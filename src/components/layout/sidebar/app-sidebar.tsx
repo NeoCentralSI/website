@@ -6,7 +6,6 @@ import {
 import * as React from "react"
 
 import { NavMain } from "@/components/layout/sidebar/nav-main"
-import { NavProjects } from "@/components/layout/sidebar/nav-projects"
 import { NavSecondary } from "@/components/layout/sidebar/nav-secondary"
 import { NavUser } from "@/components/layout/sidebar/nav-user"
 import {
@@ -40,11 +39,6 @@ interface SidebarData {
     url: string;
     icon: any;
   }>;
-  projects: Array<{
-    name: string;
-    url: string;
-    icon: any;
-  }>;
 }
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -73,7 +67,6 @@ export function AppSidebar({ data, ...props }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

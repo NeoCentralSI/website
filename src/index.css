@@ -118,3 +118,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sonner Toast Styling */
+[data-sonner-toast] [data-description] {
+  color: rgb(75 85 99) !important; /* gray-600 */
+  opacity: 1 !important;
+}

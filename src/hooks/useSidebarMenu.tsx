@@ -1,23 +1,36 @@
 import {
+  BookOpen,
   Briefcase,
   Database,
+  FileText,
   GraduationCap,
-  SquareTerminal,
-  User
+  SquareTerminal
 } from "lucide-react";
 import { useRole } from './useRole';
+import { useAuth } from './useAuth';
 
 export const useSidebarMenu = () => {
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1 } = useRole();
+  const { user: authUser } = useAuth();
 
   const getMenuData = () => {
+    // Get user initials for avatar fallback
+    const getInitials = (name?: string) => {
+      if (!name) return 'U';
+      const parts = name.split(' ').filter(Boolean);
+      const first = parts[0]?.[0] ?? '';
+      const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+      return (first + last).toUpperCase();
+    };
+
     // STUDENT MENU
     if (isStudent()) {
       return {
         user: {
-          name: "Mahasiswa",
-          email: "student@example.com",
+          name: authUser?.fullName || "User",
+          email: authUser?.email || "user@example.com",
           avatar: "/avatars/student.jpg",
+          initials: getInitials(authUser?.fullName),
         },
         navMain: [
           {
@@ -46,13 +59,28 @@ export const useSidebarMenu = () => {
             ],
           },
           {
-            title: "Tugas Akhir",
-            url: "/tugas-akhir",
-            icon: GraduationCap,
+            title: "Metodologi Penelitian",
+            url: "/metopel",
+            icon: BookOpen,
             items: [
               {
-                title: "Metodologi Penelitian",
-                url: "/tugas-akhir/metopel",
+                title: "Pendaftaran",
+                url: "/metopel/pendaftaran",
+              },
+              {
+                title: "Nilai",
+                url: "/metopel/nilai",
+              },
+            ],
+          },
+          {
+            title: "Tugas Akhir",
+            url: "/tugas-akhir",
+            icon: FileText,
+            items: [
+              {
+                title: "Pendaftaran",
+                url: "/tugas-akhir/pendaftaran",
               },
               {
                 title: "Bimbingan",
@@ -66,21 +94,25 @@ export const useSidebarMenu = () => {
                 title: "Sidang",
                 url: "/tugas-akhir/sidang",
               },
+            ],
+          },
+          {
+            title: "Yudisium",
+            url: "/yudisium",
+            icon: GraduationCap,
+            items: [
               {
-                title: "Yudisium",
-                url: "/tugas-akhir/yudisium",
+                title: "Pendaftaran",
+                url: "/yudisium/pendaftaran",
+              },
+              {
+                title: "Jadwal",
+                url: "/yudisium/jadwal",
               },
             ],
           },
         ],
-        navSecondary: [
-          {
-            title: "Profil",
-            url: "/profil",
-            icon: User,
-          },
-        ],
-        projects: [],
+        navSecondary: [],
       };
     }
 
@@ -108,50 +140,70 @@ export const useSidebarMenu = () => {
             },
           ],
         },
-        {
-          title: "Tugas Akhir",
-          url: "/tugas-akhir",
-          icon: GraduationCap,
-          items: [
-            {
-              title: "Bimbingan",
-              url: "/tugas-akhir/bimbingan",
-            },
-            {
-              title: "Seminar",
-              url: "/tugas-akhir/seminar",
-            },
-            {
-              title: "Sidang",
-              url: "/tugas-akhir/sidang",
-            },
-          ],
-        },
       ];
 
       // Tambahkan Metopel jika status supervisor = "Pembimbing 1"
       if (isPembimbing1()) {
-        menuItems[2].items?.unshift({
+        menuItems.push({
           title: "Metodologi Penelitian",
-          url: "/tugas-akhir/metopel",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [
+            {
+              title: "Bimbingan",
+              url: "/metopel/bimbingan",
+            },
+            {
+              title: "Penilaian",
+              url: "/metopel/penilaian",
+            },
+          ],
         });
       }
 
-      return {
-        user: {
-          name: "Dosen",
-          email: "lecturer@example.com",
-          avatar: "/avatars/lecturer.jpg",
-        },
-        navMain: menuItems,
-        navSecondary: [
+      // Menu Tugas Akhir (selalu ada)
+      menuItems.push({
+        title: "Tugas Akhir",
+        url: "/tugas-akhir",
+        icon: FileText,
+        items: [
           {
-            title: "Profil",
-            url: "/profil",
-            icon: User,
+            title: "Bimbingan",
+            url: "/tugas-akhir/bimbingan",
+          },
+          {
+            title: "Seminar",
+            url: "/tugas-akhir/seminar",
+          },
+          {
+            title: "Sidang",
+            url: "/tugas-akhir/sidang",
           },
         ],
-        projects: [],
+      });
+
+      // Menu Yudisium (opsional, bisa ditambahkan nanti jika perlu)
+      menuItems.push({
+        title: "Yudisium",
+        url: "/yudisium",
+        icon: GraduationCap,
+        items: [
+          {
+            title: "Jadwal",
+            url: "/yudisium/jadwal",
+          },
+        ],
+      });
+
+      return {
+        user: {
+          name: authUser?.fullName || "User",
+          email: authUser?.email || "user@example.com",
+          avatar: "/avatars/lecturer.jpg",
+          initials: getInitials(authUser?.fullName),
+        },
+        navMain: menuItems,
+        navSecondary: [],
       };
     }
 
@@ -183,66 +235,86 @@ export const useSidebarMenu = () => {
             },
           ],
         },
-        {
-          title: "Tugas Akhir",
-          url: "/tugas-akhir",
-          icon: GraduationCap,
-          items: [
-            {
-              title: "Bimbingan",
-              url: "/tugas-akhir/bimbingan",
-            },
-            {
-              title: "Seminar",
-              url: "/tugas-akhir/seminar",
-            },
-            {
-              title: "Sidang",
-              url: "/tugas-akhir/sidang",
-            },
-            {
-              title: "Kelola Penguji",
-              url: "/tugas-akhir/kelola-penguji",
-            },
-            {
-              title: "Monitoring",
-              url: "/tugas-akhir/monitoring",
-            },
-            {
-              title: "ACC Pembimbing",
-              url: "/tugas-akhir/acc-pembimbing",
-            },
-            {
-              title: "ACC Rubrik Penilaian",
-              url: "/tugas-akhir/acc-rubrik",
-            },
-          ],
-        },
       ];
 
       // Tambahkan Metopel jika status supervisor = "Pembimbing 1"
       if (isPembimbing1()) {
-        menuItems[2].items?.unshift({
+        menuItems.push({
           title: "Metodologi Penelitian",
-          url: "/tugas-akhir/metopel",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [
+            {
+              title: "Bimbingan",
+              url: "/metopel/bimbingan",
+            },
+            {
+              title: "Penilaian",
+              url: "/metopel/penilaian",
+            },
+          ],
         });
       }
 
-      return {
-        user: {
-          name: "Kepala Departemen",
-          email: "kadep@example.com",
-          avatar: "/avatars/kadep.jpg",
-        },
-        navMain: menuItems,
-        navSecondary: [
+      // Menu Tugas Akhir
+      menuItems.push({
+        title: "Tugas Akhir",
+        url: "/tugas-akhir",
+        icon: FileText,
+        items: [
           {
-            title: "Profil",
-            url: "/profil",
-            icon: User,
+            title: "Bimbingan",
+            url: "/tugas-akhir/bimbingan",
+          },
+          {
+            title: "Seminar",
+            url: "/tugas-akhir/seminar",
+          },
+          {
+            title: "Sidang",
+            url: "/tugas-akhir/sidang",
+          },
+          {
+            title: "Kelola Penguji",
+            url: "/tugas-akhir/kelola-penguji",
+          },
+          {
+            title: "Monitoring",
+            url: "/tugas-akhir/monitoring",
+          },
+          {
+            title: "ACC Pembimbing",
+            url: "/tugas-akhir/acc-pembimbing",
+          },
+          {
+            title: "ACC Rubrik Penilaian",
+            url: "/tugas-akhir/acc-rubrik",
           },
         ],
-        projects: [],
+      });
+
+      // Menu Yudisium
+      menuItems.push({
+        title: "Yudisium",
+        url: "/yudisium",
+        icon: GraduationCap,
+        items: [
+          {
+            title: "Jadwal",
+            url: "/yudisium/jadwal",
+          },
+        ],
+      });
+
+      return {
+        user: {
+          name: authUser?.fullName || "User",
+          email: authUser?.email || "user@example.com",
+          avatar: "/avatars/kadep.jpg",
+          initials: getInitials(authUser?.fullName),
+        },
+        navMain: menuItems,
+        navSecondary: [],
       };
     }
 
@@ -274,62 +346,82 @@ export const useSidebarMenu = () => {
             },
           ],
         },
-        {
-          title: "Tugas Akhir",
-          url: "/tugas-akhir",
-          icon: GraduationCap,
-          items: [
-            {
-              title: "Bimbingan",
-              url: "/tugas-akhir/bimbingan",
-            },
-            {
-              title: "Seminar",
-              url: "/tugas-akhir/seminar",
-            },
-            {
-              title: "Sidang",
-              url: "/tugas-akhir/sidang",
-            },
-            {
-              title: "Monitoring",
-              url: "/tugas-akhir/monitoring",
-            },
-            {
-              title: "Kelola Rubrik",
-              url: "/tugas-akhir/kelola-rubrik",
-            },
-            {
-              title: "Kelola Yudisium",
-              url: "/tugas-akhir/kelola-yudisium",
-            },
-          ],
-        },
       ];
 
       // Tambahkan Metopel jika status supervisor = "Pembimbing 1"
       if (isPembimbing1()) {
-        menuItems[2].items?.unshift({
+        menuItems.push({
           title: "Metodologi Penelitian",
-          url: "/tugas-akhir/metopel",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [
+            {
+              title: "Bimbingan",
+              url: "/metopel/bimbingan",
+            },
+            {
+              title: "Penilaian",
+              url: "/metopel/penilaian",
+            },
+          ],
         });
       }
 
-      return {
-        user: {
-          name: "Sekretaris Departemen",
-          email: "sekdep@example.com",
-          avatar: "/avatars/sekdep.jpg",
-        },
-        navMain: menuItems,
-        navSecondary: [
+      // Menu Tugas Akhir
+      menuItems.push({
+        title: "Tugas Akhir",
+        url: "/tugas-akhir",
+        icon: FileText,
+        items: [
           {
-            title: "Profil",
-            url: "/profil",
-            icon: User,
+            title: "Bimbingan",
+            url: "/tugas-akhir/bimbingan",
+          },
+          {
+            title: "Seminar",
+            url: "/tugas-akhir/seminar",
+          },
+          {
+            title: "Sidang",
+            url: "/tugas-akhir/sidang",
+          },
+          {
+            title: "Monitoring",
+            url: "/tugas-akhir/monitoring",
           },
         ],
-        projects: [],
+      });
+
+      // Menu Yudisium
+      menuItems.push({
+        title: "Yudisium",
+        url: "/yudisium",
+        icon: GraduationCap,
+        items: [
+          {
+            title: "Kelola Rubrik",
+            url: "/yudisium/kelola-rubrik",
+          },
+          {
+            title: "Kelola Yudisium",
+            url: "/yudisium/kelola-yudisium",
+          },
+          {
+            title: "Jadwal",
+            url: "/yudisium/jadwal",
+          },
+        ],
+      });
+
+      return {
+        user: {
+          name: authUser?.fullName || "User",
+          email: authUser?.email || "user@example.com",
+          avatar: "/avatars/sekdep.jpg",
+          initials: getInitials(authUser?.fullName),
+        },
+        navMain: menuItems,
+        navSecondary: [],
       };
     }
 
@@ -361,54 +453,74 @@ export const useSidebarMenu = () => {
             },
           ],
         },
-        {
-          title: "Tugas Akhir",
-          url: "/tugas-akhir",
-          icon: GraduationCap,
-          items: [
-            {
-              title: "Bimbingan",
-              url: "/tugas-akhir/bimbingan",
-            },
-            {
-              title: "Seminar",
-              url: "/tugas-akhir/seminar",
-            },
-            {
-              title: "Sidang",
-              url: "/tugas-akhir/sidang",
-            },
-            {
-              title: "Monitoring",
-              url: "/tugas-akhir/monitoring",
-            },
-          ],
-        },
       ];
 
       // Tambahkan Metopel jika status supervisor = "Pembimbing 1"
       if (isPembimbing1()) {
-        menuItems[2].items?.unshift({
+        menuItems.push({
           title: "Metodologi Penelitian",
-          url: "/tugas-akhir/metopel",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [
+            {
+              title: "Bimbingan",
+              url: "/metopel/bimbingan",
+            },
+            {
+              title: "Penilaian",
+              url: "/metopel/penilaian",
+            },
+          ],
         });
       }
 
-      return {
-        user: {
-          name: "GKM",
-          email: "gkm@example.com",
-          avatar: "/avatars/gkm.jpg",
-        },
-        navMain: menuItems,
-        navSecondary: [
+      // Menu Tugas Akhir
+      menuItems.push({
+        title: "Tugas Akhir",
+        url: "/tugas-akhir",
+        icon: FileText,
+        items: [
           {
-            title: "Profil",
-            url: "/profil",
-            icon: User,
+            title: "Bimbingan",
+            url: "/tugas-akhir/bimbingan",
+          },
+          {
+            title: "Seminar",
+            url: "/tugas-akhir/seminar",
+          },
+          {
+            title: "Sidang",
+            url: "/tugas-akhir/sidang",
+          },
+          {
+            title: "Monitoring",
+            url: "/tugas-akhir/monitoring",
           },
         ],
-        projects: [],
+      });
+
+      // Menu Yudisium
+      menuItems.push({
+        title: "Yudisium",
+        url: "/yudisium",
+        icon: GraduationCap,
+        items: [
+          {
+            title: "Jadwal",
+            url: "/yudisium/jadwal",
+          },
+        ],
+      });
+
+      return {
+        user: {
+          name: authUser?.fullName || "User",
+          email: authUser?.email || "user@example.com",
+          avatar: "/avatars/gkm.jpg",
+          initials: getInitials(authUser?.fullName),
+        },
+        navMain: menuItems,
+        navSecondary: [],
       };
     }
 
@@ -416,9 +528,10 @@ export const useSidebarMenu = () => {
     if (isAdmin()) {
       return {
         user: {
-          name: "Admin Departemen",
-          email: "admin@example.com",
+          name: authUser?.fullName || "User",
+          email: authUser?.email || "user@example.com",
           avatar: "/avatars/admin.jpg",
+          initials: getInitials(authUser?.fullName),
         },
         navMain: [
           {
@@ -445,19 +558,26 @@ export const useSidebarMenu = () => {
           {
             title: "Tugas Akhir",
             url: "/tugas-akhir",
-            icon: GraduationCap,
+            icon: FileText,
             items: [
               {
                 title: "Data Tugas Akhir",
                 url: "/tugas-akhir/data",
               },
+            ],
+          },
+          {
+            title: "Yudisium",
+            url: "/yudisium",
+            icon: GraduationCap,
+            items: [
               {
                 title: "Penjadwalan Seminar",
-                url: "/tugas-akhir/jadwal-seminar",
+                url: "/yudisium/jadwal-seminar",
               },
               {
                 title: "Penjadwalan Sidang",
-                url: "/tugas-akhir/jadwal-sidang",
+                url: "/yudisium/jadwal-sidang",
               },
             ],
           },
@@ -481,23 +601,17 @@ export const useSidebarMenu = () => {
             ],
           },
         ],
-        navSecondary: [
-          {
-            title: "Profil",
-            url: "/profil",
-            icon: User,
-          },
-        ],
-        projects: [],
+        navSecondary: [],
       };
     }
 
     // Default menu jika tidak ada role yang cocok
     return {
       user: {
-        name: "User",
-        email: "user@example.com",
+        name: authUser?.fullName || "User",
+        email: authUser?.email || "user@example.com",
         avatar: "/avatars/user.jpg",
+        initials: getInitials(authUser?.fullName),
       },
       navMain: [
         {
@@ -507,14 +621,7 @@ export const useSidebarMenu = () => {
           isActive: true,
         },
       ],
-      navSecondary: [
-        {
-          title: "Profil",
-          url: "/profil",
-          icon: User,
-        },
-      ],
-      projects: [],
+      navSecondary: [],
     };
   };
 

@@ -32,25 +32,58 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Check authentication on mount
   useEffect(() => {
+    let isMounted = true;
+    let isChecking = false;
+
     const checkAuth = async () => {
+      // Prevent multiple simultaneous checks
+      if (isChecking) {
+        return;
+      }
+
+      isChecking = true;
+
       try {
         const { accessToken } = getAuthTokens();
         if (accessToken) {
-          // Jika ada token, coba ambil data user
           const userData = await getUserProfileAPI();
-          setUser(userData);
+          
+          // Only update state if component is still mounted
+          if (isMounted) {
+            setUser(userData);
+          }
+        } else {
+          if (isMounted) {
+            setUser(null);
+          }
         }
       } catch (error) {
-        // Jika gagal, clear tokens dan set user null
-        console.error('Auth check failed:', error);
-        clearAuthTokens();
-        setUser(null);
+        // Only clear tokens and update state if component is still mounted
+        // Don't clear tokens on network errors
+        if (isMounted) {
+          const errorMessage = error instanceof Error ? error.message : '';
+          
+          // Only clear tokens if it's an auth error, not network error
+          if (errorMessage.includes('Session expired') || errorMessage.includes('Invalid')) {
+            clearAuthTokens();
+          }
+          
+          setUser(null);
+        }
       } finally {
-        setIsLoading(false);
+        isChecking = false;
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     checkAuth();
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
