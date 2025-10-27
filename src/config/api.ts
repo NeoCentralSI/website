@@ -24,6 +24,20 @@ export const API_CONFIG = {
       MARK_READ: (id: string) => `/notification/${id}/read`,
       DELETE: (id: string) => `/notification/${id}`,
     },
+    THESIS_STUDENT: {
+      BASE: '/thesisGuidance/student',
+      GUIDANCE_LIST: '/thesisGuidance/student/guidance',
+      GUIDANCE_DETAIL: (id: string) => `/thesisGuidance/student/guidance/${id}`,
+      GUIDANCE_REQUEST: '/thesisGuidance/student/guidance/request',
+      GUIDANCE_RESCHEDULE: (id: string) => `/thesisGuidance/student/guidance/${id}/reschedule`,
+      GUIDANCE_CANCEL: (id: string) => `/thesisGuidance/student/guidance/${id}/cancel`,
+      GUIDANCE_NOTES: (id: string) => `/thesisGuidance/student/guidance/${id}/notes`,
+      PROGRESS: '/thesisGuidance/student/progress',
+      PROGRESS_COMPLETE: '/thesisGuidance/student/progress/complete',
+      HISTORY: '/thesisGuidance/student/history',
+      ACTIVITY_LOG: '/thesisGuidance/student/activity-log',
+      SUPERVISORS: '/thesisGuidance/student/supervisors',
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };

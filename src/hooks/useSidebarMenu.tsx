@@ -62,7 +62,7 @@ export const useSidebarMenu = () => {
             icon: FileText,
             items: [
               {
-                title: "Metodologi Penelitian (Metopel)",
+                title: "Metodologi Penelitian ",
                 url: "/metopel",
               },
               {

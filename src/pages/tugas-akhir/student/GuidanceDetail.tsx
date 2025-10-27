@@ -1,0 +1,205 @@
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import type { GuidanceItem } from "@/services/studentGuidance.service";
+import {
+  getStudentGuidanceDetail,
+  rescheduleStudentGuidance,
+  cancelStudentGuidance,
+  updateStudentGuidanceNotes,
+} from "@/services/studentGuidance.service";
+import { toast } from "sonner";
+
+export default function GuidanceDetailPage() {
+  const { guidanceId } = useParams();
+  const navigate = useNavigate();
+  const [guidance, setGuidance] = useState<GuidanceItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [openReschedule, setOpenReschedule] = useState(false);
+  const [openCancel, setOpenCancel] = useState(false);
+  const [openNotes, setOpenNotes] = useState(false);
+
+  const [reschedule, setReschedule] = useState({ newTime: "", reason: "" });
+  const [cancel, setCancel] = useState({ reason: "" });
+  const [notes, setNotes] = useState({ notes: "" });
+
+  const breadcrumb = useMemo(
+    () => [
+      { label: "Tugas Akhir" },
+      { label: "Bimbingan", href: "/tugas-akhir/bimbingan" },
+      { label: "Detail" },
+    ],
+    []
+  );
+
+  const load = async () => {
+    if (!guidanceId) return;
+    setLoading(true);
+    try {
+      const data = await getStudentGuidanceDetail(guidanceId);
+      setGuidance(data.guidance);
+      setNotes({ notes: data.guidance.notes ?? "" });
+    } catch (e: any) {
+      toast.error(e?.message || "Gagal memuat detail");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guidanceId]);
+
+  const doReschedule = async () => {
+    if (!guidanceId || !reschedule.newTime) {
+      toast.error("Pilih waktu baru");
+      return;
+    }
+    try {
+      await rescheduleStudentGuidance(guidanceId, reschedule);
+      toast.success("Jadwal diperbarui");
+      setOpenReschedule(false);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message || "Gagal menjadwalkan ulang");
+    }
+  };
+
+  const doCancel = async () => {
+    if (!guidanceId) return;
+    try {
+      await cancelStudentGuidance(guidanceId, cancel);
+      toast.success("Bimbingan dibatalkan");
+      setOpenCancel(false);
+      navigate("/tugas-akhir/bimbingan");
+    } catch (e: any) {
+      toast.error(e?.message || "Gagal membatalkan");
+    }
+  };
+
+  const doUpdateNotes = async () => {
+    if (!guidanceId) return;
+    try {
+      await updateStudentGuidanceNotes(guidanceId, notes);
+      toast.success("Catatan diperbarui");
+      setOpenNotes(false);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message || "Gagal memperbarui catatan");
+    }
+  };
+
+  return (
+    <DashboardLayout breadcrumbs={breadcrumb}>
+      <div className="p-4">
+        <Button variant="secondary" onClick={() => navigate(-1)} className="mb-4">Kembali</Button>
+        <Card className="p-4">
+          {loading ? (
+            <div className="text-sm text-muted-foreground">Memuat...</div>
+          ) : guidance ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground">Pembimbing</div>
+                  <div className="font-medium">{guidance.supervisorName || guidance.supervisorId}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Status</div>
+                  <div className="font-medium capitalize">{guidance.status}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Terjadwal</div>
+                  <div className="font-medium">{guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Lokasi</div>
+                  <div className="font-medium">{guidance.location || '-'}</div>
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Catatan</div>
+                <div className="text-sm whitespace-pre-wrap">{guidance.notes || '-'}</div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Dialog open={openReschedule} onOpenChange={setOpenReschedule}>
+                  <DialogTrigger asChild>
+                    <Button>Reschedule</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Reschedule Bimbingan</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-3">
+                      <div className="grid gap-2">
+                        <Label>Waktu Baru</Label>
+                        <Input type="datetime-local" value={reschedule.newTime} onChange={(e) => setReschedule((s) => ({ ...s, newTime: e.target.value }))} />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Alasan (opsional)</Label>
+                        <Input value={reschedule.reason} onChange={(e) => setReschedule((s) => ({ ...s, reason: e.target.value }))} />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="secondary" onClick={() => setOpenReschedule(false)}>Batal</Button>
+                        <Button onClick={doReschedule}>Simpan</Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={openCancel} onOpenChange={setOpenCancel}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive">Batalkan</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Batalkan Bimbingan</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-3">
+                      <div className="grid gap-2">
+                        <Label>Alasan</Label>
+                        <Input value={cancel.reason} onChange={(e) => setCancel({ reason: e.target.value })} />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="secondary" onClick={() => setOpenCancel(false)}>Tutup</Button>
+                        <Button variant="destructive" onClick={doCancel}>Konfirmasi</Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={openNotes} onOpenChange={setOpenNotes}>
+                  <DialogTrigger asChild>
+                    <Button variant="secondary">Perbarui Catatan</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Perbarui Catatan</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-3">
+                      <div className="grid gap-2">
+                        <Label>Catatan</Label>
+                        <Input value={notes.notes} onChange={(e) => setNotes({ notes: e.target.value })} />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="secondary" onClick={() => setOpenNotes(false)}>Batal</Button>
+                        <Button onClick={doUpdateNotes}>Simpan</Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">Data tidak ditemukan</div>
+          )}
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+}
