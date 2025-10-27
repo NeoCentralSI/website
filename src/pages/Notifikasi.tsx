@@ -5,9 +5,19 @@ import { Card, CardContent } from '../components/ui/card';
 import { Bell, Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useEffect as ReactUseEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 
 export default function Notifikasi() {
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+  ReactUseEffect(() => {
+    setBreadcrumbs([
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Notifikasi' },
+    ]);
+    setTitle(undefined);
+  }, [setBreadcrumbs, setTitle]);
   const {
     notifications,
     unreadCount,
@@ -60,12 +70,6 @@ export default function Notifikasi() {
   };
 
   return (
-    <DashboardLayout
-      breadcrumbs={[
-        { label: "Dashboard", href: "/dashboard" },
-        { label: "Notifikasi" }
-      ]}
-    >
       <div className="p-6 max-w-4xl mx-auto w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Notifikasi</h1>
@@ -136,7 +140,7 @@ export default function Notifikasi() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       {!notification.isRead && (
-                        <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
+                        <div className="w-2 h-2 bg-blue-600 rounded-full shrink-0" />
                       )}
                       <h3 className="font-semibold text-gray-900 truncate">
                         {notification.title}
@@ -150,7 +154,7 @@ export default function Notifikasi() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {!notification.isRead && (
                       <Button
                         variant="ghost"
@@ -177,7 +181,6 @@ export default function Notifikasi() {
         </div>
       )}
       </div>
-    </DashboardLayout>
   );
 }
 

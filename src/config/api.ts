@@ -38,6 +38,22 @@ export const API_CONFIG = {
       ACTIVITY_LOG: '/thesisGuidance/student/activity-log',
       SUPERVISORS: '/thesisGuidance/student/supervisors',
     },
+    THESIS_LECTURER: {
+      BASE: '/thesisGuidance/lecturer',
+      MY_STUDENTS: '/thesisGuidance/lecturer/my-students',
+      REQUESTS: '/thesisGuidance/lecturer/requests',
+      REQUEST_REJECT: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/reject`,
+      REQUEST_APPROVE: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/approve`,
+      PROGRESS_SUMMARY: '/thesisGuidance/lecturer/progress',
+      PROGRESS_DETAIL: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}`,
+      PROGRESS_APPROVE_COMPONENTS: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}/approve`,
+      PROGRESS_FINAL_APPROVAL: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}/final-approval`,
+      FAIL_THESIS: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}/fail`,
+      FEEDBACK: (guidanceId: string) => `/thesisGuidance/lecturer/feedback/${guidanceId}`,
+      GUIDANCE_HISTORY: (studentId: string) => `/thesisGuidance/lecturer/guidance-history/${studentId}`,
+      ACTIVITY_LOG: (studentId: string) => `/thesisGuidance/lecturer/activity-log/${studentId}`,
+      SUPERVISOR_ELIGIBILITY: '/thesisGuidance/lecturer/supervisor/eligibility',
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };

@@ -45,7 +45,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   data: SidebarData;
 }
 
-export function AppSidebar({ data, ...props }: AppSidebarProps) {
+export const AppSidebar = React.memo(function AppSidebar({ data, ...props }: AppSidebarProps) {
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
@@ -74,4 +74,4 @@ export function AppSidebar({ data, ...props }: AppSidebarProps) {
       </SidebarFooter>
     </Sidebar>
   )
-}
+})

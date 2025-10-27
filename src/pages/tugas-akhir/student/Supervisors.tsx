@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useOutletContext } from "react-router-dom";
+import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { Card } from "@/components/ui/card";
 import type { SupervisorItem } from "@/services/studentGuidance.service";
 import { getStudentSupervisors } from "@/services/studentGuidance.service";
 import { toast } from "sonner";
+import { TabsNav } from "@/components/ui/tabs-nav";
 
 export default function SupervisorsPage() {
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan", href: "/tugas-akhir/bimbingan" }, { label: "Pembimbing" }], []);
+  useEffect(() => {
+    setBreadcrumbs(breadcrumb);
+    setTitle(undefined);
+  }, [breadcrumb, setBreadcrumbs, setTitle]);
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<SupervisorItem[]>([]);
 
@@ -27,8 +34,17 @@ export default function SupervisorsPage() {
   }, []);
 
   return (
-    <DashboardLayout breadcrumbs={breadcrumb}>
-      <div className="p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="p-4">
+        <TabsNav
+          preserveSearch
+          tabs={[
+            { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
+            { label: 'Progres', to: '/tugas-akhir/bimbingan/progress' },
+            { label: 'Aktivitas', to: '/tugas-akhir/bimbingan/activity' },
+            { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
+          ]}
+        />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {(!loading && items.length === 0) && (
           <div className="text-sm text-muted-foreground">Belum ada data pembimbing</div>
         )}
@@ -43,7 +59,7 @@ export default function SupervisorsPage() {
             </div>
           </Card>
         ))}
+        </div>
       </div>
-    </DashboardLayout>
   );
 }

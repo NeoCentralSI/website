@@ -4,6 +4,7 @@ import {
   FileText,
   SquareTerminal
 } from "lucide-react";
+import { useMemo } from "react";
 import { useRole } from './useRole';
 import { useAuth } from './useAuth';
 
@@ -11,7 +12,18 @@ export const useSidebarMenu = () => {
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1 } = useRole();
   const { user: authUser } = useAuth();
 
-  const getMenuData = () => {
+  const menuData = useMemo(() => {
+    // Compute role flags once for memo dependencies
+    const role = {
+      student: isStudent(),
+      dosen: isDosen(),
+      kadep: isKadep(),
+      sekdep: isSekdep(),
+      gkm: isGkm(),
+      admin: isAdmin(),
+      pembimbing1: isPembimbing1(),
+    };
+
     // Get user initials for avatar fallback
     const getInitials = (name?: string) => {
       if (!name) return 'U';
@@ -22,7 +34,7 @@ export const useSidebarMenu = () => {
     };
 
     // STUDENT MENU
-    if (isStudent()) {
+    if (role.student) {
       return {
         user: {
           name: authUser?.fullName || "User",
@@ -89,7 +101,7 @@ export const useSidebarMenu = () => {
     }
 
     // LECTURER (NORMAL) MENU
-    if (isDosen() && !isKadep() && !isSekdep() && !isGkm()) {
+    if (role.dosen && !role.kadep && !role.sekdep && !role.gkm) {
       const menuItems = [
         {
           title: "Dashboard",
@@ -116,7 +128,7 @@ export const useSidebarMenu = () => {
 
       // Menu Tugas Akhir (selalu ada), Metopel muncul jika Pembimbing 1
       const tugasAkhirItems = [
-        ...(isPembimbing1()
+        ...(role.pembimbing1
           ? [
               {
                 title: "Metopel",
@@ -151,7 +163,7 @@ export const useSidebarMenu = () => {
     }
 
     // LECTURER (KADEP) MENU
-    if (isKadep()) {
+    if (role.kadep) {
       const menuItems = [
         {
           title: "Dashboard",
@@ -182,7 +194,7 @@ export const useSidebarMenu = () => {
 
       // Menu Tugas Akhir
       const tugasAkhirItems = [
-        ...(isPembimbing1()
+        ...(role.pembimbing1
           ? [
               {
                 title: "Metopel",
@@ -221,7 +233,7 @@ export const useSidebarMenu = () => {
     }
 
     // LECTURER (SEKDEP) MENU
-    if (isSekdep()) {
+    if (role.sekdep) {
       const menuItems = [
         {
           title: "Dashboard",
@@ -252,7 +264,7 @@ export const useSidebarMenu = () => {
 
       // Menu Tugas Akhir
       const tugasAkhirItems = [
-        ...(isPembimbing1()
+        ...(role.pembimbing1
           ? [
               {
                 title: "Metopel",
@@ -290,7 +302,7 @@ export const useSidebarMenu = () => {
     }
 
     // LECTURER (GKM) MENU
-    if (isGkm()) {
+    if (role.gkm) {
       const menuItems = [
         {
           title: "Dashboard",
@@ -321,7 +333,7 @@ export const useSidebarMenu = () => {
 
       // Menu Tugas Akhir
       const tugasAkhirItems = [
-        ...(isPembimbing1()
+        ...(role.pembimbing1
           ? [
               {
                 title: "Metopel",
@@ -357,7 +369,7 @@ export const useSidebarMenu = () => {
     }
 
     // ADMIN DEPARTEMEN MENU
-    if (isAdmin()) {
+    if (role.admin) {
       return {
         user: {
           name: authUser?.fullName || "User",
@@ -448,7 +460,13 @@ export const useSidebarMenu = () => {
       ],
       navSecondary: [],
     };
-  };
+  // Only recompute when role flags or auth user identity change
+  }, [
+    // role flags
+    isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1,
+    // user deps
+    authUser?.fullName, authUser?.email
+  ]);
 
-  return getMenuData();
+  return menuData;
 };

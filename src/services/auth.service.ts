@@ -1,4 +1,5 @@
 import { API_CONFIG, getApiUrl } from '../config/api';
+import { logApi } from '@/utils/logger';
 import { clearAllAuthCookies, getCookie, setCookie } from '../utils/cookies';
 
 export interface LoginRequest {
@@ -234,7 +235,9 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
     },
   };
 
+  const started = performance.now?.() ?? Date.now();
   let response = await fetch(url, requestOptions);
+  logApi({ url, method: requestOptions.method, status: response.status, ok: response.ok, durationMs: (performance.now?.() ?? Date.now()) - started });
 
   if (response.status === 401 && accessToken) {
     try {
@@ -245,7 +248,9 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
         ...requestOptions.headers,
         Authorization: `Bearer ${newTokens.accessToken}`,
       };
+      const retryStart = performance.now?.() ?? Date.now();
       response = await fetch(url, requestOptions);
+      logApi({ url, method: requestOptions.method, status: response.status, ok: response.ok, durationMs: (performance.now?.() ?? Date.now()) - retryStart, note: 'retry-after-refresh' });
     } catch (refreshError) {
       clearAuthTokens();
       window.location.href = '/login';

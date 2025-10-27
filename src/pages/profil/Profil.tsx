@@ -1,5 +1,7 @@
 import { useState } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +12,14 @@ import { User, Lock, Mail, Shield, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Profil() {
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+  useEffect(() => {
+    setBreadcrumbs([
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Profil" },
+    ]);
+    setTitle(undefined);
+  }, [setBreadcrumbs, setTitle]);
   const { user } = useAuth();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -71,12 +81,6 @@ export default function Profil() {
   };
 
   return (
-    <DashboardLayout
-      breadcrumbs={[
-        { label: "Dashboard", href: "/dashboard" },
-        { label: "Profil" }
-      ]}
-    >
       <div className="flex flex-1 flex-col gap-6 p-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Profil</h1>
@@ -270,6 +274,5 @@ export default function Profil() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }

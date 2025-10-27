@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useParams, useNavigate, useOutletContext } from "react-router-dom";
+import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 
 export default function GuidanceDetailPage() {
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { guidanceId } = useParams();
   const navigate = useNavigate();
   const [guidance, setGuidance] = useState<GuidanceItem | null>(null);
@@ -24,26 +25,27 @@ export default function GuidanceDetailPage() {
   const [openCancel, setOpenCancel] = useState(false);
   const [openNotes, setOpenNotes] = useState(false);
 
-  const [reschedule, setReschedule] = useState({ newTime: "", reason: "" });
+  const [reschedule, setReschedule] = useState({ guidanceDate: "", studentNotes: "" });
   const [cancel, setCancel] = useState({ reason: "" });
-  const [notes, setNotes] = useState({ notes: "" });
+  const [notes, setNotes] = useState({ studentNotes: "" });
 
-  const breadcrumb = useMemo(
-    () => [
-      { label: "Tugas Akhir" },
-      { label: "Bimbingan", href: "/tugas-akhir/bimbingan" },
-      { label: "Detail" },
-    ],
-    []
-  );
+  const breadcrumb = useMemo(() => [
+    { label: "Tugas Akhir" },
+    { label: "Bimbingan", href: "/tugas-akhir/bimbingan" },
+    { label: "Detail" },
+  ], []);
+  useEffect(() => {
+    setBreadcrumbs(breadcrumb);
+    setTitle(undefined);
+  }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   const load = async () => {
     if (!guidanceId) return;
     setLoading(true);
     try {
-      const data = await getStudentGuidanceDetail(guidanceId);
+  const data = await getStudentGuidanceDetail(guidanceId);
       setGuidance(data.guidance);
-      setNotes({ notes: data.guidance.notes ?? "" });
+  setNotes({ studentNotes: data.guidance.notes ?? "" });
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat detail");
     } finally {
@@ -57,7 +59,7 @@ export default function GuidanceDetailPage() {
   }, [guidanceId]);
 
   const doReschedule = async () => {
-    if (!guidanceId || !reschedule.newTime) {
+    if (!guidanceId || !reschedule.guidanceDate) {
       toast.error("Pilih waktu baru");
       return;
     }
@@ -86,7 +88,7 @@ export default function GuidanceDetailPage() {
   const doUpdateNotes = async () => {
     if (!guidanceId) return;
     try {
-      await updateStudentGuidanceNotes(guidanceId, notes);
+  await updateStudentGuidanceNotes(guidanceId, notes);
       toast.success("Catatan diperbarui");
       setOpenNotes(false);
       load();
@@ -96,7 +98,6 @@ export default function GuidanceDetailPage() {
   };
 
   return (
-    <DashboardLayout breadcrumbs={breadcrumb}>
       <div className="p-4">
         <Button variant="secondary" onClick={() => navigate(-1)} className="mb-4">Kembali</Button>
         <Card className="p-4">
@@ -138,11 +139,11 @@ export default function GuidanceDetailPage() {
                     <div className="grid gap-3">
                       <div className="grid gap-2">
                         <Label>Waktu Baru</Label>
-                        <Input type="datetime-local" value={reschedule.newTime} onChange={(e) => setReschedule((s) => ({ ...s, newTime: e.target.value }))} />
+                        <Input type="datetime-local" value={reschedule.guidanceDate} onChange={(e) => setReschedule((s) => ({ ...s, guidanceDate: e.target.value }))} />
                       </div>
                       <div className="grid gap-2">
                         <Label>Alasan (opsional)</Label>
-                        <Input value={reschedule.reason} onChange={(e) => setReschedule((s) => ({ ...s, reason: e.target.value }))} />
+                        <Input value={reschedule.studentNotes} onChange={(e) => setReschedule((s) => ({ ...s, studentNotes: e.target.value }))} />
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="secondary" onClick={() => setOpenReschedule(false)}>Batal</Button>
@@ -184,7 +185,7 @@ export default function GuidanceDetailPage() {
                     <div className="grid gap-3">
                       <div className="grid gap-2">
                         <Label>Catatan</Label>
-                        <Input value={notes.notes} onChange={(e) => setNotes({ notes: e.target.value })} />
+                        <Input value={notes.studentNotes} onChange={(e) => setNotes({ studentNotes: e.target.value })} />
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="secondary" onClick={() => setOpenNotes(false)}>Batal</Button>
@@ -200,6 +201,5 @@ export default function GuidanceDetailPage() {
           )}
         </Card>
       </div>
-    </DashboardLayout>
   );
 }

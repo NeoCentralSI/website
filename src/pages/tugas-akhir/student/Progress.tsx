@@ -1,24 +1,33 @@
 import { useEffect, useMemo, useState } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useOutletContext } from "react-router-dom";
+import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import type { ProgressDetailItem } from "@/services/studentGuidance.service";
 import { completeStudentProgressComponents, getStudentProgressDetail } from "@/services/studentGuidance.service";
 import { toast } from "sonner";
+import { TabsNav } from "@/components/ui/tabs-nav";
+import ProgressChecklist from "@/components/progress/ProgressChecklist";
+import { getCache, setCache } from "@/lib/viewCache";
 
 export default function StudentProgressPage() {
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan", href: "/tugas-akhir/bimbingan" }, { label: "Progres" }], []);
-  const [loading, setLoading] = useState(true);
-  const [components, setComponents] = useState<ProgressDetailItem[]>([]);
+  useEffect(() => {
+    setBreadcrumbs(breadcrumb);
+    setTitle(undefined);
+  }, [breadcrumb, setBreadcrumbs, setTitle]);
+  const cached = getCache<ProgressDetailItem[]>("student-progress");
+  const [loading, setLoading] = useState<boolean>(!cached);
+  const [components, setComponents] = useState<ProgressDetailItem[]>(cached?.data ?? []);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   const load = async () => {
-    setLoading(true);
+    // Only show skeleton for cold start
+    setLoading((prev) => (components.length === 0 ? true : prev));
     try {
       const data = await getStudentProgressDetail();
-      setComponents(data.components || []);
+      const comps = data.components || [];
+      setComponents(comps);
+      setCache("student-progress", comps);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat progres");
     } finally {
@@ -39,7 +48,7 @@ export default function StudentProgressPage() {
       return;
     }
     try {
-      await completeStudentProgressComponents({ components: ids.map((componentId) => ({ componentId })) });
+      await completeStudentProgressComponents({ componentIds: ids });
       toast.success("Progres diperbarui");
       setSelected({});
       load();
@@ -49,40 +58,33 @@ export default function StudentProgressPage() {
   };
 
   return (
-    <DashboardLayout breadcrumbs={breadcrumb}>
-      <div className="p-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="font-medium">Komponen Progres</div>
-            <Button size="sm" onClick={submit}>Tandai Selesai</Button>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead></TableHead>
-                <TableHead>Komponen</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!loading && components.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">Tidak ada data</TableCell>
-                </TableRow>
-              )}
-              {components.map((c) => (
-                <TableRow key={c.componentId}>
-                  <TableCell>
-                    <Checkbox checked={!!selected[c.componentId]} onCheckedChange={() => toggle(c.componentId)} disabled={c.isCompleted} />
-                  </TableCell>
-                  <TableCell>{c.name}</TableCell>
-                  <TableCell>{c.isCompleted ? "Selesai" : "Belum"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      </div>
-    </DashboardLayout>
+    <div className="p-4">
+      <TabsNav
+        preserveSearch
+        tabs={[
+          { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
+          { label: 'Progres', to: '/tugas-akhir/bimbingan/progress' },
+          { label: 'Aktivitas', to: '/tugas-akhir/bimbingan/activity' },
+          { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
+        ]}
+      />
+
+      <ProgressChecklist
+        items={components}
+        loading={loading}
+        selected={selected}
+        onToggle={toggle}
+        onCompleteSelected={submit}
+        onCompleteOne={async (id: string) => {
+          try {
+            await completeStudentProgressComponents({ componentIds: [id] });
+            toast.success("Komponen ditandai selesai");
+            load();
+          } catch (e: any) {
+            toast.error(e?.message || "Gagal menyimpan");
+          }
+        }}
+      />
+    </div>
   );
 }
