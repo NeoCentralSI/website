@@ -23,6 +23,8 @@ export const API_CONFIG = {
       MARK_ALL_READ: '/notification/read-all',
       MARK_READ: (id: string) => `/notification/${id}/read`,
       DELETE: (id: string) => `/notification/${id}`,
+      FCM_REGISTER: '/notification/fcm/register',
+      FCM_UNREGISTER: '/notification/fcm/unregister',
     },
     THESIS_STUDENT: {
       BASE: '/thesisGuidance/student',

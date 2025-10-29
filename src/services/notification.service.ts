@@ -55,4 +55,22 @@ export async function deleteNotification(id: string): Promise<{ success: boolean
   return res.json();
 }
  
+export async function registerFcmToken(token: string): Promise<{ success: boolean; registered: number }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.FCM_REGISTER), {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal mendaftarkan FCM token");
+  return res.json();
+}
+
+export async function unregisterFcmToken(token: string): Promise<{ success: boolean; removed: number }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.FCM_UNREGISTER), {
+    method: "DELETE",
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menghapus FCM token");
+  return res.json();
+}
+
 
