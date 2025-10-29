@@ -65,7 +65,7 @@ export default function GuidanceDetailPage() {
     }
     try {
       await rescheduleStudentGuidance(guidanceId, reschedule);
-      toast.success("Jadwal diperbarui");
+      toast.success("Jadwal diperbarui", { id: "guidance-rescheduled" });
       setOpenReschedule(false);
       load();
     } catch (e: any) {
@@ -77,7 +77,7 @@ export default function GuidanceDetailPage() {
     if (!guidanceId) return;
     try {
       await cancelStudentGuidance(guidanceId, cancel);
-      toast.success("Bimbingan dibatalkan");
+      toast.success("Bimbingan dibatalkan", { id: "guidance-cancelled" });
       setOpenCancel(false);
       navigate("/tugas-akhir/bimbingan");
     } catch (e: any) {
@@ -89,7 +89,7 @@ export default function GuidanceDetailPage() {
     if (!guidanceId) return;
     try {
   await updateStudentGuidanceNotes(guidanceId, notes);
-      toast.success("Catatan diperbarui");
+      toast.success("Catatan diperbarui", { id: "guidance-notes-updated" });
       setOpenNotes(false);
       load();
     } catch (e: any) {
@@ -116,7 +116,7 @@ export default function GuidanceDetailPage() {
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Terjadwal</div>
-                  <div className="font-medium">{guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-'}</div>
+                  <div className="font-medium">{guidance.schedule?.guidanceDateFormatted || guidance.scheduledAtFormatted || (guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-')}</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Lokasi</div>

@@ -6,7 +6,7 @@ import { getStudentActivityLog } from "@/services/studentGuidance.service";
 import { toast } from "sonner";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import { getCache, setCache } from "@/lib/viewCache";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ActivityLogPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -15,9 +15,17 @@ export default function ActivityLogPage() {
     setBreadcrumbs(breadcrumb);
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
-  const cached = getCache<ActivityLogItem[]>("student-activity");
-  const [loading, setLoading] = useState<boolean>(!cached);
-  const [items, setItems] = useState<ActivityLogItem[]>(cached?.data ?? []);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["student-activity"],
+    queryFn: async () => {
+      const res = await getStudentActivityLog();
+      return res.items as ActivityLogItem[];
+    },
+  });
+  if (error) {
+    toast.error((error as any)?.message || "Gagal memuat aktivitas");
+  }
+  const items: ActivityLogItem[] = useMemo(() => (data ?? []) as ActivityLogItem[], [data]);
   const [q, setQ] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [actorFilter, setActorFilter] = useState("");
@@ -26,23 +34,7 @@ export default function ActivityLogPage() {
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
 
-  const load = async () => {
-    // Show skeleton only if we don't have any cached/base data yet
-    setLoading((prev) => (items.length === 0 ? true : prev));
-    try {
-      const data = await getStudentActivityLog();
-      setItems(data.items);
-      setCache("student-activity", data.items);
-    } catch (e: any) {
-      toast.error(e?.message || "Gagal memuat aktivitas");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
+  // no manual loading needed; useQuery handles caching
 
   // client-side compute display based on filters/search/sort/pagination
   const display = useMemo(() => {
@@ -138,8 +130,8 @@ export default function ActivityLogPage() {
             }
           },
         ] as Column<ActivityLogItem>[]}
-        data={display.slice}
-        loading={loading}
+  data={display.slice}
+  loading={isLoading}
         total={total}
         page={page}
         pageSize={pageSize}

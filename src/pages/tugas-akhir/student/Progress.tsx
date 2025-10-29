@@ -5,8 +5,8 @@ import type { ProgressDetailItem } from "@/services/studentGuidance.service";
 import { completeStudentProgressComponents, getStudentProgressDetail } from "@/services/studentGuidance.service";
 import { toast } from "sonner";
 import { TabsNav } from "@/components/ui/tabs-nav";
-import ProgressChecklist from "@/components/progress/ProgressChecklist";
-import { getCache, setCache } from "@/lib/viewCache";
+import ProgressChecklist from "@/components/thesis/ProgressChecklist";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function StudentProgressPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -15,46 +15,32 @@ export default function StudentProgressPage() {
     setBreadcrumbs(breadcrumb);
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
-  const cached = getCache<ProgressDetailItem[]>("student-progress");
-  const [loading, setLoading] = useState<boolean>(!cached);
-  const [components, setComponents] = useState<ProgressDetailItem[]>(cached?.data ?? []);
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["student-progress"],
+    queryFn: async () => {
+      const res = await getStudentProgressDetail();
+      return (res.components || []) as ProgressDetailItem[];
+    },
+  });
+  const components: ProgressDetailItem[] = useMemo(() => (data ?? []) as ProgressDetailItem[], [data]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-
-  const load = async () => {
-    // Only show skeleton for cold start
-    setLoading((prev) => (components.length === 0 ? true : prev));
-    try {
-      const data = await getStudentProgressDetail();
-      const comps = data.components || [];
-      setComponents(comps);
-      setCache("student-progress", comps);
-    } catch (e: any) {
-      toast.error(e?.message || "Gagal memuat progres");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
 
   const toggle = (id: string) => setSelected((s) => ({ ...s, [id]: !s[id] }));
 
-  const submit = async () => {
-    const ids = Object.keys(selected).filter((k) => selected[k]);
-    if (ids.length === 0) {
-      toast.message("Pilih minimal satu komponen");
-      return;
-    }
-    try {
-      await completeStudentProgressComponents({ componentIds: ids });
+  const completeMutation = useMutation({
+    mutationFn: async (ids: string[]) => completeStudentProgressComponents({ componentIds: ids }),
+    onSuccess: () => {
       toast.success("Progres diperbarui");
       setSelected({});
-      load();
-    } catch (e: any) {
-      toast.error(e?.message || "Gagal menyimpan");
-    }
+      qc.invalidateQueries({ queryKey: ["student-progress"] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Gagal menyimpan"),
+  });
+  const submit = () => {
+    const ids = Object.keys(selected).filter((k) => selected[k]);
+    if (ids.length === 0) return toast.message("Pilih minimal satu komponen");
+    completeMutation.mutate(ids);
   };
 
   return (
@@ -71,18 +57,12 @@ export default function StudentProgressPage() {
 
       <ProgressChecklist
         items={components}
-        loading={loading}
+        loading={isLoading}
         selected={selected}
         onToggle={toggle}
         onCompleteSelected={submit}
         onCompleteOne={async (id: string) => {
-          try {
-            await completeStudentProgressComponents({ componentIds: [id] });
-            toast.success("Komponen ditandai selesai");
-            load();
-          } catch (e: any) {
-            toast.error(e?.message || "Gagal menyimpan");
-          }
+          completeMutation.mutate([id]);
         }}
       />
     </div>

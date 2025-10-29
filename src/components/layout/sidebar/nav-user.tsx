@@ -1,5 +1,4 @@
 import {
-  Bell,
   ChevronsUpDown,
   LogOut,
   User,
@@ -27,7 +26,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/hooks/useAuth"
-import { useNotifications } from "@/hooks/useNotifications"
 import { useNavigate } from "react-router-dom"
 
 export function NavUser({
@@ -42,7 +40,6 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const { logout } = useAuth()
-  const { unreadCount } = useNotifications()
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
 
@@ -54,9 +51,7 @@ export function NavUser({
     navigate('/profil')
   }
 
-  const handleNotificationClick = () => {
-    navigate('/notifikasi')
-  }
+ 
 
   return (
     <SidebarMenu>
@@ -77,11 +72,7 @@ export function NavUser({
                 <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
-              {!isOpen && unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-semibold text-white">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
+           
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -107,15 +98,6 @@ export function NavUser({
               <DropdownMenuItem onClick={handleProfileClick}>
                 <User />
                 Profil
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleNotificationClick} className="relative">
-                <Bell />
-                Notifikasi
-                {isOpen && unreadCount > 0 && (
-                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

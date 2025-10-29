@@ -45,7 +45,7 @@ export function NavProjects({
             <SidebarMenuButton asChild tooltip={item.name}>
               <a href={item.url}>
                 <item.icon />
-                <span>{item.name}</span>
+                <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none">{item.name}</span>
               </a>
             </SidebarMenuButton>
             <DropdownMenu>
@@ -80,7 +80,7 @@ export function NavProjects({
         <SidebarMenuItem>
           <SidebarMenuButton>
             <MoreHorizontal />
-            <span>More</span>
+            <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none">More</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

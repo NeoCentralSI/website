@@ -10,8 +10,19 @@ export interface GuidanceItem {
   supervisorName?: string;
   status: GuidanceStatus;
   scheduledAt?: string; // ISO datetime
+  scheduledAtFormatted?: string; // WIB formatted (from backend)
+  schedule?: {
+    id: string;
+    guidanceDate: string;
+    guidanceDateFormatted?: string;
+  } | null;
   location?: string;
   notes?: string;
+  document?: {
+    id: string;
+    fileName: string;
+    filePath: string; // relative path served at /uploads
+  } | null;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -20,6 +31,9 @@ export interface GuidanceItem {
 export interface StudentRequestGuidanceBody {
   guidanceDate: string; // ISO datetime
   studentNotes?: string;
+  file: File; // thesis file to upload
+  meetingUrl?: string;
+  supervisorId?: string;
   [key: string]: unknown;
 }
 
@@ -133,9 +147,15 @@ export const getStudentGuidanceDetail = async (guidanceId: string): Promise<Guid
 };
 
 export const requestStudentGuidance = async (body: StudentRequestGuidanceBody): Promise<RequestGuidanceResponse> => {
+  const fd = new FormData();
+  fd.append("guidanceDate", body.guidanceDate);
+  if (body.studentNotes) fd.append("studentNotes", body.studentNotes);
+  if (body.meetingUrl) fd.append("meetingUrl", body.meetingUrl);
+  if (body.supervisorId) fd.append("supervisorId", body.supervisorId);
+  fd.append("file", body.file);
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_REQUEST), {
     method: "POST",
-    body: JSON.stringify(body),
+    body: fd,
   });
   if (!res.ok) throw new Error((await res.json()).message || "Gagal mengajukan bimbingan");
   return res.json();

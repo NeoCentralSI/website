@@ -75,7 +75,7 @@
   --sidebar-foreground: #111827;
   --sidebar-primary: #f97316;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ffffff;
+  --sidebar-accent: #f3f4f6; /* gray-100 for visible hover on white */
   --sidebar-accent-foreground: #111827;
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #f59e0b;
@@ -110,7 +110,7 @@
   --sidebar-foreground: #111827;
   --sidebar-primary: #f97316;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ffffff;
+  --sidebar-accent: #f3f4f6; /* gray-100 for visible hover on white */
   --sidebar-accent-foreground: #111827;
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #f59e0b;
@@ -130,3 +130,5 @@
   color: rgb(75 85 99) !important; /* gray-600 */
   opacity: 1 !important;
 }
+
+/* (animations handled via Tailwind transitions on elements) */

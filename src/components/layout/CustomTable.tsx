@@ -21,8 +21,9 @@ import {
 	PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SearchIcon, FilterIcon } from "lucide-react";
+import { SearchIcon, FilterIcon, CheckIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type ColumnFilterElement = { kind: "element"; element: React.ReactNode };
 type ColumnFilterControl = {
@@ -134,61 +135,75 @@ export function CustomTable<T extends Record<string, any>>({
 													<div className="flex items-center gap-2">
 														<div className="truncate">{col.header}</div>
 																				{enableColumnFilters && col.filter ? (
-															(col.filter as ColumnFilterElement).kind === 'element' ? (
-																<Popover>
-																	<PopoverTrigger asChild>
+																					(col.filter as ColumnFilterElement).kind === 'element' ? (
+																						<Popover>
+																							<PopoverTrigger asChild>
 																								<Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
-																			<FilterIcon className="size-3.5" />
-																		</Button>
-																	</PopoverTrigger>
-																	<PopoverContent align="start" className="w-56 p-3">
-																		{(col.filter as ColumnFilterElement).element}
-																	</PopoverContent>
-																</Popover>
-															) : (
-																<Popover>
-																	<PopoverTrigger asChild>
-																								<Button
-																									variant="ghost"
-																									size="icon"
-																									className={cn(
-																										"h-6 w-6 shrink-0",
-																										(col.filter as any)?.value ? "text-primary" : undefined
-																									)}
-																								>
 																									<FilterIcon className="size-3.5" />
-																		</Button>
-																	</PopoverTrigger>
-																	<PopoverContent align="start" className="w-56 p-3">
-																		{((col.filter as ColumnFilterControl).type ?? 'text') === 'select' ? (
-																			<select
-																				className="border rounded px-2 py-1 text-xs w-full"
-																				value={(col.filter as ColumnFilterControl).value ?? ''}
-																				onChange={(e) => (col.filter as ColumnFilterControl).onChange?.(e.target.value)}
-																			>
-																				{((col.filter as ColumnFilterControl).options ?? []).map((opt: { label: string; value: string }) => (
-																					<option key={opt.value} value={opt.value}>{opt.label}</option>
-																				))}
-																			</select>
-																		) : (
-																			<Input
-																				placeholder={(col.filter as ColumnFilterControl).placeholder ?? 'Filter...'}
-																				className="h-8 text-xs"
-																				value={(col.filter as ColumnFilterControl).value ?? ''}
-																				onChange={(e) => (col.filter as ColumnFilterControl).onChange?.(e.target.value)}
-																			/>
-																		)}
-																		{(col.filter as ColumnFilterControl).onChange && (
-																			<div className="flex justify-end mt-2">
-																				<Button size="sm" variant="secondary" className="h-7 px-2 text-xs" onClick={() => (col.filter as ColumnFilterControl).onChange?.('')}>
-																					Reset
-																				</Button>
-																			</div>
-																		)}
-																	</PopoverContent>
-																</Popover>
-															)
-														) : null}
+																								</Button>
+																							</PopoverTrigger>
+																							<PopoverContent align="start" className="w-56 p-3">
+																								{(col.filter as ColumnFilterElement).element}
+																							</PopoverContent>
+																						</Popover>
+																					) : (
+																						((col.filter as ColumnFilterControl).type ?? 'text') === 'select' ? (
+																							<DropdownMenu>
+																								<DropdownMenuTrigger asChild>
+																									<Button
+																										variant="ghost"
+																										size="icon"
+																										className={cn(
+																											"h-6 w-6 shrink-0",
+																											(col.filter as any)?.value ? "text-primary" : undefined
+																										)}
+																									>
+																										<FilterIcon className="size-3.5" />
+																									</Button>
+																								</DropdownMenuTrigger>
+																								<DropdownMenuContent align="start" className="w-56">
+																									{((col.filter as ColumnFilterControl).options ?? []).map((opt: { label: string; value: string }) => {
+																										const active = ((col.filter as ColumnFilterControl).value ?? '') === opt.value;
+																										return (
+																											<DropdownMenuItem key={opt.value} onClick={() => (col.filter as ColumnFilterControl).onChange?.(opt.value)}>
+																												{active && <CheckIcon className="mr-2 size-4" />} {opt.label}
+																											</DropdownMenuItem>
+																										);
+																									})}
+																									<DropdownMenuItem onClick={() => (col.filter as ColumnFilterControl).onChange?.('')}>Reset</DropdownMenuItem>
+																								</DropdownMenuContent>
+																							</DropdownMenu>
+																						) : (
+																							<Popover>
+																								<PopoverTrigger asChild>
+																									<Button
+																										variant="ghost"
+																										size="icon"
+																										className={cn(
+																											"h-6 w-6 shrink-0",
+																											(col.filter as any)?.value ? "text-primary" : undefined
+																										)}
+																									>
+																										<FilterIcon className="size-3.5" />
+																									</Button>
+																								</PopoverTrigger>
+																								<PopoverContent align="start" className="w-56 p-3">
+																									<Input
+																										placeholder={(col.filter as ColumnFilterControl).placeholder ?? 'Filter...'}
+																										className="h-8 text-xs"
+																										value={(col.filter as ColumnFilterControl).value ?? ''}
+																										onChange={(e) => (col.filter as ColumnFilterControl).onChange?.(e.target.value)}
+																									/>
+																									<div className="flex justify-end mt-2">
+																										<Button size="sm" variant="secondary" className="h-7 px-2 text-xs" onClick={() => (col.filter as ColumnFilterControl).onChange?.('')}>
+																											Reset
+																										</Button>
+																									</div>
+																								</PopoverContent>
+																							</Popover>
+																						)
+																					)
+																				) : null}
 													</div>
 												</TableHead>
 											))}

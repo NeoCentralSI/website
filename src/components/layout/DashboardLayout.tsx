@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { SidebarSkeleton } from "@/components/layout/sidebar/sidebar-skeleton";
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useSidebarMenu } from "@/hooks/useSidebarMenu";
 import { useAuth } from "@/hooks/useAuth";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -62,8 +63,8 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
     <SidebarProvider>
       <AppSidebar data={sidebarData} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2">
-          <div className="flex items-center gap-2 px-4">
+        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
@@ -77,8 +78,8 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
                       {index > 0 && <BreadcrumbSeparator className="mx-2" />}
                       <BreadcrumbItem>
                         {crumb.href ? (
-                          <BreadcrumbLink href={crumb.href}>
-                            {crumb.label}
+                          <BreadcrumbLink asChild>
+                            <Link to={crumb.href}>{crumb.label}</Link>
                           </BreadcrumbLink>
                         ) : (
                           <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
@@ -91,6 +92,9 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
             ) : title ? (
               <h1 className="text-lg font-semibold">{title}</h1>
             ) : null}
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationBell onClick={() => navigate('/notifikasi')} />
           </div>
         </header>
         <div className="flex flex-1 flex-col">

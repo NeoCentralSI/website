@@ -32,10 +32,11 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
     if (!guidanceId || !open) return;
     setLoading(true);
     try {
-      const data = await getStudentGuidanceDetail(guidanceId);
-      setGuidance(data.guidance);
-      setNotes(data.guidance.notes ?? "");
-      setRescheduleDate(data.guidance.scheduledAt ? data.guidance.scheduledAt.slice(0, 16) : "");
+  const data = await getStudentGuidanceDetail(guidanceId);
+  setGuidance(data.guidance);
+  setNotes(data.guidance.notes ?? "");
+  const iso = data.guidance.schedule?.guidanceDate || data.guidance.scheduledAt || "";
+  setRescheduleDate(iso ? iso.slice(0, 16) : "");
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat detail");
     } finally {
@@ -52,7 +53,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
     if (!guidanceId) return;
     try {
       await updateStudentGuidanceNotes(guidanceId, { studentNotes: notes });
-      toast.success("Catatan diperbarui");
+      toast.success("Catatan diperbarui", { id: "guidance-notes-updated" });
       onUpdated?.();
       load();
     } catch (e: any) {
@@ -67,7 +68,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
     }
     try {
       await rescheduleStudentGuidance(guidanceId, { guidanceDate: rescheduleDate, studentNotes: rescheduleNotes || undefined });
-      toast.success("Jadwal diperbarui");
+      toast.success("Jadwal diperbarui", { id: "guidance-rescheduled" });
       onUpdated?.();
       onOpenChange(false);
     } catch (e: any) {
@@ -79,7 +80,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
     if (!guidanceId) return;
     try {
       await cancelStudentGuidance(guidanceId, { reason: cancelReason || undefined });
-      toast.success("Bimbingan dibatalkan");
+      toast.success("Bimbingan dibatalkan", { id: "guidance-cancelled" });
       onUpdated?.();
       onOpenChange(false);
     } catch (e: any) {
@@ -108,7 +109,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Terjadwal</div>
-                <div className="font-medium">{guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-'}</div>
+                <div className="font-medium">{guidance.schedule?.guidanceDateFormatted || guidance.scheduledAtFormatted || (guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-')}</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Lokasi</div>

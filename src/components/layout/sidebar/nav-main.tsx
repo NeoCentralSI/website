@@ -1,5 +1,5 @@
 import { ChevronRight, type LucideIcon } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 
 import {
   Collapsible,
@@ -30,48 +30,60 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const { pathname } = useLocation()
+
   return (
     <SidebarGroup>
       <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
+        {items.map((item) => {
+          const hasChildren = !!item.items?.length
+          const isAnyChildActive = hasChildren
+            ? item.items!.some((s) => pathname === s.url || pathname.startsWith(s.url + "/"))
+            : false
+          const isItemActive = pathname === item.url || pathname.startsWith(item.url + "/") || isAnyChildActive
+
+          return (
+          <Collapsible key={item.title} asChild defaultOpen={isItemActive}>
             <SidebarMenuItem>
-              {item.items?.length ? (
+              {hasChildren ? (
                 // Jika ada submenu, button menjadi trigger untuk expand/collapse
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip={item.title}>
+                  <SidebarMenuButton tooltip={item.title} className="group/trigger" isActive={isItemActive}>
                     <item.icon />
-                    <span>{item.title}</span>
-                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none transform-gpu">{item.title}</span>
+                    <ChevronRight className="ml-auto transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[state=open]/trigger:rotate-90 motion-reduce:transition-none transform-gpu will-change-transform origin-center" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
               ) : (
                 // Jika tidak ada submenu, button bisa diklik untuk navigasi
-                <SidebarMenuButton asChild tooltip={item.title}>
+                <SidebarMenuButton asChild tooltip={item.title} isActive={isItemActive}>
                   <Link to={item.url}>
                     <item.icon />
-                    <span>{item.title}</span>
+                    <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               )}
-              {item.items?.length ? (
+              {hasChildren ? (
                 <CollapsibleContent>
                   <SidebarMenuSub>
-                    {item.items?.map((subItem) => (
+                    {item.items?.map((subItem) => {
+                      const isSubActive = pathname === subItem.url || pathname.startsWith(subItem.url + "/")
+                      return (
                       <SidebarMenuSubItem key={subItem.title}>
-                        <SidebarMenuSubButton asChild>
+                        <SidebarMenuSubButton asChild isActive={isSubActive}>
                           <Link to={subItem.url}>
-                            <span>{subItem.title}</span>
+                            <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none">{subItem.title}</span>
                           </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
-                    ))}
+                      )
+                    })}
                   </SidebarMenuSub>
                 </CollapsibleContent>
               ) : null}
             </SidebarMenuItem>
           </Collapsible>
-        ))}
+        )})}
       </SidebarMenu>
     </SidebarGroup>
   )

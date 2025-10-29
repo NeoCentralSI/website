@@ -1,17 +1,17 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, type ReactNode, useCallback } from 'react';
 import {
-  getNotificationsAPI,
-  getUnreadCountAPI,
-  markNotificationAsReadAPI,
-  markAllAsReadAPI,
-  deleteNotificationAPI,
-  type Notification,
-} from '../services/notification.service';
+  getNotifications,
+  getUnreadCount,
+  markNotificationRead,
+  markAllNotificationsRead,
+  deleteNotification as deleteNotificationAPI,
+  type NotificationItem,
+} from '@/services/notification.service';
 import { useAuth } from './useAuth';
 
 interface NotificationContextType {
-  notifications: Notification[];
+  notifications: NotificationItem[];
   unreadCount: number;
   isLoading: boolean;
   fetchNotifications: (params?: { limit?: number; offset?: number; onlyUnread?: boolean }) => Promise<void>;
@@ -36,7 +36,7 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const { isLoggedIn } = useAuth();
@@ -45,7 +45,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     if (!isLoggedIn) return;
     
     try {
-      const response = await getUnreadCountAPI();
+  const response = await getUnreadCount();
       setUnreadCount(response.unreadCount);
     } catch (error) {
       console.error('Failed to fetch unread count:', error);
@@ -57,7 +57,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
     try {
       setIsLoading(true);
-      const response = await getNotificationsAPI(params);
+  const response = await getNotifications(params);
       setNotifications(response.notifications);
       setUnreadCount(response.unreadCount);
     } catch (error) {
@@ -69,7 +69,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
   const markAsRead = useCallback(async (id: string) => {
     try {
-      await markNotificationAsReadAPI(id);
+  await markNotificationRead(id);
       
       // Update local state
       setNotifications(prev =>
@@ -88,7 +88,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
   const markAllAsRead = useCallback(async () => {
     try {
-      await markAllAsReadAPI();
+  await markAllNotificationsRead();
       
       // Update local state
       setNotifications(prev =>
@@ -103,7 +103,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
   const deleteNotification = useCallback(async (id: string) => {
     try {
-      await deleteNotificationAPI(id);
+  await deleteNotificationAPI(id);
       
       // Update local state
       setNotifications(prev => prev.filter(notif => notif.id !== id));

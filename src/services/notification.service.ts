@@ -1,18 +1,17 @@
-import { API_CONFIG, getApiUrl } from '../config/api';
-import { apiRequest } from './auth.service';
+import { API_CONFIG, getApiUrl } from "@/config/api";
+import { apiRequest } from "./auth.service";
 
-export interface Notification {
+export interface NotificationItem {
   id: string;
-  userId: string;
-  title: string;
-  message: string;
+  title?: string | null;
+  message?: string | null;
   isRead: boolean;
-  createdAt: string;
+  createdAt: string; // ISO
 }
 
-export interface NotificationsResponse {
+export interface NotificationsListResponse {
   success: boolean;
-  notifications: Notification[];
+  notifications: NotificationItem[];
   unreadCount: number;
   total: number;
 }
@@ -22,93 +21,38 @@ export interface UnreadCountResponse {
   unreadCount: number;
 }
 
-/**
- * Get user notifications
- */
-export const getNotificationsAPI = async (params?: {
-  limit?: number;
-  offset?: number;
-  onlyUnread?: boolean;
-}): Promise<NotificationsResponse> => {
-  const queryParams = new URLSearchParams();
-  if (params?.limit) queryParams.append('limit', params.limit.toString());
-  if (params?.offset) queryParams.append('offset', params.offset.toString());
-  if (params?.onlyUnread) queryParams.append('onlyUnread', 'true');
+export async function getNotifications(params?: { limit?: number; offset?: number; onlyUnread?: boolean }): Promise<NotificationsListResponse> {
+  const url = new URL(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.BASE));
+  if (params?.limit != null) url.searchParams.set("limit", String(params.limit));
+  if (params?.offset != null) url.searchParams.set("offset", String(params.offset));
+  if (params?.onlyUnread != null) url.searchParams.set("onlyUnread", String(params.onlyUnread));
+  const res = await apiRequest(url.toString());
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat notifikasi");
+  return res.json();
+}
 
-  const url = getApiUrl(`${API_CONFIG.ENDPOINTS.NOTIFICATION.BASE}?${queryParams.toString()}`);
-  const response = await apiRequest(url);
+export async function getUnreadCount(): Promise<UnreadCountResponse> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.UNREAD_COUNT));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat jumlah notifikasi");
+  return res.json();
+}
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to fetch notifications');
-  }
+export async function markAllNotificationsRead(): Promise<{ success: boolean; marked: number }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.MARK_ALL_READ), { method: "PATCH" });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menandai semua notifikasi");
+  return res.json();
+}
 
-  return await response.json();
-};
+export async function markNotificationRead(id: string): Promise<{ success: boolean }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.MARK_READ(id)), { method: "PATCH" });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menandai notifikasi");
+  return res.json();
+}
 
-/**
- * Get unread count only
- */
-export const getUnreadCountAPI = async (): Promise<UnreadCountResponse> => {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.UNREAD_COUNT);
-  const response = await apiRequest(url);
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to fetch unread count');
-  }
-
-  return await response.json();
-};
-
-/**
- * Mark notification as read
- */
-export const markNotificationAsReadAPI = async (id: string): Promise<{ success: boolean }> => {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.MARK_READ(id));
-  const response = await apiRequest(url, {
-    method: 'PATCH',
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to mark notification as read');
-  }
-
-  return await response.json();
-};
-
-/**
- * Mark all notifications as read
- */
-export const markAllAsReadAPI = async (): Promise<{ success: boolean; marked: number }> => {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.MARK_ALL_READ);
-  const response = await apiRequest(url, {
-    method: 'PATCH',
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to mark all as read');
-  }
-
-  return await response.json();
-};
-
-/**
- * Delete notification
- */
-export const deleteNotificationAPI = async (id: string): Promise<{ success: boolean }> => {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.DELETE(id));
-  const response = await apiRequest(url, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to delete notification');
-  }
-
-  return await response.json();
-};
+export async function deleteNotification(id: string): Promise<{ success: boolean }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.DELETE(id)), { method: "DELETE" });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menghapus notifikasi");
+  return res.json();
+}
+ 
 

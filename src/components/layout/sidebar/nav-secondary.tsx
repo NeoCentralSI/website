@@ -29,7 +29,7 @@ export function NavSecondary({
               <SidebarMenuButton asChild size="sm" tooltip={item.title}>
                 <Link to={item.url}>
                   <item.icon />
-                  <span>{item.title}</span>
+                  <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none">{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

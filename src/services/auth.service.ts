@@ -226,11 +226,15 @@ export const getUserProfileAPI = async (): Promise<User> => {
 export const apiRequest = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const { accessToken } = getAuthTokens();
   
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const baseHeaders: HeadersInit = {
+    ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+  };
   const requestOptions: RequestInit = {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+      ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
+      ...baseHeaders,
       ...options.headers,
     },
   };

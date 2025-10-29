@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav } from "@/components/ui/tabs-nav";
-import type { GuidanceItem, GuidanceStatus } from "@/services/studentGuidance.service";
-import { listStudentGuidance, requestStudentGuidance } from "@/services/studentGuidance.service";
-import { toast } from "sonner";
+import type { GuidanceItem, GuidanceStatus, SupervisorsResponse } from "@/services/studentGuidance.service";
+import { getStudentSupervisors, listStudentGuidance } from "@/services/studentGuidance.service";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import GuidanceDialog from "@/components/guidance/GuidanceDialog";
-import { EyeIcon } from "lucide-react";
-import { getCache, setCache } from "@/lib/viewCache";
+import GuidanceDialog from "@/components/thesis/GuidanceDialog";
+import DocumentPreviewDialog from "@/components/thesis/DocumentPreviewDialog";
+import StatusBadge from "@/components/thesis/StatusBadge";
+import { EyeIcon, FileTextIcon } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import RequestGuidanceDialog from "@/components/thesis/RequestGuidanceDialog";
+import { useGuidanceRealtime } from "@/hooks/useGuidanceRealtime";
 
 export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -20,26 +20,43 @@ export default function StudentGuidancePage() {
   const initialStatus = (searchParams.get('status') as GuidanceStatus | "") || "";
   const initialQ = searchParams.get('q') || "";
   const initialSupervisor = searchParams.get('supervisor') || "";
-  const initialSort = (searchParams.get('sort') as 'asc' | 'desc' | '') || "";
+  // Force newest-first on client (backend also returns newest-first)
   const initialPage = Number(searchParams.get('page') || 1);
   const initialLimit = Number(searchParams.get('limit') || 10);
   const [status, setStatus] = useState<GuidanceStatus | "">(initialStatus);
   const [q, setQ] = useState<string>(initialQ);
   const [supervisorFilter, setSupervisorFilter] = useState<string>(initialSupervisor);
-  const [sortOrder, setSortOrder] = useState<'' | 'asc' | 'desc'>(initialSort);
+  // no client-side toggle for sort; always newest first
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialLimit > 0 ? initialLimit : 10);
-  const cached = getCache<GuidanceItem[]>("student-guidance");
-  const [loading, setLoading] = useState<boolean>(!cached);
-  const [items, setItems] = useState<GuidanceItem[]>(cached?.data ?? []);
+  const qc = useQueryClient();
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["student-guidance", { status }],
+    queryFn: async () => {
+      const res = await listStudentGuidance({ status: status || undefined });
+      return res.items as GuidanceItem[];
+    },
+  });
+  const items: GuidanceItem[] = useMemo(() => (data ?? []) as GuidanceItem[], [data]);
+  // Connect WS for realtime updates on student events
+  useGuidanceRealtime();
   const [total, setTotal] = useState<number>(0);
   const [openRequest, setOpenRequest] = useState(false);
   const [openDetail, setOpenDetail] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    preferredTime: "",
-    note: "",
-  });
+  const [docOpen, setDocOpen] = useState(false);
+  const [docInfo, setDocInfo] = useState<{ fileName?: string | null; filePath?: string | null } | null>(null);
+  // request dialog moved into a dedicated component
+  // load supervisors for optional selection
+  const supervisorsQuery = useQuery<{ data: SupervisorsResponse; supervisors: SupervisorsResponse["supervisors"] }>(
+    {
+      queryKey: ["student-supervisors"],
+      queryFn: async () => {
+        const res = await getStudentSupervisors();
+        return { data: res, supervisors: res.supervisors } as any;
+      },
+    }
+  );
 
   const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan" }], []);
   useEffect(() => {
@@ -47,23 +64,9 @@ export default function StudentGuidancePage() {
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
-  const fetchAll = async () => {
-    // Only show skeleton on cold start
-    setLoading((prev) => (items.length === 0 ? true : prev));
-    try {
-      const guidances = await listStudentGuidance({ status: status || undefined });
-      setItems(guidances.items);
-      setCache("student-guidance", guidances.items);
-    } catch (e: any) {
-      toast.error(e?.message || "Gagal memuat data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    // fetch when server-driven filter changes
-    fetchAll();
+    // refetch when server-driven filter changes (queryKey already changes too)
+    refetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
@@ -73,12 +76,12 @@ export default function StudentGuidancePage() {
     if (status) sp.set('status', status); else sp.delete('status');
     if (q) sp.set('q', q); else sp.delete('q');
     if (supervisorFilter) sp.set('supervisor', supervisorFilter); else sp.delete('supervisor');
-    if (sortOrder) sp.set('sort', sortOrder); else sp.delete('sort');
+    // always newest-first; do not persist sort in URL
     if (page && page !== 1) sp.set('page', String(page)); else sp.delete('page');
     if (pageSize && pageSize !== 10) sp.set('limit', String(pageSize)); else sp.delete('limit');
     setSearchParams(sp, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, q, supervisorFilter, sortOrder, page, pageSize]);
+  }, [status, q, supervisorFilter, page, pageSize]);
 
   // derive filtered/sorted/paged data on client
   const display = useMemo(() => {
@@ -91,43 +94,28 @@ export default function StudentGuidancePage() {
       arr = arr.filter((it) => {
         const sup = (it.supervisorName || it.supervisorId || '').toString().toLowerCase();
         const statusText = it.status.toString().toLowerCase();
-        const when = it.scheduledAt ? new Date(it.scheduledAt).toLocaleString().toLowerCase() : '';
+        const when = (it.schedule?.guidanceDateFormatted || it.scheduledAtFormatted || (it.schedule?.guidanceDate ? new Date(it.schedule.guidanceDate).toLocaleString() : (it.scheduledAt ? new Date(it.scheduledAt).toLocaleString() : ''))).toLowerCase();
         return sup.includes(needle) || statusText.includes(needle) || when.includes(needle);
       });
     }
-    if (sortOrder) {
-      arr.sort((a, b) => {
-        const at = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
-        const bt = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
-        return sortOrder === 'asc' ? at - bt : bt - at;
-      });
-    }
+    // enforce newest-first order on client as safeguard
+    arr.sort((a, b) => {
+      const at = a.schedule?.guidanceDate ? new Date(a.schedule.guidanceDate).getTime() : (a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0);
+      const bt = b.schedule?.guidanceDate ? new Date(b.schedule.guidanceDate).getTime() : (b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0);
+      return bt - at;
+    });
     const totalCount = arr.length;
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
     const slice = arr.slice(start, end);
     return { slice, totalCount };
-  }, [items, supervisorFilter, q, sortOrder, page, pageSize]);
+  }, [items, supervisorFilter, q, page, pageSize]);
 
   useEffect(() => {
     setTotal(display.totalCount);
   }, [display.totalCount]);
 
-  const submitRequest = async () => {
-    try {
-      if (!form.preferredTime) {
-        toast.error("Isi waktu bimbingan");
-        return;
-      }
-      await requestStudentGuidance({ guidanceDate: form.preferredTime, studentNotes: form.note });
-      toast.success("Pengajuan bimbingan terkirim");
-      setOpenRequest(false);
-      setForm({ preferredTime: "", note: "" });
-      fetchAll();
-    } catch (e: any) {
-      toast.error(e?.message || "Gagal mengajukan bimbingan");
-    }
-  };
+  // handled inside RequestGuidanceDialog
 
   return (
     <div className="p-4">
@@ -160,22 +148,36 @@ export default function StudentGuidancePage() {
           {
             key: 'time',
             header: 'Waktu',
-            accessor: (r) => (r.scheduledAt ? new Date(r.scheduledAt).toLocaleString() : '-'),
-            filter: {
-              type: 'select',
-              value: sortOrder,
-              onChange: (v: string) => { setSortOrder((v as 'asc' | 'desc' | '')); setPage(1); },
-              options: [
-                { label: 'Default', value: '' },
-                { label: 'Ascending', value: 'asc' },
-                { label: 'Descending', value: 'desc' },
-              ]
-            }
+            accessor: (r) => r.schedule?.guidanceDateFormatted || r.scheduledAtFormatted || (r.schedule?.guidanceDate ? new Date(r.schedule.guidanceDate).toLocaleString() : (r.scheduledAt ? new Date(r.scheduledAt).toLocaleString() : '-')),
+            // no client-side time filter; backend already returns newest first
+          },
+          {
+            key: 'doc',
+            header: 'Dokumen',
+            render: (r) => {
+              const f = r.document?.filePath || "";
+              const isPdf = f.toLowerCase().endsWith(".pdf");
+              return (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={!isPdf}
+                  onClick={() => {
+                    setDocInfo({ fileName: r.document?.fileName, filePath: r.document?.filePath });
+                    setDocOpen(true);
+                  }}
+                  title={isPdf ? `Lihat ${r.document?.fileName || 'dokumen'}` : 'Tidak ada dokumen PDF'}
+                >
+                  <FileTextIcon className="size-4" />
+                </Button>
+              );
+            },
           },
           {
             key: 'status',
             header: 'Status',
-            accessor: (r) => <span className="capitalize">{r.status}</span>,
+            accessor: (r) => <StatusBadge status={r.status} />,
             filter: {
               type: 'select',
               value: status,
@@ -204,8 +206,8 @@ export default function StudentGuidancePage() {
             )
           },
         ] as Column<GuidanceItem>[]}
-        data={display.slice}
-        loading={loading}
+  data={display.slice}
+  loading={isLoading}
         total={total}
         page={page}
         pageSize={pageSize}
@@ -216,31 +218,9 @@ export default function StudentGuidancePage() {
   onSearchChange={(v) => { setQ(v); setPage(1); }}
   emptyText={q || supervisorFilter ? 'Tidak ditemukan' : 'Tidak ada data'}
         actions={(
-          <Dialog open={openRequest} onOpenChange={setOpenRequest}>
-            <DialogTrigger asChild>
-              <Button>Ajukan Bimbingan</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Ajukan Bimbingan</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-3">
-                <div className="grid gap-2">
-                  <Label>Waktu Bimbingan</Label>
-                  <Input type="datetime-local" value={form.preferredTime} onChange={(e) => setForm((f) => ({ ...f, preferredTime: e.target.value }))} />
-                  <span className="text-xs text-muted-foreground">Pembimbing akan dipilih otomatis oleh sistem.</span>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Catatan</Label>
-                  <Input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
-                </div>
-                <div className="flex justify-end gap-2 mt-2">
-                  <Button variant="secondary" onClick={() => setOpenRequest(false)}>Batal</Button>
-                  <Button onClick={submitRequest}>Kirim</Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <>
+            <Button onClick={() => setOpenRequest(true)}>Ajukan Bimbingan</Button>
+          </>
         )}
       />
 
@@ -248,7 +228,24 @@ export default function StudentGuidancePage() {
         guidanceId={activeId}
         open={openDetail}
         onOpenChange={setOpenDetail}
-        onUpdated={() => fetchAll()}
+        onUpdated={() => qc.invalidateQueries({ queryKey: ["student-guidance"] })}
+      />
+
+      <DocumentPreviewDialog
+        open={docOpen}
+        onOpenChange={setDocOpen}
+        fileName={docInfo?.fileName ?? undefined}
+        filePath={docInfo?.filePath ?? undefined}
+      />
+
+      <RequestGuidanceDialog
+        open={openRequest}
+        onOpenChange={setOpenRequest}
+        supervisors={supervisorsQuery.data?.supervisors || []}
+        onSubmitted={() => {
+          qc.invalidateQueries({ queryKey: ["student-guidance"] });
+          qc.invalidateQueries({ queryKey: ["notification-unread"] });
+        }}
       />
     </div>
   );
