@@ -12,7 +12,6 @@ import StatusBadge from "@/components/thesis/StatusBadge";
 import { EyeIcon, FileTextIcon } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import RequestGuidanceDialog from "@/components/thesis/RequestGuidanceDialog";
-import { useGuidanceRealtime } from "@/hooks/useGuidanceRealtime";
 
 export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -38,8 +37,6 @@ export default function StudentGuidancePage() {
     },
   });
   const items: GuidanceItem[] = useMemo(() => (data ?? []) as GuidanceItem[], [data]);
-  // Connect WS for realtime updates on student events
-  useGuidanceRealtime();
   const [total, setTotal] = useState<number>(0);
   const [openRequest, setOpenRequest] = useState(false);
   const [openDetail, setOpenDetail] = useState(false);

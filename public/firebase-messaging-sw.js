@@ -16,17 +16,29 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('push', (event) => {
   try {
     const data = event.data ? event.data.json() : {};
-    const title = data?.notification?.title || data?.title || 'Notifikasi';
-    const body = data?.notification?.body || data?.body || '';
+    // Support both notification and data-only payloads
+    const title = data?.notification?.title || data?.data?.title || data?.title || 'Notifikasi';
+    const body = data?.notification?.body || data?.data?.body || data?.body || '';
     const payloadData = data?.data || {};
     event.waitUntil(
-      self.registration.showNotification(title, {
-        body,
-        data: payloadData,
-        icon: '/vite.svg',
-        badge: '/vite.svg',
-      })
+      (async () => {
+        // Show OS notification
+        await self.registration.showNotification(title, {
+          body,
+          data: payloadData,
+          icon: '/vite.svg',
+          badge: '/vite.svg',
+        });
+        // Forward payload to all open clients (pages) so foreground can react
+        const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const client of clientList) {
+          try {
+            client.postMessage({ __from: 'fcm-sw', title, body, data: payloadData });
+          } catch (e) {}
+        }
+      })()
     );
+    try { console.log('[SW] push received', { title, body, payloadData }); } catch (e) {}
   } catch (e) {
     // ignore
   }

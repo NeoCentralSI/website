@@ -10,11 +10,8 @@ import { toast } from "sonner";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useGuidanceRealtime } from "@/hooks/useGuidanceRealtime";
 
 export default function LecturerRequestsPage() {
-  // Enable realtime WS for lecturer to receive toasts and auto-refresh
-  useGuidanceRealtime();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan" }, { label: "Permintaan" }], []);
   useEffect(() => {
