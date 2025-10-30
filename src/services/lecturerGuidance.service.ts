@@ -18,6 +18,8 @@ export interface GuidanceItem {
   status: string;
   requestedAt?: string;
   scheduledAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
   [key: string]: unknown;
 }
 
@@ -51,8 +53,11 @@ export const getMyStudents = async (params?: { roles?: string }): Promise<{ succ
   return res.json();
 };
 
-export const getPendingRequests = async (): Promise<{ success: boolean; count: number; requests: GuidanceItem[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUESTS));
+export const getPendingRequests = async (params?: { page?: number; pageSize?: number }): Promise<{ success: boolean; page: number; pageSize: number; total: number; totalPages: number; requests: GuidanceItem[] }> => {
+  const url = new URL(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUESTS));
+  if (params?.page) url.searchParams.set("page", String(params.page));
+  if (params?.pageSize) url.searchParams.set("pageSize", String(params.pageSize));
+  const res = await apiRequest(url.toString());
   if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan bimbingan");
   return res.json();
 };

@@ -40,9 +40,10 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
         supervisorId: supervisorId || undefined,
       });
     },
-    onSuccess: () => {
-      // Tampilkan satu toast sukses dari sisi form
-      toast.success("Pengajuan bimbingan terkirim", { id: "guidance-requested" });
+    onSuccess: (res) => {
+      const whenFmt = res?.guidance?.schedule?.guidanceDateFormatted || res?.guidance?.scheduledAtFormatted;
+      const msg = whenFmt ? `Pengajuan bimbingan terkirim • ${whenFmt}` : "Pengajuan bimbingan terkirim";
+      toast.success(msg, { id: "guidance-requested" });
       onOpenChange(false);
       setWhen(null); setNote(""); setMeetingUrl(""); setSupervisorId(""); setFile(null);
       onSubmitted?.();

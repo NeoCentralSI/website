@@ -3,6 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getUnreadCount } from "@/services/notification.service";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import NotificationsSheetContent from "@/components/notifications/NotificationsSheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useNotifications } from "@/hooks/useNotifications";
 
 type Props = {
   className?: string;
@@ -16,41 +20,69 @@ export default function NotificationBell({
   className,
   onClick,
   showZero = false,
-  refetchIntervalMs = 30000,
+  refetchIntervalMs,
   size = 20,
 }: Props) {
+  const [open, setOpen] = useState(false);
+  const { unreadCount, fetchNotifications } = useNotifications();
   const { data } = useQuery({
     queryKey: ["notification-unread"],
     queryFn: async () => {
       const res = await getUnreadCount();
       return res.unreadCount ?? 0;
     },
+    // Disable polling by default; rely on push to invalidate
     refetchInterval: refetchIntervalMs,
   });
 
   const count = data ?? 0;
   const showBadge = showZero ? true : count > 0;
 
+  useEffect(() => {
+    if (open) fetchNotifications().catch(() => {});
+  }, [open, fetchNotifications]);
+
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      onClick={onClick}
-      className={cn("relative", className)}
-      aria-label="Notifikasi"
-    >
-      <BellIcon style={{ width: size, height: size }} />
-      {showBadge && (
-        <span
-          className={cn(
-            "absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-[10px] leading-4 text-white",
-            count > 0 ? "bg-red-500" : "bg-muted-foreground/40"
-          )}
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onClick}
+          className={cn("relative", className)}
+          aria-label="Notifikasi"
         >
-          {count}
-        </span>
-      )}
-    </Button>
+          <BellIcon style={{ width: size, height: size }} />
+          {showBadge && (
+            <span
+              className={cn(
+                "absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-[10px] leading-4 text-white",
+                count > 0 ? "bg-red-500" : "bg-muted-foreground/40"
+              )}
+            >
+              {count}
+            </span>
+          )}
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full max-w-lg p-0">
+        <div className="flex flex-col h-full">
+          <div className="border-b bg-background px-6 py-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Notifikasi</h2>
+              {unreadCount > 0 && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{unreadCount} belum dibaca</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex-1 px-6 py-4 overflow-hidden">
+            <NotificationsSheetContent />
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

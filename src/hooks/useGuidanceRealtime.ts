@@ -71,7 +71,9 @@ export function useGuidanceRealtime() {
             switch (type) {
               case "thesis-guidance:requested": {
                 if (role === "supervisor") {
-                  toast("Permintaan bimbingan baru", { id: "guidance-requested" });
+                  const when = payload?.data?.scheduledAtFormatted || payload?.data?.scheduledAt || "";
+                  const msg = when ? `Permintaan bimbingan baru • ${when}` : "Permintaan bimbingan baru";
+                  toast(msg, { id: "guidance-requested" });
                   if (payload?.data?.playSound === "true") {
                     console.log("[FCM] play beep");
                     playBeep();
@@ -84,7 +86,9 @@ export function useGuidanceRealtime() {
                 break;
               }
               case "thesis-guidance:rescheduled": {
-                toast("Jadwal bimbingan diperbarui", { id: "guidance-rescheduled" });
+                const when = payload?.data?.scheduledAtFormatted || payload?.data?.scheduledAt || "";
+                const msg = when ? `Jadwal bimbingan diperbarui • ${when}` : "Jadwal bimbingan diperbarui";
+                toast(msg, { id: "guidance-rescheduled" });
                 qc.invalidateQueries({ queryKey: ["student-guidance"] });
                 qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
@@ -122,7 +126,9 @@ export function useGuidanceRealtime() {
               switch (type) {
                 case 'thesis-guidance:requested': {
                   if (role === 'supervisor') {
-                    toast('Permintaan bimbingan baru', { id: 'guidance-requested' });
+                    const when = msg?.data?.scheduledAtFormatted || msg?.data?.scheduledAt || '';
+                    const t = when ? `Permintaan bimbingan baru • ${when}` : 'Permintaan bimbingan baru';
+                    toast(t, { id: 'guidance-requested' });
                     if (msg?.data?.playSound === 'true') {
                       playBeep();
                     }
@@ -134,7 +140,9 @@ export function useGuidanceRealtime() {
                   break;
                 }
                 case 'thesis-guidance:rescheduled': {
-                  toast('Jadwal bimbingan diperbarui', { id: 'guidance-rescheduled' });
+                  const when = msg?.data?.scheduledAtFormatted || msg?.data?.scheduledAt || '';
+                  const t = when ? `Jadwal bimbingan diperbarui • ${when}` : 'Jadwal bimbingan diperbarui';
+                  toast(t, { id: 'guidance-rescheduled' });
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });

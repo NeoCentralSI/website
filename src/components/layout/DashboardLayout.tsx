@@ -97,7 +97,7 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
             ) : null}
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <NotificationBell onClick={() => navigate('/notifikasi')} />
+            <NotificationBell />
           </div>
         </header>
         <div className="flex flex-1 flex-col">

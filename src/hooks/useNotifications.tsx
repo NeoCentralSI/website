@@ -116,14 +116,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     }
   }, [fetchUnreadCount]);
 
-  // Fetch unread count on mount and when user logs in
+  // Fetch unread count on mount and when user logs in (no polling; updates via push)
   useEffect(() => {
     if (isLoggedIn) {
       fetchUnreadCount();
-      
-      // Poll for unread count every 30 seconds
-      const interval = setInterval(fetchUnreadCount, 30000);
-      return () => clearInterval(interval);
     }
   }, [isLoggedIn, fetchUnreadCount]);
 
