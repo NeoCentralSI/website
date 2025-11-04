@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,71 +9,51 @@ import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import { Eye } from 'lucide-react';
 import { toTitleCaseName } from '../../lib/text';
+import { useQuery } from '@tanstack/react-query';
 
 export default function Dosen() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const [allLecturers, setAllLecturers] = useState<Lecturer[]>([]);
-  const [lecturers, setLecturers] = useState<Lecturer[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Local UI state only
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
 
+  // Memoized breadcrumbs to avoid unnecessary re-renders
+  const breadcrumbs = useMemo(() => [
+    { label: 'Master Data' },
+    { label: 'Data Dosen' },
+  ], []);
+
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Master Data' },
-      { label: 'Data Dosen' },
-    ]);
+    setBreadcrumbs(breadcrumbs);
     setTitle('Data Dosen');
-  }, [setBreadcrumbs, setTitle]);
+  }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   useEffect(() => {
     if (!user?.roles.some((r) => r.name === 'admin')) {
       navigate('/dashboard');
-      return;
     }
-    fetchLecturers();
-  }, [user]);
+  }, [user, navigate]);
 
-  const fetchLecturers = async () => {
-    setIsLoading(true);
-    try {
-      const response = await getLecturersAPI({
-        page: 1,
-        pageSize: 1000, // Fetch all for client-side filtering
-        search: '',
-      });
-      setAllLecturers(response.lecturers);
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal memuat data dosen');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Use TanStack Query for server state management
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['lecturers', { page, pageSize, search: searchValue }],
+    queryFn: () => getLecturersAPI({ page, pageSize, search: searchValue }),
+    placeholderData: (previousData) => previousData, // Keep previous data while fetching
+    staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
+  });
 
-  // Apply filters and pagination on client side
+  // Show error toast when query fails
   useEffect(() => {
-    let filtered = [...allLecturers];
-
-    // Apply search filter
-    if (searchValue) {
-      filtered = filtered.filter(
-        (lecturer) =>
-          lecturer.fullName.toLowerCase().includes(searchValue.toLowerCase()) ||
-          lecturer.email.toLowerCase().includes(searchValue.toLowerCase()) ||
-          lecturer.identityNumber?.toLowerCase().includes(searchValue.toLowerCase())
-      );
+    if (error) {
+      toast.error((error as Error).message || 'Gagal memuat data dosen');
     }
+  }, [error]);
 
-    // Apply pagination
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    setLecturers(filtered.slice(startIndex, endIndex));
-  }, [allLecturers, searchValue, page, pageSize]);
-
-  // Reset to page 1 when filters change
+  // Reset to page 1 when search changes
   useEffect(() => {
     setPage(1);
   }, [searchValue]);
@@ -143,6 +123,10 @@ export default function Dosen() {
     },
   ];
 
+  // Extract data from query result
+  const lecturers = data?.lecturers || [];
+  const total = data?.meta?.total || 0;
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -156,7 +140,7 @@ export default function Dosen() {
         columns={columns as any}
         data={lecturers}
         loading={isLoading}
-        total={allLecturers.length}
+        total={total}
         page={page}
         pageSize={pageSize}
         onPageChange={setPage}

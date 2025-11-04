@@ -193,6 +193,9 @@ export const getUsersAPI = async (params?: {
   page?: number;
   pageSize?: number;
   search?: string;
+  identityType?: string;
+  role?: string;
+  isVerified?: boolean;
 }): Promise<{
   users: User[];
   meta: {
@@ -206,6 +209,9 @@ export const getUsersAPI = async (params?: {
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.identityType) queryParams.append('identityType', params.identityType);
+  if (params?.role) queryParams.append('role', params.role);
+  if (params?.isVerified !== undefined) queryParams.append('isVerified', params.isVerified.toString());
 
   const response = await fetch(getApiUrl(`/adminfeatures/users?${queryParams}`), {
     method: 'GET',

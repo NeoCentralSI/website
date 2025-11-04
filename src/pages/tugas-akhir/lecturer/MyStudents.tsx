@@ -15,18 +15,18 @@ export default function LecturerMyStudentsPage() {
     setBreadcrumbs(breadcrumb);
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [items, setItems] = useState<MyStudentItem[]>([]);
 
   const load = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const data = await getMyStudents();
       setItems(data.students);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat mahasiswa");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -54,7 +54,7 @@ export default function LecturerMyStudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!loading && items.length === 0 && (
+              {!isLoading && items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">Tidak ada data</TableCell>
                 </TableRow>

@@ -20,7 +20,7 @@ export default function GuidanceDetailPage() {
   const { guidanceId } = useParams();
   const navigate = useNavigate();
   const [guidance, setGuidance] = useState<GuidanceItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [openReschedule, setOpenReschedule] = useState(false);
   const [openCancel, setOpenCancel] = useState(false);
   const [openNotes, setOpenNotes] = useState(false);
@@ -41,7 +41,7 @@ export default function GuidanceDetailPage() {
 
   const load = async () => {
     if (!guidanceId) return;
-    setLoading(true);
+    setIsLoading(true);
     try {
   const data = await getStudentGuidanceDetail(guidanceId);
       setGuidance(data.guidance);
@@ -49,7 +49,7 @@ export default function GuidanceDetailPage() {
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat detail");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -101,7 +101,7 @@ export default function GuidanceDetailPage() {
       <div className="p-4">
         <Button variant="secondary" onClick={() => navigate(-1)} className="mb-4">Kembali</Button>
         <Card className="p-4">
-          {loading ? (
+          {isLoading ? (
             <div className="text-sm text-muted-foreground">Memuat...</div>
           ) : guidance ? (
             <div className="space-y-3">

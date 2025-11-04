@@ -110,7 +110,9 @@ export function CustomTable<T extends Record<string, any>>({
 					<div className="flex flex-col gap-3">
 								<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
 									<div className="flex-1 flex items-center gap-2">
-										{onSearchChange !== undefined && (
+										{loading ? (
+											<Skeleton className="h-10 w-full sm:max-w-md" />
+										) : onSearchChange !== undefined ? (
 											<div className="relative w-full sm:max-w-md">
 												<SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 												<Input
@@ -120,10 +122,17 @@ export function CustomTable<T extends Record<string, any>>({
 													onChange={(e) => onSearchChange(e.target.value)}
 												/>
 											</div>
-										)}
+										) : null}
 									</div>
 									<div className="flex items-center gap-2">
-										{actions}
+										{loading ? (
+											<>
+												<Skeleton className="h-10 w-32" />
+												<Skeleton className="h-10 w-32" />
+											</>
+										) : (
+											actions
+										)}
 									</div>
 								</div>
 
@@ -231,13 +240,22 @@ export function CustomTable<T extends Record<string, any>>({
 									</TableHeader>
 						<TableBody>
 							{loading ? (
-								Array.from({ length: Math.max(3, Math.min(pageSize, 8)) }).map((_, i) => (
-									<TableRow key={`sk-${i}`}>
-										{columns.map((col) => (
-											<TableCell key={col.key}>
-												<Skeleton className="h-4 w-[70%]" />
-											</TableCell>
-										))}
+								Array.from({ length: Math.max(3, Math.min(pageSize, 8)) }).map((_, rowIndex) => (
+									<TableRow key={`sk-${rowIndex}`}>
+										{columns.map((col, colIndex) => {
+											// Generate varied widths for more natural skeleton
+											const widthVariants = ['45%', '60%', '75%', '85%', '50%', '70%', '65%', '55%'];
+											const width = widthVariants[(rowIndex + colIndex) % widthVariants.length];
+											
+											return (
+												<TableCell key={col.key} className={col.className}>
+													<Skeleton 
+														className="h-4" 
+														style={{ width }}
+													/>
+												</TableCell>
+											);
+										})}
 									</TableRow>
 								))
 							) : data.length === 0 ? (
@@ -275,53 +293,71 @@ export function CustomTable<T extends Record<string, any>>({
 				</div>
 
 				<div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-					<div className="text-xs text-muted-foreground">
-						Menampilkan {from}-{to} dari {total}
-					</div>
-					<div className="flex items-center gap-3">
-						{onPageSizeChange && (
-							<div className="flex items-center gap-2 text-xs">
-								<span className="text-muted-foreground">Baris:</span>
-								<select
-									className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-									value={pageSize}
-									onChange={(e) => {
-										const newSize = Number(e.target.value);
-										onPageSizeChange(newSize);
-										// Reset to page 1 when changing page size to avoid out of bounds
-										if (page > Math.ceil(total / newSize)) {
-											onPageChange(1);
-										}
-									}}
-								>
-									{[10, 20, 50].map((s) => (
-										<option key={s} value={s}>{s}</option>
-									))}
-								</select>
+					{loading ? (
+						<>
+							<Skeleton className="h-4 w-40" />
+							<div className="flex items-center gap-3">
+								<Skeleton className="h-9 w-24" />
+								<div className="flex gap-1">
+									<Skeleton className="h-9 w-9" />
+									<Skeleton className="h-9 w-9" />
+									<Skeleton className="h-9 w-9" />
+									<Skeleton className="h-9 w-9" />
+									<Skeleton className="h-9 w-9" />
+								</div>
 							</div>
-						)}
-						<Pagination>
-							<PaginationContent>
-								<PaginationItem>
-									<PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); onPageChange(Math.max(1, page - 1)); }} />
-								</PaginationItem>
-								{pages.map((p, i) => (
-									p === "ellipsis" ? (
-										<PaginationEllipsis key={`e-${i}`} />
-									) : (
-										<PaginationItem key={p}>
-											<PaginationLink href="#" isActive={p === page} onClick={(e) => { e.preventDefault(); onPageChange(p); }}>
-												{p}
-											</PaginationLink>
+						</>
+					) : (
+						<>
+							<div className="text-xs text-muted-foreground">
+								Menampilkan {from}-{to} dari {total}
+							</div>
+							<div className="flex items-center gap-3">
+								{onPageSizeChange && (
+									<div className="flex items-center gap-2 text-xs">
+										<span className="text-muted-foreground">Baris:</span>
+										<select
+											className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+											value={pageSize}
+											onChange={(e) => {
+												const newSize = Number(e.target.value);
+												onPageSizeChange(newSize);
+												// Reset to page 1 when changing page size to avoid out of bounds
+												if (page > Math.ceil(total / newSize)) {
+													onPageChange(1);
+												}
+											}}
+										>
+											{[10, 20, 50].map((s) => (
+												<option key={s} value={s}>{s}</option>
+											))}
+										</select>
+									</div>
+								)}
+								<Pagination>
+									<PaginationContent>
+										<PaginationItem>
+											<PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); onPageChange(Math.max(1, page - 1)); }} />
 										</PaginationItem>
-									)
-								))}
-								<PaginationItem>
-									<PaginationNext href="#" onClick={(e) => { e.preventDefault(); onPageChange(Math.min(totalPages, page + 1)); }} />
-								</PaginationItem>
-							</PaginationContent>
-						</Pagination>
-					</div>
+										{pages.map((p, i) => (
+											p === "ellipsis" ? (
+												<PaginationEllipsis key={`e-${i}`} />
+											) : (
+												<PaginationItem key={p}>
+													<PaginationLink href="#" isActive={p === page} onClick={(e) => { e.preventDefault(); onPageChange(p); }}>
+														{p}
+													</PaginationLink>
+												</PaginationItem>
+											)
+										))}
+										<PaginationItem>
+											<PaginationNext href="#" onClick={(e) => { e.preventDefault(); onPageChange(Math.min(totalPages, page + 1)); }} />
+										</PaginationItem>
+									</PaginationContent>
+								</Pagination>
+							</div>
+						</>
+					)}
 				</div>
 			</div>
 		</Card>

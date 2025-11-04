@@ -15,18 +15,18 @@ export default function SupervisorsPage() {
     setBreadcrumbs(breadcrumb);
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [items, setItems] = useState<SupervisorItem[]>([]);
 
   const load = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const data = await getStudentSupervisors();
       setItems(data.supervisors);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat pembimbing");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -45,7 +45,7 @@ export default function SupervisorsPage() {
             { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
           ]}
         />
-        {(!loading && items.length === 0) ? (
+        {(!isLoading && items.length === 0) ? (
           <EmptyState 
             title="Belum Ada Pembimbing"
             description="Belum ada data pembimbing untuk tugas akhir Anda"

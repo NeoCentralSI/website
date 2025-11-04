@@ -1,38 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Pencil, UserPlus, Upload, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
 import { createUserAPI, updateUserAPI, importStudentsCsvAPI, getUsersAPI } from '@/services/admin.service';
 import { toTitleCaseName } from '@/lib/text';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { UserFormDialog, ImportStudentDialog } from '@/components/master-data';
 
 export default function UserManagementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const [allUsers, setAllUsers] = useState<User[]>([]); // All data from API
-  const [users, setUsers] = useState<User[]>([]); // Filtered data for display
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  
+  // Local UI state only
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -41,12 +25,12 @@ export default function UserManagementPage() {
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
   
-  // Column filters
+  // Server-side filters
   const [identityTypeFilter, setIdentityTypeFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   
-  // Form state
+  // Form state (local UI state)
   const [formData, setFormData] = useState<CreateUserRequest | UpdateUserRequest>({
     fullName: '',
     email: '',
@@ -55,72 +39,66 @@ export default function UserManagementPage() {
     identityType: 'NIM',
   });
 
+  // Memoized breadcrumbs
+  const breadcrumbs = useMemo(() => [
+    { label: 'Master Data' },
+    { label: 'Kelola User' },
+  ], []);
+
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Master Data' },
-      { label: 'Kelola User' },
-    ]);
+    setBreadcrumbs(breadcrumbs);
     setTitle('Kelola User');
-  }, [setBreadcrumbs, setTitle]);
+  }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
-  const loadUsers = async () => {
-    setLoading(true);
-    try {
-      const response = await getUsersAPI({ page: 1, pageSize: 1000 }); // Load all data
-      setAllUsers(response.users);
-    } catch (error) {
-      toast.error('Gagal memuat data user');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Convert statusFilter to boolean for API
+  const isVerifiedFilter = useMemo(() => {
+    if (statusFilter === 'verified') return true;
+    if (statusFilter === 'unverified') return false;
+    return undefined;
+  }, [statusFilter]);
 
+  // Use TanStack Query for server state with all filters
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['users', { 
+      page, 
+      pageSize, 
+      search: searchValue,
+      identityType: identityTypeFilter,
+      role: roleFilter,
+      isVerified: isVerifiedFilter
+    }],
+    queryFn: () => getUsersAPI({ 
+      page, 
+      pageSize, 
+      search: searchValue,
+      identityType: identityTypeFilter || undefined,
+      role: roleFilter || undefined,
+      isVerified: isVerifiedFilter
+    }),
+    placeholderData: (previousData) => previousData,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Show error toast
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (error) {
+      toast.error((error as Error).message || 'Gagal memuat data user');
+    }
+  }, [error]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [searchValue, identityTypeFilter, roleFilter, statusFilter]);
 
-  // Filter and paginate data on frontend
-  useEffect(() => {
-    let filtered = allUsers;
+  // Extract users from query data (no client-side filtering needed)
+  const users = data?.users || [];
+  const total = data?.meta?.total || 0;
 
-    // Apply search filter
-    if (searchValue) {
-      const search = searchValue.toLowerCase();
-      filtered = filtered.filter(user => 
-        user.fullName.toLowerCase().includes(search) ||
-        user.email.toLowerCase().includes(search) ||
-        user.identityNumber?.toLowerCase().includes(search)
-      );
-    }
-
-    // Apply identity type filter
-    if (identityTypeFilter) {
-      filtered = filtered.filter(user => user.identityType === identityTypeFilter);
-    }
-
-    // Apply role filter
-    if (roleFilter) {
-      filtered = filtered.filter(user => 
-        user.roles.some(role => role.name === roleFilter)
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter) {
-      const isVerified = statusFilter === 'verified';
-      filtered = filtered.filter(user => user.isVerified === isVerified);
-    }
-
-    // Apply pagination
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    setUsers(filtered.slice(start, end));
-  }, [allUsers, searchValue, identityTypeFilter, roleFilter, statusFilter, page, pageSize]);
+  // Invalidate cache after mutations
+  const invalidateUsers = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  };
 
   const handleOpenDialog = (user?: User) => {
     if (user) {
@@ -159,7 +137,7 @@ export default function UserManagementPage() {
       }
       
       setDialogOpen(false);
-      loadUsers();
+      invalidateUsers(); // Invalidate cache to refetch data
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal menyimpan user');
     }
@@ -176,7 +154,7 @@ export default function UserManagementPage() {
       toast.success(`Berhasil import ${result.summary?.created || 0} mahasiswa`);
       setImportDialogOpen(false);
       setSelectedFile(null);
-      loadUsers();
+      invalidateUsers(); // Invalidate cache to refetch data
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal import CSV');
     }
@@ -207,37 +185,6 @@ export default function UserManagementPage() {
     { value: 'sekdep', label: 'Sekdep' },
     { value: 'penguji', label: 'Penguji' },
   ];
-
-  // Calculate filtered total
-  const getFilteredTotal = () => {
-    let filtered = allUsers;
-
-    if (searchValue) {
-      const search = searchValue.toLowerCase();
-      filtered = filtered.filter(user => 
-        user.fullName.toLowerCase().includes(search) ||
-        user.email.toLowerCase().includes(search) ||
-        user.identityNumber?.toLowerCase().includes(search)
-      );
-    }
-
-    if (identityTypeFilter) {
-      filtered = filtered.filter(user => user.identityType === identityTypeFilter);
-    }
-
-    if (roleFilter) {
-      filtered = filtered.filter(user => 
-        user.roles.some(role => role.name === roleFilter)
-      );
-    }
-
-    if (statusFilter) {
-      const isVerified = statusFilter === 'verified';
-      filtered = filtered.filter(user => user.isVerified === isVerified);
-    }
-
-    return filtered.length;
-  };
 
   const columns = [
     {
@@ -378,11 +325,11 @@ export default function UserManagementPage() {
       <CustomTable
         data={users}
         columns={columns as any}
-        loading={loading}
+        loading={isLoading}
         emptyText="Belum ada data user"
         page={page}
         pageSize={pageSize}
-        total={getFilteredTotal()}
+        total={total}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
         searchValue={searchValue}
@@ -390,201 +337,23 @@ export default function UserManagementPage() {
         enableColumnFilters={true}
       />
 
-      {/* Create/Edit User Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>
-                {editingUser ? 'Edit User' : 'Tambah User Baru'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingUser
-                  ? 'Ubah informasi user yang sudah ada'
-                  : 'Buat user baru dengan mengisi form di bawah'}
-              </DialogDescription>
-            </DialogHeader>
+      <UserFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        editingUser={editingUser}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleSubmit}
+        roleOptions={roleOptions}
+      />
 
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="fullName">Nama Lengkap</Label>
-                <Input
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fullName: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="identityType">Tipe Identitas</Label>
-                  <Select
-                    value={formData.identityType}
-                    onValueChange={(value: any) => {
-                      // Auto-set role to student if identity type is NIM
-                      if (value === 'NIM') {
-                        setFormData({ ...formData, identityType: value, roles: ['student'] });
-                      } else {
-                        setFormData({ ...formData, identityType: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NIM">NIM</SelectItem>
-                      <SelectItem value="NIP">NIP</SelectItem>
-                      <SelectItem value="OTHER">Lainnya</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="identityNumber">Nomor Identitas</Label>
-                  <Input
-                    id="identityNumber"
-                    value={formData.identityNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, identityNumber: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="roles">Role</Label>
-                <Select
-                  value={typeof formData.roles?.[0] === 'string' ? formData.roles[0] : ''}
-                  onValueChange={(value: string) =>
-                    setFormData({ ...formData, roles: [value] })
-                  }
-                  disabled={formData.identityType === 'NIM'}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions
-                      .filter(role => {
-                        // Filter admin jika edit mode
-                        if (editingUser && role.value === 'admin') return false;
-                        // Filter student jika identity type adalah NIP
-                        if (formData.identityType === 'NIP' && role.value === 'student') return false;
-                        // Only show student if identity type is NIM
-                        if (formData.identityType === 'NIM' && role.value !== 'student') return false;
-                        return true;
-                      })
-                      .map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                {formData.identityType === 'NIM' && (
-                  <p className="text-xs text-muted-foreground">
-                    Note: User dengan NIM hanya dapat memiliki role Mahasiswa
-                  </p>
-                )}
-                {editingUser && formData.identityType !== 'NIM' && (
-                  <p className="text-xs text-muted-foreground">
-                    Note: Role admin tidak dapat diubah melalui form ini
-                  </p>
-                )}
-                {formData.identityType === 'NIP' && (
-                  <p className="text-xs text-muted-foreground">
-                    Note: User dengan NIP tidak dapat menjadi mahasiswa
-                  </p>
-                )}
-              </div>
-
-              {editingUser && 'isVerified' in formData && (
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="isVerified">Status Verifikasi</Label>
-                  <Switch
-                    id="isVerified"
-                    checked={formData.isVerified}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isVerified: checked })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
-                Batal
-              </Button>
-              <Button type="submit">
-                {editingUser ? 'Simpan Perubahan' : 'Buat User'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Import CSV Dialog */}
-      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Mahasiswa dari CSV</DialogTitle>
-            <DialogDescription>
-              Upload file CSV untuk import data mahasiswa secara massal
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="csv-file">File CSV</Label>
-              <Input
-                id="csv-file"
-                type="file"
-                accept=".csv"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Format: NIM, Nama, Email, dll.
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setImportDialogOpen(false)}
-            >
-              Batal
-            </Button>
-            <Button onClick={handleImportCsv} disabled={!selectedFile}>
-              <Upload className="w-4 h-4 mr-2" />
-              Import
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ImportStudentDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        selectedFile={selectedFile}
+        onFileChange={setSelectedFile}
+        onImport={handleImportCsv}
+      />
     </div>
   );
 }

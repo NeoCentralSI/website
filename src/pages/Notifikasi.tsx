@@ -1,23 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Bell, Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { useEffect as ReactUseEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 
 export default function Notifikasi() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  ReactUseEffect(() => {
-    setBreadcrumbs([
-      { label: 'Dashboard', href: '/dashboard' },
-      { label: 'Notifikasi' },
-    ]);
+  
+  // Memoized breadcrumbs
+  const breadcrumbs = useMemo(() => [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Notifikasi' },
+  ], []);
+  
+  useEffect(() => {
+    setBreadcrumbs(breadcrumbs);
     setTitle(undefined);
-  }, [setBreadcrumbs, setTitle]);
+  }, [setBreadcrumbs, setTitle, breadcrumbs]);
   const {
     notifications,
     unreadCount,

@@ -17,17 +17,17 @@ export default function LecturerEligibilityPage() {
   }, [breadcrumb, setBreadcrumbs, setTitle]);
   const [threshold, setThreshold] = useState<number | "">("");
   const [result, setResult] = useState<{ eligible: boolean; graduatedAsSup2: number; required: number } | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const check = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const data = await getSupervisorEligibility(typeof threshold === 'number' ? { threshold } : undefined);
       setResult({ eligible: data.eligible, graduatedAsSup2: data.graduatedAsSup2, required: data.required });
     } catch (e: any) {
       toast.error(e?.message || "Gagal memeriksa eligibility");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -52,7 +52,7 @@ export default function LecturerEligibilityPage() {
               <div className="text-sm text-muted-foreground">Threshold (opsional)</div>
               <Input type="number" value={threshold} onChange={(e) => setThreshold(e.target.value === '' ? '' : Number(e.target.value))} />
             </div>
-            <Button onClick={check} disabled={loading}>{loading ? 'Memeriksa...' : 'Periksa'}</Button>
+            <Button onClick={check} disabled={isLoading}>{isLoading ? 'Memeriksa...' : 'Periksa'}</Button>
           </div>
           {result && (
             <div className="space-y-1">

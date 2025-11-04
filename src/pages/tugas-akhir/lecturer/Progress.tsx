@@ -17,19 +17,19 @@ export default function LecturerProgressPage() {
     setBreadcrumbs(breadcrumb);
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [items, setItems] = useState<ProgressSummaryItem[]>([]);
   const navigate = useNavigate();
 
   const load = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const data = await getProgressSummary();
       setItems(data.items);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat ringkasan");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -58,7 +58,7 @@ export default function LecturerProgressPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!loading && items.length === 0 && (
+              {!isLoading && items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">Tidak ada data</TableCell>
                 </TableRow>

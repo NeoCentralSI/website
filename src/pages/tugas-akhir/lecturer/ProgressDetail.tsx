@@ -18,20 +18,20 @@ export default function LecturerProgressDetailPage() {
   }, [breadcrumb, setBreadcrumbs, setTitle]);
   const { studentId } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [components, setComponents] = useState<ProgressDetailItem[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   const load = async () => {
     if (!studentId) return;
-    setLoading(true);
+    setIsLoading(true);
     try {
       const data = await getProgressDetail(studentId);
       setComponents(data.components || []);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat detail");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -104,7 +104,7 @@ export default function LecturerProgressDetailPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!loading && components.length === 0 && (
+              {!isLoading && components.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">Tidak ada data</TableCell>
                 </TableRow>

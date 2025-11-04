@@ -15,19 +15,19 @@ export default function LecturerActivityPage() {
     setBreadcrumbs(breadcrumb);
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [items, setItems] = useState<ActivityLogItem[]>([]);
 
   const load = async () => {
     if (!studentId) return;
-    setLoading(true);
+    setIsLoading(true);
     try {
       const data = await getLecturerActivityLog(studentId);
       setItems(data.items);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat aktivitas");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -47,7 +47,7 @@ export default function LecturerActivityPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!loading && items.length === 0 && (
+              {!isLoading && items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={2} className="text-center text-sm text-muted-foreground">Tidak ada data</TableCell>
                 </TableRow>

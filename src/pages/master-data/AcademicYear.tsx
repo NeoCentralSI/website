@@ -1,25 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Plus, Pencil, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
@@ -27,19 +10,19 @@ import type { AcademicYear, CreateAcademicYearRequest, UpdateAcademicYearRequest
 import { createAcademicYearAPI, updateAcademicYearAPI, getAcademicYearsAPI } from '@/services/admin.service';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AcademicYearFormDialog } from '@/components/master-data';
 
 export default function AcademicYearPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const [allAcademicYears, setAllAcademicYears] = useState<AcademicYear[]>([]); // All data from API
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]); // Filtered data for display
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  
+  // Local UI state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingYear, setEditingYear] = useState<AcademicYear | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
-  
-  // Column filters
   const [semesterFilter, setSemesterFilter] = useState('');
   
   // Form state
@@ -50,58 +33,51 @@ export default function AcademicYearPage() {
     endDate: '',
   });
 
+  // Memoized breadcrumbs
+  const breadcrumbs = useMemo(() => [
+    { label: 'Master Data' },
+    { label: 'Tahun Ajaran' },
+  ], []);
+
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Master Data' },
-      { label: 'Tahun Ajaran' },
-    ]);
+    setBreadcrumbs(breadcrumbs);
     setTitle('Tahun Ajaran');
-  }, [setBreadcrumbs, setTitle]);
+  }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
-  const loadAcademicYears = async () => {
-    setLoading(true);
-    try {
-      const response = await getAcademicYearsAPI({ page: 1, pageSize: 1000 }); // Load all data
-      setAllAcademicYears(response.academicYears);
-    } catch (error) {
-      toast.error('Gagal memuat data tahun ajaran');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use TanStack Query for server state
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['academicYears', { page, pageSize, search: searchValue }],
+    queryFn: () => getAcademicYearsAPI({ page, pageSize, search: searchValue }),
+    placeholderData: (previousData) => previousData,
+    staleTime: 5 * 60 * 1000,
+  });
 
+  // Show error toast
   useEffect(() => {
-    loadAcademicYears();
-  }, []);
+    if (error) {
+      toast.error((error as Error).message || 'Gagal memuat data tahun ajaran');
+    }
+  }, [error]);
 
-  // Reset page to 1 when filters change
+  // Reset page when search changes
   useEffect(() => {
     setPage(1);
-  }, [searchValue, semesterFilter]);
+  }, [searchValue]);
 
-  // Filter and paginate data on frontend
-  useEffect(() => {
-    let filtered = allAcademicYears;
+  // Extract data from query
+  const allAcademicYears = data?.academicYears || [];
+  const totalYears = data?.meta?.total || 0;
 
-    // Apply search filter
-    if (searchValue) {
-      const search = searchValue.toLowerCase();
-      filtered = filtered.filter(year => 
-        year.year.toString().includes(search) ||
-        year.semester.toLowerCase().includes(search)
-      );
-    }
+  // Apply client-side semester filter
+  const filteredYears = useMemo(() => {
+    if (!semesterFilter) return allAcademicYears;
+    return allAcademicYears.filter(year => year.semester === semesterFilter);
+  }, [allAcademicYears, semesterFilter]);
 
-    // Apply semester filter
-    if (semesterFilter) {
-      filtered = filtered.filter(year => year.semester === semesterFilter);
-    }
-
-    // Apply pagination
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    setAcademicYears(filtered.slice(start, end));
-  }, [allAcademicYears, searchValue, semesterFilter, page, pageSize]);
+  // Invalidate cache after mutations
+  const invalidateAcademicYears = () => {
+    queryClient.invalidateQueries({ queryKey: ['academicYears'] });
+  };
 
   const handleOpenDialog = (year?: AcademicYear) => {
     if (year) {
@@ -137,7 +113,7 @@ export default function AcademicYearPage() {
       }
       
       setDialogOpen(false);
-      loadAcademicYears();
+      invalidateAcademicYears(); // Invalidate cache to refetch
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal menyimpan tahun ajaran');
     }
@@ -147,24 +123,8 @@ export default function AcademicYearPage() {
     return semester === 'ganjil' ? 'Ganjil' : 'Genap';
   };
 
-  // Calculate filtered total
-  const getFilteredTotal = () => {
-    let filtered = allAcademicYears;
-
-    if (searchValue) {
-      const search = searchValue.toLowerCase();
-      filtered = filtered.filter(year => 
-        year.year.toString().includes(search) ||
-        year.semester.toLowerCase().includes(search)
-      );
-    }
-
-    if (semesterFilter) {
-      filtered = filtered.filter(year => year.semester === semesterFilter);
-    }
-
-    return filtered.length;
-  };
+  // Use server total or filtered count
+  const totalCount = filteredYears.length > 0 ? filteredYears.length : totalYears;
 
   const columns = [
     {
@@ -250,13 +210,13 @@ export default function AcademicYearPage() {
       </div>
 
       <CustomTable
-        data={academicYears}
+        data={filteredYears}
         columns={columns as any}
-        loading={loading}
+        loading={isLoading}
         emptyText="Belum ada data tahun ajaran"
         page={page}
         pageSize={pageSize}
-        total={getFilteredTotal()}
+        total={totalCount}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
         searchValue={searchValue}
@@ -264,103 +224,14 @@ export default function AcademicYearPage() {
         enableColumnFilters={true}
       />
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>
-                {editingYear ? 'Edit Tahun Ajaran' : 'Tambah Tahun Ajaran'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingYear
-                  ? 'Ubah informasi tahun ajaran'
-                  : 'Tambahkan tahun ajaran baru'}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="year">Tahun</Label>
-                  <Input
-                    id="year"
-                    type="number"
-                    min="2000"
-                    max="2100"
-                    value={formData.year}
-                    onChange={(e) =>
-                      setFormData({ ...formData, year: parseInt(e.target.value) })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="semester">Semester</Label>
-                  <Select
-                    value={formData.semester}
-                    onValueChange={(value: 'ganjil' | 'genap') =>
-                      setFormData({ ...formData, semester: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ganjil">Ganjil</SelectItem>
-                      <SelectItem value="genap">Genap</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="startDate">Tanggal Mulai</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate?.split('T')[0] || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      startDate: e.target.value ? new Date(e.target.value).toISOString() : '',
-                    })
-                  }
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="endDate">Tanggal Selesai</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={formData.endDate?.split('T')[0] || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      endDate: e.target.value ? new Date(e.target.value).toISOString() : '',
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
-                Batal
-              </Button>
-              <Button type="submit">
-                {editingYear ? 'Simpan Perubahan' : 'Tambah'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <AcademicYearFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        editingYear={editingYear}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }
