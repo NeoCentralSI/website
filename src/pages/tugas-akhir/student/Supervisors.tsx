@@ -6,6 +6,7 @@ import type { SupervisorItem } from "@/services/studentGuidance.service";
 import { getStudentSupervisors } from "@/services/studentGuidance.service";
 import { toast } from "sonner";
 import { TabsNav } from "@/components/ui/tabs-nav";
+import EmptyState from "@/components/ui/empty-state";
 
 export default function SupervisorsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -44,11 +45,15 @@ export default function SupervisorsPage() {
             { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
           ]}
         />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {(!loading && items.length === 0) && (
-          <div className="text-sm text-muted-foreground">Belum ada data pembimbing</div>
-        )}
-        {items.map((s) => (
+        {(!loading && items.length === 0) ? (
+          <EmptyState 
+            title="Belum Ada Pembimbing"
+            description="Belum ada data pembimbing untuk tugas akhir Anda"
+            size="sm"
+          />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {items.map((s) => (
           <Card key={s.id} className="p-4 flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
               {s.name?.split(" ").map((p) => p[0]).join("")?.slice(0,2) || "P"}
@@ -59,7 +64,8 @@ export default function SupervisorsPage() {
             </div>
           </Card>
         ))}
-        </div>
+          </div>
+        )}
       </div>
   );
 }

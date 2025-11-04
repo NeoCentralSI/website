@@ -17,7 +17,23 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
+  identityNumber?: string;
+  identityType?: 'NIM' | 'NIP' | 'OTHER';
+  phoneNumber?: string;
+  isVerified: boolean;
   roles: Role[];
+  student?: {
+    id: string;
+    enrollmentYear: number;
+    sksCompleted: number;
+    status: string | null;
+  };
+  lecturer?: {
+    id: string;
+    scienceGroup: string | null;
+  };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LoginResponse {
@@ -263,6 +279,32 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
   }
 
   return response;
+};
+
+export interface UpdateProfileRequest {
+  phoneNumber?: string;
+}
+
+export const updateProfileAPI = async (data: UpdateProfileRequest): Promise<User> => {
+  try {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.UPDATE_PROFILE), {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Gagal memperbarui profil');
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Terjadi kesalahan saat memperbarui profil');
+  }
 };
 
 export interface ChangePasswordRequest {

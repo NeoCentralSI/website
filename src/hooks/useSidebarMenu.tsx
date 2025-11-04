@@ -428,6 +428,10 @@ export const useSidebarMenu = () => {
                 url: "/master-data/mahasiswa",
               },
               {
+                title: "Data Dosen",
+                url: "/master-data/dosen",
+              },
+              {
                 title: "Kelola User",
                 url: "/master-data/user",
               },

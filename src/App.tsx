@@ -22,6 +22,11 @@ import LecturerMyStudentsPage from './pages/tugas-akhir/lecturer/MyStudents'
 import LecturerEligibilityPage from './pages/tugas-akhir/lecturer/Eligibility'
 import LecturerHistoryPage from './pages/tugas-akhir/lecturer/History'
 import LecturerActivityPage from './pages/tugas-akhir/lecturer/Activity'
+import NotFoundPage from './pages/NotFound'
+import UserManagementPage from './pages/master-data/UserManagement'
+import AcademicYearPage from './pages/master-data/AcademicYear'
+import MahasiswaPage from './pages/master-data/Mahasiswa'
+import DosenPage from './pages/master-data/Dosen'
 
 function App() {
   return (
@@ -46,6 +51,7 @@ function App() {
               <Route path="/kerja-praktik/pendaftaran" element={<Placeholder title="Kerja Praktek - Pendaftaran" />} />
               <Route path="/kerja-praktik/logbook" element={<Placeholder title="Kerja Praktek - Log Book" />} />
               <Route path="/kerja-praktik/seminar" element={<Placeholder title="Kerja Praktek - Seminar" />} />
+              <Route path="/kerja-praktik/bimbingan" element={<Placeholder title="Kerja Praktek - Bimbingan" />} />
               <Route path="/kerja-praktik/acc-proposal" element={<Placeholder title="Kerja Praktek - ACC Proposal" />} />
               <Route path="/kerja-praktik/surat-pengantar" element={<Placeholder title="Kerja Praktek - Surat Pengantar" />} />
               <Route path="/kerja-praktik/data" element={<Placeholder title="Kerja Praktek - Data KP" />} />
@@ -68,9 +74,10 @@ function App() {
 
               {/* Master Data (Admin) */}
               <Route path="/master-data" element={<Placeholder title="main menu Master Data" />} />
-              <Route path="/master-data/mahasiswa" element={<Placeholder title="Master Data - Mahasiswa" />} />
-              <Route path="/master-data/user" element={<Placeholder title="Master Data - Kelola User" />} />
-              <Route path="/master-data/tahun-ajaran" element={<Placeholder title="Master Data - Tahun Ajaran" />} />
+              <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
+              <Route path="/master-data/dosen" element={<DosenPage />} />
+              <Route path="/master-data/user" element={<UserManagementPage />} />
+              <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
 
               {/* Tugas Akhir - Bimbingan entry (role-based redirect) */}
               <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
@@ -91,6 +98,9 @@ function App() {
               <Route path="/tugas-akhir/bimbingan/lecturer/history/:studentId" element={<LecturerHistoryPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/activity/:studentId" element={<LecturerActivityPage />} />
             </Route>
+
+            {/* 404 - Catch all undefined routes (outside ProtectedLayout) */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
           <Toaster position="top-right" visibleToasts={1} closeButton />
         </NotificationProvider>

@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SearchIcon, FilterIcon, CheckIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import EmptyState from "@/components/ui/empty-state";
 
 type ColumnFilterElement = { kind: "element"; element: React.ReactNode };
 type ColumnFilterControl = {
@@ -165,12 +166,31 @@ export function CustomTable<T extends Record<string, any>>({
 																									{((col.filter as ColumnFilterControl).options ?? []).map((opt: { label: string; value: string }) => {
 																										const active = ((col.filter as ColumnFilterControl).value ?? '') === opt.value;
 																										return (
-																											<DropdownMenuItem key={opt.value} onClick={() => (col.filter as ColumnFilterControl).onChange?.(opt.value)}>
-																												{active && <CheckIcon className="mr-2 size-4" />} {opt.label}
+																											<DropdownMenuItem 
+																												key={opt.value} 
+																												onClick={() => (col.filter as ColumnFilterControl).onChange?.(opt.value)}
+																												className="cursor-pointer hover:bg-accent focus:bg-accent"
+																											>
+																												<div className="flex items-center w-full gap-2">
+																													<div className={cn(
+																														"size-4 rounded flex items-center justify-center border-2 transition-all",
+																														active 
+																															? "border-primary bg-primary shadow-sm" 
+																															: "border-gray-300 hover:border-gray-400 bg-background"
+																													)}>
+																														<CheckIcon className={cn(
+																															"size-3 transition-all",
+																															active ? "text-primary-foreground opacity-100 scale-100" : "text-transparent opacity-0 scale-50"
+																														)} />
+																													</div>
+																													<span className={cn(
+																														"flex-1",
+																														active && "font-medium"
+																													)}>{opt.label}</span>
+																												</div>
 																											</DropdownMenuItem>
 																										);
 																									})}
-																									<DropdownMenuItem onClick={() => (col.filter as ColumnFilterControl).onChange?.('')}>Reset</DropdownMenuItem>
 																								</DropdownMenuContent>
 																							</DropdownMenu>
 																						) : (
@@ -222,8 +242,13 @@ export function CustomTable<T extends Record<string, any>>({
 								))
 							) : data.length === 0 ? (
 								<TableRow>
-									<TableCell colSpan={columns.length} className="text-center text-sm text-muted-foreground">
-										{emptyText}
+									<TableCell colSpan={columns.length} className="p-0">
+										<EmptyState 
+											title="Tidak Ada Data" 
+											description={emptyText}
+											size="sm"
+											className="py-8"
+										/>
 									</TableCell>
 								</TableRow>
 							) : (

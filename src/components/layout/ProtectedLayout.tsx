@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "./DashboardLayout";
-import { Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 export type BreadcrumbItem = { label: string; href?: string };
 export type LayoutContext = {
@@ -10,6 +11,7 @@ export type LayoutContext = {
 
 export default function ProtectedLayout() {
   const location = useLocation();
+  const { isLoading, isLoggedIn } = useAuth();
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[] | undefined>([
     { label: "Dashboard" },
   ]);
@@ -26,6 +28,11 @@ export default function ProtectedLayout() {
       setTitle(undefined);
     }
   }, [location.pathname]);
+
+  // Redirect to login if not authenticated after loading completes
+  if (!isLoading && !isLoggedIn) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <DashboardLayout breadcrumbs={breadcrumbs} title={title}>

@@ -1,11 +1,12 @@
 import { useNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Bell, Check } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import NotificationItem from "@/components/notifications/NotificationItem";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useState } from "react";
+import EmptyState from "@/components/ui/empty-state";
 
 function groupNotificationsByDate(notifications: any[]) {
   const groups: { [key: string]: any[] } = {};
@@ -102,17 +103,12 @@ export default function NotificationsSheetContent() {
       {/* Notifications List */}
       <div className="flex-1 overflow-y-auto">
         {filteredNotifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <p className="text-sm font-medium text-muted-foreground">
-              {filter === 'unread' ? 'Tidak ada notifikasi yang belum dibaca' : 'Tidak ada notifikasi'}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {filter === 'unread' ? 'Semua notifikasi sudah dibaca' : 'Notifikasi akan muncul di sini'}
-            </p>
-          </div>
+          <EmptyState
+            title={filter === 'unread' ? 'Tidak Ada Notifikasi Belum Dibaca' : 'Tidak Ada Notifikasi'}
+            description={filter === 'unread' ? 'Semua notifikasi sudah dibaca' : 'Notifikasi akan muncul di sini'}
+            size="sm"
+            className="py-8"
+          />
         ) : (
           <div className="space-y-6">
             {groupKeys.map((groupKey) => (

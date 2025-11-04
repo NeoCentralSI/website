@@ -9,6 +9,7 @@ export const API_CONFIG = {
       REFRESH: '/auth/refresh',
       LOGOUT: '/auth/logout',
       ME: '/auth/me',
+      UPDATE_PROFILE: '/auth/profile',
       CHANGE_PASSWORD: '/auth/password',
       FORGOT_PASSWORD: '/auth/reset/request',
       RESET_PASSWORD: '/auth/reset/confirm',
