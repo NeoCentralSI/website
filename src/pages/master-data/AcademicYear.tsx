@@ -36,7 +36,7 @@ export default function AcademicYearPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingYear, setEditingYear] = useState<AcademicYear | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
   
   // Column filters
@@ -258,6 +258,7 @@ export default function AcademicYearPage() {
         pageSize={pageSize}
         total={getFilteredTotal()}
         onPageChange={setPage}
+        onPageSizeChange={setPageSize}
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         enableColumnFilters={true}

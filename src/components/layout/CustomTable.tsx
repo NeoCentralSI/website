@@ -281,11 +281,18 @@ export function CustomTable<T extends Record<string, any>>({
 					<div className="flex items-center gap-3">
 						{onPageSizeChange && (
 							<div className="flex items-center gap-2 text-xs">
-								<span>Baris:</span>
+								<span className="text-muted-foreground">Baris:</span>
 								<select
-									className="border rounded px-2 py-1"
+									className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 									value={pageSize}
-									onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
+									onChange={(e) => {
+										const newSize = Number(e.target.value);
+										onPageSizeChange(newSize);
+										// Reset to page 1 when changing page size to avoid out of bounds
+										if (page > Math.ceil(total / newSize)) {
+											onPageChange(1);
+										}
+									}}
 								>
 									{[10, 20, 50].map((s) => (
 										<option key={s} value={s}>{s}</option>
