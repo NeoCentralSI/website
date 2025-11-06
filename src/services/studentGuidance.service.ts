@@ -1,7 +1,7 @@
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { apiRequest } from "./auth.service";
 
-export type GuidanceStatus = "scheduled" | "completed" | "cancelled";
+export type GuidanceStatus = "requested" | "accepted" | "rejected";
 
 export interface GuidanceItem {
   id: string;

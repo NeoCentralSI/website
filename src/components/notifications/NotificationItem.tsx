@@ -24,6 +24,14 @@ export type NotificationItemProps = {
   onDelete: (id: string) => Promise<void>;
 };
 
+function formatMessageWithNames(message: string): string {
+  if (!message) return message;
+  
+  // Backend already sends properly formatted messages with toTitleCaseName
+  // Just return the message as-is, no regex processing needed
+  return message.trim();
+}
+
 function getNotificationIcon(title: string, message: string) {
   const text = `${title} ${message}`.toLowerCase();
   
@@ -82,6 +90,9 @@ export default function NotificationItem({
   const absolute = format(created, "dd MMM yyyy HH:mm", { locale: idLocale });
   
   const iconColorClass = getNotificationColor(title || '', message || '');
+  
+  // Format message with proper name casing
+  const formattedMessage = message ? formatMessageWithNames(message) : '-';
 
   return (
     <div 
@@ -110,7 +121,7 @@ export default function NotificationItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
             <h4 className={cn(
-              "text-sm leading-5 truncate",
+              "text-sm leading-5 wrap-break-word flex-1",
               isRead ? "text-muted-foreground" : "text-foreground font-medium"
             )}>
               {title || 'Notifikasi'}
@@ -121,10 +132,10 @@ export default function NotificationItem({
           </div>
           
           <p className={cn(
-            "text-xs leading-4 line-clamp-2 wrap-break-word",
+            "text-xs leading-5 wrap-break-word whitespace-pre-wrap",
             isRead ? "text-muted-foreground/80" : "text-muted-foreground"
           )}>
-            {message || '-'}
+            {formattedMessage}
           </p>
 
           {/* Absolute timestamp */}

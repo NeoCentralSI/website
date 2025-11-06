@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
 import type { GuidanceItem } from "@/services/studentGuidance.service";
 import {
   getStudentGuidanceDetail,
@@ -22,21 +23,23 @@ type Props = {
 export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdated }: Props) {
   const [loading, setLoading] = useState(false);
   const [guidance, setGuidance] = useState<GuidanceItem | null>(null);
-  const [notes, setNotes] = useState("\n");
-  const [rescheduleDate, setRescheduleDate] = useState("");
-  const [rescheduleNotes, setRescheduleNotes] = useState("");
-  const [cancelReason, setCancelReason] = useState("");
-  const canAct = guidance && guidance.status !== "cancelled";
+  const [notes, setNotes] = useState("");
+  const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null);
+  
+  // Can only edit/reschedule if status is "requested" (not accepted or rejected)
+  const canEdit = guidance && guidance.status === "requested";
+  // Can only cancel (delete) if status is "requested"
+  const canCancel = guidance && guidance.status === "requested";
 
   const load = async () => {
     if (!guidanceId || !open) return;
     setLoading(true);
     try {
-  const data = await getStudentGuidanceDetail(guidanceId);
-  setGuidance(data.guidance);
-  setNotes(data.guidance.notes ?? "");
-  const iso = data.guidance.schedule?.guidanceDate || data.guidance.scheduledAt || "";
-  setRescheduleDate(iso ? iso.slice(0, 16) : "");
+      const data = await getStudentGuidanceDetail(guidanceId);
+      setGuidance(data.guidance);
+      setNotes(data.guidance.notes ?? "");
+      const iso = data.guidance.schedule?.guidanceDate || data.guidance.scheduledAt || "";
+      setRescheduleDate(iso ? new Date(iso) : null);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat detail");
     } finally {
@@ -49,98 +52,133 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guidanceId, open]);
 
-  const doUpdateNotes = async () => {
+  const handleUpdate = async () => {
     if (!guidanceId) return;
+    
     try {
+      // Update notes
       await updateStudentGuidanceNotes(guidanceId, { studentNotes: notes });
-      toast.success("Catatan diperbarui", { id: "guidance-notes-updated" });
-      onUpdated?.();
-      load();
-    } catch (e: any) {
-      toast.error(e?.message || "Gagal memperbarui catatan");
-    }
-  };
-
-  const doReschedule = async () => {
-    if (!guidanceId || !rescheduleDate) {
-      toast.error("Isi jadwal baru");
-      return;
-    }
-    try {
-      await rescheduleStudentGuidance(guidanceId, { guidanceDate: rescheduleDate, studentNotes: rescheduleNotes || undefined });
-      toast.success("Jadwal diperbarui", { id: "guidance-rescheduled" });
+      
+      // If reschedule date changed, update it
+      const originalDate = guidance?.schedule?.guidanceDate || guidance?.scheduledAt;
+      const hasDateChanged = rescheduleDate && originalDate && 
+        new Date(rescheduleDate).getTime() !== new Date(originalDate).getTime();
+      
+      if (hasDateChanged && rescheduleDate) {
+        await rescheduleStudentGuidance(guidanceId, { 
+          guidanceDate: rescheduleDate.toISOString(),
+        });
+        toast.success("Bimbingan berhasil diperbarui", { id: "guidance-updated" });
+      } else {
+        toast.success("Catatan diperbarui", { id: "guidance-notes-updated" });
+      }
+      
       onUpdated?.();
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e?.message || "Gagal menjadwalkan ulang");
+      toast.error(e?.message || "Gagal memperbarui");
     }
   };
 
-  const doCancel = async () => {
+  const handleCancel = async () => {
     if (!guidanceId) return;
+    
     try {
-      await cancelStudentGuidance(guidanceId, { reason: cancelReason || undefined });
-      toast.success("Bimbingan dibatalkan", { id: "guidance-cancelled" });
+      await cancelStudentGuidance(guidanceId, { reason: "Dibatalkan oleh mahasiswa" });
+      toast.success("Permintaan bimbingan dihapus", { id: "guidance-deleted" });
       onUpdated?.();
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e?.message || "Gagal membatalkan");
+      toast.error(e?.message || "Gagal menghapus permintaan");
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Detail Bimbingan</DialogTitle>
         </DialogHeader>
         {loading ? (
           <div className="text-sm text-muted-foreground">Memuat...</div>
         ) : guidance ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-6">
+            {/* Info Section */}
+            <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50">
               <div>
-                <div className="text-xs text-muted-foreground">Pembimbing</div>
+                <div className="text-xs text-muted-foreground mb-1">Pembimbing</div>
                 <div className="font-medium">{guidance.supervisorName || guidance.supervisorId}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Status</div>
+                <div className="text-xs text-muted-foreground mb-1">Status</div>
                 <div className="font-medium capitalize">{guidance.status}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Terjadwal</div>
-                <div className="font-medium">{guidance.schedule?.guidanceDateFormatted || guidance.scheduledAtFormatted || (guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-')}</div>
+                <div className="text-xs text-muted-foreground mb-1">Terjadwal</div>
+                <div className="font-medium text-sm">{guidance.schedule?.guidanceDateFormatted || guidance.scheduledAtFormatted || (guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-')}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Lokasi</div>
+                <div className="text-xs text-muted-foreground mb-1">Lokasi</div>
                 <div className="font-medium">{guidance.location || '-'}</div>
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label>Catatan</Label>
-              <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Tambahkan catatan..." />
-              <div className="flex justify-end">
-                <Button size="sm" variant="secondary" onClick={doUpdateNotes} disabled={!canAct}>Simpan Catatan</Button>
+            {/* Edit Section */}
+            <div className="space-y-4">
+              {guidance.status === "accepted" && (
+                <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+                  ℹ️ Bimbingan sudah disetujui. Jadwal dan catatan tidak dapat diubah.
+                </div>
+              )}
+              
+              {guidance.status === "rejected" && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+                  ℹ️ Bimbingan ditolak. Tidak dapat melakukan perubahan.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="reschedule-date">Reschedule</Label>
+                <DateTimePicker 
+                  value={rescheduleDate} 
+                  onChange={setRescheduleDate}
+                  disabled={!canEdit}
+                  placeholder="Pilih jadwal baru"
+                />
+                {!canEdit && guidance.status === "requested" && (
+                  <p className="text-xs text-muted-foreground">Jadwal dapat diubah saat status masih "Menunggu"</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Catatan</Label>
+                <Textarea 
+                  id="notes"
+                  value={notes} 
+                  onChange={(e) => setNotes(e.target.value)} 
+                  placeholder="Tambahkan catatan..."
+                  disabled={!canEdit}
+                  rows={3}
+                />
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>Reschedule</Label>
-                <Input type="datetime-local" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
-                <Input placeholder="Catatan (opsional)" value={rescheduleNotes} onChange={(e) => setRescheduleNotes(e.target.value)} />
-                <div className="flex justify-end">
-                  <Button size="sm" onClick={doReschedule} disabled={!canAct}>Simpan Jadwal</Button>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label>Batalkan Bimbingan</Label>
-                <Input placeholder="Alasan (opsional)" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
-                <div className="flex justify-end">
-                  <Button size="sm" variant="destructive" onClick={doCancel} disabled={!canAct}>Batalkan</Button>
-                </div>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              {canCancel && (
+                <Button 
+                  variant="destructive" 
+                  onClick={handleCancel}
+                >
+                  Hapus Permintaan
+                </Button>
+              )}
+              <Button 
+                onClick={handleUpdate} 
+                disabled={!canEdit}
+              >
+                Simpan Perubahan
+              </Button>
             </div>
           </div>
         ) : (

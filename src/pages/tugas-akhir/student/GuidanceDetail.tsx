@@ -14,10 +14,12 @@ import {
   updateStudentGuidanceNotes,
 } from "@/services/studentGuidance.service";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function GuidanceDetailPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { guidanceId } = useParams();
+  const qc = useQueryClient();
   const navigate = useNavigate();
   const [guidance, setGuidance] = useState<GuidanceItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,6 +70,7 @@ export default function GuidanceDetailPage() {
       toast.success("Jadwal diperbarui", { id: "guidance-rescheduled" });
       setOpenReschedule(false);
       load();
+      qc.invalidateQueries({ queryKey: ["notification-unread"] });
     } catch (e: any) {
       toast.error(e?.message || "Gagal menjadwalkan ulang");
     }
@@ -79,6 +82,7 @@ export default function GuidanceDetailPage() {
       await cancelStudentGuidance(guidanceId, cancel);
       toast.success("Bimbingan dibatalkan", { id: "guidance-cancelled" });
       setOpenCancel(false);
+      qc.invalidateQueries({ queryKey: ["notification-unread"] });
       navigate("/tugas-akhir/bimbingan");
     } catch (e: any) {
       toast.error(e?.message || "Gagal membatalkan");
@@ -88,10 +92,11 @@ export default function GuidanceDetailPage() {
   const doUpdateNotes = async () => {
     if (!guidanceId) return;
     try {
-  await updateStudentGuidanceNotes(guidanceId, notes);
+      await updateStudentGuidanceNotes(guidanceId, notes);
       toast.success("Catatan diperbarui", { id: "guidance-notes-updated" });
       setOpenNotes(false);
       load();
+      qc.invalidateQueries({ queryKey: ["notification-unread"] });
     } catch (e: any) {
       toast.error(e?.message || "Gagal memperbarui catatan");
     }

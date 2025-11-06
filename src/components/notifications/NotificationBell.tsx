@@ -1,6 +1,5 @@
 import { BellIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getUnreadCount } from "@/services/notification.service";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -24,19 +23,22 @@ export default function NotificationBell({
   size = 20,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const { unreadCount, fetchNotifications } = useNotifications();
-  const { data } = useQuery({
-    queryKey: ["notification-unread"],
+  const { unreadCount, fetchNotifications, fetchUnreadCount } = useNotifications();
+  
+  // Use unreadCount from context instead of separate query
+  const count = unreadCount ?? 0;
+  const showBadge = showZero ? true : count > 0;
+  
+  // Optional: still allow polling for backup (but context should handle this via FCM)
+  useQuery({
+    queryKey: ["notification-unread-poll"],
     queryFn: async () => {
-      const res = await getUnreadCount();
-      return res.unreadCount ?? 0;
+      await fetchUnreadCount();
+      return null;
     },
-    // Disable polling by default; rely on push to invalidate
+    enabled: !!refetchIntervalMs,
     refetchInterval: refetchIntervalMs,
   });
-
-  const count = data ?? 0;
-  const showBadge = showZero ? true : count > 0;
 
   useEffect(() => {
     if (open) fetchNotifications().catch(() => {});
@@ -66,7 +68,7 @@ export default function NotificationBell({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full max-w-lg p-0">
+      <SheetContent side="right" className="w-[30vw] min-w-[400px] max-w-full p-0">
         <div className="flex flex-col h-full">
           <div className="border-b bg-background px-6 py-4">
             <div className="flex items-center justify-between">

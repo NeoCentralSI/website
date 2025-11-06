@@ -5,7 +5,7 @@ import { Toaster } from './components/ui/sonner'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Profil from './pages/profil/Profil'
-import Notifikasi from './pages/Notifikasi'
+
 import ResetPassword from './pages/ResetPassword'
 import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
@@ -23,10 +23,10 @@ import LecturerEligibilityPage from './pages/tugas-akhir/lecturer/Eligibility'
 import LecturerHistoryPage from './pages/tugas-akhir/lecturer/History'
 import LecturerActivityPage from './pages/tugas-akhir/lecturer/Activity'
 import NotFoundPage from './pages/NotFound'
-import UserManagementPage from './pages/master-data/UserManagement'
-import AcademicYearPage from './pages/master-data/AcademicYear'
-import MahasiswaPage from './pages/master-data/Mahasiswa'
-import DosenPage from './pages/master-data/Dosen'
+import UserManagementPage from './pages/admin/master-data/UserManagement'
+import AcademicYearPage from './pages/admin/master-data/AcademicYear'
+import MahasiswaPage from './pages/admin/master-data/Mahasiswa'
+import DosenPage from './pages/admin/master-data/Dosen'
 
 function App() {
   return (
@@ -43,7 +43,7 @@ function App() {
             <Route element={<ProtectedLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profil" element={<Profil />} />
-              <Route path="/notifikasi" element={<Notifikasi />} />
+    
 
               {/* Placeholder routes for main + submenu entries */}
               {/* Kerja Praktek */}

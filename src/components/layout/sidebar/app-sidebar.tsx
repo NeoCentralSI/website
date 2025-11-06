@@ -1,8 +1,7 @@
 "use client"
 
-import {
-  Command,
-} from "lucide-react"
+
+
 import * as React from "react"
 
 import { NavMain } from "@/components/layout/sidebar/nav-main"
@@ -17,6 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import logoImage from "@/assets/images/logo.png"
 
 interface SidebarData {
   user: {
@@ -53,8 +53,8 @@ export const AppSidebar = React.memo(function AppSidebar({ data, ...props }: App
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a>
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Command className="size-4" />
+                <div className="bg-transparent text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <img src={logoImage} alt="Neo Central Logo" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Neo Central</span>

@@ -11,7 +11,7 @@ export default function GuidanceHistoryPage() {
     const page = sp.get('page');
     const limit = sp.get('limit');
     const params = new URLSearchParams();
-    params.set('status', 'completed');
+    params.set('status', 'accepted');
     if (q) params.set('q', q);
     if (supervisor) params.set('supervisor', supervisor);
     if (sort) params.set('sort', sort);

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useState, type ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, type ReactNode, useCallback } from 'react';
 import {
   getNotifications,
   getUnreadCount,
@@ -9,6 +9,7 @@ import {
   type NotificationItem,
 } from '@/services/notification.service';
 import { useAuth } from './useAuth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface NotificationContextType {
   notifications: NotificationItem[];
@@ -37,39 +38,54 @@ interface NotificationProviderProps {
 
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const { isLoggedIn } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Use React Query for unread count to leverage cache invalidation
+  const { data: unreadCountData } = useQuery({
+    queryKey: ['notification-unread'],
+    queryFn: async () => {
+      const response = await getUnreadCount();
+      return response.unreadCount;
+    },
+    enabled: isLoggedIn,
+    staleTime: 1000, // Consider stale after 1 second
+    refetchInterval: false, // No polling, rely on invalidation from FCM
+  });
+  
+  const unreadCount = unreadCountData ?? 0;
 
   const fetchUnreadCount = useCallback(async () => {
     if (!isLoggedIn) return;
     
-    try {
-  const response = await getUnreadCount();
-      setUnreadCount(response.unreadCount);
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  }, [isLoggedIn]);
+    // Just invalidate the query, let React Query handle refetching
+    queryClient.invalidateQueries({ queryKey: ['notification-unread'] });
+  }, [isLoggedIn, queryClient]);
 
   const fetchNotifications = useCallback(async (params?: { limit?: number; offset?: number; onlyUnread?: boolean }) => {
     if (!isLoggedIn) return;
 
     try {
       setIsLoading(true);
-  const response = await getNotifications(params);
+      const response = await getNotifications(params);
       setNotifications(response.notifications);
-      setUnreadCount(response.unreadCount);
+      // Also update unread count from response
+      queryClient.setQueryData(['notification-unread'], response.unreadCount);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, queryClient]);
 
   const markAsRead = useCallback(async (id: string) => {
     try {
-  await markNotificationRead(id);
+      // Check if notification is already read
+      const notification = notifications.find(n => n.id === id);
+      const wasUnread = notification && !notification.isRead;
+      
+      await markNotificationRead(id);
       
       // Update local state
       setNotifications(prev =>
@@ -78,50 +94,59 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
         )
       );
       
-      // Update unread count
-      await fetchUnreadCount();
+      // Decrement unread count if notification was unread
+      if (wasUnread) {
+        queryClient.setQueryData(['notification-unread'], (old: number | undefined) => Math.max(0, (old ?? 0) - 1));
+      }
     } catch (error) {
       console.error('Failed to mark as read:', error);
+      // Revert on error
+      await fetchUnreadCount();
       throw error;
     }
-  }, [fetchUnreadCount]);
+  }, [notifications, fetchUnreadCount, queryClient]);
 
   const markAllAsRead = useCallback(async () => {
     try {
-  await markAllNotificationsRead();
+      await markAllNotificationsRead();
       
       // Update local state
       setNotifications(prev =>
         prev.map(notif => ({ ...notif, isRead: true }))
       );
-      setUnreadCount(0);
+      queryClient.setQueryData(['notification-unread'], 0);
     } catch (error) {
       console.error('Failed to mark all as read:', error);
       throw error;
     }
-  }, []);
+  }, [queryClient]);
 
   const deleteNotification = useCallback(async (id: string) => {
     try {
-  await deleteNotificationAPI(id);
+      // Check if notification was unread before deleting
+      const notification = notifications.find(n => n.id === id);
+      const wasUnread = notification && !notification.isRead;
+      
+      await deleteNotificationAPI(id);
       
       // Update local state
       setNotifications(prev => prev.filter(notif => notif.id !== id));
       
-      // Update unread count
-      await fetchUnreadCount();
+      // Decrement unread count if deleted notification was unread
+      if (wasUnread) {
+        queryClient.setQueryData(['notification-unread'], (old: number | undefined) => Math.max(0, (old ?? 0) - 1));
+      }
     } catch (error) {
       console.error('Failed to delete notification:', error);
+      // Revert on error
+      await fetchUnreadCount();
       throw error;
     }
-  }, [fetchUnreadCount]);
+  }, [notifications, fetchUnreadCount, queryClient]);
 
-  // Fetch unread count on mount and when user logs in (no polling; updates via push)
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchUnreadCount();
-    }
-  }, [isLoggedIn, fetchUnreadCount]);
+  // NOTE: FCM listener is handled by useGuidanceRealtime hook in DashboardLayout
+  // to avoid duplicate listeners and ensure proper event routing based on notification type
+  // The query ['notification-unread'] will be invalidated by useGuidanceRealtime when FCM arrives
 
   const value: NotificationContextType = {
     notifications,

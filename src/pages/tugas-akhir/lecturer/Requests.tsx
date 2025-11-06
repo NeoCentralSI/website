@@ -2,20 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-// import { Input } from "@/components/ui/input";
 import type { GuidanceItem } from "@/services/lecturerGuidance.service";
 import { getPendingRequests } from "@/services/lecturerGuidance.service";
-// import { toast } from "sonner";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import { useQuery } from "@tanstack/react-query";
-import { EyeIcon, FileTextIcon } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { EyeIcon } from "lucide-react";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import DocumentPreviewDialog from "@/components/thesis/DocumentPreviewDialog";
+import GuidanceRequestDetailDialog from "@/components/thesis/GuidanceRequestDetailDialog";
 import StatusBadge from "@/components/thesis/StatusBadge";
 
 export default function LecturerRequestsPage() {
+  const qc = useQueryClient();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan" }, { label: "Permintaan" }], []);
   useEffect(() => {
@@ -32,14 +31,16 @@ export default function LecturerRequestsPage() {
     },
     placeholderData: (prev) => prev as any,
   });
-  // const [rejectOpen, setRejectOpen] = useState<string | null>(null);
-  // const [rejectMsg, setRejectMsg] = useState("");
+  
   const [q, setQ] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [studentFilter, setStudentFilter] = useState<string>("");
   const [docOpen, setDocOpen] = useState(false);
   const [docInfo, setDocInfo] = useState<{ fileName?: string | null; filePath?: string | null } | null>(null);
-  // page & pageSize state moved above
+  
+  // Detail dialog state
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedGuidance, setSelectedGuidance] = useState<GuidanceItem | null>(null);
 
   useEffect(() => {
     // ensure data loaded once
@@ -47,7 +48,15 @@ export default function LecturerRequestsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Actions approve/reject removed for this view to match requested minimalist table
+  const handleOpenDetail = (guidance: GuidanceItem) => {
+    setSelectedGuidance(guidance);
+    setDetailOpen(true);
+  };
+
+  const handleDetailUpdated = () => {
+    refetch();
+    qc.invalidateQueries({ queryKey: ["notification-unread"] });
+  };
 
   // Client-side filter + sort newest-first, then paginate via CustomTable controls
   const items = useMemo(() => {
@@ -107,22 +116,9 @@ export default function LecturerRequestsPage() {
     {
       key: "doc",
       header: "Dokumen",
-      render: (r) => {
+      accessor: (r) => {
         const fileName = (r as any)?.document?.fileName as string | undefined;
-        const filePath = (r as any)?.document?.filePath as string | undefined;
-        const isPdf = Boolean(filePath && filePath.toLowerCase().endsWith(".pdf"));
-        return (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            disabled={!isPdf}
-            onClick={() => { if (fileName && filePath) { setDocInfo({ fileName, filePath }); setDocOpen(true); } }}
-            title={isPdf ? `Lihat ${fileName || 'dokumen'}` : 'Tidak ada dokumen PDF'}
-          >
-            <FileTextIcon className="size-4" />
-          </Button>
-        );
+        return fileName || '-';
       },
     },
     {
@@ -135,9 +131,9 @@ export default function LecturerRequestsPage() {
         onChange: (v: string) => { setStatusFilter(v); setPage(1); },
         options: [
           { label: 'Semua', value: '' },
-          { label: 'Terjadwal', value: 'scheduled' },
-          { label: 'Selesai', value: 'completed' },
-          { label: 'Dibatalkan', value: 'cancelled' },
+          { label: 'Menunggu', value: 'requested' },
+          { label: 'Diterima', value: 'accepted' },
+          { label: 'Ditolak', value: 'rejected' },
         ],
       },
     },
@@ -145,25 +141,15 @@ export default function LecturerRequestsPage() {
       key: "action",
       header: "Aksi",
       render: (r) => (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" title="Detail">
-              <EyeIcon className="size-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Detail Permintaan</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2 text-sm">
-              <div><span className="text-muted-foreground">Mahasiswa:</span> {toTitleCaseName((r as any)?.studentName || (r as any)?.studentId || '-')}</div>
-              <div><span className="text-muted-foreground">Tanggal:</span> {(r as any)?.scheduledAtFormatted || (r as any)?.schedule?.guidanceDateFormatted || ((r as any)?.scheduledAt ? formatDateId((r as any).scheduledAt as string) : '-')}</div>
-              <div><span className="text-muted-foreground">Catatan:</span> {(r as any)?.notes || '-'}</div>
-              <div><span className="text-muted-foreground">Diminta:</span> {(r as any)?.requestedAtFormatted || ((r as any)?.requestedAt ? formatDateId((r as any).requestedAt as string) : '-')}</div>
-              { (r as any)?.meetingUrl ? (<div><span className="text-muted-foreground">Meeting URL:</span> {(r as any).meetingUrl}</div>) : null }
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-8 w-8" 
+          title="Detail"
+          onClick={() => handleOpenDetail(r)}
+        >
+          <EyeIcon className="size-4" />
+        </Button>
       ),
     },
   ];
@@ -199,6 +185,17 @@ export default function LecturerRequestsPage() {
         onOpenChange={setDocOpen}
         fileName={docInfo?.fileName || undefined}
         filePath={docInfo?.filePath || undefined}
+      />
+
+      <GuidanceRequestDetailDialog
+        guidance={selectedGuidance}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onUpdated={handleDetailUpdated}
+        onViewDocument={(fileName, filePath) => {
+          setDocInfo({ fileName, filePath });
+          setDocOpen(true);
+        }}
       />
     </div>
   );

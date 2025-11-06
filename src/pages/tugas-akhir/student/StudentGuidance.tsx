@@ -81,6 +81,24 @@ export default function StudentGuidancePage() {
   }, [status, q, supervisorFilter, page, pageSize]);
 
   // derive filtered/sorted/paged data on client
+  // Check if there's any pending request
+  const hasPendingRequest = useMemo(() => {
+    return items.some((item) => item.status === 'requested');
+  }, [items]);
+
+  const pendingRequestInfo = useMemo(() => {
+    const pending = items.find((item) => item.status === 'requested');
+    if (!pending) return null;
+    const dateStr = pending.schedule?.guidanceDateFormatted || pending.scheduledAtFormatted || 
+      (pending.schedule?.guidanceDate ? new Date(pending.schedule.guidanceDate).toLocaleString() : 
+       (pending.scheduledAt ? new Date(pending.scheduledAt).toLocaleString() : 'belum ditentukan'));
+    return {
+      id: pending.id,
+      dateStr,
+      supervisorName: pending.supervisorName || 'Dosen',
+    };
+  }, [items]);
+
   const display = useMemo(() => {
     let arr = [...items];
     if (supervisorFilter) {
@@ -125,6 +143,37 @@ export default function StudentGuidancePage() {
           { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
         ]}
       />
+      
+      {hasPendingRequest && pendingRequestInfo && (
+        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-amber-900 mb-1">Pengajuan Menunggu Response</h4>
+              <p className="text-sm text-amber-800">
+                Anda memiliki pengajuan bimbingan yang belum direspon oleh <strong>{pendingRequestInfo.supervisorName}</strong> (jadwal: <strong>{pendingRequestInfo.dateStr}</strong>). 
+                Anda tidak dapat mengajukan bimbingan baru hingga pengajuan sebelumnya disetujui atau ditolak.
+              </p>
+              <Button
+                variant="link"
+                size="sm"
+                className="px-0 h-auto mt-2 text-amber-900 hover:text-amber-700"
+                onClick={() => {
+                  setActiveId(pendingRequestInfo.id);
+                  setOpenDetail(true);
+                }}
+              >
+                Lihat Detail Pengajuan →
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <CustomTable<GuidanceItem>
         columns={[
           {
@@ -181,9 +230,9 @@ export default function StudentGuidancePage() {
               onChange: (v: string) => { setStatus(v as GuidanceStatus | ""); setPage(1); },
               options: [
                 { label: 'Semua', value: '' },
-                { label: 'Terjadwal', value: 'scheduled' },
-                { label: 'Selesai', value: 'completed' },
-                { label: 'Dibatalkan', value: 'cancelled' },
+                { label: 'Menunggu', value: 'requested' },
+                { label: 'Diterima', value: 'accepted' },
+                { label: 'Ditolak', value: 'rejected' },
               ]
             }
           },
@@ -216,7 +265,16 @@ export default function StudentGuidancePage() {
   emptyText={q || supervisorFilter ? 'Tidak ditemukan' : 'Tidak ada data'}
         actions={(
           <>
-            <Button onClick={() => setOpenRequest(true)}>Ajukan Bimbingan</Button>
+            <Button 
+              onClick={() => setOpenRequest(true)}
+              disabled={hasPendingRequest}
+              title={hasPendingRequest 
+                ? `Anda masih memiliki pengajuan yang belum direspon (${pendingRequestInfo?.dateStr}). Tunggu hingga dosen menyetujui atau menolak pengajuan tersebut.`
+                : 'Ajukan bimbingan baru'
+              }
+            >
+              Ajukan Bimbingan
+            </Button>
           </>
         )}
       />
