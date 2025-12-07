@@ -2,45 +2,22 @@ import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { CalendarDashboard } from "@/components/layout/CalendarDashboard";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, TrendingUp, CheckCircle2, Clock } from "lucide-react";
 import type { CalendarEvent } from "@/types/calendar.types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
-import { getEventStatisticsAPI, getUpcomingEventsAPI } from "@/services/calendar.service";
-import { useRole } from "@/hooks/useRole";
 
 export default function Dashboard() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [createEventOpen, setCreateEventOpen] = useState(false);
-  const { getRoleNames } = useRole();
-  const primaryRole = getRoleNames()[0] || 'student';
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Dashboard" }]);
     setTitle(undefined);
   }, [setBreadcrumbs, setTitle]);
-
-  // Get event statistics
-  const { data: stats } = useQuery({
-    queryKey: ['event-statistics'],
-    queryFn: getEventStatisticsAPI,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Get upcoming events
-  const { data: upcomingData } = useQuery({
-    queryKey: ['upcoming-events'],
-    queryFn: () => getUpcomingEventsAPI(7),
-    staleTime: 2 * 60 * 1000,
-  });
-
-  const upcomingEvents = upcomingData?.events || [];
 
   const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event);
@@ -76,115 +53,11 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Event Hari Ini</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.todayEvents || 0}</div>
-            <p className="text-xs text-muted-foreground">Event yang dijadwalkan</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Event Mendatang</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.upcomingEvents || 0}</div>
-            <p className="text-xs text-muted-foreground">7 hari ke depan</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Selesai Bulan Ini</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.completedThisMonth || 0}</div>
-            <p className="text-xs text-muted-foreground">Event yang diselesaikan</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {primaryRole === 'lecturer' ? 'Perlu Tindakan' : 'Event Tertunda'}
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.pendingActions || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {primaryRole === 'lecturer' ? 'Permintaan bimbingan' : 'Menunggu konfirmasi'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content: Calendar and Upcoming Events */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Calendar - Takes 2 columns */}
-        <div className="lg:col-span-2">
-          <CalendarDashboard
-            onEventClick={handleEventClick}
-            onCreateEvent={handleCreateEvent}
-          />
-        </div>
-
-        {/* Upcoming Events Sidebar */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Event Mendatang</CardTitle>
-              <CardDescription>7 hari ke depan</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {upcomingEvents.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  Tidak ada event mendatang
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {upcomingEvents.slice(0, 5).map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex flex-col gap-2 p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                      onClick={() => setSelectedEvent(event)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm line-clamp-1">{event.title}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(event.startDate), 'EEEE, dd MMM yyyy', { locale: idLocale })}
-                          </div>
-                        </div>
-                        <Badge variant={getStatusBadge(event.status)} className="text-xs">
-                          {format(new Date(event.startDate), 'HH:mm')}
-                        </Badge>
-                      </div>
-                      <Badge variant="outline" className="text-xs w-fit">
-                        {getEventTypeLabel(event.type)}
-                      </Badge>
-                    </div>
-                  ))}
-                  
-                  {upcomingEvents.length > 5 && (
-                    <div className="text-center text-sm text-muted-foreground pt-2">
-                      +{upcomingEvents.length - 5} event lainnya
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* Calendar Only */}
+      <CalendarDashboard
+        onEventClick={handleEventClick}
+        onCreateEvent={handleCreateEvent}
+      />
 
       {/* Event Detail Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>

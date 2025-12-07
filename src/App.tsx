@@ -11,15 +11,10 @@ import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import BimbinganEntry from './pages/tugas-akhir/BimbinganEntry'
 import StudentGuidancePage from './pages/tugas-akhir/student/StudentGuidance'
-import StudentProgressPage from './pages/tugas-akhir/student/Progress'
 import GuidanceHistoryPage from './pages/tugas-akhir/student/History'
-import ActivityLogPage from './pages/tugas-akhir/student/Activity'
 import SupervisorsPage from './pages/tugas-akhir/student/Supervisors'
 import LecturerRequestsPage from './pages/tugas-akhir/lecturer/Requests'
-import LecturerProgressPage from './pages/tugas-akhir/lecturer/Progress'
-import LecturerProgressDetailPage from './pages/tugas-akhir/lecturer/ProgressDetail'
 import LecturerMyStudentsPage from './pages/tugas-akhir/lecturer/MyStudents'
-import LecturerEligibilityPage from './pages/tugas-akhir/lecturer/Eligibility'
 import LecturerHistoryPage from './pages/tugas-akhir/lecturer/History'
 import LecturerActivityPage from './pages/tugas-akhir/lecturer/Activity'
 import NotFoundPage from './pages/NotFound'
@@ -83,18 +78,13 @@ function App() {
               <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
               {/* Student - Tugas Akhir - Bimbingan */}
               <Route path="/tugas-akhir/bimbingan/student" element={<StudentGuidancePage />} />
-              <Route path="/tugas-akhir/bimbingan/progress" element={<StudentProgressPage />} />
               <Route path="/tugas-akhir/bimbingan/history" element={<GuidanceHistoryPage />} />
-              <Route path="/tugas-akhir/bimbingan/activity" element={<ActivityLogPage />} />
               <Route path="/tugas-akhir/bimbingan/supervisors" element={<SupervisorsPage />} />
               {/* Guidance detail page removed; use dialog instead */}
 
               {/* Lecturer - Tugas Akhir - Bimbingan */}
               <Route path="/tugas-akhir/bimbingan/lecturer/requests" element={<LecturerRequestsPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
-              <Route path="/tugas-akhir/bimbingan/lecturer/progress" element={<LecturerProgressPage />} />
-              <Route path="/tugas-akhir/bimbingan/lecturer/progress/:studentId" element={<LecturerProgressDetailPage />} />
-              <Route path="/tugas-akhir/bimbingan/lecturer/eligibility" element={<LecturerEligibilityPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/history/:studentId" element={<LecturerHistoryPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/activity/:studentId" element={<LecturerActivityPage />} />
             </Route>

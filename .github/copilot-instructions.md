@@ -472,6 +472,36 @@ import { cn } from '@/lib/utils';
 <div style={{ color: 'red' }}> // ❌
 ```
 
+#### Text Formatting Utilities:
+**WAJIB** gunakan text utilities dari `@/lib/text` untuk formatting text:
+
+```tsx
+import { toTitleCaseName, formatRoleName, formatDateId } from '@/lib/text';
+
+// ✅ Format nama (dari KAPITAL ke Title Case)
+<div>{toTitleCaseName(user.fullName)}</div>  // "JOHN DOE" → "John Doe"
+
+// ✅ Format role name (pembimbing1 → Pembimbing 1)
+<div>{formatRoleName(role)}</div>  // "pembimbing1" → "Pembimbing 1"
+
+// ✅ Format tanggal Indonesia
+<div>{formatDateId(data.createdAt)}</div>  // "Senin, 07/12/2025, 15:30"
+
+// ❌ JANGAN tampilkan nama/role langsung tanpa format
+<div>{user.fullName}</div>  // ❌ Akan tampil "JOHN DOE"
+<div>{role}</div>  // ❌ Akan tampil "pembimbing1"
+```
+
+**Available Text Utilities:**
+- `toTitleCaseName(name)` - Convert nama dari UPPERCASE/lowercase ke Title Case
+- `formatRoleName(role)` - Format role name ke readable format (pembimbing1 → Pembimbing 1)
+- `formatDateId(date)` - Format tanggal dalam bahasa Indonesia dengan timezone Jakarta
+
+**Kapan Menggunakan:**
+- **SEMUA nama** (fullName, studentName, lecturerName, dll) → gunakan `toTitleCaseName()`
+- **SEMUA role/peran** (pembimbing1, penguji1, dll) → gunakan `formatRoleName()`
+- **SEMUA tanggal/waktu** (createdAt, updatedAt, scheduledAt, dll) → gunakan `formatDateId()`
+
 #### Shadcn UI Components:
 Project ini menggunakan **Shadcn UI** untuk base components. Berikut cara penggunaannya:
 

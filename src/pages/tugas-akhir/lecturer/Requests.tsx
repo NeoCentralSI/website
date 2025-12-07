@@ -156,16 +156,12 @@ export default function LecturerRequestsPage() {
 
   return (
     <div className="p-4">
-      <TabsNav
-        tabs={[
-          { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
-          { label: 'Progres', to: '/tugas-akhir/bimbingan/lecturer/progress' },
-          { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
-          { label: 'Eligibility', to: '/tugas-akhir/bimbingan/lecturer/eligibility' },
-        ]}
-      />
-
-      <CustomTable<GuidanceItem>
+        <TabsNav
+          tabs={[
+            { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
+            { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
+          ]}
+        />      <CustomTable<GuidanceItem>
         columns={columns}
         data={items}
         loading={isLoading}

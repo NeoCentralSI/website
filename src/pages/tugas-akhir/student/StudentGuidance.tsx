@@ -138,8 +138,6 @@ export default function StudentGuidancePage() {
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Progres', to: '/tugas-akhir/bimbingan/progress' },
-          { label: 'Aktivitas', to: '/tugas-akhir/bimbingan/activity' },
           { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
         ]}
       />
