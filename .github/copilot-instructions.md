@@ -753,3 +753,21 @@ import './styles.css';
 6. **Clean Code = Readable** - Self-documenting, consistent
 
 **Remember: Write code that your future self will thank you for! 🚀**
+
+## DILARANG: Membuat File Summary/Changelog
+
+❌ **JANGAN PERNAH** membuat file markdown untuk summary setelah implementasi selesai, seperti:
+- `IMPLEMENTATION.md`
+- `CHANGES.md`
+- `SUMMARY.md`
+- `CHANGELOG.md`
+- `COMPONENT_GUIDE.md`
+- atau file dokumentasi perubahan lainnya
+
+✅ **YANG BENAR:**
+- Langsung implementasi code
+- Components sudah self-documented dengan TypeScript
+- Berikan penjelasan singkat di chat jika diperlukan
+- Code dengan proper types dan naming adalah satu-satunya output yang diperlukan
+
+**Prinsip:** Clean code is self-documenting. TypeScript types dan component structure sudah cukup jelas.
