@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveAuthTokens } from '@/services/auth.service';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,7 +9,6 @@ export default function MicrosoftCallback() {
   
   const navigate = useNavigate();
   const { setUserDirectly } = useAuth();
-  const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     console.log('🔵 [MicrosoftCallback] useEffect RUNNING');
@@ -60,9 +59,6 @@ export default function MicrosoftCallback() {
         // Final delay before redirect
         console.log('⏳ Finalizing...');
         await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Mark as done
-        setIsProcessing(false);
 
         // Redirect to dashboard dengan hard redirect
         console.log('🚀 Redirecting to dashboard...');
