@@ -14,6 +14,8 @@ export const API_CONFIG = {
       FORGOT_PASSWORD: '/auth/reset/request',
       RESET_PASSWORD: '/auth/reset/confirm',
       ACTIVATE_ACCOUNT: '/auth/verify/request',
+      MICROSOFT_LOGIN: '/auth/microsoft/login',
+      MICROSOFT_CALLBACK: '/auth/microsoft/callback',
     },
     USER: {
       PROFILE: '/user/profile',

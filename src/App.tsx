@@ -5,7 +5,7 @@ import { Toaster } from './components/ui/sonner'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Profil from './pages/profil/Profil'
-
+import MicrosoftCallback from './pages/auth/MicrosoftCallback'
 import ResetPassword from './pages/ResetPassword'
 import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
@@ -32,6 +32,7 @@ function App() {
             {/* Public routes */}
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected layout routes - sidebar persists */}

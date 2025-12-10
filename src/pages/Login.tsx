@@ -9,6 +9,7 @@ import { activateAccountAPI, forgotPasswordAPI, getRememberedEmail, saveRemember
 import { toast } from 'sonner';
 import { Carousel, CarouselContent, CarouselItem } from '../components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
+import { MicrosoftLoginButton } from '../components/auth/MicrosoftLoginButton';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -41,11 +42,12 @@ const Login = () => {
     const verified = urlParams.get('verified');
     const reset = urlParams.get('reset');
     const message = urlParams.get('message');
+    const oauthError = urlParams.get('error');
 
     if (verified && message) {
       if (verified === 'success') {
         toast.success('Aktivasi Berhasil!', {
-          description: decodeURIComponent(message),
+          description: 'Akun Anda sudah aktif. Silakan login dengan Microsoft.',
           duration: 5000,
         });
       } else if (verified === 'error') {
@@ -66,6 +68,17 @@ const Login = () => {
           duration: 5000,
         });
       }
+
+      // Clear query params dari URL
+      window.history.replaceState({}, document.title, '/login');
+    }
+
+    // Handle Microsoft OAuth errors
+    if (oauthError) {
+      toast.error('Login Microsoft Gagal', {
+        description: decodeURIComponent(oauthError),
+        duration: 5000,
+      });
 
       // Clear query params dari URL
       window.history.replaceState({}, document.title, '/login');
@@ -133,13 +146,13 @@ const Login = () => {
         });
       } else if (result.code === 'ALREADY_VERIFIED') {
         toast.info('Akun sudah aktif', {
-          description: result.message || 'Akun Anda sudah terverifikasi. Silakan login.',
+          description: 'Akun Anda sudah aktif. Silakan login dengan Microsoft.',
         });
         setEmail('');
         setIsActivateAccount(false);
       } else {
         toast.success('Email aktivasi terkirim!', {
-          description: 'Link aktivasi dan password sementara telah dikirim ke email Anda. Silakan cek inbox atau folder spam.',
+          description: 'Link aktivasi telah dikirim. Setelah aktivasi, login dengan Microsoft.',
         });
         setEmail('');
         setIsActivateAccount(false);
@@ -237,8 +250,8 @@ const Login = () => {
               {isForgotPassword 
                 ? 'Masukkan email Anda untuk menerima link reset password'
                 : isActivateAccount
-                ? 'Masukkan email Anda untuk menerima link aktivasi dan password sementara'
-                : 'Masukkan email Anda di bawah untuk login ke akun Anda'}
+                ? 'Masukkan email untuk aktivasi akun'
+                : 'Login menggunakan akun Microsoft Anda'}
             </p>
           </div>
 
@@ -320,6 +333,23 @@ const Login = () => {
                 ? (isSendingEmail ? 'Mengirim...' : 'Kirim Link Aktivasi')
                 : (isLoading ? 'Memproses...' : 'Login')}
             </Button>
+
+            {!isForgotPassword && !isActivateAccount && (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Atau lanjutkan dengan
+                    </span>
+                  </div>
+                </div>
+
+                <MicrosoftLoginButton disabled={isLoading} />
+              </>
+            )}
           </form>
 
           {!isForgotPassword && !isActivateAccount && (

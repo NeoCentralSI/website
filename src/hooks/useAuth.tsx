@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  setUserDirectly: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,34 +31,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check authentication on mount
+  // Check authentication on mount ONLY (not when user changes)
   useEffect(() => {
+    console.log('🔄 [useAuth] Initial mount - checking auth...');
+    
     let isMounted = true;
     let isChecking = false;
 
     const checkAuth = async () => {
       // Prevent multiple simultaneous checks
       if (isChecking) {
+        console.log('⏭️  [useAuth] Already checking, skipping...');
         return;
       }
 
       isChecking = true;
+      console.log('🚀 [useAuth] Starting checkAuth...');
 
       try {
         const { accessToken } = getAuthTokens();
+        console.log('🔑 [useAuth] Access token:', accessToken ? 'EXISTS' : 'MISSING');
+        
         if (accessToken) {
+          console.log('📡 [useAuth] Fetching user profile...');
           const userData = await getUserProfileAPI();
+          console.log('✅ [useAuth] User profile fetched:', userData.fullName);
           
           // Only update state if component is still mounted
           if (isMounted) {
             setUser(userData);
           }
         } else {
+          console.log('⚠️  [useAuth] No token, setting user to null');
           if (isMounted) {
             setUser(null);
           }
         }
       } catch (error) {
+        console.error('❌ [useAuth] Error in checkAuth:', error);
         // Only clear tokens and update state if component is still mounted
         // Don't clear tokens on network errors
         if (isMounted) {
@@ -65,6 +76,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           // Only clear tokens if it's an auth error, not network error
           if (errorMessage.includes('Session expired') || errorMessage.includes('Invalid')) {
+            console.log('🗑️  [useAuth] Clearing tokens due to auth error');
             clearAuthTokens();
           }
           
@@ -73,6 +85,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       } finally {
         isChecking = false;
         if (isMounted) {
+          console.log('✅ [useAuth] checkAuth completed, setting isLoading to false');
           setIsLoading(false);
         }
       }
@@ -82,9 +95,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // Cleanup function to prevent state updates after unmount
     return () => {
+      console.log('🧹 [useAuth] Cleanup - unmounting');
       isMounted = false;
     };
-  }, []);
+  }, []); // EMPTY DEPENDENCY - only run on mount!
 
   const login = async (email: string, password: string) => {
     try {
@@ -139,13 +153,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const setUserDirectly = (userData: User) => {
+    console.log('👤 [useAuth] setUserDirectly called with user:', userData.fullName);
+    setUser(userData);
+    setIsLoading(false);
+    console.log('✅ [useAuth] User set, isLoading set to false');
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
     isLoggedIn: !!user,
     login,
     logout,
-    refreshUser
+    refreshUser,
+    setUserDirectly
   };
 
   return (

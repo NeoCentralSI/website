@@ -69,18 +69,29 @@ export const loginAPI = async (credentials: LoginRequest): Promise<LoginResponse
 };
 
 export const saveAuthTokens = (accessToken: string, refreshToken: string) => {
+  console.log('💾 [saveAuthTokens] Saving tokens to localStorage and cookies');
+  
   // Access token tetap di localStorage (lebih mudah untuk API calls)
   localStorage.setItem('accessToken', accessToken);
   
   // Refresh token disimpan di cookies (lebih aman, httpOnly bisa ditambahkan di backend)
   setCookie('refreshToken', refreshToken, 7); // 7 hari
+  
+  console.log('✅ [saveAuthTokens] Tokens saved');
 };
 
 export const getAuthTokens = () => {
-  return {
+  const tokens = {
     accessToken: localStorage.getItem('accessToken'),
     refreshToken: getCookie('refreshToken')
   };
+  
+  console.log('🔑 [getAuthTokens] Retrieved tokens:', {
+    hasAccessToken: !!tokens.accessToken,
+    hasRefreshToken: !!tokens.refreshToken
+  });
+  
+  return tokens;
 };
 
 // Function untuk logout API
@@ -121,6 +132,63 @@ export const saveRememberedEmail = (email: string) => {
 
 export const getRememberedEmail = (): string | null => {
   return getCookie('rememberedEmail');
+};
+
+// Microsoft OAuth Functions
+export interface MicrosoftAuthUrlResponse {
+  success: boolean;
+  authUrl: string;
+}
+
+export const getMicrosoftAuthUrlAPI = async (): Promise<string> => {
+  try {
+    const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.MICROSOFT_LOGIN), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Gagal mendapatkan URL login Microsoft');
+    }
+
+    const data: MicrosoftAuthUrlResponse = await response.json();
+    return data.authUrl;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Terjadi kesalahan saat menghubungi server');
+  }
+};
+
+export const handleMicrosoftCallbackAPI = async (code: string): Promise<LoginResponse> => {
+  try {
+    const response = await fetch(
+      `${getApiUrl(API_CONFIG.ENDPOINTS.AUTH.MICROSOFT_CALLBACK)}?code=${encodeURIComponent(code)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Login dengan Microsoft gagal');
+    }
+
+    const data: LoginResponse = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Terjadi kesalahan saat memproses login Microsoft');
+  }
 };
 
 export const clearAuthTokens = () => {

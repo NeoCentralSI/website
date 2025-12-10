@@ -10,8 +10,13 @@ export type LayoutContext = {
 };
 
 export default function ProtectedLayout() {
+  console.log('🛡️  [ProtectedLayout] Component rendering');
+  
   const location = useLocation();
   const { isLoading, isLoggedIn } = useAuth();
+  
+  console.log('🔐 [ProtectedLayout] Auth state:', { isLoading, isLoggedIn, path: location.pathname });
+  
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[] | undefined>([
     { label: "Dashboard" },
   ]);
@@ -19,6 +24,7 @@ export default function ProtectedLayout() {
 
   // Reset breadcrumbs and title on route change so pages must explicitly set them.
   useEffect(() => {
+    console.log('🗺️  [ProtectedLayout] Route changed:', location.pathname);
     // Keep dashboard default only at root dashboard; otherwise clear and let pages set.
     if (location.pathname === "/" || location.pathname === "/dashboard") {
       setBreadcrumbs([{ label: "Dashboard" }]);
@@ -31,9 +37,11 @@ export default function ProtectedLayout() {
 
   // Redirect to login if not authenticated after loading completes
   if (!isLoading && !isLoggedIn) {
+    console.log('🚫 [ProtectedLayout] Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
+  console.log('✅ [ProtectedLayout] Rendering dashboard layout');
   return (
     <DashboardLayout breadcrumbs={breadcrumbs} title={title}>
       <Outlet context={{ setBreadcrumbs, setTitle }} />

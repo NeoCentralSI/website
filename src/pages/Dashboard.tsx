@@ -10,11 +10,14 @@ import { id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
+  console.log('🎯 [Dashboard] Component rendering');
+  
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [createEventOpen, setCreateEventOpen] = useState(false);
 
   useEffect(() => {
+    console.log('📋 [Dashboard] Setting breadcrumbs and title');
     setBreadcrumbs([{ label: "Dashboard" }]);
     setTitle(undefined);
   }, [setBreadcrumbs, setTitle]);
