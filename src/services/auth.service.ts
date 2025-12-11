@@ -1,6 +1,6 @@
-import { API_CONFIG, getApiUrl } from '../config/api';
+import { API_CONFIG, getApiUrl } from '@/config/api';
 import { logApi } from '@/utils/logger';
-import { clearAllAuthCookies, getCookie, setCookie } from '../utils/cookies';
+import { clearAllAuthCookies, getCookie, setCookie } from '@/utils/cookies';
 
 export interface LoginRequest {
   email: string;

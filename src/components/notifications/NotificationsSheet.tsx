@@ -1,4 +1,4 @@
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications } from "@/hooks/shared";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Check } from "lucide-react";

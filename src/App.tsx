@@ -1,6 +1,5 @@
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
-import { AuthProvider } from './hooks/useAuth'
-import { NotificationProvider } from './hooks/useNotifications'
+import { AuthProvider, NotificationProvider } from '@/hooks/shared'
 import { Toaster } from './components/ui/sonner'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'

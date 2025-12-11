@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useAuth } from '../../hooks/useAuth';
-import { getLecturersAPI, type Lecturer } from '../../services/admin.service';
-import CustomTable, { type Column } from '../../components/layout/CustomTable';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
+import { useAuth } from '@/hooks/shared';
+import { getLecturersAPI, type Lecturer } from '@/services/admin.service';
+import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Eye } from 'lucide-react';
-import { toTitleCaseName } from '../../lib/text';
+import { toTitleCaseName } from '@/lib/text';
 import { useQuery } from '@tanstack/react-query';
 
 export default function Dosen() {

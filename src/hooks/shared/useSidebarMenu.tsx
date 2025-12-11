@@ -5,8 +5,8 @@ import {
   SquareTerminal
 } from "lucide-react";
 import { useMemo } from "react";
-import { useRole } from './useRole';
-import { useAuth } from './useAuth';
+import { useRole } from '@/hooks/shared';
+import { useAuth } from '@/hooks/shared';
 
 export const useSidebarMenu = () => {
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1 } = useRole();

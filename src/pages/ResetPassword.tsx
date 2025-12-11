@@ -1,11 +1,11 @@
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { resetPasswordAPI } from '../services/auth.service';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { resetPasswordAPI } from '@/services/auth.service';
 import { toast } from 'sonner';
 
 const ResetPassword = () => {

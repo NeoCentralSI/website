@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNotifications } from '../hooks/useNotifications';
-import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
+import { useNotifications } from '@/hooks/shared';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Bell, Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';

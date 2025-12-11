@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import NotificationsSheetContent from "@/components/notifications/NotificationsSheet";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications } from "@/hooks/shared";
 
 type Props = {
   className?: string;

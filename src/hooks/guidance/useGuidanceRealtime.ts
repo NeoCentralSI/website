@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { acquireFcmToken, getFirebaseMessaging, onMessage } from "@/config/firebase";
 import { registerFcmToken, unregisterFcmToken } from "@/services/notification.service";
-import { useAuth } from "./useAuth";
+import { useAuth } from "@/hooks/shared";
 
 type PushEventType =
   | "thesis-guidance:requested"

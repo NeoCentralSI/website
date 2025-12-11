@@ -1,4 +1,4 @@
-import { API_CONFIG, getApiUrl } from "../config/api";
+import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
 // Types (align with backend contracts as needed)

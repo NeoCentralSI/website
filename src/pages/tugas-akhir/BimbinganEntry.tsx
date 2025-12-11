@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRole } from "@/hooks/useRole";
+import { useRole } from "@/hooks/shared";
 
 export default function BimbinganEntry() {
   const navigate = useNavigate();

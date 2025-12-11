@@ -1,4 +1,4 @@
-import { API_CONFIG, getApiUrl } from "../config/api";
+import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
 export type GuidanceStatus = "requested" | "accepted" | "rejected";

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveAuthTokens } from '@/services/auth.service';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/shared';
 import { Loader2 } from 'lucide-react';
 
 export default function MicrosoftCallback() {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/shared";
 
 export type BreadcrumbItem = { label: string; href?: string };
 export type LayoutContext = {

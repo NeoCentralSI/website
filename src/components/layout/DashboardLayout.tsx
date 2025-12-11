@@ -17,10 +17,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useSidebarMenu } from "@/hooks/useSidebarMenu";
-import { useAuth } from "@/hooks/useAuth";
+import { useSidebarMenu, useAuth } from "@/hooks/shared";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { useGuidanceRealtime } from "@/hooks/useGuidanceRealtime";
+import { useGuidanceRealtime } from "@/hooks/guidance";
 
 interface DashboardLayoutProps {
   children: ReactNode;

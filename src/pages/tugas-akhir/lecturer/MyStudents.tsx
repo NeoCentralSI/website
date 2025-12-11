@@ -21,7 +21,7 @@ export default function LecturerMyStudentsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['lecturer-my-students'],
-    queryFn: getMyStudents,
+    queryFn: () => getMyStudents(),
   });
 
   // Filter data based on search query
@@ -30,10 +30,9 @@ export default function LecturerMyStudentsPage() {
     if (!searchQuery.trim()) return data.students;
     
     const query = searchQuery.toLowerCase();
-    return data.students.filter(student => 
+    return data.students.filter((student: MyStudentItem) => 
       toTitleCaseName(student.fullName).toLowerCase().includes(query) ||
-      student.email?.toLowerCase().includes(query) ||
-      student.identityNumber?.toLowerCase().includes(query)
+      student.email?.toLowerCase().includes(query)
     );
   }, [data?.students, searchQuery]);
 

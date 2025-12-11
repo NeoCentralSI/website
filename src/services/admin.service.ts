@@ -1,4 +1,4 @@
-import { getApiUrl } from '../config/api';
+import { getApiUrl } from '@/config/api';
 
 export interface User {
   id: string;

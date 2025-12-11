@@ -138,7 +138,7 @@ export default function GuidanceRequestDetailDialog({
             {/* Catatan Mahasiswa */}
             <div className="space-y-2">
               <Label>Catatan Mahasiswa</Label>
-              <div className="p-3 rounded-lg bg-muted/30 text-sm min-h-[80px]">
+              <div className="p-3 rounded-lg bg-muted/30 text-sm min-h-20">
                 {(guidance as any)?.notes || '-'}
               </div>
             </div>

@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback } from '../../components/ui/avatar';
-import { Button } from '../../components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,8 +7,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu';
-import { useAuth } from '../../hooks/useAuth';
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/hooks/shared';
 
 const Navbar = () => {
   const { user, logout } = useAuth();

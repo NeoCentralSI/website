@@ -1,4 +1,4 @@
-import { getApiUrl } from '../config/api';
+import { getApiUrl } from '@/config/api';
 import type { CalendarEvent, CalendarFilter, CalendarResponse } from '@/types/calendar.types';
 
 /**

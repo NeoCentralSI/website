@@ -12,7 +12,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { getMyCalendarEventsAPI } from '@/services/calendar.service';
 import type { CalendarEvent } from '@/types/calendar.types';
-import { useRole } from '@/hooks/useRole';
+import { useRole } from '@/hooks/shared';
 
 // FullCalendar imports
 import FullCalendar from '@fullcalendar/react';

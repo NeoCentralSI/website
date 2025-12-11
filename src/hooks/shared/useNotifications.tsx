@@ -8,7 +8,7 @@ import {
   deleteNotification as deleteNotificationAPI,
   type NotificationItem,
 } from '@/services/notification.service';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/hooks/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface NotificationContextType {

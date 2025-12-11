@@ -1,5 +1,5 @@
-import { type Role } from '../services/auth.service';
-import { useAuth } from './useAuth';
+import { type Role } from '@/services/auth.service';
+import { useAuth } from '@/hooks/shared';
 
 export const useRole = () => {
   const { user } = useAuth();
