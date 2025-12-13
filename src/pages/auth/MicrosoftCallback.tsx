@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { saveAuthTokens } from '@/services/auth.service';
 import { useAuth } from '@/hooks/shared';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function MicrosoftCallback() {
   console.log('🔵 [MicrosoftCallback] Component MOUNTED');
@@ -35,13 +36,17 @@ export default function MicrosoftCallback() {
         // Decode base64 tokens
         console.log('🔓 Decoding tokens...');
         const decodedString = atob(tokensString);
-        const { accessToken, refreshToken, user } = JSON.parse(decodedString);
+        const { accessToken, refreshToken, user, hasCalendarAccess } = JSON.parse(decodedString);
         
         console.log('✅ User:', user.fullName);
+        console.log('📅 Calendar Access:', hasCalendarAccess ? 'Yes' : 'No');
 
         // Save tokens
         console.log('💾 Saving tokens...');
         saveAuthTokens(accessToken, refreshToken);
+
+        // Save calendar access status
+        localStorage.setItem('hasCalendarAccess', JSON.stringify(hasCalendarAccess ?? false));
 
         // Delay untuk ensure tokens saved
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -59,6 +64,17 @@ export default function MicrosoftCallback() {
         // Final delay before redirect
         console.log('⏳ Finalizing...');
         await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Show calendar sync status notification
+        if (hasCalendarAccess) {
+          toast.success('Login berhasil! Outlook Calendar tersinkronisasi.', {
+            description: 'Jadwal bimbingan akan otomatis muncul di Outlook Calendar Anda.'
+          });
+        } else {
+          toast.info('Login berhasil!', {
+            description: 'Calendar sync tidak tersedia. Anda mungkin perlu login ulang dengan izin calendar.'
+          });
+        }
 
         // Redirect to dashboard dengan hard redirect
         console.log('🚀 Redirecting to dashboard...');

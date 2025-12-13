@@ -29,89 +29,48 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasChecked, setHasChecked] = useState(false);
   const navigate = useNavigate();
 
-  // Check authentication on mount ONLY (not when user changes)
+  // Check authentication on mount - ONLY ONCE
   useEffect(() => {
-    console.log('🔄 [useAuth] Initial mount - checking auth...');
+    if (hasChecked) return;
     
-    let isMounted = true;
-    let isChecking = false;
-
     const checkAuth = async () => {
-      // Prevent multiple simultaneous checks
-      if (isChecking) {
-        console.log('⏭️  [useAuth] Already checking, skipping...');
-        return;
-      }
-
-      isChecking = true;
-      console.log('🚀 [useAuth] Starting checkAuth...');
-
       try {
         const { accessToken } = getAuthTokens();
-        console.log('🔑 [useAuth] Access token:', accessToken ? 'EXISTS' : 'MISSING');
         
         if (accessToken) {
-          console.log('📡 [useAuth] Fetching user profile...');
           const userData = await getUserProfileAPI();
-          console.log('✅ [useAuth] User profile fetched:', userData.fullName);
-          
-          // Only update state if component is still mounted
-          if (isMounted) {
-            setUser(userData);
-          }
+          setUser(userData);
         } else {
-          console.log('⚠️  [useAuth] No token, setting user to null');
-          if (isMounted) {
-            setUser(null);
-          }
-        }
-      } catch (error) {
-        console.error('❌ [useAuth] Error in checkAuth:', error);
-        // Only clear tokens and update state if component is still mounted
-        // Don't clear tokens on network errors
-        if (isMounted) {
-          const errorMessage = error instanceof Error ? error.message : '';
-          
-          // Only clear tokens if it's an auth error, not network error
-          if (errorMessage.includes('Session expired') || errorMessage.includes('Invalid')) {
-            console.log('🗑️  [useAuth] Clearing tokens due to auth error');
-            clearAuthTokens();
-          }
-          
           setUser(null);
         }
-      } finally {
-        isChecking = false;
-        if (isMounted) {
-          console.log('✅ [useAuth] checkAuth completed, setting isLoading to false');
-          setIsLoading(false);
+      } catch (error) {
+        console.error('[useAuth] Error checking auth:', error);
+        const errorMessage = error instanceof Error ? error.message : '';
+        
+        if (errorMessage.includes('Session expired') || errorMessage.includes('Invalid')) {
+          clearAuthTokens();
         }
+        
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+        setHasChecked(true);
       }
     };
 
     checkAuth();
-
-    // Cleanup function to prevent state updates after unmount
-    return () => {
-      console.log('🧹 [useAuth] Cleanup - unmounting');
-      isMounted = false;
-    };
-  }, []); // EMPTY DEPENDENCY - only run on mount!
+  }, [hasChecked]);
 
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       const response = await loginAPI({ email, password });
       
-      // Simpan token ke localStorage
       saveAuthTokens(response.accessToken, response.refreshToken);
-      
-      // Set user data
       setUser(response.user);
-      
-      // Navigate ke dashboard
       navigate('/dashboard');
     } catch (error) {
       throw error;
@@ -122,17 +81,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async () => {
     try {
-      // Panggil logout API jika ada token
       if (getAuthTokens().accessToken) {
         await logoutAPI();
       }
     } catch (error) {
       console.error('Logout API error:', error);
-      // Meskipun API gagal, tetap clear local state
     } finally {
-      // Clear local state dan redirect
       clearAuthTokens();
       setUser(null);
+      setHasChecked(false);
       navigate('/login');
     }
   };
@@ -144,7 +101,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(userData);
     } catch (error) {
       console.error('Failed to refresh user data:', error);
-      // Jika gagal refresh, mungkin token expired, logout user
       clearAuthTokens();
       setUser(null);
       navigate('/login');
@@ -154,10 +110,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const setUserDirectly = (userData: User) => {
-    console.log('👤 [useAuth] setUserDirectly called with user:', userData.fullName);
     setUser(userData);
     setIsLoading(false);
-    console.log('✅ [useAuth] User set, isLoading set to false');
+    setHasChecked(true);
   };
 
   const value: AuthContextType = {

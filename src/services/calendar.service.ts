@@ -161,3 +161,67 @@ export const getEventStatisticsAPI = async (): Promise<{
 
   return response.json();
 };
+
+// ============ Outlook Calendar Integration ============
+
+// Check if user has Outlook calendar access
+export const checkOutlookCalendarAccess = async (): Promise<{
+  success: boolean;
+  hasCalendarAccess: boolean;
+  message: string;
+}> => {
+  const response = await fetch(getApiUrl('/outlook-calendar/status'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    return {
+      success: false,
+      hasCalendarAccess: false,
+      message: 'Gagal memeriksa status calendar',
+    };
+  }
+
+  return response.json();
+};
+
+// Get Outlook calendar events
+export const getOutlookCalendarEvents = async (
+  startDate: string,
+  endDate: string
+): Promise<{
+  success: boolean;
+  count: number;
+  events: Array<{
+    id: string;
+    subject: string;
+    start: string;
+    end: string;
+    location?: string;
+    webLink?: string;
+    isOnlineMeeting: boolean;
+    onlineMeetingUrl?: string;
+  }>;
+}> => {
+  const queryParams = new URLSearchParams({
+    startDate,
+    endDate,
+  });
+
+  const response = await fetch(getApiUrl(`/outlook-calendar/events?${queryParams}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat Outlook events');
+  }
+
+  return response.json();
+};

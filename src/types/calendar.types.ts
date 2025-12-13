@@ -24,7 +24,10 @@ export type EventType =
   // Common Events
   | 'meeting'
   | 'holiday'
-  | 'announcement';
+  | 'announcement'
+  
+  // External Calendar Events
+  | 'outlook_event';
 
 export type EventStatus = 'requested' | 'accepted' | 'rejected';
 

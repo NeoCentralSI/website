@@ -74,10 +74,8 @@ export interface ActivityLogItem {
 export interface SupervisorItem {
   id: string;
   name: string;
-  email?: string;
-  nidn?: string;
-  avatarUrl?: string;
-  [key: string]: unknown;
+  email: string;
+  role: string;
 }
 
 export interface GuidanceListResponse {
