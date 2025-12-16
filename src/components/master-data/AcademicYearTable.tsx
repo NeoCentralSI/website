@@ -134,6 +134,8 @@ export function AcademicYearTable({
           variant="ghost"
           size="sm"
           onClick={() => onEdit(row)}
+          disabled={!row.isActive}
+          title={!row.isActive ? 'Tahun ajaran tidak aktif tidak dapat diedit' : 'Edit tahun ajaran'}
         >
           <Pencil className="w-4 h-4" />
         </Button>
