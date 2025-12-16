@@ -160,30 +160,30 @@ export default function UserManagementPage() {
     }
   };
 
-  // Format role name for display
-  const formatRoleName = (roleName: string): string => {
+  // Format role name for display - use from lib/roles.ts
+  const formatRoleNameLocal = (roleName: string): string => {
     const roleMap: Record<string, string> = {
-      'admin': 'Admin',
-      'gkm': 'GKM',
-      'kadep': 'Kadep',
-      'pembimbing1': 'Pembimbing 1',
-      'pembimbing2': 'Pembimbing 2',
-      'student': 'Mahasiswa',
-      'sekdep': 'Sekdep',
-      'penguji': 'Penguji',
+      'Admin': 'Admin',
+      'GKM': 'GKM',
+      'Ketua Departemen': 'Kadep',
+      'Sekretaris Departemen': 'Sekdep',
+      'Pembimbing 1': 'Pembimbing 1',
+      'Pembimbing 2': 'Pembimbing 2',
+      'Mahasiswa': 'Mahasiswa',
+      'Penguji': 'Penguji',
     };
     return roleMap[roleName] || roleName;
   };
 
   const roleOptions = [
-    { value: 'admin', label: 'Admin' },
-    { value: 'gkm', label: 'GKM' },
-    { value: 'kadep', label: 'Kadep' },
-    { value: 'pembimbing1', label: 'Pembimbing 1' },
-    { value: 'pembimbing2', label: 'Pembimbing 2' },
-    { value: 'student', label: 'Mahasiswa' },
-    { value: 'sekdep', label: 'Sekdep' },
-    { value: 'penguji', label: 'Penguji' },
+    { value: 'Admin', label: 'Admin' },
+    { value: 'GKM', label: 'GKM' },
+    { value: 'Ketua Departemen', label: 'Ketua Departemen' },
+    { value: 'Sekretaris Departemen', label: 'Sekretaris Departemen' },
+    { value: 'Pembimbing 1', label: 'Pembimbing 1' },
+    { value: 'Pembimbing 2', label: 'Pembimbing 2' },
+    { value: 'Mahasiswa', label: 'Mahasiswa' },
+    { value: 'Penguji', label: 'Penguji' },
   ];
 
   const columns = [

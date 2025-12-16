@@ -1,5 +1,6 @@
 import { type Role } from '@/services/auth.service';
 import { useAuth } from '@/hooks/shared';
+import { ROLES, SUPERVISOR_ROLES, LECTURER_ROLES, STAFF_ROLES } from '@/lib/roles';
 
 export const useRole = () => {
   const { user } = useAuth();
@@ -43,57 +44,57 @@ export const useRole = () => {
 
   // Helper function untuk mengecek apakah user adalah admin
   const isAdmin = (): boolean => {
-    return hasRole('admin');
+    return hasRole(ROLES.ADMIN);
   };
 
-  // Helper function untuk mengecek apakah user adalah student
+  // Helper function untuk mengecek apakah user adalah student (Mahasiswa)
   const isStudent = (): boolean => {
-    return hasRole('student');
+    return hasRole(ROLES.MAHASISWA);
   };
 
-  // Helper function untuk mengecek apakah user adalah kadep (Kepala Departemen)
+  // Helper function untuk mengecek apakah user adalah kadep (Ketua Departemen)
   const isKadep = (): boolean => {
-    return hasRole('kadep');
+    return hasRole(ROLES.KETUA_DEPARTEMEN);
   };
 
   // Helper function untuk mengecek apakah user adalah sekdep (Sekretaris Departemen)
   const isSekdep = (): boolean => {
-    return hasRole('sekdep');
+    return hasRole(ROLES.SEKRETARIS_DEPARTEMEN);
   };
 
   // Helper function untuk mengecek apakah user adalah pembimbing1
   const isPembimbing1 = (): boolean => {
-    return hasRole('pembimbing1');
+    return hasRole(ROLES.PEMBIMBING_1);
   };
 
   // Helper function untuk mengecek apakah user adalah pembimbing2
   const isPembimbing2 = (): boolean => {
-    return hasRole('pembimbing2');
+    return hasRole(ROLES.PEMBIMBING_2);
   };
 
   // Helper function untuk mengecek apakah user adalah penguji
   const isPenguji = (): boolean => {
-    return hasRole('penguji');
+    return hasRole(ROLES.PENGUJI);
   };
 
-  // Helper function untuk mengecek apakah user adalah gkm (GKM - mungkin Guru Khusus Mahasiswa)
+  // Helper function untuk mengecek apakah user adalah gkm
   const isGkm = (): boolean => {
-    return hasRole('gkm');
+    return hasRole(ROLES.GKM);
   };
 
   // Helper function untuk mengecek apakah user adalah pembimbing (pembimbing1 atau pembimbing2)
   const isPembimbing = (): boolean => {
-    return hasAnyRole(['pembimbing1', 'pembimbing2']);
+    return hasAnyRole([...SUPERVISOR_ROLES]);
   };
 
   // Helper function untuk mengecek apakah user adalah staff akademik (kadep, sekdep, admin)
   const isStaffAkademik = (): boolean => {
-    return hasAnyRole(['kadep', 'sekdep', 'admin']);
+    return hasAnyRole([...STAFF_ROLES]);
   };
 
-  // Helper function untuk mengecek apakah user adalah dosen (pembimbing atau penguji)
+  // Helper function untuk mengecek apakah user adalah dosen
   const isDosen = (): boolean => {
-    return hasAnyRole(['pembimbing1', 'pembimbing2', 'penguji', 'kadep', 'sekdep']);
+    return hasAnyRole([...LECTURER_ROLES]);
   };
 
   return {

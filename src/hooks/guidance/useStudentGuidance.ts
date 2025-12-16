@@ -60,12 +60,12 @@ export const useStudentGuidance = () => {
     const pending = items.find((item) => item.status === 'requested');
     if (!pending) return null;
     const dateStr =
-      pending.schedule?.guidanceDateFormatted ||
-      pending.scheduledAtFormatted ||
-      (pending.schedule?.guidanceDate
-        ? new Date(pending.schedule.guidanceDate).toLocaleString()
-        : pending.scheduledAt
-        ? new Date(pending.scheduledAt).toLocaleString()
+      pending.approvedDateFormatted ||
+      pending.requestedDateFormatted ||
+      (pending.approvedDate
+        ? new Date(pending.approvedDate).toLocaleString()
+        : pending.requestedDate
+        ? new Date(pending.requestedDate).toLocaleString()
         : 'belum ditentukan');
     return {
       id: pending.id,
@@ -88,27 +88,27 @@ export const useStudentGuidance = () => {
         const sup = (it.supervisorName || it.supervisorId || '').toString().toLowerCase();
         const statusText = it.status.toString().toLowerCase();
         const when = (
-          it.schedule?.guidanceDateFormatted ||
-          it.scheduledAtFormatted ||
-          (it.schedule?.guidanceDate
-            ? new Date(it.schedule.guidanceDate).toLocaleString()
-            : it.scheduledAt
-            ? new Date(it.scheduledAt).toLocaleString()
+          it.approvedDateFormatted ||
+          it.requestedDateFormatted ||
+          (it.approvedDate
+            ? new Date(it.approvedDate).toLocaleString()
+            : it.requestedDate
+            ? new Date(it.requestedDate).toLocaleString()
             : '')
         ).toLowerCase();
         return sup.includes(needle) || statusText.includes(needle) || when.includes(needle);
       });
     }
     arr.sort((a, b) => {
-      const at = a.schedule?.guidanceDate
-        ? new Date(a.schedule.guidanceDate).getTime()
-        : a.scheduledAt
-        ? new Date(a.scheduledAt).getTime()
+      const at = a.approvedDate
+        ? new Date(a.approvedDate).getTime()
+        : a.requestedDate
+        ? new Date(a.requestedDate).getTime()
         : 0;
-      const bt = b.schedule?.guidanceDate
-        ? new Date(b.schedule.guidanceDate).getTime()
-        : b.scheduledAt
-        ? new Date(b.scheduledAt).getTime()
+      const bt = b.approvedDate
+        ? new Date(b.approvedDate).getTime()
+        : b.requestedDate
+        ? new Date(b.requestedDate).getTime()
         : 0;
       return bt - at;
     });

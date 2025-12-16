@@ -38,7 +38,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
       const data = await getStudentGuidanceDetail(guidanceId);
       setGuidance(data.guidance);
       setNotes(data.guidance.notes ?? "");
-      const iso = data.guidance.schedule?.guidanceDate || data.guidance.scheduledAt || "";
+      const iso = data.guidance.approvedDate || data.guidance.requestedDate || "";
       setRescheduleDate(iso ? new Date(iso) : null);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memuat detail");
@@ -60,13 +60,13 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
       await updateStudentGuidanceNotes(guidanceId, { studentNotes: notes });
       
       // If reschedule date changed, update it
-      const originalDate = guidance?.schedule?.guidanceDate || guidance?.scheduledAt;
+      const originalDate = guidance?.approvedDate || guidance?.requestedDate;
       const hasDateChanged = rescheduleDate && originalDate && 
         new Date(rescheduleDate).getTime() !== new Date(originalDate).getTime();
       
       if (hasDateChanged && rescheduleDate) {
         await rescheduleStudentGuidance(guidanceId, { 
-          guidanceDate: rescheduleDate.toISOString(),
+          requestedDate: rescheduleDate.toISOString(),
         });
         toast.success("Bimbingan berhasil diperbarui", { id: "guidance-updated" });
       } else {
@@ -115,7 +115,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Terjadwal</div>
-                <div className="font-medium text-sm">{guidance.schedule?.guidanceDateFormatted || guidance.scheduledAtFormatted || (guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-')}</div>
+                <div className="font-medium text-sm">{guidance.approvedDateFormatted || guidance.requestedDateFormatted || (guidance.requestedDate ? new Date(guidance.requestedDate).toLocaleString() : '-')}</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Lokasi</div>

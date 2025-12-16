@@ -48,9 +48,9 @@ export const useLecturerRequests = () => {
       arr = arr.filter((it) => {
         const name = toTitleCaseName(it.studentName || it.studentId || '').toLowerCase();
         const when = (
-          (it as any)?.scheduledAtFormatted ||
-          (it as any)?.schedule?.guidanceDateFormatted ||
-          (it.scheduledAt ? formatDateId(it.scheduledAt) : '')
+          (it as any)?.requestedDateFormatted ||
+          (it as any)?.approvedDateFormatted ||
+          (it.requestedDate ? formatDateId(it.requestedDate) : '')
         ).toLowerCase();
         const notes = String((it as any)?.notes ?? '').toLowerCase();
         return name.includes(needle) || when.includes(needle) || notes.includes(needle);
@@ -58,15 +58,15 @@ export const useLecturerRequests = () => {
     }
     
     arr.sort((a, b) => {
-      const at = a.scheduledAt
-        ? new Date(a.scheduledAt).getTime()
-        : (a as any)?.schedule?.guidanceDate
-        ? new Date((a as any).schedule.guidanceDate).getTime()
+      const at = a.requestedDate
+        ? new Date(a.requestedDate).getTime()
+        : a.approvedDate
+        ? new Date(a.approvedDate).getTime()
         : 0;
-      const bt = b.scheduledAt
-        ? new Date(b.scheduledAt).getTime()
-        : (b as any)?.schedule?.guidanceDate
-        ? new Date((b as any).schedule.guidanceDate).getTime()
+      const bt = b.requestedDate
+        ? new Date(b.requestedDate).getTime()
+        : b.approvedDate
+        ? new Date(b.approvedDate).getTime()
         : 0;
       return bt - at;
     });

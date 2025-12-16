@@ -1,27 +1,35 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
-export type GuidanceStatus = "requested" | "accepted" | "rejected";
+export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled";
+export type GuidanceType = "online" | "offline";
 
 export interface GuidanceItem {
   id: string;
   thesisId?: string;
   supervisorId?: string;
   supervisorName?: string;
+  studentId?: string;
+  studentName?: string;
   status: GuidanceStatus;
-  scheduledAt?: string; // ISO datetime
-  scheduledAtFormatted?: string; // WIB formatted (from backend)
-  schedule?: {
-    id: string;
-    guidanceDate: string;
-    guidanceDateFormatted?: string;
-  } | null;
+  // New schema: requestedDate and approvedDate instead of schedule
+  requestedDate?: string; // ISO datetime - tanggal diminta mahasiswa
+  requestedDateFormatted?: string; // WIB formatted
+  approvedDate?: string; // ISO datetime - tanggal disetujui dosen
+  approvedDateFormatted?: string; // WIB formatted
+  // Guidance details
+  type?: GuidanceType; // online/offline
+  duration?: number; // durasi dalam menit
   location?: string;
+  meetingUrl?: string;
   notes?: string;
+  supervisorFeedback?: string;
+  rejectionReason?: string;
+  completedAt?: string;
   document?: {
-    id: string;
+    id?: string;
     fileName: string;
-    filePath: string; // relative path served at /uploads
+    filePath: string;
   } | null;
   createdAt?: string;
   updatedAt?: string;
@@ -34,12 +42,18 @@ export interface StudentRequestGuidanceBody {
   file: File; // thesis file to upload
   meetingUrl?: string;
   supervisorId?: string;
+  type?: GuidanceType; // online/offline
+  duration?: number; // durasi dalam menit
+  location?: string;
   [key: string]: unknown;
 }
 
 export interface StudentRescheduleGuidanceBody {
   guidanceDate: string; // ISO datetime
   studentNotes?: string; // optional reason/notes
+  type?: GuidanceType;
+  duration?: number;
+  location?: string;
   [key: string]: unknown;
 }
 
@@ -52,8 +66,13 @@ export interface ProgressDetailItem {
   componentId: string;
   name: string;
   description?: string;
+  orderIndex?: number;
+  isMandatory?: boolean;
   completedAt?: string | null; // ISO
   validatedBySupervisor?: boolean;
+  validatedAt?: string | null; // ISO
+  notes?: string | null; // catatan dari supervisor
+  evidenceUrl?: string | null; // link bukti/dokumen
   [key: string]: unknown;
 }
 
@@ -62,12 +81,17 @@ export interface StudentCompleteComponentsBody {
   completedAt?: string; // ISO
 }
 
+export type ActivityType = "guidance" | "submission" | "revision" | "approval" | "milestone" | "notification" | "other";
+
 export interface ActivityLogItem {
   id: string;
-  action: string;
-  actor?: string;
-  timestamp: string; // ISO
-  details?: Record<string, unknown>;
+  thesisId?: string;
+  userId?: string;
+  activityType?: ActivityType;
+  activity: string; // deskripsi singkat
+  notes?: string | null;
+  metadata?: Record<string, unknown>;
+  createdAt: string; // ISO
   [key: string]: unknown;
 }
 

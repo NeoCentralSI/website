@@ -5,19 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface GuidanceRescheduleDialogProps {
-  onReschedule: (data: { guidanceDate: string; studentNotes: string }) => Promise<boolean>;
+  onReschedule: (data: { requestedDate: string; studentNotes: string }) => Promise<boolean>;
   trigger?: React.ReactNode;
 }
 
 export function GuidanceRescheduleDialog({ onReschedule, trigger }: GuidanceRescheduleDialogProps) {
   const [open, setOpen] = useState(false);
-  const [data, setData] = useState({ guidanceDate: '', studentNotes: '' });
+  const [data, setData] = useState({ requestedDate: '', studentNotes: '' });
 
   const handleSubmit = async () => {
     const success = await onReschedule(data);
     if (success) {
       setOpen(false);
-      setData({ guidanceDate: '', studentNotes: '' });
+      setData({ requestedDate: '', studentNotes: '' });
     }
   };
 
@@ -35,8 +35,8 @@ export function GuidanceRescheduleDialog({ onReschedule, trigger }: GuidanceResc
             <Label>Waktu Baru</Label>
             <Input
               type="datetime-local"
-              value={data.guidanceDate}
-              onChange={(e) => setData((s) => ({ ...s, guidanceDate: e.target.value }))}
+              value={data.requestedDate}
+              onChange={(e) => setData((s) => ({ ...s, requestedDate: e.target.value }))}
             />
           </div>
           <div className="grid gap-2">

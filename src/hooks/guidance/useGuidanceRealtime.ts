@@ -90,7 +90,7 @@ export function useGuidanceRealtime() {
             switch (type) {
               case "thesis-guidance:requested": {
                 if (role === "supervisor") {
-                  const when = payload?.data?.scheduledAtFormatted || payload?.data?.scheduledAt || "";
+                  const when = payload?.data?.requestedDateFormatted || payload?.data?.requestedDate || "";
                   const msg = when ? `Permintaan bimbingan baru • ${when}` : "Permintaan bimbingan baru";
                   toast(msg, { id: "guidance-requested" });
                   if (payload?.data?.playSound === "true") {
@@ -105,7 +105,7 @@ export function useGuidanceRealtime() {
                 break;
               }
               case "thesis-guidance:rescheduled": {
-                const when = payload?.data?.scheduledAtFormatted || payload?.data?.scheduledAt || "";
+                const when = payload?.data?.requestedDateFormatted || payload?.data?.requestedDate || "";
                 const msg = when ? `Jadwal bimbingan diperbarui • ${when}` : "Jadwal bimbingan diperbarui";
                 toast(msg, { id: "guidance-rescheduled" });
                 qc.invalidateQueries({ queryKey: ["student-guidance"] });
@@ -192,7 +192,7 @@ export function useGuidanceRealtime() {
               switch (type) {
                 case 'thesis-guidance:requested': {
                   if (role === 'supervisor') {
-                    const when = msg?.data?.scheduledAtFormatted || msg?.data?.scheduledAt || '';
+                    const when = msg?.data?.requestedDateFormatted || msg?.data?.requestedDate || '';
                     const t = when ? `Permintaan bimbingan baru • ${when}` : 'Permintaan bimbingan baru';
                     toast(t, { id: 'guidance-requested' });
                     if (msg?.data?.playSound === 'true') {
@@ -206,7 +206,7 @@ export function useGuidanceRealtime() {
                   break;
                 }
                 case 'thesis-guidance:rescheduled': {
-                  const when = msg?.data?.scheduledAtFormatted || msg?.data?.scheduledAt || '';
+                  const when = msg?.data?.requestedDateFormatted || msg?.data?.requestedDate || '';
                   const t = when ? `Jadwal bimbingan diperbarui • ${when}` : 'Jadwal bimbingan diperbarui';
                   toast(t, { id: 'guidance-rescheduled' });
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });

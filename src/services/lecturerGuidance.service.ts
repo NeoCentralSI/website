@@ -2,32 +2,68 @@ import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
 // Types (align with backend contracts as needed)
+export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled";
+export type GuidanceType = "online" | "offline";
+
 export interface MyStudentItem {
   studentId: string;
   fullName: string;
   email?: string;
+  identityNumber?: string;
   thesisId?: string;
-  roles?: string[]; // e.g., ["SUPERVISOR_1"]
+  thesisTitle?: string;
+  roles?: string[]; // e.g., ["pembimbing1"]
 }
 
 export interface GuidanceItem {
   id: string;
-  studentId: string;
+  studentId?: string;
   studentName?: string;
+  supervisorId?: string;
+  supervisorName?: string;
   thesisId?: string;
-  status: string;
-  requestedAt?: string;
-  scheduledAt?: string;
+  status: GuidanceStatus;
+  // New schema fields
+  requestedDate?: string;
+  requestedDateFormatted?: string;
+  approvedDate?: string;
+  approvedDateFormatted?: string;
+  type?: GuidanceType;
+  duration?: number;
+  location?: string;
+  meetingUrl?: string;
+  notes?: string;
+  supervisorFeedback?: string;
+  rejectionReason?: string;
+  completedAt?: string;
+  document?: {
+    fileName: string;
+    filePath: string;
+  } | null;
   createdAt?: string;
   updatedAt?: string;
+  requestedAt?: string; // alias for createdAt
   [key: string]: unknown;
 }
 
 export interface ActivityLogItem {
   id: string;
-  action: string;
-  timestamp: string;
-  details?: Record<string, unknown>;
+  thesisId?: string;
+  userId?: string;
+  activityType?: string;
+  activity: string;
+  notes?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface ApproveGuidanceBody {
+  feedback?: string;
+  meetingUrl?: string;
+  approvedDate?: string;
+  type?: GuidanceType;
+  duration?: number;
+  location?: string;
 }
 
 // API calls

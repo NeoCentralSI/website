@@ -132,11 +132,11 @@ export function UserFormDialog({
                   {roleOptions
                     .filter(role => {
                       // Filter admin jika edit mode
-                      if (editingUser && role.value === 'admin') return false;
+                      if (editingUser && role.value === 'Admin') return false;
                       // Filter student jika identity type adalah NIP
-                      if (formData.identityType === 'NIP' && role.value === 'student') return false;
+                      if (formData.identityType === 'NIP' && role.value === 'Mahasiswa') return false;
                       // Only show student if identity type is NIM
-                      if (formData.identityType === 'NIM' && role.value !== 'student') return false;
+                      if (formData.identityType === 'NIM' && role.value !== 'Mahasiswa') return false;
                       return true;
                     })
                     .map((role) => (

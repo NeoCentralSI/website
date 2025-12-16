@@ -34,8 +34,8 @@ export function useStudentGuidanceDetail(guidanceId: string | undefined) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guidanceId]);
 
-  const reschedule = async (data: { guidanceDate: string; studentNotes: string }) => {
-    if (!guidanceId || !data.guidanceDate) {
+  const reschedule = async (data: { requestedDate: string; studentNotes: string }) => {
+    if (!guidanceId || !data.requestedDate) {
       toast.error('Pilih waktu baru');
       return false;
     }

@@ -48,9 +48,9 @@ export default function GuidanceDetailPage() {
               <div>
                 <div className="text-sm text-muted-foreground">Terjadwal</div>
                 <div className="font-medium">
-                  {guidance.schedule?.guidanceDateFormatted ||
-                    guidance.scheduledAtFormatted ||
-                    (guidance.scheduledAt ? new Date(guidance.scheduledAt).toLocaleString() : '-')}
+                  {guidance.approvedDateFormatted ||
+                    guidance.requestedDateFormatted ||
+                    (guidance.requestedDate ? new Date(guidance.requestedDate).toLocaleString() : '-')}
                 </div>
               </div>
               <div>

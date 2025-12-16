@@ -26,9 +26,9 @@ export const getLecturerRequestColumns = (
       key: 'tanggal',
       header: 'Tanggal',
       accessor: (r) =>
-        (r as any)?.scheduledAtFormatted ||
-        (r as any)?.schedule?.guidanceDateFormatted ||
-        (r.scheduledAt ? formatDateId(r.scheduledAt) : '-'),
+        r.requestedDateFormatted ||
+        r.approvedDateFormatted ||
+        (r.requestedDate ? formatDateId(r.requestedDate) : '-'),
     },
     {
       key: 'student',

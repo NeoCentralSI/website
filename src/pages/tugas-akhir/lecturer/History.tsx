@@ -54,7 +54,7 @@ export default function LecturerHistoryPage() {
               )}
               {items.map((g) => (
                 <TableRow key={g.id}>
-                  <TableCell>{g.scheduledAt ? new Date(g.scheduledAt).toLocaleString() : '-'}</TableCell>
+                  <TableCell>{g.approvedDate ? new Date(g.approvedDate).toLocaleString() : (g.requestedDate ? new Date(g.requestedDate).toLocaleString() : '-')}</TableCell>
                   <TableCell className="capitalize">{g.status}</TableCell>
                 </TableRow>
               ))}

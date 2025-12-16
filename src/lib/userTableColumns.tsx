@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pencil, CheckCircle2, XCircle } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
-import { formatRoleName } from '@/lib/roles';
+import { formatRoleName, ROLES } from '@/lib/roles';
 import type { User } from '@/services/admin.service';
 
 interface GetUserTableColumnsOptions {
@@ -85,14 +85,14 @@ export const getUserTableColumns = (options: GetUserTableColumnsOptions) => {
         onChange: setRoleFilter,
         options: [
           { label: 'Semua', value: '' },
-          { label: 'Admin', value: 'admin' },
-          { label: 'GKM', value: 'gkm' },
-          { label: 'Kadep', value: 'kadep' },
-          { label: 'Pembimbing 1', value: 'pembimbing1' },
-          { label: 'Pembimbing 2', value: 'pembimbing2' },
-          { label: 'Mahasiswa', value: 'student' },
-          { label: 'Sekdep', value: 'sekdep' },
-          { label: 'Penguji', value: 'penguji' },
+          { label: 'Admin', value: ROLES.ADMIN },
+          { label: 'GKM', value: ROLES.GKM },
+          { label: 'Ketua Departemen', value: ROLES.KETUA_DEPARTEMEN },
+          { label: 'Sekretaris Departemen', value: ROLES.SEKRETARIS_DEPARTEMEN },
+          { label: 'Pembimbing 1', value: ROLES.PEMBIMBING_1 },
+          { label: 'Pembimbing 2', value: ROLES.PEMBIMBING_2 },
+          { label: 'Mahasiswa', value: ROLES.MAHASISWA },
+          { label: 'Penguji', value: ROLES.PENGUJI },
         ],
       },
     },

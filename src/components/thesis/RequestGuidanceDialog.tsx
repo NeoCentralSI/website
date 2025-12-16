@@ -33,7 +33,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
       // ensure the date is not behind server tolerance; bump to minDate if needed
       const selected = when.getTime() < minDate.getTime() ? minDate : when;
       return requestStudentGuidance({
-        guidanceDate: selected.toISOString(),
+        requestedDate: selected.toISOString(),
         studentNotes: note || undefined,
         file: file,
         meetingUrl: meetingUrl || undefined,
@@ -41,7 +41,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
       });
     },
     onSuccess: (res) => {
-      const whenFmt = res?.guidance?.schedule?.guidanceDateFormatted || res?.guidance?.scheduledAtFormatted;
+      const whenFmt = res?.guidance?.requestedDateFormatted || res?.guidance?.approvedDateFormatted;
       const msg = whenFmt ? `Pengajuan bimbingan terkirim • ${whenFmt}` : "Pengajuan bimbingan terkirim";
       toast.success(msg, { id: "guidance-requested" });
       onOpenChange(false);

@@ -33,7 +33,7 @@ export default function Dosen() {
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   useEffect(() => {
-    if (!user?.roles.some((r) => r.name === 'admin')) {
+    if (!user?.roles.some((r) => r.name === 'Admin')) {
       navigate('/dashboard');
     }
   }, [user, navigate]);

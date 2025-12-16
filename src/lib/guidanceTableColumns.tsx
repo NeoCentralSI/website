@@ -52,12 +52,12 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       key: 'time',
       header: 'Waktu',
       accessor: (r) =>
-        r.schedule?.guidanceDateFormatted ||
-        r.scheduledAtFormatted ||
-        (r.schedule?.guidanceDate
-          ? new Date(r.schedule.guidanceDate).toLocaleString()
-          : r.scheduledAt
-          ? new Date(r.scheduledAt).toLocaleString()
+        r.approvedDateFormatted ||
+        r.requestedDateFormatted ||
+        (r.approvedDate
+          ? new Date(r.approvedDate).toLocaleString()
+          : r.requestedDate
+          ? new Date(r.requestedDate).toLocaleString()
           : '-'),
     },
     {

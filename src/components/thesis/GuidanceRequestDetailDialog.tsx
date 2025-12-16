@@ -121,16 +121,16 @@ export default function GuidanceRequestDetailDialog({
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Jadwal Diminta</div>
                 <div className="font-medium text-sm">
-                  {(guidance as any)?.scheduledAtFormatted || 
-                   (guidance as any)?.schedule?.guidanceDateFormatted || 
-                   (guidance.scheduledAt ? formatDateId(guidance.scheduledAt) : '-')}
+                  {(guidance as any)?.requestedDateFormatted || 
+                   (guidance as any)?.approvedDateFormatted || 
+                   (guidance.requestedDate ? formatDateId(guidance.requestedDate) : '-')}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Tanggal Pengajuan</div>
                 <div className="font-medium text-sm">
-                  {(guidance as any)?.requestedAtFormatted || 
-                   ((guidance as any)?.requestedAt ? formatDateId((guidance as any).requestedAt as string) : '-')}
+                  {(guidance as any)?.createdAtFormatted || 
+                   ((guidance as any)?.createdAt ? formatDateId((guidance as any).createdAt as string) : '-')}
                 </div>
               </div>
             </div>
