@@ -1,6 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clearAuthTokens, getAuthTokens, getUserProfileAPI, loginAPI, logoutAPI, saveAuthTokens, type User } from '@/services/auth.service';
+import { unregisterFcmToken } from '@/services/notification.service';
+
+// Key untuk menyimpan FCM token di localStorage
+const FCM_TOKEN_KEY = 'fcm_token';
 
 interface AuthContextType {
   user: User | null;
@@ -81,6 +85,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async () => {
     try {
+      // Unregister FCM token first, before logout invalidates the auth token
+      const fcmToken = localStorage.getItem(FCM_TOKEN_KEY);
+      if (fcmToken && getAuthTokens().accessToken) {
+        try {
+          await unregisterFcmToken(fcmToken);
+          localStorage.removeItem(FCM_TOKEN_KEY);
+        } catch (fcmError) {
+          console.error('FCM unregister error (ignored):', fcmError);
+        }
+      }
+      
+      // Now call logout API
       if (getAuthTokens().accessToken) {
         await logoutAPI();
       }
@@ -88,6 +104,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('Logout API error:', error);
     } finally {
       clearAuthTokens();
+      localStorage.removeItem(FCM_TOKEN_KEY);
       setUser(null);
       setHasChecked(false);
       navigate('/login');

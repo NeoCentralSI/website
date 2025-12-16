@@ -1,9 +1,9 @@
 import {
   ChevronsUpDown,
   LogOut,
+  Settings2,
   User,
 } from "lucide-react"
-import { useState } from "react"
 
 import {
   Avatar,
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/hooks/shared"
 import { useNavigate } from "react-router-dom"
+import { useUIStore } from "@/stores/ui.store"
 
 export function NavUser({
   user,
@@ -41,7 +42,7 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const { logout } = useAuth()
   const navigate = useNavigate()
-  const [isOpen, setIsOpen] = useState(false)
+  const setSidebarSettingsOpen = useUIStore((s) => s.setSidebarSettingsOpen)
 
   const handleLogout = async () => {
     await logout()
@@ -51,12 +52,14 @@ export function NavUser({
     navigate('/profil')
   }
 
- 
+  const handleSettingsClick = () => {
+    setSidebarSettingsOpen(true)
+  }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu onOpenChange={setIsOpen}>
+        <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
@@ -98,6 +101,10 @@ export function NavUser({
               <DropdownMenuItem onClick={handleProfileClick}>
                 <User />
                 Profil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSettingsClick}>
+                <Settings2 />
+                Pengaturan Menu
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

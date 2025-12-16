@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { SidebarSkeleton } from "@/components/layout/sidebar/sidebar-skeleton";
+import { ActiveAcademicYearBadge } from "@/components/layout/ActiveAcademicYearBadge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -95,7 +96,8 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
               <h1 className="text-lg font-semibold">{title}</h1>
             ) : null}
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
+            <ActiveAcademicYearBadge />
             <NotificationBell />
           </div>
         </header>

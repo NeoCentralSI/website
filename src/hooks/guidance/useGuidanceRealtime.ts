@@ -2,8 +2,12 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { acquireFcmToken, getFirebaseMessaging, onMessage } from "@/config/firebase";
-import { registerFcmToken, unregisterFcmToken } from "@/services/notification.service";
+import { registerFcmToken } from "@/services/notification.service";
 import { useAuth } from "@/hooks/shared";
+import { getAuthTokens } from "@/services/auth.service";
+
+// Key untuk menyimpan FCM token di localStorage (shared dengan useAuth)
+const FCM_TOKEN_KEY = 'fcm_token';
 
 type PushEventType =
   | "thesis-guidance:requested"
@@ -67,6 +71,8 @@ export function useGuidanceRealtime() {
           return;
         }
         tokenRef.current = token;
+        // Store token in localStorage so useAuth can unregister it on logout
+        localStorage.setItem(FCM_TOKEN_KEY, token);
         console.log("[FCM] acquired token", token.length > 12 ? `${token.slice(0, 6)}...${token.slice(-6)}` : token);
         await registerFcmToken(token);
         console.log("[FCM] token registered with backend");
@@ -280,7 +286,6 @@ export function useGuidanceRealtime() {
 
     return () => {
       if (unsubscribe) unsubscribe();
-      const tok = tokenRef.current;
       tokenRef.current = null;
       try {
         if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
@@ -292,9 +297,8 @@ export function useGuidanceRealtime() {
       }
       document.removeEventListener("click", unlock as any);
       document.removeEventListener("keydown", unlock as any);
-      if (tok) {
-        unregisterFcmToken(tok).catch(() => {});
-      }
+      // Note: FCM token unregistration is handled by useAuth.logout()
+      // to ensure it's called before auth token is invalidated
     };
   }, [qc, isLoggedIn]);
 }

@@ -9,6 +9,7 @@ import CustomTable from '@/components/layout/CustomTable';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
 import { createUserAPI, updateUserAPI, importStudentsCsvAPI, getUsersAPI } from '@/services/admin.service';
 import { toTitleCaseName } from '@/lib/text';
+import { formatRoleName, ROLES } from '@/lib/roles';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserFormDialog, ImportStudentDialog } from '@/components/master-data';
 
@@ -160,30 +161,16 @@ export default function UserManagementPage() {
     }
   };
 
-  // Format role name for display - use from lib/roles.ts
-  const formatRoleNameLocal = (roleName: string): string => {
-    const roleMap: Record<string, string> = {
-      'Admin': 'Admin',
-      'GKM': 'GKM',
-      'Ketua Departemen': 'Kadep',
-      'Sekretaris Departemen': 'Sekdep',
-      'Pembimbing 1': 'Pembimbing 1',
-      'Pembimbing 2': 'Pembimbing 2',
-      'Mahasiswa': 'Mahasiswa',
-      'Penguji': 'Penguji',
-    };
-    return roleMap[roleName] || roleName;
-  };
-
+  // Role options for form - using ROLES constants from lib/roles.ts
   const roleOptions = [
-    { value: 'Admin', label: 'Admin' },
-    { value: 'GKM', label: 'GKM' },
-    { value: 'Ketua Departemen', label: 'Ketua Departemen' },
-    { value: 'Sekretaris Departemen', label: 'Sekretaris Departemen' },
-    { value: 'Pembimbing 1', label: 'Pembimbing 1' },
-    { value: 'Pembimbing 2', label: 'Pembimbing 2' },
-    { value: 'Mahasiswa', label: 'Mahasiswa' },
-    { value: 'Penguji', label: 'Penguji' },
+    { value: ROLES.ADMIN, label: 'Admin' },
+    { value: ROLES.GKM, label: 'GKM' },
+    { value: ROLES.KETUA_DEPARTEMEN, label: 'Ketua Departemen' },
+    { value: ROLES.SEKRETARIS_DEPARTEMEN, label: 'Sekretaris Departemen' },
+    { value: ROLES.PEMBIMBING_1, label: 'Pembimbing 1' },
+    { value: ROLES.PEMBIMBING_2, label: 'Pembimbing 2' },
+    { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
+    { value: ROLES.PENGUJI, label: 'Penguji' },
   ];
 
   const columns = [
@@ -245,14 +232,14 @@ export default function UserManagementPage() {
         onChange: setRoleFilter,
         options: [
           { label: 'Semua', value: '' },
-          { label: 'Admin', value: 'admin' },
-          { label: 'GKM', value: 'gkm' },
-          { label: 'Kadep', value: 'kadep' },
-          { label: 'Pembimbing 1', value: 'pembimbing1' },
-          { label: 'Pembimbing 2', value: 'pembimbing2' },
-          { label: 'Mahasiswa', value: 'student' },
-          { label: 'Sekdep', value: 'sekdep' },
-          { label: 'Penguji', value: 'penguji' },
+          { label: 'Admin', value: ROLES.ADMIN },
+          { label: 'GKM', value: ROLES.GKM },
+          { label: 'Ketua Departemen', value: ROLES.KETUA_DEPARTEMEN },
+          { label: 'Sekretaris Departemen', value: ROLES.SEKRETARIS_DEPARTEMEN },
+          { label: 'Pembimbing 1', value: ROLES.PEMBIMBING_1 },
+          { label: 'Pembimbing 2', value: ROLES.PEMBIMBING_2 },
+          { label: 'Mahasiswa', value: ROLES.MAHASISWA },
+          { label: 'Penguji', value: ROLES.PENGUJI },
         ],
       },
     },

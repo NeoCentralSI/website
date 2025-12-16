@@ -22,6 +22,7 @@ export interface AcademicYear {
   year: number;
   startDate?: string;
   endDate?: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +56,7 @@ export interface UpdateAcademicYearRequest {
   year?: number;
   startDate?: string;
   endDate?: string;
+  isActive?: boolean;
 }
 
 // Import students from CSV
@@ -183,6 +185,25 @@ export const getAcademicYearsAPI = async (params?: {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Gagal memuat tahun ajaran');
+  }
+
+  return response.json();
+};
+
+// Get active academic year
+export const getActiveAcademicYearAPI = async (): Promise<{
+  academicYear: AcademicYear | null;
+}> => {
+  const response = await fetch(getApiUrl('/adminfeatures/academic-years/active'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat tahun ajaran aktif');
   }
 
   return response.json();

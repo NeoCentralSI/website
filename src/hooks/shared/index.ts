@@ -3,3 +3,4 @@ export { useRole } from './useRole';
 export { useSidebarMenu } from './useSidebarMenu';
 export { useNotifications, NotificationProvider } from './useNotifications';
 export { useFirstVisitDelay } from './useFirstVisitDelay';
+export { useActiveAcademicYear } from './useActiveAcademicYear';
