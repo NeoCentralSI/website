@@ -1,61 +1,65 @@
-import Autoplay from 'embla-carousel-autoplay';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from '@/components/ui/carousel';
-import { useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import logo from '@/assets/images/neocentral-logo.png';
 
 const carouselImages = [
   {
-    url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&auto=format&fit=crop',
-    alt: 'Students learning',
+    url: 'https://images.unsplash.com/photo-1531498860502-7c67cf02f657?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080',
+    alt: 'Software development coding',
   },
   {
-    url: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=800&auto=format&fit=crop',
-    alt: 'Education technology',
+    url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080',
+    alt: 'Students collaboration',
   },
   {
-    url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&auto=format&fit=crop',
-    alt: 'Collaboration',
+    url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080',
+    alt: 'University learning',
   },
 ];
 
 export function LoginCarousel() {
-  const plugin = useRef(
-    Autoplay({ delay: 3000, stopOnInteraction: true })
-  );
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % carouselImages.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="relative hidden bg-muted lg:block">
-      <Carousel
-        plugins={[plugin.current]}
-        className="h-screen"
-        onMouseEnter={plugin.current.stop}
-        onMouseLeave={plugin.current.reset}
-      >
-        <CarouselContent>
-          {carouselImages.map((image, index) => (
-            <CarouselItem key={index}>
-              <div className="h-screen relative">
-                <img
-                  src={image.url}
-                  alt={image.alt}
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-      </Carousel>
+    <div className="relative hidden bg-[#FFF8F0] lg:block h-screen overflow-hidden">
+      {/* Background Images with Fade Transition */}
+      {carouselImages.map((image, index) => (
+        <div
+          key={index}
+          className={`absolute inset-0 transition-opacity duration-1000 ${
+            index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <img
+            src={image.url}
+            alt={image.alt}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-linear-to-t from-[#F7931E]/80 via-[#F7931E]/30 to-transparent" />
+        </div>
+      ))}
+
+      {/* Logo & Branding - Clickable to Landing */}
+      <Link to="/" className="absolute top-8 left-8 z-10 hover:opacity-80 transition-opacity">
+        <img src={logo} alt="NeoCentral Logo" className="h-16 w-auto" />
+      </Link>
 
       <div className="absolute bottom-0 left-0 right-0 p-10 text-white z-10">
-        <blockquote className="space-y-2">
-          <p className="text-lg">
+        <blockquote className="space-y-3">
+          <p className="text-xl font-medium leading-relaxed">
             "Sistem informasi tugas akhir yang memudahkan mahasiswa dan dosen dalam mengelola proses bimbingan."
           </p>
-          <footer className="text-sm">Neo Central - Sistem Informasi DSI</footer>
+          <footer className="text-sm font-semibold text-white/90">
+            Neo Central - Departemen Sistem Informasi
+          </footer>
         </blockquote>
       </div>
     </div>

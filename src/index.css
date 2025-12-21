@@ -71,13 +71,13 @@
   --chart-4: #fdba74;
   --chart-5: #ea580c;
   /* Sidebar surfaces */
-  --sidebar: #ffffff;
+  --sidebar: #fff7ed; /* orange-50 for subtle orange tint */
   --sidebar-foreground: #111827;
   --sidebar-primary: #f97316;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f3f4f6; /* gray-100 for visible hover on white */
+  --sidebar-accent: #fed7aa; /* orange-200 for visible hover */
   --sidebar-accent-foreground: #111827;
-  --sidebar-border: #e5e7eb;
+  --sidebar-border: #fdba74; /* orange-300 */
   --sidebar-ring: #f59e0b;
 }
 
@@ -106,19 +106,22 @@
   --chart-3: #f97316;
   --chart-4: #fdba74;
   --chart-5: #ea580c;
-  --sidebar: #ffffff;
+  --sidebar: #fff7ed; /* orange-50 for subtle orange tint */
   --sidebar-foreground: #111827;
   --sidebar-primary: #f97316;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f3f4f6; /* gray-100 for visible hover on white */
+  --sidebar-accent: #fed7aa; /* orange-200 for visible hover */
   --sidebar-accent-foreground: #111827;
-  --sidebar-border: #e5e7eb;
+  --sidebar-border: #fdba74; /* orange-300 */
   --sidebar-ring: #f59e0b;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground;

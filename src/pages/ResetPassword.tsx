@@ -1,10 +1,12 @@
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { resetPasswordAPI } from '@/services/auth.service';
 import { toast } from 'sonner';
 
@@ -163,7 +165,14 @@ const ResetPassword = () => {
                     disabled={isResetting}
                     className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isResetting ? 'Memproses...' : 'Reset Password'}
+                    {isResetting ? (
+                      <>
+                        <Spinner className="mr-2" />
+                        Memproses...
+                      </>
+                    ) : (
+                      'Reset Password'
+                    )}
                   </Button>
 
                   <div className="text-center">

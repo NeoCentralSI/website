@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 
 interface GuidanceRescheduleDialogProps {
   onReschedule: (data: { requestedDate: string; studentNotes: string }) => Promise<boolean>;
@@ -12,12 +13,18 @@ interface GuidanceRescheduleDialogProps {
 export function GuidanceRescheduleDialog({ onReschedule, trigger }: GuidanceRescheduleDialogProps) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState({ requestedDate: '', studentNotes: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    const success = await onReschedule(data);
-    if (success) {
-      setOpen(false);
-      setData({ requestedDate: '', studentNotes: '' });
+    setIsSubmitting(true);
+    try {
+      const success = await onReschedule(data);
+      if (success) {
+        setOpen(false);
+        setData({ requestedDate: '', studentNotes: '' });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -47,10 +54,19 @@ export function GuidanceRescheduleDialog({ onReschedule, trigger }: GuidanceResc
             />
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setOpen(false)}>
+            <Button variant="secondary" onClick={() => setOpen(false)} disabled={isSubmitting}>
               Batal
             </Button>
-            <Button onClick={handleSubmit}>Simpan</Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner className="mr-2" />
+                  Menyimpan...
+                </>
+              ) : (
+                'Simpan'
+              )}
+            </Button>
           </div>
         </div>
       </DialogContent>

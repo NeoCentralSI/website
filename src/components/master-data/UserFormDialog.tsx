@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Spinner } from '@/components/ui/spinner';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
 
 interface UserFormDialogProps {
@@ -27,6 +28,7 @@ interface UserFormDialogProps {
   setFormData: (data: CreateUserRequest | UpdateUserRequest) => void;
   onSubmit: (e: React.FormEvent) => void;
   roleOptions: Array<{ value: string; label: string }>;
+  isSubmitting?: boolean;
 }
 
 export function UserFormDialog({
@@ -37,6 +39,7 @@ export function UserFormDialog({
   setFormData,
   onSubmit,
   roleOptions,
+  isSubmitting = false,
 }: UserFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -146,21 +149,7 @@ export function UserFormDialog({
                     ))}
                 </SelectContent>
               </Select>
-              {formData.identityType === 'NIM' && (
-                <p className="text-xs text-muted-foreground">
-                  Note: User dengan NIM hanya dapat memiliki role Mahasiswa
-                </p>
-              )}
-              {editingUser && formData.identityType !== 'NIM' && (
-                <p className="text-xs text-muted-foreground">
-                  Note: Role admin tidak dapat diubah melalui form ini
-                </p>
-              )}
-              {formData.identityType === 'NIP' && (
-                <p className="text-xs text-muted-foreground">
-                  Note: User dengan NIP tidak dapat menjadi mahasiswa
-                </p>
-              )}
+       
             </div>
 
             {editingUser && 'isVerified' in formData && (
@@ -182,11 +171,21 @@ export function UserFormDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
             >
               Batal
             </Button>
-            <Button type="submit">
-              {editingUser ? 'Simpan Perubahan' : 'Buat User'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner className="mr-2" />
+                  Menyimpan...
+                </>
+              ) : editingUser ? (
+                'Simpan Perubahan'
+              ) : (
+                'Buat User'
+              )}
             </Button>
           </DialogFooter>
         </form>

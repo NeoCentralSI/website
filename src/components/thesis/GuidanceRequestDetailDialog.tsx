@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Spinner } from "@/components/ui/spinner";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { CheckIcon, XIcon, FileTextIcon } from "lucide-react";
 import StatusBadge from "@/components/thesis/StatusBadge";
@@ -256,8 +257,17 @@ export default function GuidanceRequestDetailDialog({
                 disabled={submitting}
                 className="gap-2"
               >
-                <CheckIcon className="size-4" />
-                {submitting ? 'Memproses...' : 'Setujui Bimbingan'}
+                {submitting ? (
+                  <>
+                    <Spinner className="size-4" />
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    <CheckIcon className="size-4" />
+                    Setujui Bimbingan
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -299,8 +309,17 @@ export default function GuidanceRequestDetailDialog({
                 disabled={submitting || !rejectFeedback.trim()}
                 className="gap-2"
               >
-                <XIcon className="size-4" />
-                {submitting ? 'Memproses...' : 'Tolak Bimbingan'}
+                {submitting ? (
+                  <>
+                    <Spinner className="size-4" />
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    <XIcon className="size-4" />
+                    Tolak Bimbingan
+                  </>
+                )}
               </Button>
             </div>
           </div>

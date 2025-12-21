@@ -66,7 +66,7 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
     <SidebarProvider>
       <AppSidebar data={sidebarData} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
+        <header className="flex h-16 shrink-0 items-center gap-2 px-4 mx-4 mt-4 bg-white rounded-t-xl">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator
@@ -101,7 +101,7 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
             <NotificationBell />
           </div>
         </header>
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col mx-4 mb-4 bg-white rounded-b-xl">
           {children}
         </div>
       </SidebarInset>

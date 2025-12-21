@@ -21,6 +21,7 @@ interface UseAcademicYearsOptions {
 export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
   const { page = 1, pageSize = 10, search = '' } = options;
   const queryClient = useQueryClient();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['academicYears', { page, pageSize, search }],
@@ -35,6 +36,7 @@ export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
   };
 
   const createAcademicYear = async (formData: CreateAcademicYearRequest) => {
+    setIsSubmitting(true);
     try {
       await createAcademicYearAPI(formData);
       toast.success('Tahun ajaran berhasil ditambahkan');
@@ -43,12 +45,15 @@ export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal menyimpan tahun ajaran');
       return false;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Note: isActive is now computed automatically based on date range
   // Admin can only update semester, year, startDate, endDate
   const updateAcademicYear = async (id: string, formData: UpdateAcademicYearRequest) => {
+    setIsSubmitting(true);
     try {
       // Remove isActive from update payload since it's auto-computed
       const { isActive, ...updateData } = formData;
@@ -59,6 +64,8 @@ export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal menyimpan tahun ajaran');
       return false;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -67,6 +74,7 @@ export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
     meta: data?.meta,
     total: data?.meta?.total || 0,
     isLoading,
+    isSubmitting,
     error,
     createAcademicYear,
     updateAcademicYear,

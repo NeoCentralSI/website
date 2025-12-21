@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 
 interface GuidanceNotesDialogProps {
   initialNotes?: string;
@@ -13,15 +14,21 @@ interface GuidanceNotesDialogProps {
 export function GuidanceNotesDialog({ initialNotes = '', onUpdate, trigger }: GuidanceNotesDialogProps) {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setNotes(initialNotes);
   }, [initialNotes]);
 
   const handleSubmit = async () => {
-    const success = await onUpdate({ studentNotes: notes });
-    if (success) {
-      setOpen(false);
+    setIsSubmitting(true);
+    try {
+      const success = await onUpdate({ studentNotes: notes });
+      if (success) {
+        setOpen(false);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -37,13 +44,26 @@ export function GuidanceNotesDialog({ initialNotes = '', onUpdate, trigger }: Gu
         <div className="grid gap-3">
           <div className="grid gap-2">
             <Label>Catatan</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Input 
+              value={notes} 
+              onChange={(e) => setNotes(e.target.value)} 
+              disabled={isSubmitting}
+            />
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setOpen(false)}>
+            <Button variant="secondary" onClick={() => setOpen(false)} disabled={isSubmitting}>
               Batal
             </Button>
-            <Button onClick={handleSubmit}>Simpan</Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner className="mr-2" />
+                  Menyimpan...
+                </>
+              ) : (
+                'Simpan'
+              )}
+            </Button>
           </div>
         </div>
       </DialogContent>

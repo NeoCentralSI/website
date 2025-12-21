@@ -37,6 +37,7 @@ export default function UserManagementPage() {
     editingUser,
     formData,
     setFormData,
+    isSubmitting,
     handleOpenDialog,
     handleSubmit,
   } = useUserForm(invalidateUsers);
@@ -47,6 +48,7 @@ export default function UserManagementPage() {
     selectedFile,
     setSelectedFile,
     handleImportCsv,
+    isImporting,
   } = useImportStudents(invalidateUsers);
 
   const breadcrumbs = useMemo(() => [
@@ -111,6 +113,7 @@ export default function UserManagementPage() {
         setFormData={setFormData}
         onSubmit={handleSubmit}
         roleOptions={roleOptions}
+        isSubmitting={isSubmitting}
       />
 
       <ImportStudentDialog
@@ -119,6 +122,7 @@ export default function UserManagementPage() {
         selectedFile={selectedFile}
         onFileChange={setSelectedFile}
         onImport={handleImportCsv}
+        isImporting={isImporting}
       />
     </div>
   );

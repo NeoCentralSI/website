@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
+import { Spinner } from "@/components/ui/spinner";
 import type { GuidanceItem } from "@/services/studentGuidance.service";
 import {
   getStudentGuidanceDetail,
@@ -25,6 +26,8 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
   const [guidance, setGuidance] = useState<GuidanceItem | null>(null);
   const [notes, setNotes] = useState("");
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   
   // Can only edit/reschedule if status is "requested" (not accepted or rejected)
   const canEdit = guidance && guidance.status === "requested";
@@ -54,6 +57,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
 
   const handleUpdate = async () => {
     if (!guidanceId) return;
+    setIsSubmitting(true);
     
     try {
       // Update notes
@@ -66,7 +70,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
       
       if (hasDateChanged && rescheduleDate) {
         await rescheduleStudentGuidance(guidanceId, { 
-          requestedDate: rescheduleDate.toISOString(),
+          guidanceDate: rescheduleDate.toISOString(),
         });
         toast.success("Bimbingan berhasil diperbarui", { id: "guidance-updated" });
       } else {
@@ -77,11 +81,14 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e?.message || "Gagal memperbarui");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleCancel = async () => {
     if (!guidanceId) return;
+    setIsCancelling(true);
     
     try {
       await cancelStudentGuidance(guidanceId, { reason: "Dibatalkan oleh mahasiswa" });
@@ -90,6 +97,8 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e?.message || "Gagal menghapus permintaan");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -169,15 +178,30 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
                 <Button 
                   variant="destructive" 
                   onClick={handleCancel}
+                  disabled={isCancelling || isSubmitting}
                 >
-                  Hapus Permintaan
+                  {isCancelling ? (
+                    <>
+                      <Spinner className="mr-2" />
+                      Menghapus...
+                    </>
+                  ) : (
+                    'Hapus Permintaan'
+                  )}
                 </Button>
               )}
               <Button 
                 onClick={handleUpdate} 
-                disabled={!canEdit}
+                disabled={!canEdit || isSubmitting || isCancelling}
               >
-                Simpan Perubahan
+                {isSubmitting ? (
+                  <>
+                    <Spinner className="mr-2" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  'Simpan Perubahan'
+                )}
               </Button>
             </div>
           </div>

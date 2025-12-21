@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { ComboBox } from "@/components/ui/combobox";
+import { Spinner } from "@/components/ui/spinner";
 import type { SupervisorsResponse } from "@/services/studentGuidance.service";
 import { requestStudentGuidance } from "@/services/studentGuidance.service";
 import { useMutation } from "@tanstack/react-query";
@@ -33,7 +34,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
       // ensure the date is not behind server tolerance; bump to minDate if needed
       const selected = when.getTime() < minDate.getTime() ? minDate : when;
       return requestStudentGuidance({
-        requestedDate: selected.toISOString(),
+        guidanceDate: selected.toISOString(),
         studentNotes: note || undefined,
         file: file,
         meetingUrl: meetingUrl || undefined,
@@ -91,8 +92,17 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
             <span className="text-xs text-muted-foreground">Format yang didukung: PDF saja. Maks 50MB.</span>
           </div>
           <div className="flex justify-end gap-2 mt-2">
-            <Button variant="secondary" onClick={() => onOpenChange(false)}>Batal</Button>
-            <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending}>{submitMutation.isPending ? 'Mengirim...' : 'Kirim'}</Button>
+            <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={submitMutation.isPending}>Batal</Button>
+            <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending}>
+              {submitMutation.isPending ? (
+                <>
+                  <Spinner className="mr-2" />
+                  Mengirim...
+                </>
+              ) : (
+                'Kirim'
+              )}
+            </Button>
           </div>
         </div>
       </DialogContent>

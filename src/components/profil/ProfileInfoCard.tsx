@@ -1,8 +1,10 @@
 import { User, Phone, CheckCircle, Shield } from 'lucide-react';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/hooks/shared';
 import { useProfileUpdate } from '@/hooks/profile';
 
@@ -147,7 +149,14 @@ export function ProfileInfoCard() {
           disabled={isSaving}
           className="bg-orange-500 hover:bg-orange-600 text-white"
         >
-          {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+          {isSaving ? (
+            <>
+              <Spinner className="mr-2" />
+              Menyimpan...
+            </>
+          ) : (
+            'Simpan Perubahan'
+          )}
         </Button>
       </div>
     </form>

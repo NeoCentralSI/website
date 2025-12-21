@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { Upload } from 'lucide-react';
 
 interface ImportStudentDialogProps {
@@ -17,6 +18,7 @@ interface ImportStudentDialogProps {
   selectedFile: File | null;
   onFileChange: (file: File | null) => void;
   onImport: () => void;
+  isImporting?: boolean;
 }
 
 export function ImportStudentDialog({
@@ -25,6 +27,7 @@ export function ImportStudentDialog({
   selectedFile,
   onFileChange,
   onImport,
+  isImporting = false,
 }: ImportStudentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,6 +47,7 @@ export function ImportStudentDialog({
               type="file"
               accept=".csv"
               onChange={(e) => onFileChange(e.target.files?.[0] || null)}
+              disabled={isImporting}
             />
             <p className="text-sm text-muted-foreground">
               Format: NIM, Nama, Email, dll.
@@ -56,12 +60,22 @@ export function ImportStudentDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
+            disabled={isImporting}
           >
             Batal
           </Button>
-          <Button onClick={onImport} disabled={!selectedFile}>
-            <Upload className="w-4 h-4 mr-2" />
-            Import
+          <Button onClick={onImport} disabled={!selectedFile || isImporting}>
+            {isImporting ? (
+              <>
+                <Spinner className="mr-2" />
+                Mengimport...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4 mr-2" />
+                Import
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

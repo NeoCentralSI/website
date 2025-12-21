@@ -22,6 +22,8 @@ export default function UserManagementPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
@@ -127,6 +129,7 @@ export default function UserManagementPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     try {
       if (editingUser) {
@@ -141,6 +144,8 @@ export default function UserManagementPage() {
       invalidateUsers(); // Invalidate cache to refetch data
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal menyimpan user');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -150,6 +155,7 @@ export default function UserManagementPage() {
       return;
     }
 
+    setIsImporting(true);
     try {
       const result = await importStudentsCsvAPI(selectedFile);
       toast.success(`Berhasil import ${result.summary?.created || 0} mahasiswa`);
@@ -158,6 +164,8 @@ export default function UserManagementPage() {
       invalidateUsers(); // Invalidate cache to refetch data
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal import CSV');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -332,6 +340,7 @@ export default function UserManagementPage() {
         setFormData={setFormData}
         onSubmit={handleSubmit}
         roleOptions={roleOptions}
+        isSubmitting={isSubmitting}
       />
 
       <ImportStudentDialog
@@ -340,6 +349,7 @@ export default function UserManagementPage() {
         selectedFile={selectedFile}
         onFileChange={setSelectedFile}
         onImport={handleImportCsv}
+        isImporting={isImporting}
       />
     </div>
   );

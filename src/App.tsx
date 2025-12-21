@@ -3,6 +3,7 @@ import { AuthProvider, NotificationProvider } from '@/hooks/shared'
 import { Toaster } from './components/ui/sonner'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 import Profil from './pages/profil/Profil'
 import MicrosoftCallback from './pages/auth/MicrosoftCallback'
 import ResetPassword from './pages/ResetPassword'
@@ -29,7 +30,7 @@ function App() {
         <NotificationProvider>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />

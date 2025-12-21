@@ -1,7 +1,9 @@
 import { Lock, Eye, EyeOff } from 'lucide-react';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { useChangePassword } from '@/hooks/profile';
 
 export function ChangePasswordCard() {
@@ -126,7 +128,14 @@ export function ChangePasswordCard() {
             disabled={isChanging}
             className="bg-orange-500 hover:bg-orange-600 text-white px-8"
           >
-            {isChanging ? 'Menyimpan...' : 'Ubah Password'}
+            {isChanging ? (
+              <>
+                <Spinner className="mr-2" />
+                Menyimpan...
+              </>
+            ) : (
+              'Ubah Password'
+            )}
           </Button>
         </div>
       </form>

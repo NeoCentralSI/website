@@ -6,6 +6,7 @@ import { createUserAPI, updateUserAPI } from '@/services/admin.service';
 export const useUserForm = (onSuccess: () => void) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<CreateUserRequest | UpdateUserRequest>({
     fullName: '',
     email: '',
@@ -40,6 +41,7 @@ export const useUserForm = (onSuccess: () => void) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     try {
       if (editingUser) {
@@ -54,6 +56,8 @@ export const useUserForm = (onSuccess: () => void) => {
       onSuccess();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal menyimpan user');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -63,6 +67,7 @@ export const useUserForm = (onSuccess: () => void) => {
     editingUser,
     formData,
     setFormData,
+    isSubmitting,
     handleOpenDialog,
     handleSubmit,
   };

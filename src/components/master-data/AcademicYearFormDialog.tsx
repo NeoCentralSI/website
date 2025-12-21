@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import type { AcademicYear, CreateAcademicYearRequest, UpdateAcademicYearRequest } from '@/services/admin.service';
 
 interface AcademicYearFormDialogProps {
@@ -25,6 +26,7 @@ interface AcademicYearFormDialogProps {
   formData: CreateAcademicYearRequest | UpdateAcademicYearRequest;
   setFormData: (data: CreateAcademicYearRequest | UpdateAcademicYearRequest) => void;
   onSubmit: (e: React.FormEvent) => void;
+  isSubmitting?: boolean;
 }
 
 export function AcademicYearFormDialog({
@@ -34,6 +36,7 @@ export function AcademicYearFormDialog({
   formData,
   setFormData,
   onSubmit,
+  isSubmitting = false,
 }: AcademicYearFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,11 +125,21 @@ export function AcademicYearFormDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
             >
               Batal
             </Button>
-            <Button type="submit">
-              {editingYear ? 'Simpan Perubahan' : 'Tambah'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner className="mr-2" />
+                  Menyimpan...
+                </>
+              ) : editingYear ? (
+                'Simpan Perubahan'
+              ) : (
+                'Tambah'
+              )}
             </Button>
           </DialogFooter>
         </form>

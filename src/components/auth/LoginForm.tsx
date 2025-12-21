@@ -1,8 +1,10 @@
 import { Eye, EyeOff } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Spinner } from '@/components/ui/spinner';
 import { MicrosoftLoginButton } from '@/components/auth/MicrosoftLoginButton';
 import { useLoginForm } from '@/hooks/auth';
 
@@ -27,40 +29,41 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
   } = useLoginForm();
 
   return (
-    <div className="mx-auto grid w-[350px] gap-6">
-      <div className="grid gap-2 text-center">
-        <h1 className="text-3xl font-bold">Login</h1>
-        <p className="text-balance text-muted-foreground">
-          Login menggunakan akun Microsoft Anda
+    <div className="mx-auto grid w-[380px] gap-8">
+      <div className="grid gap-3 text-center">
+        <h1 className="text-4xl font-bold text-gray-900">Selamat Datang</h1>
+        <p className="text-gray-600">
+          Masuk ke akun Neo Central Anda
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-4">
+      <form onSubmit={handleSubmit} className="grid gap-5">
         {error && (
-          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
             {error}
           </div>
         )}
 
         <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
           <Input
             id="email"
             type="email"
-            placeholder="m@example.com"
+            placeholder="nama@unand.ac.id"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="h-12 rounded-xl border-gray-200 focus:border-[#F7931E] focus:ring-[#F7931E]"
             required
           />
         </div>
 
         <div className="grid gap-2">
           <div className="flex items-center">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
             <button
               type="button"
               onClick={onForgotPassword}
-              className="ml-auto inline-block text-sm underline"
+              className="ml-auto inline-block text-sm text-[#F7931E] hover:text-[#E08319] font-medium"
             >
               Lupa password?
             </button>
@@ -71,15 +74,15 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pr-10"
+              className="h-12 rounded-xl border-gray-200 focus:border-[#F7931E] focus:ring-[#F7931E] pr-12"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -89,23 +92,35 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
             id="remember"
             checked={rememberMe}
             onCheckedChange={(checked) => setRememberMe(checked === true)}
+            className="border-gray-300 data-[state=checked]:bg-[#F7931E] data-[state=checked]:border-[#F7931E]"
           />
-          <Label htmlFor="remember" className="text-sm font-normal">
+          <Label htmlFor="remember" className="text-sm font-normal text-gray-600">
             Ingat saya
           </Label>
         </div>
 
-        <Button type="submit" disabled={isLoading} className="w-full">
-          {isLoading ? 'Memproses...' : 'Login'}
+        <Button 
+          type="submit" 
+          disabled={isLoading} 
+          className="w-full h-12 rounded-xl bg-[#F7931E] hover:bg-[#E08319] text-white font-semibold text-base"
+        >
+          {isLoading ? (
+            <>
+              <Spinner className="mr-2" />
+              Memproses...
+            </>
+          ) : (
+            'Masuk'
+          )}
         </Button>
 
-        <div className="relative">
+        <div className="relative py-2">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Atau lanjutkan dengan
+            <span className="bg-white px-4 text-gray-500">
+              Atau
             </span>
           </div>
         </div>
@@ -113,12 +128,12 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
         <MicrosoftLoginButton disabled={isLoading} />
       </form>
 
-      <div className="mt-4 text-center text-sm">
+      <div className="text-center text-sm text-gray-600">
         Belum aktivasi akun?{' '}
         <button
           type="button"
           onClick={onActivateAccount}
-          className="underline"
+          className="text-[#F7931E] hover:text-[#E08319] font-semibold"
         >
           Aktivasi di sini
         </button>

@@ -5,6 +5,7 @@ import { importStudentsCsvAPI } from '@/services/admin.service';
 export const useImportStudents = (onSuccess: () => void) => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleImportCsv = async () => {
     if (!selectedFile) {
@@ -12,6 +13,7 @@ export const useImportStudents = (onSuccess: () => void) => {
       return;
     }
 
+    setIsImporting(true);
     try {
       const result = await importStudentsCsvAPI(selectedFile);
       toast.success(`Berhasil import ${result.summary?.created || 0} mahasiswa`);
@@ -20,6 +22,8 @@ export const useImportStudents = (onSuccess: () => void) => {
       onSuccess();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal import CSV');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -29,5 +33,6 @@ export const useImportStudents = (onSuccess: () => void) => {
     selectedFile,
     setSelectedFile,
     handleImportCsv,
+    isImporting,
   };
 };

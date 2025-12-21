@@ -29,6 +29,7 @@ export default function AcademicYearPage() {
     academicYears, 
     total, 
     isLoading, 
+    isSubmitting,
     error,
     createAcademicYear, 
     updateAcademicYear 
@@ -127,6 +128,7 @@ export default function AcademicYearPage() {
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

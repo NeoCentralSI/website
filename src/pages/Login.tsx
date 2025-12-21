@@ -28,10 +28,10 @@ const Login = () => {
   };
 
   return (
-    <div className="w-full h-screen lg:grid lg:grid-cols-2">
+    <div className="w-full h-screen lg:grid lg:grid-cols-2 bg-white">
       <LoginCarousel />
 
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-12 px-6 bg-white">
         {isForgotPassword ? (
           <ForgotPasswordForm onBack={handleBack} />
         ) : isActivateAccount ? (
