@@ -37,7 +37,7 @@ export function Footer() {
         >
           <div className="w-full h-96 bg-gray-800 overflow-hidden rounded-3xl">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.3045858947486!2d100.35891607475981!3d-0.9147539354203653!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2fd4b7f8b0a6e4e5%3A0x3a5b0c5f0f6e8b0a!2sFakultas%20Teknologi%20Informasi%20Universitas%20Andalas!5e0!3m2!1sid!2sid!4v1703000000000!5m2!1sid!2sid"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.309172682548!2d100.45847837496508!3d-0.9153507990757912!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2fd4b7963e1ea631%3A0x452d09b61f76d6ec!2sFakultas%20Teknologi%20InformasiUniversitas%20Andalas!5e0!3m2!1sid!2sid!4v1766327576639!5m2!1sid!2sid"
               width="100%"
               height="100%"
               style={{ border: 0 }}
