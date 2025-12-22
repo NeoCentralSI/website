@@ -26,7 +26,6 @@ export interface MilestoneListProps {
   onDelete?: (milestone: Milestone) => void;
   onStatusChange?: (milestone: Milestone, status: MilestoneStatus) => void;
   onProgressChange?: (milestone: Milestone, progress: number) => void;
-  onSubmitReview?: (milestone: Milestone) => void;
   onValidate?: (milestone: Milestone) => void;
   onRequestRevision?: (milestone: Milestone) => void;
   onAddFeedback?: (milestone: Milestone) => void;
@@ -44,7 +43,6 @@ export function MilestoneList({
   onDelete,
   onStatusChange,
   onProgressChange,
-  onSubmitReview,
   onValidate,
   onRequestRevision,
   onAddFeedback,
@@ -198,7 +196,6 @@ export function MilestoneList({
               onDelete={onDelete}
               onStatusChange={onStatusChange}
               onProgressChange={onProgressChange}
-              onSubmitReview={onSubmitReview}
               onValidate={onValidate}
               onRequestRevision={onRequestRevision}
               onAddFeedback={onAddFeedback}

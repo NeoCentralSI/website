@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
 import { MilestoneStatusBadge } from "./MilestoneStatusBadge";
 import type { Milestone, MilestoneStatus } from "@/types/milestone.types";
-import { formatDateId } from "@/lib/text";
+import { formatDateId, toTitleCaseName } from "@/lib/text";
 import {
   Calendar,
   Clock,
@@ -13,11 +14,11 @@ import {
   ChevronUp,
   Edit2,
   Trash2,
-  Send,
   CheckCircle,
   RotateCcw,
   MessageSquare,
   GripVertical,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +30,6 @@ export interface MilestoneCardProps {
   onDelete?: (milestone: Milestone) => void;
   onStatusChange?: (milestone: Milestone, status: MilestoneStatus) => void;
   onProgressChange?: (milestone: Milestone, progress: number) => void;
-  onSubmitReview?: (milestone: Milestone) => void;
   onValidate?: (milestone: Milestone) => void;
   onRequestRevision?: (milestone: Milestone) => void;
   onAddFeedback?: (milestone: Milestone) => void;
@@ -44,7 +44,6 @@ export function MilestoneCard({
   onDelete,
   onStatusChange,
   onProgressChange,
-  onSubmitReview,
   onValidate,
   onRequestRevision,
   onAddFeedback,
@@ -58,8 +57,6 @@ export function MilestoneCard({
   const isRevisionNeeded = milestone.status === "revision_needed";
   const canStartWorking =
     isOwner && (milestone.status === "not_started" || milestone.status === "revision_needed");
-  const canSubmitReview =
-    isOwner && (milestone.status === "in_progress" || milestone.status === "revision_needed");
   const canValidate = isSupervisor && isPendingReview;
   const canRequestRevision = isSupervisor && (isPendingReview || milestone.status === "in_progress");
 
@@ -190,6 +187,43 @@ export function MilestoneCard({
                 </a>
               </div>
             )}
+
+            {/* Linked Guidances */}
+            {milestone.guidances && milestone.guidances.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Bimbingan Terkait ({milestone.guidances.length})
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {milestone.guidances.map((g) => (
+                    <div
+                      key={g.id}
+                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={g.status === "completed" ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {g.status === "completed" ? "Selesai" : g.status === "accepted" ? "Diterima" : "Pending"}
+                        </Badge>
+                        <span className="text-muted-foreground">
+                          {formatDateId(g.requestedDate)}
+                        </span>
+                      </div>
+                      {g.supervisor?.user?.fullName && (
+                        <span className="text-muted-foreground text-xs">
+                          {toTitleCaseName(g.supervisor.user.fullName)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -226,16 +260,6 @@ export function MilestoneCard({
                   >
                     <Clock className="h-4 w-4 mr-1" />
                     Mulai
-                  </Button>
-                )}
-                {canSubmitReview && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => onSubmitReview?.(milestone)}
-                  >
-                    <Send className="h-4 w-4 mr-1" />
-                    Ajukan Review
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" onClick={() => onEdit?.(milestone)}>

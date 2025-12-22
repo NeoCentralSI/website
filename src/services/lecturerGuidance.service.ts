@@ -33,6 +33,7 @@ export interface GuidanceItem {
   location?: string;
   meetingUrl?: string;
   notes?: string;
+  studentNotes?: string; // alias for notes from student
   supervisorFeedback?: string;
   rejectionReason?: string;
   completedAt?: string;
@@ -40,9 +41,20 @@ export interface GuidanceItem {
     fileName: string;
     filePath: string;
   } | null;
+  documentUrl?: string; // link to external document (e.g., Google Docs, Overleaf)
   createdAt?: string;
+  createdAtFormatted?: string;
   updatedAt?: string;
   requestedAt?: string; // alias for createdAt
+  // Milestone info
+  milestoneId?: string;
+  milestone?: {
+    id: string;
+    title: string;
+    status: string;
+  } | null;
+  milestoneName?: string;
+  milestoneStatus?: string;
   [key: string]: unknown;
 }
 

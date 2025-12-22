@@ -276,7 +276,7 @@ export const useSidebarMenu = () => {
         { title: "Seminar", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
         { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        { title: "Kelola Rubrik", url: "/tugas-akhir/kelola-rubrik" },
+        { title: "Kelola Rubrik ", url: "/tugas-akhir/kelola-rubrik" },
         { title: "Kelola Yudisium", url: "/tugas-akhir/kelola-yudisium" },
       ];
 

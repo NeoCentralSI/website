@@ -134,20 +134,28 @@ export default function GuidanceRequestDetailDialog({
                    ((guidance as any)?.createdAt ? formatDateId((guidance as any).createdAt as string) : '-')}
                 </div>
               </div>
+              {(guidance as any)?.milestone?.title && (
+                <div className="col-span-2">
+                  <div className="text-xs text-muted-foreground mb-1">Milestone yang Dibahas</div>
+                  <div className="font-medium text-sm text-primary">
+                    {(guidance as any).milestone.title}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Catatan Mahasiswa */}
             <div className="space-y-2">
               <Label>Catatan Mahasiswa</Label>
               <div className="p-3 rounded-lg bg-muted/30 text-sm min-h-20">
-                {(guidance as any)?.notes || '-'}
+                {(guidance as any)?.notes || (guidance as any)?.studentNotes || '-'}
               </div>
             </div>
 
             {/* Dokumen */}
             {fileName && (
               <div className="space-y-2">
-                <Label>Dokumen</Label>
+                <Label>File Thesis</Label>
                 <div className="flex items-center gap-2 p-3 rounded-lg border">
                   <FileTextIcon className="size-5 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
@@ -166,6 +174,24 @@ export default function GuidanceRequestDetailDialog({
                     </Button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Link Dokumen Pembahasan (if exists) */}
+            {(guidance as any)?.documentUrl && (
+              <div className="space-y-2">
+                <Label>Link Dokumen Pembahasan</Label>
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm break-all">
+                  <a 
+                    href={(guidance as any).documentUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {(guidance as any).documentUrl}
+                  </a>
+                </div>
+                <span className="text-xs text-muted-foreground">Google Docs, Overleaf, Notion, dll</span>
               </div>
             )}
 

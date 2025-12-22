@@ -41,7 +41,9 @@ export interface StudentRequestGuidanceBody {
   studentNotes?: string;
   file: File; // thesis file to upload
   meetingUrl?: string;
+  documentUrl?: string; // Link dokumen yang akan dibahas (Google Docs, Overleaf, dll)
   supervisorId?: string;
+  milestoneId?: string; // Link to milestone
   type?: GuidanceType; // online/offline
   duration?: number; // durasi dalam menit
   location?: string;
@@ -173,7 +175,9 @@ export const requestStudentGuidance = async (body: StudentRequestGuidanceBody): 
   fd.append("guidanceDate", body.guidanceDate);
   if (body.studentNotes) fd.append("studentNotes", body.studentNotes);
   if (body.meetingUrl) fd.append("meetingUrl", body.meetingUrl);
+  if (body.documentUrl) fd.append("documentUrl", body.documentUrl);
   if (body.supervisorId) fd.append("supervisorId", body.supervisorId);
+  if (body.milestoneId) fd.append("milestoneId", body.milestoneId);
   fd.append("file", body.file);
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_REQUEST), {
     method: "POST",

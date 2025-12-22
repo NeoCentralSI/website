@@ -12,6 +12,7 @@ import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
 import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
+import { useMilestones } from '@/hooks/milestone';
 
 export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -55,6 +56,11 @@ export default function StudentGuidancePage() {
   });
 
   const supervisors = supervisorsQuery.data?.supervisors ?? [];
+  const thesisId = supervisorsQuery.data?.thesisId ?? '';
+
+  // Fetch milestones for guidance dialog
+  const milestonesQuery = useMilestones(thesisId);
+  const milestones = milestonesQuery.data?.milestones ?? [];
 
   const breadcrumb = useMemo(() => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }], []);
 
@@ -145,9 +151,11 @@ export default function StudentGuidancePage() {
         open={openRequest}
         onOpenChange={setOpenRequest}
         supervisors={supervisorsQuery.data?.supervisors || []}
+        milestones={milestones}
         onSubmitted={() => {
           qc.invalidateQueries({ queryKey: ['student-guidance'] });
           qc.invalidateQueries({ queryKey: ['notification-unread'] });
+          qc.invalidateQueries({ queryKey: ['milestones'] });
         }}
       />
     </div>

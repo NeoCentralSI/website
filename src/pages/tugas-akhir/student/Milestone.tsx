@@ -22,7 +22,6 @@ import {
   useUpdateMilestone,
   useDeleteMilestone,
   useUpdateProgress,
-  useSubmitForReview,
 } from "@/hooks/milestone";
 
 import type {
@@ -55,7 +54,6 @@ export default function StudentMilestonePage() {
   const updateMutation = useUpdateMilestone(thesisId);
   const deleteMutation = useDeleteMilestone(thesisId);
   const updateProgressMutation = useUpdateProgress(thesisId);
-  const submitForReviewMutation = useSubmitForReview(thesisId);
 
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -170,20 +168,6 @@ export default function StudentMilestonePage() {
     );
   };
 
-  const handleSubmitReview = (milestone: Milestone) => {
-    submitForReviewMutation.mutate(
-      { milestoneId: milestone.id },
-      {
-        onSuccess: () => {
-          toast.success("Milestone berhasil diajukan untuk review");
-        },
-        onError: (error) => {
-          toast.error(error.message || "Gagal mengajukan milestone untuk review");
-        },
-      }
-    );
-  };
-
   const isLoading = isLoadingSupervisors || isLoadingMilestones;
 
   // If no thesis or error
@@ -233,7 +217,6 @@ export default function StudentMilestonePage() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onProgressChange={handleProgressChange}
-        onSubmitReview={handleSubmitReview}
       />
 
       {/* Create/Edit Dialog */}
