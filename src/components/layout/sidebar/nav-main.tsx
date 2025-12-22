@@ -14,6 +14,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function NavMain({
@@ -31,6 +32,14 @@ export function NavMain({
   }[]
 }) {
   const { pathname } = useLocation()
+  const { state, setOpen } = useSidebar()
+
+  // Handler untuk expand sidebar ketika klik menu dengan submenu saat collapsed
+  const handleMenuClick = () => {
+    if (state === "collapsed") {
+      setOpen(true)
+    }
+  }
 
   return (
     <SidebarGroup>
@@ -48,7 +57,12 @@ export function NavMain({
               {hasChildren ? (
                 // Jika ada submenu, button menjadi trigger untuk expand/collapse
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip={item.title} className="group/trigger" isActive={isItemActive}>
+                  <SidebarMenuButton 
+                    tooltip={item.title} 
+                    className="group/trigger" 
+                    isActive={isItemActive}
+                    onClick={handleMenuClick}
+                  >
                     <item.icon />
                     <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none transform-gpu">{item.title}</span>
                     <ChevronRight className="ml-auto transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[state=open]/trigger:rotate-90 motion-reduce:transition-none transform-gpu will-change-transform origin-center" />

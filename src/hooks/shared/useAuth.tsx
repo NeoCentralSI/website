@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clearAuthTokens, getAuthTokens, getUserProfileAPI, loginAPI, logoutAPI, saveAuthTokens, type User } from '@/services/auth.service';
 import { unregisterFcmToken } from '@/services/notification.service';
@@ -33,12 +33,13 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasChecked, setHasChecked] = useState(false);
+  const hasCheckedRef = useRef(false);
   const navigate = useNavigate();
 
-  // Check authentication on mount - ONLY ONCE
+  // Check authentication on mount - ONLY ONCE (survives StrictMode double mount)
   useEffect(() => {
-    if (hasChecked) return;
+    if (hasCheckedRef.current) return;
+    hasCheckedRef.current = true;
     
     const checkAuth = async () => {
       try {
@@ -61,12 +62,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(null);
       } finally {
         setIsLoading(false);
-        setHasChecked(true);
       }
     };
 
     checkAuth();
-  }, [hasChecked]);
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       clearAuthTokens();
       localStorage.removeItem(FCM_TOKEN_KEY);
       setUser(null);
-      setHasChecked(false);
+      hasCheckedRef.current = false;
       navigate('/login');
     }
   };

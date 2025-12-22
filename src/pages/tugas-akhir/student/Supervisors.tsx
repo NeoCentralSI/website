@@ -24,10 +24,7 @@ export default function SupervisorsPage() {
 
   const { data, isPending, isError } = useQuery({
     queryKey: ['student-supervisors'],
-    queryFn: async () => {
-      const res = await getStudentSupervisors();
-      return { data: res, supervisors: res.supervisors };
-    },
+    queryFn: getStudentSupervisors,
   });
 
   const items = Array.isArray(data?.supervisors) ? data.supervisors : [];
@@ -50,6 +47,7 @@ export default function SupervisorsPage() {
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
           { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
+          { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
         ]}
       />
       {isPending ? (

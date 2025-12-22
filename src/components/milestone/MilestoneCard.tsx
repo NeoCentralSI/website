@@ -1,0 +1,292 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { MilestoneStatusBadge } from "./MilestoneStatusBadge";
+import type { Milestone, MilestoneStatus } from "@/types/milestone.types";
+import { formatDateId } from "@/lib/text";
+import {
+  Calendar,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Trash2,
+  Send,
+  CheckCircle,
+  RotateCcw,
+  MessageSquare,
+  GripVertical,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export interface MilestoneCardProps {
+  milestone: Milestone;
+  isOwner?: boolean;
+  isSupervisor?: boolean;
+  onEdit?: (milestone: Milestone) => void;
+  onDelete?: (milestone: Milestone) => void;
+  onStatusChange?: (milestone: Milestone, status: MilestoneStatus) => void;
+  onProgressChange?: (milestone: Milestone, progress: number) => void;
+  onSubmitReview?: (milestone: Milestone) => void;
+  onValidate?: (milestone: Milestone) => void;
+  onRequestRevision?: (milestone: Milestone) => void;
+  onAddFeedback?: (milestone: Milestone) => void;
+  draggable?: boolean;
+}
+
+export function MilestoneCard({
+  milestone,
+  isOwner = false,
+  isSupervisor = false,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onProgressChange,
+  onSubmitReview,
+  onValidate,
+  onRequestRevision,
+  onAddFeedback,
+  draggable = false,
+}: MilestoneCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [localProgress, setLocalProgress] = useState(milestone.progressPercentage);
+
+  const isCompleted = milestone.status === "completed";
+  const isPendingReview = milestone.status === "pending_review";
+  const isRevisionNeeded = milestone.status === "revision_needed";
+  const canStartWorking =
+    isOwner && (milestone.status === "not_started" || milestone.status === "revision_needed");
+  const canSubmitReview =
+    isOwner && (milestone.status === "in_progress" || milestone.status === "revision_needed");
+  const canValidate = isSupervisor && isPendingReview;
+  const canRequestRevision = isSupervisor && (isPendingReview || milestone.status === "in_progress");
+
+  const handleProgressCommit = () => {
+    if (localProgress !== milestone.progressPercentage) {
+      onProgressChange?.(milestone, localProgress);
+    }
+  };
+
+  return (
+    <Card
+      className={cn(
+        "transition-all",
+        isCompleted && "border-green-200 bg-green-50/30",
+        isPendingReview && "border-yellow-200 bg-yellow-50/30",
+        isRevisionNeeded && "border-orange-200 bg-orange-50/30"
+      )}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex items-start gap-3">
+          {draggable && (
+            <div className="cursor-grab pt-1">
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base font-semibold truncate">
+                {milestone.title}
+              </CardTitle>
+              <MilestoneStatusBadge status={milestone.status} />
+            </div>
+            {milestone.description && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {milestone.description}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {/* Progress bar */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Progress</span>
+            <span className="font-medium">{milestone.progressPercentage}%</span>
+          </div>
+          <Progress value={milestone.progressPercentage} className="h-2" />
+        </div>
+
+        {/* Timeline info */}
+        <div className="flex flex-wrap gap-4 text-sm">
+          {milestone.targetDate && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>Target: {formatDateId(milestone.targetDate)}</span>
+            </div>
+          )}
+          {milestone.startedAt && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>Mulai: {formatDateId(milestone.startedAt)}</span>
+            </div>
+          )}
+          {milestone.completedAt && (
+            <div className="flex items-center gap-1.5 text-green-600">
+              <CheckCircle className="h-4 w-4" />
+              <span>Selesai: {formatDateId(milestone.completedAt)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Supervisor notes */}
+        {milestone.supervisorNotes && (
+          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+            <p className="text-xs font-medium text-blue-800 mb-1">
+              Catatan Pembimbing:
+            </p>
+            <p className="text-sm text-blue-700">{milestone.supervisorNotes}</p>
+          </div>
+        )}
+
+        {/* Expandable section */}
+        {expanded && (
+          <div className="space-y-4 pt-2 border-t">
+            {/* Progress slider for owner */}
+            {isOwner && !isCompleted && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Ubah Progress</label>
+                <div className="flex items-center gap-4">
+                  <Slider
+                    value={[localProgress]}
+                    onValueChange={([val]: [number]) => setLocalProgress(val)}
+                    onValueCommit={handleProgressCommit}
+                    max={100}
+                    step={5}
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-medium w-12 text-right">
+                    {localProgress}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Student notes */}
+            {milestone.studentNotes && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Catatan Mahasiswa:
+                </p>
+                <p className="text-sm">{milestone.studentNotes}</p>
+              </div>
+            )}
+
+            {/* Evidence */}
+            {milestone.evidenceUrl && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Bukti:</p>
+                <a
+                  href={milestone.evidenceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
+                  {milestone.evidenceDescription || milestone.evidenceUrl}
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+            className="text-muted-foreground"
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="h-4 w-4 mr-1" />
+                Sembunyikan
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4 mr-1" />
+                Detail
+              </>
+            )}
+          </Button>
+
+          <div className="flex items-center gap-2">
+            {/* Owner actions */}
+            {isOwner && !isCompleted && (
+              <>
+                {canStartWorking && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onStatusChange?.(milestone, "in_progress")}
+                  >
+                    <Clock className="h-4 w-4 mr-1" />
+                    Mulai
+                  </Button>
+                )}
+                {canSubmitReview && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => onSubmitReview?.(milestone)}
+                  >
+                    <Send className="h-4 w-4 mr-1" />
+                    Ajukan Review
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => onEdit?.(milestone)}>
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+                {!milestone.validatedBy && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete?.(milestone)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </>
+            )}
+
+            {/* Supervisor actions */}
+            {isSupervisor && (
+              <>
+                {canValidate && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => onValidate?.(milestone)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Validasi
+                  </Button>
+                )}
+                {canRequestRevision && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRequestRevision?.(milestone)}
+                    className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Minta Revisi
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => onAddFeedback?.(milestone)}>
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

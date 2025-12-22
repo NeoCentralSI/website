@@ -17,6 +17,8 @@ import LecturerRequestsPage from './pages/tugas-akhir/lecturer/Requests'
 import LecturerMyStudentsPage from './pages/tugas-akhir/lecturer/MyStudents'
 import LecturerHistoryPage from './pages/tugas-akhir/lecturer/History'
 import LecturerActivityPage from './pages/tugas-akhir/lecturer/Activity'
+import StudentMilestonePage from './pages/tugas-akhir/student/Milestone'
+import LecturerStudentMilestonePage from './pages/tugas-akhir/lecturer/StudentMilestone'
 import NotFoundPage from './pages/NotFound'
 import UserManagementPage from './pages/admin/master-data/UserManagement'
 import AcademicYearPage from './pages/admin/master-data/AcademicYear'
@@ -83,11 +85,17 @@ function App() {
               <Route path="/tugas-akhir/bimbingan/supervisors" element={<SupervisorsPage />} />
               {/* Guidance detail page removed; use dialog instead */}
 
+              {/* Student - Tugas Akhir - Milestone */}
+              <Route path="/tugas-akhir/bimbingan/milestone" element={<StudentMilestonePage />} />
+
               {/* Lecturer - Tugas Akhir - Bimbingan */}
               <Route path="/tugas-akhir/bimbingan/lecturer/requests" element={<LecturerRequestsPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/history/:studentId" element={<LecturerHistoryPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/activity/:studentId" element={<LecturerActivityPage />} />
+              
+              {/* Lecturer - Student Milestone */}
+              <Route path="/tugas-akhir/bimbingan/lecturer/milestone/:studentId" element={<LecturerStudentMilestonePage />} />
             </Route>
 
             {/* 404 - Catch all undefined routes (outside ProtectedLayout) */}
