@@ -12,7 +12,11 @@ export type DocumentPreviewDialogProps = {
 };
 
 export default function DocumentPreviewDialog({ open, onOpenChange, fileName, filePath, mode = "fullscreen" }: DocumentPreviewDialogProps) {
-  const url = filePath ? getApiUrl(filePath.startsWith("/") ? filePath : `/${filePath}`) : undefined;
+  let url: string | undefined;
+  if (filePath) {
+    const normalized = filePath.startsWith("http") ? filePath : getApiUrl(filePath.startsWith("/") ? filePath : `/${filePath}`);
+    url = normalized;
+  }
   // Basic preview via iframe; we rely on browser PDF viewer
   const contentClass =
     mode === "fullscreen"

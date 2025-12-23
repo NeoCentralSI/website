@@ -24,6 +24,8 @@ import UserManagementPage from './pages/admin/master-data/UserManagement'
 import AcademicYearPage from './pages/admin/master-data/AcademicYear'
 import MahasiswaPage from './pages/admin/master-data/Mahasiswa'
 import DosenPage from './pages/admin/master-data/Dosen'
+import KelolaTugasAkhirPage from './pages/tugas-akhir/secretary/TugasAkhir'
+import KelolaSopPage from './pages/kelola/Sop'
 
 function App() {
   return (
@@ -69,6 +71,17 @@ function App() {
               <Route path="/tugas-akhir/data" element={<Placeholder title="Tugas Akhir - Data" />} />
               <Route path="/tugas-akhir/jadwal-seminar" element={<Placeholder title="Tugas Akhir - Penjadwalan Seminar" />} />
               <Route path="/tugas-akhir/jadwal-sidang" element={<Placeholder title="Tugas Akhir - Penjadwalan Sidang" />} />
+
+              {/* Kelola */}
+              <Route path="/kelola" element={<Placeholder title="main menu Kelola" />} />
+              <Route path="/kelola/kerja-praktik" element={<Placeholder title="Kelola - Kerja Praktek" />} />
+              <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/monitor" replace />} />
+              <Route path="/kelola/tugas-akhir/monitor" element={<KelolaTugasAkhirPage />} />
+              <Route path="/kelola/tugas-akhir/milestone" element={<KelolaTugasAkhirPage />} />
+              <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<KelolaTugasAkhirPage />} />
+              <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<KelolaTugasAkhirPage />} />
+              <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
+              <Route path="/kelola/sop" element={<KelolaSopPage />} />
 
               {/* Master Data (Admin) */}
               <Route path="/master-data" element={<Placeholder title="main menu Master Data" />} />

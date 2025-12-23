@@ -29,9 +29,6 @@ export default function ProtectedLayout() {
     if (location.pathname === "/" || location.pathname === "/dashboard") {
       setBreadcrumbs([{ label: "Dashboard" }]);
       setTitle(undefined);
-    } else {
-      setBreadcrumbs(undefined);
-      setTitle(undefined);
     }
   }, [location.pathname]);
 

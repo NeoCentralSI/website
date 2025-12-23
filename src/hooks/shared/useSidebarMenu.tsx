@@ -275,9 +275,6 @@ export const useSidebarMenu = () => {
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
         { title: "Seminar", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
-        { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        { title: "Kelola Rubrik ", url: "/tugas-akhir/kelola-rubrik" },
-        { title: "Kelola Yudisium", url: "/tugas-akhir/kelola-yudisium" },
       ];
 
       menuItems.push({
@@ -285,6 +282,18 @@ export const useSidebarMenu = () => {
         url: "/tugas-akhir",
         icon: FileText,
         items: tugasAkhirItems,
+      });
+
+      menuItems.push({
+        title: "Kelola",
+        url: "/kelola",
+        icon: Database,
+        items: [
+          { title: "Kerja Praktek", url: "/kelola/kerja-praktik" },
+          { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
+          { title: "Yudisium", url: "/kelola/yudisium" },
+          { title: "Kelola Panduan", url: "/kelola/sop" },
+        ],
       });
 
       // no Profil for sekdep

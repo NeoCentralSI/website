@@ -10,6 +10,8 @@ import type {
   CreateMilestoneDto,
   UpdateMilestoneDto,
   CreateFromTemplatesDto,
+  CreateTemplateDto,
+  UpdateTemplateDto,
   UpdateStatusDto,
   UpdateProgressDto,
   SubmitForReviewDto,
@@ -37,6 +39,7 @@ const ENDPOINTS = {
   VALIDATE: (milestoneId: string) => `/milestones/${milestoneId}/validate`,
   REQUEST_REVISION: (milestoneId: string) => `/milestones/${milestoneId}/request-revision`,
   FEEDBACK: (milestoneId: string) => `/milestones/${milestoneId}/feedback`,
+  TEMPLATE_DETAIL: (templateId: string) => `/milestones/templates/${templateId}`,
 };
 
 // ============================================
@@ -74,6 +77,73 @@ export async function getTemplateCategories(): Promise<TemplateCategory[]> {
 
   const result = await response.json();
   return result.data;
+}
+
+/**
+ * Get template by ID
+ */
+export async function getTemplateById(templateId: string): Promise<MilestoneTemplate> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.TEMPLATE_DETAIL(templateId)));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil detail template");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Create milestone template (Sekretaris Departemen)
+ */
+export async function createTemplate(data: CreateTemplateDto): Promise<MilestoneTemplate> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.TEMPLATES), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal membuat template milestone");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Update milestone template (Sekretaris Departemen)
+ */
+export async function updateTemplate(
+  templateId: string,
+  data: UpdateTemplateDto
+): Promise<MilestoneTemplate> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.TEMPLATE_DETAIL(templateId)), {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal memperbarui template milestone");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Delete milestone template (Sekretaris Departemen)
+ */
+export async function deleteTemplate(templateId: string): Promise<void> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.TEMPLATE_DETAIL(templateId)), {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal menghapus template milestone");
+  }
 }
 
 // ============================================

@@ -13,12 +13,15 @@ import type {
   RequestRevisionDto,
   AddFeedbackDto,
   ReorderMilestonesDto,
+  CreateTemplateDto,
+  UpdateTemplateDto,
 } from "@/types/milestone.types";
 
 // Query Keys
 export const milestoneKeys = {
   all: ["milestones"] as const,
   templates: () => [...milestoneKeys.all, "templates"] as const,
+  template: (templateId: string) => [...milestoneKeys.templates(), templateId] as const,
   templateCategories: () => [...milestoneKeys.templates(), "categories"] as const,
   thesis: (thesisId: string) => [...milestoneKeys.all, "thesis", thesisId] as const,
   thesisMilestones: (thesisId: string, status?: MilestoneStatus) =>
@@ -50,6 +53,81 @@ export function useTemplateCategories() {
   return useQuery({
     queryKey: milestoneKeys.templateCategories(),
     queryFn: milestoneService.getTemplateCategories,
+  });
+}
+
+/**
+ * Hook to fetch single template
+ */
+export function useTemplate(templateId?: string) {
+  return useQuery({
+    queryKey: templateId ? milestoneKeys.template(templateId) : milestoneKeys.template(""),
+    queryFn: () => milestoneService.getTemplateById(templateId!),
+    enabled: !!templateId,
+  });
+}
+
+/**
+ * Hook for creating a milestone template
+ */
+export function useCreateTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateTemplateDto) => milestoneService.createTemplate(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templates() });
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateCategories() });
+      toast.success("Template milestone berhasil dibuat");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal membuat template milestone");
+    },
+  });
+}
+
+/**
+ * Hook for updating a milestone template
+ */
+export function useUpdateTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      templateId,
+      data,
+    }: {
+      templateId: string;
+      data: UpdateTemplateDto;
+    }) => milestoneService.updateTemplate(templateId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templates() });
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.template(variables.templateId) });
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateCategories() });
+      toast.success("Template milestone berhasil diperbarui");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal memperbarui template milestone");
+    },
+  });
+}
+
+/**
+ * Hook for deleting a milestone template
+ */
+export function useDeleteTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (templateId: string) => milestoneService.deleteTemplate(templateId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templates() });
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateCategories() });
+      toast.success("Template milestone berhasil dihapus");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal menghapus template milestone");
+    },
   });
 }
 

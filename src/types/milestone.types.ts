@@ -24,6 +24,16 @@ export interface TemplateCategory {
   count: number;
 }
 
+export interface CreateTemplateDto {
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  orderIndex?: number;
+  isActive?: boolean;
+}
+
+export type UpdateTemplateDto = Partial<CreateTemplateDto>;
+
 // Milestone
 export interface Milestone {
   id: string;
