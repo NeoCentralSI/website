@@ -134,14 +134,28 @@ export default function GuidanceRequestDetailDialog({
                    ((guidance as any)?.createdAt ? formatDateId((guidance as any).createdAt as string) : '-')}
                 </div>
               </div>
-              {(guidance as any)?.milestone?.title && (
-                <div className="col-span-2">
-                  <div className="text-xs text-muted-foreground mb-1">Milestone yang Dibahas</div>
+              <div className="col-span-2">
+                <div className="text-xs text-muted-foreground mb-1">Milestone yang Dibahas</div>
+                {((guidance as any)?.milestoneTitles && (guidance as any).milestoneTitles.length > 0) ? (
+                  <ul className="list-disc list-inside text-sm text-primary space-y-1">
+                    {(guidance as any).milestoneTitles.map((title: string) => (
+                      <li key={title}>{title}</li>
+                    ))}
+                  </ul>
+                ) : (guidance as any)?.milestone?.title ? (
                   <div className="font-medium text-sm text-primary">
                     {(guidance as any).milestone.title}
                   </div>
-                </div>
-              )}
+                ) : (guidance as any)?.milestoneIds && (guidance as any).milestoneIds.length > 0 ? (
+                  <ul className="list-disc list-inside text-sm text-primary space-y-1">
+                    {(guidance as any).milestoneIds.map((id: string) => (
+                      <li key={id}>Milestone ID: {id}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-sm text-muted-foreground">Tidak ada milestone terlampir</div>
+                )}
+              </div>
             </div>
 
             {/* Catatan Mahasiswa */}

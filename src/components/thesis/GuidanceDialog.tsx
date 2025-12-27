@@ -130,6 +130,16 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
                 <div className="text-xs text-muted-foreground mb-1">Lokasi</div>
                 <div className="font-medium">{guidance.location || '-'}</div>
               </div>
+              {guidance.milestoneTitles && guidance.milestoneTitles.length > 0 && (
+                <div className="col-span-2">
+                  <div className="text-xs text-muted-foreground mb-1">Milestone yang dibahas</div>
+                  <ul className="list-disc list-inside text-sm text-foreground space-y-1">
+                    {guidance.milestoneTitles.map((title) => (
+                      <li key={title}>{title}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Edit Section */}

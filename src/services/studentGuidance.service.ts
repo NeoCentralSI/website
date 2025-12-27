@@ -31,6 +31,8 @@ export interface GuidanceItem {
     fileName: string;
     filePath: string;
   } | null;
+  milestoneIds?: string[];
+  milestoneTitles?: string[];
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;

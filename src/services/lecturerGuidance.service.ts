@@ -55,6 +55,8 @@ export interface GuidanceItem {
   } | null;
   milestoneName?: string;
   milestoneStatus?: string;
+  milestoneIds?: string[];
+  milestoneTitles?: string[];
   [key: string]: unknown;
 }
 
