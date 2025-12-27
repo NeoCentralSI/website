@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MilestoneCard } from "./MilestoneCard";
 import { MilestoneProgressCard } from "./MilestoneProgressCard";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/select";
 import type { Milestone, MilestoneProgress, MilestoneStatus } from "@/types/milestone.types";
 import { MILESTONE_STATUS_CONFIG } from "@/types/milestone.types";
-import { Plus, Search, Filter, LayoutGrid, List } from "lucide-react";
+import { Plus, Search, Filter, LayoutGrid, List, MoveVertical, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface MilestoneListProps {
   milestones: Milestone[];
@@ -29,6 +30,14 @@ export interface MilestoneListProps {
   onValidate?: (milestone: Milestone) => void;
   onRequestRevision?: (milestone: Milestone) => void;
   onAddFeedback?: (milestone: Milestone) => void;
+  isProgressUpdating?: boolean;
+  statusUpdatingId?: string | null;
+  onReorder?: (orders: { id: string; orderIndex: number }[]) => void;
+  isReordering?: boolean;
+  selectedIds?: string[];
+  onToggleSelect?: (milestoneId: string) => void;
+  onBulkStart?: () => void;
+  isBulkStarting?: boolean;
 }
 
 export function MilestoneList({
@@ -46,13 +55,36 @@ export function MilestoneList({
   onValidate,
   onRequestRevision,
   onAddFeedback,
+  isProgressUpdating = false,
+  statusUpdatingId = null,
+  onReorder,
+  isReordering = false,
+  selectedIds = [],
+  onToggleSelect,
+  onBulkStart,
+  isBulkStarting = false,
 }: MilestoneListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<MilestoneStatus | "all">("all");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [orderedMilestones, setOrderedMilestones] = useState<Milestone[]>([]);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [hasReordered, setHasReordered] = useState(false);
+  const [reorderEnabled, setReorderEnabled] = useState(false);
+  const selectedCount = selectedIds?.length ?? 0;
+
+  // Keep local ordered state in sync with incoming data
+  useEffect(() => {
+    const sorted = [...milestones].sort((a, b) => a.orderIndex - b.orderIndex);
+    setOrderedMilestones(sorted);
+    if (!reorderEnabled) {
+      setDraggingId(null);
+      setHasReordered(false);
+    }
+  }, [milestones, reorderEnabled]);
 
   // Filter milestones
-  const filteredMilestones = milestones.filter((m) => {
+  const filteredMilestones = orderedMilestones.filter((m) => {
     const matchesSearch =
       searchQuery === "" ||
       m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -62,6 +94,46 @@ export function MilestoneList({
 
     return matchesSearch && matchesStatus;
   });
+
+  const enableReorder = isOwner && !!onReorder && reorderEnabled && !isReordering;
+
+  const handleDragStart = (milestoneId: string) => {
+    if (!enableReorder) return;
+    setDraggingId(milestoneId);
+  };
+
+  const handleDragOver = (event: React.DragEvent, targetId: string) => {
+    if (!enableReorder) return;
+    event.preventDefault();
+    if (!draggingId || draggingId === targetId) return;
+
+    setOrderedMilestones((prev) => {
+      const currentIndex = prev.findIndex((m) => m.id === draggingId);
+      const targetIndex = prev.findIndex((m) => m.id === targetId);
+      if (currentIndex === -1 || targetIndex === -1) return prev;
+
+      const next = [...prev];
+      const [moved] = next.splice(currentIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+    setHasReordered(true);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+  };
+
+  const handleSaveOrder = () => {
+    if (!onReorder) return;
+    const payload = orderedMilestones.map((m, idx) => ({
+      id: m.id,
+      orderIndex: idx,
+    }));
+    onReorder(payload);
+    setHasReordered(false);
+    setReorderEnabled(false);
+  };
 
   // Loading skeleton
   if (isLoading) {
@@ -117,6 +189,17 @@ export function MilestoneList({
         </div>
 
         <div className="flex items-center gap-2">
+          {isOwner && onBulkStart && selectedCount > 0 && (
+            <Button
+              size="sm"
+              onClick={onBulkStart}
+              disabled={isBulkStarting}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isBulkStarting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Mulai {selectedCount} Milestone
+            </Button>
+          )}
           <div className="flex border rounded-md">
             <Button
               variant={viewMode === "list" ? "secondary" : "ghost"}
@@ -148,8 +231,35 @@ export function MilestoneList({
               Tambah Milestone
             </Button>
           )}
+          {isOwner && onReorder && milestones.length > 1 && (
+            <Button
+              variant={reorderEnabled ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setReorderEnabled((prev) => !prev)}
+              disabled={isReordering}
+            >
+              <MoveVertical className="h-4 w-4 mr-2" />
+              {reorderEnabled ? "Selesai Atur Urutan" : "Atur Urutan"}
+            </Button>
+          )}
+          {reorderEnabled && (
+            <Button
+              size="sm"
+              onClick={handleSaveOrder}
+              disabled={!hasReordered || isReordering}
+            >
+              {isReordering && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Simpan Urutan
+            </Button>
+          )}
         </div>
       </div>
+
+      {reorderEnabled && (
+        <p className="text-xs text-muted-foreground">
+          Drag & drop kartu untuk mengubah urutan. Klik "Simpan Urutan" untuk menyimpan perubahan.
+        </p>
+      )}
 
       {/* Empty state */}
       {milestones.length === 0 ? (
@@ -179,28 +289,66 @@ export function MilestoneList({
           Tidak ada milestone yang sesuai dengan filter
         </div>
       ) : (
-        <div
-          className={
-            viewMode === "grid"
-              ? "grid grid-cols-1 md:grid-cols-2 gap-4"
-              : "space-y-4"
-          }
-        >
-          {filteredMilestones.map((milestone) => (
-            <MilestoneCard
-              key={milestone.id}
-              milestone={milestone}
-              isOwner={isOwner}
-              isSupervisor={isSupervisor}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onStatusChange={onStatusChange}
-              onProgressChange={onProgressChange}
-              onValidate={onValidate}
-              onRequestRevision={onRequestRevision}
-              onAddFeedback={onAddFeedback}
-            />
-          ))}
+        <div className="relative">
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 md:grid-cols-2 gap-4"
+                : "space-y-4"
+            }
+          >
+            {filteredMilestones.map((milestone) => (
+              <div key={milestone.id} className="relative">
+                {onToggleSelect && isOwner && (
+                  <div className="absolute z-10 ml-3 mt-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds?.includes(milestone.id)}
+                      onChange={() => onToggleSelect(milestone.id)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                  </div>
+                )}
+                <div
+                  draggable={enableReorder}
+                  onDragStart={() => handleDragStart(milestone.id)}
+                  onDragOver={(event) => handleDragOver(event, milestone.id)}
+                  onDragEnd={handleDragEnd}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    handleDragEnd();
+                  }}
+                  className={cn(
+                    enableReorder && "cursor-grab",
+                    draggingId === milestone.id && "opacity-75",
+                    selectedIds?.includes(milestone.id) && "ring-2 ring-primary/60"
+                  )}
+                >
+                  <MilestoneCard
+                    milestone={milestone}
+                    isOwner={isOwner}
+                    isSupervisor={isSupervisor}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onStatusChange={onStatusChange}
+                    onProgressChange={onProgressChange}
+                    onValidate={onValidate}
+                    onRequestRevision={onRequestRevision}
+                    onAddFeedback={onAddFeedback}
+                    isProgressUpdating={isProgressUpdating}
+                    isStatusUpdating={statusUpdatingId === milestone.id}
+                    draggable={enableReorder}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {isReordering && (
+            <div className="absolute inset-0 flex items-start justify-center pt-6 bg-background/70 backdrop-blur-sm">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </div>
       )}
     </div>

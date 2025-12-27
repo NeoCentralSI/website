@@ -22,6 +22,8 @@ import {
   useUpdateMilestone,
   useDeleteMilestone,
   useUpdateProgress,
+  useUpdateStatus,
+  useReorderMilestones,
 } from "@/hooks/milestone";
 
 import type {
@@ -54,12 +56,17 @@ export default function StudentMilestonePage() {
   const updateMutation = useUpdateMilestone(thesisId);
   const deleteMutation = useDeleteMilestone(thesisId);
   const updateProgressMutation = useUpdateProgress(thesisId);
+  const updateStatusMutation = useUpdateStatus(thesisId);
+  const reorderMutation = useReorderMilestones(thesisId);
 
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkStarting, setIsBulkStarting] = useState(false);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
 
   // Breadcrumbs
   const breadcrumb = useMemo(
@@ -168,6 +175,69 @@ export default function StudentMilestonePage() {
     );
   };
 
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkStart = async () => {
+    const eligible = milestones.filter(
+      (m) => selectedIds.includes(m.id) && (m.status === "not_started" || m.status === "revision_needed")
+    );
+    if (eligible.length === 0) {
+      toast.error("Pilih milestone dengan status Belum Mulai atau Revisi untuk memulai");
+      return;
+    }
+    setIsBulkStarting(true);
+    let successCount = 0;
+    for (const m of eligible) {
+      try {
+        await updateStatusMutation.mutateAsync({
+          milestoneId: m.id,
+          data: { status: "in_progress" },
+        });
+        successCount += 1;
+      } catch (err) {
+        toast.error((err as Error).message || `Gagal memulai "${m.title}"`);
+      }
+    }
+    if (successCount > 0) {
+      toast.success(`${successCount} milestone dimulai`);
+    }
+    setIsBulkStarting(false);
+    setSelectedIds([]);
+  };
+
+  const handleStatusChange = (milestone: Milestone, status: Milestone["status"]) => {
+    setStatusUpdatingId(milestone.id);
+    updateStatusMutation.mutate(
+      { milestoneId: milestone.id, data: { status } },
+      {
+        onSuccess: () => {
+          toast.success("Status berhasil diperbarui");
+        },
+        onError: (error) => {
+          toast.error(error.message || "Gagal memperbarui status");
+        },
+        onSettled: () => {
+          setStatusUpdatingId(null);
+        },
+      }
+    );
+  };
+
+  const handleReorder = (orders: { id: string; orderIndex: number }[]) => {
+    reorderMutation.mutate(
+      { milestoneOrders: orders },
+      {
+        onError: (error) => {
+          toast.error(error.message || "Gagal mengubah urutan milestone");
+        },
+      }
+    );
+  };
+
   const isLoading = isLoadingSupervisors || isLoadingMilestones;
 
   // If no thesis or error
@@ -217,6 +287,15 @@ export default function StudentMilestonePage() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onProgressChange={handleProgressChange}
+        onStatusChange={handleStatusChange}
+        isProgressUpdating={updateProgressMutation.isPending}
+        statusUpdatingId={statusUpdatingId}
+        onReorder={handleReorder}
+        isReordering={reorderMutation.isPending}
+        selectedIds={selectedIds}
+        onToggleSelect={handleToggleSelect}
+        onBulkStart={handleBulkStart}
+        isBulkStarting={isBulkStarting}
       />
 
       {/* Create/Edit Dialog */}

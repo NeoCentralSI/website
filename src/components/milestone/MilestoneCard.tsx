@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -19,6 +19,9 @@ import {
   MessageSquare,
   GripVertical,
   BookOpen,
+  Save,
+  X,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +37,8 @@ export interface MilestoneCardProps {
   onRequestRevision?: (milestone: Milestone) => void;
   onAddFeedback?: (milestone: Milestone) => void;
   draggable?: boolean;
+  isProgressUpdating?: boolean;
+  isStatusUpdating?: boolean;
 }
 
 export function MilestoneCard({
@@ -48,22 +53,38 @@ export function MilestoneCard({
   onRequestRevision,
   onAddFeedback,
   draggable = false,
+  isProgressUpdating = false,
+  isStatusUpdating = false,
 }: MilestoneCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [localProgress, setLocalProgress] = useState(milestone.progressPercentage);
+  const [isEditingProgress, setIsEditingProgress] = useState(false);
 
   const isCompleted = milestone.status === "completed";
-  const isPendingReview = milestone.status === "pending_review";
   const isRevisionNeeded = milestone.status === "revision_needed";
   const canStartWorking =
     isOwner && (milestone.status === "not_started" || milestone.status === "revision_needed");
-  const canValidate = isSupervisor && isPendingReview;
-  const canRequestRevision = isSupervisor && (isPendingReview || milestone.status === "in_progress");
+  const canValidate = false;
+  const canRequestRevision = isSupervisor && milestone.status === "in_progress";
 
-  const handleProgressCommit = () => {
-    if (localProgress !== milestone.progressPercentage) {
+  const progressChanged = localProgress !== milestone.progressPercentage;
+
+  useEffect(() => {
+    if (!isEditingProgress) {
+      setLocalProgress(milestone.progressPercentage);
+    }
+  }, [milestone.progressPercentage, isEditingProgress]);
+
+  const handleSaveProgress = () => {
+    if (progressChanged) {
       onProgressChange?.(milestone, localProgress);
     }
+    setIsEditingProgress(false);
+  };
+
+  const handleCancelProgressEdit = () => {
+    setLocalProgress(milestone.progressPercentage);
+    setIsEditingProgress(false);
   };
 
   return (
@@ -71,7 +92,6 @@ export function MilestoneCard({
       className={cn(
         "transition-all",
         isCompleted && "border-green-200 bg-green-50/30",
-        isPendingReview && "border-yellow-200 bg-yellow-50/30",
         isRevisionNeeded && "border-orange-200 bg-orange-50/30"
       )}
     >
@@ -146,20 +166,70 @@ export function MilestoneCard({
             {/* Progress slider for owner */}
             {isOwner && !isCompleted && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Ubah Progress</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm font-medium">Ubah Progress</label>
+                  <div className="flex items-center gap-1">
+                    {!isEditingProgress ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsEditingProgress(true)}
+                        className="h-8 w-8 text-muted-foreground"
+                        disabled={isProgressUpdating}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleCancelProgressEdit}
+                        className="h-8 w-8 text-muted-foreground"
+                        disabled={isProgressUpdating}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 <div className="flex items-center gap-4">
                   <Slider
                     value={[localProgress]}
                     onValueChange={([val]: [number]) => setLocalProgress(val)}
-                    onValueCommit={handleProgressCommit}
                     max={100}
                     step={5}
                     className="flex-1"
+                    disabled={!isEditingProgress || isProgressUpdating}
                   />
                   <span className="text-sm font-medium w-12 text-right">
                     {localProgress}%
                   </span>
                 </div>
+                {!isEditingProgress && (
+                  <p className="text-xs text-muted-foreground">
+                    Klik ikon edit untuk mengubah progress.
+                  </p>
+                )}
+                {isEditingProgress && (
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelProgressEdit}
+                      disabled={isProgressUpdating}
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveProgress}
+                      disabled={!progressChanged || isProgressUpdating}
+                    >
+                      <Save className="h-4 w-4 mr-1" />
+                      Simpan
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -257,8 +327,13 @@ export function MilestoneCard({
                     variant="outline"
                     size="sm"
                     onClick={() => onStatusChange?.(milestone, "in_progress")}
+                    disabled={isStatusUpdating}
                   >
-                    <Clock className="h-4 w-4 mr-1" />
+                    {isStatusUpdating ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Clock className="h-4 w-4 mr-1" />
+                    )}
                     Mulai
                   </Button>
                 )}

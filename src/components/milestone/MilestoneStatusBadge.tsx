@@ -10,9 +10,8 @@ export interface MilestoneStatusBadgeProps {
 
 const iconByStatus: Record<MilestoneStatus, string> = {
   not_started: "○",
-  in_progress: "◐",
-  pending_review: "◑",
-  revision_needed: "⟳",
+  in_progress: "◔",
+  revision_needed: "◕",
   completed: "●",
 };
 

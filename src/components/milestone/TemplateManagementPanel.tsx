@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Loader2, Pencil, Plus, Trash } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Loader2, Pencil, Plus, Trash, MoveVertical, GripVertical } from "lucide-react";
 import {
   useTemplates,
   useTemplateCategories,
@@ -54,6 +55,11 @@ export function TemplateManagementPanel() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formState, setFormState] = useState<TemplateFormState>(emptyForm);
+  const [orderedTemplates, setOrderedTemplates] = useState<MilestoneTemplate[]>([]);
+  const [reorderEnabled, setReorderEnabled] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [hasReordered, setHasReordered] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   const templatesQuery = useTemplates(categoryFilter || undefined);
   const categoriesQuery = useTemplateCategories();
@@ -62,16 +68,27 @@ export function TemplateManagementPanel() {
   const deleteTemplate = useDeleteTemplate();
 
   const templates = templatesQuery.data || [];
+
+  useEffect(() => {
+    const sorted = [...templates].sort((a, b) => a.orderIndex - b.orderIndex);
+    setOrderedTemplates(sorted);
+    if (!reorderEnabled) {
+      setDraggingId(null);
+      setHasReordered(false);
+    }
+  }, [templates, reorderEnabled]);
+
   const filteredTemplates = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return templates;
-    return templates.filter(
+    const source = orderedTemplates;
+    if (!term) return source;
+    return source.filter(
       (t) =>
         t.name.toLowerCase().includes(term) ||
         (t.description ?? "").toLowerCase().includes(term) ||
         (t.category ?? "").toLowerCase().includes(term)
     );
-  }, [search, templates]);
+  }, [search, orderedTemplates]);
 
   const isBusy =
     templatesQuery.isLoading ||
@@ -83,7 +100,7 @@ export function TemplateManagementPanel() {
   const startCreate = () => {
     setFormState({
       ...emptyForm,
-      orderIndex: templates.length,
+      orderIndex: orderedTemplates.length,
     });
     setDialogOpen(true);
   };
@@ -134,6 +151,47 @@ export function TemplateManagementPanel() {
     deleteTemplate.mutate(template.id);
   };
 
+  const handleDragStart = (id: string) => {
+    if (!reorderEnabled) return;
+    setDraggingId(id);
+  };
+
+  const handleDragOver = (event: React.DragEvent, targetId: string) => {
+    if (!reorderEnabled) return;
+    event.preventDefault();
+    if (!draggingId || draggingId === targetId) return;
+
+    setOrderedTemplates((prev) => {
+      const currentIndex = prev.findIndex((t) => t.id === draggingId);
+      const targetIndex = prev.findIndex((t) => t.id === targetId);
+      if (currentIndex === -1 || targetIndex === -1) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(currentIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+    setHasReordered(true);
+  };
+
+  const handleSaveOrder = async () => {
+    if (!hasReordered) return;
+    setIsSavingOrder(true);
+    try {
+      await Promise.all(
+        orderedTemplates.map((t, idx) => {
+          if (t.orderIndex === idx) return Promise.resolve();
+          return updateTemplate.mutateAsync({ templateId: t.id, data: { orderIndex: idx } });
+        })
+      );
+      setHasReordered(false);
+      setReorderEnabled(false);
+    } catch (err) {
+      toast.error((err as Error).message || "Gagal menyimpan urutan");
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -144,10 +202,32 @@ export function TemplateManagementPanel() {
               Buat, perbarui, atau hapus template milestone untuk tugas akhir.
             </CardDescription>
           </div>
-          <Button onClick={startCreate} disabled={isBusy}>
-            <Plus className="mr-2 h-4 w-4" />
-            Tambah Template
-          </Button>
+          <div className="flex items-center gap-2">
+            {reorderEnabled && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSaveOrder}
+                disabled={!hasReordered || isSavingOrder}
+              >
+                {isSavingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Simpan Urutan
+              </Button>
+            )}
+            <Button
+              variant={reorderEnabled ? "outline" : "default"}
+              size="sm"
+              onClick={() => setReorderEnabled((prev) => !prev)}
+              disabled={isBusy || isSavingOrder}
+            >
+              <MoveVertical className="mr-2 h-4 w-4" />
+              {reorderEnabled ? "Selesai Atur Urutan" : "Atur Urutan"}
+            </Button>
+            <Button onClick={startCreate} disabled={isBusy || reorderEnabled}>
+              <Plus className="mr-2 h-4 w-4" />
+              Tambah Template
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -185,6 +265,12 @@ export function TemplateManagementPanel() {
 
           <Separator />
 
+          {reorderEnabled && (
+            <p className="text-xs text-muted-foreground">
+              Drag & drop kartu untuk mengubah urutan. Klik “Simpan Urutan” untuk menyimpan perubahan.
+            </p>
+          )}
+
           {templatesQuery.isLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -199,10 +285,25 @@ export function TemplateManagementPanel() {
               {filteredTemplates.map((template) => (
                 <div
                   key={template.id}
-                  className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:flex-row md:items-start md:justify-between"
+                  draggable={reorderEnabled}
+                  onDragStart={() => handleDragStart(template.id)}
+                  onDragOver={(e) => handleDragOver(e, template.id)}
+                  onDragEnd={() => setDraggingId(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDraggingId(null);
+                  }}
+                  className={cn(
+                    "flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:flex-row md:items-start md:justify-between",
+                    reorderEnabled && "cursor-grab",
+                    draggingId === template.id && "opacity-75"
+                  )}
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
+                      {reorderEnabled && (
+                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                      )}
                       <p className="font-semibold text-sm md:text-base">{template.name}</p>
                       {template.category && (
                         <Badge variant="outline" className="text-xs">
@@ -231,7 +332,7 @@ export function TemplateManagementPanel() {
                       variant="outline"
                       size="sm"
                       onClick={() => startEdit(template)}
-                      disabled={isBusy}
+                      disabled={isBusy || reorderEnabled}
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
@@ -240,7 +341,7 @@ export function TemplateManagementPanel() {
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(template)}
-                      disabled={isBusy}
+                      disabled={isBusy || reorderEnabled}
                     >
                       <Trash className="mr-2 h-4 w-4" />
                       Hapus

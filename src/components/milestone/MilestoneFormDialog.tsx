@@ -46,7 +46,6 @@ export function MilestoneFormDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [targetDate, setTargetDate] = useState<Date | undefined>();
-  const [orderIndex, setOrderIndex] = useState(0);
 
   // Reset form when dialog opens/closes or milestone changes
   useEffect(() => {
@@ -54,12 +53,10 @@ export function MilestoneFormDialog({
       setTitle(milestone.title);
       setDescription(milestone.description || "");
       setTargetDate(milestone.targetDate ? new Date(milestone.targetDate) : undefined);
-      setOrderIndex(milestone.orderIndex);
     } else if (open && !milestone) {
       setTitle("");
       setDescription("");
       setTargetDate(undefined);
-      setOrderIndex(0);
     }
   }, [open, milestone]);
 
@@ -75,7 +72,6 @@ export function MilestoneFormDialog({
         title: title.trim(),
         description: description.trim() || undefined,
         targetDate: targetDate?.toISOString(),
-        orderIndex,
       };
       onSubmit(updateData);
     } else {
@@ -83,7 +79,7 @@ export function MilestoneFormDialog({
         title: title.trim(),
         description: description.trim() || undefined,
         targetDate: targetDate?.toISOString(),
-        orderIndex,
+        orderIndex: 0,
       };
       onSubmit(createData);
     }
@@ -150,21 +146,6 @@ export function MilestoneFormDialog({
                 />
               </PopoverContent>
             </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="orderIndex">Urutan</Label>
-            <Input
-              id="orderIndex"
-              type="number"
-              min={0}
-              value={orderIndex}
-              onChange={(e) => setOrderIndex(parseInt(e.target.value) || 0)}
-              placeholder="0"
-            />
-            <p className="text-xs text-muted-foreground">
-              Urutan tampilan milestone (0 = paling atas)
-            </p>
           </div>
 
           <DialogFooter>

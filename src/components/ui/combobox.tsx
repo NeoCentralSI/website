@@ -26,6 +26,7 @@ type ComboBoxProps = {
   onChange?: (value: string) => void
   defaultValue?: string
   width?: string
+  disabled?: boolean
 }
 
 export function ComboBox({
@@ -34,6 +35,7 @@ export function ComboBox({
   onChange,
   defaultValue = "",
   width = "w-[200px]",
+  disabled = false,
 }: ComboBoxProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<string>(defaultValue)
@@ -54,6 +56,7 @@ export function ComboBox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className={`${width} justify-between`}
         >
           {selectedItem ? selectedItem.label : placeholder}

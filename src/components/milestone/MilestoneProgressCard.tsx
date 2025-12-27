@@ -1,7 +1,7 @@
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { MilestoneProgress } from "@/types/milestone.types";
-import { CheckCircle2, Clock, AlertCircle, Loader2, Circle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, Circle } from "lucide-react";
 
 export interface MilestoneProgressCardProps {
   progress: MilestoneProgress | null;
@@ -18,8 +18,8 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
         <CardContent>
           <div className="space-y-4">
             <div className="h-4 w-full bg-muted animate-pulse rounded" />
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              {Array.from({ length: 5 }).map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-16 bg-muted animate-pulse rounded" />
               ))}
             </div>
@@ -60,13 +60,6 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
       bg: "bg-blue-50",
     },
     {
-      label: "Review",
-      value: progress.pendingReview,
-      icon: Clock,
-      color: "text-yellow-600",
-      bg: "bg-yellow-50",
-    },
-    {
       label: "Revisi",
       value: progress.revisionNeeded,
       icon: AlertCircle,
@@ -102,7 +95,7 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {stats.map((stat) => (
               <div
                 key={stat.label}

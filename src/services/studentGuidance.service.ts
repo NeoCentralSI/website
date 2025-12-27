@@ -44,6 +44,7 @@ export interface StudentRequestGuidanceBody {
   documentUrl?: string; // Link dokumen yang akan dibahas (Google Docs, Overleaf, dll)
   supervisorId?: string;
   milestoneId?: string; // Link to milestone
+  milestoneIds?: string[]; // Link multiple milestones
   type?: GuidanceType; // online/offline
   duration?: number; // durasi dalam menit
   location?: string;
@@ -178,6 +179,9 @@ export const requestStudentGuidance = async (body: StudentRequestGuidanceBody): 
   if (body.documentUrl) fd.append("documentUrl", body.documentUrl);
   if (body.supervisorId) fd.append("supervisorId", body.supervisorId);
   if (body.milestoneId) fd.append("milestoneId", body.milestoneId);
+  if (body.milestoneIds && Array.isArray(body.milestoneIds)) {
+    body.milestoneIds.forEach((id) => fd.append("milestoneIds[]", id));
+  }
   fd.append("file", body.file);
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_REQUEST), {
     method: "POST",
