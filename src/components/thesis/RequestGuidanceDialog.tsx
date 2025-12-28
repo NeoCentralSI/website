@@ -86,7 +86,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!w-[85vw] !max-w-none flex flex-col p-6">
+      <DialogContent className="w-[85vw]! max-w-none! flex flex-col p-6">
         <DialogHeader>
           <DialogTitle className="text-xl">Ajukan Bimbingan</DialogTitle>
         </DialogHeader>

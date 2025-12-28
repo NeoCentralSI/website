@@ -1,14 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
-import { Plus, Cloud, CloudOff, Loader2 } from 'lucide-react';
+import { Plus, Cloud, CloudOff, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -16,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMyCalendarEventsAPI, checkOutlookCalendarAccess, getOutlookCalendarEvents } from '@/services/calendar.service';
 import type { CalendarEvent } from '@/types/calendar.types';
 import { useRole } from '@/hooks/shared';
@@ -37,8 +30,9 @@ interface CalendarDashboardProps {
 }
 
 export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashboardProps) {
-  const [filterType, setFilterType] = useState<string>('all');
+  const [isSyncing, setIsSyncing] = useState(false);
   const calendarRef = useRef<FullCalendar>(null);
+  const queryClient = useQueryClient();
   
   const { getRoleNames } = useRole();
   const role = getRoleNames()[0] as 'student' | 'lecturer' | 'admin' | undefined;
@@ -60,18 +54,16 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
   }, []);
 
   // Get internal calendar events
-  const { data, error, isLoading } = useQuery({
-    queryKey: ['calendar-events', filterType],
+  const { data, error, isLoading, refetch: refetchInternal, isFetching: isFetchingInternal } = useQuery({
+    queryKey: ['calendar-events'],
     queryFn: async () => {
       try {
         console.log('[Calendar Dashboard] ===== FETCHING INTERNAL EVENTS =====');
         console.log('[Calendar Dashboard] Role:', role);
-        console.log('[Calendar Dashboard] Filter type:', filterType);
         
         const result = await getMyCalendarEventsAPI({
           startDate: dateRange.startDate.toISOString(),
           endDate: dateRange.endDate.toISOString(),
-          types: filterType !== 'all' ? [filterType] : undefined,
         });
         
         console.log('[Calendar Dashboard] Internal events count:', result?.events?.length || 0);
@@ -84,8 +76,8 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
     staleTime: 2 * 60 * 1000,
   });
 
-  // Get Outlook calendar events (only if user has calendar access and filter is 'all' or 'outlook')
-  const { data: outlookEvents } = useQuery({
+  // Get Outlook calendar events (only if user has calendar access)
+  const { data: outlookEvents, refetch: refetchOutlook, isFetching: isFetchingOutlook } = useQuery({
     queryKey: ['outlook-calendar-events', dateRange],
     queryFn: async () => {
       try {
@@ -101,13 +93,37 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
         return { events: [] };
       }
     },
-    enabled: outlookStatus?.hasCalendarAccess === true && (filterType === 'all' || filterType === 'outlook'),
+    enabled: outlookStatus?.hasCalendarAccess === true,
     staleTime: 2 * 60 * 1000,
   });
   
   if (error) {
     console.error('[Calendar Dashboard] Query error:', error);
   }
+
+  // Check if any sync operation is in progress
+  const isLoadingAny = isLoading || isFetchingInternal || isFetchingOutlook || isSyncing;
+
+  // Sync function to refresh calendar data
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      console.log('[Calendar Dashboard] Manual sync triggered');
+      
+      // Use refetch instead of invalidateQueries for better loading feedback
+      await Promise.all([
+        refetchInternal(),
+        outlookStatus?.hasCalendarAccess && refetchOutlook(),
+        queryClient.invalidateQueries({ queryKey: ['outlook-calendar-status'] })
+      ].filter(Boolean));
+      
+      console.log('[Calendar Dashboard] Manual sync completed');
+    } catch (error) {
+      console.error('[Calendar Dashboard] Manual sync failed:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Combine internal events with Outlook events
   const events = useMemo(() => {
@@ -143,17 +159,79 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
     transformedOutlookEvents.forEach((outlookEvent) => {
       // Check if this Outlook event is already synced as an internal event
       const isDuplicate = internalEvents.some((internalEvent) => {
-        // Compare by time and title (rough matching)
-        const sameTime = new Date(internalEvent.startDate).getTime() === new Date(outlookEvent.startDate).getTime();
-        const sameTitle = internalEvent.title?.toLowerCase().includes(outlookEvent.title?.toLowerCase()) ||
-                          outlookEvent.title?.toLowerCase().includes(internalEvent.title?.toLowerCase());
-        return sameTime && sameTitle;
+        // Enhanced matching logic for better deduplication
+        
+        // 1. Check if the internal event has an Outlook calendar event ID that matches
+        const hasMatchingOutlookId = (internalEvent as any)?.outlookEventId === outlookEvent.id.replace('outlook-', '');
+        if (hasMatchingOutlookId) {
+          console.log('[Calendar Dashboard] Found exact Outlook ID match:', {
+            internalEventId: internalEvent.id,
+            outlookEventId: outlookEvent.id,
+            title: internalEvent.title
+          });
+          return true;
+        }
+        
+        // 2. Time-based matching with tolerance for timezone conversion issues
+        const internalTime = new Date(internalEvent.startDate);
+        const outlookTime = new Date(outlookEvent.startDate);
+        const timeDifferenceMinutes = Math.abs(internalTime.getTime() - outlookTime.getTime()) / (1000 * 60);
+        
+        // Allow up to 12 hours difference to account for timezone conversion issues
+        const timeMatch = timeDifferenceMinutes <= (12 * 60);
+        
+        // 3. Title matching (case insensitive, partial match)
+        const internalTitle = (internalEvent.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        const outlookTitle = (outlookEvent.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        
+        // Check if titles have common words (for "Bimbingan - Student Name" vs "Bimbingan ...")
+        const titleMatch = (
+          internalTitle.includes('bimbingan') && outlookTitle.includes('bimbingan') ||
+          internalTitle.includes(outlookTitle) || 
+          outlookTitle.includes(internalTitle) ||
+          (internalTitle.split(' ').some(word => word.length > 3 && outlookTitle.includes(word)))
+        );
+        
+        const isMatch = timeMatch && titleMatch;
+        
+        if (isMatch) {
+          console.log('[Calendar Dashboard] Found potential duplicate:', {
+            internalEvent: {
+              id: internalEvent.id,
+              title: internalEvent.title,
+              startDate: internalEvent.startDate,
+              type: internalEvent.type
+            },
+            outlookEvent: {
+              id: outlookEvent.id,
+              title: outlookEvent.title,
+              startDate: outlookEvent.startDate,
+              type: outlookEvent.type
+            },
+            timeDifferenceMinutes,
+            timeMatch,
+            titleMatch
+          });
+        }
+        
+        return isMatch;
       });
 
       if (!isDuplicate) {
+        console.log('[Calendar Dashboard] Adding Outlook event (no duplicate found):', {
+          id: outlookEvent.id,
+          title: outlookEvent.title,
+          startDate: outlookEvent.startDate
+        });
         // Cast to any to bypass strict type check since we're displaying only
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         allEvents.push(outlookEvent as any);
+      } else {
+        console.log('[Calendar Dashboard] Skipping Outlook event (duplicate found):', {
+          id: outlookEvent.id,
+          title: outlookEvent.title,
+          startDate: outlookEvent.startDate
+        });
       }
     });
 
@@ -211,48 +289,6 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
     }));
   }, [events]);
 
-  // Get event type options based on role
-  const getEventTypeOptions = () => {
-    if (!role) return [{ value: 'all', label: 'Semua Event' }];
-
-    const commonOptions = [
-      { value: 'all', label: 'Semua Event' },
-      { value: 'meeting', label: 'Meeting' },
-      { value: 'holiday', label: 'Libur' },
-    ];
-
-    // Add Outlook option if user has calendar access
-    if (outlookStatus?.hasCalendarAccess) {
-      commonOptions.push({ value: 'outlook', label: '📅 Outlook Calendar' });
-    }
-
-    const roleOptions = {
-      student: [
-        { value: 'guidance_scheduled', label: 'Bimbingan Diterima' },
-        { value: 'guidance_request', label: 'Bimbingan Menunggu' },
-        { value: 'guidance_rejected', label: 'Bimbingan Ditolak' },
-        { value: 'thesis_deadline', label: 'Deadline Tugas Akhir' },
-        { value: 'seminar_scheduled', label: 'Seminar' },
-        { value: 'defense_scheduled', label: 'Sidang' },
-        { value: 'submission_deadline', label: 'Deadline Pengumpulan' },
-      ],
-      lecturer: [
-        { value: 'guidance_request', label: 'Permintaan Bimbingan' },
-        { value: 'student_guidance', label: 'Bimbingan Diterima' },
-        { value: 'guidance_rejected', label: 'Bimbingan Ditolak' },
-        { value: 'seminar_as_examiner', label: 'Seminar (Penguji)' },
-        { value: 'defense_as_examiner', label: 'Sidang (Penguji)' },
-      ],
-      admin: [
-        { value: 'academic_year_start', label: 'Mulai Tahun Akademik' },
-        { value: 'academic_year_end', label: 'Akhir Tahun Akademik' },
-        { value: 'registration_period', label: 'Periode Registrasi' },
-      ],
-    };
-
-    return [...commonOptions, ...(roleOptions[role] || [])];
-  };
-
   // Handle event click
   const handleEventClick = (clickInfo: EventClickArg) => {
     const event = clickInfo.event.extendedProps as CalendarEvent;
@@ -307,19 +343,24 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
           </div>
           
           <div className="flex flex-wrap gap-2">
-            {/* Filter Type */}
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {getEventTypeOptions().map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Sync Button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleSync}
+                    disabled={isLoadingAny}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isLoadingAny ? 'animate-spin' : ''}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isLoadingAny ? 'Menyinkronkan...' : 'Sinkronkan Kalender'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {/* Create Event Button */}
             {onCreateEvent && (
@@ -333,7 +374,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
 
         {/* FullCalendar */}
         <div className="fullcalendar-wrapper relative">
-          {isLoading && (
+          {isLoadingAny && (
             <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>

@@ -27,6 +27,45 @@ export default function Dashboard() {
     setSelectedEvent(event);
   };
 
+  // Generate Outlook web link for viewing event in Outlook Calendar
+  const getOutlookWebLink = (event: CalendarEvent) => {
+    console.log('[Dashboard] Generating Outlook link for event:', {
+      type: event.type,
+      title: event.title,
+      startDate: event.startDate,
+      status: event.status
+    });
+    
+    if (event.type === 'outlook_event') {
+      // For Outlook events, use the webLink if available
+      const webLink = (event as any)?.metadata?.webLink;
+      if (webLink) {
+        console.log('[Dashboard] Using webLink for Outlook event:', webLink);
+        return webLink;
+      }
+    }
+    
+    // For any event (internal or Outlook), try to construct specific event link
+    const outlookEventId = (event as any)?.outlookEventId || 
+                           (event as any)?.studentCalendarEventId || 
+                           (event as any)?.supervisorCalendarEventId;
+    
+    if (outlookEventId) {
+      console.log('[Dashboard] Using specific event ID:', outlookEventId);
+      return `https://outlook.live.com/calendar/0/view/event/${outlookEventId}`;
+    }
+    
+    // Fallback: Open Outlook Calendar to the event date and time
+    const eventDate = new Date(event.startDate);
+    const dateString = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
+    const timeString = eventDate.toISOString(); // Full ISO string for better navigation
+    
+    console.log('[Dashboard] Using fallback calendar view for date:', dateString);
+    
+    // Use the calendar view with date parameter - this will navigate to the specific day
+    return `https://outlook.live.com/calendar/0/view/day/${dateString}`;
+  };
+
   const handleCreateEvent = () => {
     setCreateEventOpen(true);
   };
@@ -173,11 +212,27 @@ export default function Dashboard() {
                 <Button variant="outline" className="flex-1" onClick={() => setSelectedEvent(null)}>
                   Tutup
                 </Button>
+                
+                {/* Meeting Link Button */}
                 {selectedEvent.meetingLink && (
                   <Button className="flex-1 gap-2" asChild>
                     <a href={selectedEvent.meetingLink} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
-                      Buka {selectedEvent.type === 'outlook_event' ? 'di Outlook' : 'Meeting'}
+                      Buka Meeting
+                    </a>
+                  </Button>
+                )}
+                
+                {/* View in Outlook Button - Show for all accepted events or outlook events */}
+                {(selectedEvent.type === 'outlook_event' || 
+                  selectedEvent.status === 'accepted' || 
+                  selectedEvent.type === 'student_guidance' ||
+                  selectedEvent.type === 'guidance_scheduled'
+                ) && (
+                  <Button variant="outline" className="flex-1 gap-2" asChild>
+                    <a href={getOutlookWebLink(selectedEvent)} target="_blank" rel="noopener noreferrer">
+                      <Calendar className="h-4 w-4" />
+                      Lihat di Outlook
                     </a>
                   </Button>
                 )}
