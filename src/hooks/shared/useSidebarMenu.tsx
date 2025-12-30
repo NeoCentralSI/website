@@ -7,10 +7,20 @@ import {
 import { useMemo } from "react";
 import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
+import { useQuery } from "@tanstack/react-query";
+import { getCachedStudentsFromSia } from "@/services/sia.service";
 
 export const useSidebarMenu = () => {
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1 } = useRole();
   const { user: authUser } = useAuth();
+  const nim = authUser?.identityNumber;
+
+  const { data: siaStudents } = useQuery({
+    queryKey: ["sia-cached-students"],
+    queryFn: getCachedStudentsFromSia,
+    enabled: !!nim && isStudent(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
@@ -35,6 +45,75 @@ export const useSidebarMenu = () => {
 
     // STUDENT MENU
     if (role.student) {
+      const siaStudent = siaStudents?.find((s) => s.nim === nim);
+      const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
+      const hasTugasAkhirCourse = !!siaStudent?.currentSemesterCourses?.some(
+        (c) => (c.name || "").toLowerCase().includes("tugas akhir")
+      );
+      const showKerjaPraktek = sks >= 90;
+      const showTugasAkhir = sks >= 110 && hasTugasAkhirCourse;
+
+      const studentNav: any[] = [
+        {
+          title: "Dashboard",
+          url: "/dashboard",
+          icon: SquareTerminal,
+          isActive: true,
+        },
+      ];
+
+      if (showKerjaPraktek) {
+        studentNav.push({
+          title: "Kerja Praktek",
+          url: "/kerja-praktik",
+          icon: Briefcase,
+          items: [
+            {
+              title: "Pendaftaran",
+              url: "/kerja-praktik/pendaftaran",
+            },
+            {
+              title: "Log Book",
+              url: "/kerja-praktik/logbook",
+            },
+            {
+              title: "Seminar",
+              url: "/kerja-praktik/seminar",
+            },
+          ],
+        });
+      }
+
+      if (showTugasAkhir) {
+        studentNav.push({
+          title: "Tugas Akhir",
+          url: "/tugas-akhir",
+          icon: FileText,
+          items: [
+            {
+              title: "Metodologi Penelitian ",
+              url: "/metopel",
+            },
+            {
+              title: "Bimbingan",
+              url: "/tugas-akhir/bimbingan",
+            },
+            {
+              title: "Seminar",
+              url: "/tugas-akhir/seminar",
+            },
+            {
+              title: "Sidang",
+              url: "/tugas-akhir/sidang",
+            },
+            {
+              title: "Yudisium",
+              url: "/yudisium",
+            },
+          ],
+        });
+      }
+
       return {
         user: {
           name: authUser?.fullName || "User",
@@ -42,60 +121,7 @@ export const useSidebarMenu = () => {
           avatar: "/avatars/student.jpg",
           initials: getInitials(authUser?.fullName),
         },
-        navMain: [
-          {
-            title: "Dashboard",
-            url: "/dashboard",
-            icon: SquareTerminal,
-            isActive: true,
-          },
-          {
-            title: "Kerja Praktek",
-            url: "/kerja-praktik",
-            icon: Briefcase,
-            items: [
-              {
-                title: "Pendaftaran",
-                url: "/kerja-praktik/pendaftaran",
-              },
-              {
-                title: "Log Book",
-                url: "/kerja-praktik/logbook",
-              },
-              {
-                title: "Seminar",
-                url: "/kerja-praktik/seminar",
-              },
-            ],
-          },
-          {
-            title: "Tugas Akhir",
-            url: "/tugas-akhir",
-            icon: FileText,
-            items: [
-              {
-                title: "Metodologi Penelitian ",
-                url: "/metopel",
-              },
-              {
-                title: "Bimbingan",
-                url: "/tugas-akhir/bimbingan",
-              },
-              {
-                title: "Seminar",
-                url: "/tugas-akhir/seminar",
-              },
-              {
-                title: "Sidang",
-                url: "/tugas-akhir/sidang",
-              },
-              {
-                title: "Yudisium",
-                url: "/yudisium",
-              },
-            ],
-          },
-        ],
+        navMain: studentNav,
         navSecondary: [],
       };
     }
@@ -478,7 +504,8 @@ export const useSidebarMenu = () => {
     // role flags
     isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1,
     // user deps
-    authUser?.fullName, authUser?.email
+    authUser?.fullName, authUser?.email, authUser?.identityNumber,
+    siaStudents
   ]);
 
   return menuData;

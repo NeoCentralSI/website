@@ -320,6 +320,23 @@ export const getStudentsAPI = async (params?: {
   return response.json();
 };
 
+// Trigger SIA sync (fetch from SIA service and cache)
+export const triggerSiaSyncAPI = async (): Promise<{ success: boolean; message?: string }> => {
+  const response = await fetch(getApiUrl('/sia/sync'), {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal menjalankan sync SIA');
+  }
+
+  return response.json();
+};
+
 // Get all lecturers
 export const getLecturersAPI = async (params?: {
   page?: number;
