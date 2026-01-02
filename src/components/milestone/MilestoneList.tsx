@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import type { Milestone, MilestoneProgress, MilestoneStatus } from "@/types/milestone.types";
 import { MILESTONE_STATUS_CONFIG } from "@/types/milestone.types";
-import { Plus, Search, Filter, LayoutGrid, List, MoveVertical, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, LayoutGrid, List, Loader2, Edit3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface MilestoneListProps {
@@ -36,6 +36,7 @@ export interface MilestoneListProps {
   isReordering?: boolean;
   selectedIds?: string[];
   onToggleSelect?: (milestoneId: string) => void;
+  onClearSelection?: () => void;
   onBulkStart?: () => void;
   isBulkStarting?: boolean;
 }
@@ -61,6 +62,7 @@ export function MilestoneList({
   isReordering = false,
   selectedIds = [],
   onToggleSelect,
+  onClearSelection,
   onBulkStart,
   isBulkStarting = false,
 }: MilestoneListProps) {
@@ -71,11 +73,20 @@ export function MilestoneList({
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hasReordered, setHasReordered] = useState(false);
   const [reorderEnabled, setReorderEnabled] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const selectedCount = selectedIds?.length ?? 0;
 
   // Keep local ordered state in sync with incoming data
   useEffect(() => {
-    const sorted = [...milestones].sort((a, b) => a.orderIndex - b.orderIndex);
+    // Keep non-completed milestones at the top (in their orderIndex order) and push completed ones to the bottom
+    const sorted = [...milestones].sort((a, b) => {
+      const aCompleted = a.status === "completed";
+      const bCompleted = b.status === "completed";
+      if (aCompleted !== bCompleted) {
+        return aCompleted ? 1 : -1;
+      }
+      return a.orderIndex - b.orderIndex;
+    });
     setOrderedMilestones(sorted);
     if (!reorderEnabled) {
       setDraggingId(null);
@@ -96,6 +107,9 @@ export function MilestoneList({
   });
 
   const enableReorder = isOwner && !!onReorder && reorderEnabled && !isReordering;
+  const startableIds = new Set(
+    orderedMilestones.filter((m) => m.status === "not_started").map((m) => m.id)
+  );
 
   const handleDragStart = (milestoneId: string) => {
     if (!enableReorder) return;
@@ -132,8 +146,41 @@ export function MilestoneList({
     }));
     onReorder(payload);
     setHasReordered(false);
-    setReorderEnabled(false);
   };
+
+  const toggleEditMode = () => {
+    setEditMode((prev) => {
+      const next = !prev;
+      if (!next) {
+        setReorderEnabled(false);
+        setHasReordered(false);
+        setDraggingId(null);
+        onClearSelection?.();
+      } else {
+        setReorderEnabled(true);
+      }
+      return next;
+    });
+  };
+
+  // Ensure reorder flag follows edit mode
+  useEffect(() => {
+    setReorderEnabled(editMode);
+    if (!editMode) {
+      setHasReordered(false);
+    }
+  }, [editMode]);
+
+  const showCheckboxes = isOwner && editMode && !!onToggleSelect;
+
+  // Drop any selection that is no longer startable when data refreshes
+  useEffect(() => {
+    if (!selectedIds?.length) return;
+    const stillValid = selectedIds.filter((id) => startableIds.has(id));
+    if (stillValid.length !== selectedIds.length) {
+      onClearSelection?.();
+    }
+  }, [selectedIds, startableIds, onClearSelection]);
 
   // Loading skeleton
   if (isLoading) {
@@ -189,7 +236,7 @@ export function MilestoneList({
         </div>
 
         <div className="flex items-center gap-2">
-          {isOwner && onBulkStart && selectedCount > 0 && (
+          {isOwner && editMode && onBulkStart && selectedCount > 0 && (
             <Button
               size="sm"
               onClick={onBulkStart}
@@ -231,15 +278,15 @@ export function MilestoneList({
               Tambah Milestone
             </Button>
           )}
-          {isOwner && onReorder && milestones.length > 1 && (
+          {isOwner && milestones.length > 0 && (
             <Button
-              variant={reorderEnabled ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setReorderEnabled((prev) => !prev)}
+              variant={editMode ? "secondary" : "outline"}
+              size="icon"
+              onClick={toggleEditMode}
               disabled={isReordering}
+              title={editMode ? "Selesai edit" : "Edit urutan & mulai banyak"}
             >
-              <MoveVertical className="h-4 w-4 mr-2" />
-              {reorderEnabled ? "Selesai Atur Urutan" : "Atur Urutan"}
+              <Edit3 className="h-4 w-4" />
             </Button>
           )}
           {reorderEnabled && (
@@ -257,7 +304,7 @@ export function MilestoneList({
 
       {reorderEnabled && (
         <p className="text-xs text-muted-foreground">
-          Drag & drop kartu untuk mengubah urutan. Klik "Simpan Urutan" untuk menyimpan perubahan.
+          Mode edit aktif: drag & drop kartu untuk mengubah urutan, centang milestone berstatus Belum Mulai lalu klik "Mulai" untuk memulai bersama.
         </p>
       )}
 
@@ -299,13 +346,17 @@ export function MilestoneList({
           >
             {filteredMilestones.map((milestone) => (
               <div key={milestone.id} className="relative">
-                {onToggleSelect && isOwner && (
+                {showCheckboxes && (
                   <div className="absolute z-10 ml-3 mt-3">
                     <input
                       type="checkbox"
                       checked={selectedIds?.includes(milestone.id)}
-                      onChange={() => onToggleSelect(milestone.id)}
-                      className="h-4 w-4 accent-primary"
+                      onChange={() => {
+                        if (!startableIds.has(milestone.id)) return;
+                        onToggleSelect(milestone.id);
+                      }}
+                      disabled={!startableIds.has(milestone.id)}
+                      className="h-4 w-4 accent-primary disabled:opacity-40 disabled:cursor-not-allowed"
                     />
                   </div>
                 )}

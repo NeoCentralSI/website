@@ -97,31 +97,31 @@ export default function NotificationItem({
   return (
     <div 
       className={cn(
-        "group relative p-4 rounded-lg border transition-all duration-200 hover:shadow-sm",
+        "group relative p-3 rounded-lg border transition-all duration-200 hover:shadow-sm",
         isRead 
           ? "bg-background border-border" 
           : "bg-muted/30 border-muted-foreground/20 shadow-sm"
       )}
     >
-      {/* Unread indicator */}
-      {!isRead && (
-        <div className="absolute top-3 left-3 h-2 w-2 rounded-full bg-primary" />
-      )}
-      
       <div className="flex items-start gap-3">
-        {/* Icon */}
-        <div className={cn(
-          "flex items-center justify-center h-8 w-8 rounded-lg border shrink-0",
-          iconColorClass
-        )}>
-          {getNotificationIcon(title || '', message || '')}
+        {/* Icon with unread indicator */}
+        <div className="relative shrink-0">
+          {!isRead && (
+            <div className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-primary z-10" />
+          )}
+          <div className={cn(
+            "flex items-center justify-center h-8 w-8 rounded-lg border",
+            iconColorClass
+          )}>
+            {getNotificationIcon(title || '', message || '')}
+          </div>
         </div>
         
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex items-start justify-between gap-2">
             <h4 className={cn(
-              "text-sm leading-5 wrap-break-word flex-1",
+              "text-sm leading-5 wrap-break-word",
               isRead ? "text-muted-foreground" : "text-foreground font-medium"
             )}>
               {title || 'Notifikasi'}
@@ -132,20 +132,20 @@ export default function NotificationItem({
           </div>
           
           <p className={cn(
-            "text-xs leading-5 wrap-break-word whitespace-pre-wrap",
+            "text-xs leading-relaxed wrap-break-word mt-0.5",
             isRead ? "text-muted-foreground/80" : "text-muted-foreground"
           )}>
             {formattedMessage}
           </p>
 
           {/* Absolute timestamp */}
-          <div className="mt-1 text-[10px] text-muted-foreground">
+          <div className="mt-1 text-[10px] text-muted-foreground/70">
             {absolute}
           </div>
         </div>
         
         {/* Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           {!isRead && (
             <Button
               size="sm"

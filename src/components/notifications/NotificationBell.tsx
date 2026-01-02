@@ -68,9 +68,12 @@ export default function NotificationBell({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[30vw] min-w-[400px] max-w-full p-0">
+      <SheetContent
+        side="right"
+        className="w-[30vw] sm:w-[30vw] sm:max-w-[30vw] min-w-[360px] max-w-none p-0"
+      >
         <div className="flex flex-col h-full">
-          <div className="border-b bg-background px-6 py-4">
+          <div className="border-b bg-background px-6 py-4 pr-12">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Notifikasi</h2>
               {unreadCount > 0 && (

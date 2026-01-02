@@ -1,12 +1,24 @@
 import { useNotifications } from "@/hooks/shared";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, Trash2 } from "lucide-react";
 import NotificationItem from "@/components/notifications/NotificationItem";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useState } from "react";
 import EmptyState from "@/components/ui/empty-state";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 function groupNotificationsByDate(notifications: any[]) {
   const groups: { [key: string]: any[] } = {};
@@ -33,8 +45,9 @@ function groupNotificationsByDate(notifications: any[]) {
 }
 
 export default function NotificationsSheetContent() {
-  const { notifications, isLoading, markAsRead, deleteNotification, markAllAsRead, unreadCount } = useNotifications();
+  const { notifications, isLoading, markAsRead, deleteNotification, markAllAsRead, deleteAllNotifications, unreadCount } = useNotifications();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const filteredNotifications = filter === 'unread' 
     ? notifications.filter(n => !n.isRead)
@@ -95,6 +108,49 @@ export default function NotificationsSheetContent() {
             <Check className="h-3 w-3 mr-1" />
             Tandai semua dibaca
           </Button>
+        )}
+        
+        {notifications.length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={isDeleting}
+                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                {isDeleting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                Hapus semua
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Hapus Semua Notifikasi?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tindakan ini akan menghapus semua notifikasi secara permanen dan tidak dapat dibatalkan.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    try {
+                      await deleteAllNotifications();
+                      toast.success("Semua notifikasi dihapus");
+                    } catch {
+                      toast.error("Gagal menghapus notifikasi");
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                >
+                  Hapus Semua
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
 

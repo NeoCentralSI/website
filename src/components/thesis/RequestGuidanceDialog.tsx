@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,8 +9,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { ComboBox } from "@/components/ui/combobox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Info } from "lucide-react";
-import type { SupervisorsResponse } from "@/services/studentGuidance.service";
-import { requestStudentGuidance } from "@/services/studentGuidance.service";
+import type { SupervisorBusySlot, SupervisorsResponse } from "@/services/studentGuidance.service";
+import { getSupervisorAvailability, requestStudentGuidance } from "@/services/studentGuidance.service";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Milestone } from "@/types/milestone.types";
@@ -31,13 +31,74 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
   const [supervisorId, setSupervisorId] = useState("");
   const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
+  const [busySlots, setBusySlots] = useState<SupervisorBusySlot[]>([]);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [slotConflict, setSlotConflict] = useState<string | null>(null);
   // Prevent borderline server-side validation by enforcing a small future window on the picker
   const minDate = new Date(Date.now() + 60 * 1000); // >= 1 minute from now
+  const durationMinutes = 60;
+
+  const resolvedSupervisorId = useMemo(() => supervisorId || supervisors[0]?.id || "", [supervisorId, supervisors]);
+
+  const startOfDay = (d: Date) => {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+  };
+  const endOfDay = (d: Date) => {
+    const x = new Date(d);
+    x.setHours(23, 59, 59, 999);
+    return x;
+  };
+  const addMinutes = (d: Date, mins: number) => new Date(d.getTime() + mins * 60000);
+
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!when || !resolvedSupervisorId) {
+        setBusySlots([]);
+        setSlotConflict(null);
+        return;
+      }
+      setCheckingAvailability(true);
+      setAvailabilityError(null);
+      try {
+        const res = await getSupervisorAvailability(resolvedSupervisorId, {
+          start: startOfDay(when).toISOString(),
+          end: endOfDay(when).toISOString(),
+        });
+        setBusySlots(res.busySlots || []);
+
+        const selectedStart = when;
+        const selectedEnd = addMinutes(when, durationMinutes);
+        const conflict = res.busySlots?.find((slot) => {
+          const slotStart = new Date(slot.start);
+          const slotEnd = new Date(slot.end);
+          return selectedStart < slotEnd && selectedEnd > slotStart;
+        });
+        if (conflict) {
+          const label = conflict.studentName ? `dengan ${conflict.studentName}` : "dengan mahasiswa lain";
+          const range = `${new Date(conflict.start).toLocaleString("id-ID")} - ${new Date(conflict.end).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
+          setSlotConflict(`Jadwal bentrok ${label} pada ${range}. Pilih waktu lain.`);
+        } else {
+          setSlotConflict(null);
+        }
+      } catch (err) {
+        setAvailabilityError((err as Error)?.message || "Gagal memuat jadwal dosen");
+        setSlotConflict(null);
+      } finally {
+        setCheckingAvailability(false);
+      }
+    };
+
+    fetchAvailability();
+  }, [when, resolvedSupervisorId]);
 
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!when) throw new Error("Pilih tanggal dan waktu");
       if (!file) throw new Error("Unggah file thesis (PDF)");
+      if (slotConflict) throw new Error(slotConflict);
       // ensure the date is not behind server tolerance; bump to minDate if needed
       const selected = when.getTime() < minDate.getTime() ? minDate : when;
       return requestStudentGuidance({
@@ -46,7 +107,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
         file: file,
         meetingUrl: meetingUrl || undefined,
         documentUrl: documentUrl || undefined,
-        supervisorId: supervisorId || undefined,
+        supervisorId: resolvedSupervisorId || undefined,
         milestoneIds: selectedMilestoneIds.length ? selectedMilestoneIds : undefined,
       });
     },
@@ -76,7 +137,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
   const needsMilestoneSelection = milestonesWithProgress.length === 0 && activeMilestones.length > 0;
   
   // Disable submit if no milestones or no active progress and no milestone selected
-  const canSubmit = !hasNoMilestones && (!needsMilestoneSelection || selectedMilestoneIds.length > 0);
+  const canSubmit = !hasNoMilestones && (!needsMilestoneSelection || selectedMilestoneIds.length > 0) && !slotConflict && !checkingAvailability;
 
   const toggleMilestone = (id: string) => {
     setSelectedMilestoneIds((prev) =>
@@ -116,7 +177,23 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Waktu Bimbingan</Label>
-              <DateTimePicker value={when} onChange={setWhen} min={minDate} disabled={hasNoMilestones} />
+              <DateTimePicker 
+                value={when} 
+                onChange={setWhen} 
+                min={minDate} 
+                disabled={hasNoMilestones}
+                busySlots={busySlots}
+                duration={durationMinutes}
+              />
+              {checkingAvailability && (
+                <p className="text-xs text-muted-foreground">Memeriksa jadwal pembimbing...</p>
+              )}
+              {availabilityError && (
+                <p className="text-xs text-destructive">{availabilityError}</p>
+              )}
+              {slotConflict && (
+                <p className="text-xs text-destructive font-medium">{slotConflict}</p>
+              )}
               <p className="text-xs text-muted-foreground">Pembimbing akan dipilih otomatis oleh sistem bila tidak dipilih.</p>
             </div>
             

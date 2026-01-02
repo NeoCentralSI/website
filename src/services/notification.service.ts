@@ -54,6 +54,12 @@ export async function deleteNotification(id: string): Promise<{ success: boolean
   if (!res.ok) throw new Error((await res.json()).message || "Gagal menghapus notifikasi");
   return res.json();
 }
+
+export async function deleteAllNotifications(): Promise<{ success: boolean; deleted: number }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.DELETE_ALL), { method: "DELETE" });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menghapus semua notifikasi");
+  return res.json();
+}
  
 export async function registerFcmToken(token: string): Promise<{ success: boolean; registered: number }> {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.FCM_REGISTER), {

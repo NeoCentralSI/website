@@ -183,10 +183,10 @@ export default function StudentMilestonePage() {
 
   const handleBulkStart = async () => {
     const eligible = milestones.filter(
-      (m) => selectedIds.includes(m.id) && (m.status === "not_started" || m.status === "revision_needed")
+      (m) => selectedIds.includes(m.id) && m.status === "not_started"
     );
     if (eligible.length === 0) {
-      toast.error("Pilih milestone dengan status Belum Mulai atau Revisi untuk memulai");
+      toast.error("Hanya milestone berstatus Belum Mulai yang bisa dipilih untuk mulai");
       return;
     }
     setIsBulkStarting(true);
@@ -294,6 +294,7 @@ export default function StudentMilestonePage() {
         isReordering={reorderMutation.isPending}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
+        onClearSelection={() => setSelectedIds([])}
         onBulkStart={handleBulkStart}
         isBulkStarting={isBulkStarting}
       />

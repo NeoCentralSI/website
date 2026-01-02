@@ -69,6 +69,29 @@ export function MilestoneCard({
 
   const progressChanged = localProgress !== milestone.progressPercentage;
 
+  const deadlineInfo = (() => {
+    if (!milestone.targetDate || milestone.status === "completed") return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(milestone.targetDate);
+    target.setHours(23, 59, 59, 999);
+    const diffDays = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 7) {
+      return { text: `Sisa ${diffDays} hari`, tone: "ok" as const };
+    }
+    if (diffDays > 1) {
+      return { text: `Sisa ${diffDays} hari`, tone: "warn" as const };
+    }
+    if (diffDays === 1) {
+      return { text: "Deadline besok", tone: "warn" as const };
+    }
+    if (diffDays === 0) {
+      return { text: "Deadline hari ini", tone: "urgent" as const };
+    }
+    return { text: `Terlambat ${Math.abs(diffDays)} hari`, tone: "urgent" as const };
+  })();
+
   useEffect(() => {
     if (!isEditingProgress) {
       setLocalProgress(milestone.progressPercentage);
@@ -91,11 +114,12 @@ export function MilestoneCard({
     <Card
       className={cn(
         "transition-all",
+        isCompleted ? "py-6" : "py-8",
         isCompleted && "border-green-200 bg-green-50/30",
         isRevisionNeeded && "border-orange-200 bg-orange-50/30"
       )}
     >
-      <CardHeader className="pb-2">
+      <CardHeader className={cn("pb-2", isCompleted && "pb-1")}>
         <div className="flex items-start gap-3">
           {draggable && (
             <div className="cursor-grab pt-1">
@@ -118,7 +142,7 @@ export function MilestoneCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className={cn("space-y-4", isCompleted && "space-y-3")}>
         {/* Progress bar */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
@@ -129,7 +153,7 @@ export function MilestoneCard({
         </div>
 
         {/* Timeline info */}
-        <div className="flex flex-wrap gap-4 text-sm">
+        <div className={cn("flex flex-wrap gap-4 text-sm", isCompleted && "gap-3")}>
           {milestone.targetDate && (
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="h-4 w-4" />
@@ -148,21 +172,34 @@ export function MilestoneCard({
               <span>Selesai: {formatDateId(milestone.completedAt)}</span>
             </div>
           )}
+          {deadlineInfo && (
+            <div
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2 py-1",
+                deadlineInfo.tone === "ok" && "bg-green-50 text-green-700 border border-green-200",
+                deadlineInfo.tone === "warn" && "bg-amber-50 text-amber-700 border border-amber-200",
+                deadlineInfo.tone === "urgent" && "bg-red-50 text-red-700 border border-red-200"
+              )}
+            >
+              <Clock className="h-4 w-4" />
+              <span className="font-medium">{deadlineInfo.text}</span>
+            </div>
+          )}
         </div>
-
-        {/* Supervisor notes */}
-        {milestone.supervisorNotes && (
-          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-            <p className="text-xs font-medium text-blue-800 mb-1">
-              Catatan Pembimbing:
-            </p>
-            <p className="text-sm text-blue-700">{milestone.supervisorNotes}</p>
-          </div>
-        )}
 
         {/* Expandable section */}
         {expanded && (
           <div className="space-y-4 pt-2 border-t">
+            {/* Supervisor notes - only visible when expanded */}
+            {milestone.supervisorNotes && (
+              <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                <p className="text-xs font-medium text-blue-800 mb-1">
+                  Catatan Pembimbing:
+                </p>
+                <p className="text-sm text-blue-700">{milestone.supervisorNotes}</p>
+              </div>
+            )}
+
             {/* Progress slider for owner */}
             {isOwner && !isCompleted && (
               <div className="space-y-2">
@@ -313,7 +350,7 @@ export function MilestoneCard({
             ) : (
               <>
                 <ChevronDown className="h-4 w-4 mr-1" />
-                Detail
+                {isCompleted ? "Detail ringkas" : "Detail"}
               </>
             )}
           </Button>

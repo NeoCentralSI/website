@@ -26,6 +26,7 @@ export const API_CONFIG = {
       MARK_ALL_READ: '/notification/read-all',
       MARK_READ: (id: string) => `/notification/${id}/read`,
       DELETE: (id: string) => `/notification/${id}`,
+      DELETE_ALL: '/notification/all',
       FCM_REGISTER: '/notification/fcm/register',
       FCM_UNREGISTER: '/notification/fcm/unregister',
     },
@@ -42,6 +43,7 @@ export const API_CONFIG = {
       HISTORY: '/thesisGuidance/student/history',
       ACTIVITY_LOG: '/thesisGuidance/student/activity-log',
       SUPERVISORS: '/thesisGuidance/student/supervisors',
+      SUPERVISOR_AVAILABILITY: (supervisorId: string) => `/thesisGuidance/student/supervisors/${supervisorId}/availability`,
     },
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',

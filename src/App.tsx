@@ -1,5 +1,5 @@
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
-import { AuthProvider, NotificationProvider } from '@/hooks/shared'
+import { AuthProvider, NotificationProvider, useAuth } from '@/hooks/shared'
 import { Toaster } from './components/ui/sonner'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
@@ -26,6 +26,28 @@ import MahasiswaPage from './pages/admin/master-data/Mahasiswa'
 import DosenPage from './pages/admin/master-data/Dosen'
 import KelolaTugasAkhirPage from './pages/tugas-akhir/secretary/TugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
+import { getAuthTokens } from './services/auth.service'
+import { Spinner } from './components/ui/spinner'
+
+const RootRoute = () => {
+  const { isLoading, isLoggedIn } = useAuth()
+  const { accessToken, refreshToken } = getAuthTokens()
+  const hasStoredSession = Boolean(accessToken || refreshToken)
+
+  if (isLoggedIn) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  if (hasStoredSession && isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Spinner className="h-8 w-8" />
+      </div>
+    )
+  }
+
+  return <Landing />
+}
 
 function App() {
   return (
@@ -34,7 +56,7 @@ function App() {
         <NotificationProvider>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<RootRoute />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />

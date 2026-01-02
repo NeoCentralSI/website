@@ -96,9 +96,9 @@ export default function GuidanceRequestDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[85vw]! max-w-none! max-h-[90vh] overflow-hidden flex flex-col p-6">
         <DialogHeader className="shrink-0">
-          <DialogTitle>
+          <DialogTitle className="text-xl">
             {mode === 'approve' && 'Setujui Bimbingan'}
             {mode === 'reject' && 'Tolak Bimbingan'}
             {mode === 'view' && 'Detail Permintaan Bimbingan'}
@@ -107,36 +107,36 @@ export default function GuidanceRequestDetailDialog({
 
         <div className="flex-1 overflow-auto">
           {mode === 'view' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               {/* Kolom Kiri - Info Utama */}
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {/* Info Section - Compact */}
-                <div className="space-y-3 p-4 rounded-lg bg-muted/50">
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-xs text-muted-foreground mb-1">Mahasiswa</div>
-                      <div className="font-medium text-sm">
+                      <div className="text-sm text-muted-foreground mb-1">Mahasiswa</div>
+                      <div className="font-medium">
                         {toTitleCaseName((guidance as any)?.studentName || (guidance as any)?.studentId || '-')}
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-muted-foreground mb-1">Status</div>
+                      <div className="text-sm text-muted-foreground mb-1">Status</div>
                       <div><StatusBadge status={guidance.status as any} /></div>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-xs text-muted-foreground mb-1">Jadwal Diminta</div>
-                      <div className="font-medium text-sm">
+                      <div className="text-sm text-muted-foreground mb-1">Jadwal Diminta</div>
+                      <div className="font-medium">
                         {(guidance as any)?.requestedDateFormatted || 
                          (guidance as any)?.approvedDateFormatted || 
                          (guidance.requestedDate ? formatDateId(guidance.requestedDate) : '-')}
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-muted-foreground mb-1">Tanggal Pengajuan</div>
-                      <div className="font-medium text-sm">
+                      <div className="text-sm text-muted-foreground mb-1">Tanggal Pengajuan</div>
+                      <div className="font-medium">
                         {(guidance as any)?.createdAtFormatted || 
                          ((guidance as any)?.createdAt ? formatDateId((guidance as any).createdAt as string) : '-')}
                       </div>
@@ -147,7 +147,7 @@ export default function GuidanceRequestDetailDialog({
                 {/* Catatan Mahasiswa */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Catatan Mahasiswa</Label>
-                  <div className="p-3 rounded-lg bg-muted/30 text-sm min-h-20 max-h-32 overflow-auto">
+                  <div className="p-4 rounded-lg bg-muted/30 min-h-24 max-h-40 overflow-auto">
                     {(guidance as any)?.notes || (guidance as any)?.studentNotes || '-'}
                   </div>
                 </div>
@@ -156,7 +156,7 @@ export default function GuidanceRequestDetailDialog({
                 {(guidance as any)?.meetingUrl && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Meeting URL</Label>
-                    <div className="p-3 rounded-lg bg-muted/30 text-sm">
+                    <div className="p-4 rounded-lg bg-muted/30">
                       <a 
                         href={(guidance as any).meetingUrl} 
                         target="_blank" 
@@ -171,11 +171,11 @@ export default function GuidanceRequestDetailDialog({
               </div>
 
               {/* Kolom Kanan - Milestone & Dokumen */}
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {/* Milestone */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Milestone yang Dibahas</Label>
-                  <div className="p-3 rounded-lg bg-muted/30 text-sm min-h-20 max-h-32 overflow-auto">
+                  <div className="p-4 rounded-lg bg-muted/30 min-h-24 max-h-40 overflow-auto">
                     {((guidance as any)?.milestoneTitles && (guidance as any).milestoneTitles.length > 0) ? (
                       <ul className="list-disc list-inside text-primary space-y-1">
                         {(guidance as any).milestoneTitles.map((title: string) => (
@@ -202,12 +202,12 @@ export default function GuidanceRequestDetailDialog({
                 {fileName && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">File Thesis</Label>
-                    <div className="flex items-center gap-2 p-3 rounded-lg border">
+                    <div className="flex items-center gap-3 p-4 rounded-lg border">
                       <FileTextIcon className="size-5 text-muted-foreground shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{fileName}</div>
+                        <div className="font-medium truncate">{fileName}</div>
                         {isPdf && (
-                          <div className="text-xs text-muted-foreground">Klik untuk melihat preview</div>
+                          <div className="text-sm text-muted-foreground">Klik untuk melihat preview</div>
                         )}
                       </div>
                       {isPdf && filePath && (
@@ -227,7 +227,7 @@ export default function GuidanceRequestDetailDialog({
                 {(guidance as any)?.documentUrl && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Link Dokumen Pembahasan</Label>
-                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm">
+                    <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
                       <a 
                         href={(guidance as any).documentUrl} 
                         target="_blank" 
@@ -236,7 +236,7 @@ export default function GuidanceRequestDetailDialog({
                       >
                         {(guidance as any).documentUrl}
                       </a>
-                      <div className="text-xs text-muted-foreground mt-1">Google Docs, Overleaf, Notion, dll</div>
+                      <div className="text-sm text-muted-foreground mt-1">Google Docs, Overleaf, Notion, dll</div>
                     </div>
                   </div>
                 )}
@@ -245,13 +245,13 @@ export default function GuidanceRequestDetailDialog({
           )}
 
           {mode === 'approve' && (
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
+            <div className="space-y-5">
+              <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800">
                 ℹ️ Anda akan menyetujui permintaan bimbingan dari{' '}
                 <strong>{toTitleCaseName((guidance as any)?.studentName || '-')}</strong>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="meetingUrl">Meeting URL (opsional)</Label>
                   <Input
@@ -261,7 +261,7 @@ export default function GuidanceRequestDetailDialog({
                     onChange={(e) => setMeetingUrl(e.target.value)}
                     disabled={submitting}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Link meeting untuk bimbingan online
                   </p>
                 </div>
@@ -283,8 +283,8 @@ export default function GuidanceRequestDetailDialog({
           )}
 
           {mode === 'reject' && (
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+            <div className="space-y-5">
+              <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-800">
                 ⚠️ Anda akan menolak permintaan bimbingan dari{' '}
                 <strong>{toTitleCaseName((guidance as any)?.studentName || '-')}</strong>
               </div>
@@ -300,7 +300,7 @@ export default function GuidanceRequestDetailDialog({
                   rows={4}
                   className="resize-none"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Mahasiswa akan menerima notifikasi dengan alasan ini
                 </p>
               </div>

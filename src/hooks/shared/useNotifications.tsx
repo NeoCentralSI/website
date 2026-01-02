@@ -6,6 +6,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   deleteNotification as deleteNotificationAPI,
+  deleteAllNotifications as deleteAllNotificationsAPI,
   type NotificationItem,
 } from '@/services/notification.service';
 import { useAuth } from '@/hooks/shared';
@@ -20,6 +21,7 @@ interface NotificationContextType {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  deleteAllNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -144,6 +146,19 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     }
   }, [notifications, fetchUnreadCount, queryClient]);
 
+  const deleteAllNotifications = useCallback(async () => {
+    try {
+      await deleteAllNotificationsAPI();
+      
+      // Clear all notifications from local state
+      setNotifications([]);
+      queryClient.setQueryData(['notification-unread'], 0);
+    } catch (error) {
+      console.error('Failed to delete all notifications:', error);
+      throw error;
+    }
+  }, [queryClient]);
+
   // NOTE: FCM listener is handled by useGuidanceRealtime hook in DashboardLayout
   // to avoid duplicate listeners and ensure proper event routing based on notification type
   // The query ['notification-unread'] will be invalidated by useGuidanceRealtime when FCM arrives
@@ -157,6 +172,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllNotifications,
   };
 
   return (

@@ -142,6 +142,15 @@ export interface SupervisorsResponse {
   supervisors: SupervisorItem[];
 }
 
+export interface SupervisorBusySlot {
+  id: string;
+  start: string;
+  end: string;
+  duration: number;
+  status: GuidanceStatus;
+  studentName: string | null;
+}
+
 // Helpers
 const buildUrl = (endpoint: string, params?: Record<string, string | number | boolean | undefined>) => {
   if (!params) return getApiUrl(endpoint);
@@ -261,5 +270,23 @@ export const getStudentActivityLog = async (): Promise<{ success: boolean; count
 export const getStudentSupervisors = async (): Promise<SupervisorsResponse> => {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.SUPERVISORS));
   if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat pembimbing");
+  return res.json();
+};
+
+export const getSupervisorAvailability = async (
+  supervisorId: string,
+  params?: { start?: string; end?: string }
+): Promise<{ success: boolean; busySlots: SupervisorBusySlot[] }> => {
+  const url = (() => {
+    const endpoint = API_CONFIG.ENDPOINTS.THESIS_STUDENT.SUPERVISOR_AVAILABILITY(supervisorId);
+    if (!params?.start && !params?.end) return getApiUrl(endpoint);
+    const qs = new URLSearchParams();
+    if (params?.start) qs.set("start", params.start);
+    if (params?.end) qs.set("end", params.end);
+    return `${getApiUrl(endpoint)}?${qs.toString()}`;
+  })();
+
+  const res = await apiRequest(url);
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat ketersediaan dosen");
   return res.json();
 };

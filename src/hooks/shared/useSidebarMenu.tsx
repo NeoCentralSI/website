@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   Briefcase,
   Database,
   FileText,
@@ -86,14 +87,17 @@ export const useSidebarMenu = () => {
 
       if (showTugasAkhir) {
         studentNav.push({
+          title: "Metode Penelitian",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [],
+        });
+
+        studentNav.push({
           title: "Tugas Akhir",
           url: "/tugas-akhir",
           icon: FileText,
           items: [
-            {
-              title: "Metodologi Penelitian ",
-              url: "/metopel",
-            },
             {
               title: "Bimbingan",
               url: "/tugas-akhir/bimbingan",
@@ -152,16 +156,18 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      // Menu Tugas Akhir (selalu ada), Metopel muncul jika Pembimbing 1
+      // Menu Metode Penelitian (hanya untuk Pembimbing 1)
+      if (role.pembimbing1) {
+        menuItems.push({
+          title: "Metode Penelitian",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [],
+        });
+      }
+
+      // Menu Tugas Akhir (selalu ada)
       const tugasAkhirItems = [
-        ...(role.pembimbing1
-          ? [
-              {
-                title: "Metopel",
-                url: "/metopel",
-              },
-            ]
-          : []),
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
         { title: "Seminar", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
@@ -218,16 +224,18 @@ export const useSidebarMenu = () => {
         },
       ];
 
+      // Menu Metode Penelitian (hanya untuk Pembimbing 1)
+      if (role.pembimbing1) {
+        menuItems.push({
+          title: "Metode Penelitian",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [],
+        });
+      }
+
       // Menu Tugas Akhir
       const tugasAkhirItems = [
-        ...(role.pembimbing1
-          ? [
-              {
-                title: "Metopel",
-                url: "/metopel",
-              },
-            ]
-          : []),
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
         { title: "Seminar", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
@@ -288,16 +296,18 @@ export const useSidebarMenu = () => {
         },
       ];
 
+      // Menu Metode Penelitian (hanya untuk Pembimbing 1)
+      if (role.pembimbing1) {
+        menuItems.push({
+          title: "Metode Penelitian",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [],
+        });
+      }
+
       // Menu Tugas Akhir
       const tugasAkhirItems = [
-        ...(role.pembimbing1
-          ? [
-              {
-                title: "Metopel",
-                url: "/metopel",
-              },
-            ]
-          : []),
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
         { title: "Seminar", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
@@ -366,16 +376,18 @@ export const useSidebarMenu = () => {
         },
       ];
 
+      // Menu Metode Penelitian (hanya untuk Pembimbing 1)
+      if (role.pembimbing1) {
+        menuItems.push({
+          title: "Metode Penelitian",
+          url: "/metopel",
+          icon: BookOpen,
+          items: [],
+        });
+      }
+
       // Menu Tugas Akhir
       const tugasAkhirItems = [
-        ...(role.pembimbing1
-          ? [
-              {
-                title: "Metopel",
-                url: "/metopel",
-              },
-            ]
-          : []),
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
         { title: "Seminar", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },

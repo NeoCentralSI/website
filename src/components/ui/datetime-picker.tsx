@@ -11,6 +11,15 @@ const TIME_PRESETS = [
   "13:00", "14:00", "15:00", "16:00",
 ];
 
+export type BusySlot = {
+  id: string;
+  start: string;
+  end: string;
+  duration?: number;
+  status?: string;
+  studentName?: string | null;
+};
+
 export type DateTimePickerProps = {
   value?: Date | null;
   onChange?: (value: Date | null) => void;
@@ -18,9 +27,20 @@ export type DateTimePickerProps = {
   disabled?: boolean;
   className?: string;
   min?: Date; // optional minimum date/time
+  busySlots?: BusySlot[]; // slots that are already booked
+  duration?: number; // duration in minutes for the new slot (default 60)
 };
 
-export function DateTimePicker({ value, onChange, placeholder = "Pilih tanggal & waktu", disabled, className, min }: DateTimePickerProps) {
+export function DateTimePicker({ 
+  value, 
+  onChange, 
+  placeholder = "Pilih tanggal & waktu", 
+  disabled, 
+  className, 
+  min,
+  busySlots = [],
+  duration = 60,
+}: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | null>(value || null);
   const [time, setTime] = React.useState<string>(() => {
@@ -82,6 +102,41 @@ export function DateTimePicker({ value, onChange, placeholder = "Pilih tanggal &
     return testDate >= min;
   };
 
+  // Check if a time slot conflicts with busy slots
+  const isTimeBusy = (t: string): { busy: boolean; conflict?: BusySlot } => {
+    if (!date || busySlots.length === 0) return { busy: false };
+    
+    const [hh, mm] = t.split(":").map((v) => parseInt(v || "0", 10));
+    const slotStart = new Date(date);
+    slotStart.setHours(hh, mm, 0, 0);
+    const slotEnd = new Date(slotStart.getTime() + duration * 60000);
+
+    for (const busy of busySlots) {
+      const busyStart = new Date(busy.start);
+      const busyEnd = new Date(busy.end);
+      
+      // Check if same day
+      if (slotStart.toDateString() !== busyStart.toDateString()) continue;
+      
+      // Check overlap: slotStart < busyEnd && slotEnd > busyStart
+      if (slotStart < busyEnd && slotEnd > busyStart) {
+        return { busy: true, conflict: busy };
+      }
+    }
+    return { busy: false };
+  };
+
+  // Get busy slots info for tooltip
+  const getBusySlotInfo = (t: string): string | null => {
+    const { busy, conflict } = isTimeBusy(t);
+    if (!busy || !conflict) return null;
+    
+    const startTime = new Date(conflict.start).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    const endTime = new Date(conflict.end).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    const name = conflict.studentName || "mahasiswa lain";
+    return `Sudah dibooking oleh ${name} (${startTime}-${endTime})`;
+  };
+
   // Calculate min date for calendar
   const minDate = min ? new Date(min.getFullYear(), min.getMonth(), min.getDate()) : undefined;
 
@@ -132,28 +187,61 @@ export function DateTimePicker({ value, onChange, placeholder = "Pilih tanggal &
             <div className="grid grid-cols-2 gap-1.5 mb-3">
               {TIME_PRESETS.map((t) => {
                 const isValid = isTimeValid(t);
+                const { busy: isBusy } = isTimeBusy(t);
+                const busyInfo = getBusySlotInfo(t);
                 const isSelected = time === t;
+                const isDisabled = !isValid || isBusy;
+                
                 return (
-                  <Button
-                    key={t}
-                    type="button"
-                    variant={isSelected ? "default" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "text-xs h-8",
-                      !isValid && "opacity-50 cursor-not-allowed"
+                  <div key={t} className="relative group">
+                    <Button
+                      type="button"
+                      variant={isSelected ? "default" : isBusy ? "ghost" : "outline"}
+                      size="sm"
+                      className={cn(
+                        "text-xs h-8 w-full",
+                        isDisabled && "opacity-50 cursor-not-allowed",
+                        isBusy && "bg-red-50 border-red-200 text-red-400 hover:bg-red-50 line-through"
+                      )}
+                      disabled={isDisabled}
+                      onClick={() => { 
+                        setTime(t); 
+                        commit(date, t); 
+                      }}
+                    >
+                      {t}
+                    </Button>
+                    {/* Tooltip for busy slots */}
+                    {isBusy && busyInfo && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-[10px] bg-gray-900 text-white rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                        {busyInfo}
+                      </div>
                     )}
-                    disabled={!isValid}
-                    onClick={() => { 
-                      setTime(t); 
-                      commit(date, t); 
-                    }}
-                  >
-                    {t}
-                  </Button>
+                  </div>
                 );
               })}
             </div>
+            
+            {/* Busy slots summary */}
+            {date && busySlots.filter(s => new Date(s.start).toDateString() === date.toDateString()).length > 0 && (
+              <div className="mb-3 p-2 rounded-md bg-amber-50 border border-amber-200">
+                <div className="text-[10px] text-amber-700 font-medium mb-1">Jadwal terpakai:</div>
+                <div className="space-y-0.5">
+                  {busySlots
+                    .filter(s => new Date(s.start).toDateString() === date.toDateString())
+                    .map(slot => (
+                      <div key={slot.id} className="text-[10px] text-amber-600 flex justify-between">
+                        <span className="truncate max-w-16">{slot.studentName || "Lain"}</span>
+                        <span>
+                          {new Date(slot.start).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}-
+                          {new Date(slot.end).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
             
             {/* Custom time input */}
             <div className="space-y-1.5">

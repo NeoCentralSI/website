@@ -136,7 +136,7 @@ export function CustomTable<T extends Record<string, any>>({
 									</div>
 								</div>
 
-				<div className="border rounded-md">
+				<div className="rounded-md border border-black/10">
 								<Table>
 									<TableHeader>
 										<TableRow>
