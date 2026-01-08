@@ -76,9 +76,9 @@ export default function MicrosoftCallback() {
           });
         }
 
-        // Redirect to dashboard dengan hard redirect
+        // Redirect to dashboard dengan SPA navigation
         console.log('🚀 Redirecting to dashboard...');
-        window.location.href = '/dashboard';
+        navigate('/dashboard', { replace: true });
       } catch (error) {
         console.error('❌ Callback error:', error);
         // Jangan tampilkan error, langsung redirect ke login

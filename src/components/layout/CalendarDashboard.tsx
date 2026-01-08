@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Plus, Cloud, CloudOff, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMyCalendarEventsAPI, checkOutlookCalendarAccess, getOutlookCalendarEvents } from '@/services/calendar.service';
 import type { CalendarEvent } from '@/types/calendar.types';
 import { useRole } from '@/hooks/shared';
+import { cn } from '@/lib/utils';
 
 // FullCalendar imports
 import FullCalendar from '@fullcalendar/react';
@@ -27,13 +28,36 @@ interface CalendarDashboardProps {
   onEventClick?: (event: CalendarEvent) => void;
   onCreateEvent?: () => void;
   compact?: boolean;
+  className?: string;
 }
 
-export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashboardProps) {
+export function CalendarDashboard({ onEventClick, onCreateEvent, className }: CalendarDashboardProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const calendarRef = useRef<FullCalendar>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
+  // Handle Resize for responsive layout
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Use requestAnimationFrame to throttle and ensure render cycle is complete
+      requestAnimationFrame(() => {
+        if (calendarRef.current) {
+          calendarRef.current.getApi().updateSize();
+        }
+      });
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   const { getRoleNames } = useRole();
   const role = getRoleNames()[0] as 'student' | 'lecturer' | 'admin' | undefined;
 
@@ -306,10 +330,10 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
   };
 
   return (
-    <Card className="w-full">
-      <div className="p-6">
+    <Card className={cn("w-full h-full flex flex-col", className)}>
+      <div className="p-6 h-full flex flex-col">
         {/* Header Controls */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-4 mb-4 shrink-0">
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold">Kalender</h2>
@@ -373,7 +397,10 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
         </div>
 
         {/* FullCalendar */}
-        <div className="fullcalendar-wrapper relative">
+        <div 
+          ref={containerRef}
+          className="fullcalendar-wrapper relative flex-1 min-h-0"
+        >
           {isLoadingAny && (
             <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -402,7 +429,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
             select={handleDateSelect}
             editable={false}
             dayMaxEvents={3}
-            height="auto"
+            height="100%"
             firstDay={1}
             slotMinTime="07:00:00"
             slotMaxTime="20:00:00"
@@ -432,59 +459,126 @@ export function CalendarDashboard({ onEventClick, onCreateEvent }: CalendarDashb
 
       {/* Minimal Custom CSS for FullCalendar */}
       <style>{`
-        .fullcalendar-wrapper .fc {
+        .fullcalendar-wrapper {
+          --fc-border-color: var(--border);
+          --fc-button-text-color: var(--foreground);
+          --fc-button-bg-color: transparent;
+          --fc-button-border-color: var(--border);
+          --fc-button-hover-bg-color: var(--accent);
+          --fc-button-hover-border-color: var(--border);
+          --fc-button-active-bg-color: var(--primary);
+          --fc-button-active-border-color: var(--primary);
+          --fc-button-active-text-color: var(--primary-foreground);
+          --fc-today-bg-color: var(--accent);
+          --fc-page-bg-color: var(--background);
+          --fc-neutral-bg-color: var(--secondary);
+          --fc-list-event-hover-bg-color: var(--accent);
           font-family: inherit;
         }
 
+        /* Toolbar Styling */
+        .fullcalendar-wrapper .fc-header-toolbar {
+          margin-bottom: 1.5rem !important;
+          gap: 1rem;
+        }
+
+        .fullcalendar-wrapper .fc-toolbar-title {
+          font-size: 1.25rem !important;
+          font-weight: 600 !important;
+          color: var(--foreground);
+        }
+
+        /* Button Styling */
         .fullcalendar-wrapper .fc-button {
-          text-transform: capitalize;
-          background-color: white !important;
-          color: #f97316 !important;
-          border: 1px solid #f97316 !important;
-          padding: 0.4rem 0.8rem !important;
+          height: 2.25rem;
+          padding: 0 1rem !important;
           font-size: 0.875rem !important;
+          font-weight: 500 !important;
+          text-transform: capitalize;
+          border-radius: var(--radius) !important;
+          box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .fullcalendar-wrapper .fc-button:hover {
-          background-color: #fff7ed !important;
-          color: #f97316 !important;
-          border-color: #f97316 !important;
-        }
-
-        .fullcalendar-wrapper .fc-button:focus {
-          box-shadow: 0 0 0 0.15rem rgba(249, 115, 22, 0.2) !important;
+          background-color: var(--accent) !important;
+          color: var(--accent-foreground) !important;
+          border-color: var(--border) !important;
         }
 
         .fullcalendar-wrapper .fc-button-active {
-          background-color: #f97316 !important;
-          color: white !important;
-          border-color: #f97316 !important;
+          background-color: var(--primary) !important;
+          color: var(--primary-foreground) !important;
+          border-color: var(--primary) !important;
+          box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
 
         .fullcalendar-wrapper .fc-button:disabled {
           opacity: 0.5;
-          background-color: white !important;
-          color: #f97316 !important;
-          border-color: #f97316 !important;
         }
 
+        /* Button Group Styling */
+        .fullcalendar-wrapper .fc-button-group .fc-button {
+          border-radius: 0 !important;
+        }
+        
+        .fullcalendar-wrapper .fc-button-group .fc-button:first-child {
+          border-top-left-radius: var(--radius) !important;
+          border-bottom-left-radius: var(--radius) !important;
+        }
+        
+        .fullcalendar-wrapper .fc-button-group .fc-button:last-child {
+          border-top-right-radius: var(--radius) !important;
+          border-bottom-right-radius: var(--radius) !important;
+        }
+
+        /* Focus Ring */
+        .fullcalendar-wrapper .fc-button:focus-visible {
+          outline: 2px solid var(--ring);
+          outline-offset: 2px;
+          z-index: 10;
+        }
+
+        /* Grid Header */
+        .fullcalendar-wrapper .fc-col-header-cell {
+          background-color: var(--muted);
+          padding: 0.5rem 0 !important;
+        }
+
+        .fullcalendar-wrapper .fc-col-header-cell-cushion {
+          color: var(--muted-foreground);
+          font-weight: 500;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 0.025em;
+        }
+
+        /* Grid Body */
+        .fullcalendar-wrapper .fc-daygrid-day-number {
+          padding: 0.5rem 0.75rem !important;
+          color: var(--foreground);
+          font-size: 0.875rem;
+          font-weight: 400;
+        }
+
+        .fullcalendar-wrapper .fc-day-today {
+          background-color: transparent !important;
+        }
+        
+        .fullcalendar-wrapper .fc-day-today .fc-daygrid-day-frame {
+          background-color: var(--accent);
+        }
+
+        /* Events */
         .fullcalendar-wrapper .fc-event {
-          cursor: pointer;
-        }
-
-        .dark .fullcalendar-wrapper .fc-button {
-          background-color: hsl(var(--background)) !important;
-          color: #f97316 !important;
-          border: 1px solid #f97316 !important;
-        }
-
-        .dark .fullcalendar-wrapper .fc-button:hover {
-          background-color: hsl(var(--accent)) !important;
-        }
-
-        .dark .fullcalendar-wrapper .fc-button-active {
-          background-color: #f97316 !important;
-          color: white !important;
+          border-radius: 4px;
+          border: none;
+          padding: 2px 4px;
+          font-weight: 500;
+          font-size: 0.75rem;
         }
       `}</style>
     </Card>

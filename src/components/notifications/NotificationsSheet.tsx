@@ -1,4 +1,5 @@
 import { useNotifications } from "@/hooks/shared";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Check, Trash2 } from "lucide-react";
@@ -73,84 +74,98 @@ export default function NotificationsSheetContent() {
   return (
     <div className="flex flex-col h-full">
       {/* Header Controls */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('all')}
-            className="h-8"
-          >
-            Semua
-          </Button>
-          <Button
-            variant={filter === 'unread' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('unread')}
-            className="h-8"
-          >
-            Belum dibaca
-            {unreadCount > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center h-5 min-w-5 px-2 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </Button>
+      <div className="flex flex-col gap-3 mb-2 pb-2">
+        <div className="flex items-center justify-between gap-2">
+          {/* Filters - Left Aligned */}
+          <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-md border">
+            <Button
+              variant={filter === 'all' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter('all')}
+              className={cn(
+                "h-7 text-xs px-3",
+                filter === 'all' && "bg-white shadow-sm dark:bg-zinc-800"
+              )}
+            >
+              Semua
+            </Button>
+            <Button
+              variant={filter === 'unread' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter('unread')}
+              className={cn(
+                "h-7 text-xs px-3",
+                filter === 'unread' && "bg-white shadow-sm dark:bg-zinc-800"
+              )}
+            >
+              Belum dibaca
+              {unreadCount > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center h-4 min-w-4 px-1 text-[10px] font-medium bg-primary/10 text-primary rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
         
-        {unreadCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => markAllAsRead()}
-            className="h-8 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Check className="h-3 w-3 mr-1" />
-            Tandai semua dibaca
-          </Button>
-        )}
-        
-        {notifications.length > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+        {/* Bulk Actions - Right Aligned (Separate Row to prevent overlap) */}
+        {(unreadCount > 0 || notifications.length > 0) && (
+          <div className="flex items-center justify-end gap-2 flex-wrap">
+            {unreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={isDeleting}
-                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => markAllAsRead()}
+                className="h-7 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5"
               >
-                {isDeleting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
-                Hapus semua
+                <Check className="h-3 w-3 mr-1.5" />
+                Tandai dibaca
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Hapus Semua Notifikasi?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tindakan ini akan menghapus semua notifikasi secara permanen dan tidak dapat dibatalkan.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-white hover:bg-destructive/90"
-                  onClick={async () => {
-                    setIsDeleting(true);
-                    try {
-                      await deleteAllNotifications();
-                      toast.success("Semua notifikasi dihapus");
-                    } catch {
-                      toast.error("Gagal menghapus notifikasi");
-                    } finally {
-                      setIsDeleting(false);
-                    }
-                  }}
-                >
-                  Hapus Semua
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            )}
+            
+            {notifications.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isDeleting}
+                    className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    {isDeleting ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1.5" />}
+                    Hapus semua
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Hapus Semua Notifikasi?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tindakan ini akan menghapus semua notifikasi secara permanen dan tidak dapat dibatalkan.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-white hover:bg-destructive/90"
+                      onClick={async () => {
+                        setIsDeleting(true);
+                        try {
+                          await deleteAllNotifications();
+                          toast.success("Semua notifikasi dihapus");
+                        } catch {
+                          toast.error("Gagal menghapus notifikasi");
+                        } finally {
+                          setIsDeleting(false);
+                        }
+                      }}
+                    >
+                      Hapus Semua
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         )}
       </div>
 

@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { clearAuthTokens, getAuthTokens, getUserProfileAPI, loginAPI, logoutAPI, saveAuthTokens, type User } from '@/services/auth.service';
 import { unregisterFcmToken } from '@/services/notification.service';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Key untuk menyimpan FCM token di localStorage
 const FCM_TOKEN_KEY = 'fcm_token';
@@ -31,55 +32,43 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const hasCheckedRef = useRef(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
 
-  // Check authentication on mount - ONLY ONCE (survives StrictMode double mount)
+  // Gunakan React Query untuk management state user & auth checking
+  // Ini otomatis handle caching, deduplication, dan revalidation
+  const { data: user, isLoading, error, refetch } = useQuery({
+    queryKey: ['auth-user'],
+    queryFn: async () => {
+      const { accessToken } = getAuthTokens();
+      if (!accessToken) return null;
+      return await getUserProfileAPI();
+    },
+    staleTime: Infinity, // User data jarang berubah, manual refresh jika perlu
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 mins
+    retry: false, // Jangan retry jika 401, langsung logout
+    enabled: location.pathname !== '/auth/microsoft/callback', // Skip fetch saat callback process
+  });
+
+  // Handle error (misal token expired atau invalid)
   useEffect(() => {
-    if (hasCheckedRef.current) return;
-    hasCheckedRef.current = true;
-    
-    const checkAuth = async () => {
-      try {
-        const { accessToken } = getAuthTokens();
-        
-        if (accessToken) {
-          const userData = await getUserProfileAPI();
-          setUser(userData);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('[useAuth] Error checking auth:', error);
-        const errorMessage = error instanceof Error ? error.message : '';
-        
-        if (errorMessage.includes('Session expired') || errorMessage.includes('Invalid')) {
-          clearAuthTokens();
-        }
-        
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
+    if (error) {
+      console.error('[useAuth] Auth check failed:', error);
+      clearAuthTokens();
+      queryClient.setQueryData(['auth-user'], null);
+    }
+  }, [error, queryClient]);
 
   const login = async (email: string, password: string) => {
     try {
-      setIsLoading(true);
       const response = await loginAPI({ email, password });
       
       saveAuthTokens(response.accessToken, response.refreshToken);
-      setUser(response.user);
+      queryClient.setQueryData(['auth-user'], response.user);
       navigate('/dashboard');
     } catch (error) {
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -105,35 +94,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       clearAuthTokens();
       localStorage.removeItem(FCM_TOKEN_KEY);
-      setUser(null);
-      hasCheckedRef.current = false;
+      queryClient.setQueryData(['auth-user'], null);
+      queryClient.clear(); // Clear all cache
       navigate('/login');
     }
   };
 
   const refreshUser = async () => {
     try {
-      setIsLoading(true);
-      const userData = await getUserProfileAPI();
-      setUser(userData);
+      await refetch();
     } catch (error) {
       console.error('Failed to refresh user data:', error);
       clearAuthTokens();
-      setUser(null);
+      queryClient.setQueryData(['auth-user'], null);
       navigate('/login');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const setUserDirectly = (userData: User) => {
-    setUser(userData);
-    setIsLoading(false);
-    setHasChecked(true);
+    queryClient.setQueryData(['auth-user'], userData);
   };
 
   const value: AuthContextType = {
-    user,
+    user: user || null,
     isLoading,
     isLoggedIn: !!user,
     login,
@@ -141,6 +124,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     refreshUser,
     setUserDirectly
   };
+
 
   return (
     <AuthContext.Provider value={value}>

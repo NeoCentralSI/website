@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNotifications } from '@/hooks/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bell, Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
+import { Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import EmptyState from '@/components/ui/empty-state';
 
 export default function Notifikasi() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -119,12 +120,11 @@ export default function Notifikasi() {
       ) : notifications.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Bell className="w-12 h-12 text-gray-300 mb-4" />
-            <p className="text-gray-500 text-center">
-              {filter === 'unread'
-                ? 'Tidak ada notifikasi yang belum dibaca'
-                : 'Tidak ada notifikasi'}
-            </p>
+            <EmptyState
+              title={filter === 'unread' ? 'Tidak Ada Notifikasi Belum Dibaca' : 'Tidak Ada Notifikasi'}
+              description={filter === 'unread' ? 'Semua notifikasi sudah dibaca' : 'Notifikasi akan muncul di sini'}
+              size="md"
+            />
           </CardContent>
         </Card>
       ) : (

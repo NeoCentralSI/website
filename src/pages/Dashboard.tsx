@@ -9,6 +9,9 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Calendar, MapPin, Users, Video } from "lucide-react";
+import { UpcomingEventsCard } from "@/components/dashboard/UpcomingEventsCard";
+import { MilestoneProgressCard } from "@/components/dashboard/MilestoneProgressCard";
+import { useRole } from "@/hooks/shared";
 
 export default function Dashboard() {
   console.log('🎯 [Dashboard] Component rendering');
@@ -16,6 +19,7 @@ export default function Dashboard() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [createEventOpen, setCreateEventOpen] = useState(false);
+  const { isStudent } = useRole();
 
   useEffect(() => {
     console.log('📋 [Dashboard] Setting breadcrumbs and title');
@@ -103,12 +107,21 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
-      {/* Calendar Only */}
-      <CalendarDashboard
-        onEventClick={handleEventClick}
-        onCreateEvent={handleCreateEvent}
-      />
+    <div className="flex flex-1 flex-col p-6 h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
+        <div className="lg:col-span-2 h-full min-h-0">
+          {/* Calendar Only */}
+          <CalendarDashboard
+            onEventClick={handleEventClick}
+            onCreateEvent={handleCreateEvent}
+            className="h-full"
+          />
+        </div>
+        <div className="lg:col-span-1 h-full min-h-0 flex flex-col gap-6">
+          {isStudent() && <MilestoneProgressCard className="flex-1 min-h-0" />}
+          <UpcomingEventsCard limit={20} className="flex-1 min-h-0" />
+        </div>
+      </div>
 
       {/* Event Detail Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
