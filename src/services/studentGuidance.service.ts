@@ -231,7 +231,7 @@ export const updateStudentGuidanceNotes = async (
   body: StudentNotesBody
 ): Promise<GuidanceDetailResponse> => {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_NOTES(guidanceId)), {
-    method: "POST",
+    method: "PATCH",
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error((await res.json()).message || "Gagal memperbarui catatan");

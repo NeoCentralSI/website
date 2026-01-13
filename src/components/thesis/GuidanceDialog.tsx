@@ -109,7 +109,9 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
           <DialogTitle>Detail Bimbingan</DialogTitle>
         </DialogHeader>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Memuat...</div>
+          <div className="flex justify-center items-center py-8">
+            <Spinner className="h-8 w-8 text-primary" />
+          </div>
         ) : guidance ? (
           <div className="space-y-6">
             {/* Info Section */}

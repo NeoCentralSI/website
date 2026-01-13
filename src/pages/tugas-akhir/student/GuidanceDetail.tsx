@@ -3,6 +3,7 @@ import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { useStudentGuidanceDetail } from '@/hooks/guidance';
 import { GuidanceRescheduleDialog } from '@/components/thesis/GuidanceRescheduleDialog';
 import { GuidanceCancelDialog } from '@/components/thesis/GuidanceCancelDialog';
@@ -33,7 +34,9 @@ export default function GuidanceDetailPage() {
 
       <Card className="p-4">
         {isLoading ? (
-          <div className="text-sm text-muted-foreground">Memuat...</div>
+          <div className="flex justify-center items-center py-8">
+            <Spinner className="h-8 w-8 text-primary" />
+          </div>
         ) : guidance ? (
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

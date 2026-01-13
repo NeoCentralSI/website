@@ -15,6 +15,7 @@ import GuidanceHistoryPage from './pages/tugas-akhir/student/History'
 import SupervisorsPage from './pages/tugas-akhir/student/Supervisors'
 import LecturerRequestsPage from './pages/tugas-akhir/lecturer/Requests'
 import LecturerMyStudentsPage from './pages/tugas-akhir/lecturer/MyStudents'
+import LecturerMyStudentDetailPage from './pages/tugas-akhir/lecturer/MyStudentDetail'
 import LecturerHistoryPage from './pages/tugas-akhir/lecturer/History'
 import LecturerActivityPage from './pages/tugas-akhir/lecturer/Activity'
 import StudentMilestonePage from './pages/tugas-akhir/student/Milestone'
@@ -126,6 +127,7 @@ function App() {
               {/* Lecturer - Tugas Akhir - Bimbingan */}
               <Route path="/tugas-akhir/bimbingan/lecturer/requests" element={<LecturerRequestsPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
+              <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/history/:studentId" element={<LecturerHistoryPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/activity/:studentId" element={<LecturerActivityPage />} />
               

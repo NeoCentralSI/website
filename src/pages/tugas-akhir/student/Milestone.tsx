@@ -67,6 +67,7 @@ export default function StudentMilestonePage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkStarting, setIsBulkStarting] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [progressUpdatingId, setProgressUpdatingId] = useState<string | null>(null);
 
   // Breadcrumbs
   const breadcrumb = useMemo(
@@ -162,6 +163,7 @@ export default function StudentMilestonePage() {
   };
 
   const handleProgressChange = (milestone: Milestone, newProgress: number) => {
+    setProgressUpdatingId(milestone.id);
     updateProgressMutation.mutate(
       { milestoneId: milestone.id, data: { progressPercentage: newProgress } },
       {
@@ -171,6 +173,9 @@ export default function StudentMilestonePage() {
         onError: (error) => {
           toast.error(error.message || "Gagal memperbarui progress");
         },
+        onSettled: () => {
+          setProgressUpdatingId(null);
+        }
       }
     );
   };
@@ -289,6 +294,7 @@ export default function StudentMilestonePage() {
         onProgressChange={handleProgressChange}
         onStatusChange={handleStatusChange}
         isProgressUpdating={updateProgressMutation.isPending}
+        progressUpdatingId={progressUpdatingId}
         statusUpdatingId={statusUpdatingId}
         onReorder={handleReorder}
         isReordering={reorderMutation.isPending}

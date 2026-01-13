@@ -13,6 +13,10 @@ export interface MyStudentItem {
   thesisId?: string;
   thesisTitle?: string;
   roles?: string[]; // e.g., ["pembimbing1"]
+  thesisRating?: "ONGOING" | "SLOW" | "AT_RISK" | "FAILED";
+  latestMilestone?: string;
+  lastGuidanceDate?: string;
+  deadlineDate?: string;
 }
 
 export interface GuidanceItem {
@@ -81,6 +85,59 @@ export interface ApproveGuidanceBody {
 }
 
 // API calls
+export interface StudentDetail {
+    thesisId: string;
+    title: string;
+    status: string;
+    rating: string;
+    startDate: string | null;
+    deadlineDate: string | null;
+    student: {
+        id: string;
+        fullName: string;
+        nim: string;
+        email: string;
+    };
+    document: {
+        id: string;
+        fileName: string;
+        url: string;
+    } | null;
+    proposalDocument: {
+        id: string;
+        fileName: string;
+        url: string;
+    } | null;
+    milestones: {
+        id: string;
+        title: string;
+        status: string;
+        updatedAt: string;
+        progressPercentage: number;
+    }[];
+}
+
+export const validateMilestone = async (milestoneId: string, notes?: string): Promise<{ success: boolean; data: any }> => {
+    const res = await apiRequest(getApiUrl(`/milestones/${milestoneId}/validate`), {
+        method: "POST",
+        body: JSON.stringify({ supervisorNotes: notes }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memvalidasi milestone" }));
+        throw new Error(errorData.message || "Gagal memvalidasi milestone");
+    }
+    return res.json();
+};
+
+export const getStudentDetail = async (thesisId: string): Promise<{ success: boolean; data: StudentDetail }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS_DETAIL(thesisId)));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail mahasiswa" }));
+        throw new Error(errorData.message || "Gagal memuat detail mahasiswa");
+    }
+    return res.json();
+};
+
 export const getMyStudents = async (params?: { roles?: string }): Promise<{ success: boolean; count: number; students: MyStudentItem[] }> => {
   const qs = params?.roles ? `?roles=${encodeURIComponent(params.roles)}` : "";
   const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS}${qs}`));
@@ -129,7 +186,7 @@ export const approveGuidanceRequest = async (guidanceId: string, body?: Record<s
 
 export const postFeedback = async (guidanceId: string, body: { message: string }): Promise<{ success: boolean; guidance: GuidanceItem }> => {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.FEEDBACK(guidanceId)), {
-    method: "POST",
+    method: "PATCH",
     body: JSON.stringify(body),
   });
   if (!res.ok) {

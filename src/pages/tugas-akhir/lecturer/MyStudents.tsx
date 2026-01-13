@@ -7,14 +7,18 @@ import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { useQuery } from "@tanstack/react-query";
 import { toTitleCaseName, formatRoleName } from "@/lib/text";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, History, Activity, Target } from "lucide-react";
+import { Eye, Clock } from "lucide-react";
+
+const getDaysRemaining = (deadlineDate?: string) => {
+  if (!deadlineDate) return null;
+  const deadline = new Date(deadlineDate);
+  const now = new Date();
+  const diffTime = deadline.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
 
 export default function LecturerMyStudentsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -48,52 +52,116 @@ export default function LecturerMyStudentsPage() {
   const columns: Column<MyStudentItem>[] = useMemo(() => [
     {
       key: 'fullName',
-      header: 'Nama',
-      render: (row) => toTitleCaseName(row.fullName),
+      header: 'Mahasiswa',
+      render: (row) => (
+        <div className="space-y-0.5">
+          <div className="font-medium">{toTitleCaseName(row.fullName)}</div>
+          <div className="text-xs text-muted-foreground">{row.email || '-'}</div>
+          {row.identityNumber && <div className="text-xs text-muted-foreground">{row.identityNumber}</div>}
+        </div>
+      ),
     },
     {
-      key: 'email',
-      header: 'Email',
-      render: (row) => row.email || '-',
+      key: 'thesisTitle',
+      header: 'Judul Skripsi',
+      render: (row) => <div className="max-w-[300px] truncate" title={row.thesisTitle}>{row.thesisTitle || '-'}</div>,
     },
     {
-      key: 'roles',
-      header: 'Peran',
-      render: (row) => row.roles?.map(formatRoleName).join(', ') || '-',
+      key: 'latestMilestone',
+      header: 'Progress',
+      render: (row) => <Badge variant="outline">{row.latestMilestone || "-"}</Badge>,
+    },
+    {
+      key: 'deadline',
+      header: 'Sisa Waktu',
+      render: (row) => {
+        const days = getDaysRemaining(row.deadlineDate);
+        if (days === null) return <span className="text-muted-foreground">-</span>;
+        
+        if (days < 0) {
+          return (
+            <Badge variant="destructive" className="items-center gap-1">
+               <Clock className="h-3 w-3" />
+               Expired ({Math.abs(days)} hari)
+            </Badge>
+          );
+        }
+        
+        if (days <= 30) {
+           return (
+            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 items-center gap-1">
+               <Clock className="h-3 w-3" />
+               {days} hari
+            </Badge>
+           );
+        }
+
+        return (
+           <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span>{days} hari</span>
+           </div>
+        );
+      }
+    },
+    {
+      key: 'thesisRating',
+      header: 'Status',
+      render: (row) => {
+        let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
+        let label = row.thesisRating;
+        let className = "";
+  
+        switch (row.thesisRating) {
+            case "ONGOING": 
+              variant = "outline"; 
+              label = "Ongoing";
+              className = "border-green-500 text-green-600 bg-green-50"; 
+              break;
+            case "SLOW": 
+              variant = "secondary"; 
+              label = "Slow"; 
+              className = "bg-yellow-100 text-yellow-700 hover:bg-yellow-200";
+              break;
+            case "AT_RISK": 
+              variant = "destructive"; 
+              label = "At Risk"; 
+              break;
+            case "FAILED": 
+              variant = "destructive"; 
+              label = "Gagal / Timeout"; 
+              break;
+            case "FINISHED":
+              variant = "default";
+              label = "Selesai";
+              className = "bg-green-600 hover:bg-green-700";
+              break;
+            default:
+              label = "Ongoing";
+        }
+
+        return (
+          <Badge variant={variant} className={`whitespace-nowrap ${className}`}>
+            {label}
+          </Badge>
+        );
+      },
     },
     {
       key: 'actions',
       header: 'Aksi',
       render: (row) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/milestone/${row.studentId}`)}
-            >
-              <Target className="h-4 w-4 mr-2" />
-              Lihat Milestone
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/history/${row.studentId}`)}
-            >
-              <History className="h-4 w-4 mr-2" />
-              Riwayat Bimbingan
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/activity/${row.studentId}`)}
-            >
-              <Activity className="h-4 w-4 mr-2" />
-              Log Aktivitas
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
+        <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/my-students/${row.thesisId}`)}
+            className="h-8 w-8 p-0"
+        >
+            <Eye className="h-4 w-4" />
+            <span className="sr-only">Detail</span>
+        </Button>
+      )
+    }
   ], [navigate]);
 
   return (

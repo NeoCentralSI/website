@@ -31,6 +31,7 @@ export interface MilestoneListProps {
   onRequestRevision?: (milestone: Milestone) => void;
   onAddFeedback?: (milestone: Milestone) => void;
   isProgressUpdating?: boolean;
+  progressUpdatingId?: string | null;
   statusUpdatingId?: string | null;
   onReorder?: (orders: { id: string; orderIndex: number }[]) => void;
   isReordering?: boolean;
@@ -57,6 +58,7 @@ export function MilestoneList({
   onRequestRevision,
   onAddFeedback,
   isProgressUpdating = false,
+  progressUpdatingId = null,
   statusUpdatingId = null,
   onReorder,
   isReordering = false,
@@ -386,7 +388,11 @@ export function MilestoneList({
                     onValidate={onValidate}
                     onRequestRevision={onRequestRevision}
                     onAddFeedback={onAddFeedback}
-                    isProgressUpdating={isProgressUpdating}
+                    isProgressUpdating={
+                      progressUpdatingId
+                        ? progressUpdatingId === milestone.id
+                        : isProgressUpdating
+                    }
                     isStatusUpdating={statusUpdatingId === milestone.id}
                     draggable={enableReorder}
                   />

@@ -48,6 +48,7 @@ export const API_CONFIG = {
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',
       MY_STUDENTS: '/thesisGuidance/lecturer/my-students',
+      MY_STUDENTS_DETAIL: (thesisId: string) => `/thesisGuidance/lecturer/my-students/${thesisId}`,
       REQUESTS: '/thesisGuidance/lecturer/requests',
       REQUEST_REJECT: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/reject`,
       REQUEST_APPROVE: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/approve`,

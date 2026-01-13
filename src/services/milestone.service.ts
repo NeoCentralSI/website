@@ -119,7 +119,7 @@ export async function updateTemplate(
   data: UpdateTemplateDto
 ): Promise<MilestoneTemplate> {
   const response = await apiRequest(getApiUrl(ENDPOINTS.TEMPLATE_DETAIL(templateId)), {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 
@@ -239,7 +239,7 @@ export async function updateMilestone(
   data: UpdateMilestoneDto
 ): Promise<Milestone> {
   const response = await apiRequest(getApiUrl(ENDPOINTS.MILESTONE_DETAIL(milestoneId)), {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 
@@ -474,7 +474,7 @@ export async function reorderMilestones(
   data: ReorderMilestonesDto
 ): Promise<void> {
   const response = await apiRequest(getApiUrl(ENDPOINTS.REORDER(thesisId)), {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 

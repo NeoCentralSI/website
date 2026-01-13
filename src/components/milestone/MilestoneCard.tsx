@@ -113,12 +113,17 @@ export function MilestoneCard({
   return (
     <Card
       className={cn(
-        "transition-all",
+        "transition-all relative",
         isCompleted ? "py-6" : "py-8",
         isCompleted && "border-green-200 bg-green-50/30",
         isRevisionNeeded && "border-orange-200 bg-orange-50/30"
       )}
     >
+      {isProgressUpdating && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-lg transition-all">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      )}
       <CardHeader className={cn("pb-2", isCompleted && "pb-1")}>
         <div className="flex items-start gap-3">
           {draggable && (
