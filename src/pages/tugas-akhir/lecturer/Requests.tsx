@@ -1,15 +1,18 @@
-import { useEffect, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import CustomTable from '@/components/layout/CustomTable';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import GuidanceRequestDetailDialog from '@/components/thesis/GuidanceRequestDetailDialog';
+import PendingApprovalList from '@/components/thesis/PendingApprovalList';
 import { useLecturerRequests, useLecturerGuidanceDialogs } from '@/hooks/guidance';
 import { getLecturerRequestColumns } from '@/lib/lecturerRequestColumns';
+import type { GuidanceItem } from '@/services/lecturerGuidance.service';
 
 export default function LecturerRequestsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+  const navigate = useNavigate();
 
   const {
     items,
@@ -34,11 +37,20 @@ export default function LecturerRequestsPage() {
     setDocOpen,
     docInfo,
     openDocumentPreview,
-    detailOpen,
-    setDetailOpen,
-    selectedGuidance,
-    openDetail,
   } = useLecturerGuidanceDialogs();
+
+  // State untuk detail dialog
+  const [selectedGuidance, setSelectedGuidance] = useState<GuidanceItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const openDetailDialog = (guidance: GuidanceItem) => {
+    setSelectedGuidance(guidance);
+    setDetailOpen(true);
+  };
+
+  const handleDialogUpdated = () => {
+    invalidate();
+  };
 
   const breadcrumb = useMemo(() => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }, { label: 'Permintaan' }], []);
 
@@ -54,7 +66,8 @@ export default function LecturerRequestsPage() {
     statusFilter,
     setStatusFilter,
     setPage,
-    onOpenDetail: openDetail,
+    navigate,
+    onOpenDetail: openDetailDialog,
   });
 
   return (
@@ -62,9 +75,15 @@ export default function LecturerRequestsPage() {
       <TabsNav
         tabs={[
           { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
+          { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
           { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
         ]}
       />
+
+      {/* Summary bimbingan yang perlu di-approve */}
+      <div className="mb-4">
+        <PendingApprovalList />
+      </div>
       
       <CustomTable
         columns={columns as any}
@@ -95,11 +114,13 @@ export default function LecturerRequestsPage() {
       />
 
       <GuidanceRequestDetailDialog
-        guidance={selectedGuidance}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        onUpdated={invalidate}
-        onViewDocument={openDocumentPreview}
+        guidance={selectedGuidance}
+        onUpdated={handleDialogUpdated}
+        onViewDocument={(fileName, filePath) => {
+          openDocumentPreview(fileName, filePath);
+        }}
       />
     </div>
   );

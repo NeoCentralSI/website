@@ -80,7 +80,7 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
 
   return (
     <Card className={cn("h-full flex flex-col", className)}>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-yellow-500" />
           Milestone Summary
@@ -88,13 +88,13 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
       </CardHeader>
 
       <CardContent className="flex-1 pb-6 min-h-0 flex flex-col justify-center">
-        <div className="flex flex-col items-center justify-center gap-6">
+        <div className="flex flex-col items-center justify-center gap-5">
           
           {/* Circular Progress */}
-          <div className="relative flex items-center justify-center w-32 h-32">
+          <div className="relative flex items-center justify-center w-28 h-28">
              <CircularProgress percentage={progress.percentComplete} />
              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-bold text-primary">{Math.round(progress.percentComplete)}%</span>
+                <span className="text-3xl font-semibold text-primary">{Math.round(progress.percentComplete)}%</span>
                 <span className="text-xs text-muted-foreground">Total</span>
              </div>
           </div>
@@ -136,7 +136,7 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
 
 function CircularProgress({ percentage }: { percentage: number }) {
   const radius = 50;
-  const stroke = 8;
+  const stroke = 6;
   const normalizedRadius = radius - stroke;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -148,7 +148,7 @@ function CircularProgress({ percentage }: { percentage: number }) {
         className="w-full h-full -rotate-90"
       >
         <circle
-          className="stroke-muted"
+          className="stroke-muted/30"
           strokeWidth={stroke}
           fill="transparent"
           r={normalizedRadius}

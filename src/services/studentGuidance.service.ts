@@ -1,7 +1,7 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
-export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled";
+export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending";
 export type GuidanceType = "online" | "offline";
 
 export interface GuidanceItem {
@@ -26,6 +26,12 @@ export interface GuidanceItem {
   supervisorFeedback?: string;
   rejectionReason?: string;
   completedAt?: string;
+  completedAtFormatted?: string;
+  // Session summary (diisi mahasiswa)
+  sessionSummary?: string;
+  actionItems?: string;
+  summarySubmittedAt?: string;
+  summarySubmittedAtFormatted?: string;
   document?: {
     id?: string;
     fileName: string;
@@ -33,6 +39,8 @@ export interface GuidanceItem {
   } | null;
   milestoneIds?: string[];
   milestoneTitles?: string[];
+  milestoneName?: string;
+  thesisTitle?: string;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -41,7 +49,7 @@ export interface GuidanceItem {
 export interface StudentRequestGuidanceBody {
   guidanceDate: string; // ISO datetime
   studentNotes?: string;
-  file: File; // thesis file to upload
+  file?: File; // thesis file to upload (optional)
   meetingUrl?: string;
   documentUrl?: string; // Link dokumen yang akan dibahas (Google Docs, Overleaf, dll)
   supervisorId?: string;
@@ -193,7 +201,7 @@ export const requestStudentGuidance = async (body: StudentRequestGuidanceBody): 
   if (body.milestoneIds && Array.isArray(body.milestoneIds)) {
     body.milestoneIds.forEach((id) => fd.append("milestoneIds[]", id));
   }
-  fd.append("file", body.file);
+  if (body.file) fd.append("file", body.file);
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_REQUEST), {
     method: "POST",
     body: fd,
@@ -288,5 +296,119 @@ export const getSupervisorAvailability = async (
 
   const res = await apiRequest(url);
   if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat ketersediaan dosen");
+  return res.json();
+};
+
+// ==================== SESSION SUMMARY ====================
+
+export interface SessionSummaryBody {
+  sessionSummary: string;
+  actionItems?: string;
+}
+
+export interface GuidanceNeedingSummary {
+  id: string;
+  supervisorName?: string;
+  approvedDate?: string;
+  approvedDateFormatted?: string;
+  type?: GuidanceType;
+  duration?: number;
+  location?: string;
+  meetingUrl?: string;
+  studentNotes?: string;
+  milestoneName?: string;
+}
+
+export interface CompletedGuidance {
+  id: string;
+  supervisorName?: string;
+  approvedDate?: string;
+  approvedDateFormatted?: string;
+  completedAt?: string;
+  completedAtFormatted?: string;
+  type?: GuidanceType;
+  duration?: number;
+  location?: string;
+  meetingUrl?: string;
+  studentNotes?: string;
+  sessionSummary?: string;
+  actionItems?: string;
+  milestoneName?: string;
+  thesisTitle?: string;
+}
+
+export interface GuidanceExport {
+  id: string;
+  studentName?: string;
+  studentId?: string;
+  supervisorName?: string;
+  approvedDate?: string;
+  approvedDateFormatted?: string;
+  completedAt?: string;
+  completedAtFormatted?: string;
+  type?: GuidanceType;
+  duration?: number;
+  location?: string;
+  studentNotes?: string;
+  sessionSummary?: string;
+  actionItems?: string;
+  milestoneName?: string;
+  thesisTitle?: string;
+}
+
+/**
+ * Get guidances that need summary submission (accepted + past scheduled time)
+ */
+export const getGuidancesNeedingSummary = async (): Promise<{ success: boolean; guidances: GuidanceNeedingSummary[] }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.NEEDS_SUMMARY));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat bimbingan yang perlu diisi");
+  return res.json();
+};
+
+/**
+ * Submit session summary after guidance
+ */
+export const submitSessionSummary = async (
+  guidanceId: string,
+  body: SessionSummaryBody
+): Promise<{ success: boolean; guidance: { id: string; status: GuidanceStatus; sessionSummary?: string; actionItems?: string } }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.SUBMIT_SUMMARY(guidanceId)), {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal mengirim catatan bimbingan");
+  return res.json();
+};
+
+/**
+ * Mark session as complete directly (skip lecturer approval)
+ */
+export const markSessionComplete = async (
+  guidanceId: string,
+  body: SessionSummaryBody
+): Promise<{ success: boolean; guidance: { id: string; status: GuidanceStatus; sessionSummary?: string; actionItems?: string; completedAt?: string } }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.COMPLETE_SESSION(guidanceId)), {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyelesaikan sesi bimbingan");
+  return res.json();
+};
+
+/**
+ * Get completed guidance history for documentation
+ */
+export const getCompletedGuidanceHistory = async (): Promise<{ success: boolean; guidances: CompletedGuidance[] }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.COMPLETED_HISTORY));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat riwayat bimbingan selesai");
+  return res.json();
+};
+
+/**
+ * Get single guidance detail for export/download
+ */
+export const getGuidanceForExport = async (guidanceId: string): Promise<{ success: boolean; guidance: GuidanceExport }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.EXPORT_GUIDANCE(guidanceId)));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat detail bimbingan");
   return res.json();
 };

@@ -28,6 +28,7 @@ import {
 
 import type {
   Milestone,
+  MilestoneStatus,
   CreateMilestoneDto,
   UpdateMilestoneDto,
 } from "@/types/milestone.types";
@@ -214,7 +215,7 @@ export default function StudentMilestonePage() {
     setSelectedIds([]);
   };
 
-  const handleStatusChange = (milestone: Milestone, status: Milestone["status"]) => {
+  const handleStatusChange = (milestone: Milestone, status: Exclude<MilestoneStatus, "completed">) => {
     setStatusUpdatingId(milestone.id);
     updateStatusMutation.mutate(
       { milestoneId: milestone.id, data: { status } },
@@ -255,6 +256,7 @@ export default function StudentMilestonePage() {
             { label: "Bimbingan", to: "/tugas-akhir/bimbingan/student", end: true },
             { label: "Pembimbing", to: "/tugas-akhir/bimbingan/supervisors" },
             { label: "Milestone", to: "/tugas-akhir/bimbingan/milestone" },
+            { label: "Riwayat", to: "/tugas-akhir/bimbingan/completed-history" },
           ]}
         />
         <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -278,6 +280,7 @@ export default function StudentMilestonePage() {
           { label: "Bimbingan", to: "/tugas-akhir/bimbingan/student", end: true },
           { label: "Pembimbing", to: "/tugas-akhir/bimbingan/supervisors" },
           { label: "Milestone", to: "/tugas-akhir/bimbingan/milestone" },
+          { label: "Riwayat", to: "/tugas-akhir/bimbingan/completed-history" },
         ]}
       />
 
@@ -312,6 +315,7 @@ export default function StudentMilestonePage() {
         milestone={selectedMilestone}
         onSubmit={handleFormSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
+        hideTargetDateOnEdit
       />
 
       {/* Template Selector Dialog */}

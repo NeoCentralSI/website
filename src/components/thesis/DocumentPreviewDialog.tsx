@@ -14,8 +14,18 @@ export type DocumentPreviewDialogProps = {
 export default function DocumentPreviewDialog({ open, onOpenChange, fileName, filePath, mode = "fullscreen" }: DocumentPreviewDialogProps) {
   let url: string | undefined;
   if (filePath) {
-    const normalized = filePath.startsWith("http") ? filePath : getApiUrl(filePath.startsWith("/") ? filePath : `/${filePath}`);
-    url = normalized;
+    // If path starts with http, it's already a full URL
+    if (filePath.startsWith("http")) {
+      url = filePath;
+    }
+    // If path already starts with /uploads/, use it as-is
+    else if (filePath.startsWith("/uploads/")) {
+      url = getApiUrl(filePath);
+    }
+    // Otherwise, add /uploads/ prefix
+    else {
+      url = getApiUrl(`/uploads/${filePath}`);
+    }
   }
   // Basic preview via iframe; we rely on browser PDF viewer
   const contentClass =

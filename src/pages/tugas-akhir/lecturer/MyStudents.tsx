@@ -6,7 +6,7 @@ import { getMyStudents } from "@/services/lecturerGuidance.service";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { useQuery } from "@tanstack/react-query";
-import { toTitleCaseName, formatRoleName } from "@/lib/text";
+import { toTitleCaseName } from "@/lib/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Clock } from "lucide-react";
@@ -109,40 +109,35 @@ export default function LecturerMyStudentsPage() {
       header: 'Status',
       render: (row) => {
         let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
-        let label = row.thesisRating;
+        let displayLabel = "Ongoing";
         let className = "";
   
         switch (row.thesisRating) {
             case "ONGOING": 
               variant = "outline"; 
-              label = "Ongoing";
+              displayLabel = "Ongoing";
               className = "border-green-500 text-green-600 bg-green-50"; 
               break;
             case "SLOW": 
               variant = "secondary"; 
-              label = "Slow"; 
+              displayLabel = "Slow"; 
               className = "bg-yellow-100 text-yellow-700 hover:bg-yellow-200";
               break;
             case "AT_RISK": 
               variant = "destructive"; 
-              label = "At Risk"; 
+              displayLabel = "At Risk"; 
               break;
             case "FAILED": 
               variant = "destructive"; 
-              label = "Gagal / Timeout"; 
-              break;
-            case "FINISHED":
-              variant = "default";
-              label = "Selesai";
-              className = "bg-green-600 hover:bg-green-700";
+              displayLabel = "Gagal / Timeout"; 
               break;
             default:
-              label = "Ongoing";
+              displayLabel = "Ongoing";
         }
 
         return (
           <Badge variant={variant} className={`whitespace-nowrap ${className}`}>
-            {label}
+            {displayLabel}
           </Badge>
         );
       },
@@ -169,6 +164,7 @@ export default function LecturerMyStudentsPage() {
       <TabsNav
         tabs={[
           { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
+          { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
           { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
         ]}
       />

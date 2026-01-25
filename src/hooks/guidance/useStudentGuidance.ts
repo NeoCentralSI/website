@@ -99,17 +99,10 @@ export const useStudentGuidance = () => {
         return sup.includes(needle) || statusText.includes(needle) || when.includes(needle);
       });
     }
+    // Sort by createdAt timestamp (newest first)
     arr.sort((a, b) => {
-      const at = a.approvedDate
-        ? new Date(a.approvedDate).getTime()
-        : a.requestedDate
-        ? new Date(a.requestedDate).getTime()
-        : 0;
-      const bt = b.approvedDate
-        ? new Date(b.approvedDate).getTime()
-        : b.requestedDate
-        ? new Date(b.requestedDate).getTime()
-        : 0;
+      const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bt - at;
     });
     const totalCount = arr.length;

@@ -11,15 +11,18 @@ import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import BimbinganEntry from './pages/tugas-akhir/BimbinganEntry'
 import StudentGuidancePage from './pages/tugas-akhir/student/StudentGuidance'
+import StudentGuidanceSessionPage from './pages/tugas-akhir/student/GuidanceSession'
 import GuidanceHistoryPage from './pages/tugas-akhir/student/History'
 import SupervisorsPage from './pages/tugas-akhir/student/Supervisors'
 import LecturerRequestsPage from './pages/tugas-akhir/lecturer/Requests'
+import LecturerScheduledPage from './pages/tugas-akhir/lecturer/Scheduled'
+import LecturerGuidanceSessionPage from './pages/tugas-akhir/lecturer/GuidanceSession'
 import LecturerMyStudentsPage from './pages/tugas-akhir/lecturer/MyStudents'
 import LecturerMyStudentDetailPage from './pages/tugas-akhir/lecturer/MyStudentDetail'
 import LecturerHistoryPage from './pages/tugas-akhir/lecturer/History'
 import LecturerActivityPage from './pages/tugas-akhir/lecturer/Activity'
 import StudentMilestonePage from './pages/tugas-akhir/student/Milestone'
-import LecturerStudentMilestonePage from './pages/tugas-akhir/lecturer/StudentMilestone'
+import CompletedHistoryPage from './pages/tugas-akhir/student/CompletedHistory'
 import NotFoundPage from './pages/NotFound'
 import UserManagementPage from './pages/admin/master-data/UserManagement'
 import AcademicYearPage from './pages/admin/master-data/AcademicYear'
@@ -117,22 +120,23 @@ function App() {
               <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
               {/* Student - Tugas Akhir - Bimbingan */}
               <Route path="/tugas-akhir/bimbingan/student" element={<StudentGuidancePage />} />
+              <Route path="/tugas-akhir/bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
               <Route path="/tugas-akhir/bimbingan/history" element={<GuidanceHistoryPage />} />
               <Route path="/tugas-akhir/bimbingan/supervisors" element={<SupervisorsPage />} />
-              {/* Guidance detail page removed; use dialog instead */}
 
               {/* Student - Tugas Akhir - Milestone */}
               <Route path="/tugas-akhir/bimbingan/milestone" element={<StudentMilestonePage />} />
+              {/* Student - Tugas Akhir - Completed History */}
+              <Route path="/tugas-akhir/bimbingan/completed-history" element={<CompletedHistoryPage />} />
 
               {/* Lecturer - Tugas Akhir - Bimbingan */}
               <Route path="/tugas-akhir/bimbingan/lecturer/requests" element={<LecturerRequestsPage />} />
+              <Route path="/tugas-akhir/bimbingan/lecturer/scheduled" element={<LecturerScheduledPage />} />
+              <Route path="/tugas-akhir/bimbingan/lecturer/session/:guidanceId" element={<LecturerGuidanceSessionPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/history/:studentId" element={<LecturerHistoryPage />} />
               <Route path="/tugas-akhir/bimbingan/lecturer/activity/:studentId" element={<LecturerActivityPage />} />
-              
-              {/* Lecturer - Student Milestone */}
-              <Route path="/tugas-akhir/bimbingan/lecturer/milestone/:studentId" element={<LecturerStudentMilestonePage />} />
             </Route>
 
             {/* 404 - Catch all undefined routes (outside ProtectedLayout) */}

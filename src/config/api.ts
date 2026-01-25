@@ -44,12 +44,19 @@ export const API_CONFIG = {
       ACTIVITY_LOG: '/thesisGuidance/student/activity-log',
       SUPERVISORS: '/thesisGuidance/student/supervisors',
       SUPERVISOR_AVAILABILITY: (supervisorId: string) => `/thesisGuidance/student/supervisors/${supervisorId}/availability`,
+      // Session Summary
+      NEEDS_SUMMARY: '/thesisGuidance/student/needs-summary',
+      SUBMIT_SUMMARY: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/submit-summary`,
+      COMPLETE_SESSION: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/complete`,
+      COMPLETED_HISTORY: '/thesisGuidance/student/completed-history',
+      EXPORT_GUIDANCE: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/export`,
     },
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',
       MY_STUDENTS: '/thesisGuidance/lecturer/my-students',
       MY_STUDENTS_DETAIL: (thesisId: string) => `/thesisGuidance/lecturer/my-students/${thesisId}`,
       REQUESTS: '/thesisGuidance/lecturer/requests',
+      SCHEDULED: '/thesisGuidance/lecturer/scheduled',
       REQUEST_REJECT: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/reject`,
       REQUEST_APPROVE: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/approve`,
       PROGRESS_SUMMARY: '/thesisGuidance/lecturer/progress',
@@ -61,6 +68,11 @@ export const API_CONFIG = {
       GUIDANCE_HISTORY: (studentId: string) => `/thesisGuidance/lecturer/guidance-history/${studentId}`,
       ACTIVITY_LOG: (studentId: string) => `/thesisGuidance/lecturer/activity-log/${studentId}`,
       SUPERVISOR_ELIGIBILITY: '/thesisGuidance/lecturer/supervisor/eligibility',
+      // Session Summary Approval
+      PENDING_APPROVAL: '/thesisGuidance/lecturer/pending-approval',
+      APPROVE_SUMMARY: (guidanceId: string) => `/thesisGuidance/lecturer/guidance/${guidanceId}/approve-summary`,
+      // Guidance Detail
+      GUIDANCE_DETAIL: (guidanceId: string) => `/thesisGuidance/lecturer/guidance/${guidanceId}`,
     },
   },
   TIMEOUT: 10000, // 10 detik

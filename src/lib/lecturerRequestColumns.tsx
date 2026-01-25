@@ -4,6 +4,7 @@ import { EyeIcon } from 'lucide-react';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
+import { useNavigate } from 'react-router-dom';
 
 interface GetLecturerRequestColumnsOptions {
   allRequests: GuidanceItem[];
@@ -12,13 +13,14 @@ interface GetLecturerRequestColumnsOptions {
   statusFilter: string;
   setStatusFilter: (value: string) => void;
   setPage: (value: number) => void;
-  onOpenDetail: (guidance: GuidanceItem) => void;
+  navigate: ReturnType<typeof useNavigate>;
+  onOpenDetail?: (guidance: GuidanceItem) => void;
 }
 
 export const getLecturerRequestColumns = (
   options: GetLecturerRequestColumnsOptions
 ): Column<GuidanceItem>[] => {
-  const { allRequests, studentFilter, setStudentFilter, statusFilter, setStatusFilter, setPage, onOpenDetail } =
+  const { allRequests, studentFilter, setStudentFilter, statusFilter, setStatusFilter, setPage, navigate, onOpenDetail } =
     options;
 
   return [
@@ -85,7 +87,21 @@ export const getLecturerRequestColumns = (
       key: 'action',
       header: 'Aksi',
       render: (r) => (
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Detail" onClick={() => onOpenDetail(r)}>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-8 w-8" 
+          title="Detail" 
+          onClick={() => {
+            // Jika status requested, buka dialog untuk approve/reject
+            // Jika status lain, navigate ke session detail
+            if (r.status === 'requested' && onOpenDetail) {
+              onOpenDetail(r);
+            } else {
+              navigate(`/tugas-akhir/bimbingan/lecturer/session/${r.id}`);
+            }
+          }}
+        >
           <EyeIcon className="size-4" />
         </Button>
       ),

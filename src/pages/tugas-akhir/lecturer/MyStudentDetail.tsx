@@ -4,10 +4,11 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { getStudentDetail, validateMilestone } from "@/services/lecturerGuidance.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
+import { getApiUrl } from "@/config/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, CheckCircle2, Clock, AlertTriangle, Download, ArrowLeft, Check, BookOpen, Calendar, Star } from "lucide-react";
+import { FileText, CheckCircle2, Clock, AlertTriangle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
@@ -46,6 +47,16 @@ export default function LecturerMyStudentDetailPage() {
   const queryClient = useQueryClient();
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [validatingId, setValidatingId] = useState<string | null>(null);
+
+  // Helper to convert backend URLs to absolute URLs
+  const getDocumentUrl = (path: string): string => {
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+    // Backend returns paths WITH /uploads/ prefix, so we need to use it as-is
+    // getApiUrl() just prepends base URL: http://localhost:3000 + /uploads/thesis/file.pdf
+    return getApiUrl(path);
+  };
 
   // Initial breadcrumb, will be updated when data is loaded
   const baseBreadcrumb = useMemo(() => [
@@ -184,12 +195,6 @@ export default function LecturerMyStudentDetailPage() {
                             <Badge variant="secondary" className="font-normal rounded-md">
                                 {toTitleCaseName(detailData.status)}
                             </Badge>
-                            {detailData.rating && (
-                                <Badge variant="outline" className="font-normal rounded-md gap-1 bg-yellow-50 text-yellow-700 border-yellow-200">
-                                    <Star className="h-3 w-3 fill-yellow-700" />
-                                    Nilai: {detailData.rating}
-                                </Badge>
-                            )}
                         </div>
                     </div>
 
@@ -266,7 +271,7 @@ export default function LecturerMyStudentDetailPage() {
                                     </div>
                                 </div>
                                 <Button variant="ghost" size="icon" asChild>
-                                    <a href={detailData.proposalDocument.url} target="_blank" rel="noopener noreferrer">
+                                    <a href={getDocumentUrl(detailData.proposalDocument.url)} target="_blank" rel="noopener noreferrer">
                                         <Download className="h-4 w-4" />
                                     </a>
                                 </Button>
@@ -294,7 +299,7 @@ export default function LecturerMyStudentDetailPage() {
                                     </div>
                                 </div>
                                 <Button variant="ghost" size="icon" asChild>
-                                    <a href={detailData.document.url} target="_blank" rel="noopener noreferrer">
+                                    <a href={getDocumentUrl(detailData.document.url)} target="_blank" rel="noopener noreferrer">
                                         <Download className="h-4 w-4" />
                                     </a>
                                 </Button>
@@ -363,6 +368,12 @@ export default function LecturerMyStudentDetailPage() {
                                             <Badge variant={STATUS_VARIANTS[milestone.status] || "outline"} className="text-[10px] h-5 px-1.5 font-normal">
                                                 {STATUS_LABELS[milestone.status] || milestone.status.replace(/_/g, " ")}
                                             </Badge>
+                                            {milestone.progressPercentage === 100 && milestone.status === 'in_progress' && (
+                                                <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal gap-1 animate-pulse text-red-600 border-red-600 bg-transparent">
+                                                    <Bell className="h-3 w-3" />
+                                                    Perlu Approval
+                                                </Badge>
+                                            )}
                                             {milestone.updatedAt && (
                                                 <span className="text-xs text-muted-foreground/70">
                                                     {formatDateId(milestone.updatedAt)}

@@ -32,6 +32,8 @@ interface MilestoneFormDialogProps {
   milestone?: Milestone | null;
   onSubmit: (data: CreateMilestoneDto | UpdateMilestoneDto) => void;
   isSubmitting?: boolean;
+  /** Hide targetDate field when editing (for student context) */
+  hideTargetDateOnEdit?: boolean;
 }
 
 export function MilestoneFormDialog({
@@ -40,8 +42,10 @@ export function MilestoneFormDialog({
   milestone,
   onSubmit,
   isSubmitting,
+  hideTargetDateOnEdit = false,
 }: MilestoneFormDialogProps) {
   const isEdit = !!milestone;
+  const showTargetDate = !isEdit || !hideTargetDateOnEdit;
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -119,34 +123,36 @@ export function MilestoneFormDialog({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Target Tanggal</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !targetDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {targetDate
-                    ? format(targetDate, "PPP", { locale: localeId })
-                    : "Pilih tanggal target"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={targetDate}
-                  onSelect={setTargetDate}
-                  initialFocus
-                  locale={localeId}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          {showTargetDate && (
+            <div className="space-y-2">
+              <Label>Target Tanggal</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !targetDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {targetDate
+                      ? format(targetDate, "PPP", { locale: localeId })
+                      : "Pilih tanggal target"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={targetDate}
+                    onSelect={setTargetDate}
+                    initialFocus
+                    locale={localeId}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
 
           <DialogFooter>
             <Button

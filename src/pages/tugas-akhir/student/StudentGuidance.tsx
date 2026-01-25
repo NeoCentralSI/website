@@ -1,14 +1,14 @@
 import { useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { getStudentSupervisors } from '@/services/studentGuidance.service';
 import CustomTable from '@/components/layout/CustomTable';
-import GuidanceDialog from '@/components/thesis/GuidanceDialog';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import RequestGuidanceDialog from '@/components/thesis/RequestGuidanceDialog';
 import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
+import NeedsSummaryList from '@/components/thesis/NeedsSummaryList';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
 import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
@@ -17,6 +17,7 @@ import { useMilestones } from '@/hooks/milestone';
 export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const {
     items,
@@ -40,13 +41,9 @@ export default function StudentGuidancePage() {
   const {
     openRequest,
     setOpenRequest,
-    openDetail,
-    setOpenDetail,
-    activeId,
     docOpen,
     setDocOpen,
     docInfo,
-    openDetailDialog,
     openDocumentPreview,
   } = useGuidanceDialogs();
 
@@ -55,7 +52,6 @@ export default function StudentGuidancePage() {
     queryFn: getStudentSupervisors,
   });
 
-  const supervisors = supervisorsQuery.data?.supervisors ?? [];
   const thesisId = supervisorsQuery.data?.thesisId ?? '';
 
   // Fetch milestones for guidance dialog
@@ -76,8 +72,8 @@ export default function StudentGuidancePage() {
     status,
     setStatus,
     setPage,
-    onViewDetail: openDetailDialog,
     onViewDocument: openDocumentPreview,
+    navigate,
   });
 
   return (
@@ -88,6 +84,7 @@ export default function StudentGuidancePage() {
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
           { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
           { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
+          { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
         ]}
       />
 
@@ -95,9 +92,14 @@ export default function StudentGuidancePage() {
         <PendingRequestAlert
           supervisorName={pendingRequestInfo.supervisorName}
           dateStr={pendingRequestInfo.dateStr}
-          onViewDetail={() => openDetailDialog(pendingRequestInfo.id)}
+          onViewDetail={() => navigate(`/tugas-akhir/bimbingan/student/session/${pendingRequestInfo.id}`)}
         />
       )}
+
+      {/* Bimbingan yang perlu diisi catatan */}
+      <div className="mb-4">
+        <NeedsSummaryList />
+      </div>
 
       <CustomTable
         columns={columns as any}
@@ -131,13 +133,6 @@ export default function StudentGuidancePage() {
             Ajukan Bimbingan
           </Button>
         }
-      />
-
-      <GuidanceDialog
-        guidanceId={activeId}
-        open={openDetail}
-        onOpenChange={setOpenDetail}
-        onUpdated={() => qc.invalidateQueries({ queryKey: ['student-guidance'] })}
       />
 
       <DocumentPreviewDialog

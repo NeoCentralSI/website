@@ -8,6 +8,7 @@ import { useStudentGuidanceDetail } from '@/hooks/guidance';
 import { GuidanceRescheduleDialog } from '@/components/thesis/GuidanceRescheduleDialog';
 import { GuidanceCancelDialog } from '@/components/thesis/GuidanceCancelDialog';
 import { GuidanceNotesDialog } from '@/components/thesis/GuidanceNotesDialog';
+import { toTitleCaseName } from '@/lib/text';
 
 export default function GuidanceDetailPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -42,7 +43,7 @@ export default function GuidanceDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <div className="text-sm text-muted-foreground">Pembimbing</div>
-                <div className="font-medium">{guidance.supervisorName || guidance.supervisorId}</div>
+                <div className="font-medium">{toTitleCaseName(guidance.supervisorName || guidance.supervisorId || '-')}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Status</div>

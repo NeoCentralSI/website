@@ -20,7 +20,7 @@ import {
 	PaginationPrevious,
 	PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loading, Spinner } from "@/components/ui/spinner";
 import { SearchIcon, FilterIcon, CheckIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -111,7 +111,10 @@ export function CustomTable<T extends Record<string, any>>({
 								<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
 									<div className="flex-1 flex items-center gap-2">
 										{loading ? (
-											<Skeleton className="h-10 w-full sm:max-w-md" />
+										<div className="flex items-center gap-2 text-sm text-muted-foreground">
+											<Spinner className="size-4" />
+											<span>Memuat...</span>
+										</div>
 										) : onSearchChange !== undefined ? (
 											<div className="relative w-full sm:max-w-md">
 												<SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -124,16 +127,11 @@ export function CustomTable<T extends Record<string, any>>({
 											</div>
 										) : null}
 									</div>
-									<div className="flex items-center gap-2">
-										{loading ? (
-											<>
-												<Skeleton className="h-10 w-32" />
-												<Skeleton className="h-10 w-32" />
-											</>
-										) : (
-											actions
-										)}
-									</div>
+									{!loading && actions && (
+										<div className="flex items-center gap-2">
+											{actions}
+										</div>
+									)}
 								</div>
 
 				<div className="rounded-md border border-black/10">
@@ -240,24 +238,11 @@ export function CustomTable<T extends Record<string, any>>({
 									</TableHeader>
 						<TableBody>
 							{loading ? (
-								Array.from({ length: Math.max(3, Math.min(pageSize, 8)) }).map((_, rowIndex) => (
-									<TableRow key={`sk-${rowIndex}`}>
-										{columns.map((col, colIndex) => {
-											// Generate varied widths for more natural skeleton
-											const widthVariants = ['45%', '60%', '75%', '85%', '50%', '70%', '65%', '55%'];
-											const width = widthVariants[(rowIndex + colIndex) % widthVariants.length];
-											
-											return (
-												<TableCell key={col.key} className={col.className}>
-													<Skeleton 
-														className="h-4" 
-														style={{ width }}
-													/>
-												</TableCell>
-											);
-										})}
-									</TableRow>
-								))
+								<TableRow>
+									<TableCell colSpan={columns.length} className="text-center py-12">
+										<Loading />
+									</TableCell>
+								</TableRow>
 							) : data.length === 0 ? (
 								<TableRow>
 									<TableCell colSpan={columns.length} className="p-0">
@@ -293,21 +278,7 @@ export function CustomTable<T extends Record<string, any>>({
 				</div>
 
 				<div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-					{loading ? (
-						<>
-							<Skeleton className="h-4 w-40" />
-							<div className="flex items-center gap-3">
-								<Skeleton className="h-9 w-24" />
-								<div className="flex gap-1">
-									<Skeleton className="h-9 w-9" />
-									<Skeleton className="h-9 w-9" />
-									<Skeleton className="h-9 w-9" />
-									<Skeleton className="h-9 w-9" />
-									<Skeleton className="h-9 w-9" />
-								</div>
-							</div>
-						</>
-					) : (
+					{!loading && (
 						<>
 							<div className="text-xs text-muted-foreground">
 								Menampilkan {from}-{to} dari {total}

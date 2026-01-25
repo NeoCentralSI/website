@@ -9,6 +9,7 @@ export default function BimbinganEntry() {
   useEffect(() => {
     // Redirect based on role
     if (isStudent()) {
+      // Redirect to Timeline as main entry point for students
       navigate("/tugas-akhir/bimbingan/student", { replace: true });
     } else if (isDosen()) {
       navigate("/tugas-akhir/bimbingan/lecturer/requests", { replace: true });

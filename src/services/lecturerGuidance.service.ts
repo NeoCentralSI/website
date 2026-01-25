@@ -2,7 +2,7 @@ import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
 // Types (align with backend contracts as needed)
-export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled";
+export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending";
 export type GuidanceType = "online" | "offline";
 
 export interface MyStudentItem {
@@ -160,6 +160,18 @@ export const getPendingRequests = async (params?: { page?: number; pageSize?: nu
   return res.json();
 };
 
+export const getScheduledGuidances = async (params?: { page?: number; pageSize?: number }): Promise<{ success: boolean; page: number; pageSize: number; total: number; totalPages: number; guidances: GuidanceItem[] }> => {
+  const url = new URL(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.SCHEDULED));
+  if (params?.page) url.searchParams.set("page", String(params.page));
+  if (params?.pageSize) url.searchParams.set("pageSize", String(params.pageSize));
+  const res = await apiRequest(url.toString());
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memuat bimbingan terjadwal" }));
+    throw new Error(errorData.message || "Gagal memuat bimbingan terjadwal");
+  }
+  return res.json();
+};
+
 export const rejectGuidanceRequest = async (guidanceId: string, body: { message: string }): Promise<{ success: boolean; guidance: GuidanceItem }> => {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUEST_REJECT(guidanceId)), {
     method: "PATCH",
@@ -210,6 +222,93 @@ export const getLecturerActivityLog = async (studentId: string): Promise<{ succe
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Gagal memuat aktivitas" }));
     throw new Error(errorData.message || "Gagal memuat aktivitas");
+  }
+  return res.json();
+};
+
+// ==================== SESSION SUMMARY APPROVAL ====================
+
+export interface PendingApprovalItem {
+  id: string;
+  studentName?: string;
+  studentId?: string;
+  approvedDate?: string;
+  approvedDateFormatted?: string;
+  summarySubmittedAt?: string;
+  summarySubmittedAtFormatted?: string;
+  sessionSummary?: string;
+  actionItems?: string;
+  milestoneName?: string;
+}
+
+/**
+ * Get guidances pending summary approval (for 1-click approve)
+ */
+export const getPendingApproval = async (params?: { page?: number; pageSize?: number }): Promise<{
+  success: boolean;
+  total: number;
+  guidances: PendingApprovalItem[];
+  page: number;
+  pageSize: number;
+}> => {
+  const url = (() => {
+    const base = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.PENDING_APPROVAL);
+    if (!params?.page && !params?.pageSize) return base;
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.pageSize) qs.set("pageSize", String(params.pageSize));
+    return `${base}?${qs.toString()}`;
+  })();
+  
+  const res = await apiRequest(url);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memuat catatan bimbingan" }));
+    throw new Error(errorData.message || "Gagal memuat catatan bimbingan");
+  }
+  return res.json();
+};
+
+/**
+ * Approve session summary - 1 click, minimal interaction
+ */
+export const approveSessionSummary = async (guidanceId: string): Promise<{
+  success: boolean;
+  guidance: { id: string; status: GuidanceStatus; completedAt?: string };
+}> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.APPROVE_SUMMARY(guidanceId)), {
+    method: "PUT",
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal menyetujui catatan" }));
+    throw new Error(errorData.message || "Gagal menyetujui catatan");
+  }
+  return res.json();
+};
+
+// Guidance detail response type
+export interface GuidanceDetailItem extends GuidanceItem {
+  studentNim?: string;
+  studentEmail?: string;
+  thesisTitle?: string;
+  sessionSummary?: string;
+  actionItems?: string;
+  summarySubmittedAt?: string;
+  summarySubmittedAtFormatted?: string;
+  completedAtFormatted?: string;
+  createdAtFormatted?: string;
+}
+
+/**
+ * Get detailed guidance info for session detail page
+ */
+export const getLecturerGuidanceDetail = async (guidanceId: string): Promise<{
+  success: boolean;
+  guidance: GuidanceDetailItem;
+}> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.GUIDANCE_DETAIL(guidanceId)));
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail bimbingan" }));
+    throw new Error(errorData.message || "Gagal memuat detail bimbingan");
   }
   return res.json();
 };

@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/ui/spinner";
 import { getStudentSupervisors } from "@/services/studentGuidance.service";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import EmptyState from "@/components/ui/empty-state";
@@ -48,20 +49,11 @@ export default function SupervisorsPage() {
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
           { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
           { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
+          { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
         ]}
       />
       {isPending ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2].map((i) => (
-            <Card key={i} className="p-4 animate-pulse">
-              <div className="space-y-2">
-                <div className="h-4 w-20 bg-muted rounded" />
-                <div className="h-4 w-40 bg-muted rounded" />
-                <div className="h-6 w-full bg-muted rounded" />
-              </div>
-            </Card>
-          ))}
-        </div>
+        <Loading text="Memuat data pembimbing..." />
       ) : isError ? (
         <EmptyState 
           title="Gagal Memuat Data"

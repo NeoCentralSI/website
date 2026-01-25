@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/ui/spinner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 import type { ProgressDetailItem } from "@/services/studentGuidance.service";
@@ -83,11 +84,7 @@ export default function ProgressChecklist({ items, loading, selected, onToggle, 
 
       <Card className="p-0">
         {loading ? (
-          <div className="p-4 space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 bg-accent animate-pulse rounded" />
-            ))}
-          </div>
+          <Loading text="Memuat komponen..." className="py-8" />
         ) : filtered.length === 0 ? (
           <div className="p-6 text-sm text-muted-foreground">Tidak ada komponen</div>
         ) : (

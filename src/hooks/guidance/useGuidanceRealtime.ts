@@ -15,7 +15,9 @@ type PushEventType =
   | "thesis-guidance:rejected"
   | "thesis-guidance:rescheduled"
   | "thesis-guidance:cancelled"
-  | "thesis-guidance:notes-updated";
+  | "thesis-guidance:notes-updated"
+  | "thesis-guidance:summary-submitted"
+  | "thesis-guidance:summary-approved";
 
 export function useGuidanceRealtime() {
   const qc = useQueryClient();
@@ -154,6 +156,42 @@ export function useGuidanceRealtime() {
                 toast("Catatan bimbingan diperbarui", { id: "guidance-notes-updated" });
                 qc.invalidateQueries({ queryKey: ["student-guidance"] });
                 qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "thesis-guidance:summary-submitted": {
+                // Lecturer receives notification that student submitted summary
+                if (role === "supervisor") {
+                  const studentName = payload?.data?.studentName || "Mahasiswa";
+                  toast.info("Catatan Bimbingan Baru", {
+                    description: `${studentName} telah mengisi catatan bimbingan`,
+                    id: "guidance-summary-submitted",
+                    duration: 5000,
+                  });
+                  if (payload?.data?.playSound === "true") {
+                    console.log("[FCM] play beep for summary submitted");
+                    playBeep();
+                  }
+                  qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
+                  qc.invalidateQueries({ queryKey: ["pending-approval"] });
+                }
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "thesis-guidance:summary-approved": {
+                // Student receives notification that lecturer approved summary
+                if (role === "student") {
+                  const title = payload?.data?.title || "Catatan Bimbingan Disetujui ✓";
+                  const body = payload?.data?.body || "Catatan bimbingan Anda telah disetujui. Bimbingan selesai!";
+                  toast.success(title, {
+                    description: body,
+                    id: "guidance-summary-approved",
+                    duration: 5000,
+                  });
+                  qc.invalidateQueries({ queryKey: ["student-guidance"] });
+                  qc.invalidateQueries({ queryKey: ["needs-summary"] });
+                  qc.invalidateQueries({ queryKey: ["completed-history"] });
+                }
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }

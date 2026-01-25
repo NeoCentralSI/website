@@ -1,13 +1,13 @@
 import { Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { useActiveAcademicYear } from '@/hooks/shared';
 
 export function ActiveAcademicYearBadge() {
   const { label, isLoading } = useActiveAcademicYear();
 
   if (isLoading) {
-    return <Skeleton className="h-6 w-32" />;
+    return <Spinner className="size-4" />;
   }
 
   if (!label) {

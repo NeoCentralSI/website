@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MilestoneCard } from "./MilestoneCard";
 import { MilestoneProgressCard } from "./MilestoneProgressCard";
 import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -25,7 +26,7 @@ export interface MilestoneListProps {
   onCreateFromTemplates?: () => void;
   onEdit?: (milestone: Milestone) => void;
   onDelete?: (milestone: Milestone) => void;
-  onStatusChange?: (milestone: Milestone, status: MilestoneStatus) => void;
+  onStatusChange?: (milestone: Milestone, status: Exclude<MilestoneStatus, "completed">) => void;
   onProgressChange?: (milestone: Milestone, progress: number) => void;
   onValidate?: (milestone: Milestone) => void;
   onRequestRevision?: (milestone: Milestone) => void;
@@ -184,21 +185,9 @@ export function MilestoneList({
     }
   }, [selectedIds, startableIds, onClearSelection]);
 
-  // Loading skeleton
+  // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <MilestoneProgressCard progress={null} loading />
-        <div className="space-y-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-40 bg-muted animate-pulse rounded-lg"
-            />
-          ))}
-        </div>
-      </div>
-    );
+    return <Loading text="Memuat milestone..." />;
   }
 
   return (

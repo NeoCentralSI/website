@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { SidebarSkeleton } from "@/components/layout/sidebar/sidebar-skeleton";
+import { Loading } from "@/components/ui/spinner";
 import { ActiveAcademicYearBadge } from "@/components/layout/ActiveAcademicYearBadge";
 import {
   Breadcrumb,
@@ -50,12 +51,11 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2">
             <div className="flex items-center gap-2 px-4">
-              <div className="h-6 w-6 bg-gray-300 rounded animate-pulse" />
+              <SidebarTrigger className="-ml-1" />
             </div>
           </header>
           <div className="flex flex-1 flex-col gap-4 p-6">
-            <div className="h-8 w-48 bg-gray-300 rounded animate-pulse" />
-            <div className="h-64 bg-gray-200 rounded animate-pulse" />
+            <Loading text="Memuat dashboard..." />
           </div>
         </SidebarInset>
       </SidebarProvider>

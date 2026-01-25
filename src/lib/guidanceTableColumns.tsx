@@ -3,6 +3,7 @@ import StatusBadge from '@/components/thesis/StatusBadge';
 import { EyeIcon, FileTextIcon } from 'lucide-react';
 import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
+import { useNavigate } from 'react-router-dom';
 
 interface GetGuidanceTableColumnsOptions {
   items: GuidanceItem[];
@@ -11,8 +12,8 @@ interface GetGuidanceTableColumnsOptions {
   status: GuidanceStatus | '';
   setStatus: (value: GuidanceStatus | '') => void;
   setPage: (value: number) => void;
-  onViewDetail: (id: string) => void;
   onViewDocument: (fileName?: string | null, filePath?: string | null) => void;
+  navigate: ReturnType<typeof useNavigate>;
 }
 
 export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions): Column<GuidanceItem>[] => {
@@ -23,8 +24,8 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
     status,
     setStatus,
     setPage,
-    onViewDetail,
     onViewDocument,
+    navigate,
   } = options;
 
   return [
@@ -104,11 +105,21 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
     {
       key: 'action',
       header: 'Aksi',
-      render: (r) => (
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onViewDetail(r.id)} title="Detail">
-          <EyeIcon className="size-4" />
-        </Button>
-      ),
+      render: (r) => {
+        const isRejected = r.status === 'rejected';
+        return (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8" 
+            onClick={() => navigate(`/tugas-akhir/bimbingan/student/session/${r.id}`)} 
+            title={isRejected ? 'Bimbingan ditolak' : 'Detail'}
+            disabled={isRejected}
+          >
+            <EyeIcon className="size-4" />
+          </Button>
+        );
+      },
     },
   ];
 };

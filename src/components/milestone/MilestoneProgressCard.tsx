@@ -1,5 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loading } from "@/components/ui/spinner";
 import type { MilestoneProgress } from "@/types/milestone.types";
 import { CheckCircle2, AlertCircle, Loader2, Circle } from "lucide-react";
 
@@ -16,14 +17,7 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
           <CardTitle className="text-base">Progress Milestone</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="h-4 w-full bg-muted animate-pulse rounded" />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-16 bg-muted animate-pulse rounded" />
-              ))}
-            </div>
-          </div>
+          <Loading text="Memuat progress..." size="sm" />
         </CardContent>
       </Card>
     );

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink, Calendar, MapPin, Users, Video } from "lucide-react";
 import { UpcomingEventsCard } from "@/components/dashboard/UpcomingEventsCard";
 import { MilestoneProgressCard } from "@/components/dashboard/MilestoneProgressCard";
+import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { useRole } from "@/hooks/shared";
 
 export default function Dashboard() {
@@ -19,7 +20,7 @@ export default function Dashboard() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [createEventOpen, setCreateEventOpen] = useState(false);
-  const { isStudent } = useRole();
+  const { isStudent, isDosen } = useRole();
 
   useEffect(() => {
     console.log('📋 [Dashboard] Setting breadcrumbs and title');
@@ -119,6 +120,7 @@ export default function Dashboard() {
         </div>
         <div className="lg:col-span-1 h-full min-h-0 flex flex-col gap-6">
           {isStudent() && <MilestoneProgressCard className="flex-1 min-h-0" />}
+          {isDosen() && <QuickActionsCard className="shrink-0" />}
           <UpcomingEventsCard limit={20} className="flex-1 min-h-0" />
         </div>
       </div>

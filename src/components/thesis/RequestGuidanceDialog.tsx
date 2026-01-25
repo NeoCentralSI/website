@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { Spinner } from "@/components/ui/spinner";
 import { ComboBox } from "@/components/ui/combobox";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Info } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, Settings2 } from "lucide-react";
 import type { SupervisorBusySlot, SupervisorsResponse } from "@/services/studentGuidance.service";
 import { getSupervisorAvailability, requestStudentGuidance } from "@/services/studentGuidance.service";
 import { useMutation } from "@tanstack/react-query";
@@ -35,8 +35,9 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [slotConflict, setSlotConflict] = useState<string | null>(null);
-  // Prevent borderline server-side validation by enforcing a small future window on the picker
-  const minDate = new Date(Date.now() + 60 * 1000); // >= 1 minute from now
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  const minDate = new Date(Date.now() + 60 * 1000);
   const durationMinutes = 60;
 
   const resolvedSupervisorId = useMemo(() => supervisorId || supervisors[0]?.id || "", [supervisorId, supervisors]);
@@ -97,14 +98,12 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!when) throw new Error("Pilih tanggal dan waktu");
-      if (!file) throw new Error("Unggah file thesis (PDF)");
       if (slotConflict) throw new Error(slotConflict);
-      // ensure the date is not behind server tolerance; bump to minDate if needed
       const selected = when.getTime() < minDate.getTime() ? minDate : when;
       return requestStudentGuidance({
         guidanceDate: selected.toISOString(),
         studentNotes: note || undefined,
-        file: file,
+        file: file ?? undefined,
         meetingUrl: meetingUrl || undefined,
         documentUrl: documentUrl || undefined,
         supervisorId: resolvedSupervisorId || undefined,
@@ -116,28 +115,31 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
       const msg = whenFmt ? `Pengajuan bimbingan terkirim • ${whenFmt}` : "Pengajuan bimbingan terkirim";
       toast.success(msg, { id: "guidance-requested" });
       onOpenChange(false);
-      setWhen(null); setNote(""); setMeetingUrl(""); setDocumentUrl(""); setSupervisorId(""); setSelectedMilestoneIds([]); setFile(null);
+      resetForm();
       onSubmitted?.();
     },
     onError: (e: unknown) => toast.error((e as Error)?.message || "Gagal mengajukan bimbingan"),
   });
 
-  const supervisorOptions = [{ label: "Pilih otomatis", value: "" }, ...supervisors.map((s) => ({ label: s.name || s.id, value: s.id }))];
+  const resetForm = () => {
+    setWhen(null);
+    setNote("");
+    setMeetingUrl("");
+    setDocumentUrl("");
+    setSupervisorId("");
+    setSelectedMilestoneIds([]);
+    setFile(null);
+    setShowAdvanced(false);
+  };
+
+  const supervisorOptions = [
+    { label: "Pilih otomatis (Pembimbing 1)", value: "" },
+    ...supervisors.map((s) => ({ label: s.name || s.id, value: s.id }))
+  ];
   
-  // Filter milestones - only show not completed milestones
   const activeMilestones = milestones.filter((m) => m.status !== "completed");
   
-  // Check if there are milestones with active work (in_progress, revision_needed)
-  const milestonesWithProgress = milestones.filter(
-    (m) => m.status === "in_progress" || m.status === "revision_needed"
-  );
-  
-  // Must have milestones and either active progress or select a milestone
-  const hasNoMilestones = milestones.length === 0;
-  const needsMilestoneSelection = milestonesWithProgress.length === 0 && activeMilestones.length > 0;
-  
-  // Disable submit if no milestones or no active progress and no milestone selected
-  const canSubmit = !hasNoMilestones && (!needsMilestoneSelection || selectedMilestoneIds.length > 0) && !slotConflict && !checkingAvailability;
+  const canSubmit = !!when && !slotConflict && !checkingAvailability;
 
   const toggleMilestone = (id: string) => {
     setSelectedMilestoneIds((prev) =>
@@ -147,148 +149,135 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[85vw]! max-w-none! flex flex-col p-6">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Ajukan Bimbingan</DialogTitle>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+        <DialogHeader className="shrink-0">
+          <DialogTitle>Ajukan Bimbingan</DialogTitle>
+          <DialogDescription>
+            Pilih waktu bimbingan dan tulis agenda yang ingin dibahas
+          </DialogDescription>
         </DialogHeader>
         
-        {/* Alert if no milestones - full width */}
-        {hasNoMilestones && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Anda belum memiliki milestone. Buat milestone terlebih dahulu di tab <strong>Milestone</strong> sebelum mengajukan bimbingan.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Info if needs milestone selection - full width */}
-        {!hasNoMilestones && needsMilestoneSelection && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Tidak ada milestone yang sedang dikerjakan. Pilih milestone yang akan dibahas untuk melanjutkan.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="grid gap-x-10 gap-y-4 md:grid-cols-2 flex-1">
-          {/* Kolom Kiri */}
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Waktu Bimbingan</Label>
-              <DateTimePicker 
-                value={when} 
-                onChange={setWhen} 
-                min={minDate} 
-                disabled={hasNoMilestones}
-                busySlots={busySlots}
-                duration={durationMinutes}
-              />
-              {checkingAvailability && (
-                <p className="text-xs text-muted-foreground">Memeriksa jadwal pembimbing...</p>
-              )}
-              {availabilityError && (
-                <p className="text-xs text-destructive">{availabilityError}</p>
-              )}
-              {slotConflict && (
-                <p className="text-xs text-destructive font-medium">{slotConflict}</p>
-              )}
-              <p className="text-xs text-muted-foreground">Pembimbing akan dipilih otomatis oleh sistem bila tidak dipilih.</p>
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Pilih Pembimbing (opsional)</Label>
-              <ComboBox items={supervisorOptions} defaultValue={supervisorId} onChange={setSupervisorId} width="w-full" disabled={hasNoMilestones} />
-            </div>
-            
-            {activeMilestones.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">
-                  Milestone yang Dibahas
-                  {needsMilestoneSelection && <span className="text-destructive ml-1">*</span>}
-                </Label>
-                <div className="space-y-1 rounded-lg border p-3 max-h-36 overflow-auto">
-                  {activeMilestones.map((m) => (
-                    <label key={m.id} className="flex items-start gap-2 text-sm cursor-pointer hover:bg-muted/50 py-1 px-1 rounded transition-colors">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 h-4 w-4 accent-primary"
-                        checked={selectedMilestoneIds.includes(m.id)}
-                        onChange={() => toggleMilestone(m.id)}
-                      />
-                      <span className="flex-1">
-                        <span className="font-medium">{m.title}</span>
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          {m.status === "in_progress"
-                            ? "(Sedang dikerjakan)"
-                            : m.status === "revision_needed"
-                              ? "(Perlu revisi)"
-                              : ""}
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {needsMilestoneSelection 
-                    ? "Wajib pilih milestone karena tidak ada yang sedang aktif dikerjakan."
-                    : "Pilih milestone yang akan dibahas dalam bimbingan ini."
-                  }
-                </p>
-              </div>
+        <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+          {/* Required: Date/Time */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Kapan? <span className="text-destructive">*</span>
+            </Label>
+            <DateTimePicker 
+              value={when} 
+              onChange={setWhen} 
+              min={minDate}
+              busySlots={busySlots}
+              duration={durationMinutes}
+            />
+            {checkingAvailability && (
+              <p className="text-xs text-muted-foreground">Memeriksa jadwal...</p>
+            )}
+            {availabilityError && (
+              <p className="text-xs text-destructive">{availabilityError}</p>
+            )}
+            {slotConflict && (
+              <p className="text-xs text-destructive font-medium">{slotConflict}</p>
             )}
           </div>
 
-          {/* Kolom Kanan */}
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Catatan / Agenda</Label>
-              <Textarea 
-                value={note} 
-                onChange={(e) => setNote(e.target.value)} 
-                placeholder="Tuliskan agenda atau hal yang ingin dibahas..."
-                rows={3}
-                disabled={hasNoMilestones}
-              />
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Link Dokumen (opsional)</Label>
-              <Input
-                placeholder="https://docs.google.com/..."
-                value={documentUrl}
-                onChange={(e) => setDocumentUrl(e.target.value)}
-                disabled={hasNoMilestones}
-              />
-              <p className="text-xs text-muted-foreground">Link ke dokumen (Google Docs, Overleaf, Notion)</p>
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Meeting URL (opsional)</Label>
-              <Input
-                placeholder="https://meet.google.com/xxx-xxxx-xxx"
-                value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
-                disabled={hasNoMilestones}
-              />
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">File Thesis</Label>
-              <Input
-                type="file"
-                accept=".pdf,application/pdf"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                disabled={hasNoMilestones}
-              />
-              <p className="text-xs text-muted-foreground">Format: PDF saja. Maks 50MB.</p>
-            </div>
+          {/* Optional: Notes */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Apa yang ingin dibahas?</Label>
+            <Textarea 
+              value={note} 
+              onChange={(e) => setNote(e.target.value)} 
+              placeholder="Contoh: Review Bab 3, diskusi metodologi, dll..."
+              rows={3}
+            />
           </div>
+
+          {/* Optional: File Upload */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Unggah file thesis (opsional)</Label>
+            <Input
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {file ? `File: ${file.name}` : "Kosongkan jika file sama dengan sebelumnya"}
+            </p>
+          </div>
+
+          {/* Advanced Options - Collapsed by default */}
+          <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground">
+                <span className="flex items-center gap-2">
+                  <Settings2 className="h-4 w-4" />
+                  Opsi Lanjutan
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 pt-2">
+              {/* Supervisor Selection */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Pilih Pembimbing</Label>
+                <ComboBox 
+                  items={supervisorOptions} 
+                  defaultValue={supervisorId} 
+                  onChange={setSupervisorId} 
+                  width="w-full"
+                />
+              </div>
+              
+              {/* Milestone Selection */}
+              {activeMilestones.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Milestone yang Dibahas</Label>
+                  <div className="space-y-1 rounded-lg border p-3 max-h-32 overflow-auto">
+                    {activeMilestones.map((m) => (
+                      <label key={m.id} className="flex items-start gap-2 text-sm cursor-pointer hover:bg-muted/50 py-1 px-1 rounded">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-4 w-4 accent-primary"
+                          checked={selectedMilestoneIds.includes(m.id)}
+                          onChange={() => toggleMilestone(m.id)}
+                        />
+                        <span className="flex-1">
+                          <span className="font-medium">{m.title}</span>
+                          {m.status === "in_progress" && (
+                            <span className="ml-1 text-xs text-muted-foreground">(Sedang dikerjakan)</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Document URL */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Link Dokumen Online</Label>
+                <Input
+                  placeholder="https://docs.google.com/..."
+                  value={documentUrl}
+                  onChange={(e) => setDocumentUrl(e.target.value)}
+                />
+              </div>
+              
+              {/* Meeting URL */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Meeting URL</Label>
+                <Input
+                  placeholder="https://meet.google.com/..."
+                  value={meetingUrl}
+                  onChange={(e) => setMeetingUrl(e.target.value)}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
-        {/* Tombol Aksi - full width */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pt-4 border-t shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitMutation.isPending}>
             Batal
           </Button>
@@ -299,7 +288,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
                 Mengirim...
               </>
             ) : (
-              'Kirim'
+              'Ajukan Bimbingan'
             )}
           </Button>
         </div>

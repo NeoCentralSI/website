@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { ActivityLogItem } from "@/services/lecturerGuidance.service";
 import { getLecturerActivityLog } from "@/services/lecturerGuidance.service";
 import { toast } from "sonner";
+import { formatDateId } from "@/lib/text";
 
 export default function LecturerActivityPage() {
   const { studentId } = useParams();
@@ -54,8 +55,8 @@ export default function LecturerActivityPage() {
               )}
               {items.map((a) => (
                 <TableRow key={a.id}>
-                  <TableCell>{new Date(a.timestamp).toLocaleString()}</TableCell>
-                  <TableCell>{a.action}</TableCell>
+                  <TableCell>{formatDateId(a.createdAt)}</TableCell>
+                  <TableCell>{a.activity}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
