@@ -20,6 +20,15 @@ import type {
   AddFeedbackDto,
   ReorderMilestonesDto,
   MilestoneStatus,
+  PendingMilestoneItem,
+  StudentCompletionStatus,
+  ThesisCompletionCheck,
+  BulkValidateDto,
+  BulkValidateResult,
+  SeminarReadinessStatus,
+  SeminarReadinessApprovalResult,
+  StudentReadyForSeminar,
+  SeminarReadinessNotesDto,
 } from "@/types/milestone.types";
 
 // API Endpoints
@@ -29,6 +38,7 @@ const ENDPOINTS = {
   THESIS_MILESTONES: (thesisId: string) => `/milestones/thesis/${thesisId}`,
   THESIS_PROGRESS: (thesisId: string) => `/milestones/thesis/${thesisId}/progress`,
   THESIS_LOGS: (thesisId: string) => `/milestones/thesis/${thesisId}/logs`,
+  THESIS_COMPLETION: (thesisId: string) => `/milestones/thesis/${thesisId}/completion`,
   FROM_TEMPLATES: (thesisId: string) => `/milestones/thesis/${thesisId}/from-templates`,
   REORDER: (thesisId: string) => `/milestones/thesis/${thesisId}/reorder`,
   MILESTONE_DETAIL: (milestoneId: string) => `/milestones/${milestoneId}`,
@@ -40,6 +50,15 @@ const ENDPOINTS = {
   REQUEST_REVISION: (milestoneId: string) => `/milestones/${milestoneId}/request-revision`,
   FEEDBACK: (milestoneId: string) => `/milestones/${milestoneId}/feedback`,
   TEMPLATE_DETAIL: (templateId: string) => `/milestones/templates/${templateId}`,
+  // Lecturer Dashboard Endpoints
+  LECTURER_PENDING: "/milestones/lecturer/pending",
+  LECTURER_COMPLETION_STATUS: "/milestones/lecturer/completion-status",
+  LECTURER_BULK_VALIDATE: "/milestones/lecturer/bulk-validate",
+  // Seminar Readiness Endpoints
+  READY_FOR_SEMINAR: "/milestones/ready-for-seminar",
+  SEMINAR_READINESS: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness`,
+  SEMINAR_READINESS_APPROVE: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness/approve`,
+  SEMINAR_READINESS_REVOKE: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness/revoke`,
 };
 
 // ============================================
@@ -482,4 +501,166 @@ export async function reorderMilestones(
     const error = await response.json();
     throw new Error(error.message || "Gagal mengubah urutan milestone");
   }
+}
+
+// ============================================
+// Lecturer Dashboard Services (Thesis Completion)
+// ============================================
+
+export interface GetPendingMilestonesOptions {
+  status?: MilestoneStatus;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Get pending milestones for lecturer dashboard
+ */
+export async function getPendingMilestonesForLecturer(
+  options: GetPendingMilestonesOptions = {}
+): Promise<{ milestones: PendingMilestoneItem[]; count: number }> {
+  const url = new URL(getApiUrl(ENDPOINTS.LECTURER_PENDING));
+  if (options.status) {
+    url.searchParams.set("status", options.status);
+  }
+  if (options.limit) {
+    url.searchParams.set("limit", String(options.limit));
+  }
+  if (options.offset) {
+    url.searchParams.set("offset", String(options.offset));
+  }
+
+  const response = await apiRequest(url.toString());
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil milestone pending");
+  }
+
+  const result = await response.json();
+  return {
+    milestones: result.data,
+    count: result.count,
+  };
+}
+
+/**
+ * Get thesis completion status for all supervised students
+ */
+export async function getCompletionStatusForLecturer(): Promise<StudentCompletionStatus[]> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.LECTURER_COMPLETION_STATUS));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil status kelengkapan thesis");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Bulk validate milestones
+ */
+export async function bulkValidateMilestones(
+  data: BulkValidateDto
+): Promise<BulkValidateResult> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.LECTURER_BULK_VALIDATE), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal memvalidasi milestone");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Check thesis completion status
+ */
+export async function checkThesisCompletion(thesisId: string): Promise<ThesisCompletionCheck> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.THESIS_COMPLETION(thesisId)));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengecek kelengkapan thesis");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+// ============================================================================
+// SEMINAR READINESS FUNCTIONS
+// ============================================================================
+
+/**
+ * Get seminar readiness status for a thesis
+ */
+export async function getSeminarReadinessStatus(thesisId: string): Promise<SeminarReadinessStatus> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.SEMINAR_READINESS(thesisId)));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil status kesiapan seminar");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Approve seminar readiness for a thesis
+ */
+export async function approveSeminarReadiness(
+  thesisId: string,
+  data?: SeminarReadinessNotesDto
+): Promise<SeminarReadinessApprovalResult> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.SEMINAR_READINESS_APPROVE(thesisId)), {
+    method: "POST",
+    body: JSON.stringify(data || {}),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal menyetujui kesiapan seminar");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Revoke seminar readiness approval for a thesis
+ */
+export async function revokeSeminarReadiness(
+  thesisId: string,
+  data?: SeminarReadinessNotesDto
+): Promise<SeminarReadinessApprovalResult> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.SEMINAR_READINESS_REVOKE(thesisId)), {
+    method: "POST",
+    body: JSON.stringify(data || {}),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mencabut persetujuan kesiapan seminar");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Get list of students ready for seminar (both supervisors approved)
+ */
+export async function getStudentsReadyForSeminar(): Promise<StudentReadyForSeminar[]> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.READY_FOR_SEMINAR));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil daftar mahasiswa siap seminar");
+  }
+
+  const result = await response.json();
+  return result.data;
 }

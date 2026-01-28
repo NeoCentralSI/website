@@ -30,6 +30,7 @@ import MahasiswaPage from './pages/admin/master-data/Mahasiswa'
 import DosenPage from './pages/admin/master-data/Dosen'
 import KelolaTugasAkhirPage from './pages/tugas-akhir/secretary/TugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
+import MonitoringDashboard from './pages/monitoring/MonitoringDashboard'
 import { getAuthTokens } from './services/auth.service'
 import { Spinner } from './components/ui/spinner'
 
@@ -89,7 +90,7 @@ function App() {
               <Route path="/tugas-akhir/sidang" element={<Placeholder title="Tugas Akhir - Sidang" />} />
               <Route path="/yudisium" element={<Placeholder title="Yudisium" />} />
               <Route path="/tugas-akhir/kelola-penguji" element={<Placeholder title="Tugas Akhir - Kelola Penguji" />} />
-              <Route path="/tugas-akhir/monitoring" element={<Placeholder title="Tugas Akhir - Monitoring" />} />
+              <Route path="/tugas-akhir/monitoring" element={<MonitoringDashboard />} />
               <Route path="/tugas-akhir/acc-pembimbing" element={<Placeholder title="Tugas Akhir - ACC Pembimbing" />} />
               <Route path="/tugas-akhir/acc-rubrik" element={<Placeholder title="Tugas Akhir - ACC Rubrik Penilaian" />} />
               <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />

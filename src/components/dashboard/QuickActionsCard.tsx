@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +9,32 @@ import {
   ClipboardCheck, 
   FileCheck, 
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  GraduationCap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPendingRequests, getPendingApproval } from "@/services/lecturerGuidance.service";
-import { getMilestones } from "@/services/milestone.service";
+import { getMilestones, getSeminarReadinessStatus } from "@/services/milestone.service";
 import { getMyStudents } from "@/services/lecturerGuidance.service";
+import { useLottie } from 'lottie-react';
+import completeAnimation from '@/assets/lottie/complete.json';
+
+// Lottie options for complete animation
+const completeLottieOptions = {
+  animationData: completeAnimation,
+  loop: true,
+  autoplay: true,
+};
+
+function CompleteLottie({ size = "w-24 h-24" }: { size?: string }) {
+  const { View, setSpeed } = useLottie(completeLottieOptions);
+  
+  React.useEffect(() => {
+    setSpeed(0.5);
+  }, [setSpeed]);
+
+  return <div className={size}>{View}</div>;
+}
 
 interface QuickActionsCardProps {
   className?: string;
@@ -75,14 +96,53 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     enabled: !!studentsData?.students,
   });
 
+  // Fetch pending seminar readiness approvals
+  const { data: pendingSeminarData, isLoading: loadingSeminar } = useQuery({
+    queryKey: ["pending-seminar-approvals"],
+    queryFn: async () => {
+      if (!studentsData?.students) return [];
+      
+      // Get all students' thesis IDs
+      const studentsWithThesis = studentsData.students
+        .filter((s: any) => !!s.thesisId)
+        .map((s: any) => ({ studentId: s.studentId, thesisId: s.thesisId, fullName: s.fullName }));
+
+      // Fetch seminar readiness for each thesis
+      const readinessStatuses = await Promise.all(
+        studentsWithThesis.map(async (student: any) => {
+          try {
+            const result = await getSeminarReadinessStatus(student.thesisId);
+            return {
+              ...result,
+              studentName: student.fullName,
+            };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      // Filter for students where:
+      // 1. Milestone is 100% complete
+      // 2. Current user has not yet approved
+      return readinessStatuses.filter(
+        (r: any) => r && r.milestoneProgress?.isComplete && r.currentUserRole && !r.currentUserHasApproved
+      );
+    },
+    enabled: !!studentsData?.students,
+  });
+
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
   const pendingMilestonesCount = pendingMilestonesData?.length || 0;
+  const pendingSeminarCount = pendingSeminarData?.length || 0;
   
   // Get first pending milestone's thesisId for direct link to student detail
   const firstPendingMilestoneThesisId = pendingMilestonesData?.[0]?.thesisId;
+  // Get first pending seminar's thesisId for direct link
+  const firstPendingSeminarThesisId = pendingSeminarData?.[0]?.thesisId;
 
-  const totalPending = pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount;
+  const totalPending = pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount;
 
   const quickActions = [
     {
@@ -120,9 +180,22 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
         : "/tugas-akhir/bimbingan/lecturer/my-students",
       loading: loadingMilestones,
     },
+    {
+      id: "pending-seminar",
+      title: "Acc Seminar",
+      description: "Approve kesiapan seminar",
+      count: pendingSeminarCount,
+      icon: GraduationCap,
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+      link: firstPendingSeminarThesisId 
+        ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingSeminarThesisId}`
+        : "/tugas-akhir/bimbingan/lecturer/my-students",
+      loading: loadingSeminar,
+    },
   ];
 
-  const isLoading = loadingRequests || loadingApprovals || loadingMilestones;
+  const isLoading = loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar;
 
   return (
     <Card className={cn("flex flex-col", className)}>
@@ -141,9 +214,9 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
         {isLoading ? (
           <Loading text="Memuat aksi cepat..." className="py-4" size="sm" />
         ) : totalPending === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-            <CheckCircle className="h-12 w-12 mb-3 text-green-500" />
-            <p className="font-medium">Semua Selesai!</p>
+          <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
+            <CompleteLottie size="w-24 h-24" />
+            <p className="font-medium mt-2">Semua Selesai!</p>
             <p className="text-sm">Tidak ada yang perlu di-approve</p>
           </div>
         ) : (

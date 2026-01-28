@@ -12,6 +12,7 @@ import {
   MilestoneFormDialog,
   TemplateSelectorDialog,
   DeleteMilestoneDialog,
+  SeminarReadinessStatusCard,
 } from "@/components/milestone";
 
 import {
@@ -283,6 +284,11 @@ export default function StudentMilestonePage() {
           { label: "Riwayat", to: "/tugas-akhir/bimbingan/completed-history" },
         ]}
       />
+
+      {/* Seminar Readiness Status for Student */}
+      {hasThesis && thesisId && (
+        <SeminarReadinessStatusCard thesisId={thesisId} className="mb-4" />
+      )}
 
       <MilestoneList
         milestones={milestones}

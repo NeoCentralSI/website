@@ -411,6 +411,10 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
             initialView="dayGridMonth"
             locale={idLocale}
+            dayHeaderContent={(args) => {
+              const day = args.date.toLocaleDateString('id-ID', { weekday: 'short' });
+              return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+            }}
             headerToolbar={{
               left: 'prev,next today',
               center: 'title',
@@ -552,7 +556,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
           color: var(--muted-foreground);
           font-weight: 500;
           font-size: 0.875rem;
-          text-transform: uppercase;
+          text-transform: capitalize;
           letter-spacing: 0.025em;
         }
 

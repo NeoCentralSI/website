@@ -500,3 +500,203 @@ export function useMilestoneManagement(thesisId: string) {
     isReordering: reorderMutation.isPending,
   };
 }
+
+// ============================================
+// Lecturer Dashboard Hooks (Thesis Completion)
+// ============================================
+
+/**
+ * Hook to fetch pending milestones for lecturer dashboard
+ */
+export function usePendingMilestonesForLecturer(
+  options: milestoneService.GetPendingMilestonesOptions = {}
+) {
+  return useQuery({
+    queryKey: [...milestoneKeys.all, "lecturer", "pending", options],
+    queryFn: () => milestoneService.getPendingMilestonesForLecturer(options),
+  });
+}
+
+/**
+ * Hook to fetch completion status for all supervised students
+ */
+export function useCompletionStatusForLecturer() {
+  return useQuery({
+    queryKey: [...milestoneKeys.all, "lecturer", "completion-status"],
+    queryFn: milestoneService.getCompletionStatusForLecturer,
+  });
+}
+
+/**
+ * Hook to check thesis completion status
+ */
+export function useThesisCompletion(thesisId?: string) {
+  return useQuery({
+    queryKey: [...milestoneKeys.all, "thesis-completion", thesisId],
+    queryFn: () => milestoneService.checkThesisCompletion(thesisId!),
+    enabled: !!thesisId,
+  });
+}
+
+/**
+ * Hook for bulk validating milestones
+ */
+export function useBulkValidateMilestones() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: milestoneService.bulkValidateMilestones,
+    onSuccess: (data) => {
+      // Invalidate all milestone queries to refresh data
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.all });
+      toast.success(`${data.validatedCount} milestone berhasil divalidasi`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal memvalidasi milestone");
+    },
+  });
+}
+
+/**
+ * Combined hook for lecturer milestone dashboard
+ */
+export function useLecturerMilestoneDashboard() {
+  const pendingQuery = usePendingMilestonesForLecturer();
+  const completionStatusQuery = useCompletionStatusForLecturer();
+  const bulkValidateMutation = useBulkValidateMilestones();
+
+  return {
+    // Pending milestones
+    pendingMilestones: pendingQuery.data?.milestones ?? [],
+    pendingCount: pendingQuery.data?.count ?? 0,
+    isPendingLoading: pendingQuery.isLoading,
+    isPendingError: pendingQuery.isError,
+    pendingError: pendingQuery.error,
+    refetchPending: pendingQuery.refetch,
+
+    // Completion status
+    completionStatus: completionStatusQuery.data ?? [],
+    isCompletionStatusLoading: completionStatusQuery.isLoading,
+    isCompletionStatusError: completionStatusQuery.isError,
+    completionStatusError: completionStatusQuery.error,
+    refetchCompletionStatus: completionStatusQuery.refetch,
+
+    // Bulk validate
+    bulkValidate: bulkValidateMutation.mutate,
+    isBulkValidating: bulkValidateMutation.isPending,
+    bulkValidateResult: bulkValidateMutation.data,
+  };
+}
+
+// ============================================
+// Seminar Readiness Hooks
+// ============================================
+
+/**
+ * Hook to fetch seminar readiness status for a thesis
+ */
+export function useSeminarReadinessStatus(thesisId?: string) {
+  return useQuery({
+    queryKey: [...milestoneKeys.all, "seminar-readiness", thesisId],
+    queryFn: () => milestoneService.getSeminarReadinessStatus(thesisId!),
+    enabled: !!thesisId,
+  });
+}
+
+/**
+ * Hook to fetch students ready for seminar
+ */
+export function useStudentsReadyForSeminar() {
+  return useQuery({
+    queryKey: [...milestoneKeys.all, "ready-for-seminar"],
+    queryFn: milestoneService.getStudentsReadyForSeminar,
+  });
+}
+
+/**
+ * Hook for approving seminar readiness
+ */
+export function useApproveSeminarReadiness() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ thesisId, notes }: { thesisId: string; notes?: string }) =>
+      milestoneService.approveSeminarReadiness(thesisId, notes ? { notes } : undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "seminar-readiness", variables.thesisId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "ready-for-seminar"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "lecturer-completion-status"],
+      });
+      toast.success("Kesiapan seminar berhasil disetujui");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal menyetujui kesiapan seminar");
+    },
+  });
+}
+
+/**
+ * Hook for revoking seminar readiness approval
+ */
+export function useRevokeSeminarReadiness() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ thesisId, notes }: { thesisId: string; notes?: string }) =>
+      milestoneService.revokeSeminarReadiness(thesisId, notes ? { notes } : undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "seminar-readiness", variables.thesisId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "ready-for-seminar"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "lecturer-completion-status"],
+      });
+      toast.success("Persetujuan kesiapan seminar berhasil dicabut");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal mencabut persetujuan kesiapan seminar");
+    },
+  });
+}
+
+/**
+ * Combined hook for seminar readiness management
+ */
+export function useSeminarReadinessManagement(thesisId?: string) {
+  const statusQuery = useSeminarReadinessStatus(thesisId);
+  const approveMutation = useApproveSeminarReadiness();
+  const revokeMutation = useRevokeSeminarReadiness();
+
+  return {
+    // Status
+    readinessStatus: statusQuery.data,
+    isLoading: statusQuery.isLoading,
+    isError: statusQuery.isError,
+    error: statusQuery.error,
+    refetch: statusQuery.refetch,
+
+    // Approve
+    approve: (notes?: string) => {
+      if (thesisId) {
+        approveMutation.mutate({ thesisId, notes });
+      }
+    },
+    isApproving: approveMutation.isPending,
+
+    // Revoke
+    revoke: (notes?: string) => {
+      if (thesisId) {
+        revokeMutation.mutate({ thesisId, notes });
+      }
+    },
+    isRevoking: revokeMutation.isPending,
+  };
+}

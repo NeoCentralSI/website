@@ -8,7 +8,8 @@ import { getApiUrl } from "@/config/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, CheckCircle2, Clock, AlertTriangle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { FileText, CheckCircle2, Clock, AlertTriangle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarReadinessCard";
 
 const STATUS_LABELS: Record<string, string> = {
   not_started: "Belum Dimulai",
@@ -175,6 +177,26 @@ export default function LecturerMyStudentDetailPage() {
             </Badge>
         </div>
       </div>
+
+      {/* Alert Banner ketika milestone 100% */}
+      {progressPercentage === 100 && (
+        <Alert className="border-green-200 bg-green-50">
+          <PartyPopper className="h-5 w-5 text-green-600" />
+          <AlertTitle className="text-green-800">Milestone Selesai 100%!</AlertTitle>
+          <AlertDescription className="text-green-700">
+            Mahasiswa ini telah menyelesaikan keseluruhan milestone. Silakan review kembali progress dan berikan approval agar mahasiswa dapat mendaftar seminar.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Seminar Readiness Card - tampilkan jika milestone 100% */}
+      {progressPercentage === 100 && thesisId && (
+        <SeminarReadinessCard
+          thesisId={thesisId}
+          studentName={detailData.student.fullName}
+          thesisTitle={detailData.title}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Thesis Info & Documents */}

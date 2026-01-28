@@ -311,6 +311,7 @@ export const useSidebarMenu = () => {
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
         { title: "Seminar", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
+        { title: "Monitoring", url: "/tugas-akhir/monitoring" },
       ];
 
       menuItems.push({
