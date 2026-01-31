@@ -27,7 +27,7 @@ export default function KelolaTugasAkhirPage() {
   const copy = PLACEHOLDER_COPY[activeTab.label] ?? "Konten akan segera hadir.";
 
   const breadcrumbs = useMemo(
-    () => [{ label: "Kelola" }, { label: "Tugas Akhir" }, { label: activeTab.label }],
+    () => [{ label: "Kelola", href: "/kelola" }, { label: "Tugas Akhir", href: "/kelola/tugas-akhir" }, { label: activeTab.label }],
     [activeTab.label]
   );
 

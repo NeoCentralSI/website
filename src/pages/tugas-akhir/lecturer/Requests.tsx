@@ -5,10 +5,10 @@ import { TabsNav } from '@/components/ui/tabs-nav';
 import CustomTable from '@/components/layout/CustomTable';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import GuidanceRequestDetailDialog from '@/components/thesis/GuidanceRequestDetailDialog';
-import PendingApprovalList from '@/components/thesis/PendingApprovalList';
 import { useLecturerRequests, useLecturerGuidanceDialogs } from '@/hooks/guidance';
 import { getLecturerRequestColumns } from '@/lib/lecturerRequestColumns';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
+import { Loading } from '@/components/ui/spinner';
 
 export default function LecturerRequestsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -52,7 +52,7 @@ export default function LecturerRequestsPage() {
     invalidate();
   };
 
-  const breadcrumb = useMemo(() => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }, { label: 'Permintaan' }], []);
+  const breadcrumb = useMemo(() => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan', href: '/tugas-akhir/bimbingan/lecturer/requests' }, { label: 'Permintaan' }], []);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
@@ -70,41 +70,46 @@ export default function LecturerRequestsPage() {
     onOpenDetail: openDetailDialog,
   });
 
+  // Define tabs for reuse
+  const tabs = [
+    { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
+    { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
+    { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
+  ];
+
   return (
     <div className="p-4">
-      <TabsNav
-        tabs={[
-          { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
-          { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
-          { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
-        ]}
-      />
+      <TabsNav tabs={tabs} />
 
-      {/* Summary bimbingan yang perlu di-approve */}
-      <div className="mb-4">
-        <PendingApprovalList />
-      </div>
-      
-      <CustomTable
-        columns={columns as any}
-        data={items}
-        loading={isLoading}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        searchValue={q}
-        onSearchChange={(v) => {
-          setQ(v);
-          setPage(1);
-        }}
-        emptyText={q ? 'Tidak ditemukan' : 'Tidak ada permintaan'}
-        enableColumnFilters
-      />
+      {/* Loading state - tabs tetap render, loading di content */}
+      {isLoading ? (
+        <div className="flex h-[calc(100vh-280px)] items-center justify-center">
+          <Loading size="lg" text="Memuat data permintaan..." />
+        </div>
+      ) : (
+        <>
+          <CustomTable
+            columns={columns as any}
+            data={items}
+            loading={isLoading}
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(s) => {
+              setPageSize(s);
+              setPage(1);
+            }}
+            searchValue={q}
+            onSearchChange={(v) => {
+              setQ(v);
+              setPage(1);
+            }}
+            emptyText={q ? 'Tidak ditemukan' : 'Tidak ada permintaan'}
+            enableColumnFilters
+          />
+        </>
+      )}
 
       <DocumentPreviewDialog
         open={docOpen}

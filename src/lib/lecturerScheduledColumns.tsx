@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { EyeIcon, ExternalLink, Clock, FileText, Target } from 'lucide-react';
+import { EyeIcon, Clock, FileText, Target } from 'lucide-react';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
@@ -117,20 +117,6 @@ export const getLecturerScheduledColumns = (
       header: 'Aksi',
       render: (r) => (
         <div className="flex items-center gap-2">
-          {r.meetingUrl && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5"
-              asChild
-              onClick={(e) => e.stopPropagation()}
-            >
-              <a href={r.meetingUrl} target="_blank" rel="noreferrer">
-                <ExternalLink className="h-3.5 w-3.5" />
-                Join
-              </a>
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"

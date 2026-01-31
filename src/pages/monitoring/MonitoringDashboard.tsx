@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, Calendar } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
+import { Loading } from "@/components/ui/spinner";
 
 export default function MonitoringDashboard() {
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
@@ -62,6 +63,15 @@ export default function MonitoringDashboard() {
     selectedAcademicYear === "all"
       ? activeAcademicYear?.label || "Ganji 2025"
       : filterOptions?.academicYears?.find((ay) => ay.value === selectedAcademicYear)?.label || "";
+
+  // Full blank loading on browser reload (no cached data)
+  if (isLoading && !data) {
+    return (
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <Loading size="lg" text="Memuat data monitoring..." />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col p-6 space-y-6">
@@ -111,7 +121,7 @@ export default function MonitoringDashboard() {
       </div>
 
       {/* Full Table */}
-      <ThesesTable isSyncing={isSyncing} />
+      <ThesesTable isSyncing={isSyncing} academicYear={academicYearFilter} />
     </div>
   );
 }

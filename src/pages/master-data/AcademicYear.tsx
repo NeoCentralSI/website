@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loading } from '@/components/ui/spinner';
 import { 
   AcademicYearFormDialog, 
   AcademicYearTable 
@@ -84,6 +85,15 @@ export default function AcademicYearPage() {
       closeDialog();
     }
   };
+
+  // Full blank loading on browser reload (no cached data)
+  if (isLoading && academicYears.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <Loading size="lg" text="Memuat data tahun ajaran..." />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

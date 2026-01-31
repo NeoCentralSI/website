@@ -10,6 +10,7 @@ import { toTitleCaseName } from "@/lib/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Clock } from "lucide-react";
+import { Loading } from "@/components/ui/spinner";
 
 const getDaysRemaining = (deadlineDate?: string) => {
   if (!deadlineDate) return null;
@@ -23,7 +24,7 @@ const getDaysRemaining = (deadlineDate?: string) => {
 export default function LecturerMyStudentsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan" }, { label: "Mahasiswa Bimbingan" }], []);
+  const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/requests" }, { label: "Mahasiswa Bimbingan" }], []);
   
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
@@ -31,6 +32,8 @@ export default function LecturerMyStudentsPage() {
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading } = useQuery({
     queryKey: ['lecturer-my-students'],
@@ -48,6 +51,13 @@ export default function LecturerMyStudentsPage() {
       student.email?.toLowerCase().includes(query)
     );
   }, [data?.students, searchQuery]);
+
+  // Paginate filtered data
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, page, pageSize]);
 
   const columns: Column<MyStudentItem>[] = useMemo(() => [
     {
@@ -159,29 +169,41 @@ export default function LecturerMyStudentsPage() {
     }
   ], [navigate]);
 
+  // Define tabs for reuse
+  const tabs = [
+    { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
+    { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
+    { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
+  ];
+
   return (
     <div className="p-4 space-y-4">
-      <TabsNav
-        tabs={[
-          { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
-          { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
-          { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
-        ]}
-      />
-      
-      <CustomTable
-        columns={columns}
-        data={filteredData}
-        loading={isLoading}
-        total={filteredData.length}
-        page={1}
-        pageSize={filteredData.length || 10}
-        onPageChange={() => {}}
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        emptyText="Tidak ada mahasiswa bimbingan"
-        rowKey={(row) => row.studentId}
-      />
+      <TabsNav tabs={tabs} />
+
+      {/* Loading state - tabs tetap render, loading di content */}
+      {isLoading ? (
+        <div className="flex h-[calc(100vh-280px)] items-center justify-center">
+          <Loading size="lg" text="Memuat data mahasiswa bimbingan..." />
+        </div>
+      ) : (
+        <CustomTable
+          columns={columns}
+          data={paginatedData}
+          loading={isLoading}
+          total={filteredData.length}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          searchValue={searchQuery}
+          onSearchChange={(val) => {
+            setSearchQuery(val);
+            setPage(1); // Reset to page 1 on search
+          }}
+          emptyText="Tidak ada mahasiswa bimbingan"
+          rowKey={(row) => row.studentId}
+        />
+      )}
     </div>
   );
 }

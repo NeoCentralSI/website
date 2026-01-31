@@ -137,6 +137,8 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const pendingMilestonesCount = pendingMilestonesData?.length || 0;
   const pendingSeminarCount = pendingSeminarData?.length || 0;
   
+  // Get first pending approval's guidanceId for direct link to session page
+  const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
   // Get first pending milestone's thesisId for direct link to student detail
   const firstPendingMilestoneThesisId = pendingMilestonesData?.[0]?.thesisId;
   // Get first pending seminar's thesisId for direct link
@@ -164,7 +166,9 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
       icon: FileCheck,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      link: "/tugas-akhir/bimbingan/lecturer/requests",
+      link: firstPendingApprovalId 
+        ? `/tugas-akhir/bimbingan/lecturer/session/${firstPendingApprovalId}`
+        : "/tugas-akhir/bimbingan/lecturer/requests",
       loading: loadingApprovals,
     },
     {

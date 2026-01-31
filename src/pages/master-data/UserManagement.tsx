@@ -8,6 +8,7 @@ import { UserFormDialog, ImportStudentDialog } from '@/components/master-data';
 import { useUserManagement, useUserForm, useImportStudents } from '@/hooks/admin';
 import { getUserTableColumns } from '@/lib/userTableColumns';
 import { roleOptions } from '@/lib/roles';
+import { Loading } from '@/components/ui/spinner';
 
 export default function UserManagementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -70,6 +71,15 @@ export default function UserManagementPage() {
     setStatusFilter,
     onEdit: handleOpenDialog,
   });
+
+  // Full blank loading on browser reload (no cached data)
+  if (isLoading && users.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <Loading size="lg" text="Memuat data user..." />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

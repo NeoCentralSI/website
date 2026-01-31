@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import type { ReadyForSeminarStudent } from "@/services/monitoring.service";
+import Lottie from "lottie-react";
+import emptyAnimation from "@/assets/lottie/empty.json";
 
 interface ReadyForSeminarCardProps {
   students: ReadyForSeminarStudent[] | undefined;
@@ -68,9 +70,13 @@ export function ReadyForSeminarCard({ students, isLoading, showViewAll = true }:
       </CardHeader>
       <CardContent className="max-h-80 overflow-y-auto">
         {displayStudents.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <GraduationCap className="h-12 w-12 mx-auto mb-2 opacity-20" />
-            <p>Belum ada mahasiswa siap seminar</p>
+          <div className="flex flex-col items-center justify-center py-6">
+            <Lottie 
+              animationData={emptyAnimation} 
+              loop 
+              className="w-24 h-24 opacity-70" 
+            />
+            <p className="text-sm text-muted-foreground mt-2">Belum ada mahasiswa siap seminar</p>
           </div>
         ) : (
           <div className="space-y-3 pr-2">

@@ -2,7 +2,6 @@ import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
 export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending";
-export type GuidanceType = "online" | "offline";
 
 export interface GuidanceItem {
   id: string;
@@ -18,10 +17,7 @@ export interface GuidanceItem {
   approvedDate?: string; // ISO datetime - tanggal disetujui dosen
   approvedDateFormatted?: string; // WIB formatted
   // Guidance details
-  type?: GuidanceType; // online/offline
   duration?: number; // durasi dalam menit
-  location?: string;
-  meetingUrl?: string;
   notes?: string;
   supervisorFeedback?: string;
   rejectionReason?: string;
@@ -50,23 +46,18 @@ export interface StudentRequestGuidanceBody {
   guidanceDate: string; // ISO datetime
   studentNotes?: string;
   file?: File; // thesis file to upload (optional)
-  meetingUrl?: string;
   documentUrl?: string; // Link dokumen yang akan dibahas (Google Docs, Overleaf, dll)
   supervisorId?: string;
   milestoneId?: string; // Link to milestone
   milestoneIds?: string[]; // Link multiple milestones
-  type?: GuidanceType; // online/offline
   duration?: number; // durasi dalam menit
-  location?: string;
   [key: string]: unknown;
 }
 
 export interface StudentRescheduleGuidanceBody {
   guidanceDate: string; // ISO datetime
   studentNotes?: string; // optional reason/notes
-  type?: GuidanceType;
   duration?: number;
-  location?: string;
   [key: string]: unknown;
 }
 
@@ -194,7 +185,6 @@ export const requestStudentGuidance = async (body: StudentRequestGuidanceBody): 
   const fd = new FormData();
   fd.append("guidanceDate", body.guidanceDate);
   if (body.studentNotes) fd.append("studentNotes", body.studentNotes);
-  if (body.meetingUrl) fd.append("meetingUrl", body.meetingUrl);
   if (body.documentUrl) fd.append("documentUrl", body.documentUrl);
   if (body.supervisorId) fd.append("supervisorId", body.supervisorId);
   if (body.milestoneId) fd.append("milestoneId", body.milestoneId);
@@ -311,10 +301,7 @@ export interface GuidanceNeedingSummary {
   supervisorName?: string;
   approvedDate?: string;
   approvedDateFormatted?: string;
-  type?: GuidanceType;
   duration?: number;
-  location?: string;
-  meetingUrl?: string;
   studentNotes?: string;
   milestoneName?: string;
 }
@@ -326,10 +313,7 @@ export interface CompletedGuidance {
   approvedDateFormatted?: string;
   completedAt?: string;
   completedAtFormatted?: string;
-  type?: GuidanceType;
   duration?: number;
-  location?: string;
-  meetingUrl?: string;
   studentNotes?: string;
   sessionSummary?: string;
   actionItems?: string;
@@ -346,9 +330,7 @@ export interface GuidanceExport {
   approvedDateFormatted?: string;
   completedAt?: string;
   completedAtFormatted?: string;
-  type?: GuidanceType;
   duration?: number;
-  location?: string;
   studentNotes?: string;
   sessionSummary?: string;
   actionItems?: string;

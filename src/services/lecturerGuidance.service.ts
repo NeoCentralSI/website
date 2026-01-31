@@ -3,7 +3,6 @@ import { apiRequest } from "./auth.service";
 
 // Types (align with backend contracts as needed)
 export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending";
-export type GuidanceType = "online" | "offline";
 
 export interface MyStudentItem {
   studentId: string;
@@ -32,10 +31,7 @@ export interface GuidanceItem {
   requestedDateFormatted?: string;
   approvedDate?: string;
   approvedDateFormatted?: string;
-  type?: GuidanceType;
   duration?: number;
-  location?: string;
-  meetingUrl?: string;
   notes?: string;
   studentNotes?: string; // alias for notes from student
   supervisorFeedback?: string;
@@ -77,11 +73,6 @@ export interface ActivityLogItem {
 
 export interface ApproveGuidanceBody {
   feedback?: string;
-  meetingUrl?: string;
-  approvedDate?: string;
-  type?: GuidanceType;
-  duration?: number;
-  location?: string;
 }
 
 // API calls
@@ -309,6 +300,40 @@ export const getLecturerGuidanceDetail = async (guidanceId: string): Promise<{
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail bimbingan" }));
     throw new Error(errorData.message || "Gagal memuat detail bimbingan");
+  }
+  return res.json();
+};
+
+// ==================== MILESTONE MANAGEMENT ====================
+
+export interface CreateMilestoneForStudentDto {
+  title: string;
+  description?: string;
+  targetDate?: string;
+  supervisorNotes?: string;
+}
+
+/**
+ * Create milestone for student (supervisor only)
+ */
+export const createMilestoneForStudent = async (thesisId: string, data: CreateMilestoneForStudentDto): Promise<{
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    title: string;
+    description?: string;
+    status: string;
+    progressPercentage: number;
+  };
+}> => {
+  const res = await apiRequest(getApiUrl(`/milestones/thesis/${thesisId}/by-supervisor`), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal membuat milestone" }));
+    throw new Error(errorData.message || "Gagal membuat milestone");
   }
   return res.json();
 };

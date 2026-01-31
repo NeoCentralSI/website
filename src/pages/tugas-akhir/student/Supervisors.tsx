@@ -52,8 +52,12 @@ export default function SupervisorsPage() {
           { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
         ]}
       />
+
+      {/* Loading state - tabs tetap render, loading di content */}
       {isPending ? (
-        <Loading text="Memuat data pembimbing..." />
+        <div className="flex h-[calc(100vh-280px)] items-center justify-center">
+          <Loading size="lg" text="Memuat data pembimbing..." />
+        </div>
       ) : isError ? (
         <EmptyState 
           title="Gagal Memuat Data"

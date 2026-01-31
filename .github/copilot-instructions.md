@@ -681,6 +681,310 @@ const mutation = useMutation({
 });
 ```
 
+### 11. Button Loading State
+
+**WAJIB** gunakan **Spinner** di dalam button saat proses submit/loading.
+
+#### ✅ Pattern Button dengan Loading State:
+```tsx
+import { Spinner } from '@/components/ui/spinner';
+
+// Standard submit button
+<Button onClick={handleSubmit} disabled={isSubmitting}>
+  {isSubmitting ? (
+    <>
+      <Spinner className="mr-2 h-4 w-4" />
+      Menyimpan...
+    </>
+  ) : (
+    'Simpan'
+  )}
+</Button>
+
+// Destructive action button (delete, cancel, etc)
+<Button 
+  variant="destructive" 
+  onClick={handleDelete} 
+  disabled={isDeleting}
+>
+  {isDeleting ? (
+    <>
+      <Spinner className="mr-2 h-4 w-4" />
+      Menghapus...
+    </>
+  ) : (
+    'Hapus'
+  )}
+</Button>
+
+// AlertDialog action button
+<AlertDialogAction disabled={isProcessing} onClick={handleAction}>
+  {isProcessing ? (
+    <>
+      <Spinner className="mr-2 h-4 w-4" />
+      Memproses...
+    </>
+  ) : (
+    'Ya, Lanjutkan'
+  )}
+</AlertDialogAction>
+```
+
+#### ❌ JANGAN gunakan text-only loading:
+```tsx
+// ❌ SALAH - tidak ada visual loading indicator
+<Button disabled={isSubmitting}>
+  {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+</Button>
+
+// ❌ SALAH - browser confirm()
+if (confirm('Yakin?')) { ... }
+```
+
+#### Prinsip Button Loading:
+1. **SELALU** disable button saat proses berjalan
+2. **SELALU** tampilkan Spinner di dalam button
+3. **SELALU** ubah text button menjadi gerund (Menyimpan..., Menghapus..., Memproses...)
+4. **JANGAN** gunakan browser `confirm()` - gunakan `AlertDialog` component
+5. Gunakan `AlertDialog` untuk konfirmasi destructive actions (delete, cancel, etc)
+
+### 12. Loading State Management
+
+**WAJIB** gunakan **Centered Spinner** untuk loading state, **BUKAN Skeleton Loading**.
+
+Ada 2 skenario loading yang berbeda:
+1. **Browser Reload (F5)** → Full blank putih dengan spinner di tengah (DashboardLayout handle ini)
+2. **Navigasi Menu/Tabs Dashboard** → Sidebar/header/tabs tetap render, spinner hanya di main content area
+
+#### ✅ DashboardLayout Handle Auth Loading:
+Browser reload akan menampilkan full blank dengan spinner karena DashboardLayout sudah handle ini:
+```tsx
+// DashboardLayout.tsx - sudah di-implement
+if (isLoading || !user) {
+  return (
+    <div className="flex h-screen w-screen items-center justify-center bg-background">
+      <Loading size="lg" text="Memuat..." />
+    </div>
+  );
+}
+```
+
+#### ✅ Pattern untuk Page DENGAN Tabs:
+Tabs HARUS SELALU render, loading hanya di content area:
+
+```tsx
+export default function TabsPage() {
+  const { data, isLoading } = useQuery({ ... });
+
+  const tabs = [
+    { label: 'Tab 1', to: '/path1' },
+    { label: 'Tab 2', to: '/path2' },
+  ];
+
+  return (
+    <div className="p-4">
+      {/* Tabs SELALU render */}
+      <TabsNav tabs={tabs} />
+
+      {/* Loading state - tabs tetap render, loading di content */}
+      {isLoading ? (
+        <div className="flex h-[calc(100vh-280px)] items-center justify-center">
+          <Loading size="lg" text="Memuat data..." />
+        </div>
+      ) : (
+        <ContentComponent data={data} />
+      )}
+    </div>
+  );
+}
+```
+
+#### ✅ Pattern untuk Page TANPA Tabs:
+Early return dengan spinner untuk initial loading:
+
+```tsx
+export default function NoTabsPage() {
+  const { data, isLoading } = useQuery({ ... });
+  const items = data?.items || [];
+
+  // Full loading on initial load (no cached data)
+  if (isLoading && items.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <Loading size="lg" text="Memuat data..." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4">
+      <ContentComponent data={data} />
+    </div>
+  );
+}
+  );
+}
+```
+
+#### ✅ Layout SELALU Render Sidebar (Tanpa Loading State):
+
+```tsx
+// components/layout/DashboardLayout.tsx
+export function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-screen">
+      {/* Sidebar SELALU render, tidak ada loading state */}
+      <Sidebar />
+      
+      <div className="flex-1 flex flex-col">
+        <Navbar />
+        <main className="flex-1 overflow-auto p-6">
+          {/* Content area - loading spinner di sini */}
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+```
+
+#### ❌ JANGAN Gunakan Skeleton Loading:
+
+```tsx
+// ❌ SALAH - Skeleton loading
+if (isLoading) {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-8 w-3/4" />
+      <Skeleton className="h-8 w-1/2" />
+    </div>
+  );
+}
+
+// ❌ SALAH - Skeleton untuk sidebar
+if (isLoading) {
+  return <SidebarSkeleton />;
+}
+
+// ❌ SALAH - Full page skeleton
+if (isLoading) {
+  return <PageSkeleton />;
+}
+```
+
+#### ✅ Pattern Loading di Component:
+
+```tsx
+// components/admin/UserTable.tsx
+export function UserTable() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: adminService.getUsers,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <LoadingSpinner text="Memuat data pengguna..." />
+      </div>
+    );
+  }
+
+  return (
+    <Table>
+      {/* table content */}
+    </Table>
+  );
+}
+```
+
+#### Prinsip Loading State:
+
+1. **Sidebar & Navbar SELALU visible** - Tidak ada loading state untuk layout components (handled by DashboardLayout)
+2. **DashboardLayout Handle Auth Loading** - Browser reload otomatis tampilkan full blank dengan spinner
+3. **Page dengan Tabs** - Tabs SELALU render, loading hanya di content area dengan height `h-[calc(100vh-280px)]`
+4. **Page tanpa Tabs** - Early return dengan spinner jika `isLoading && !data`
+5. **Gunakan Loading component** - `import { Loading } from '@/components/ui/spinner'`
+6. **Tambahkan loading text** - Berikan context apa yang sedang dimuat
+7. **JANGAN gunakan Skeleton** - Skeleton loading tidak digunakan di project ini
+
+### 13. Breadcrumb Navigation
+
+**WAJIB** buat breadcrumb item menjadi link yang dapat diklik untuk navigasi ke halaman sebelumnya.
+
+#### ✅ Pattern Breadcrumb dengan Link:
+```tsx
+// Semua item breadcrumb KECUALI item terakhir (halaman saat ini) harus memiliki href
+const breadcrumb = useMemo(
+  () => [
+    { label: 'Tugas Akhir' },  // First level - tidak perlu href jika tidak ada halaman parent
+    { label: 'Bimbingan', href: '/tugas-akhir/bimbingan/student' },  // ✅ Parent link
+    { label: 'Detail' }  // ✅ Current page - TIDAK ada href
+  ],
+  []
+);
+```
+
+#### ❌ SALAH - Breadcrumb tanpa href:
+```tsx
+// ❌ User tidak bisa navigate ke halaman sebelumnya
+const breadcrumb = useMemo(
+  () => [
+    { label: 'Tugas Akhir' },
+    { label: 'Bimbingan' },  // ❌ MISSING href - tidak bisa diklik
+    { label: 'Detail' }
+  ],
+  []
+);
+```
+
+#### Contoh Breadcrumb untuk Berbagai Role:
+
+**Student Pages:**
+```tsx
+// StudentGuidance (root) - "Bimbingan" adalah halaman saat ini
+[{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }]
+
+// GuidanceSession - detail dari Bimbingan
+[
+  { label: 'Tugas Akhir' }, 
+  { label: 'Bimbingan', href: '/tugas-akhir/bimbingan/student' }, 
+  { label: 'Sesi Bimbingan' }
+]
+```
+
+**Lecturer Pages:**
+```tsx
+// Requests (root)
+[{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }, { label: 'Permintaan' }]
+
+// MyStudentDetail - nested dari My Students
+[
+  { label: 'Tugas Akhir' }, 
+  { label: 'Bimbingan', href: '/tugas-akhir/bimbingan/lecturer/requests' }, 
+  { label: 'Mahasiswa Bimbingan', href: '/tugas-akhir/bimbingan/lecturer/my-students' },
+  { label: studentName }  // Current page
+]
+```
+
+**Admin/Secretary Pages:**
+```tsx
+// Secretary TugasAkhir dengan tabs
+[
+  { label: 'Kelola', href: '/kelola' }, 
+  { label: 'Tugas Akhir', href: '/kelola/tugas-akhir' }, 
+  { label: activeTab.label }  // Current tab
+]
+```
+
+#### Prinsip Breadcrumb:
+
+1. **Item terakhir = Halaman saat ini** - TIDAK memiliki `href`
+2. **Item parent = Navigable** - WAJIB memiliki `href` yang valid
+3. **Gunakan useMemo** - Untuk mencegah re-render yang tidak perlu
+4. **Dynamic breadcrumb** - Jika ada data dynamic (nama mahasiswa), update breadcrumb di useEffect setelah data loaded
+
 ## Checklist Implementasi Fitur
 
 Sebelum menganggap fitur selesai, pastikan:
@@ -691,6 +995,7 @@ Sebelum menganggap fitur selesai, pastikan:
 - [ ] Server state menggunakan TanStack Query
 - [ ] Client state menggunakan Zustand (jika perlu)
 - [ ] Semua props dan return types ter-define dengan TypeScript
+- [ ] Breadcrumb parent items memiliki `href` untuk navigasi
 - [ ] Menggunakan Tailwind CSS dengan konsisten
 - [ ] Error handling sudah proper
 - [ ] Loading states ditangani dengan baik

@@ -5,20 +5,30 @@ export type MilestoneStatus =
   | "revision_needed"
   | "completed";
 
+// Thesis Topic
+export interface ThesisTopic {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Milestone Template
 export interface MilestoneTemplate {
   id: string;
   name: string;
   description?: string | null;
-  category?: string | null;
+  topicId?: string | null;
+  topic?: ThesisTopic | null;
   orderIndex: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-// Template Category
-export interface TemplateCategory {
+// Template Topic with Count
+export interface TemplateTopic {
+  id: string;
   name: string;
   count: number;
 }
@@ -26,7 +36,7 @@ export interface TemplateCategory {
 export interface CreateTemplateDto {
   name: string;
   description?: string | null;
-  category?: string | null;
+  topicId?: string | null;
   orderIndex?: number;
   isActive?: boolean;
 }
@@ -142,6 +152,7 @@ export interface UpdateMilestoneDto {
 
 export interface CreateFromTemplatesDto {
   templateIds: string[];
+  topicId?: string | null;
   startDate?: string | null;
 }
 
@@ -196,9 +207,14 @@ export interface TemplatesResponse {
   data: MilestoneTemplate[];
 }
 
-export interface CategoriesResponse {
+export interface TopicsResponse {
   success: boolean;
-  data: TemplateCategory[];
+  data: ThesisTopic[];
+}
+
+export interface TemplateTopicsResponse {
+  success: boolean;
+  data: TemplateTopic[];
 }
 
 export interface LogsResponse {

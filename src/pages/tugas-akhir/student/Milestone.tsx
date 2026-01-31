@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import { getStudentSupervisors } from "@/services/studentGuidance.service";
+import { Loading } from "@/components/ui/spinner";
 
 import {
   MilestoneList,
@@ -134,9 +135,9 @@ export default function StudentMilestonePage() {
     }
   };
 
-  const handleTemplateSubmit = (templateIds: string[]) => {
+  const handleTemplateSubmit = (templateIds: string[], topicId: string) => {
     createFromTemplatesMutation.mutate(
-      { templateIds },
+      { templateIds, topicId },
       {
         onSuccess: (data) => {
           toast.success(`${data.length} milestone berhasil dibuat dari template`);
@@ -247,19 +248,24 @@ export default function StudentMilestonePage() {
 
   const isLoading = isLoadingSupervisors || isLoadingMilestones;
 
-  // If no thesis or error
-  if (!isLoading && !hasThesis) {
-    return (
-      <div className="p-4">
-        <TabsNav
-          preserveSearch
-          tabs={[
-            { label: "Bimbingan", to: "/tugas-akhir/bimbingan/student", end: true },
-            { label: "Pembimbing", to: "/tugas-akhir/bimbingan/supervisors" },
-            { label: "Milestone", to: "/tugas-akhir/bimbingan/milestone" },
-            { label: "Riwayat", to: "/tugas-akhir/bimbingan/completed-history" },
-          ]}
-        />
+  // Define tabs for reuse
+  const tabs = [
+    { label: "Bimbingan", to: "/tugas-akhir/bimbingan/student", end: true },
+    { label: "Pembimbing", to: "/tugas-akhir/bimbingan/supervisors" },
+    { label: "Milestone", to: "/tugas-akhir/bimbingan/milestone" },
+    { label: "Riwayat", to: "/tugas-akhir/bimbingan/completed-history" },
+  ];
+
+  return (
+    <div className="p-4">
+      <TabsNav preserveSearch tabs={tabs} />
+
+      {/* Loading state - tabs tetap render, loading di content */}
+      {isLoading ? (
+        <div className="flex h-[calc(100vh-280px)] items-center justify-center">
+          <Loading size="lg" text="Memuat data milestone..." />
+        </div>
+      ) : !hasThesis ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <h3 className="text-lg font-semibold mb-2">Belum Terdaftar Tugas Akhir</h3>
           <p className="text-muted-foreground max-w-sm">
@@ -269,79 +275,67 @@ export default function StudentMilestonePage() {
             }
           </p>
         </div>
-      </div>
-    );
-  }
+      ) : (
+        <>
+          {/* Seminar Readiness Status for Student */}
+          {thesisId && (
+            <SeminarReadinessStatusCard thesisId={thesisId} className="mb-4" />
+          )}
 
-  return (
-    <div className="p-4">
-      <TabsNav
-        preserveSearch
-        tabs={[
-          { label: "Bimbingan", to: "/tugas-akhir/bimbingan/student", end: true },
-          { label: "Pembimbing", to: "/tugas-akhir/bimbingan/supervisors" },
-          { label: "Milestone", to: "/tugas-akhir/bimbingan/milestone" },
-          { label: "Riwayat", to: "/tugas-akhir/bimbingan/completed-history" },
-        ]}
-      />
+          <MilestoneList
+            milestones={milestones}
+            progress={progress ?? null}
+            isLoading={isLoading}
+            isOwner={true}
+            isSupervisor={false}
+            onCreateNew={handleCreateNew}
+            onCreateFromTemplates={handleCreateFromTemplates}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onProgressChange={handleProgressChange}
+            onStatusChange={handleStatusChange}
+            isProgressUpdating={updateProgressMutation.isPending}
+            progressUpdatingId={progressUpdatingId}
+            statusUpdatingId={statusUpdatingId}
+            onReorder={handleReorder}
+            isReordering={reorderMutation.isPending}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onClearSelection={() => setSelectedIds([])}
+            onBulkStart={handleBulkStart}
+            isBulkStarting={isBulkStarting}
+          />
 
-      {/* Seminar Readiness Status for Student */}
-      {hasThesis && thesisId && (
-        <SeminarReadinessStatusCard thesisId={thesisId} className="mb-4" />
+          {/* Create/Edit Dialog */}
+          <MilestoneFormDialog
+            open={formDialogOpen}
+            onOpenChange={setFormDialogOpen}
+            milestone={selectedMilestone}
+            onSubmit={handleFormSubmit}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            hideTargetDateOnEdit
+          />
+
+          {/* Template Selector Dialog */}
+          <TemplateSelectorDialog
+            open={templateDialogOpen}
+            onOpenChange={setTemplateDialogOpen}
+            templates={templates}
+            isLoading={isLoadingTemplates}
+            isSubmitting={createFromTemplatesMutation.isPending}
+            onSubmit={handleTemplateSubmit}
+          />
+
+          {/* Delete Confirmation Dialog */}
+          <DeleteMilestoneDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            milestone={selectedMilestone}
+            isDeleting={deleteMutation.isPending}
+            onConfirm={handleConfirmDelete}
+          />
+        </>
       )}
-
-      <MilestoneList
-        milestones={milestones}
-        progress={progress ?? null}
-        isLoading={isLoading}
-        isOwner={true}
-        isSupervisor={false}
-        onCreateNew={handleCreateNew}
-        onCreateFromTemplates={handleCreateFromTemplates}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onProgressChange={handleProgressChange}
-        onStatusChange={handleStatusChange}
-        isProgressUpdating={updateProgressMutation.isPending}
-        progressUpdatingId={progressUpdatingId}
-        statusUpdatingId={statusUpdatingId}
-        onReorder={handleReorder}
-        isReordering={reorderMutation.isPending}
-        selectedIds={selectedIds}
-        onToggleSelect={handleToggleSelect}
-        onClearSelection={() => setSelectedIds([])}
-        onBulkStart={handleBulkStart}
-        isBulkStarting={isBulkStarting}
-      />
-
-      {/* Create/Edit Dialog */}
-      <MilestoneFormDialog
-        open={formDialogOpen}
-        onOpenChange={setFormDialogOpen}
-        milestone={selectedMilestone}
-        onSubmit={handleFormSubmit}
-        isSubmitting={createMutation.isPending || updateMutation.isPending}
-        hideTargetDateOnEdit
-      />
-
-      {/* Template Selector Dialog */}
-      <TemplateSelectorDialog
-        open={templateDialogOpen}
-        onOpenChange={setTemplateDialogOpen}
-        templates={templates}
-        isLoading={isLoadingTemplates}
-        isSubmitting={createFromTemplatesMutation.isPending}
-        onSubmit={handleTemplateSubmit}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteMilestoneDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        milestone={selectedMilestone}
-        isDeleting={deleteMutation.isPending}
-        onConfirm={handleConfirmDelete}
-      />
     </div>
   );
 }

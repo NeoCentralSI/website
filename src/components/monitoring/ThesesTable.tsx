@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { CustomTable } from "@/components/layout/CustomTable";
 import type { Column } from "@/components/layout/CustomTable";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, XCircle, RefreshCw, X } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, X, Eye } from "lucide-react";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
-import type { ThesesFilters, ThesisListItem } from "@/services/monitoring.service";
+import type { ThesisListItem } from "@/services/monitoring.service";
 
 // Status badge color mapping
 const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -45,47 +46,86 @@ function getProgressColor(percent: number): string {
 
 interface ThesesTableProps {
   isSyncing?: boolean;
+  academicYear?: string;
 }
 
-export function ThesesTable({ isSyncing = false }: ThesesTableProps) {
-  const [filters, setFilters] = useState<ThesesFilters>({
-    page: 1,
-    pageSize: 10,
-  });
+export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProps) {
+  const navigate = useNavigate();
+  // Filter state for dropdowns (backend filtering)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [lecturerFilter, setLecturerFilter] = useState<string | undefined>(undefined);
+  
+  // Frontend pagination & search state
+  const [frontendSearch, setFrontendSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const { data, isLoading, refetch, isFetching } = useThesesList(filters);
+  // Fetch ALL data with pageSize 1000 to disable backend pagination
+  // Filters (status, lecturer, academicYear) are still applied on backend
+  const apiFilters = useMemo(() => ({
+    status: statusFilter,
+    lecturerId: lecturerFilter,
+    academicYear,
+    page: 1,
+    pageSize: 1000, // Fetch all data for frontend pagination & search
+  }), [statusFilter, lecturerFilter, academicYear]);
+
+  const { data, isLoading, refetch, isFetching } = useThesesList(apiFilters);
   const isLoadingAny = isLoading || isFetching || isSyncing;
   const { data: filterOptions } = useFilterOptions();
 
-  const handleFilterChange = (key: keyof ThesesFilters, value: string | undefined) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value === "all" ? undefined : value,
-      page: 1,
-    }));
-  };
+  // Frontend search filter applied to ALL data
+  const searchFilteredData = useMemo(() => {
+    if (!data?.data) return [];
+    if (!frontendSearch.trim()) return data.data;
+    
+    const searchLower = frontendSearch.toLowerCase();
+    return data.data.filter((thesis) => 
+      thesis.student.name.toLowerCase().includes(searchLower) ||
+      thesis.student.nim.toLowerCase().includes(searchLower) ||
+      thesis.title?.toLowerCase().includes(searchLower) ||
+      thesis.supervisors.pembimbing1?.toLowerCase().includes(searchLower) ||
+      thesis.supervisors.pembimbing2?.toLowerCase().includes(searchLower)
+    );
+  }, [data?.data, frontendSearch]);
 
-  const handleSearchChange = (value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      search: value || undefined,
-      page: 1,
-    }));
-  };
+  // Frontend pagination - slice the search-filtered data
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    return searchFilteredData.slice(startIndex, startIndex + pageSize);
+  }, [searchFilteredData, page, pageSize]);
 
-  const handlePageChange = (newPage: number) => {
-    setFilters((prev) => ({ ...prev, page: newPage }));
-  };
+  const handleFilterChange = useCallback((key: 'status' | 'lecturerId', value: string | undefined) => {
+    if (key === 'status') {
+      setStatusFilter(value === "all" ? undefined : value);
+    } else {
+      setLecturerFilter(value === "all" ? undefined : value);
+    }
+    setPage(1); // Reset to first page when filter changes
+  }, []);
 
-  const handlePageSizeChange = (newSize: number) => {
-    setFilters((prev) => ({ ...prev, pageSize: newSize, page: 1 }));
-  };
+  const handleSearchChange = useCallback((value: string) => {
+    setFrontendSearch(value);
+    setPage(1); // Reset to first page when search changes
+  }, []);
 
-  const clearFilters = () => {
-    setFilters({ page: 1, pageSize: 10 });
-  };
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+  }, []);
 
-  const hasActiveFilters = filters.status || filters.lecturerId || filters.search;
+  const handlePageSizeChange = useCallback((newSize: number) => {
+    setPageSize(newSize);
+    setPage(1); // Reset to first page when page size changes
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setStatusFilter(undefined);
+    setLecturerFilter(undefined);
+    setFrontendSearch("");
+    setPage(1);
+  }, []);
+
+  const hasActiveFilters = statusFilter || lecturerFilter || frontendSearch;
 
   const columns: Column<ThesisListItem>[] = [
     {
@@ -180,12 +220,27 @@ export function ThesesTable({ isSyncing = false }: ThesesTableProps) {
         </span>
       ),
     },
+    {
+      key: "actions",
+      header: "Aksi",
+      className: "text-center w-20",
+      render: (thesis) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(`/tugas-akhir/monitoring/${thesis.id}`)}
+          title="Lihat Detail"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      ),
+    },
   ];
 
   const actions = (
     <>
       <Select
-        value={filters.status || "all"}
+        value={statusFilter || "all"}
         onValueChange={(value) => handleFilterChange("status", value)}
       >
         <SelectTrigger className="w-40">
@@ -202,7 +257,7 @@ export function ThesesTable({ isSyncing = false }: ThesesTableProps) {
       </Select>
 
       <Select
-        value={filters.lecturerId || "all"}
+        value={lecturerFilter || "all"}
         onValueChange={(value) => handleFilterChange("lecturerId", value)}
       >
         <SelectTrigger className="w-[200px]">
@@ -245,14 +300,14 @@ export function ThesesTable({ isSyncing = false }: ThesesTableProps) {
   return (
     <CustomTable<ThesisListItem>
       columns={columns}
-      data={data?.data || []}
+      data={paginatedData}
       loading={isLoadingAny}
-      total={data?.pagination.total || 0}
-      page={filters.page ?? 1}
-      pageSize={filters.pageSize ?? 10}
+      total={searchFilteredData.length}
+      page={page}
+      pageSize={pageSize}
       onPageChange={handlePageChange}
       onPageSizeChange={handlePageSizeChange}
-      searchValue={filters.search || ""}
+      searchValue={frontendSearch}
       onSearchChange={handleSearchChange}
       actions={actions}
       emptyText="Tidak ada data tugas akhir"

@@ -27,10 +27,13 @@ import NotFoundPage from './pages/NotFound'
 import UserManagementPage from './pages/admin/master-data/UserManagement'
 import AcademicYearPage from './pages/admin/master-data/AcademicYear'
 import MahasiswaPage from './pages/admin/master-data/Mahasiswa'
+import MahasiswaDetailPage from './pages/admin/master-data/MahasiswaDetail'
 import DosenPage from './pages/admin/master-data/Dosen'
+import DosenDetailPage from './pages/admin/master-data/DosenDetail'
 import KelolaTugasAkhirPage from './pages/tugas-akhir/secretary/TugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
 import MonitoringDashboard from './pages/monitoring/MonitoringDashboard'
+import StudentProgressDetail from './pages/monitoring/StudentProgressDetail'
 import { getAuthTokens } from './services/auth.service'
 import { Spinner } from './components/ui/spinner'
 
@@ -91,6 +94,7 @@ function App() {
               <Route path="/yudisium" element={<Placeholder title="Yudisium" />} />
               <Route path="/tugas-akhir/kelola-penguji" element={<Placeholder title="Tugas Akhir - Kelola Penguji" />} />
               <Route path="/tugas-akhir/monitoring" element={<MonitoringDashboard />} />
+              <Route path="/tugas-akhir/monitoring/:thesisId" element={<StudentProgressDetail />} />
               <Route path="/tugas-akhir/acc-pembimbing" element={<Placeholder title="Tugas Akhir - ACC Pembimbing" />} />
               <Route path="/tugas-akhir/acc-rubrik" element={<Placeholder title="Tugas Akhir - ACC Rubrik Penilaian" />} />
               <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />
@@ -113,7 +117,9 @@ function App() {
               {/* Master Data (Admin) */}
               <Route path="/master-data" element={<Placeholder title="main menu Master Data" />} />
               <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
+              <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />
               <Route path="/master-data/dosen" element={<DosenPage />} />
+              <Route path="/master-data/dosen/:id" element={<DosenDetailPage />} />
               <Route path="/master-data/user" element={<UserManagementPage />} />
               <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
 

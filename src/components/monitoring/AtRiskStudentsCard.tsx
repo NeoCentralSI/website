@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toTitleCaseName } from "@/lib/text";
 import type { AtRiskStudent } from "@/services/monitoring.service";
+import Lottie from "lottie-react";
+import emptyAnimation from "@/assets/lottie/empty.json";
 
 interface AtRiskStudentsCardProps {
   students: AtRiskStudent[] | undefined;
@@ -68,9 +70,13 @@ export function AtRiskStudentsCard({ students, isLoading, showViewAll = true }: 
       </CardHeader>
       <CardContent className="max-h-80 overflow-y-auto">
         {displayStudents.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-20" />
-            <p>Tidak ada mahasiswa berisiko</p>
+          <div className="flex flex-col items-center justify-center py-6">
+            <Lottie 
+              animationData={emptyAnimation} 
+              loop 
+              className="w-24 h-24 opacity-70" 
+            />
+            <p className="text-sm text-muted-foreground mt-2">Tidak ada mahasiswa berisiko</p>
           </div>
         ) : (
           <div className="space-y-3 pr-2">

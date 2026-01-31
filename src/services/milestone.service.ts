@@ -6,7 +6,8 @@ import type {
   MilestoneTemplate,
   MilestoneLog,
   MilestoneProgress,
-  TemplateCategory,
+  ThesisTopic,
+  TemplateTopic,
   CreateMilestoneDto,
   UpdateMilestoneDto,
   CreateFromTemplatesDto,
@@ -34,6 +35,7 @@ import type {
 // API Endpoints
 const ENDPOINTS = {
   TEMPLATES: "/milestones/templates",
+  TEMPLATE_TOPICS: "/milestones/templates/topics",
   TEMPLATE_CATEGORIES: "/milestones/templates/categories",
   THESIS_MILESTONES: (thesisId: string) => `/milestones/thesis/${thesisId}`,
   THESIS_PROGRESS: (thesisId: string) => `/milestones/thesis/${thesisId}/progress`,
@@ -68,10 +70,10 @@ const ENDPOINTS = {
 /**
  * Get all milestone templates
  */
-export async function getTemplates(category?: string): Promise<MilestoneTemplate[]> {
+export async function getTemplates(topicId?: string): Promise<MilestoneTemplate[]> {
   const url = new URL(getApiUrl(ENDPOINTS.TEMPLATES));
-  if (category) {
-    url.searchParams.set("category", category);
+  if (topicId) {
+    url.searchParams.set("topicId", topicId);
   }
 
   const response = await apiRequest(url.toString());
@@ -85,13 +87,27 @@ export async function getTemplates(category?: string): Promise<MilestoneTemplate
 }
 
 /**
- * Get template categories
+ * Get all thesis topics
  */
-export async function getTemplateCategories(): Promise<TemplateCategory[]> {
+export async function getTopics(): Promise<ThesisTopic[]> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.TEMPLATE_TOPICS));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil daftar topik");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Get template topics with count
+ */
+export async function getTemplateTopics(): Promise<TemplateTopic[]> {
   const response = await apiRequest(getApiUrl(ENDPOINTS.TEMPLATE_CATEGORIES));
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Gagal mengambil kategori template");
+    throw new Error(error.message || "Gagal mengambil topik template");
   }
 
   const result = await response.json();
@@ -163,6 +179,24 @@ export async function deleteTemplate(templateId: string): Promise<void> {
     const error = await response.json();
     throw new Error(error.message || "Gagal menghapus template milestone");
   }
+}
+
+/**
+ * Bulk delete milestone templates (Sekretaris Departemen)
+ */
+export async function bulkDeleteTemplates(templateIds: string[]): Promise<{ count: number }> {
+  const response = await apiRequest(getApiUrl(`${ENDPOINTS.TEMPLATES}/bulk`), {
+    method: "DELETE",
+    body: JSON.stringify({ templateIds }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal menghapus template milestone");
+  }
+
+  const result = await response.json();
+  return { count: result.count };
 }
 
 // ============================================

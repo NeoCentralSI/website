@@ -7,11 +7,12 @@ import type { ActivityLogItem } from "@/services/lecturerGuidance.service";
 import { getLecturerActivityLog } from "@/services/lecturerGuidance.service";
 import { toast } from "sonner";
 import { formatDateId } from "@/lib/text";
+import { Loading } from "@/components/ui/spinner";
 
 export default function LecturerActivityPage() {
   const { studentId } = useParams();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan" }, { label: "Aktivitas" }], []);
+  const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/requests" }, { label: "Aktivitas" }], []);
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
     setTitle(undefined);
@@ -37,6 +38,15 @@ export default function LecturerActivityPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
+  // Show full page loading spinner on initial load
+  if (isLoading) {
+    return (
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <Loading size="lg" text="Memuat aktivitas..." />
+      </div>
+    );
+  }
+
   return (
       <div className="p-4">
         <Card className="p-4">
@@ -48,7 +58,7 @@ export default function LecturerActivityPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!isLoading && items.length === 0 && (
+              {items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={2} className="text-center text-sm text-muted-foreground">Tidak ada data</TableCell>
                 </TableRow>

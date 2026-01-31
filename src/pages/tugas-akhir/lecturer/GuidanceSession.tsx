@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useOutletContext, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Loading } from "@/components/ui/spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Calendar,
@@ -18,15 +19,17 @@ import {
   FileText,
   Loader2,
   Clock,
-  MapPin,
-  Video,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
   Mail,
   Hash,
+  NotebookPen,
 } from "lucide-react";
-import { getLecturerGuidanceDetail, approveSessionSummary } from "@/services/lecturerGuidance.service";
+import { PdfViewer } from "@/components/pdf";
+import { 
+  getLecturerGuidanceDetail, 
+  approveSessionSummary,
+} from "@/services/lecturerGuidance.service";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
 
@@ -35,6 +38,7 @@ export default function LecturerGuidanceSessionPage() {
   const { guidanceId } = useParams<{ guidanceId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("info");
 
   // Fetch guidance detail
   const { data, isLoading, error } = useQuery({
@@ -134,7 +138,9 @@ export default function LecturerGuidanceSessionPage() {
 
   if (isLoading) {
     return (
-      <Loading text="Memuat detail sesi bimbingan..." />
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <Loading size="lg" text="Memuat detail sesi bimbingan..." />
+      </div>
     );
   }
 
@@ -181,255 +187,249 @@ export default function LecturerGuidanceSessionPage() {
         {getStatusBadge()}
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* Student & Thesis Info Card */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <User className="h-4 w-4" />
-              Informasi Mahasiswa
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <User className="h-4 w-4" />
-                  <span>Nama</span>
-                </div>
-                <p className="font-medium text-base">
-                  {toTitleCaseName(guidance.studentName || "-")}
-                </p>
-              </div>
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="info" className="gap-2">
+            <NotebookPen className="h-4 w-4" />
+            <span className="hidden sm:inline">Informasi & Catatan</span>
+            <span className="sm:hidden">Info</span>
+          </TabsTrigger>
+          <TabsTrigger value="document" className="gap-2" disabled={!documentUrl}>
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Dokumen</span>
+            <span className="sm:hidden">Dokumen</span>
+          </TabsTrigger>
+        </TabsList>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Hash className="h-4 w-4" />
-                  <span>NIM</span>
-                </div>
-                <p className="font-medium text-base">{guidance.studentNim || "-"}</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  <span>Email</span>
-                </div>
-                <p className="font-medium text-base">{guidance.studentEmail || "-"}</p>
-              </div>
-            </div>
-
-            {guidance.thesisTitle && (
-              <>
-                <Separator />
-                <div>
-                  <div className="text-sm text-muted-foreground mb-2">Judul Skripsi</div>
-                  <p className="font-medium leading-relaxed">{guidance.thesisTitle}</p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Guidance Info Card */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Calendar className="h-4 w-4" />
-              Informasi Bimbingan
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>Waktu Bimbingan</span>
-                </div>
-                <p className="font-medium text-base">
-                  {guidance.approvedDateFormatted ||
-                    guidance.requestedDateFormatted ||
-                    (guidance.approvedDate
-                      ? formatDateId(guidance.approvedDate)
-                      : guidance.requestedDate
-                      ? formatDateId(guidance.requestedDate)
-                      : "-")}
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  {guidance.type === "offline" ? (
-                    <MapPin className="h-4 w-4" />
-                  ) : (
-                    <Video className="h-4 w-4" />
-                  )}
-                  <span>{guidance.type === "offline" ? "Lokasi" : "Mode"}</span>
-                </div>
-                <p className="font-medium text-base">
-                  {guidance.type === "offline" ? guidance.location || "-" : "Online"}
-                  {guidance.meetingUrl && (
-                    <a
-                      href={guidance.meetingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="ml-2 text-primary hover:underline inline-flex items-center gap-1 text-sm"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Link
-                    </a>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {guidance.milestoneTitles && guidance.milestoneTitles.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
-                    <Target className="h-4 w-4" />
-                    <span>Milestone</span>
+        {/* Tab: Info & Catatan Bimbingan */}
+        <TabsContent value="info" className="mt-6 space-y-6">
+          {/* Student & Thesis Info Card */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <User className="h-4 w-4" />
+                Informasi Mahasiswa
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span>Nama</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {guidance.milestoneTitles.map((title, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs font-normal">
-                        {title}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {guidance.notes && (
-              <>
-                <Separator />
-                <div>
-                  <div className="text-sm text-muted-foreground mb-2">Catatan Mahasiswa</div>
-                  <p className="text-sm whitespace-pre-wrap bg-muted/30 p-3 rounded-md border">
-                    {guidance.notes}
+                  <p className="font-medium text-base">
+                    {toTitleCaseName(guidance.studentName || "-")}
                   </p>
                 </div>
-              </>
-            )}
 
-            {documentUrl && (
-              <>
-                <Separator />
-                <div>
-                  <div className="text-sm text-muted-foreground mb-2">Dokumen</div>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={documentUrl} target="_blank" rel="noreferrer">
-                      <FileText className="h-4 w-4 mr-2" />
-                      {guidance.document?.fileName || "Buka Dokumen"}
-                      <ExternalLink className="h-3 w-3 ml-2" />
-                    </a>
-                  </Button>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Catatan Bimbingan Card */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileText className="h-4 w-4" />
-              Catatan Sesi Bimbingan
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {!hasSummary ? (
-              <Alert className="border-amber-200 bg-amber-50/80">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-700 text-sm">
-                  Mahasiswa belum mengisi catatan bimbingan. Tunggu mahasiswa untuk mengisi
-                  ringkasan dan arahan dari sesi bimbingan.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <>
-                {isPendingApproval && (
-                  <Alert className="border-violet-200 bg-violet-50/80">
-                    <Clock className="h-4 w-4 text-violet-600" />
-                    <AlertDescription className="text-violet-700 text-sm">
-                      Mahasiswa telah mengisi catatan. Silakan review dan setujui untuk
-                      menyelesaikan sesi bimbingan.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {isCompleted && (
-                  <Alert className="border-green-200 bg-green-50/80">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-700 text-sm">
-                      Catatan bimbingan telah disetujui. Sesi bimbingan selesai.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div>
-                  <Label className="text-sm text-muted-foreground mb-2 block">
-                    Ringkasan Bimbingan
-                  </Label>
-                  <div className="p-4 bg-muted/30 rounded-md border whitespace-pre-wrap text-sm">
-                    {guidance.sessionSummary || "-"}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Hash className="h-4 w-4" />
+                    <span>NIM</span>
                   </div>
+                  <p className="font-medium text-base">{guidance.studentNim || "-"}</p>
                 </div>
 
-                {guidance.actionItems && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span>Email</span>
+                  </div>
+                  <p className="font-medium text-base">{guidance.studentEmail || "-"}</p>
+                </div>
+              </div>
+
+              {guidance.thesisTitle && (
+                <>
+                  <Separator />
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-2">Judul Skripsi</div>
+                    <p className="font-medium leading-relaxed">{guidance.thesisTitle}</p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Guidance Info Card */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Calendar className="h-4 w-4" />
+                Informasi Bimbingan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>Waktu Bimbingan</span>
+                  </div>
+                  <p className="font-medium text-base">
+                    {guidance.approvedDateFormatted ||
+                      guidance.requestedDateFormatted ||
+                      (guidance.approvedDate
+                        ? formatDateId(guidance.approvedDate)
+                        : guidance.requestedDate
+                        ? formatDateId(guidance.requestedDate)
+                        : "-")}
+                  </p>
+                </div>
+              </div>
+
+              {guidance.milestoneTitles && guidance.milestoneTitles.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+                      <Target className="h-4 w-4" />
+                      <span>Milestone</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {guidance.milestoneTitles.map((title, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs font-normal">
+                          {title}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {guidance.notes && (
+                <>
+                  <Separator />
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-2">Catatan Mahasiswa</div>
+                    <p className="text-sm whitespace-pre-wrap bg-muted/30 p-3 rounded-md border">
+                      {guidance.notes}
+                    </p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Notes Card */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <NotebookPen className="h-4 w-4" />
+                Catatan Sesi Bimbingan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!hasSummary ? (
+                <Alert className="border-amber-200 bg-amber-50/80">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-700 text-sm">
+                    Mahasiswa belum mengisi catatan bimbingan. Tunggu mahasiswa untuk mengisi
+                    ringkasan dan arahan dari sesi bimbingan.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  {isPendingApproval && (
+                    <Alert className="border-violet-200 bg-violet-50/80">
+                      <Clock className="h-4 w-4 text-violet-600" />
+                      <AlertDescription className="text-violet-700 text-sm">
+                        Mahasiswa telah mengisi catatan. Silakan review dan setujui untuk
+                        menyelesaikan sesi bimbingan.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {isCompleted && (
+                    <Alert className="border-green-200 bg-green-50/80">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-700 text-sm">
+                        Catatan bimbingan telah disetujui. Sesi bimbingan selesai.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div>
                     <Label className="text-sm text-muted-foreground mb-2 block">
-                      Arahan / Action Items
+                      Ringkasan Bimbingan
                     </Label>
                     <div className="p-4 bg-muted/30 rounded-md border whitespace-pre-wrap text-sm">
-                      {guidance.actionItems}
+                      {guidance.sessionSummary || "-"}
                     </div>
                   </div>
-                )}
 
-                {guidance.summarySubmittedAtFormatted && (
-                  <p className="text-xs text-muted-foreground">
-                    Dikirim pada: {guidance.summarySubmittedAtFormatted}
-                  </p>
-                )}
-
-                {isPendingApproval && (
-                  <>
-                    <Separator />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate("/tugas-akhir/bimbingan/lecturer/requests")}
-                      >
-                        Kembali
-                      </Button>
-                      <Button
-                        onClick={() => approveMutation.mutate()}
-                        disabled={approveMutation.isPending}
-                      >
-                        {approveMutation.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Memproses...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Setujui Catatan
-                          </>
-                        )}
-                      </Button>
+                  {guidance.actionItems && (
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-2 block">
+                        Arahan / Action Items
+                      </Label>
+                      <div className="p-4 bg-muted/30 rounded-md border whitespace-pre-wrap text-sm">
+                        {guidance.actionItems}
+                      </div>
                     </div>
-                  </>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  )}
+
+                  {guidance.summarySubmittedAtFormatted && (
+                    <p className="text-xs text-muted-foreground">
+                      Dikirim pada: {guidance.summarySubmittedAtFormatted}
+                    </p>
+                  )}
+
+                  {isPendingApproval && (
+                    <>
+                      <Separator />
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => navigate("/tugas-akhir/bimbingan/lecturer/requests")}
+                        >
+                          Kembali
+                        </Button>
+                        <Button
+                          onClick={() => approveMutation.mutate()}
+                          disabled={approveMutation.isPending}
+                        >
+                          {approveMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Memproses...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Setujui Catatan
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Dokumen */}
+        <TabsContent value="document" className="mt-6">
+          {documentUrl ? (
+            <PdfViewer
+              url={documentUrl}
+              className="min-h-[600px]"
+              showToolbar={true}
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Tidak ada dokumen yang diunggah</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

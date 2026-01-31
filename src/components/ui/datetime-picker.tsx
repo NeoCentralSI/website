@@ -147,10 +147,10 @@ export function DateTimePicker({
           type="button"
           variant="outline"
           disabled={disabled}
-          className={cn("justify-start text-left font-normal w-full", !date || !time ? "text-muted-foreground" : "", className)}
+          className={cn("justify-start text-left font-normal min-w-[280px]", !date || !time ? "text-muted-foreground" : "", className)}
         >
-          <CalendarIcon className="mr-2 size-4" />
-          {label}
+          <CalendarIcon className="mr-2 size-4 shrink-0" />
+          <span className="truncate">{label}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="p-0 w-auto" align="start">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { Spinner } from "@/components/ui/spinner";
 import { ComboBox } from "@/components/ui/combobox";
@@ -15,6 +16,13 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Milestone } from "@/types/milestone.types";
 
+const DURATION_OPTIONS = [
+  { value: '30', label: '30 menit' },
+  { value: '60', label: '1 jam' },
+  { value: '90', label: '1 jam 30 menit' },
+  { value: '120', label: '2 jam' },
+];
+
 export type RequestGuidanceDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,8 +33,8 @@ export type RequestGuidanceDialogProps = {
 
 export default function RequestGuidanceDialog({ open, onOpenChange, supervisors = [], milestones = [], onSubmitted }: RequestGuidanceDialogProps) {
   const [when, setWhen] = useState<Date | null>(null);
+  const [duration, setDuration] = useState('60');
   const [note, setNote] = useState("");
-  const [meetingUrl, setMeetingUrl] = useState("");
   const [documentUrl, setDocumentUrl] = useState("");
   const [supervisorId, setSupervisorId] = useState("");
   const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>([]);
@@ -38,7 +46,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   const minDate = new Date(Date.now() + 60 * 1000);
-  const durationMinutes = 60;
+  const durationMinutes = parseInt(duration, 10);
 
   const resolvedSupervisorId = useMemo(() => supervisorId || supervisors[0]?.id || "", [supervisorId, supervisors]);
 
@@ -93,7 +101,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
     };
 
     fetchAvailability();
-  }, [when, resolvedSupervisorId]);
+  }, [when, resolvedSupervisorId, durationMinutes]);
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -104,7 +112,6 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
         guidanceDate: selected.toISOString(),
         studentNotes: note || undefined,
         file: file ?? undefined,
-        meetingUrl: meetingUrl || undefined,
         documentUrl: documentUrl || undefined,
         supervisorId: resolvedSupervisorId || undefined,
         milestoneIds: selectedMilestoneIds.length ? selectedMilestoneIds : undefined,
@@ -123,8 +130,8 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
 
   const resetForm = () => {
     setWhen(null);
+    setDuration('60');
     setNote("");
-    setMeetingUrl("");
     setDocumentUrl("");
     setSupervisorId("");
     setSelectedMilestoneIds([]);
@@ -170,6 +177,27 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
               busySlots={busySlots}
               duration={durationMinutes}
             />
+          </div>
+
+          {/* Duration */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Durasi</Label>
+            <Select value={duration} onValueChange={setDuration}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih durasi" />
+              </SelectTrigger>
+              <SelectContent>
+                {DURATION_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Fixed height area for messages */}
+          <div className="min-h-6">
             {checkingAvailability && (
               <p className="text-xs text-muted-foreground">Memeriksa jadwal...</p>
             )}
@@ -260,16 +288,6 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
                   placeholder="https://docs.google.com/..."
                   value={documentUrl}
                   onChange={(e) => setDocumentUrl(e.target.value)}
-                />
-              </div>
-              
-              {/* Meeting URL */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Meeting URL</Label>
-                <Input
-                  placeholder="https://meet.google.com/..."
-                  value={meetingUrl}
-                  onChange={(e) => setMeetingUrl(e.target.value)}
                 />
               </div>
             </CollapsibleContent>

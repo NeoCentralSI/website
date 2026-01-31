@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,12 +7,24 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, FileText, CheckCircle2 } from "lucide-react";
+import { Loader2, FileText, CheckCircle2, ChevronLeft, AlertTriangle } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import type { MilestoneTemplate } from "@/types/milestone.types";
+import { useTopics } from "@/hooks/milestone";
 
 interface TemplateSelectorDialogProps {
   open: boolean;
@@ -20,7 +32,7 @@ interface TemplateSelectorDialogProps {
   templates: MilestoneTemplate[];
   isLoading?: boolean;
   isSubmitting?: boolean;
-  onSubmit: (templateIds: string[]) => void;
+  onSubmit: (templateIds: string[], topicId: string) => void;
 }
 
 export function TemplateSelectorDialog({
@@ -31,28 +43,41 @@ export function TemplateSelectorDialog({
   isSubmitting,
   onSubmit,
 }: TemplateSelectorDialogProps) {
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+
+  // Fetch topics
+  const { data: topics = [], isLoading: isLoadingTopics } = useTopics();
 
   // Reset selection when dialog opens
   useEffect(() => {
     if (open) {
-      // Select all by default
-      setSelectedIds(templates.map((t) => t.id));
+      setSelectedTopicId(null);
+      setSelectedIds([]);
     }
-  }, [open, templates]);
+  }, [open]);
 
-  // Group templates by category
-  const groupedTemplates = templates.reduce(
-    (acc, template) => {
-      const category = template.category || "Lainnya";
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category].push(template);
-      return acc;
-    },
-    {} as Record<string, MilestoneTemplate[]>
+  // Filter templates by selected topic
+  const topicTemplates = useMemo(() => {
+    if (!selectedTopicId) return [];
+    return templates
+      .filter((t) => t.topicId === selectedTopicId)
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+  }, [templates, selectedTopicId]);
+
+  // Get selected topic name
+  const selectedTopic = useMemo(
+    () => topics.find((t) => t.id === selectedTopicId),
+    [topics, selectedTopicId]
   );
+
+  // Auto-select all templates when topic is selected
+  useEffect(() => {
+    if (selectedTopicId && topicTemplates.length > 0) {
+      setSelectedIds(topicTemplates.map((t) => t.id));
+    }
+  }, [selectedTopicId, topicTemplates]);
 
   const toggleTemplate = (id: string) => {
     setSelectedIds((prev) =>
@@ -60,80 +85,134 @@ export function TemplateSelectorDialog({
     );
   };
 
-  const toggleCategory = (category: string) => {
-    const categoryTemplates = groupedTemplates[category];
-    const categoryIds = categoryTemplates.map((t) => t.id);
-    const allSelected = categoryIds.every((id) => selectedIds.includes(id));
-
+  const toggleSelectAll = () => {
+    const allIds = topicTemplates.map((t) => t.id);
+    const allSelected = allIds.every((id) => selectedIds.includes(id));
     if (allSelected) {
-      setSelectedIds((prev) => prev.filter((id) => !categoryIds.includes(id)));
+      setSelectedIds([]);
     } else {
-      setSelectedIds((prev) => [...new Set([...prev, ...categoryIds])]);
+      setSelectedIds(allIds);
     }
   };
 
-  const handleSubmit = () => {
-    if (selectedIds.length > 0) {
-      onSubmit(selectedIds);
+  const handleSubmitClick = () => {
+    if (selectedIds.length > 0 && selectedTopicId) {
+      setConfirmDialogOpen(true);
     }
   };
+
+  const handleConfirmedSubmit = () => {
+    if (selectedIds.length > 0 && selectedTopicId) {
+      onSubmit(selectedIds, selectedTopicId);
+      setConfirmDialogOpen(false);
+    }
+  };
+
+  const handleBack = () => {
+    setSelectedTopicId(null);
+    setSelectedIds([]);
+  };
+
+  const isLoadingAll = isLoading || isLoadingTopics;
+  const allSelected =
+    topicTemplates.length > 0 &&
+    topicTemplates.every((t) => selectedIds.includes(t.id));
+  const someSelected =
+    topicTemplates.some((t) => selectedIds.includes(t.id)) && !allSelected;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Pilih Template Milestone
-          </DialogTitle>
-          <DialogDescription>
-            Pilih template milestone yang ingin Anda gunakan untuk tugas akhir.
-            Anda dapat mengedit setelah milestone dibuat.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {selectedTopicId
+                ? "Pilih Template Milestone"
+                : "Pilih Topik Tugas Akhir"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTopicId
+                ? `Pilih milestone untuk topik "${selectedTopic?.name}". Anda dapat mengedit setelah milestone dibuat.`
+                : "Pilih topik tugas akhir Anda terlebih dahulu untuk melihat template milestone yang tersedia."}
+            </DialogDescription>
+          </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : templates.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Tidak ada template tersedia
-          </div>
-        ) : (
-          <ScrollArea className="max-h-[50vh] pr-4">
-            <div className="space-y-6">
-              {Object.entries(groupedTemplates).map(([category, categoryTemplates]) => {
-                const categoryIds = categoryTemplates.map((t) => t.id);
-                const allSelected = categoryIds.every((id) =>
-                  selectedIds.includes(id)
-                );
-                const someSelected =
-                  categoryIds.some((id) => selectedIds.includes(id)) && !allSelected;
+          {isLoadingAll ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : !selectedTopicId ? (
+            // Step 1: Topic Selection
+            <ScrollArea className="max-h-[50vh] pr-4">
+              <div className="space-y-2">
+                {topics.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Tidak ada topik tersedia
+                  </div>
+                ) : (
+                  topics.map((topic) => {
+                    const count = templates.filter(
+                      (t) => t.topicId === topic.id
+                    ).length;
+                    return (
+                      <div
+                        key={topic.id}
+                        className="flex items-center justify-between p-4 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setSelectedTopicId(topic.id)}
+                      >
+                        <div>
+                          <p className="font-medium">{topic.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {count} template milestone
+                          </p>
+                        </div>
+                        <Badge variant="secondary">{count}</Badge>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          ) : (
+            // Step 2: Template Selection
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-fit -mt-2 mb-2"
+                onClick={handleBack}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Kembali pilih topik
+              </Button>
 
-                return (
-                  <div key={category} className="space-y-3">
+              {topicTemplates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Tidak ada template untuk topik ini
+                </div>
+              ) : (
+                <ScrollArea className="max-h-[45vh] pr-4">
+                  <div className="space-y-3">
+                    {/* Select All */}
                     <div
-                      className="flex items-center gap-2 cursor-pointer"
-                      onClick={() => toggleCategory(category)}
+                      className="flex items-center gap-2 pb-2 border-b cursor-pointer"
+                      onClick={toggleSelectAll}
                     >
                       <Checkbox
                         checked={allSelected}
-                        // indeterminate state not available, use data attribute
                         data-state={someSelected ? "indeterminate" : undefined}
-                        onCheckedChange={() => toggleCategory(category)}
+                        onCheckedChange={toggleSelectAll}
                       />
-                      <h3 className="font-semibold text-sm">{category}</h3>
+                      <span className="font-medium text-sm">Pilih Semua</span>
                       <Badge variant="secondary" className="ml-auto">
-                        {categoryTemplates.filter((t) =>
-                          selectedIds.includes(t.id)
-                        ).length}
-                        /{categoryTemplates.length}
+                        {selectedIds.length}/{topicTemplates.length}
                       </Badge>
                     </div>
 
-                    <div className="space-y-2 ml-6">
-                      {categoryTemplates.map((template) => (
+                    {/* Template List */}
+                    <div className="space-y-2">
+                      {topicTemplates.map((template) => (
                         <div
                           key={template.id}
                           className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
@@ -170,34 +249,75 @@ export function TemplateSelectorDialog({
                       ))}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        )}
+                </ScrollArea>
+              )}
+            </>
+          )}
 
-        <DialogFooter className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {selectedIds.length} milestone dipilih
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || selectedIds.length === 0}
-            >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Buat {selectedIds.length} Milestone
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {selectedTopicId
+                ? `${selectedIds.length} milestone dipilih`
+                : `${topics.length} topik tersedia`}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                Batal
+              </Button>
+              {selectedTopicId && (
+                <Button
+                  onClick={handleSubmitClick}
+                  disabled={isSubmitting || selectedIds.length === 0}
+                >
+                  {isSubmitting && (
+                    <Spinner className="mr-2 h-4 w-4" />
+                  )}
+                  Buat {selectedIds.length} Milestone
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Konfirmasi Pembuatan Milestone
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Anda akan membuat <strong>{selectedIds.length} milestone</strong> dari
+                template topik <strong>"{selectedTopic?.name}"</strong>.
+              </p>
+              <p className="text-yellow-600 dark:text-yellow-500 font-medium">
+                Pastikan Anda benar-benar memilih template sesuai topik Tugas Akhir
+                yang Anda kerjakan. Topik ini akan diset sebagai topik tugas akhir Anda.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmedSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Memproses...
+                </>
+              ) : (
+                "Ya, Buat Milestone"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

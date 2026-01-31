@@ -22,7 +22,8 @@ export const milestoneKeys = {
   all: ["milestones"] as const,
   templates: () => [...milestoneKeys.all, "templates"] as const,
   template: (templateId: string) => [...milestoneKeys.templates(), templateId] as const,
-  templateCategories: () => [...milestoneKeys.templates(), "categories"] as const,
+  templateTopics: () => [...milestoneKeys.templates(), "topics"] as const,
+  topics: () => [...milestoneKeys.all, "topics"] as const,
   thesis: (thesisId: string) => [...milestoneKeys.all, "thesis", thesisId] as const,
   thesisMilestones: (thesisId: string, status?: MilestoneStatus) =>
     [...milestoneKeys.thesis(thesisId), { status }] as const,
@@ -39,20 +40,30 @@ export const milestoneKeys = {
 /**
  * Hook to fetch milestone templates
  */
-export function useTemplates(category?: string) {
+export function useTemplates(topicId?: string) {
   return useQuery({
-    queryKey: [...milestoneKeys.templates(), { category }],
-    queryFn: () => milestoneService.getTemplates(category),
+    queryKey: [...milestoneKeys.templates(), { topicId }],
+    queryFn: () => milestoneService.getTemplates(topicId),
   });
 }
 
 /**
- * Hook to fetch template categories
+ * Hook to fetch all thesis topics
  */
-export function useTemplateCategories() {
+export function useTopics() {
   return useQuery({
-    queryKey: milestoneKeys.templateCategories(),
-    queryFn: milestoneService.getTemplateCategories,
+    queryKey: milestoneKeys.topics(),
+    queryFn: milestoneService.getTopics,
+  });
+}
+
+/**
+ * Hook to fetch template topics with count
+ */
+export function useTemplateTopics() {
+  return useQuery({
+    queryKey: milestoneKeys.templateTopics(),
+    queryFn: milestoneService.getTemplateTopics,
   });
 }
 
@@ -77,7 +88,7 @@ export function useCreateTemplate() {
     mutationFn: (data: CreateTemplateDto) => milestoneService.createTemplate(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: milestoneKeys.templates() });
-      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateCategories() });
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateTopics() });
       toast.success("Template milestone berhasil dibuat");
     },
     onError: (error: Error) => {
@@ -103,7 +114,7 @@ export function useUpdateTemplate() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: milestoneKeys.templates() });
       queryClient.invalidateQueries({ queryKey: milestoneKeys.template(variables.templateId) });
-      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateCategories() });
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateTopics() });
       toast.success("Template milestone berhasil diperbarui");
     },
     onError: (error: Error) => {
@@ -122,8 +133,27 @@ export function useDeleteTemplate() {
     mutationFn: (templateId: string) => milestoneService.deleteTemplate(templateId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: milestoneKeys.templates() });
-      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateCategories() });
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateTopics() });
       toast.success("Template milestone berhasil dihapus");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal menghapus template milestone");
+    },
+  });
+}
+
+/**
+ * Hook for bulk deleting milestone templates
+ */
+export function useBulkDeleteTemplates() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (templateIds: string[]) => milestoneService.bulkDeleteTemplates(templateIds),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templates() });
+      queryClient.invalidateQueries({ queryKey: milestoneKeys.templateTopics() });
+      toast.success(`${result.count} template milestone berhasil dihapus`);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Gagal menghapus template milestone");

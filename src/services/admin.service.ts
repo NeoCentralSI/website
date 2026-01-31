@@ -370,3 +370,182 @@ export const getLecturersAPI = async (params?: {
 
   return response.json();
 };
+
+// Student Detail interface
+export interface StudentDetail {
+  id: string;
+  fullName: string;
+  email: string;
+  identityNumber?: string;
+  identityType?: string;
+  phoneNumber?: string;
+  isVerified: boolean;
+  createdAt: string;
+  student: {
+    enrollmentYear: number;
+    sksCompleted: number;
+    status: string | null;
+  };
+  roles: Array<{
+    id: string;
+    name: string;
+    status: string;
+  }>;
+  theses: Array<{
+    id: string;
+    title: string;
+    status: string | null;
+    topic: string | null;
+    startDate: string | null;
+    deadlineDate: string | null;
+    supervisors: Array<{
+      id: string;
+      role: string;
+      fullName: string;
+      email: string;
+    }>;
+    examiners: Array<{
+      id: string;
+      role: string;
+      fullName: string;
+      email: string;
+    }>;
+    milestones: {
+      completed: number;
+      total: number;
+      progress: number;
+      items: Array<{
+        id: string;
+        title: string;
+        status: string;
+        targetDate: string | null;
+        completedAt: string | null;
+      }>;
+    };
+    guidances: {
+      completed: number;
+      total: number;
+      recent: Array<{
+        id: string;
+        status: string;
+        approvedDate: string | null;
+        completedAt: string | null;
+      }>;
+    };
+    seminars: Array<{
+      id: string;
+      type: string;
+      status: string;
+      scheduledAt: string | null;
+      result: string | null;
+      score: number | null;
+    }>;
+    defences: Array<{
+      id: string;
+      status: string;
+      scheduledAt: string | null;
+      result: string | null;
+      score: number | null;
+    }>;
+  }>;
+}
+
+// Lecturer Detail interface
+export interface LecturerDetail {
+  id: string;
+  fullName: string;
+  email: string;
+  identityNumber?: string;
+  identityType?: string;
+  phoneNumber?: string;
+  isVerified: boolean;
+  createdAt: string;
+  lecturer: {
+    scienceGroup: string | null;
+  };
+  roles: Array<{
+    id: string;
+    name: string;
+    status: string;
+  }>;
+  statistics: {
+    activeSupervising: number;
+    completedSupervising: number;
+    totalSupervising: number;
+    examining: number;
+  };
+  supervising: Array<{
+    thesisId: string;
+    title: string;
+    status: string | null;
+    role: string;
+    student: {
+      id: string;
+      fullName: string;
+      nim: string;
+    };
+  }>;
+  completedSupervising: Array<{
+    thesisId: string;
+    title: string;
+    status: string | null;
+    role: string;
+    student: {
+      id: string;
+      fullName: string;
+      nim: string;
+    };
+  }>;
+  examining: Array<{
+    thesisId: string;
+    title: string;
+    status: string | null;
+    role: string;
+    student: {
+      id: string;
+      fullName: string;
+      nim: string;
+    };
+  }>;
+  recentGuidances: Array<{
+    id: string;
+    approvedDate: string;
+    studentName: string;
+    studentNim: string;
+    thesisTitle: string;
+  }>;
+}
+
+// Get student detail
+export const getStudentDetailAPI = async (id: string): Promise<{ data: StudentDetail }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/students/${id}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat detail mahasiswa');
+  }
+
+  return response.json();
+};
+
+// Get lecturer detail
+export const getLecturerDetailAPI = async (id: string): Promise<{ data: LecturerDetail }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/lecturers/${id}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat detail dosen');
+  }
+
+  return response.json();
+};

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Eye } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useQuery } from '@tanstack/react-query';
+import { Loading } from '@/components/ui/spinner';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -113,6 +114,15 @@ export default function Mahasiswa() {
   // Extract data from query result
   const students = data?.students || [];
   const total = data?.meta?.total || 0;
+
+  // Full blank loading on browser reload (no cached data)
+  if (isLoading && students.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <Loading size="lg" text="Memuat data mahasiswa..." />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

@@ -291,7 +291,7 @@ export function MilestoneCard({
                 <Button variant="ghost" size="sm" onClick={() => onEdit?.(milestone)}>
                   <Edit2 className="h-4 w-4" />
                 </Button>
-                {!milestone.validatedBy && (
+                {milestone.status === "not_started" && !milestone.validatedBy && (
                   <Button
                     variant="ghost"
                     size="sm"

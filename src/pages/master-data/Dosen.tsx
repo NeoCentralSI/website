@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Eye } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useQuery } from '@tanstack/react-query';
+import { Loading } from '@/components/ui/spinner';
 
 export default function Dosen() {
   const navigate = useNavigate();
@@ -126,6 +127,15 @@ export default function Dosen() {
   // Extract data from query result
   const lecturers = data?.lecturers || [];
   const total = data?.meta?.total || 0;
+
+  // Full blank loading on browser reload (no cached data)
+  if (isLoading && lecturers.length === 0) {
+    return (
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+        <Loading size="lg" text="Memuat data dosen..." />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

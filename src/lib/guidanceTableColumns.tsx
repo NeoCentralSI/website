@@ -1,9 +1,11 @@
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import StatusBadge from '@/components/thesis/StatusBadge';
-import { EyeIcon, FileTextIcon } from 'lucide-react';
+import { EyeIcon, FileTextIcon, CalendarClock, XCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
 import { useNavigate } from 'react-router-dom';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface GetGuidanceTableColumnsOptions {
   items: GuidanceItem[];
@@ -14,6 +16,8 @@ interface GetGuidanceTableColumnsOptions {
   setPage: (value: number) => void;
   onViewDocument: (fileName?: string | null, filePath?: string | null) => void;
   navigate: ReturnType<typeof useNavigate>;
+  onReschedule?: (guidanceId: string) => void;
+  onCancel?: (guidanceId: string) => void;
 }
 
 export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions): Column<GuidanceItem>[] => {
@@ -26,6 +30,8 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
     setPage,
     onViewDocument,
     navigate,
+    onReschedule,
+    onCancel,
   } = options;
 
   return [
@@ -86,7 +92,48 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
     {
       key: 'status',
       header: 'Status',
-      accessor: (r) => <StatusBadge status={r.status} />,
+      render: (r) => {
+        // Check if needs summary (accepted or summary_pending without sessionSummary)
+        const needsSummary = (r.status === 'accepted' || r.status === 'summary_pending') && !r.sessionSummary;
+        const hasSummary = !!r.sessionSummary;
+        const isCompleted = r.status === 'completed';
+        
+        return (
+          <div className="flex items-center gap-2">
+            <StatusBadge status={r.status} />
+            {needsSummary && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className="text-xs border-amber-300 bg-amber-50 text-amber-700 gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Isi
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Catatan bimbingan perlu diisi</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {hasSummary && !isCompleted && r.status === 'summary_pending' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className="text-xs border-violet-300 bg-violet-50 text-violet-700 gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Terkirim
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Menunggu approval dosen</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        );
+      },
       filter: {
         type: 'select',
         value: status,
@@ -107,17 +154,43 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       header: 'Aksi',
       render: (r) => {
         const isRejected = r.status === 'rejected';
+        const isRequested = r.status === 'requested';
+        
         return (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8" 
-            onClick={() => navigate(`/tugas-akhir/bimbingan/student/session/${r.id}`)} 
-            title={isRejected ? 'Bimbingan ditolak' : 'Detail'}
-            disabled={isRejected}
-          >
-            <EyeIcon className="size-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {isRequested && onReschedule && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => onReschedule(r.id)} 
+                title="Reschedule jadwal bimbingan"
+              >
+                <CalendarClock className="size-4" />
+              </Button>
+            )}
+            {isRequested && onCancel && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" 
+                onClick={() => onCancel(r.id)} 
+                title="Batalkan pengajuan bimbingan"
+              >
+                <XCircle className="size-4" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8" 
+              onClick={() => navigate(`/tugas-akhir/bimbingan/student/session/${r.id}`)} 
+              title={isRejected ? 'Bimbingan ditolak' : 'Detail'}
+              disabled={isRejected}
+            >
+              <EyeIcon className="size-4" />
+            </Button>
+          </div>
         );
       },
     },

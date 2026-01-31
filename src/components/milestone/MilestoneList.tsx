@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MilestoneCard } from "./MilestoneCard";
 import { MilestoneProgressCard } from "./MilestoneProgressCard";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,20 @@ export function MilestoneList({
   const [reorderEnabled, setReorderEnabled] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const selectedCount = selectedIds?.length ?? 0;
+  const wasReorderingRef = useRef(false);
+
+  // Reset edit mode when reorder completes successfully
+  useEffect(() => {
+    if (wasReorderingRef.current && !isReordering) {
+      // Reorder just completed
+      setEditMode(false);
+      setReorderEnabled(false);
+      setHasReordered(false);
+      setDraggingId(null);
+      onClearSelection?.();
+    }
+    wasReorderingRef.current = isReordering;
+  }, [isReordering, onClearSelection]);
 
   // Keep local ordered state in sync with incoming data
   useEffect(() => {

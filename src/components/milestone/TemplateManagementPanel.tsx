@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, Trash, MoveVertical, GripVertical } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash, MoveVertical, GripVertical, Trash2 } from "lucide-react";
 import {
   useTemplates,
-  useTemplateCategories,
+  useTopics,
+  useTemplateTopics,
   useCreateTemplate,
   useUpdateTemplate,
   useDeleteTemplate,
+  useBulkDeleteTemplates,
 } from "@/hooks/milestone/useMilestone";
 import type { MilestoneTemplate } from "@/types/milestone.types";
 import { Button } from "@/components/ui/button";
@@ -25,19 +27,38 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 type TemplateFormState = {
   id?: string;
   name: string;
   description: string;
-  category: string;
+  topicId: string;
   orderIndex?: number;
   isActive: boolean;
 };
@@ -45,13 +66,13 @@ type TemplateFormState = {
 const emptyForm: TemplateFormState = {
   name: "",
   description: "",
-  category: "",
+  topicId: "",
   orderIndex: undefined,
   isActive: true,
 };
 
 export function TemplateManagementPanel() {
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [topicFilter, setTopicFilter] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formState, setFormState] = useState<TemplateFormState>(emptyForm);
@@ -60,14 +81,22 @@ export function TemplateManagementPanel() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hasReordered, setHasReordered] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<MilestoneTemplate | null>(null);
 
-  const templatesQuery = useTemplates(categoryFilter || undefined);
-  const categoriesQuery = useTemplateCategories();
+  const templatesQuery = useTemplates(topicFilter || undefined);
+  const topicsQuery = useTopics();
+  const templateTopicsQuery = useTemplateTopics();
   const createTemplate = useCreateTemplate();
   const updateTemplate = useUpdateTemplate();
   const deleteTemplate = useDeleteTemplate();
+  const bulkDeleteTemplates = useBulkDeleteTemplates();
 
   const templates = templatesQuery.data || [];
+  const topics = topicsQuery.data || [];
+  const templateTopics = templateTopicsQuery.data || [];
 
   useEffect(() => {
     const sorted = [...templates].sort((a, b) => a.orderIndex - b.orderIndex);
@@ -86,16 +115,57 @@ export function TemplateManagementPanel() {
       (t) =>
         t.name.toLowerCase().includes(term) ||
         (t.description ?? "").toLowerCase().includes(term) ||
-        (t.category ?? "").toLowerCase().includes(term)
+        (t.topic?.name ?? "").toLowerCase().includes(term)
     );
   }, [search, orderedTemplates]);
 
   const isBusy =
     templatesQuery.isLoading ||
-    categoriesQuery.isLoading ||
+    topicsQuery.isLoading ||
+    templateTopicsQuery.isLoading ||
     createTemplate.isPending ||
     updateTemplate.isPending ||
-    deleteTemplate.isPending;
+    deleteTemplate.isPending ||
+    bulkDeleteTemplates.isPending;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredTemplates.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredTemplates.map((t) => t.id)));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    bulkDeleteTemplates.mutate(Array.from(selectedIds), {
+      onSuccess: () => {
+        setSelectedIds(new Set());
+        setBulkDeleteDialogOpen(false);
+      },
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!templateToDelete) return;
+    deleteTemplate.mutate(templateToDelete.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setTemplateToDelete(null);
+      },
+    });
+  };
 
   const startCreate = () => {
     setFormState({
@@ -110,7 +180,7 @@ export function TemplateManagementPanel() {
       id: template.id,
       name: template.name,
       description: template.description || "",
-      category: template.category || "",
+      topicId: template.topicId || "",
       orderIndex: template.orderIndex,
       isActive: template.isActive,
     });
@@ -121,7 +191,7 @@ export function TemplateManagementPanel() {
     const payload = {
       name: formState.name.trim(),
       description: formState.description.trim() || null,
-      category: formState.category.trim() || null,
+      topicId: formState.topicId || null,
       orderIndex:
         formState.orderIndex === undefined || formState.orderIndex === null
           ? undefined
@@ -144,11 +214,8 @@ export function TemplateManagementPanel() {
   };
 
   const handleDelete = (template: MilestoneTemplate) => {
-    const ok = window.confirm(
-      `Hapus template "${template.name}"? Tindakan ini tidak dapat dibatalkan.`
-    );
-    if (!ok) return;
-    deleteTemplate.mutate(template.id);
+    setTemplateToDelete(template);
+    setDeleteDialogOpen(true);
   };
 
   const handleDragStart = (id: string) => {
@@ -203,6 +270,17 @@ export function TemplateManagementPanel() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            {selectedIds.size > 0 && !reorderEnabled && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setBulkDeleteDialogOpen(true)}
+                disabled={isBusy}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Hapus ({selectedIds.size})
+              </Button>
+            )}
             {reorderEnabled && (
               <Button
                 variant="secondary"
@@ -231,24 +309,24 @@ export function TemplateManagementPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
-                variant={!categoryFilter ? "secondary" : "outline"}
-                onClick={() => setCategoryFilter(null)}
+                variant={!topicFilter ? "secondary" : "outline"}
+                onClick={() => setTopicFilter(null)}
                 disabled={isBusy}
               >
-                Semua Kategori
+                Semua Topik
               </Button>
-              {categoriesQuery.data?.map((cat) => (
+              {templateTopics.map((topic) => (
                 <Button
-                  key={cat.name}
+                  key={topic.id}
                   size="sm"
-                  variant={categoryFilter === cat.name ? "secondary" : "outline"}
-                  onClick={() => setCategoryFilter(cat.name)}
+                  variant={topicFilter === topic.id ? "secondary" : "outline"}
+                  onClick={() => setTopicFilter(topic.id)}
                   disabled={isBusy}
                 >
-                  {cat.name} <Badge className="ml-2">{cat.count}</Badge>
+                  {topic.name} <Badge className="ml-2">{topic.count}</Badge>
                 </Button>
               ))}
             </div>
@@ -256,7 +334,7 @@ export function TemplateManagementPanel() {
               <Label htmlFor="search">Cari template</Label>
               <Input
                 id="search"
-                placeholder="Cari nama/kategori"
+                placeholder="Cari nama/topik"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -269,6 +347,19 @@ export function TemplateManagementPanel() {
             <p className="text-xs text-muted-foreground">
               Drag & drop kartu untuk mengubah urutan. Klik “Simpan Urutan” untuk menyimpan perubahan.
             </p>
+          )}
+
+          {!reorderEnabled && filteredTemplates.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="select-all"
+                checked={selectedIds.size === filteredTemplates.length && filteredTemplates.length > 0}
+                onCheckedChange={toggleSelectAll}
+              />
+              <Label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">
+                Pilih semua ({filteredTemplates.length} template)
+              </Label>
+            </div>
           )}
 
           {templatesQuery.isLoading ? (
@@ -296,36 +387,46 @@ export function TemplateManagementPanel() {
                   className={cn(
                     "flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm md:flex-row md:items-start md:justify-between",
                     reorderEnabled && "cursor-grab",
-                    draggingId === template.id && "opacity-75"
+                    draggingId === template.id && "opacity-75",
+                    selectedIds.has(template.id) && "ring-2 ring-primary"
                   )}
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      {reorderEnabled && (
-                        <GripVertical className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <p className="font-semibold text-sm md:text-base">{template.name}</p>
-                      {template.category && (
-                        <Badge variant="outline" className="text-xs">
-                          {template.category}
-                        </Badge>
-                      )}
-                      <Badge
-                        variant={template.isActive ? "default" : "secondary"}
-                        className={cn(
-                          "text-xs",
-                          !template.isActive && "bg-gray-200 text-gray-700"
+                  <div className="flex items-start gap-3">
+                    {!reorderEnabled && (
+                      <Checkbox
+                        checked={selectedIds.has(template.id)}
+                        onCheckedChange={() => toggleSelect(template.id)}
+                        className="mt-1"
+                      />
+                    )}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        {reorderEnabled && (
+                          <GripVertical className="h-4 w-4 text-muted-foreground" />
                         )}
-                      >
-                        {template.isActive ? "Aktif" : "Nonaktif"}
-                      </Badge>
+                        <p className="font-semibold text-sm md:text-base">{template.name}</p>
+                        {template.topic && (
+                          <Badge variant="outline" className="text-xs">
+                            {template.topic.name}
+                          </Badge>
+                        )}
+                        <Badge
+                          variant={template.isActive ? "default" : "secondary"}
+                          className={cn(
+                            "text-xs",
+                            !template.isActive && "bg-gray-200 text-gray-700"
+                          )}
+                        >
+                          {template.isActive ? "Aktif" : "Nonaktif"}
+                        </Badge>
+                      </div>
+                      {template.description ? (
+                        <p className="text-sm text-muted-foreground">{template.description}</p>
+                      ) : null}
+                      <p className="text-xs text-muted-foreground">
+                        Urutan: #{template.orderIndex + 1}
+                      </p>
                     </div>
-                    {template.description ? (
-                      <p className="text-sm text-muted-foreground">{template.description}</p>
-                    ) : null}
-                    <p className="text-xs text-muted-foreground">
-                      Urutan: #{template.orderIndex + 1}
-                    </p>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -375,13 +476,28 @@ export function TemplateManagementPanel() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Kategori</Label>
-              <Input
-                id="category"
-                value={formState.category}
-                onChange={(e) => setFormState((s) => ({ ...s, category: e.target.value }))}
-                placeholder="Mis. Proposal, Sidang, dll (opsional)"
-              />
+              <Label htmlFor="topicId">Topik</Label>
+              <Select
+                value={formState.topicId ?? "none"}
+                onValueChange={(val) =>
+                  setFormState((s) => ({ ...s, topicId: val === "none" ? null : val }))
+                }
+              >
+                <SelectTrigger id="topicId">
+                  <SelectValue placeholder="Pilih topik (opsional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Tidak ada topik</SelectItem>
+                  {topics.map((topic) => (
+                    <SelectItem key={topic.id} value={topic.id}>
+                      {topic.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Pilih topik tugas akhir untuk template ini (opsional).
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Deskripsi</Label>
@@ -438,6 +554,64 @@ export function TemplateManagementPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus {selectedIds.size} Template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Semua template yang dipilih akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleteTemplates.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteTemplates.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteTemplates.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Menghapus...
+                </>
+              ) : (
+                "Ya, Hapus"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Single Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hapus template "{templateToDelete?.name}"? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTemplate.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteTemplate.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteTemplate.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Menghapus...
+                </>
+              ) : (
+                "Ya, Hapus"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNotifications } from '@/hooks/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
+import { Check, CheckCheck, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import EmptyState from '@/components/ui/empty-state';
+import { Loading } from '@/components/ui/spinner';
 
 export default function Notifikasi() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -114,8 +115,8 @@ export default function Notifikasi() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <div className="flex h-[calc(100vh-300px)] items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       ) : notifications.length === 0 ? (
         <Card>

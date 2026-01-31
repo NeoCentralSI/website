@@ -87,6 +87,101 @@ export interface ThesisListItem {
   createdAt: string;
 }
 
+// Thesis Detail Types
+export interface ThesisDetailParticipant {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface ThesisDetailMilestone {
+  id: string;
+  title: string;
+  status: string;
+  progressPercentage: number | null;
+  targetDate: string | null;
+  completedAt: string | null;
+}
+
+export interface ThesisDetailGuidance {
+  id: string;
+  status: string;
+  topic: string | null;
+  approvedDate: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface ThesisDetailScore {
+  scorerName: string;
+  rubric: string | null;
+  score: number | null;
+}
+
+export interface ThesisDetailSeminar {
+  id: string;
+  status: string;
+  result: string | null;
+  scheduledAt: string | null;
+  endTime: string | null;
+  room: string | null;
+  scores: ThesisDetailScore[];
+  averageScore: number | null;
+}
+
+export interface ThesisDetailDefence {
+  id: string;
+  status: string | null;
+  scheduledAt: string | null;
+  endTime: string | null;
+  room: string | null;
+  scores: ThesisDetailScore[];
+  averageScore: number | null;
+}
+
+export interface ThesisDetail {
+  id: string;
+  title: string;
+  status: string | null;
+  topic: string | null;
+  academicYear: string | null;
+  startDate: string | null;
+  deadlineDate: string | null;
+  createdAt: string;
+  lastActivity: string;
+  seminarApproval: {
+    supervisor1: boolean;
+    supervisor2: boolean;
+    isFullyApproved: boolean;
+    approvedAt: string | null;
+  };
+  student: {
+    id: string;
+    userId: string;
+    name: string;
+    nim: string;
+    email: string;
+    phone: string | null;
+  };
+  supervisors: ThesisDetailParticipant[];
+  examiners: ThesisDetailParticipant[];
+  progress: {
+    completed: number;
+    total: number;
+    percent: number;
+  };
+  milestones: ThesisDetailMilestone[];
+  guidances: {
+    items: ThesisDetailGuidance[];
+    total: number;
+    completed: number;
+    pending: number;
+  };
+  seminars: ThesisDetailSeminar[];
+  defences: ThesisDetailDefence[];
+}
+
 export interface ThesesListResponse {
   data: ThesisListItem[];
   pagination: {
@@ -127,6 +222,7 @@ export interface ThesesFilters {
 const ENDPOINTS = {
   DASHBOARD: "/thesisGuidance/monitoring/dashboard",
   THESES: "/thesisGuidance/monitoring/theses",
+  THESIS_DETAIL: "/thesisGuidance/monitoring/theses",
   FILTERS: "/thesisGuidance/monitoring/filters",
   AT_RISK: "/thesisGuidance/monitoring/at-risk",
   READY_SEMINAR: "/thesisGuidance/monitoring/ready-seminar",
@@ -216,6 +312,20 @@ export async function getStudentsReadyForSeminar(academicYear?: string): Promise
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Gagal mengambil mahasiswa siap seminar");
+  }
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Get thesis detail by ID
+ */
+export async function getThesisDetail(thesisId: string): Promise<ThesisDetail> {
+  const url = `${ENDPOINTS.THESIS_DETAIL}/${thesisId}`;
+  const response = await apiRequest(getApiUrl(url));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil detail tugas akhir");
   }
   const result = await response.json();
   return result.data;

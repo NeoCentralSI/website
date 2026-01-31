@@ -35,7 +35,7 @@ export default function GuidanceDetailPage() {
 
       <Card className="p-4">
         {isLoading ? (
-          <div className="flex justify-center items-center py-8">
+          <div className="flex h-64 items-center justify-center">
             <Spinner className="h-8 w-8 text-primary" />
           </div>
         ) : guidance ? (

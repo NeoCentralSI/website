@@ -5,12 +5,14 @@ import {
   getFilterOptions,
   getAtRiskStudents,
   getStudentsReadyForSeminar,
+  getThesisDetail,
   type ThesesFilters,
   type MonitoringDashboard,
   type ThesesListResponse,
   type FilterOptions,
   type AtRiskStudent,
   type ReadyForSeminarStudent,
+  type ThesisDetail,
 } from "@/services/monitoring.service";
 
 // Query keys
@@ -18,6 +20,7 @@ export const monitoringKeys = {
   all: ["monitoring"] as const,
   dashboard: (academicYear?: string) => [...monitoringKeys.all, "dashboard", academicYear] as const,
   theses: (filters: ThesesFilters) => [...monitoringKeys.all, "theses", filters] as const,
+  thesisDetail: (thesisId: string) => [...monitoringKeys.all, "thesis-detail", thesisId] as const,
   filters: () => [...monitoringKeys.all, "filters"] as const,
   atRisk: (academicYear?: string) => [...monitoringKeys.all, "at-risk", academicYear] as const,
   readySeminar: (academicYear?: string) => [...monitoringKeys.all, "ready-seminar", academicYear] as const,
@@ -76,6 +79,18 @@ export function useStudentsReadyForSeminar(academicYear?: string) {
   return useQuery<ReadyForSeminarStudent[], Error>({
     queryKey: monitoringKeys.readySeminar(academicYear),
     queryFn: () => getStudentsReadyForSeminar(academicYear),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
+ * Hook to fetch thesis detail by ID
+ */
+export function useThesisDetail(thesisId: string) {
+  return useQuery<ThesisDetail, Error>({
+    queryKey: monitoringKeys.thesisDetail(thesisId),
+    queryFn: () => getThesisDetail(thesisId),
+    enabled: !!thesisId,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }

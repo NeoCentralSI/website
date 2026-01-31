@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { getStudentDetail, validateMilestone } from "@/services/lecturerGuidance.service";
+import { getStudentDetail, validateMilestone, createMilestoneForStudent, type CreateMilestoneForStudentDto } from "@/services/lecturerGuidance.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FileText, CheckCircle2, Clock, AlertTriangle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper } from "lucide-react";
+import { FileText, CheckCircle2, Clock, AlertTriangle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
@@ -23,6 +23,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarReadinessCard";
@@ -49,6 +68,13 @@ export default function LecturerMyStudentDetailPage() {
   const queryClient = useQueryClient();
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [validatingId, setValidatingId] = useState<string | null>(null);
+  
+  // Create milestone dialog state
+  const [createMilestoneOpen, setCreateMilestoneOpen] = useState(false);
+  const [milestoneTitle, setMilestoneTitle] = useState("");
+  const [milestoneDescription, setMilestoneDescription] = useState("");
+  const [milestoneTargetDate, setMilestoneTargetDate] = useState<Date | undefined>();
+  const [milestoneSupervisorNotes, setMilestoneSupervisorNotes] = useState("");
 
   // Helper to convert backend URLs to absolute URLs
   const getDocumentUrl = (path: string): string => {
@@ -63,7 +89,7 @@ export default function LecturerMyStudentDetailPage() {
   // Initial breadcrumb, will be updated when data is loaded
   const baseBreadcrumb = useMemo(() => [
     { label: "Tugas Akhir" }, 
-    { label: "Bimbingan" }, 
+    { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/requests" }, 
     { label: "Mahasiswa Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/my-students" },
     { label: "Detail Mahasiswa" }
   ], []);
@@ -99,6 +125,39 @@ export default function LecturerMyStudentDetailPage() {
     }
   });
 
+  const createMilestoneMutation = useMutation({
+    mutationFn: (data: CreateMilestoneForStudentDto) => createMilestoneForStudent(thesisId!, data),
+    onSuccess: () => {
+        toast.success("Milestone berhasil dibuat untuk mahasiswa");
+        queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
+        setCreateMilestoneOpen(false);
+        resetMilestoneForm();
+    },
+    onError: (error: Error) => {
+        toast.error(error.message);
+    }
+  });
+
+  const resetMilestoneForm = () => {
+    setMilestoneTitle("");
+    setMilestoneDescription("");
+    setMilestoneTargetDate(undefined);
+    setMilestoneSupervisorNotes("");
+  };
+
+  const handleCreateMilestone = () => {
+    if (!milestoneTitle.trim()) {
+        toast.error("Judul milestone wajib diisi");
+        return;
+    }
+    createMilestoneMutation.mutate({
+        title: milestoneTitle.trim(),
+        description: milestoneDescription.trim() || undefined,
+        targetDate: milestoneTargetDate?.toISOString(),
+        supervisorNotes: milestoneSupervisorNotes.trim() || undefined,
+    });
+  };
+
   const handleValidate = () => {
     if (selectedMilestoneId) {
         const id = selectedMilestoneId;
@@ -113,7 +172,7 @@ export default function LecturerMyStudentDetailPage() {
     if (detailData?.student.fullName) {
         setBreadcrumbs([
             { label: "Tugas Akhir" }, 
-            { label: "Bimbingan" }, 
+            { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/requests" }, 
             { label: "Mahasiswa Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/my-students" },
             { label: toTitleCaseName(detailData.student.fullName) }
         ]);
@@ -131,9 +190,9 @@ export default function LecturerMyStudentDetailPage() {
 
   if (isLoading) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-            <Spinner className="h-8 w-8 mb-4" />
-            <p className="text-muted-foreground">Memuat detail mahasiswa...</p>
+        <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center">
+            <Spinner className="h-10 w-10 text-primary" />
+            <p className="mt-3 text-sm text-muted-foreground">Memuat detail mahasiswa...</p>
         </div>
     );
   }
@@ -339,8 +398,16 @@ export default function LecturerMyStudentDetailPage() {
         {/* Right Column: Milestones */}
         <div className="space-y-6">
             <Card className="h-full border-none shadow-none lg:border lg:shadow-sm">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Riwayat Milestone</CardTitle>
+                    <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setCreateMilestoneOpen(true)}
+                    >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Tambah
+                    </Button>
                 </CardHeader>
                 <CardContent className="px-2 sm:px-6">
                      <div className="relative border-l ml-3 space-y-8 my-2">
@@ -433,6 +500,120 @@ export default function LecturerMyStudentDetailPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Milestone Dialog */}
+      <Dialog 
+        open={createMilestoneOpen} 
+        onOpenChange={(open) => {
+            setCreateMilestoneOpen(open);
+            if (!open) resetMilestoneForm();
+        }}
+      >
+        <DialogContent className="max-w-lg">
+            <DialogHeader>
+                <DialogTitle>Tambah Milestone untuk Mahasiswa</DialogTitle>
+            </DialogHeader>
+            <form 
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    handleCreateMilestone();
+                }}
+                className="space-y-4"
+            >
+                <div className="space-y-2">
+                    <Label htmlFor="milestone-title">
+                        Judul Milestone <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id="milestone-title"
+                        value={milestoneTitle}
+                        onChange={(e) => setMilestoneTitle(e.target.value)}
+                        placeholder="Contoh: Revisi Bab 4"
+                        disabled={createMilestoneMutation.isPending}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="milestone-description">Deskripsi</Label>
+                    <Textarea
+                        id="milestone-description"
+                        value={milestoneDescription}
+                        onChange={(e) => setMilestoneDescription(e.target.value)}
+                        placeholder="Deskripsi detail milestone..."
+                        rows={3}
+                        disabled={createMilestoneMutation.isPending}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label>Target Tanggal</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !milestoneTargetDate && "text-muted-foreground"
+                                )}
+                                disabled={createMilestoneMutation.isPending}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {milestoneTargetDate 
+                                    ? format(milestoneTargetDate, "PPP", { locale: localeId })
+                                    : "Pilih tanggal target"
+                                }
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                                mode="single"
+                                selected={milestoneTargetDate}
+                                onSelect={setMilestoneTargetDate}
+                                initialFocus
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="milestone-notes">Catatan untuk Mahasiswa</Label>
+                    <Textarea
+                        id="milestone-notes"
+                        value={milestoneSupervisorNotes}
+                        onChange={(e) => setMilestoneSupervisorNotes(e.target.value)}
+                        placeholder="Instruksi atau catatan untuk mahasiswa..."
+                        rows={3}
+                        disabled={createMilestoneMutation.isPending}
+                    />
+                </div>
+
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCreateMilestoneOpen(false)}
+                        disabled={createMilestoneMutation.isPending}
+                    >
+                        Batal
+                    </Button>
+                    <Button 
+                        type="submit"
+                        disabled={createMilestoneMutation.isPending || !milestoneTitle.trim()}
+                    >
+                        {createMilestoneMutation.isPending ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Menyimpan...
+                            </>
+                        ) : (
+                            "Simpan Milestone"
+                        )}
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import CustomTable from '@/components/layout/CustomTable';
 import { getScheduledGuidances } from '@/services/lecturerGuidance.service';
 import { getLecturerScheduledColumns } from '@/lib/lecturerScheduledColumns';
 import { toTitleCaseName } from '@/lib/text';
+import { Loading } from '@/components/ui/spinner';
 
 export default function ScheduledGuidancesPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -18,7 +19,7 @@ export default function ScheduledGuidancesPage() {
   const [statusFilter, setStatusFilter] = useState('');
 
   const breadcrumb = useMemo(
-    () => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }, { label: 'Terjadwal' }],
+    () => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan', href: '/tugas-akhir/bimbingan/lecturer/requests' }, { label: 'Terjadwal' }],
     []
   );
 
@@ -78,31 +79,39 @@ export default function ScheduledGuidancesPage() {
     navigate,
   });
 
+  // Define tabs for reuse
+  const tabs = [
+    { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
+    { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
+    { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
+  ];
+
   return (
     <div className="p-4">
-      <TabsNav
-        tabs={[
-          { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
-          { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
-          { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
-        ]}
-      />
+      <TabsNav tabs={tabs} />
 
-      <CustomTable
-        columns={columns as any}
-        data={paginatedGuidances}
-        loading={isLoading}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      {/* Loading state - tabs tetap render, loading di content */}
+      {isLoading ? (
+        <div className="flex h-[calc(100vh-280px)] items-center justify-center">
+          <Loading size="lg" text="Memuat jadwal bimbingan..." />
+        </div>
+      ) : (
+        <CustomTable
+          columns={columns as any}
+          data={paginatedGuidances}
+          loading={isLoading}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setPage(1);
+          }}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+      )}
     </div>
   );
 }

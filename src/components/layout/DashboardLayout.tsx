@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
-import { SidebarSkeleton } from "@/components/layout/sidebar/sidebar-skeleton";
 import { Loading } from "@/components/ui/spinner";
 import { ActiveAcademicYearBadge } from "@/components/layout/ActiveAcademicYearBadge";
 import {
@@ -43,22 +42,12 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
     }
   }, [isLoading, user, navigate]);
 
-  // Tampilkan skeleton saat loading atau belum ada user
+  // Full blank loading state saat browser reload (auth loading)
   if (isLoading || !user) {
     return (
-      <SidebarProvider>
-        <SidebarSkeleton />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-            </div>
-          </header>
-          <div className="flex flex-1 flex-col gap-4 p-6">
-            <Loading text="Memuat dashboard..." />
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <Loading size="lg" text="Memuat..." />
+      </div>
     );
   }
 

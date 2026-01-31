@@ -8,7 +8,7 @@ export default function CompletedHistoryPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
   const breadcrumb = useMemo(
-    () => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }, { label: 'Riwayat' }],
+    () => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan', href: '/tugas-akhir/bimbingan/student' }, { label: 'Riwayat' }],
     []
   );
 
