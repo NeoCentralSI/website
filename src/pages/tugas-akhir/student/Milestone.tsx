@@ -40,6 +40,10 @@ import {
   DefenceRequestCard,
 } from "@/components/milestone";
 
+import { ThesisChangeRequestCard } from "@/components/tugas-akhir/student/ThesisChangeRequestCard";
+import { ChangeRequestApprovedAlert, useHasApprovedChangeRequest } from "@/components/tugas-akhir/student/ChangeRequestApprovedAlert";
+import { ThesisDeletedAlert, useHasThesisDeleted } from "@/components/tugas-akhir/student/ThesisDeletedAlert";
+
 import {
   useMilestones,
   useTemplates,
@@ -71,6 +75,12 @@ export default function StudentMilestonePage() {
 
   const thesisId = supervisorsData?.thesisId || "";
   const hasThesis = !supervisorsError && !!thesisId;
+  
+  // Check if student has approved change request (thesis deleted via change request)
+  const { hasApprovedRequest } = useHasApprovedChangeRequest();
+  
+  // Check if student's thesis was deleted (e.g., due to FAILED status)
+  const { hasDeletedThesis } = useHasThesisDeleted();
 
   // Get thesis detail
   const { data: thesisDetail, isLoading: isLoadingThesis } = useQuery({
@@ -364,6 +374,10 @@ export default function StudentMilestonePage() {
         <div className="flex h-[calc(100vh-280px)] items-center justify-center">
           <Loading size="lg" text="Memuat data milestone..." />
         </div>
+      ) : !hasThesis && hasApprovedRequest ? (
+        <ChangeRequestApprovedAlert className="mt-4" />
+      ) : !hasThesis && hasDeletedThesis ? (
+        <ThesisDeletedAlert className="mt-4" />
       ) : !hasThesis ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <h3 className="text-lg font-semibold mb-2">Belum Terdaftar Tugas Akhir</h3>
@@ -584,6 +598,11 @@ export default function StudentMilestonePage() {
           {/* Defence Readiness Request for Student */}
           {thesisId && (
             <DefenceRequestCard thesisId={thesisId} className="mb-4" />
+          )}
+
+          {/* Thesis Change Request for Student */}
+          {thesisId && (
+            <ThesisChangeRequestCard thesisId={thesisId} className="mb-4" />
           )}
 
           <MilestoneList

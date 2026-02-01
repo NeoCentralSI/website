@@ -23,6 +23,7 @@ export const API_CONFIG = {
     NOTIFICATION: {
       BASE: '/notification',
       UNREAD_COUNT: '/notification/unread-count',
+      CHECK_THESIS_DELETED: '/notification/check-thesis-deleted',
       MARK_ALL_READ: '/notification/read-all',
       MARK_READ: (id: string) => `/notification/${id}/read`,
       DELETE: (id: string) => `/notification/${id}`,

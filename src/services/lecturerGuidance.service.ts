@@ -339,3 +339,70 @@ export const createMilestoneForStudent = async (thesisId: string, data: CreateMi
   }
   return res.json();
 };
+
+// ==================== THESIS CHANGE REQUEST ====================
+
+export interface ChangeRequestApproval {
+  id: string;
+  lecturerId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  notes?: string;
+  lecturer: {
+    user: {
+      id: string;
+      fullName: string;
+    };
+  };
+}
+
+export interface PendingChangeRequest {
+  id: string;
+  thesisId: string;
+  requestType: 'topic' | 'supervisor' | 'both';
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  approvals: ChangeRequestApproval[];
+  thesis: {
+    student: {
+      user: {
+        id: string;
+        fullName: string;
+        identityNumber: string;
+      };
+    };
+  };
+}
+
+/**
+ * Get pending change request for a thesis that requires lecturer review
+ */
+export const getPendingChangeRequestForThesis = async (thesisId: string): Promise<{
+  success: boolean;
+  data: PendingChangeRequest | null;
+}> => {
+  const res = await apiRequest(getApiUrl(`/thesis-change-requests/thesis/${thesisId}/pending`));
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memuat permintaan perubahan" }));
+    throw new Error(errorData.message || "Gagal memuat permintaan perubahan");
+  }
+  return res.json();
+};
+
+/**
+ * Review change request (approve/reject) by lecturer
+ */
+export const reviewChangeRequest = async (requestId: string, data: { status: 'approved' | 'rejected'; notes?: string }): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  const res = await apiRequest(getApiUrl(`/thesis-change-requests/${requestId}/review`), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memproses review" }));
+    throw new Error(errorData.message || "Gagal memproses review");
+  }
+  return res.json();
+};

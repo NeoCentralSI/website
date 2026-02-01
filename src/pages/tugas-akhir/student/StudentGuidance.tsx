@@ -20,6 +20,8 @@ import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import RequestGuidanceDialog from '@/components/thesis/RequestGuidanceDialog';
 import { GuidanceRescheduleDialog } from '@/components/thesis/GuidanceRescheduleDialog';
 import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
+import { ChangeRequestApprovedAlert, useHasApprovedChangeRequest } from '@/components/tugas-akhir/student/ChangeRequestApprovedAlert';
+import { ThesisDeletedAlert, useHasThesisDeleted } from '@/components/tugas-akhir/student/ThesisDeletedAlert';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
 import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
@@ -70,6 +72,13 @@ export default function StudentGuidancePage() {
   });
 
   const thesisId = supervisorsQuery.data?.thesisId ?? '';
+  const hasNoThesis = !thesisId && !supervisorsQuery.isLoading;
+  
+  // Check if student has approved change request (thesis deleted via change request)
+  const { hasApprovedRequest } = useHasApprovedChangeRequest();
+  
+  // Check if student's thesis was deleted (e.g., due to FAILED status)
+  const { hasDeletedThesis } = useHasThesisDeleted();
 
   // Fetch milestones for guidance dialog
   const milestonesQuery = useMilestones(thesisId);
@@ -139,6 +148,10 @@ export default function StudentGuidancePage() {
         <div className="flex h-[calc(100vh-280px)] items-center justify-center">
           <Loading size="lg" text="Memuat data bimbingan..." />
         </div>
+      ) : hasNoThesis && hasApprovedRequest ? (
+        <ChangeRequestApprovedAlert className="mt-4" />
+      ) : hasNoThesis && hasDeletedThesis ? (
+        <ThesisDeletedAlert className="mt-4" />
       ) : (
         <>
           {hasPendingRequest && pendingRequestInfo && (

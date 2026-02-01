@@ -362,3 +362,22 @@ export async function sendWarningToStudent(thesisId: string, warningType: Warnin
   }
   return response.json();
 }
+
+/**
+ * Delete thesis (for Kadep only - used for FAILED thesis)
+ */
+export async function deleteThesisFromMonitoring(thesisId: string, reason?: string): Promise<{ success: boolean; message: string }> {
+  const response = await apiRequest(
+    getApiUrl(`/adminfeatures/thesis/${thesisId}`),
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal menghapus thesis");
+  }
+  return response.json();
+}

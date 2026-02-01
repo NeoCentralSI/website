@@ -222,22 +222,28 @@ export const useSidebarMenu = () => {
         });
       }
 
-      // Menu Tugas Akhir
-      const tugasAkhirItems = [
-        { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-        { title: "Seminar", url: "/tugas-akhir/seminar" },
-        { title: "Sidang", url: "/tugas-akhir/sidang" },
-        { title: "Kelola Penguji", url: "/tugas-akhir/kelola-penguji" },
-        { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        { title: "ACC Pembimbing", url: "/tugas-akhir/acc-pembimbing" },
-        { title: "ACC Rubrik Penilaian", url: "/tugas-akhir/acc-rubrik" },
-      ];
-
+      // Menu Tugas Akhir (hanya aktivitas dosen)
       menuItems.push({
         title: "Tugas Akhir",
         url: "/tugas-akhir",
         icon: FileText,
-        items: tugasAkhirItems,
+        items: [
+          { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+          { title: "Seminar", url: "/tugas-akhir/seminar" },
+          { title: "Sidang", url: "/tugas-akhir/sidang" },
+          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
+        ],
+      });
+
+      // Menu Kelola (fitur manajemen Kadep)
+      menuItems.push({
+        title: "Kelola",
+        url: "/kelola",
+        icon: Database,
+        items: [
+          { title: "Tugas Akhir", url: "/kelola/tugas-akhir/kadep" },
+          { title: "Kerja Praktek", url: "/kelola/kerja-praktik" },
+        ],
       });
 
       // no Profil for kadep

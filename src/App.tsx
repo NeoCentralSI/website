@@ -30,6 +30,7 @@ import MahasiswaDetailPage from './pages/admin/master-data/MahasiswaDetail'
 import DosenPage from './pages/admin/master-data/Dosen'
 import DosenDetailPage from './pages/admin/master-data/DosenDetail'
 import KelolaTugasAkhirPage from './pages/tugas-akhir/secretary/TugasAkhir'
+import KelolaTugasAkhirKadepPage from './pages/kelola/kadep/KelolaTugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
 import MonitoringDashboard from './pages/monitoring/MonitoringDashboard'
 import StudentProgressDetail from './pages/monitoring/StudentProgressDetail'
@@ -133,7 +134,7 @@ function App() {
               <Route path="/tugas-akhir/jadwal-seminar" element={<Placeholder title="Tugas Akhir - Penjadwalan Seminar" />} />
               <Route path="/tugas-akhir/jadwal-sidang" element={<Placeholder title="Tugas Akhir - Penjadwalan Sidang" />} />
 
-              {/* Kelola */}
+              {/* Kelola - Sekretaris */}
               <Route path="/kelola" element={<Placeholder title="main menu Kelola" />} />
               <Route path="/kelola/kerja-praktik" element={<Placeholder title="Kelola - Kerja Praktek" />} />
               <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
@@ -143,6 +144,14 @@ function App() {
               <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<KelolaTugasAkhirPage />} />
               <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<KelolaTugasAkhirPage />} />
               <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
+              
+              {/* Kelola - Kadep */}
+              <Route path="/kelola/tugas-akhir/kadep" element={<Navigate to="/kelola/tugas-akhir/kadep/pergantian" replace />} />
+              <Route path="/kelola/tugas-akhir/kadep/pergantian" element={<KelolaTugasAkhirKadepPage />} />
+              <Route path="/kelola/tugas-akhir/kadep/data" element={<KelolaTugasAkhirKadepPage />} />
+              <Route path="/kelola/tugas-akhir/kadep/penguji" element={<KelolaTugasAkhirKadepPage />} />
+              <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<KelolaTugasAkhirKadepPage />} />
+              <Route path="/kelola/tugas-akhir/kadep/acc-rubrik" element={<KelolaTugasAkhirKadepPage />} />
               <Route path="/kelola/sop" element={<KelolaSopPage />} />
 
               {/* Master Data (Admin) */}

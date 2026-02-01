@@ -27,15 +27,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CheckCircle2, XCircle, RefreshCw, X, Eye, Bell, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, X, Eye, Bell, AlertTriangle, Trash2 } from "lucide-react";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
-import { sendWarningToStudent } from "@/services/monitoring.service";
-import { useMutation } from "@tanstack/react-query";
+import { sendWarningToStudent, deleteThesisFromMonitoring } from "@/services/monitoring.service";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { useAuthStore } from "@/stores/auth.store";
+import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
 
 // Status badge color mapping
 const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -84,13 +86,25 @@ function getProgressColor(percent: number): string {
 interface ThesesTableProps {
   isSyncing?: boolean;
   academicYear?: string;
+  initialRating?: string;
 }
 
-export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProps) {
+export function ThesesTable({ isSyncing = false, academicYear, initialRating }: ThesesTableProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  
+  // Check if user is Kadep (can delete FAILED thesis)
+  const isKadep = user?.roles?.some(role => role.name === 'Ketua Departemen') ?? false;
   
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
+    open: boolean;
+    thesis: ThesisListItem | null;
+  }>({ open: false, thesis: null });
+
+  // Delete dialog state (for FAILED thesis)
+  const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     thesis: ThesisListItem | null;
   }>({ open: false, thesis: null });
@@ -108,6 +122,21 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
     },
   });
 
+  // Delete thesis mutation
+  const deleteThesisMutation = useMutation({
+    mutationFn: (thesisId: string) =>
+      deleteThesisFromMonitoring(thesisId, "Dihapus oleh Kadep karena status FAILED (gagal > 1 tahun)"),
+    onSuccess: () => {
+      toast.success("Thesis berhasil dihapus");
+      setDeleteDialog({ open: false, thesis: null });
+      // Invalidate and refetch monitoring data
+      queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal menghapus thesis");
+    },
+  });
+
   const handleSendWarning = () => {
     const thesis = warningDialog.thesis;
     if (!thesis?.id || !thesis?.rating) return;
@@ -116,9 +145,16 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
       warningType: thesis.rating as WarningType,
     });
   };
+
+  const handleDeleteThesis = () => {
+    const thesis = deleteDialog.thesis;
+    if (!thesis?.id) return;
+    deleteThesisMutation.mutate(thesis.id);
+  };
   // Filter state for dropdowns (backend filtering)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [lecturerFilter, setLecturerFilter] = useState<string | undefined>(undefined);
+  const [ratingFilter, setRatingFilter] = useState<string | undefined>(initialRating);
   
   // Frontend pagination & search state
   const [frontendSearch, setFrontendSearch] = useState("");
@@ -139,20 +175,31 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
   const isLoadingAny = isLoading || isFetching || isSyncing;
   const { data: filterOptions } = useFilterOptions();
 
-  // Frontend search filter applied to ALL data
+  // Frontend search & rating filter applied to ALL data
   const searchFilteredData = useMemo(() => {
     if (!data?.data) return [];
-    if (!frontendSearch.trim()) return data.data;
     
-    const searchLower = frontendSearch.toLowerCase();
-    return data.data.filter((thesis) => 
-      thesis.student.name.toLowerCase().includes(searchLower) ||
-      thesis.student.nim.toLowerCase().includes(searchLower) ||
-      thesis.title?.toLowerCase().includes(searchLower) ||
-      thesis.supervisors.pembimbing1?.toLowerCase().includes(searchLower) ||
-      thesis.supervisors.pembimbing2?.toLowerCase().includes(searchLower)
-    );
-  }, [data?.data, frontendSearch]);
+    let filtered = data.data;
+    
+    // Apply rating filter (frontend)
+    if (ratingFilter) {
+      filtered = filtered.filter((thesis) => thesis.rating === ratingFilter);
+    }
+    
+    // Apply search filter
+    if (frontendSearch.trim()) {
+      const searchLower = frontendSearch.toLowerCase();
+      filtered = filtered.filter((thesis) => 
+        thesis.student.name.toLowerCase().includes(searchLower) ||
+        thesis.student.nim.toLowerCase().includes(searchLower) ||
+        thesis.title?.toLowerCase().includes(searchLower) ||
+        thesis.supervisors.pembimbing1?.toLowerCase().includes(searchLower) ||
+        thesis.supervisors.pembimbing2?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return filtered;
+  }, [data?.data, frontendSearch, ratingFilter]);
 
   // Frontend pagination - slice the search-filtered data
   const paginatedData = useMemo(() => {
@@ -160,11 +207,13 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
     return searchFilteredData.slice(startIndex, startIndex + pageSize);
   }, [searchFilteredData, page, pageSize]);
 
-  const handleFilterChange = useCallback((key: 'status' | 'lecturerId', value: string | undefined) => {
+  const handleFilterChange = useCallback((key: 'status' | 'lecturerId' | 'rating', value: string | undefined) => {
     if (key === 'status') {
       setStatusFilter(value === "all" ? undefined : value);
-    } else {
+    } else if (key === 'lecturerId') {
       setLecturerFilter(value === "all" ? undefined : value);
+    } else if (key === 'rating') {
+      setRatingFilter(value === "all" ? undefined : value);
     }
     setPage(1); // Reset to first page when filter changes
   }, []);
@@ -186,11 +235,12 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
   const clearFilters = useCallback(() => {
     setStatusFilter(undefined);
     setLecturerFilter(undefined);
+    setRatingFilter(undefined);
     setFrontendSearch("");
     setPage(1);
   }, []);
 
-  const hasActiveFilters = statusFilter || lecturerFilter || frontendSearch;
+  const hasActiveFilters = statusFilter || lecturerFilter || ratingFilter || frontendSearch;
 
   const columns: Column<ThesisListItem>[] = [
     {
@@ -330,6 +380,27 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
                 </Tooltip>
               </TooltipProvider>
             )}
+            {/* Delete button for FAILED thesis (Kadep only) */}
+            {isKadep && thesis.rating === 'FAILED' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setDeleteDialog({ open: true, thesis })}
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Hapus Thesis</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Hapus Thesis</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -387,6 +458,22 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
               {toTitleCaseName(supervisor.label)}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={ratingFilter || "all"}
+        onValueChange={(value) => handleFilterChange("rating", value)}
+      >
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder="Rating" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Semua Rating</SelectItem>
+          <SelectItem value="ONGOING">Ongoing</SelectItem>
+          <SelectItem value="SLOW">Slow</SelectItem>
+          <SelectItem value="AT_RISK">At Risk</SelectItem>
+          <SelectItem value="FAILED">Gagal</SelectItem>
         </SelectContent>
       </Select>
 
@@ -480,6 +567,61 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
                 <>
                   <Bell className="mr-2 h-4 w-4" />
                   Kirim Peringatan
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Thesis Dialog (Kadep only - for FAILED thesis) */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => !deleteThesisMutation.isPending && setDeleteDialog({ open, thesis: open ? deleteDialog.thesis : null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Hapus Tugas Akhir?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Apakah Anda yakin ingin menghapus tugas akhir ini?</p>
+                {deleteDialog.thesis && (
+                  <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+                    <p className="font-medium">{deleteDialog.thesis.student?.fullName}</p>
+                    <p className="text-sm text-muted-foreground">{deleteDialog.thesis.student?.nim}</p>
+                    <p className="text-sm">{deleteDialog.thesis.title}</p>
+                    <Badge variant="destructive" className="mt-2">
+                      Rating: FAILED
+                    </Badge>
+                  </div>
+                )}
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  <p className="font-medium">⚠️ Perhatian:</p>
+                  <ul className="mt-1 list-disc list-inside space-y-1">
+                    <li>Tindakan ini tidak dapat dibatalkan</li>
+                    <li>Semua data bimbingan terkait akan dihapus</li>
+                    <li>Mahasiswa dapat mengajukan topik baru setelah penghapusan</li>
+                  </ul>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteThesisMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteThesis}
+              disabled={deleteThesisMutation.isPending}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {deleteThesisMutation.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Hapus Tugas Akhir
                 </>
               )}
             </AlertDialogAction>

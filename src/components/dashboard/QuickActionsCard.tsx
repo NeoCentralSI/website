@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/spinner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   CheckCircle, 
   ClipboardCheck, 
@@ -11,12 +12,17 @@ import {
   ArrowRight,
   AlertCircle,
   GraduationCap,
-  Award
+  Award,
+  RefreshCw,
+  AlertTriangle,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getPendingRequests, getPendingApproval } from "@/services/lecturerGuidance.service";
+import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesis } from "@/services/lecturerGuidance.service";
 import { getMilestones, getSeminarReadinessStatus, getDefenceReadinessStatus } from "@/services/milestone.service";
 import { getMyStudents } from "@/services/lecturerGuidance.service";
+import { getKadepQuickActionsStats } from "@/services/admin.service";
+import { useAuthStore } from "@/stores/auth.store";
 import { useLottie } from 'lottie-react';
 import completeAnimation from '@/assets/lottie/complete.json';
 
@@ -42,6 +48,11 @@ interface QuickActionsCardProps {
 }
 
 export function QuickActionsCard({ className }: QuickActionsCardProps) {
+  const { user } = useAuthStore();
+  
+  // Check if user is Kadep
+  const isKadep = user?.roles?.some(role => role.name === 'Ketua Departemen') ?? false;
+
   // Fetch pending guidance requests
   const { data: pendingRequestsData, isLoading: loadingRequests } = useQuery({
     queryKey: ["lecturer-pending-requests-count"],
@@ -170,11 +181,56 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     enabled: !!studentsData?.students,
   });
 
+  // Fetch pending change requests for lecturer's students
+  const { data: pendingChangeRequestsData, isLoading: loadingChangeRequests } = useQuery({
+    queryKey: ["pending-change-requests-lecturer"],
+    queryFn: async () => {
+      if (!studentsData?.students) return [];
+      
+      // Get all students' thesis IDs
+      const studentsWithThesis = studentsData.students
+        .filter((s: any) => !!s.thesisId)
+        .map((s: any) => ({ studentId: s.studentId, thesisId: s.thesisId, fullName: s.fullName }));
+
+      // Fetch pending change requests for each thesis
+      const changeRequests = await Promise.all(
+        studentsWithThesis.map(async (student: any) => {
+          try {
+            const result = await getPendingChangeRequestForThesis(student.thesisId);
+            if (result.data) {
+              return {
+                ...result.data,
+                studentName: student.fullName,
+              };
+            }
+            return null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      // Filter for non-null results (students with pending change requests)
+      return changeRequests.filter((r) => r !== null);
+    },
+    enabled: !!studentsData?.students,
+  });
+
+  // Fetch Kadep quick actions stats (only for Kadep)
+  const { data: kadepStatsData, isLoading: loadingKadepStats } = useQuery({
+    queryKey: ["kadep-quick-actions-stats"],
+    queryFn: () => getKadepQuickActionsStats(),
+    enabled: isKadep,
+  });
+
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
   const pendingMilestonesCount = pendingMilestonesData?.length || 0;
   const pendingSeminarCount = pendingSeminarData?.length || 0;
   const pendingDefenceCount = pendingDefenceData?.length || 0;
+  const pendingChangeRequestsCount = pendingChangeRequestsData?.length || 0;
+  const failedThesesCount = kadepStatsData?.failedThesesCount || 0;
+  const pendingKadepChangeRequestsCount = kadepStatsData?.pendingChangeRequestsCount || 0;
   
   // Get first pending approval's guidanceId for direct link to session page
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
@@ -184,10 +240,15 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const firstPendingSeminarThesisId = pendingSeminarData?.[0]?.thesisId;
   // Get first pending defence's thesisId for direct link
   const firstPendingDefenceThesisId = pendingDefenceData?.[0]?.thesisId;
+  // Get first pending change request's thesisId for direct link
+  const firstPendingChangeRequestThesisId = pendingChangeRequestsData?.[0]?.thesisId;
 
-  const totalPending = pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount;
+  // Calculate total pending including Kadep specific items
+  const kadepPending = isKadep ? (failedThesesCount + pendingKadepChangeRequestsCount) : 0;
+  const totalPending = pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount + pendingChangeRequestsCount + kadepPending;
 
-  const quickActions = [
+  // Lecturer quick actions (for pembimbing role)
+  const lecturerQuickActions = [
     {
       id: "pending-requests",
       title: "Permintaan Bimbingan",
@@ -251,9 +312,51 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
         : "/tugas-akhir/bimbingan/lecturer/my-students",
       loading: loadingDefence,
     },
+    {
+      id: "pending-change-requests",
+      title: "Pergantian TA",
+      description: "Review permintaan pergantian",
+      count: pendingChangeRequestsCount,
+      icon: RefreshCw,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      link: firstPendingChangeRequestThesisId 
+        ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingChangeRequestThesisId}`
+        : "/tugas-akhir/bimbingan/lecturer/my-students",
+      loading: loadingChangeRequests,
+    },
   ];
 
-  const isLoading = loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence;
+  // Kadep specific quick actions
+  const kadepQuickActions = isKadep ? [
+    {
+      id: "failed-theses",
+      title: "Thesis Gagal",
+      description: "Kelola thesis > 1 tahun",
+      count: failedThesesCount,
+      icon: Trash2,
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+      link: "/tugas-akhir/monitoring?rating=FAILED",
+      loading: loadingKadepStats,
+    },
+    {
+      id: "kadep-change-requests",
+      title: "Approval Pergantian",
+      description: "Approve permintaan mahasiswa",
+      count: pendingKadepChangeRequestsCount,
+      icon: AlertTriangle,
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      link: "/kelola/tugas-akhir/kadep/pergantian",
+      loading: loadingKadepStats,
+    },
+  ] : [];
+
+  // Combine all quick actions
+  const quickActions = [...lecturerQuickActions, ...kadepQuickActions];
+
+  const isLoading = loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence || loadingChangeRequests || (isKadep && loadingKadepStats);
 
   return (
     <Card className={cn("flex flex-col", className)}>
@@ -268,46 +371,52 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 space-y-3">
+      <CardContent className="flex-1 p-0 overflow-hidden">
         {isLoading ? (
-          <Loading text="Memuat aksi cepat..." className="py-4" size="sm" />
+          <div className="px-6 pb-6">
+            <Loading text="Memuat aksi cepat..." className="py-4" size="sm" />
+          </div>
         ) : totalPending === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground px-6">
             <CompleteLottie size="w-24 h-24" />
             <p className="font-medium mt-2">Semua Selesai!</p>
             <p className="text-sm">Tidak ada yang perlu di-approve</p>
           </div>
         ) : (
-          quickActions.map((action) => (
-            <Link key={action.id} to={action.link}>
-              <div className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border transition-all",
-                "hover:shadow-md hover:border-primary/50 cursor-pointer",
-                action.count > 0 ? "border-primary/20" : "border-border opacity-60"
-              )}>
-                <div className={cn(
-                  "p-2 rounded-lg shrink-0",
-                  action.bgColor
-                )}>
-                  <action.icon className={cn("h-5 w-5", action.color)} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm leading-tight">{action.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{action.description}</p>
+          <ScrollArea className="h-full max-h-[400px]">
+            <div className="space-y-3 px-6 pb-6">
+              {quickActions.map((action) => (
+                <Link key={action.id} to={action.link}>
+                  <div className={cn(
+                    "flex items-start gap-3 p-3 rounded-lg border transition-all",
+                    "hover:shadow-md hover:border-primary/50 cursor-pointer",
+                    action.count > 0 ? "border-primary/20" : "border-border opacity-60"
+                  )}>
+                    <div className={cn(
+                      "p-2 rounded-lg shrink-0",
+                      action.bgColor
+                    )}>
+                      <action.icon className={cn("h-5 w-5", action.color)} />
                     </div>
-                    {action.count > 0 && (
-                      <Badge variant="secondary" className="shrink-0">
-                        {action.count}
-                      </Badge>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm leading-tight">{action.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{action.description}</p>
+                        </div>
+                        {action.count > 0 && (
+                          <Badge variant="secondary" className="shrink-0">
+                            {action.count}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 mt-2" />
                   </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 mt-2" />
-              </div>
-            </Link>
-          ))
+                </Link>
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </CardContent>
     </Card>

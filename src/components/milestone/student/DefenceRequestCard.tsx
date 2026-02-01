@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { CheckCircle2, XCircle, Clock, FileText, Upload, PartyPopper, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, Upload, PartyPopper, AlertCircle, ExternalLink, Download } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useDefenceReadinessStatus, useRequestDefence } from "@/hooks/milestone/useMilestone";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
@@ -31,10 +31,11 @@ interface DefenceRequestCardProps {
 }
 
 // Upload document API call
-async function uploadDocument(file: File): Promise<{ id: string; fileName: string; filePath: string }> {
+async function uploadDocument(file: File, thesisId: string): Promise<{ id: string; fileName: string; filePath: string }> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("documentType", "final_thesis");
+  formData.append("documentType", "Final Thesis");
+  formData.append("thesisId", thesisId);
 
   const response = await apiRequest(getApiUrl("/documents/upload"), {
     method: "POST",
@@ -63,7 +64,7 @@ export function DefenceRequestCard({
 
   // Upload mutation
   const uploadMutation = useMutation({
-    mutationFn: uploadDocument,
+    mutationFn: (file: File) => uploadDocument(file, thesisId),
     onError: (error: Error) => {
       toast.error(error.message || "Gagal mengupload dokumen");
     },
@@ -211,6 +212,39 @@ export function DefenceRequestCard({
                 <p className="text-xs text-muted-foreground">
                   Diupload: {formatDateId(finalDocument.uploadedAt)}
                 </p>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      const url = finalDocument.filePath.startsWith("http") 
+                        ? finalDocument.filePath 
+                        : getApiUrl(`/${finalDocument.filePath}`);
+                      window.open(url, "_blank");
+                    }}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Lihat
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      const url = finalDocument.filePath.startsWith("http") 
+                        ? finalDocument.filePath 
+                        : getApiUrl(`/${finalDocument.filePath}`);
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = finalDocument.fileName;
+                      link.click();
+                    }}
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Download
+                  </Button>
+                </div>
               </div>
               <Badge variant="secondary" className="shrink-0">
                 <CheckCircle2 className="h-3 w-3 mr-1" />

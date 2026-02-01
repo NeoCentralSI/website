@@ -549,3 +549,62 @@ export const getLecturerDetailAPI = async (id: string): Promise<{ data: Lecturer
 
   return response.json();
 };
+
+// ========== Kadep Quick Actions ==========
+
+export interface KadepQuickActionsStats {
+  failedThesesCount: number;
+  pendingChangeRequestsCount: number;
+}
+
+export interface FailedThesis {
+  id: string;
+  title: string;
+  rating: string;
+  createdAt: string;
+  student: {
+    id: string;
+    fullName: string;
+    nim: string;
+    email: string;
+  };
+}
+
+/**
+ * Get Kadep quick actions stats (failed thesis count, pending change requests count)
+ */
+export const getKadepQuickActionsStats = async (): Promise<KadepQuickActionsStats> => {
+  const response = await fetch(getApiUrl('/adminfeatures/kadep/quick-actions'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat data quick actions');
+  }
+
+  const result = await response.json();
+  return result.data;
+};
+
+/**
+ * Get list of FAILED theses
+ */
+export const getFailedThesesList = async (): Promise<{ data: FailedThesis[]; total: number }> => {
+  const response = await fetch(getApiUrl('/adminfeatures/kadep/failed-theses'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat data thesis gagal');
+  }
+
+  return response.json();
+};

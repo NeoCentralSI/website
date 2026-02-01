@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import {
   MonitoringSummaryCards,
@@ -24,6 +24,9 @@ import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
 import { Loading } from "@/components/ui/spinner";
 
 export default function MonitoringDashboard() {
+  const [searchParams] = useSearchParams();
+  const initialRating = searchParams.get("rating") || undefined;
+  
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const queryClient = useQueryClient();
@@ -126,7 +129,7 @@ export default function MonitoringDashboard() {
       </div>
 
       {/* Full Table */}
-      <ThesesTable isSyncing={isSyncing} academicYear={academicYearFilter} />
+      <ThesesTable isSyncing={isSyncing} academicYear={academicYearFilter} initialRating={initialRating} />
     </div>
   );
 }

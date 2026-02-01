@@ -79,4 +79,29 @@ export async function unregisterFcmToken(token: string): Promise<{ success: bool
   return res.json();
 }
 
+export interface ThesisDeletionNotification {
+  id: string;
+  title: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface CheckThesisDeletionResponse {
+  success: boolean;
+  data: {
+    hasDeletedThesis: boolean;
+    notification: ThesisDeletionNotification | null;
+  };
+}
+
+/**
+ * Check if student has a thesis deletion notification
+ * Used to show "please re-register" message on frontend
+ */
+export async function checkThesisDeletionNotification(): Promise<CheckThesisDeletionResponse> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.CHECK_THESIS_DELETED));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memeriksa status tugas akhir");
+  return res.json();
+}
+
 

@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarReadinessCard";
 import { DefenceReadinessCard } from "@/components/milestone/lecturer/DefenceReadinessCard";
+import { ChangeRequestReviewCard } from "@/components/tugas-akhir/lecturer/ChangeRequestReviewCard";
 
 const STATUS_LABELS: Record<string, string> = {
   not_started: "Belum Dimulai",
@@ -247,6 +248,14 @@ export default function LecturerMyStudentDetailPage() {
             Mahasiswa ini telah menyelesaikan keseluruhan milestone. Silakan review kembali progress dan berikan approval agar mahasiswa dapat mendaftar seminar.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Change Request Review Card - tampilkan jika ada pending request */}
+      {thesisId && (
+        <ChangeRequestReviewCard
+          thesisId={thesisId}
+          studentName={detailData.student.fullName}
+        />
       )}
 
       {/* Seminar Readiness Card - tampilkan jika milestone 100% */}

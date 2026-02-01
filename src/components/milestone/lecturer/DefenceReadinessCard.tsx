@@ -24,12 +24,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, XCircle, AlertCircle, FileText, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, FileText, Clock, Download, ExternalLink } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useDefenceReadinessManagement } from "@/hooks/milestone/useMilestone";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { ROLES } from "@/lib/roles";
+import { getApiUrl } from "@/config/api";
 
 interface DefenceReadinessCardProps {
   thesisId: string;
@@ -162,11 +163,46 @@ export function DefenceReadinessCard({
 
         {/* Final Document Info */}
         {finalDocument && (
-          <div className="text-xs text-muted-foreground pl-6">
-            <p className="truncate" title={finalDocument.fileName}>
-              {finalDocument.fileName}
-            </p>
-            <p>Diupload: {formatDateId(finalDocument.uploadedAt)}</p>
+          <div className="text-xs text-muted-foreground pl-6 space-y-2">
+            <div>
+              <p className="truncate" title={finalDocument.fileName}>
+                {finalDocument.fileName}
+              </p>
+              <p>Diupload: {formatDateId(finalDocument.uploadedAt)}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  const url = finalDocument.filePath.startsWith("http") 
+                    ? finalDocument.filePath 
+                    : getApiUrl(`/${finalDocument.filePath}`);
+                  window.open(url, "_blank");
+                }}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Lihat
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  const url = finalDocument.filePath.startsWith("http") 
+                    ? finalDocument.filePath 
+                    : getApiUrl(`/${finalDocument.filePath}`);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = finalDocument.fileName;
+                  link.click();
+                }}
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Download
+              </Button>
+            </div>
           </div>
         )}
 
