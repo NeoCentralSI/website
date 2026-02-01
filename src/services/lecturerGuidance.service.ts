@@ -11,11 +11,19 @@ export interface MyStudentItem {
   identityNumber?: string;
   thesisId?: string;
   thesisTitle?: string;
+  thesisStatus?: string;
   roles?: string[]; // e.g., ["pembimbing1"]
   thesisRating?: "ONGOING" | "SLOW" | "AT_RISK" | "FAILED";
   latestMilestone?: string;
-  lastGuidanceDate?: string;
-  deadlineDate?: string;
+  // Milestone progress info
+  totalMilestones?: number;
+  completedMilestones?: number;
+  milestoneProgress?: number; // 0-100 percentage
+  // Guidance info
+  completedGuidanceCount?: number;
+  lastGuidanceDate?: string | null;
+  deadlineDate?: string | null;
+  startDate?: string | null;
 }
 
 export interface GuidanceItem {
@@ -58,17 +66,6 @@ export interface GuidanceItem {
   milestoneIds?: string[];
   milestoneTitles?: string[];
   [key: string]: unknown;
-}
-
-export interface ActivityLogItem {
-  id: string;
-  thesisId?: string;
-  userId?: string;
-  activityType?: string;
-  activity: string;
-  notes?: string;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
 }
 
 export interface ApproveGuidanceBody {
@@ -139,6 +136,20 @@ export const getMyStudents = async (params?: { roles?: string }): Promise<{ succ
   return res.json();
 };
 
+export type WarningType = "SLOW" | "AT_RISK" | "FAILED";
+
+export const sendWarningToStudent = async (thesisId: string, warningType: WarningType): Promise<{ success: boolean; message: string }> => {
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS}/${thesisId}/send-warning`), {
+    method: "POST",
+    body: JSON.stringify({ warningType }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal mengirim peringatan" }));
+    throw new Error(errorData.message || "Gagal mengirim peringatan");
+  }
+  return res.json();
+};
+
 export const getPendingRequests = async (params?: { page?: number; pageSize?: number }): Promise<{ success: boolean; page: number; pageSize: number; total: number; totalPages: number; requests: GuidanceItem[] }> => {
   const url = new URL(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUESTS));
   if (params?.page) url.searchParams.set("page", String(params.page));
@@ -204,15 +215,6 @@ export const getLecturerGuidanceHistory = async (studentId: string): Promise<{ s
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Gagal memuat riwayat bimbingan" }));
     throw new Error(errorData.message || "Gagal memuat riwayat bimbingan");
-  }
-  return res.json();
-};
-
-export const getLecturerActivityLog = async (studentId: string): Promise<{ success: boolean; count: number; items: ActivityLogItem[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.ACTIVITY_LOG(studentId)));
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat aktivitas" }));
-    throw new Error(errorData.message || "Gagal memuat aktivitas");
   }
   return res.json();
 };

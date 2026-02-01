@@ -17,19 +17,23 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
+export interface NavSubItem {
+  title: string
+  url: string
+}
+
+export interface NavItem {
+  title: string
+  url: string
+  icon: LucideIcon
+  isActive?: boolean
+  items?: NavSubItem[]
+}
+
 export function NavMain({
   items,
 }: {
-  items: {
-    title: string
-    url: string
-    icon: LucideIcon
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
-  }[]
+  items: NavItem[]
 }) {
   const { pathname } = useLocation()
   const { state, setOpen } = useSidebar()

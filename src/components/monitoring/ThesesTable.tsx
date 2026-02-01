@@ -11,10 +11,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, XCircle, RefreshCw, X, Eye } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { CheckCircle2, XCircle, RefreshCw, X, Eye, Bell, AlertTriangle } from "lucide-react";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
-import type { ThesisListItem } from "@/services/monitoring.service";
+import { cn } from "@/lib/utils";
+import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
+import { sendWarningToStudent } from "@/services/monitoring.service";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
 
 // Status badge color mapping
 const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -37,6 +58,22 @@ function getStatusBadge(status: string) {
   return <Badge variant={variant}>{status}</Badge>;
 }
 
+// Rating badge config
+const getRatingConfig = (rating?: string) => {
+  switch (rating) {
+    case "ONGOING":
+      return { variant: "outline" as const, label: "Ongoing", className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
+    case "SLOW":
+      return { variant: "secondary" as const, label: "Slow", className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", needsWarning: true };
+    case "AT_RISK":
+      return { variant: "destructive" as const, label: "At Risk", className: "", needsWarning: true };
+    case "FAILED":
+      return { variant: "destructive" as const, label: "Gagal", className: "", needsWarning: true };
+    default:
+      return { variant: "outline" as const, label: "Ongoing", className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
+  }
+};
+
 function getProgressColor(percent: number): string {
   if (percent >= 80) return "bg-green-500";
   if (percent >= 50) return "bg-amber-500";
@@ -51,6 +88,34 @@ interface ThesesTableProps {
 
 export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProps) {
   const navigate = useNavigate();
+  
+  // Warning dialog state
+  const [warningDialog, setWarningDialog] = useState<{
+    open: boolean;
+    thesis: ThesisListItem | null;
+  }>({ open: false, thesis: null });
+
+  // Send warning mutation
+  const sendWarningMutation = useMutation({
+    mutationFn: ({ thesisId, warningType }: { thesisId: string; warningType: WarningType }) =>
+      sendWarningToStudent(thesisId, warningType),
+    onSuccess: (data) => {
+      toast.success(data.message || "Peringatan berhasil dikirim");
+      setWarningDialog({ open: false, thesis: null });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal mengirim peringatan");
+    },
+  });
+
+  const handleSendWarning = () => {
+    const thesis = warningDialog.thesis;
+    if (!thesis?.id || !thesis?.rating) return;
+    sendWarningMutation.mutate({
+      thesisId: thesis.id,
+      warningType: thesis.rating as WarningType,
+    });
+  };
   // Filter state for dropdowns (backend filtering)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [lecturerFilter, setLecturerFilter] = useState<string | undefined>(undefined);
@@ -142,7 +207,7 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
       key: "title",
       header: "Judul",
       render: (thesis) => (
-        <p className="max-w-[250px] truncate" title={thesis.title}>
+        <p className="max-w-62.5 truncate" title={thesis.title}>
           {thesis.title}
         </p>
       ),
@@ -176,12 +241,12 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
       render: (thesis) => (
         <div className="space-y-0.5 text-sm">
           {thesis.supervisors.pembimbing1 && (
-            <p className="truncate max-w-[150px]" title={thesis.supervisors.pembimbing1}>
+            <p className="truncate max-w-37.5" title={thesis.supervisors.pembimbing1}>
               1. {toTitleCaseName(thesis.supervisors.pembimbing1)}
             </p>
           )}
           {thesis.supervisors.pembimbing2 && (
-            <p className="truncate max-w-[150px] text-muted-foreground" title={thesis.supervisors.pembimbing2}>
+            <p className="truncate max-w-37.5 text-muted-foreground" title={thesis.supervisors.pembimbing2}>
               2. {toTitleCaseName(thesis.supervisors.pembimbing2)}
             </p>
           )}
@@ -221,19 +286,71 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
       ),
     },
     {
+      key: "rating",
+      header: "Rating",
+      render: (thesis) => {
+        const config = getRatingConfig(thesis.rating);
+        return (
+          <div className="flex items-center gap-2">
+            <Badge variant={config.variant} className={cn("whitespace-nowrap", config.className)}>
+              {config.label}
+            </Badge>
+            {config.needsWarning && (
+              <AlertTriangle className="h-4 w-4 text-orange-500 animate-pulse" />
+            )}
+          </div>
+        );
+      },
+    },
+    {
       key: "actions",
       header: "Aksi",
-      className: "text-center w-20",
-      render: (thesis) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(`/tugas-akhir/monitoring/${thesis.id}`)}
-          title="Lihat Detail"
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
-      ),
+      className: "text-center w-24",
+      render: (thesis) => {
+        const config = getRatingConfig(thesis.rating);
+        return (
+          <div className="flex items-center justify-center gap-1">
+            {config.needsWarning && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setWarningDialog({ open: true, thesis })}
+                      className="h-8 w-8 p-0 text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                    >
+                      <Bell className="h-4 w-4" />
+                      <span className="sr-only">Kirim Peringatan</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Kirim Peringatan</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(`/tugas-akhir/monitoring/${thesis.id}`)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span className="sr-only">Detail</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Lihat Detail</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        );
+      },
     },
   ];
 
@@ -260,7 +377,7 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
         value={lecturerFilter || "all"}
         onValueChange={(value) => handleFilterChange("lecturerId", value)}
       >
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-50">
           <SelectValue placeholder="Pembimbing" />
         </SelectTrigger>
         <SelectContent>
@@ -298,20 +415,77 @@ export function ThesesTable({ isSyncing = false, academicYear }: ThesesTableProp
   );
 
   return (
-    <CustomTable<ThesisListItem>
-      columns={columns}
-      data={paginatedData}
-      loading={isLoadingAny}
-      total={searchFilteredData.length}
-      page={page}
-      pageSize={pageSize}
-      onPageChange={handlePageChange}
-      onPageSizeChange={handlePageSizeChange}
-      searchValue={frontendSearch}
-      onSearchChange={handleSearchChange}
-      actions={actions}
-      emptyText="Tidak ada data tugas akhir"
-      rowKey={(row) => row.id}
-    />
+    <>
+      <CustomTable<ThesisListItem>
+        columns={columns}
+        data={paginatedData}
+        loading={isLoadingAny}
+        total={searchFilteredData.length}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        searchValue={frontendSearch}
+        onSearchChange={handleSearchChange}
+        actions={actions}
+        emptyText="Tidak ada data tugas akhir"
+        rowKey={(row) => row.id}
+      />
+
+      {/* Warning Confirmation Dialog */}
+      <AlertDialog open={warningDialog.open} onOpenChange={(open) => setWarningDialog({ open, thesis: open ? warningDialog.thesis : null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Kirim Peringatan
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Anda akan mengirim notifikasi peringatan ke mahasiswa:
+                </p>
+                <div className="bg-muted p-3 rounded-md space-y-1">
+                  <p className="font-medium">{toTitleCaseName(warningDialog.thesis?.student.name || "")}</p>
+                  <p className="text-sm">{warningDialog.thesis?.student.nim}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Status saat ini:</span>
+                  <Badge 
+                    variant={getRatingConfig(warningDialog.thesis?.rating).variant}
+                    className={getRatingConfig(warningDialog.thesis?.rating).className}
+                  >
+                    {getRatingConfig(warningDialog.thesis?.rating).label}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Mahasiswa akan menerima notifikasi push dan in-app notification untuk mengingatkan progress tugas akhir mereka.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sendWarningMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleSendWarning}
+              disabled={sendWarningMutation.isPending}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              {sendWarningMutation.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Mengirim...
+                </>
+              ) : (
+                <>
+                  <Bell className="mr-2 h-4 w-4" />
+                  Kirim Peringatan
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

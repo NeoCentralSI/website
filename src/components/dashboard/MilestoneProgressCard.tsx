@@ -67,7 +67,7 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
           <CardTitle>Milestone Tugas Akhir</CardTitle>
           <CardDescription>Progress pengerjaan tugas akhir</CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center items-center min-h-[200px]">
+        <CardContent className="flex justify-center items-center min-h-50">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
@@ -81,7 +81,7 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
           <CardTitle>Milestone Tugas Akhir</CardTitle>
           <CardDescription>Progress pengerjaan tugas akhir</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col justify-center items-center min-h-[200px]">
+        <CardContent className="flex flex-col justify-center items-center min-h-50">
           <EmptyState
             title="Belum ada Tugas Akhir"
             description="Anda belum terdaftar dalam tugas akhir apapun."
@@ -156,7 +156,7 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
                {nextMilestones && nextMilestones.length > 0 ? (
                   <div className="space-y-2">
                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium truncate pr-2 max-w-[200px]" title={nextMilestones[0].title}>
+                        <span className="font-medium truncate pr-2 max-w-50" title={nextMilestones[0].title}>
                           {nextMilestones[0].title}
                         </span>
                         <Badge variant="secondary" className="text-[10px] h-5">

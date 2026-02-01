@@ -4,7 +4,6 @@ import type {
   Milestone,
   MilestoneDetail,
   MilestoneTemplate,
-  MilestoneLog,
   MilestoneProgress,
   ThesisTopic,
   TemplateTopic,
@@ -30,6 +29,12 @@ import type {
   SeminarReadinessApprovalResult,
   StudentReadyForSeminar,
   SeminarReadinessNotesDto,
+  DefenceReadinessStatus,
+  DefenceReadinessApprovalResult,
+  StudentReadyForDefence,
+  DefenceReadinessNotesDto,
+  RequestDefenceDto,
+  RequestDefenceResult,
 } from "@/types/milestone.types";
 
 // API Endpoints
@@ -39,12 +44,10 @@ const ENDPOINTS = {
   TEMPLATE_CATEGORIES: "/milestones/templates/categories",
   THESIS_MILESTONES: (thesisId: string) => `/milestones/thesis/${thesisId}`,
   THESIS_PROGRESS: (thesisId: string) => `/milestones/thesis/${thesisId}/progress`,
-  THESIS_LOGS: (thesisId: string) => `/milestones/thesis/${thesisId}/logs`,
   THESIS_COMPLETION: (thesisId: string) => `/milestones/thesis/${thesisId}/completion`,
   FROM_TEMPLATES: (thesisId: string) => `/milestones/thesis/${thesisId}/from-templates`,
   REORDER: (thesisId: string) => `/milestones/thesis/${thesisId}/reorder`,
   MILESTONE_DETAIL: (milestoneId: string) => `/milestones/${milestoneId}`,
-  MILESTONE_LOGS: (milestoneId: string) => `/milestones/${milestoneId}/logs`,
   MILESTONE_STATUS: (milestoneId: string) => `/milestones/${milestoneId}/status`,
   MILESTONE_PROGRESS: (milestoneId: string) => `/milestones/${milestoneId}/progress`,
   SUBMIT_REVIEW: (milestoneId: string) => `/milestones/${milestoneId}/submit-review`,
@@ -61,6 +64,12 @@ const ENDPOINTS = {
   SEMINAR_READINESS: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness`,
   SEMINAR_READINESS_APPROVE: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness/approve`,
   SEMINAR_READINESS_REVOKE: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness/revoke`,
+  // Defence Readiness Endpoints
+  READY_FOR_DEFENCE: "/milestones/ready-for-defence",
+  DEFENCE_READINESS: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness`,
+  DEFENCE_READINESS_APPROVE: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness/approve`,
+  DEFENCE_READINESS_REVOKE: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness/revoke`,
+  REQUEST_DEFENCE: (thesisId: string) => `/milestones/thesis/${thesisId}/request-defence`,
 };
 
 // ============================================
@@ -471,50 +480,6 @@ export async function getThesisProgress(thesisId: string): Promise<MilestoneProg
   return result.data;
 }
 
-/**
- * Get milestone activity logs
- */
-export async function getMilestoneLogs(
-  milestoneId: string,
-  limit?: number
-): Promise<MilestoneLog[]> {
-  const url = new URL(getApiUrl(ENDPOINTS.MILESTONE_LOGS(milestoneId)));
-  if (limit) {
-    url.searchParams.set("limit", String(limit));
-  }
-
-  const response = await apiRequest(url.toString());
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Gagal mengambil log aktivitas milestone");
-  }
-
-  const result = await response.json();
-  return result.data;
-}
-
-/**
- * Get all milestone logs for thesis
- */
-export async function getThesisMilestoneLogs(
-  thesisId: string,
-  limit?: number
-): Promise<MilestoneLog[]> {
-  const url = new URL(getApiUrl(ENDPOINTS.THESIS_LOGS(thesisId)));
-  if (limit) {
-    url.searchParams.set("limit", String(limit));
-  }
-
-  const response = await apiRequest(url.toString());
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Gagal mengambil log aktivitas thesis");
-  }
-
-  const result = await response.json();
-  return result.data;
-}
-
 // ============================================
 // Reorder Service
 // ============================================
@@ -693,6 +658,101 @@ export async function getStudentsReadyForSeminar(): Promise<StudentReadyForSemin
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Gagal mengambil daftar mahasiswa siap seminar");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+// ============================================
+// Defence Readiness Services
+// ============================================
+
+/**
+ * Get defence readiness status for a thesis
+ */
+export async function getDefenceReadinessStatus(thesisId: string): Promise<DefenceReadinessStatus> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.DEFENCE_READINESS(thesisId)));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil status kesiapan sidang");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Approve defence readiness for a thesis
+ */
+export async function approveDefenceReadiness(
+  thesisId: string,
+  data?: DefenceReadinessNotesDto
+): Promise<DefenceReadinessApprovalResult> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.DEFENCE_READINESS_APPROVE(thesisId)), {
+    method: "POST",
+    body: JSON.stringify(data || {}),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal menyetujui kesiapan sidang");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Revoke defence readiness approval for a thesis
+ */
+export async function revokeDefenceReadiness(
+  thesisId: string,
+  data?: DefenceReadinessNotesDto
+): Promise<DefenceReadinessApprovalResult> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.DEFENCE_READINESS_REVOKE(thesisId)), {
+    method: "POST",
+    body: JSON.stringify(data || {}),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mencabut persetujuan kesiapan sidang");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Get list of students ready for defence (both supervisors approved)
+ */
+export async function getStudentsReadyForDefence(): Promise<StudentReadyForDefence[]> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.READY_FOR_DEFENCE));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil daftar mahasiswa siap sidang");
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Request defence (student uploads final thesis and requests defence)
+ */
+export async function requestDefence(
+  thesisId: string,
+  data: RequestDefenceDto
+): Promise<RequestDefenceResult> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.REQUEST_DEFENCE(thesisId)), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengajukan permintaan sidang");
   }
 
   const result = await response.json();

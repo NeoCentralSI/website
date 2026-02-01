@@ -107,7 +107,7 @@ export function SOPSection() {
       if (!ctx) return;
       canvas.width = scaledViewport.width;
       canvas.height = scaledViewport.height;
-      await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+      await page.render({ canvas, canvasContext: ctx, viewport: scaledViewport }).promise;
       const thumb = canvas.toDataURL('image/png');
       setPreviews((prev) => ({
         ...prev,

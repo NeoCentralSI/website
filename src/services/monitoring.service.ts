@@ -50,9 +50,17 @@ export interface ReadyForSeminarStudent {
   approvedAt: string;
 }
 
+export interface RatingDistribution {
+  id: string;
+  name: string;
+  value: string;
+  count: number;
+}
+
 export interface MonitoringDashboard {
   summary: ProgressStats;
   statusDistribution: StatusDistribution[];
+  ratingDistribution: RatingDistribution[];
   atRiskStudents: AtRiskStudent[];
   readyForSeminar: ReadyForSeminarStudent[];
 }
@@ -60,6 +68,7 @@ export interface MonitoringDashboard {
 export interface ThesisListItem {
   id: string;
   title: string;
+  rating: 'ONGOING' | 'SLOW' | 'AT_RISK' | 'FAILED';
   student: {
     id: string;
     userId: string;
@@ -76,7 +85,9 @@ export interface ThesisListItem {
   };
   supervisors: {
     pembimbing1: string | null;
+    pembimbing1Id: string | null;
     pembimbing2: string | null;
+    pembimbing2Id: string | null;
   };
   seminarApproval: {
     supervisor1: boolean;
@@ -329,4 +340,25 @@ export async function getThesisDetail(thesisId: string): Promise<ThesisDetail> {
   }
   const result = await response.json();
   return result.data;
+}
+
+export type WarningType = 'SLOW' | 'AT_RISK' | 'FAILED';
+
+/**
+ * Send warning notification to student about thesis progress (for monitoring role: Kadep, Sekdep, GKM)
+ */
+export async function sendWarningToStudent(thesisId: string, warningType: WarningType): Promise<{ success: boolean; message: string }> {
+  const response = await apiRequest(
+    getApiUrl(`/thesisGuidance/monitoring/theses/${thesisId}/send-warning`),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ warningType }),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengirim peringatan");
+  }
+  return response.json();
 }

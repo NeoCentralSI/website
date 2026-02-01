@@ -46,14 +46,6 @@ export const useSidebarMenu = () => {
 
     // STUDENT MENU
     if (role.student) {
-      const siaStudent = siaStudents?.find((s) => s.nim === nim);
-      const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
-      const hasTugasAkhirCourse = !!siaStudent?.currentSemesterCourses?.some(
-        (c) => (c.name || "").toLowerCase().includes("tugas akhir")
-      );
-      const showKerjaPraktek = sks >= 90;
-      const showTugasAkhir = sks >= 110 && hasTugasAkhirCourse;
-
       const studentNav: any[] = [
         {
           title: "Dashboard",
@@ -61,10 +53,8 @@ export const useSidebarMenu = () => {
           icon: SquareTerminal,
           isActive: true,
         },
-      ];
-
-      if (showKerjaPraktek) {
-        studentNav.push({
+        // Kerja Praktek - always show with submenus
+        {
           title: "Kerja Praktek",
           url: "/kerja-praktik",
           icon: Briefcase,
@@ -82,18 +72,16 @@ export const useSidebarMenu = () => {
               url: "/kerja-praktik/seminar",
             },
           ],
-        });
-      }
-
-      if (showTugasAkhir) {
-        studentNav.push({
+        },
+        // Metode Penelitian - always show
+        {
           title: "Metode Penelitian",
           url: "/metopel",
           icon: BookOpen,
           items: [],
-        });
-
-        studentNav.push({
+        },
+        // Tugas Akhir - always show with submenus
+        {
           title: "Tugas Akhir",
           url: "/tugas-akhir",
           icon: FileText,
@@ -115,8 +103,8 @@ export const useSidebarMenu = () => {
               url: "/yudisium",
             },
           ],
-        });
-      }
+        },
+      ];
 
       return {
         user: {

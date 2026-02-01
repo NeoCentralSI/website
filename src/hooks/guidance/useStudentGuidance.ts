@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
 import { listStudentGuidance } from '@/services/studentGuidance.service';
 
-export const useStudentGuidance = () => {
+export function useStudentGuidance() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -23,12 +23,18 @@ export const useStudentGuidance = () => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['student-guidance', { status }],
     queryFn: async () => {
-      const res = await listStudentGuidance({ status: status || undefined });
-      return res.items as GuidanceItem[];
+      try {
+        const res = await listStudentGuidance({ status: status || undefined });
+        console.log('[useStudentGuidance] API response:', res);
+        return (res?.items ?? []) as GuidanceItem[];
+      } catch (error) {
+        console.error('[useStudentGuidance] API error:', error);
+        throw error;
+      }
     },
   });
 
-  const items: GuidanceItem[] = useMemo(() => (data ?? []) as GuidanceItem[], [data]);
+  const items: GuidanceItem[] = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
   // Persist UI state in URL
   useEffect(() => {

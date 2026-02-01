@@ -28,9 +28,7 @@ export const milestoneKeys = {
   thesisMilestones: (thesisId: string, status?: MilestoneStatus) =>
     [...milestoneKeys.thesis(thesisId), { status }] as const,
   thesisProgress: (thesisId: string) => [...milestoneKeys.thesis(thesisId), "progress"] as const,
-  thesisLogs: (thesisId: string) => [...milestoneKeys.thesis(thesisId), "logs"] as const,
   detail: (milestoneId: string) => [...milestoneKeys.all, "detail", milestoneId] as const,
-  logs: (milestoneId: string) => [...milestoneKeys.all, "logs", milestoneId] as const,
 };
 
 // ============================================
@@ -194,28 +192,6 @@ export function useThesisProgress(thesisId: string) {
   return useQuery({
     queryKey: milestoneKeys.thesisProgress(thesisId),
     queryFn: () => milestoneService.getThesisProgress(thesisId),
-    enabled: !!thesisId,
-  });
-}
-
-/**
- * Hook to fetch milestone logs
- */
-export function useMilestoneLogs(milestoneId: string, limit?: number) {
-  return useQuery({
-    queryKey: [...milestoneKeys.logs(milestoneId), { limit }],
-    queryFn: () => milestoneService.getMilestoneLogs(milestoneId, limit),
-    enabled: !!milestoneId,
-  });
-}
-
-/**
- * Hook to fetch thesis milestone logs
- */
-export function useThesisMilestoneLogs(thesisId: string, limit?: number) {
-  return useQuery({
-    queryKey: [...milestoneKeys.thesisLogs(thesisId), { limit }],
-    queryFn: () => milestoneService.getThesisMilestoneLogs(thesisId, limit),
     enabled: !!thesisId,
   });
 }
@@ -704,6 +680,140 @@ export function useSeminarReadinessManagement(thesisId?: string) {
   const statusQuery = useSeminarReadinessStatus(thesisId);
   const approveMutation = useApproveSeminarReadiness();
   const revokeMutation = useRevokeSeminarReadiness();
+
+  return {
+    // Status
+    readinessStatus: statusQuery.data,
+    isLoading: statusQuery.isLoading,
+    isError: statusQuery.isError,
+    error: statusQuery.error,
+    refetch: statusQuery.refetch,
+
+    // Approve
+    approve: (notes?: string) => {
+      if (thesisId) {
+        approveMutation.mutate({ thesisId, notes });
+      }
+    },
+    isApproving: approveMutation.isPending,
+
+    // Revoke
+    revoke: (notes?: string) => {
+      if (thesisId) {
+        revokeMutation.mutate({ thesisId, notes });
+      }
+    },
+    isRevoking: revokeMutation.isPending,
+  };
+}
+
+// ============================================
+// Defence Readiness Hooks
+// ============================================
+
+/**
+ * Hook to fetch defence readiness status for a thesis
+ */
+export function useDefenceReadinessStatus(thesisId?: string) {
+  return useQuery({
+    queryKey: [...milestoneKeys.all, "defence-readiness", thesisId],
+    queryFn: () => milestoneService.getDefenceReadinessStatus(thesisId!),
+    enabled: !!thesisId,
+  });
+}
+
+/**
+ * Hook to fetch students ready for defence
+ */
+export function useStudentsReadyForDefence() {
+  return useQuery({
+    queryKey: [...milestoneKeys.all, "ready-for-defence"],
+    queryFn: milestoneService.getStudentsReadyForDefence,
+  });
+}
+
+/**
+ * Hook for approving defence readiness
+ */
+export function useApproveDefenceReadiness() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ thesisId, notes }: { thesisId: string; notes?: string }) =>
+      milestoneService.approveDefenceReadiness(thesisId, notes ? { notes } : undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "defence-readiness", variables.thesisId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "ready-for-defence"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "lecturer-completion-status"],
+      });
+      toast.success("Kesiapan sidang berhasil disetujui");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal menyetujui kesiapan sidang");
+    },
+  });
+}
+
+/**
+ * Hook for revoking defence readiness approval
+ */
+export function useRevokeDefenceReadiness() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ thesisId, notes }: { thesisId: string; notes?: string }) =>
+      milestoneService.revokeDefenceReadiness(thesisId, notes ? { notes } : undefined),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "defence-readiness", variables.thesisId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "ready-for-defence"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "lecturer-completion-status"],
+      });
+      toast.success("Persetujuan kesiapan sidang berhasil dicabut");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal mencabut persetujuan kesiapan sidang");
+    },
+  });
+}
+
+/**
+ * Hook for student to request defence
+ */
+export function useRequestDefence() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ thesisId, documentId }: { thesisId: string; documentId: string }) =>
+      milestoneService.requestDefence(thesisId, { documentId }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...milestoneKeys.all, "defence-readiness", variables.thesisId],
+      });
+      toast.success("Permintaan sidang berhasil diajukan");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal mengajukan permintaan sidang");
+    },
+  });
+}
+
+/**
+ * Combined hook for defence readiness management
+ */
+export function useDefenceReadinessManagement(thesisId?: string) {
+  const statusQuery = useDefenceReadinessStatus(thesisId);
+  const approveMutation = useApproveDefenceReadiness();
+  const revokeMutation = useRevokeDefenceReadiness();
 
   return {
     // Status

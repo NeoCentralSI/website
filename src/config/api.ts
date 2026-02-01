@@ -41,7 +41,6 @@ export const API_CONFIG = {
       PROGRESS: '/thesisGuidance/student/progress',
       PROGRESS_COMPLETE: '/thesisGuidance/student/progress/complete',
       HISTORY: '/thesisGuidance/student/history',
-      ACTIVITY_LOG: '/thesisGuidance/student/activity-log',
       SUPERVISORS: '/thesisGuidance/student/supervisors',
       SUPERVISOR_AVAILABILITY: (supervisorId: string) => `/thesisGuidance/student/supervisors/${supervisorId}/availability`,
       // Session Summary
@@ -50,6 +49,9 @@ export const API_CONFIG = {
       COMPLETE_SESSION: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/complete`,
       COMPLETED_HISTORY: '/thesisGuidance/student/completed-history',
       EXPORT_GUIDANCE: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/export`,
+      // My Thesis
+      MY_THESIS: '/thesisGuidance/student/my-thesis',
+      UPDATE_THESIS_TITLE: '/thesisGuidance/student/my-thesis/title',
     },
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',
@@ -66,7 +68,6 @@ export const API_CONFIG = {
       FAIL_THESIS: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}/fail`,
       FEEDBACK: (guidanceId: string) => `/thesisGuidance/lecturer/feedback/${guidanceId}`,
       GUIDANCE_HISTORY: (studentId: string) => `/thesisGuidance/lecturer/guidance-history/${studentId}`,
-      ACTIVITY_LOG: (studentId: string) => `/thesisGuidance/lecturer/activity-log/${studentId}`,
       SUPERVISOR_ELIGIBILITY: '/thesisGuidance/lecturer/supervisor/eligibility',
       // Session Summary Approval
       PENDING_APPROVAL: '/thesisGuidance/lecturer/pending-approval',

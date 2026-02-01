@@ -34,7 +34,7 @@ export function ComboBox({
   placeholder = "Select an option...",
   onChange,
   defaultValue = "",
-  width = "w-[200px]",
+  width = "w-50",
   disabled = false,
 }: ComboBoxProps) {
   const [open, setOpen] = React.useState(false)

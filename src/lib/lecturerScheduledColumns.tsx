@@ -80,7 +80,7 @@ export const getLecturerScheduledColumns = (
         return (
           <div className="flex items-center gap-1.5">
             <Target className="h-3.5 w-3.5 text-purple-600" />
-            <span className="truncate max-w-[200px]">{milestoneName}</span>
+            <span className="truncate max-w-50">{milestoneName}</span>
           </div>
         );
       },
@@ -91,7 +91,7 @@ export const getLecturerScheduledColumns = (
       accessor: (r) => {
         const notes = (r as any)?.notes || (r as any)?.studentNotes;
         if (!notes) return '-';
-        return <span className="truncate max-w-[250px] block">{notes}</span>;
+        return <span className="truncate max-w-62.5 block">{notes}</span>;
       },
     },
     {

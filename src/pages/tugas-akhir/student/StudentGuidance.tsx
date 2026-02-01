@@ -82,8 +82,8 @@ export default function StudentGuidancePage() {
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
-  const columns = getGuidanceTableColumns({
-    items,
+  const columns = useMemo(() => getGuidanceTableColumns({
+    items: items || [],
     supervisorFilter,
     setSupervisorFilter,
     status,
@@ -92,7 +92,7 @@ export default function StudentGuidancePage() {
     onViewDocument: openDocumentPreview,
     navigate,
     onReschedule: (guidanceId: string) => {
-      const guidance = items.find(g => g.id === guidanceId);
+      const guidance = (items || []).find(g => g.id === guidanceId);
       if (guidance && guidance.supervisorId) {
         setRescheduleGuidance({ id: guidanceId, supervisorId: guidance.supervisorId });
       }
@@ -100,7 +100,7 @@ export default function StudentGuidancePage() {
     onCancel: (guidanceId: string) => {
       setCancelGuidanceId(guidanceId);
     },
-  });
+  }), [items, supervisorFilter, setSupervisorFilter, status, setStatus, setPage, openDocumentPreview, navigate]);
 
   const handleReschedule = async (data: { requestedDate: string; studentNotes: string }) => {
     if (!rescheduleGuidance) return false;
@@ -129,7 +129,7 @@ export default function StudentGuidancePage() {
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
           { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
-          { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
+          { label: 'Tugas Akhir Saya', to: '/tugas-akhir/bimbingan/milestone' },
           { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
         ]}
       />

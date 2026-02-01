@@ -85,20 +85,6 @@ export interface StudentCompleteComponentsBody {
   completedAt?: string; // ISO
 }
 
-export type ActivityType = "guidance" | "submission" | "revision" | "approval" | "milestone" | "notification" | "other";
-
-export interface ActivityLogItem {
-  id: string;
-  thesisId?: string;
-  userId?: string;
-  activityType?: ActivityType;
-  activity: string; // deskripsi singkat
-  notes?: string | null;
-  metadata?: Record<string, unknown>;
-  createdAt: string; // ISO
-  [key: string]: unknown;
-}
-
 export interface SupervisorItem {
   id: string;
   name: string;
@@ -170,8 +156,16 @@ export const listStudentGuidance = async (params?: { status?: GuidanceStatus; q?
     limit: params?.limit,
   });
   const res = await apiRequest(url);
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat bimbingan");
-  return res.json();
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memuat bimbingan" }));
+    throw new Error(errorData.message || "Gagal memuat bimbingan");
+  }
+  const data = await res.json();
+  return {
+    success: data.success ?? true,
+    count: data.count ?? 0,
+    items: data.items ?? [],
+  };
 };
 
 export const getStudentGuidanceDetail = async (guidanceId: string): Promise<GuidanceDetailResponse> => {
@@ -259,16 +253,18 @@ export const getStudentGuidanceHistory = async (): Promise<GuidanceListResponse>
   return res.json();
 };
 
-export const getStudentActivityLog = async (): Promise<{ success: boolean; count: number; items: ActivityLogItem[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.ACTIVITY_LOG));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat aktivitas");
-  return res.json();
-};
-
 export const getStudentSupervisors = async (): Promise<SupervisorsResponse> => {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.SUPERVISORS));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat pembimbing");
-  return res.json();
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memuat pembimbing" }));
+    throw new Error(errorData.message || "Gagal memuat pembimbing");
+  }
+  const data = await res.json();
+  return {
+    success: data.success ?? true,
+    thesisId: data.thesisId ?? '',
+    supervisors: data.supervisors ?? [],
+  };
 };
 
 export const getSupervisorAvailability = async (
@@ -392,5 +388,87 @@ export const getCompletedGuidanceHistory = async (): Promise<{ success: boolean;
 export const getGuidanceForExport = async (guidanceId: string): Promise<{ success: boolean; guidance: GuidanceExport }> => {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.EXPORT_GUIDANCE(guidanceId)));
   if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat detail bimbingan");
+  return res.json();
+};
+
+// ========== MY THESIS ==========
+
+export interface MyThesisDetail {
+  id: string;
+  title: string;
+  status: string;
+  rating: number | null;
+  createdAt: string;
+  updatedAt: string;
+  student: {
+    id: string;
+    name: string | null;
+    nim: string | null;
+    email: string | null;
+  };
+  topic: {
+    id: string;
+    name: string;
+  } | null;
+  academicYear: {
+    id: string;
+    name: string;
+    year: number;
+    semester: number;
+    isActive: boolean;
+  } | null;
+  document: {
+    id: string;
+    fileName: string;
+    filePath: string;
+  } | null;
+  supervisors: Array<{
+    id: string;
+    name: string | null;
+    email: string | null;
+    role: string | null;
+  }>;
+  examiners: Array<{
+    id: string;
+    name: string | null;
+    email: string | null;
+    role: string | null;
+  }>;
+  stats: {
+    totalGuidances: number;
+    totalMilestones: number;
+    completedMilestones: number;
+    inProgressMilestones?: number;
+    overdueMilestones?: number;
+    totalSessions?: number;
+    milestoneProgress: number;
+  };
+  seminarApproval: {
+    pembimbing1: boolean;
+    pembimbing2: boolean;
+  };
+}
+
+/**
+ * Get current student's thesis detail
+ * Returns thesis object directly (unwrapped from API response)
+ */
+export const getMyThesisDetail = async (): Promise<MyThesisDetail> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.MY_THESIS));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat detail tugas akhir");
+  const data = await res.json();
+  return data.thesis;
+};
+
+/**
+ * Update thesis title
+ */
+export const updateMyThesisTitle = async (title: string): Promise<{ success: boolean; message: string; thesis: { id: string; title: string; updatedAt: string } }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.UPDATE_THESIS_TITLE), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memperbarui judul tugas akhir");
   return res.json();
 };

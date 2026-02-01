@@ -10,11 +10,12 @@ import {
   FileCheck, 
   ArrowRight,
   AlertCircle,
-  GraduationCap
+  GraduationCap,
+  Award
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPendingRequests, getPendingApproval } from "@/services/lecturerGuidance.service";
-import { getMilestones, getSeminarReadinessStatus } from "@/services/milestone.service";
+import { getMilestones, getSeminarReadinessStatus, getDefenceReadinessStatus } from "@/services/milestone.service";
 import { getMyStudents } from "@/services/lecturerGuidance.service";
 import { useLottie } from 'lottie-react';
 import completeAnimation from '@/assets/lottie/complete.json';
@@ -132,10 +133,48 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     enabled: !!studentsData?.students,
   });
 
+  // Fetch pending defence readiness approvals
+  const { data: pendingDefenceData, isLoading: loadingDefence } = useQuery({
+    queryKey: ["pending-defence-approvals"],
+    queryFn: async () => {
+      if (!studentsData?.students) return [];
+      
+      // Get all students' thesis IDs
+      const studentsWithThesis = studentsData.students
+        .filter((s: any) => !!s.thesisId)
+        .map((s: any) => ({ studentId: s.studentId, thesisId: s.thesisId, fullName: s.fullName }));
+
+      // Fetch defence readiness for each thesis
+      const readinessStatuses = await Promise.all(
+        studentsWithThesis.map(async (student: any) => {
+          try {
+            const result = await getDefenceReadinessStatus(student.thesisId);
+            return {
+              ...result,
+              thesisId: student.thesisId,
+              studentName: student.fullName,
+            };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      // Filter for students where:
+      // 1. Student has uploaded final thesis and requested defence
+      // 2. Current user has not yet approved
+      return readinessStatuses.filter(
+        (r: any) => r && r.defenceReadiness?.hasRequestedDefence && r.currentUserRole && !r.currentUserHasApproved
+      );
+    },
+    enabled: !!studentsData?.students,
+  });
+
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
   const pendingMilestonesCount = pendingMilestonesData?.length || 0;
   const pendingSeminarCount = pendingSeminarData?.length || 0;
+  const pendingDefenceCount = pendingDefenceData?.length || 0;
   
   // Get first pending approval's guidanceId for direct link to session page
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
@@ -143,8 +182,10 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const firstPendingMilestoneThesisId = pendingMilestonesData?.[0]?.thesisId;
   // Get first pending seminar's thesisId for direct link
   const firstPendingSeminarThesisId = pendingSeminarData?.[0]?.thesisId;
+  // Get first pending defence's thesisId for direct link
+  const firstPendingDefenceThesisId = pendingDefenceData?.[0]?.thesisId;
 
-  const totalPending = pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount;
+  const totalPending = pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount;
 
   const quickActions = [
     {
@@ -197,9 +238,22 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
         : "/tugas-akhir/bimbingan/lecturer/my-students",
       loading: loadingSeminar,
     },
+    {
+      id: "pending-defence",
+      title: "Acc Sidang",
+      description: "Approve kesiapan sidang",
+      count: pendingDefenceCount,
+      icon: Award,
+      color: "text-rose-600",
+      bgColor: "bg-rose-50",
+      link: firstPendingDefenceThesisId 
+        ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingDefenceThesisId}`
+        : "/tugas-akhir/bimbingan/lecturer/my-students",
+      loading: loadingDefence,
+    },
   ];
 
-  const isLoading = loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar;
+  const isLoading = loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence;
 
   return (
     <Card className={cn("flex flex-col", className)}>

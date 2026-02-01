@@ -3,16 +3,17 @@ import { useLocation, useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
+import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
 
 const TAB_ITEMS: TabItem[] = [
-  { label: "Monitor", to: "/kelola/tugas-akhir/monitor", end: true },
+  { label: "Kelola Topik", to: "/kelola/tugas-akhir/topik" },
   { label: "Kelola Milestone", to: "/kelola/tugas-akhir/milestone" },
   { label: "Kelola Rubrik Seminar", to: "/kelola/tugas-akhir/rubrik-seminar" },
   { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" },
-] ;
+];
 
 const PLACEHOLDER_COPY: Record<string, string> = {
-  Monitor: "Halaman monitor tugas akhir akan menampilkan ringkasan progres dan statistik.",
+  "Kelola Topik": "Kelola daftar topik tugas akhir untuk mengelompokkan template milestone.",
   "Kelola Milestone": "Kelola daftar milestone tugas akhir, termasuk pembuatan dan pembaruan jadwal.",
   "Kelola Rubrik Seminar": "Atur rubrik penilaian untuk seminar tugas akhir di sini.",
   "Kelola Rubrik Sidang": "Atur rubrik penilaian untuk sidang tugas akhir di sini.",
@@ -37,6 +38,10 @@ export default function KelolaTugasAkhirPage() {
   }, [activeTab.label, breadcrumbs, setBreadcrumbs, setTitle]);
 
   const renderContent = () => {
+    if (activeTab.label === "Kelola Topik") {
+      return <TopicManagementPanel />;
+    }
+
     if (activeTab.label === "Kelola Milestone") {
       return <TemplateManagementPanel />;
     }

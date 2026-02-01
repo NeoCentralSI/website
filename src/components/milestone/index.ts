@@ -10,6 +10,8 @@ export { DeleteMilestoneDialog } from "./DeleteMilestoneDialog";
 
 // Student components
 export { SeminarReadinessStatusCard } from "./student/SeminarReadinessStatusCard";
+export { DefenceRequestCard } from "./student/DefenceRequestCard";
 
 // Lecturer components
 export { SeminarReadinessCard } from "./lecturer/SeminarReadinessCard";
+export { DefenceReadinessCard } from "./lecturer/DefenceReadinessCard";

@@ -4,6 +4,7 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import {
   MonitoringSummaryCards,
   StatusDistributionCard,
+  RatingDistributionCard,
   AtRiskStudentsCard,
   ReadyForSeminarCard,
   ThesesTable,
@@ -80,7 +81,7 @@ export default function MonitoringDashboard() {
         <div className="flex items-center gap-3">
           <Calendar className="h-5 w-5 text-muted-foreground" />
           <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-50">
               <SelectValue placeholder="Pilih Tahun Ajaran" />
             </SelectTrigger>
             <SelectContent>
@@ -104,10 +105,14 @@ export default function MonitoringDashboard() {
       {/* Summary Cards */}
       <MonitoringSummaryCards summary={data?.summary} isLoading={isLoadingAny} />
 
-      {/* Status Distribution + Quick Lists */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Status Distribution + Rating Distribution + Quick Lists */}
+      <div className="grid gap-6 lg:grid-cols-4">
         <StatusDistributionCard
           statusDistribution={data?.statusDistribution}
+          isLoading={isLoadingAny}
+        />
+        <RatingDistributionCard
+          ratingDistribution={data?.ratingDistribution}
           isLoading={isLoadingAny}
         />
         <AtRiskStudentsCard

@@ -65,9 +65,6 @@ export interface Milestone {
   updatedAt: string;
   // Included relations
   guidances?: MilestoneGuidance[];
-  _count?: {
-    activityLogs: number;
-  };
 }
 
 // Milestone with detail (includes thesis info)
@@ -84,7 +81,6 @@ export interface MilestoneDetail extends Milestone {
       };
     };
   };
-  activityLogs?: MilestoneLog[];
 }
 
 // Milestone Guidance (simplified)
@@ -99,24 +95,6 @@ export interface MilestoneGuidance {
       fullName: string;
       email: string;
     };
-  };
-}
-
-// Milestone Log
-export interface MilestoneLog {
-  id: string;
-  milestoneId: string;
-  action: string;
-  previousStatus?: MilestoneStatus | null;
-  newStatus?: MilestoneStatus | null;
-  previousProgress?: number | null;
-  newProgress?: number | null;
-  notes?: string | null;
-  performedBy: string;
-  createdAt: string;
-  milestone?: {
-    id: string;
-    title: string;
   };
 }
 
@@ -215,11 +193,6 @@ export interface TopicsResponse {
 export interface TemplateTopicsResponse {
   success: boolean;
   data: TemplateTopic[];
-}
-
-export interface LogsResponse {
-  success: boolean;
-  data: MilestoneLog[];
 }
 
 export interface ProgressResponse {
@@ -461,4 +434,125 @@ export interface StudentsReadyForSeminarResponse {
   success: boolean;
   data: StudentReadyForSeminar[];
   count: number;
+}
+
+// ============================================
+// Defence Readiness Approval Types
+// ============================================
+
+export interface DefenceReadinessSupervisor {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  hasApproved: boolean | null;
+}
+
+export interface DefenceReadinessStatus {
+  thesisId: string;
+  thesisTitle: string;
+  student: {
+    id: string;
+    userId: string;
+    name: string;
+    nim: string;
+    email: string;
+  };
+  thesisStatus: {
+    id: string;
+    name: string;
+    isEligible: boolean;
+  };
+  finalDocument: {
+    id: string;
+    fileName: string;
+    filePath: string;
+    uploadedAt: string;
+  } | null;
+  defenceReadiness: {
+    hasRequestedDefence: boolean;
+    requestedAt: string | null;
+    approvedBySupervisor1: boolean;
+    approvedBySupervisor2: boolean;
+    isFullyApproved: boolean;
+    approvedAt: string | null;
+    notes: string | null;
+  };
+  supervisors: DefenceReadinessSupervisor[];
+  currentUserRole: string | null;
+  currentUserHasApproved: boolean | null;
+  canRegisterDefence: boolean;
+}
+
+export interface DefenceReadinessApprovalResult {
+  thesisId: string;
+  thesisTitle: string;
+  approvedBySupervisor1: boolean;
+  approvedBySupervisor2: boolean;
+  isFullyApproved: boolean;
+  approvedAt: string | null;
+  notes: string | null;
+}
+
+export interface StudentReadyForDefence {
+  thesisId: string;
+  thesisTitle: string;
+  student: {
+    name: string;
+    nim: string;
+    email: string;
+  };
+  supervisors: Array<{
+    name: string;
+    role: string;
+  }>;
+  finalDocument: {
+    fileName: string;
+    filePath: string;
+  } | null;
+  approvedAt: string;
+  notes: string | null;
+}
+
+export interface DefenceReadinessNotesDto {
+  notes?: string | null;
+}
+
+export interface RequestDefenceDto {
+  documentId: string;
+}
+
+export interface RequestDefenceResult {
+  thesisId: string;
+  thesisTitle: string;
+  finalDocument: {
+    id: string;
+    fileName: string;
+    filePath: string;
+  };
+  requestedAt: string;
+}
+
+// Defence readiness responses
+export interface DefenceReadinessStatusResponse {
+  success: boolean;
+  data: DefenceReadinessStatus;
+}
+
+export interface DefenceReadinessApprovalResponse {
+  success: boolean;
+  message: string;
+  data: DefenceReadinessApprovalResult;
+}
+
+export interface StudentsReadyForDefenceResponse {
+  success: boolean;
+  data: StudentReadyForDefence[];
+  count: number;
+}
+
+export interface RequestDefenceResponse {
+  success: boolean;
+  message: string;
+  data: RequestDefenceResult;
 }

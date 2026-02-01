@@ -45,6 +45,7 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarReadinessCard";
+import { DefenceReadinessCard } from "@/components/milestone/lecturer/DefenceReadinessCard";
 
 const STATUS_LABELS: Record<string, string> = {
   not_started: "Belum Dimulai",
@@ -251,6 +252,15 @@ export default function LecturerMyStudentDetailPage() {
       {/* Seminar Readiness Card - tampilkan jika milestone 100% */}
       {progressPercentage === 100 && thesisId && (
         <SeminarReadinessCard
+          thesisId={thesisId}
+          studentName={detailData.student.fullName}
+          thesisTitle={detailData.title}
+        />
+      )}
+
+      {/* Defence Readiness Card - tampilkan berdasarkan status thesis */}
+      {thesisId && (
+        <DefenceReadinessCard
           thesisId={thesisId}
           studentName={detailData.student.fullName}
           thesisTitle={detailData.title}
