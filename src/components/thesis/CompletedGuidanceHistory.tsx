@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/spinner";
+import EmptyState from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -69,8 +70,12 @@ export default function CompletedGuidanceHistory() {
   if (error) {
     return (
       <Card className="mt-4">
-        <CardContent className="p-6 text-center text-muted-foreground">
-          Gagal memuat riwayat bimbingan
+        <CardContent className="p-4">
+          <EmptyState
+            title="Gagal Memuat Data"
+            description="Gagal memuat riwayat bimbingan"
+            size="sm"
+          />
         </CardContent>
       </Card>
     );
@@ -79,12 +84,12 @@ export default function CompletedGuidanceHistory() {
   if (guidances.length === 0) {
     return (
       <Card className="mt-4">
-        <CardContent className="p-8 text-center">
-          <History className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-          <h3 className="font-medium text-lg mb-1">Belum Ada Riwayat</h3>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-            Bimbingan yang sudah selesai akan muncul di sini sebagai dokumentasi
-          </p>
+        <CardContent className="p-4">
+          <EmptyState
+            title="Belum Ada Riwayat"
+            description="Bimbingan yang sudah selesai akan muncul di sini sebagai dokumentasi"
+            size="sm"
+          />
         </CardContent>
       </Card>
     );
@@ -162,7 +167,7 @@ export default function CompletedGuidanceHistory() {
                       <span className="text-muted-foreground hidden sm:inline">•</span>
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Target className="h-3.5 w-3.5" />
-                        <span className="truncate max-w-[150px]">{guidance.milestoneName}</span>
+                        <span className="truncate max-w-37.5">{guidance.milestoneName}</span>
                       </div>
                     </>
                   )}

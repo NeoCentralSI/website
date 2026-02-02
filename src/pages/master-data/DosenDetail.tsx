@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useAuth } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared/useRole';
 import { getLecturerDetailAPI } from '@/services/admin.service';
 import { useQuery } from '@tanstack/react-query';
 import { toTitleCaseName, formatRoleName, formatDateId } from '@/lib/text';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import EmptyState from '@/components/ui/empty-state';
 import { 
   ArrowLeft, 
   User, 
@@ -28,7 +29,7 @@ import {
 
 export default function DosenDetail() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { isAdmin } = useRole();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { id } = useParams<{ id: string }>();
 
@@ -44,10 +45,10 @@ export default function DosenDetail() {
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   useEffect(() => {
-    if (!user?.roles.some((r) => r.name === 'Admin')) {
+    if (!isAdmin()) {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [isAdmin, navigate]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['lecturer-detail', id],
@@ -77,7 +78,7 @@ export default function DosenDetail() {
 
   if (isError || !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
+      <div className="flex flex-col items-center justify-center min-h-100">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <h2 className="text-xl font-semibold mb-2">Terjadi Kesalahan</h2>
         <p className="text-muted-foreground mb-4">Gagal memuat data dosen. Silakan coba lagi.</p>
@@ -272,10 +273,11 @@ export default function DosenDetail() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center">
-                  <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">Tidak ada mahasiswa bimbingan aktif</p>
-                </div>
+                <EmptyState 
+                  size="sm" 
+                  title="Tidak Ada Bimbingan" 
+                  description="Tidak ada mahasiswa bimbingan aktif" 
+                />
               )}
             </CardContent>
           </Card>
@@ -310,10 +312,11 @@ export default function DosenDetail() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center">
-                  <Briefcase className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">Tidak menjadi penguji skripsi manapun</p>
-                </div>
+                <EmptyState 
+                  size="sm" 
+                  title="Tidak Ada Penguji" 
+                  description="Tidak menjadi penguji skripsi manapun" 
+                />
               )}
             </CardContent>
           </Card>
@@ -346,10 +349,11 @@ export default function DosenDetail() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center">
-                  <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">Belum ada riwayat bimbingan</p>
-                </div>
+                <EmptyState 
+                  size="sm" 
+                  title="Belum Ada Riwayat" 
+                  description="Belum ada riwayat bimbingan" 
+                />
               )}
             </CardContent>
           </Card>

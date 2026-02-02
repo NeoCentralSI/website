@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { Spinner } from "@/components/ui/spinner";
+import EmptyState from "@/components/ui/empty-state";
 import type { GuidanceItem } from "@/services/studentGuidance.service";
 import {
   getStudentGuidanceDetail,
@@ -104,7 +105,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Detail Bimbingan</DialogTitle>
         </DialogHeader>
@@ -218,7 +219,11 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
             </div>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">Data tidak ditemukan</div>
+          <EmptyState 
+            size="sm" 
+            title="Data Tidak Ditemukan" 
+            description="Data bimbingan tidak ditemukan" 
+          />
         )}
       </DialogContent>
     </Dialog>

@@ -1,21 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useAuth } from '@/hooks/shared';
-import { getStudentsAPI, type Student } from '@/services/admin.service';
+import { useRole } from '@/hooks/shared/useRole';
+import { getStudentsAPI, triggerSiaSyncAPI, type Student } from '@/services/admin.service';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Eye } from 'lucide-react';
+import { Eye, RefreshCw } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
-import { useQuery } from '@tanstack/react-query';
-import { Loading } from '@/components/ui/spinner';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { isAdmin } = useRole();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+  const queryClient = useQueryClient();
   
   // Local UI state only
   const [page, setPage] = useState(1);
@@ -34,10 +36,10 @@ export default function Mahasiswa() {
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   useEffect(() => {
-    if (!user?.roles.some((r) => r.name === 'Admin')) {
+    if (!isAdmin()) {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [isAdmin, navigate]);
 
   // Use TanStack Query for server state management
   const { data, isLoading, error } = useQuery({
@@ -45,6 +47,17 @@ export default function Mahasiswa() {
     queryFn: () => getStudentsAPI({ page, pageSize, search: searchValue }),
     placeholderData: (previousData) => previousData, // Keep previous data while fetching
     staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: triggerSiaSyncAPI,
+    onSuccess: () => {
+      toast.success('Sync SIA berhasil dijalankan');
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: (err) => {
+      toast.error((err as Error).message || 'Sync SIA gagal');
+    },
   });
 
   // Show error toast when query fails
@@ -114,38 +127,61 @@ export default function Mahasiswa() {
   // Extract data from query result
   const students = data?.students || [];
   const total = data?.meta?.total || 0;
-
-  // Full blank loading on browser reload (no cached data)
-  if (isLoading && students.length === 0) {
-    return (
-      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
-        <Loading size="lg" text="Memuat data mahasiswa..." />
-      </div>
-    );
-  }
+  const isTableLoading = isLoading || syncMutation.isPending;
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-4">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Data Mahasiswa</h1>
           <p className="text-gray-500">Kelola data mahasiswa sistem</p>
         </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">Sinkronkan data mahasiswa dari SIA</span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => syncMutation.mutate()}
+                  disabled={syncMutation.isPending}
+                  aria-label="Sinkronisasi data SIA"
+                >
+                  <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{syncMutation.isPending ? 'Menyinkronkan...' : 'Sinkronkan data SIA'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
 
-      <CustomTable
-        columns={columns as any}
-        data={students}
-        loading={isLoading}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-        searchValue={searchValue}
-        onSearchChange={setSearchValue}
-        enableColumnFilters
-      />
+      <div className="relative">
+        {isTableLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-md">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <Spinner className="h-5 w-5" />
+              <span>Menyinkronkan data mahasiswa...</span>
+            </div>
+          </div>
+        )}
+        <CustomTable
+          columns={columns as any}
+          data={students}
+          loading={isLoading}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+          enableColumnFilters
+        />
+      </div>
     </div>
   );
 }

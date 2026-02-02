@@ -63,7 +63,6 @@ export default function Dashboard() {
     // Fallback: Open Outlook Calendar to the event date and time
     const eventDate = new Date(event.startDate);
     const dateString = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
-    const timeString = eventDate.toISOString(); // Full ISO string for better navigation
     
     console.log('[Dashboard] Using fallback calendar view for date:', dateString);
     
@@ -127,7 +126,7 @@ export default function Dashboard() {
 
       {/* Event Detail Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
             <DialogTitle>{selectedEvent?.title}</DialogTitle>
             <DialogDescription>
@@ -211,9 +210,9 @@ export default function Dashboard() {
                         <div key={idx} className="flex items-center justify-between text-sm">
                           <span>{participant.name}</span>
                           <Badge variant="secondary" className="text-xs">
-                            {participant.role === 'student' && 'Mahasiswa'}
-                            {participant.role === 'lecturer' && 'Dosen'}
-                            {participant.role === 'admin' && 'Admin'}
+                            {participant.role === 'student' ? 'Mahasiswa' 
+                              : participant.role === 'lecturer' ? 'Dosen'
+                              : 'Admin'}
                           </Badge>
                         </div>
                       ))}

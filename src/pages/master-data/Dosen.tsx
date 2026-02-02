@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useAuth } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared/useRole';
 import { getLecturersAPI, type Lecturer } from '@/services/admin.service';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
@@ -10,11 +10,10 @@ import { toast } from 'sonner';
 import { Eye } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useQuery } from '@tanstack/react-query';
-import { Loading } from '@/components/ui/spinner';
 
 export default function Dosen() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { isAdmin } = useRole();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   
   // Local UI state only
@@ -34,10 +33,10 @@ export default function Dosen() {
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   useEffect(() => {
-    if (!user?.roles.some((r) => r.name === 'Admin')) {
+    if (!isAdmin()) {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [isAdmin, navigate]);
 
   // Use TanStack Query for server state management
   const { data, isLoading, error } = useQuery({
@@ -127,15 +126,6 @@ export default function Dosen() {
   // Extract data from query result
   const lecturers = data?.lecturers || [];
   const total = data?.meta?.total || 0;
-
-  // Full blank loading on browser reload (no cached data)
-  if (isLoading && lecturers.length === 0) {
-    return (
-      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
-        <Loading size="lg" text="Memuat data dosen..." />
-      </div>
-    );
-  }
 
   return (
     <div className="p-6">

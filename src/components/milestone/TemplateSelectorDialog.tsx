@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import EmptyState from "@/components/ui/empty-state";
 import { Loader2, FileText, CheckCircle2, ChevronLeft, AlertTriangle } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { MilestoneTemplate } from "@/types/milestone.types";
@@ -123,7 +124,7 @@ export function TemplateSelectorDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -147,9 +148,11 @@ export function TemplateSelectorDialog({
             <ScrollArea className="max-h-[50vh] pr-4">
               <div className="space-y-2">
                 {topics.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Tidak ada topik tersedia
-                  </div>
+                  <EmptyState 
+                    size="sm" 
+                    title="Tidak Ada Topik" 
+                    description="Tidak ada topik tersedia" 
+                  />
                 ) : (
                   topics.map((topic) => {
                     const count = templates.filter(
@@ -188,9 +191,11 @@ export function TemplateSelectorDialog({
               </Button>
 
               {topicTemplates.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Tidak ada template untuk topik ini
-                </div>
+                <EmptyState 
+                  size="sm" 
+                  title="Tidak Ada Template" 
+                  description="Tidak ada template untuk topik ini" 
+                />
               ) : (
                 <ScrollArea className="max-h-[45vh] pr-4">
                   <div className="space-y-3">

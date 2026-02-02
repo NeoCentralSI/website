@@ -1,15 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Trash2, Search, AlertTriangle, GraduationCap } from "lucide-react";
+import { Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,19 +13,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Spinner, Loading } from "@/components/ui/spinner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Spinner } from "@/components/ui/spinner";
+import { CustomTable, type Column } from "@/components/layout/CustomTable";
 import { toTitleCaseName, formatRoleName } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
 import { apiRequest } from "@/services/auth.service";
@@ -101,16 +86,16 @@ async function deleteThesis(id: string, reason: string): Promise<void> {
 export function ThesisManagementPanel() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [thesisToDelete, setThesisToDelete] = useState<ThesisItem | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
 
   // Query thesis list
   const thesisQuery = useQuery({
-    queryKey: ["admin-thesis-list", page, search],
-    queryFn: () => getThesisList({ page, pageSize: 10, search }),
+    queryKey: ["admin-thesis-list", page, pageSize, search],
+    queryFn: () => getThesisList({ page, pageSize, search }),
   });
 
   // Delete mutation
@@ -128,17 +113,6 @@ export function ThesisManagementPanel() {
     },
   });
 
-  const handleSearch = () => {
-    setSearch(searchInput);
-    setPage(1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
   const openDeleteDialog = (thesis: ThesisItem) => {
     setThesisToDelete(thesis);
     setDeleteReason("");
@@ -155,141 +129,97 @@ export function ThesisManagementPanel() {
   };
 
   const thesisList = thesisQuery.data?.thesis || [];
-  const totalPages = thesisQuery.data?.totalPages || 1;
+
+  // Define columns for CustomTable
+  const columns: Column<ThesisItem>[] = useMemo(() => [
+    {
+      key: 'mahasiswa',
+      header: 'Mahasiswa',
+      width: 200,
+      render: (thesis) => (
+        <div>
+          <p className="font-medium">{toTitleCaseName(thesis.student.fullName)}</p>
+          <p className="text-sm text-muted-foreground">{thesis.student.nim}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'judul',
+      header: 'Judul',
+      render: (thesis) => (
+        <div>
+          <p className="line-clamp-2">
+            {thesis.title || <span className="text-muted-foreground italic">Belum ada judul</span>}
+          </p>
+          {thesis.topic && (
+            <Badge variant="outline" className="mt-1">{thesis.topic}</Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: 120,
+      render: (thesis) => (
+        <Badge variant="secondary">{thesis.status || "Baru"}</Badge>
+      ),
+    },
+    {
+      key: 'pembimbing',
+      header: 'Pembimbing',
+      width: 200,
+      render: (thesis) => (
+        <div className="space-y-1">
+          {thesis.supervisors.length > 0 ? (
+            thesis.supervisors.map((sup, idx) => (
+              <div key={idx} className="text-sm">
+                <span className="font-medium">{toTitleCaseName(sup.name)}</span>
+                <span className="text-muted-foreground text-xs ml-1">({formatRoleName(sup.role)})</span>
+              </div>
+            ))
+          ) : (
+            <span className="text-muted-foreground text-sm italic">Belum ada</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'aksi',
+      header: 'Aksi',
+      width: 80,
+      className: 'text-center',
+      render: (thesis) => (
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => openDeleteDialog(thesis)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ], []);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5" />
-          Kelola Data Tugas Akhir
-        </CardTitle>
-        <CardDescription>
-          Kelola data tugas akhir mahasiswa. Hapus data TA untuk kasus pergantian topik/pembimbing.
-          <br />
-          <span className="text-destructive font-medium">
-            ⚠️ Penghapusan bersifat permanen dan tidak dapat dibatalkan.
-          </span>
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Search */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Cari nama mahasiswa, NIM, atau judul..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="pl-9"
-            />
-          </div>
-          <Button onClick={handleSearch}>Cari</Button>
-        </div>
-
-        {/* Table */}
-        {thesisQuery.isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <Loading text="Memuat data..." />
-          </div>
-        ) : thesisList.length === 0 ? (
-          <div className="flex h-40 flex-col items-center justify-center text-muted-foreground">
-            <GraduationCap className="h-10 w-10 mb-2 opacity-50" />
-            <p>Tidak ada data tugas akhir ditemukan</p>
-          </div>
-        ) : (
-          <>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[250px]">Mahasiswa</TableHead>
-                    <TableHead>Judul</TableHead>
-                    <TableHead className="w-[150px]">Status</TableHead>
-                    <TableHead className="w-[200px]">Pembimbing</TableHead>
-                    <TableHead className="w-[100px] text-center">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {thesisList.map((thesis) => (
-                    <TableRow key={thesis.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{toTitleCaseName(thesis.student.fullName)}</p>
-                          <p className="text-sm text-muted-foreground">{thesis.student.nim}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="line-clamp-2">{thesis.title || <span className="text-muted-foreground italic">Belum ada judul</span>}</p>
-                          {thesis.topic && (
-                            <Badge variant="outline" className="mt-1">{thesis.topic}</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{thesis.status || "Baru"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {thesis.supervisors.length > 0 ? (
-                            thesis.supervisors.map((sup, idx) => (
-                              <div key={idx} className="text-sm">
-                                <span className="font-medium">{toTitleCaseName(sup.name)}</span>
-                                <span className="text-muted-foreground text-xs ml-1">({formatRoleName(sup.role)})</span>
-                              </div>
-                            ))
-                          ) : (
-                            <span className="text-muted-foreground text-sm italic">Belum ada</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => openDeleteDialog(thesis)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Menampilkan {thesisList.length} dari {thesisQuery.data?.total || 0} data
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Sebelumnya
-                </Button>
-                <span className="flex items-center px-3 text-sm">
-                  {page} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Selanjutnya
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-      </CardContent>
+    <div className="space-y-4">
+      <CustomTable
+        columns={columns}
+        data={thesisList}
+        loading={thesisQuery.isLoading}
+        total={thesisQuery.data?.total || 0}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        searchValue={search}
+        onSearchChange={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        emptyText="Tidak ada data tugas akhir ditemukan"
+        rowKey={(row) => row.id}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -322,7 +252,7 @@ export function ThesisManagementPanel() {
                     placeholder="Contoh: Pergantian topik dan pembimbing atas persetujuan Kadep"
                     value={deleteReason}
                     onChange={(e) => setDeleteReason(e.target.value)}
-                    className="min-h-[80px]"
+                    className="min-h-20"
                   />
                 </div>
               </div>
@@ -353,6 +283,6 @@ export function ThesisManagementPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 }

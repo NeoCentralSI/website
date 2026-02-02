@@ -9,34 +9,40 @@ import MicrosoftCallback from './pages/auth/MicrosoftCallback'
 import ResetPassword from './pages/ResetPassword'
 import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
-import BimbinganEntry from './pages/tugas-akhir/BimbinganEntry'
-import StudentGuidancePage from './pages/tugas-akhir/student/StudentGuidance'
-import StudentGuidanceSessionPage from './pages/tugas-akhir/student/GuidanceSession'
-import GuidanceHistoryPage from './pages/tugas-akhir/student/History'
-import SupervisorsPage from './pages/tugas-akhir/student/Supervisors'
-import LecturerRequestsPage from './pages/tugas-akhir/lecturer/Requests'
-import LecturerScheduledPage from './pages/tugas-akhir/lecturer/Scheduled'
-import LecturerGuidanceSessionPage from './pages/tugas-akhir/lecturer/GuidanceSession'
-import LecturerMyStudentsPage from './pages/tugas-akhir/lecturer/MyStudents'
-import LecturerMyStudentDetailPage from './pages/tugas-akhir/lecturer/MyStudentDetail'
-import LecturerHistoryPage from './pages/tugas-akhir/lecturer/History'
-import StudentMilestonePage from './pages/tugas-akhir/student/Milestone'
-import CompletedHistoryPage from './pages/tugas-akhir/student/CompletedHistory'
-import NotFoundPage from './pages/NotFound'
-import UserManagementPage from './pages/admin/master-data/UserManagement'
-import AcademicYearPage from './pages/admin/master-data/AcademicYear'
-import MahasiswaPage from './pages/admin/master-data/Mahasiswa'
-import MahasiswaDetailPage from './pages/admin/master-data/MahasiswaDetail'
-import DosenPage from './pages/admin/master-data/Dosen'
-import DosenDetailPage from './pages/admin/master-data/DosenDetail'
-import KelolaTugasAkhirPage from './pages/tugas-akhir/secretary/TugasAkhir'
+// Tugas Akhir - Bimbingan Module
+import BimbinganEntry from './pages/tugas-akhir/bimbingan/BimbinganEntry'
+import StudentGuidancePage from './pages/tugas-akhir/bimbingan/student/StudentGuidance'
+import StudentGuidanceSessionPage from './pages/tugas-akhir/bimbingan/student/GuidanceSession'
+import GuidanceHistoryPage from './pages/tugas-akhir/bimbingan/student/History'
+import SupervisorsPage from './pages/tugas-akhir/bimbingan/student/Supervisors'
+import StudentMilestonePage from './pages/tugas-akhir/bimbingan/student/Milestone'
+import CompletedHistoryPage from './pages/tugas-akhir/bimbingan/student/CompletedHistory'
+import LecturerRequestsPage from './pages/tugas-akhir/bimbingan/lecturer/Requests'
+import LecturerScheduledPage from './pages/tugas-akhir/bimbingan/lecturer/Scheduled'
+import LecturerGuidanceSessionPage from './pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'
+import LecturerMyStudentsPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudents'
+import LecturerMyStudentDetailPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'
+import LecturerHistoryPage from './pages/tugas-akhir/bimbingan/lecturer/History'
+import SecretaryKelolaTugasAkhirPage from './pages/tugas-akhir/bimbingan/secretary/TugasAkhir'
+// Tugas Akhir - Monitoring Module
+import MonitoringDashboard from './pages/tugas-akhir/monitoring/MonitoringDashboard'
+import StudentProgressDetail from './pages/tugas-akhir/monitoring/StudentProgressDetail'
+// Master Data
+import UserManagementPage from './pages/master-data/UserManagement'
+import AcademicYearPage from './pages/master-data/AcademicYear'
+import MahasiswaPage from './pages/master-data/Mahasiswa'
+import MahasiswaDetailPage from './pages/master-data/MahasiswaDetail'
+import DosenPage from './pages/master-data/Dosen'
+import DosenDetailPage from './pages/master-data/DosenDetail'
+// Kelola
 import KelolaTugasAkhirKadepPage from './pages/kelola/kadep/KelolaTugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
-import MonitoringDashboard from './pages/monitoring/MonitoringDashboard'
-import StudentProgressDetail from './pages/monitoring/StudentProgressDetail'
+// Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
+// Others
+import NotFoundPage from './pages/NotFound'
 import { getAuthTokens } from './services/auth.service'
 import { Spinner } from './components/ui/spinner'
 
@@ -138,11 +144,11 @@ function App() {
               <Route path="/kelola" element={<Placeholder title="main menu Kelola" />} />
               <Route path="/kelola/kerja-praktik" element={<Placeholder title="Kelola - Kerja Praktek" />} />
               <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
-              <Route path="/kelola/tugas-akhir/topik" element={<KelolaTugasAkhirPage />} />
-              <Route path="/kelola/tugas-akhir/monitor" element={<KelolaTugasAkhirPage />} />
-              <Route path="/kelola/tugas-akhir/milestone" element={<KelolaTugasAkhirPage />} />
-              <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<KelolaTugasAkhirPage />} />
-              <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<KelolaTugasAkhirPage />} />
+              <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
+              <Route path="/kelola/tugas-akhir/monitor" element={<SecretaryKelolaTugasAkhirPage />} />
+              <Route path="/kelola/tugas-akhir/milestone" element={<SecretaryKelolaTugasAkhirPage />} />
+              <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
+              <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
               <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
               
               {/* Kelola - Kadep */}

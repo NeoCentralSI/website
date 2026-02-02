@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2, BookOpen, FileText } from "lucide-react";
 import * as topicService from "@/services/topic.service";
+import EmptyState from "@/components/ui/empty-state";
 import type { Topic, CreateTopicDto, UpdateTopicDto } from "@/types/topic.types";
 import { Button } from "@/components/ui/button";
 import {
@@ -265,11 +266,13 @@ export function TopicManagementPanel() {
           <Separator />
 
           {filteredTopics.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
-              {search.trim()
+            <EmptyState
+              title={search.trim() ? "Tidak Ditemukan" : "Belum Ada Topik"}
+              description={search.trim()
                 ? "Tidak ada topik yang cocok dengan pencarian."
-                : "Belum ada topik. Klik 'Tambah Topik' untuk membuat topik baru."}
-            </div>
+                : "Klik 'Tambah Topik' untuk membuat topik baru."}
+              size="sm"
+            />
           ) : (
             <div className="rounded-md border">
               <Table>

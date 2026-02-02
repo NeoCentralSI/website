@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StatusDistribution } from "@/services/monitoring.service";
-import Lottie from "lottie-react";
-import emptyAnimation from "@/assets/lottie/empty.json";
+import EmptyState from "@/components/ui/empty-state";
 
 interface StatusDistributionCardProps {
   statusDistribution: StatusDistribution[] | undefined;
@@ -63,14 +62,11 @@ export function StatusDistributionCard({ statusDistribution, isLoading }: Status
       </CardHeader>
       <CardContent className="space-y-4">
         {sortedStatuses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6">
-            <Lottie 
-              animationData={emptyAnimation} 
-              loop 
-              className="w-24 h-24 opacity-70" 
-            />
-            <p className="text-sm text-muted-foreground mt-2">Tidak ada data</p>
-          </div>
+          <EmptyState 
+            size="sm" 
+            title="Tidak Ada Data" 
+            description="Belum ada data status" 
+          />
         ) : (
           sortedStatuses.map((status) => {
             const percentage = total > 0 ? Math.round((status.count / total) * 100) : 0;

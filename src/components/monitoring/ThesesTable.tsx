@@ -36,7 +36,7 @@ import { sendWarningToStudent, deleteThesisFromMonitoring } from "@/services/mon
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
-import { useAuthStore } from "@/stores/auth.store";
+import { useRole } from "@/hooks/shared/useRole";
 import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
 
 // Status badge color mapping
@@ -92,10 +92,10 @@ interface ThesesTableProps {
 export function ThesesTable({ isSyncing = false, academicYear, initialRating }: ThesesTableProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { isKadep } = useRole();
   
   // Check if user is Kadep (can delete FAILED thesis)
-  const isKadep = user?.roles?.some(role => role.name === 'Ketua Departemen') ?? false;
+  const canDeleteThesis = isKadep();
   
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
@@ -381,7 +381,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
               </TooltipProvider>
             )}
             {/* Delete button for FAILED thesis (Kadep only) */}
-            {isKadep && thesis.rating === 'FAILED' && (
+            {canDeleteThesis && thesis.rating === 'FAILED' && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

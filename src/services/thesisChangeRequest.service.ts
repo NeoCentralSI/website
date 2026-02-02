@@ -16,7 +16,8 @@ export interface ThesisChangeRequestApproval {
 
 export interface ThesisChangeRequest {
   id: string;
-  thesisId: string;
+  studentId: string;
+  thesisId: string | null;
   requestType: 'topic' | 'supervisor' | 'both';
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -26,17 +27,18 @@ export interface ThesisChangeRequest {
   createdAt: string;
   updatedAt: string;
   approvals?: ThesisChangeRequestApproval[];
+  // Direct student relation (persists even after thesis deleted)
+  student?: {
+    user: {
+      id: string;
+      fullName: string;
+      identityNumber: string;
+      email: string;
+    };
+  };
   thesis?: {
     id: string;
     title: string | null;
-    student: {
-      user: {
-        id: string;
-        fullName: string;
-        identityNumber: string;
-        email: string;
-      };
-    };
     thesisTopic?: {
       id: string;
       name: string;

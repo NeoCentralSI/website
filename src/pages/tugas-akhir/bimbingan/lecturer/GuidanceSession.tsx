@@ -3,6 +3,7 @@ import { useParams, useNavigate, useOutletContext, Link } from "react-router-dom
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
+import EmptyState from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -164,8 +165,12 @@ export default function LecturerGuidanceSessionPage() {
           </div>
         </div>
         <Card>
-          <CardContent className="p-6 text-center text-muted-foreground">
-            Data bimbingan tidak ditemukan
+          <CardContent className="p-4">
+            <EmptyState
+              title="Data Tidak Ditemukan"
+              description="Data bimbingan tidak ditemukan"
+              size="sm"
+            />
           </CardContent>
         </Card>
       </div>

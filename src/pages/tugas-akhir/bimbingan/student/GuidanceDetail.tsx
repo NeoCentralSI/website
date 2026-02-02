@@ -3,6 +3,7 @@ import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import EmptyState from '@/components/ui/empty-state';
 import { Spinner } from '@/components/ui/spinner';
 import { useStudentGuidanceDetail } from '@/hooks/guidance';
 import { GuidanceRescheduleDialog } from '@/components/thesis/GuidanceRescheduleDialog';
@@ -75,7 +76,11 @@ export default function GuidanceDetailPage() {
             </div>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">Data tidak ditemukan</div>
+          <EmptyState
+            title="Data Tidak Ditemukan"
+            description="Data bimbingan tidak ditemukan"
+            size="sm"
+          />
         )}
       </Card>
     </div>

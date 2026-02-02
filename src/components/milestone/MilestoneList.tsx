@@ -3,6 +3,7 @@ import { MilestoneCard } from "./MilestoneCard";
 import { MilestoneProgressCard } from "./MilestoneProgressCard";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/spinner";
+import EmptyState from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -337,9 +338,11 @@ export function MilestoneList({
           )}
         </div>
       ) : filteredMilestones.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          Tidak ada milestone yang sesuai dengan filter
-        </div>
+        <EmptyState 
+          size="sm" 
+          title="Tidak Ditemukan" 
+          description="Tidak ada milestone yang sesuai dengan filter" 
+        />
       ) : (
         <div className="relative">
           <div

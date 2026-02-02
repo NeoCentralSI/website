@@ -7,6 +7,7 @@ import type { GuidanceItem } from "@/services/lecturerGuidance.service";
 import { getLecturerGuidanceHistory } from "@/services/lecturerGuidance.service";
 import { toast } from "sonner";
 import { Loading } from "@/components/ui/spinner";
+import EmptyState from "@/components/ui/empty-state";
 
 export default function LecturerHistoryPage() {
   const { studentId } = useParams();
@@ -57,17 +58,24 @@ export default function LecturerHistoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.length === 0 && (
+              {items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center text-sm text-muted-foreground">Tidak ada data</TableCell>
+                  <TableCell colSpan={2}>
+                    <EmptyState 
+                      size="sm" 
+                      title="Tidak Ada Riwayat" 
+                      description="Belum ada riwayat bimbingan" 
+                    />
+                  </TableCell>
                 </TableRow>
+              ) : (
+                items.map((g) => (
+                  <TableRow key={g.id}>
+                    <TableCell>{g.approvedDate ? new Date(g.approvedDate).toLocaleString() : (g.requestedDate ? new Date(g.requestedDate).toLocaleString() : '-')}</TableCell>
+                    <TableCell className="capitalize">{g.status}</TableCell>
+                  </TableRow>
+                ))
               )}
-              {items.map((g) => (
-                <TableRow key={g.id}>
-                  <TableCell>{g.approvedDate ? new Date(g.approvedDate).toLocaleString() : (g.requestedDate ? new Date(g.requestedDate).toLocaleString() : '-')}</TableCell>
-                  <TableCell className="capitalize">{g.status}</TableCell>
-                </TableRow>
-              ))}
             </TableBody>
           </Table>
         </Card>

@@ -1,20 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { SUPERVISOR_ROLES } from '@/lib/roles';
+import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Spinner, Loading } from '@/components/ui/spinner';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Dialog,
   DialogContent,
@@ -32,14 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Search, Check, X, Eye, Clock, CheckCircle, XCircle, AlertTriangle, Users } from 'lucide-react';
+import { Check, X, Eye, Clock, CheckCircle, XCircle, AlertTriangle, Users } from 'lucide-react';
 import {
   getPendingChangeRequests,
   getAllChangeRequests,
@@ -67,6 +53,13 @@ const APPROVAL_STATUS_CONFIG = {
   rejected: { label: 'Tolak', variant: 'destructive' as const, icon: XCircle },
 };
 
+const STATUS_OPTIONS = [
+  { label: 'Semua Status', value: '' },
+  { label: 'Menunggu', value: 'pending' },
+  { label: 'Disetujui', value: 'approved' },
+  { label: 'Ditolak', value: 'rejected' },
+];
+
 type ViewMode = 'pending' | 'all';
 
 export function ChangeRequestManagementPanel() {
@@ -75,7 +68,7 @@ export function ChangeRequestManagementPanel() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const [selectedRequest, setSelectedRequest] = useState<ThesisChangeRequest | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
@@ -85,13 +78,13 @@ export function ChangeRequestManagementPanel() {
   const [rejectNotes, setRejectNotes] = useState('');
 
   const { data: pendingData, isLoading: isLoadingPending } = useQuery({
-    queryKey: ['change-requests-pending', page, search],
+    queryKey: ['change-requests-pending', page, pageSize, search],
     queryFn: () => getPendingChangeRequests({ page, pageSize, search }),
     enabled: viewMode === 'pending',
   });
 
   const { data: allData, isLoading: isLoadingAll } = useQuery({
-    queryKey: ['change-requests-all', page, search, statusFilter],
+    queryKey: ['change-requests-all', page, pageSize, search, statusFilter],
     queryFn: () => getAllChangeRequests({ page, pageSize, search, status: statusFilter }),
     enabled: viewMode === 'all',
   });
@@ -164,7 +157,7 @@ export function ChangeRequestManagementPanel() {
 
   const getSupervisors = (request: ThesisChangeRequest) => {
     return request.thesis?.thesisParticipants
-      ?.filter((p) => p.role?.name?.toLowerCase().includes('pembimbing'))
+      ?.filter((p) => SUPERVISOR_ROLES.includes(p.role?.name as typeof SUPERVISOR_ROLES[number]))
       ?.map((p) => ({
         name: toTitleCaseName(p.lecturer?.user?.fullName || ''),
         role: formatRoleName(p.role?.name || ''),
@@ -187,248 +180,229 @@ export function ChangeRequestManagementPanel() {
     return allApproved;
   };
 
-  if (isLoading && requests.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loading size="lg" text="Memuat data permintaan..." />
-      </div>
-    );
-  }
+  // Define columns for CustomTable
+  const columns: Column<ThesisChangeRequest>[] = useMemo(() => {
+    const baseColumns: Column<ThesisChangeRequest>[] = [
+      {
+        key: 'mahasiswa',
+        header: 'Mahasiswa',
+        width: 180,
+        render: (request) => (
+          <div>
+            <p className="font-medium">
+              {toTitleCaseName(request.student?.user?.fullName || '')}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {request.student?.user?.identityNumber}
+            </p>
+          </div>
+        ),
+      },
+      {
+        key: 'jenisPermintaan',
+        header: 'Jenis Permintaan',
+        width: 160,
+        render: (request) => (
+          <Badge variant="outline">
+            {REQUEST_TYPE_LABELS[request.requestType] || request.requestType}
+          </Badge>
+        ),
+      },
+      {
+        key: 'approvalPembimbing',
+        header: 'Approval Pembimbing',
+        width: 200,
+        render: (request) => {
+          const { allApproved, hasRejected, approvals } = getApprovalStatus(request);
+          if (approvals.length === 0) {
+            return <span className="text-xs text-muted-foreground">-</span>;
+          }
+          return (
+            <div className="flex flex-col gap-1">
+              {approvals.map((approval) => {
+                const approvalConfig = APPROVAL_STATUS_CONFIG[approval.status];
+                const ApprovalIcon = approvalConfig.icon;
+                return (
+                  <div key={approval.id} className="flex items-center gap-1.5">
+                    <ApprovalIcon className={`h-3.5 w-3.5 ${
+                      approval.status === 'approved' ? 'text-green-600' :
+                      approval.status === 'rejected' ? 'text-red-600' :
+                      'text-yellow-600'
+                    }`} />
+                    <span className="text-xs">
+                      {toTitleCaseName(approval.lecturer?.user?.fullName || '')}
+                    </span>
+                  </div>
+                );
+              })}
+              {allApproved && (
+                <Badge variant="default" className="w-fit mt-1 text-[10px]">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Siap Approve Kadep
+                </Badge>
+              )}
+              {hasRejected && (
+                <Badge variant="destructive" className="w-fit mt-1 text-[10px]">
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Ditolak Pembimbing
+                </Badge>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        key: 'alasan',
+        header: 'Alasan',
+        render: (request) => (
+          <p className="line-clamp-2 text-sm">{request.reason}</p>
+        ),
+      },
+      {
+        key: 'tanggal',
+        header: 'Tanggal',
+        width: 120,
+        render: (request) => (
+          <span className="text-xs text-muted-foreground">
+            {formatDateId(request.createdAt)}
+          </span>
+        ),
+      },
+    ];
+
+    // Add status column only in 'all' view mode
+    if (viewMode === 'all') {
+      baseColumns.push({
+        key: 'status',
+        header: 'Status',
+        width: 120,
+        filter: {
+          type: 'select',
+          value: statusFilter,
+          onChange: (v) => {
+            setStatusFilter(v);
+            setPage(1);
+          },
+          options: STATUS_OPTIONS,
+        },
+        render: (request) => {
+          const status = STATUS_CONFIG[request.status];
+          const StatusIcon = status.icon;
+          return (
+            <Badge className={status.color}>
+              <StatusIcon className="h-3 w-3 mr-1" />
+              {status.label}
+            </Badge>
+          );
+        },
+      });
+    }
+
+    // Add actions column
+    baseColumns.push({
+      key: 'aksi',
+      header: 'Aksi',
+      width: 120,
+      className: 'text-right',
+      render: (request) => (
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleViewDetail(request)}
+            title="Lihat Detail"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          {request.status === 'pending' && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleApprove(request)}
+                className={`text-green-600 hover:text-green-700 hover:bg-green-50 ${
+                  !canKadepApprove(request) ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title={canKadepApprove(request) ? "Setujui" : "Menunggu approval pembimbing"}
+                disabled={!canKadepApprove(request)}
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleReject(request)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                title="Tolak"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      ),
+    });
+
+    return baseColumns;
+  }, [viewMode, statusFilter]);
+
+  // View mode toggle actions
+  const tableActions = (
+    <div className="flex gap-2">
+      <Button
+        variant={viewMode === 'pending' ? 'default' : 'outline'}
+        size="sm"
+        onClick={() => {
+          setViewMode('pending');
+          setPage(1);
+          setStatusFilter('');
+        }}
+      >
+        <Clock className="h-4 w-4 mr-1" />
+        Menunggu Review
+      </Button>
+      <Button
+        variant={viewMode === 'all' ? 'default' : 'outline'}
+        size="sm"
+        onClick={() => {
+          setViewMode('all');
+          setPage(1);
+        }}
+      >
+        Semua Riwayat
+      </Button>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'pending' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => {
-              setViewMode('pending');
-              setPage(1);
-            }}
-          >
-            <Clock className="h-4 w-4 mr-1" />
-            Menunggu Review
-          </Button>
-          <Button
-            variant={viewMode === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => {
-              setViewMode('all');
-              setPage(1);
-            }}
-          >
-            Semua Riwayat
-          </Button>
-        </div>
-
-        <div className="flex-1 flex gap-2">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cari nama/NIM..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="pl-9"
-            />
-          </div>
-
-          {viewMode === 'all' && (
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => {
-                setStatusFilter(v);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Semua Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Semua Status</SelectItem>
-                <SelectItem value="pending">Menunggu</SelectItem>
-                <SelectItem value="approved">Disetujui</SelectItem>
-                <SelectItem value="rejected">Ditolak</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-      </div>
-
-      {/* Table */}
-      {requests.length === 0 ? (
-        <div className="rounded-lg border bg-muted/50 p-8 text-center">
-          <p className="text-muted-foreground">
-            {viewMode === 'pending'
-              ? 'Tidak ada permintaan yang menunggu review'
-              : 'Tidak ada data permintaan'}
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-44">Mahasiswa</TableHead>
-                <TableHead className="w-40">Jenis Permintaan</TableHead>
-                <TableHead className="w-48">Approval Pembimbing</TableHead>
-                <TableHead>Alasan</TableHead>
-                <TableHead className="w-28">Tanggal</TableHead>
-                {viewMode === 'all' && <TableHead className="w-28">Status</TableHead>}
-                <TableHead className="w-28 text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requests.map((request) => {
-                const status = STATUS_CONFIG[request.status];
-                const StatusIcon = status.icon;
-                const { allApproved, hasRejected, approvals } = getApprovalStatus(request);
-                return (
-                  <TableRow key={request.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {toTitleCaseName(request.thesis?.student?.user?.fullName || '')}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {request.thesis?.student?.user?.identityNumber}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {REQUEST_TYPE_LABELS[request.requestType] || request.requestType}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {approvals.length > 0 ? (
-                        <div className="flex flex-col gap-1">
-                          {approvals.map((approval) => {
-                            const approvalConfig = APPROVAL_STATUS_CONFIG[approval.status];
-                            const ApprovalIcon = approvalConfig.icon;
-                            return (
-                              <div key={approval.id} className="flex items-center gap-1.5">
-                                <ApprovalIcon className={`h-3.5 w-3.5 ${
-                                  approval.status === 'approved' ? 'text-green-600' :
-                                  approval.status === 'rejected' ? 'text-red-600' :
-                                  'text-yellow-600'
-                                }`} />
-                                <span className="text-xs">
-                                  {toTitleCaseName(approval.lecturer?.user?.fullName || '')}
-                                </span>
-                              </div>
-                            );
-                          })}
-                          {allApproved && (
-                            <Badge variant="default" className="w-fit mt-1 text-[10px]">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Siap Approve Kadep
-                            </Badge>
-                          )}
-                          {hasRejected && (
-                            <Badge variant="destructive" className="w-fit mt-1 text-[10px]">
-                              <XCircle className="h-3 w-3 mr-1" />
-                              Ditolak Pembimbing
-                            </Badge>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <p className="line-clamp-2 text-sm">{request.reason}</p>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {formatDateId(request.createdAt)}
-                    </TableCell>
-                    {viewMode === 'all' && (
-                      <TableCell>
-                        <Badge className={status.color}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {status.label}
-                        </Badge>
-                      </TableCell>
-                    )}
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleViewDetail(request)}
-                          title="Lihat Detail"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {request.status === 'pending' && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleApprove(request)}
-                              className={`text-green-600 hover:text-green-700 hover:bg-green-50 ${
-                                !canKadepApprove(request) ? 'opacity-50 cursor-not-allowed' : ''
-                              }`}
-                              title={canKadepApprove(request) ? "Setujui" : "Menunggu approval pembimbing"}
-                              disabled={!canKadepApprove(request)}
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleReject(request)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              title="Tolak"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Menampilkan {requests.length} dari {pagination.total} permintaan
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              Sebelumnya
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === pagination.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Selanjutnya
-            </Button>
-          </div>
-        </div>
-      )}
+      <CustomTable
+        columns={columns}
+        data={requests}
+        loading={isLoading}
+        total={pagination?.total || 0}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        searchValue={search}
+        onSearchChange={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        enableColumnFilters={viewMode === 'all'}
+        actions={tableActions}
+        emptyText={
+          viewMode === 'pending'
+            ? 'Tidak ada permintaan yang menunggu review'
+            : 'Tidak ada data permintaan'
+        }
+        rowKey={(row) => row.id}
+      />
 
       {/* Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Detail Permintaan Pergantian</DialogTitle>
           </DialogHeader>
@@ -438,10 +412,10 @@ export function ChangeRequestManagementPanel() {
                 <div>
                   <p className="text-muted-foreground">Mahasiswa</p>
                   <p className="font-medium">
-                    {toTitleCaseName(selectedRequest.thesis?.student?.user?.fullName || '')}
+                    {toTitleCaseName(selectedRequest.student?.user?.fullName || '')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {selectedRequest.thesis?.student?.user?.identityNumber}
+                    {selectedRequest.student?.user?.identityNumber}
                   </p>
                 </div>
                 <div>
@@ -595,7 +569,7 @@ export function ChangeRequestManagementPanel() {
                 Anda akan menyetujui permintaan pergantian{' '}
                 <strong>{REQUEST_TYPE_LABELS[selectedRequest?.requestType || '']}</strong> dari{' '}
                 <strong>
-                  {toTitleCaseName(selectedRequest?.thesis?.student?.user?.fullName || '')}
+                  {toTitleCaseName(selectedRequest?.student?.user?.fullName || '')}
                 </strong>.
               </p>
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">
@@ -646,7 +620,7 @@ export function ChangeRequestManagementPanel() {
               <p>
                 Anda akan menolak permintaan pergantian dari{' '}
                 <strong>
-                  {toTitleCaseName(selectedRequest?.thesis?.student?.user?.fullName || '')}
+                  {toTitleCaseName(selectedRequest?.student?.user?.fullName || '')}
                 </strong>.
               </p>
               <div className="space-y-2">

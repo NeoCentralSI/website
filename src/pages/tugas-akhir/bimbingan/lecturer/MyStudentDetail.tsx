@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import EmptyState from "@/components/ui/empty-state";
 import { FileText, CheckCircle2, Clock, AlertTriangle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
@@ -201,16 +202,14 @@ export default function LecturerMyStudentDetailPage() {
 
   if (isError || !detailData) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[400px]">
-             <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-             <h2 className="text-xl font-semibold mb-2">Terjadi Kesalahan</h2>
-             <p className="text-muted-foreground mb-4">Gagal memuat data mahasiswa. Silakan coba lagi.</p>
-             <Button asChild variant="outline">
-                <Link to="/tugas-akhir/bimbingan/lecturer/my-students">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Kembali
-                </Link>
-             </Button>
+        <div className="flex flex-col items-center justify-center min-h-100">
+             <EmptyState 
+               title="Terjadi Kesalahan" 
+               description="Gagal memuat data mahasiswa. Silakan coba lagi."
+               showButton
+               buttonText="Kembali"
+               onButtonClick={() => window.location.href = '/tugas-akhir/bimbingan/lecturer/my-students'}
+             />
         </div>
     );
   }
@@ -377,9 +376,11 @@ export default function LecturerMyStudentDetailPage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="text-sm text-muted-foreground italic text-center p-4 border border-dashed rounded-md">
-                                Belum ada dokumen proposal
-                            </div>
+                            <EmptyState 
+                              size="sm" 
+                              title="Belum Ada Proposal" 
+                              description="Belum ada dokumen proposal" 
+                            />
                         )}
                     </CardContent>
                 </Card>
@@ -405,9 +406,11 @@ export default function LecturerMyStudentDetailPage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="text-sm text-muted-foreground italic text-center p-4 border border-dashed rounded-md">
-                                Belum ada draft skripsi
-                            </div>
+                            <EmptyState 
+                              size="sm" 
+                              title="Belum Ada Draft" 
+                              description="Belum ada draft skripsi" 
+                            />
                         )}
                     </CardContent>
                 </Card>
@@ -439,7 +442,7 @@ export default function LecturerMyStudentDetailPage() {
                                         </div>
                                     )}
                                     <span className={cn(
-                                        "absolute -left-[37px] top-1 p-1 rounded-full border bg-background z-10",
+                                        "absolute -left-9.25 top-1 p-1 rounded-full border bg-background z-10",
                                         milestone.status === 'completed' ? "border-green-500 text-green-500" : "border-border text-muted-foreground"
                                     )}>
                                          {getStatusIcon(milestone.status)}
@@ -492,8 +495,12 @@ export default function LecturerMyStudentDetailPage() {
                                 </div>
                             ))
                         ) : (
-                            <div className="text-center py-8 text-muted-foreground -ml-3">
-                                Belum ada milestone yang tercatat
+                            <div className="-ml-3">
+                              <EmptyState 
+                                size="sm" 
+                                title="Belum Ada Milestone" 
+                                description="Belum ada milestone yang tercatat" 
+                              />
                             </div>
                         )}
                     </div>
@@ -528,7 +535,7 @@ export default function LecturerMyStudentDetailPage() {
             if (!open) resetMilestoneForm();
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
             <DialogHeader>
                 <DialogTitle>Tambah Milestone untuk Mahasiswa</DialogTitle>
             </DialogHeader>

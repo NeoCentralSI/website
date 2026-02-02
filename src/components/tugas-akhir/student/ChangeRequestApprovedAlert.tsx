@@ -1,6 +1,12 @@
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Home, Mail } from 'lucide-react';
 import { checkApprovedWithDeletedThesis } from '@/services/thesisChangeRequest.service';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Kadep contact info - TODO: fetch from backend if available
+const KADEP_EMAIL = 'kadep.informatika@pnj.ac.id';
 
 interface ChangeRequestApprovedAlertProps {
   className?: string;
@@ -11,33 +17,75 @@ interface ChangeRequestApprovedAlertProps {
  * and thesis data has been deleted. Shows on all guidance tabs.
  */
 export function ChangeRequestApprovedAlert({ className }: ChangeRequestApprovedAlertProps) {
-  return (
-    <div className={`rounded-lg border border-green-200 bg-green-50 p-6 ${className || ''}`}>
-      <div className="flex flex-col items-center text-center space-y-4">
-        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100">
-          <RefreshCw className="h-8 w-8 text-green-600" />
-        </div>
-        
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-green-800">
-            Permintaan Pergantian Disetujui
-          </h3>
-          <p className="text-green-700">
-            Permintaan pergantian topik/pembimbing Anda telah disetujui.
-          </p>
-        </div>
+  const navigate = useNavigate();
 
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 max-w-md">
-          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-          <div className="text-sm text-amber-800 text-left">
-            <p className="font-medium">Langkah Selanjutnya:</p>
-            <p>
-              Data tugas akhir Anda sebelumnya telah dihapus. Silakan daftar kembali 
-              tugas akhir dengan topik/pembimbing baru melalui Departemen.
-            </p>
+  const handleEmailKadep = () => {
+    const subject = encodeURIComponent('Pendaftaran Ulang Tugas Akhir - Pergantian Topik/Pembimbing');
+    const body = encodeURIComponent(
+      `Yth. Ketua Departemen,\n\nSaya ingin mendaftar kembali tugas akhir setelah pengajuan pergantian topik/pembimbing saya disetujui.\n\nTerima kasih.`
+    );
+    window.open(`mailto:${KADEP_EMAIL}?subject=${subject}&body=${body}`, '_blank');
+  };
+
+  return (
+    <div className={`flex items-center justify-center min-h-[calc(100vh-200px)] p-4 ${className || ''}`}>
+      <Card className="max-w-md w-full border-green-200">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <CheckCircle2 className="h-8 w-8 text-green-600" />
           </div>
-        </div>
-      </div>
+          <CardTitle className="text-xl text-green-800">
+            Pergantian Disetujui
+          </CardTitle>
+          <CardDescription className="text-base">
+            Permintaan pergantian topik/pembimbing Anda telah disetujui oleh Ketua Departemen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">
+              Langkah selanjutnya:
+            </p>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5">1.</span>
+                <span>Hubungi Ketua Departemen untuk pendaftaran ulang</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5">2.</span>
+                <span>Daftar tugas akhir dengan topik/pembimbing baru</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5">3.</span>
+                <span>Pastikan memenuhi persyaratan yang diperlukan</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => navigate('/dashboard')}
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Kembali ke Home
+            </Button>
+            <Button
+              variant="default"
+              className="flex-1 bg-orange-500 hover:bg-orange-600"
+              onClick={handleEmailKadep}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Email Kadep
+            </Button>
+          </div>
+
+          <p className="text-xs text-center text-muted-foreground">
+            Silakan hubungi Ketua Departemen untuk proses pendaftaran ulang tugas akhir.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

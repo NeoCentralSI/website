@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/spinner";
 import { getStudentSupervisors } from "@/services/studentGuidance.service";
 import { TabsNav } from "@/components/ui/tabs-nav";
-import { ChangeRequestApprovedAlert, useHasApprovedChangeRequest } from "@/components/tugas-akhir/student/ChangeRequestApprovedAlert";
-import { ThesisDeletedAlert, useHasThesisDeleted } from "@/components/tugas-akhir/student/ThesisDeletedAlert";
 import EmptyState from "@/components/ui/empty-state";
 import { useQuery } from "@tanstack/react-query";
 import { toTitleCaseName, formatRoleName } from "@/lib/text";
@@ -31,14 +29,6 @@ export default function SupervisorsPage() {
   });
 
   const items = Array.isArray(data?.supervisors) ? data.supervisors : [];
-  const thesisId = data?.thesisId ?? '';
-  const hasNoThesis = !thesisId && !isPending;
-  
-  // Check if student has approved change request (thesis deleted via change request)
-  const { hasApprovedRequest } = useHasApprovedChangeRequest();
-  
-  // Check if student's thesis was deleted (e.g., due to FAILED status)
-  const { hasDeletedThesis } = useHasThesisDeleted();
 
   const copyEmail = async (id: string, email: string) => {
     try {
@@ -74,10 +64,6 @@ export default function SupervisorsPage() {
           description="Terjadi kesalahan saat memuat data pembimbing"
           size="sm"
         />
-      ) : hasNoThesis && hasApprovedRequest ? (
-        <ChangeRequestApprovedAlert className="mt-4" />
-      ) : hasNoThesis && hasDeletedThesis ? (
-        <ThesisDeletedAlert className="mt-4" />
       ) : items.length === 0 ? (
         <EmptyState 
           title="Belum Ada Pembimbing"

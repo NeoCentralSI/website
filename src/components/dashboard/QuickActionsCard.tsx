@@ -22,7 +22,7 @@ import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesi
 import { getMilestones, getSeminarReadinessStatus, getDefenceReadinessStatus } from "@/services/milestone.service";
 import { getMyStudents } from "@/services/lecturerGuidance.service";
 import { getKadepQuickActionsStats } from "@/services/admin.service";
-import { useAuthStore } from "@/stores/auth.store";
+import { useRole } from '@/hooks/shared/useRole';
 import { useLottie } from 'lottie-react';
 import completeAnimation from '@/assets/lottie/complete.json';
 
@@ -48,10 +48,10 @@ interface QuickActionsCardProps {
 }
 
 export function QuickActionsCard({ className }: QuickActionsCardProps) {
-  const { user } = useAuthStore();
+  const { isKadep } = useRole();
   
   // Check if user is Kadep
-  const isKadep = user?.roles?.some(role => role.name === 'Ketua Departemen') ?? false;
+  const isKadepUser = isKadep();
 
   // Fetch pending guidance requests
   const { data: pendingRequestsData, isLoading: loadingRequests } = useQuery({
@@ -220,7 +220,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const { data: kadepStatsData, isLoading: loadingKadepStats } = useQuery({
     queryKey: ["kadep-quick-actions-stats"],
     queryFn: () => getKadepQuickActionsStats(),
-    enabled: isKadep,
+    enabled: isKadepUser,
   });
 
   const pendingRequestsCount = pendingRequestsData?.total || 0;
@@ -244,7 +244,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const firstPendingChangeRequestThesisId = pendingChangeRequestsData?.[0]?.thesisId;
 
   // Calculate total pending including Kadep specific items
-  const kadepPending = isKadep ? (failedThesesCount + pendingKadepChangeRequestsCount) : 0;
+  const kadepPending = isKadepUser ? (failedThesesCount + pendingKadepChangeRequestsCount) : 0;
   const totalPending = pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount + pendingChangeRequestsCount + kadepPending;
 
   // Lecturer quick actions (for pembimbing role)
@@ -328,7 +328,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   ];
 
   // Kadep specific quick actions
-  const kadepQuickActions = isKadep ? [
+  const kadepQuickActions = isKadepUser ? [
     {
       id: "failed-theses",
       title: "Thesis Gagal",
@@ -356,7 +356,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   // Combine all quick actions
   const quickActions = [...lecturerQuickActions, ...kadepQuickActions];
 
-  const isLoading = loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence || loadingChangeRequests || (isKadep && loadingKadepStats);
+  const isLoading = loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence || loadingChangeRequests || (isKadepUser && loadingKadepStats);
 
   return (
     <Card className={cn("flex flex-col", className)}>
@@ -383,7 +383,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
             <p className="text-sm">Tidak ada yang perlu di-approve</p>
           </div>
         ) : (
-          <ScrollArea className="h-full max-h-[400px]">
+          <ScrollArea className="h-full max-h-100">
             <div className="space-y-3 px-6 pb-6">
               {quickActions.map((action) => (
                 <Link key={action.id} to={action.link}>

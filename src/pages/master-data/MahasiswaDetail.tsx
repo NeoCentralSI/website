@@ -1,7 +1,7 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useAuth } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared/useRole';
 import { getStudentDetailAPI } from '@/services/admin.service';
 import { useQuery } from '@tanstack/react-query';
 import { toTitleCaseName, formatRoleName, formatDateId } from '@/lib/text';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
+import EmptyState from '@/components/ui/empty-state';
 import { 
   ArrowLeft, 
   User, 
@@ -44,7 +45,7 @@ const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
 
 export default function MahasiswaDetail() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { isAdmin } = useRole();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { id } = useParams<{ id: string }>();
 
@@ -60,10 +61,10 @@ export default function MahasiswaDetail() {
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   useEffect(() => {
-    if (!user?.roles.some((r) => r.name === 'Admin')) {
+    if (!isAdmin()) {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [isAdmin, navigate]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['student-detail', id],
@@ -93,7 +94,7 @@ export default function MahasiswaDetail() {
 
   if (isError || !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
+      <div className="flex flex-col items-center justify-center min-h-100">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <h2 className="text-xl font-semibold mb-2">Terjadi Kesalahan</h2>
         <p className="text-muted-foreground mb-4">Gagal memuat data mahasiswa. Silakan coba lagi.</p>
@@ -372,7 +373,11 @@ export default function MahasiswaDetail() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground italic">Belum ada seminar</p>
+                      <EmptyState 
+                        size="sm" 
+                        title="Belum Ada Seminar" 
+                        description="Belum ada seminar terdaftar" 
+                      />
                     )}
                   </div>
                   <div>
@@ -389,7 +394,11 @@ export default function MahasiswaDetail() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground italic">Belum ada sidang</p>
+                      <EmptyState 
+                        size="sm" 
+                        title="Belum Ada Sidang" 
+                        description="Belum ada sidang terdaftar" 
+                      />
                     )}
                   </div>
                 </div>
@@ -400,10 +409,11 @@ export default function MahasiswaDetail() {
           {/* No Active Thesis */}
           {!activeThesis && (
             <Card>
-              <CardContent className="py-12 text-center">
-                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Tidak Ada Skripsi Aktif</h3>
-                <p className="text-muted-foreground">Mahasiswa ini belum memiliki skripsi yang sedang berjalan.</p>
+              <CardContent className="py-12">
+                <EmptyState 
+                  title="Tidak Ada Skripsi Aktif" 
+                  description="Mahasiswa ini belum memiliki skripsi yang sedang berjalan" 
+                />
               </CardContent>
             </Card>
           )}
