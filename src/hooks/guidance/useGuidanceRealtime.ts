@@ -294,8 +294,17 @@ export function useGuidanceRealtime() {
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });
                   break;
                 }
-                default:
+                default: {
+                  // Fallback: always invalidate notification count for any FCM message
+                  console.warn('[FCM SW] Unknown notification type:', type);
+                  const title = msg?.title || msg?.notification?.title || 'Notifikasi Baru';
+                  const body = msg?.body || msg?.notification?.body || '';
+                  if (title || body) {
+                    toast(title, { description: body, duration: 5000 });
+                  }
+                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
                   break;
+                }
               }
             } catch {}
           };

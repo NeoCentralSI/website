@@ -12,7 +12,7 @@ export const useLecturerRequests = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [studentFilter, setStudentFilter] = useState<string>('');
 
-  const { data, isLoading, refetch } = useQuery<{
+  const { data, isLoading, refetch, isFetching } = useQuery<{
     success: boolean;
     page: number;
     pageSize: number;
@@ -84,6 +84,7 @@ export const useLecturerRequests = () => {
     allRequests: data?.requests ?? [],
     total: data?.total ?? 0,
     isLoading,
+    isFetching,
     page,
     setPage,
     pageSize,
@@ -95,5 +96,6 @@ export const useLecturerRequests = () => {
     studentFilter,
     setStudentFilter,
     invalidate,
+    refetch,
   };
 };

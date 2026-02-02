@@ -8,6 +8,7 @@ import { getScheduledGuidances } from '@/services/lecturerGuidance.service';
 import { getLecturerScheduledColumns } from '@/lib/lecturerScheduledColumns';
 import { toTitleCaseName } from '@/lib/text';
 import { Loading } from '@/components/ui/spinner';
+import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function ScheduledGuidancesPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -28,7 +29,7 @@ export default function ScheduledGuidancesPage() {
     setTitle(undefined);
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['lecturer-scheduled'],
     queryFn: () => getScheduledGuidances({ pageSize: 100 }),
   });
@@ -100,6 +101,7 @@ export default function ScheduledGuidancesPage() {
           columns={columns as any}
           data={paginatedGuidances}
           loading={isLoading}
+          isRefreshing={isFetching && !isLoading}
           total={total}
           page={page}
           pageSize={pageSize}
@@ -110,6 +112,12 @@ export default function ScheduledGuidancesPage() {
           }}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
+          actions={
+            <RefreshButton 
+              onClick={() => refetch()} 
+              isRefreshing={isFetching && !isLoading} 
+            />
+          }
         />
       )}
     </div>

@@ -93,11 +93,12 @@ export function ChangeRequestApprovedAlert({ className }: ChangeRequestApprovedA
 /**
  * Hook to check if student has an approved change request where thesis was deleted
  */
-export function useHasApprovedChangeRequest() {
+export function useHasApprovedChangeRequest(enabled: boolean = true) {
   const { data: hasApprovedRequest = false, isLoading } = useQuery({
     queryKey: ['check-approved-change-request'],
     queryFn: checkApprovedWithDeletedThesis,
     staleTime: 5 * 60 * 1000,
+    enabled,
   });
 
   return { hasApprovedRequest, isLoading };

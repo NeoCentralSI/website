@@ -181,11 +181,12 @@ export function ThesisPendingChangeAlert({ className }: ThesisPendingChangeAlert
 /**
  * Hook to check if student has pending change request
  */
-export function useHasPendingChangeRequest() {
+export function useHasPendingChangeRequest(enabled: boolean = true) {
   const { data, isLoading } = useQuery({
     queryKey: ['my-change-requests'],
     queryFn: getMyChangeRequests,
     staleTime: 5 * 60 * 1000,
+    enabled,
   });
 
   const pendingRequest = data?.find((r) => r.status === 'pending');

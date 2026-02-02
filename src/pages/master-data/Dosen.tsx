@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Eye } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useQuery } from '@tanstack/react-query';
+import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function Dosen() {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ export default function Dosen() {
   }, [isAdmin, navigate]);
 
   // Use TanStack Query for server state management
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ['lecturers', { page, pageSize, search: searchValue }],
     queryFn: () => getLecturersAPI({ page, pageSize, search: searchValue }),
     placeholderData: (previousData) => previousData, // Keep previous data while fetching
@@ -140,6 +141,7 @@ export default function Dosen() {
         columns={columns as any}
         data={lecturers}
         loading={isLoading}
+        isRefreshing={isFetching && !isLoading}
         total={total}
         page={page}
         pageSize={pageSize}
@@ -148,6 +150,12 @@ export default function Dosen() {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         enableColumnFilters
+        actions={
+          <RefreshButton 
+            onClick={() => refetch()} 
+            isRefreshing={isFetching && !isLoading} 
+          />
+        }
       />
     </div>
   );

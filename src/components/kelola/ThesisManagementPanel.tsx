@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { CustomTable, type Column } from "@/components/layout/CustomTable";
 import { toTitleCaseName, formatRoleName } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
@@ -97,6 +98,8 @@ export function ThesisManagementPanel() {
     queryKey: ["admin-thesis-list", page, pageSize, search],
     queryFn: () => getThesisList({ page, pageSize, search }),
   });
+
+  const { refetch, isFetching } = thesisQuery;
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -207,6 +210,7 @@ export function ThesisManagementPanel() {
         columns={columns}
         data={thesisList}
         loading={thesisQuery.isLoading}
+        isRefreshing={isFetching && !thesisQuery.isLoading}
         total={thesisQuery.data?.total || 0}
         page={page}
         pageSize={pageSize}
@@ -219,6 +223,12 @@ export function ThesisManagementPanel() {
         }}
         emptyText="Tidak ada data tugas akhir ditemukan"
         rowKey={(row) => row.id}
+        actions={
+          <RefreshButton 
+            onClick={() => refetch()} 
+            isRefreshing={isFetching && !thesisQuery.isLoading} 
+          />
+        }
       />
 
       {/* Delete Confirmation Dialog */}

@@ -3,13 +3,8 @@ import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { 
-  CalendarDays, 
-  MessageSquareText, 
-  FileText, 
-  BookOpen,
   CheckCircle2,
-  Trash2,
-  Clock
+  Trash2
 } from "lucide-react";
 
 export type NotificationItemProps = {
@@ -32,44 +27,6 @@ function formatMessageWithNames(message: string): string {
   return message.trim();
 }
 
-function getNotificationIcon(title: string, message: string) {
-  const text = `${title} ${message}`.toLowerCase();
-  
-  if (text.includes('bimbingan') || text.includes('guidance')) {
-    return <CalendarDays className="h-4 w-4" />;
-  }
-  if (text.includes('catatan') || text.includes('feedback') || text.includes('comment')) {
-    return <MessageSquareText className="h-4 w-4" />;
-  }
-  if (text.includes('dokumen') || text.includes('document') || text.includes('file')) {
-    return <FileText className="h-4 w-4" />;
-  }
-  if (text.includes('tugas') || text.includes('thesis') || text.includes('proposal')) {
-    return <BookOpen className="h-4 w-4" />;
-  }
-  
-  return <Clock className="h-4 w-4" />;
-}
-
-function getNotificationColor(title: string, message: string) {
-  const text = `${title} ${message}`.toLowerCase();
-  
-  if (text.includes('bimbingan') || text.includes('guidance')) {
-    return 'bg-blue-50 text-blue-600 border-blue-200';
-  }
-  if (text.includes('catatan') || text.includes('feedback')) {
-    return 'bg-green-50 text-green-600 border-green-200';
-  }
-  if (text.includes('dokumen') || text.includes('document')) {
-    return 'bg-purple-50 text-purple-600 border-purple-200';
-  }
-  if (text.includes('ditolak') || text.includes('rejected') || text.includes('gagal')) {
-    return 'bg-red-50 text-red-600 border-red-200';
-  }
-  
-  return 'bg-gray-50 text-gray-600 border-gray-200';
-}
-
 export default function NotificationItem({ 
   notification, 
   onMarkRead, 
@@ -89,8 +46,6 @@ export default function NotificationItem({
   // Absolute timestamp under each item (localized time)
   const absolute = format(created, "dd MMM yyyy HH:mm", { locale: idLocale });
   
-  const iconColorClass = getNotificationColor(title || '', message || '');
-  
   // Format message with proper name casing
   const formattedMessage = message ? formatMessageWithNames(message) : '-';
 
@@ -104,21 +59,13 @@ export default function NotificationItem({
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Icon with unread indicator */}
-        <div className="relative shrink-0">
-          {!isRead && (
-            <div className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-primary z-10" />
-          )}
-          <div className={cn(
-            "flex items-center justify-center h-8 w-8 rounded-lg border",
-            iconColorClass
-          )}>
-            {getNotificationIcon(title || '', message || '')}
-          </div>
-        </div>
+        {/* Unread indicator dot */}
+        {!isRead && (
+          <div className="absolute top-3 left-3 h-2 w-2 rounded-full bg-primary" />
+        )}
         
         {/* Content */}
-        <div className="flex-1 min-w-0 overflow-hidden">
+        <div className={cn("flex-1 min-w-0 overflow-hidden", !isRead && "pl-4")}>
           <div className="flex items-start justify-between gap-2">
             <h4 className={cn(
               "text-sm leading-5 wrap-break-word",

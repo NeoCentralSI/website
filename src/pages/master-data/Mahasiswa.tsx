@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Eye, RefreshCw } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ export default function Mahasiswa() {
   }, [isAdmin, navigate]);
 
   // Use TanStack Query for server state management
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ['students', { page, pageSize, search: searchValue }],
     queryFn: () => getStudentsAPI({ page, pageSize, search: searchValue }),
     placeholderData: (previousData) => previousData, // Keep previous data while fetching
@@ -159,29 +160,26 @@ export default function Mahasiswa() {
         </div>
       </div>
 
-      <div className="relative">
-        {isTableLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-md">
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <Spinner className="h-5 w-5" />
-              <span>Menyinkronkan data mahasiswa...</span>
-            </div>
-          </div>
-        )}
-        <CustomTable
-          columns={columns as any}
-          data={students}
-          loading={isLoading}
-          total={total}
-          page={page}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
-          searchValue={searchValue}
-          onSearchChange={setSearchValue}
-          enableColumnFilters
-        />
-      </div>
+      <CustomTable
+        columns={columns as any}
+        data={students}
+        loading={isLoading}
+        isRefreshing={(isFetching && !isLoading) || syncMutation.isPending}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        enableColumnFilters
+        actions={
+          <RefreshButton 
+            onClick={() => refetch()} 
+            isRefreshing={isFetching && !isLoading} 
+          />
+        }
+      />
     </div>
   );
 }

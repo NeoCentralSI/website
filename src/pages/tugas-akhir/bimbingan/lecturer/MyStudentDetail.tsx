@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarReadinessCard";
 import { DefenceReadinessCard } from "@/components/milestone/lecturer/DefenceReadinessCard";
 import { ChangeRequestReviewCard } from "@/components/tugas-akhir/lecturer/ChangeRequestReviewCard";
+import { RefreshButton } from "@/components/ui/refresh-button";
 
 const STATUS_LABELS: Record<string, string> = {
   not_started: "Belum Dimulai",
@@ -102,7 +103,7 @@ export default function LecturerMyStudentDetailPage() {
     setTitle(undefined);
   }, [baseBreadcrumb, setBreadcrumbs, setTitle]);
 
-  const { data: detailData, isLoading, isError } = useQuery({
+  const { data: detailData, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ['student-detail', thesisId],
     queryFn: () => getStudentDetail(thesisId!).then(res => res.data),
     enabled: !!thesisId
@@ -232,6 +233,10 @@ export default function LecturerMyStudentDetailPage() {
         </div>
       
         <div className="flex items-center gap-2">
+             <RefreshButton 
+               onClick={() => refetch()} 
+               isRefreshing={isFetching && !isLoading} 
+             />
              <Badge variant="outline" className="text-sm px-3 py-1 h-9">
                 {formatRoleName(detailData.status)}
             </Badge>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import {
   Dialog,
   DialogContent,
@@ -77,13 +78,13 @@ export function ChangeRequestManagementPanel() {
   const [approveNotes, setApproveNotes] = useState('');
   const [rejectNotes, setRejectNotes] = useState('');
 
-  const { data: pendingData, isLoading: isLoadingPending } = useQuery({
+  const { data: pendingData, isLoading: isLoadingPending, isFetching: isFetchingPending, refetch: refetchPending } = useQuery({
     queryKey: ['change-requests-pending', page, pageSize, search],
     queryFn: () => getPendingChangeRequests({ page, pageSize, search }),
     enabled: viewMode === 'pending',
   });
 
-  const { data: allData, isLoading: isLoadingAll } = useQuery({
+  const { data: allData, isLoading: isLoadingAll, isFetching: isFetchingAll, refetch: refetchAll } = useQuery({
     queryKey: ['change-requests-all', page, pageSize, search, statusFilter],
     queryFn: () => getAllChangeRequests({ page, pageSize, search, status: statusFilter }),
     enabled: viewMode === 'all',
@@ -121,6 +122,8 @@ export function ChangeRequestManagementPanel() {
 
   const data = viewMode === 'pending' ? pendingData : allData;
   const isLoading = viewMode === 'pending' ? isLoadingPending : isLoadingAll;
+  const isFetching = viewMode === 'pending' ? isFetchingPending : isFetchingAll;
+  const refetch = viewMode === 'pending' ? refetchPending : refetchAll;
   const requests = data?.data || [];
   const pagination = data?.pagination;
 
@@ -348,7 +351,11 @@ export function ChangeRequestManagementPanel() {
 
   // View mode toggle actions
   const tableActions = (
-    <div className="flex gap-2">
+    <div className="flex items-center gap-2">
+      <RefreshButton 
+        onClick={() => refetch()} 
+        isRefreshing={isFetching && !isLoading} 
+      />
       <Button
         variant={viewMode === 'pending' ? 'default' : 'outline'}
         size="sm"
@@ -380,6 +387,7 @@ export function ChangeRequestManagementPanel() {
         columns={columns}
         data={requests}
         loading={isLoading}
+        isRefreshing={isFetching && !isLoading}
         total={pagination?.total || 0}
         page={page}
         pageSize={pageSize}

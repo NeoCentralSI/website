@@ -26,6 +26,7 @@ import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
 import { useMilestones } from '@/hooks/milestone';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
+import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -37,6 +38,7 @@ export default function StudentGuidancePage() {
     displayItems,
     total,
     isLoading,
+    isFetching,
     status,
     setStatus,
     q,
@@ -49,6 +51,7 @@ export default function StudentGuidancePage() {
     setPageSize,
     hasPendingRequest,
     pendingRequestInfo,
+    refetch,
   } = useStudentGuidance();
 
   const {
@@ -153,6 +156,7 @@ export default function StudentGuidancePage() {
             columns={columns as any}
             data={displayItems}
             loading={isLoading}
+            isRefreshing={isFetching && !isLoading}
             total={total}
             page={page}
             pageSize={pageSize}
@@ -169,17 +173,23 @@ export default function StudentGuidancePage() {
             }}
             emptyText={q || supervisorFilter ? 'Tidak ditemukan' : 'Tidak ada data'}
             actions={
-              <Button
-                onClick={() => setOpenRequest(true)}
-                disabled={hasPendingRequest}
-                title={
-                  hasPendingRequest
-                    ? `Anda masih memiliki pengajuan yang belum direspon (${pendingRequestInfo?.dateStr}). Tunggu hingga dosen menyetujui atau menolak pengajuan tersebut.`
-                    : 'Ajukan bimbingan baru'
-                }
-              >
-                Ajukan Bimbingan
-              </Button>
+              <div className="flex items-center gap-2">
+                <RefreshButton 
+                  onClick={() => refetch()} 
+                  isRefreshing={isFetching && !isLoading} 
+                />
+                <Button
+                  onClick={() => setOpenRequest(true)}
+                  disabled={hasPendingRequest}
+                  title={
+                    hasPendingRequest
+                      ? `Anda masih memiliki pengajuan yang belum direspon (${pendingRequestInfo?.dateStr}). Tunggu hingga dosen menyetujui atau menolak pengajuan tersebut.`
+                      : 'Ajukan bimbingan baru'
+                  }
+                >
+                  Ajukan Bimbingan
+                </Button>
+              </div>
             }
           />
         </>

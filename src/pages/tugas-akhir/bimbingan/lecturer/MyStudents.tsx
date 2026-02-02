@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle } from "lucide-react";
 import { Loading, Spinner } from "@/components/ui/spinner";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -75,7 +76,7 @@ export default function LecturerMyStudentsPage() {
     student: MyStudentItem | null;
   }>({ open: false, student: null });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['lecturer-my-students'],
     queryFn: () => getMyStudents(),
   });
@@ -312,6 +313,7 @@ export default function LecturerMyStudentsPage() {
           columns={columns}
           data={paginatedData}
           loading={isLoading}
+          isRefreshing={isFetching && !isLoading}
           total={filteredData.length}
           page={page}
           pageSize={pageSize}
@@ -324,6 +326,12 @@ export default function LecturerMyStudentsPage() {
           }}
           emptyText="Tidak ada mahasiswa bimbingan"
           rowKey={(row) => row.studentId}
+          actions={
+            <RefreshButton 
+              onClick={() => refetch()} 
+              isRefreshing={isFetching && !isLoading} 
+            />
+          }
         />
       )}
 

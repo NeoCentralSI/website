@@ -9,6 +9,7 @@ import { useLecturerRequests, useLecturerGuidanceDialogs } from '@/hooks/guidanc
 import { getLecturerRequestColumns } from '@/lib/lecturerRequestColumns';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
 import { Loading } from '@/components/ui/spinner';
+import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function LecturerRequestsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -19,6 +20,7 @@ export default function LecturerRequestsPage() {
     allRequests,
     total,
     isLoading,
+    isFetching,
     page,
     setPage,
     pageSize,
@@ -30,6 +32,7 @@ export default function LecturerRequestsPage() {
     studentFilter,
     setStudentFilter,
     invalidate,
+    refetch,
   } = useLecturerRequests();
 
   const {
@@ -92,6 +95,7 @@ export default function LecturerRequestsPage() {
             columns={columns as any}
             data={items}
             loading={isLoading}
+            isRefreshing={isFetching && !isLoading}
             total={total}
             page={page}
             pageSize={pageSize}
@@ -107,6 +111,12 @@ export default function LecturerRequestsPage() {
             }}
             emptyText={q ? 'Tidak ditemukan' : 'Tidak ada permintaan'}
             enableColumnFilters
+            actions={
+              <RefreshButton 
+                onClick={() => refetch()} 
+                isRefreshing={isFetching && !isLoading} 
+              />
+            }
           />
         </>
       )}

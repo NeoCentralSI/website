@@ -50,6 +50,7 @@ export type CustomTableProps<T> = {
 	columns: Column<T>[];
 	data: T[];
 	loading?: boolean;
+	isRefreshing?: boolean; // Overlay spinner saat refresh
 	total: number;
 	page: number; // 1-based
 	pageSize: number;
@@ -85,6 +86,7 @@ export function CustomTable<T extends Record<string, any>>({
 	columns,
 	data,
 	loading,
+	isRefreshing,
 	total,
 	page,
 	pageSize,
@@ -134,7 +136,12 @@ export function CustomTable<T extends Record<string, any>>({
 									)}
 								</div>
 
-				<div className="rounded-md border border-black/10">
+				<div className="rounded-md border border-black/10 relative">
+					{isRefreshing && !loading && (
+						<div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-md">
+							<Spinner className="h-8 w-8" />
+						</div>
+					)}
 								<Table>
 									<TableHeader>
 										<TableRow>

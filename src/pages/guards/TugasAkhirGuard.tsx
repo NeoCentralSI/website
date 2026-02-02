@@ -24,11 +24,11 @@ export default function TugasAkhirGuard() {
     enabled: isStudentUser,
   });
   
-  // Check if student has pending change request
-  const { hasPendingRequest, isLoading: isPendingLoading } = useHasPendingChangeRequest();
+  // Check if student has pending change request (only for students)
+  const { hasPendingRequest, isLoading: isPendingLoading } = useHasPendingChangeRequest(isStudentUser);
   
-  // Check if student has approved change request (thesis deleted for re-registration)
-  const { hasApprovedRequest, isLoading: isApprovedLoading } = useHasApprovedChangeRequest();
+  // Check if student has approved change request (thesis deleted for re-registration) (only for students)
+  const { hasApprovedRequest, isLoading: isApprovedLoading } = useHasApprovedChangeRequest(isStudentUser);
   
   const hasThesisDeletionNotification = !!thesisDeletionData?.data?.notification;
 

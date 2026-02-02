@@ -20,7 +20,7 @@ export function useStudentGuidance() {
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialLimit > 0 ? initialLimit : 10);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['student-guidance', { status }],
     queryFn: async () => {
       try {
@@ -127,6 +127,7 @@ export function useStudentGuidance() {
     displayItems: display.slice,
     total: display.totalCount,
     isLoading,
+    isFetching,
     status,
     setStatus,
     q,
@@ -140,5 +141,6 @@ export function useStudentGuidance() {
     hasPendingRequest,
     pendingRequestInfo,
     invalidate,
+    refetch,
   };
 };

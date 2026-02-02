@@ -1,5 +1,4 @@
 import { BellIcon } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -11,7 +10,6 @@ type Props = {
   className?: string;
   onClick?: () => void;
   showZero?: boolean; // show badge even if 0
-  refetchIntervalMs?: number; // polling interval
   size?: number; // icon size (px)
 };
 
@@ -19,26 +17,14 @@ export default function NotificationBell({
   className,
   onClick,
   showZero = false,
-  refetchIntervalMs,
   size = 20,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const { unreadCount, fetchNotifications, fetchUnreadCount } = useNotifications();
+  const { unreadCount, fetchNotifications } = useNotifications();
   
-  // Use unreadCount from context instead of separate query
+  // Use unreadCount from context - polling is handled by NotificationProvider
   const count = unreadCount ?? 0;
   const showBadge = showZero ? true : count > 0;
-  
-  // Optional: still allow polling for backup (but context should handle this via FCM)
-  useQuery({
-    queryKey: ["notification-unread-poll"],
-    queryFn: async () => {
-      await fetchUnreadCount();
-      return null;
-    },
-    enabled: !!refetchIntervalMs,
-    refetchInterval: refetchIntervalMs,
-  });
 
   useEffect(() => {
     if (open) fetchNotifications().catch(() => {});
@@ -70,7 +56,7 @@ export default function NotificationBell({
       </SheetTrigger>
       <SheetContent
         side="right"
-        className="w-[30vw] sm:w-[30vw] sm:max-w-[30vw] min-w-[360px] max-w-none p-0"
+        className="w-[30vw] sm:w-[30vw] sm:max-w-[30vw] min-w-90 max-w-none p-0"
       >
         <div className="flex flex-col h-full">
           <div className="border-b bg-background px-6 py-4 pr-12">

@@ -52,8 +52,11 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
       return response.unreadCount;
     },
     enabled: isLoggedIn,
-    staleTime: 1000, // Consider stale after 1 second
-    refetchInterval: false, // No polling, rely on invalidation from FCM
+    staleTime: 30 * 1000, // Consider stale after 30 seconds
+    refetchInterval: 60 * 1000, // Poll every 60 seconds as fallback for missed FCM
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when tab gains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
   });
   
   const unreadCount = unreadCountData ?? 0;

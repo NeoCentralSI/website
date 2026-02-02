@@ -12,6 +12,7 @@ import { toTitleCaseName } from '@/lib/text';
 import { formatRoleName, ROLES } from '@/lib/roles';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserFormDialog, ImportStudentDialog } from '@/components/master-data';
+import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function UserManagementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -61,7 +62,7 @@ export default function UserManagementPage() {
   }, [statusFilter]);
 
   // Use TanStack Query for server state with all filters
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ['users', { 
       page, 
       pageSize, 
@@ -321,6 +322,7 @@ export default function UserManagementPage() {
         data={users}
         columns={columns as any}
         loading={isLoading}
+        isRefreshing={isFetching && !isLoading}
         emptyText="Belum ada data user"
         page={page}
         pageSize={pageSize}
@@ -330,6 +332,12 @@ export default function UserManagementPage() {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         enableColumnFilters={true}
+        actions={
+          <RefreshButton 
+            onClick={() => refetch()} 
+            isRefreshing={isFetching && !isLoading} 
+          />
+        }
       />
 
       <UserFormDialog

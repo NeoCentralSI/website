@@ -27,7 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CheckCircle2, XCircle, RefreshCw, X, Eye, Bell, AlertTriangle, Trash2 } from "lucide-react";
+import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Trash2 } from "lucide-react";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,7 @@ import { sendWarningToStudent, deleteThesisFromMonitoring } from "@/services/mon
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { useRole } from "@/hooks/shared/useRole";
 import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
 
@@ -489,15 +490,10 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         </Button>
       )}
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => refetch()}
-        disabled={isFetching}
-      >
-        <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? "animate-spin" : ""}`} />
-        Refresh
-      </Button>
+      <RefreshButton 
+        onClick={() => refetch()} 
+        isRefreshing={isFetching && !isLoading} 
+      />
     </>
   );
 
@@ -507,6 +503,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         columns={columns}
         data={paginatedData}
         loading={isLoadingAny}
+        isRefreshing={isFetching && !isLoading}
         total={searchFilteredData.length}
         page={page}
         pageSize={pageSize}
