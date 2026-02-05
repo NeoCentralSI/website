@@ -120,7 +120,7 @@ export default function UserManagementPage() {
       setFormData({
         fullName: '',
         email: '',
-        roles: [],
+        roles: ['Mahasiswa'], // Default role for NIM
         identityNumber: '',
         identityType: 'NIM',
       });

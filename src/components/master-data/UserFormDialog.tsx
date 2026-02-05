@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
 
@@ -88,11 +89,15 @@ export function UserFormDialog({
                 <Select
                   value={formData.identityType}
                   onValueChange={(value: any) => {
-                    // Auto-set role to student if identity type is NIM
+                    // Auto-set role to Mahasiswa if identity type is NIM
                     if (value === 'NIM') {
-                      setFormData({ ...formData, identityType: value, roles: ['student'] });
+                      setFormData({ ...formData, identityType: value, roles: ['Mahasiswa'] });
                     } else {
-                      setFormData({ ...formData, identityType: value });
+                      // Clear roles if changing from NIM to NIP/OTHER
+                      const currentRoles = Array.isArray(formData.roles) 
+                        ? formData.roles.filter((r): r is string => typeof r === 'string' && r !== 'Mahasiswa')
+                        : [];
+                      setFormData({ ...formData, identityType: value, roles: currentRoles });
                     }
                   }}
                 >
@@ -120,36 +125,68 @@ export function UserFormDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="roles">Role</Label>
-              <Select
-                value={typeof formData.roles?.[0] === 'string' ? formData.roles[0] : ''}
-                onValueChange={(value: string) =>
-                  setFormData({ ...formData, roles: [value] })
-                }
-                disabled={formData.identityType === 'NIM'}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleOptions
+              <Label>Role</Label>
+              <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
+                {formData.identityType === 'NIM' ? (
+                  // For NIM, only show Mahasiswa and it's auto-selected
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="role-mahasiswa"
+                      checked={true}
+                      disabled
+                    />
+                    <label
+                      htmlFor="role-mahasiswa"
+                      className="text-sm font-medium leading-none text-muted-foreground"
+                    >
+                      Mahasiswa (otomatis untuk NIM)
+                    </label>
+                  </div>
+                ) : (
+                  // For NIP/OTHER, show all roles except Mahasiswa
+                  roleOptions
                     .filter(role => {
-                      // Filter admin jika edit mode
+                      // Filter admin role when editing
                       if (editingUser && role.value === 'Admin') return false;
-                      // Filter student jika identity type adalah NIP
-                      if (formData.identityType === 'NIP' && role.value === 'Mahasiswa') return false;
-                      // Only show student if identity type is NIM
-                      if (formData.identityType === 'NIM' && role.value !== 'Mahasiswa') return false;
+                      // Filter Mahasiswa for NIP/OTHER
+                      if (role.value === 'Mahasiswa') return false;
                       return true;
                     })
-                    .map((role) => (
-                      <SelectItem key={role.value} value={role.value}>
-                        {role.label}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-       
+                    .map((role) => {
+                      const isChecked = Array.isArray(formData.roles) && 
+                        formData.roles.some(r => 
+                          typeof r === 'string' ? r === role.value : r?.name === role.value
+                        );
+                      return (
+                        <div key={role.value} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`role-${role.value}`}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              const currentRoles = Array.isArray(formData.roles) 
+                                ? formData.roles.filter((r): r is string => typeof r === 'string')
+                                : [];
+                              if (checked) {
+                                setFormData({ ...formData, roles: [...currentRoles, role.value] });
+                              } else {
+                                setFormData({ ...formData, roles: currentRoles.filter(r => r !== role.value) });
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor={`role-${role.value}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {role.label}
+                          </label>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+              {formData.identityType !== 'NIM' && (!formData.roles || formData.roles.length === 0) && (
+                <p className="text-xs text-muted-foreground">Pilih minimal satu role</p>
+              )}
             </div>
 
             {editingUser && 'isVerified' in formData && (
