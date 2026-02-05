@@ -381,3 +381,60 @@ export async function deleteThesisFromMonitoring(thesisId: string, reason?: stri
   }
   return response.json();
 }
+
+// ========== Progress Report Types ==========
+
+export interface ReportThesisItem {
+  no: number;
+  nim: string;
+  name: string;
+  title: string;
+  topic: string;
+  status: string;
+  rating: string;
+  pembimbing1: string;
+  pembimbing2: string;
+  guidanceTotal: number;
+  guidanceCompleted: number;
+  milestoneTotal: number;
+  milestoneCompleted: number;
+  progressPercent: number;
+  startDate: string | null;
+  createdAt: string;
+}
+
+export interface ReportSummary {
+  totalTheses: number;
+  totalGuidances: number;
+  completedGuidances: number;
+  totalMilestones: number;
+  completedMilestones: number;
+  averageMilestoneProgress: number;
+  averageGuidanceCompletion: number;
+}
+
+export interface ProgressReportData {
+  academicYear: string;
+  generatedAt: string;
+  summary: ReportSummary;
+  statusDistribution: StatusDistribution[];
+  ratingDistribution: RatingDistribution[];
+  theses: ReportThesisItem[];
+}
+
+/**
+ * Get progress report data for PDF generation
+ */
+export async function getProgressReport(academicYear?: string): Promise<ProgressReportData> {
+  const url = academicYear && academicYear !== "all"
+    ? `${getApiUrl("/thesisGuidance/monitoring/report")}?academicYear=${academicYear}`
+    : getApiUrl("/thesisGuidance/monitoring/report");
+  
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil data laporan");
+  }
+  const result = await response.json();
+  return result.data;
+}

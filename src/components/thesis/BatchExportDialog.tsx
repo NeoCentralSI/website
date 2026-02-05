@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import {
   Dialog,
@@ -8,12 +9,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loading } from "@/components/ui/spinner";
+import { Loading, Spinner } from "@/components/ui/spinner";
 import { Download } from "lucide-react";
 import { getGuidanceForExport } from "@/services/studentGuidance.service";
 import { toTitleCaseName } from "@/lib/text";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { generateGuidanceLogReportPDF } from "@/lib/generateGuidanceLogReport";
 
 interface BatchExportDialogProps {
   open: boolean;
@@ -26,6 +26,8 @@ export default function BatchExportDialog({
   onOpenChange,
   guidanceIds,
 }: BatchExportDialogProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  
   // Fetch all guidances in parallel
   const queries = useQueries({
     queries: guidanceIds.map((id) => ({
@@ -50,96 +52,31 @@ export default function BatchExportDialog({
   // Get student info from first guidance
   const studentInfo = guidances[0];
 
-  const generatePDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+  const generatePDF = async () => {
+    if (!studentInfo || guidances.length === 0) return;
     
-    // Title
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Bukti Bimbingan Tugas Akhir", pageWidth / 2, 20, { align: "center" });
-    
-    // Student Info
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    let yPos = 35;
-    
-    doc.text(`Nama Mahasiswa: ${toTitleCaseName(studentInfo?.studentName || "-")}`, 14, yPos);
-    yPos += 6;
-    doc.text(`NIM: ${studentInfo?.studentId || "-"}`, 14, yPos);
-    yPos += 6;
-    doc.text(`Dosen Pembimbing: ${toTitleCaseName(studentInfo?.supervisorName || "-")}`, 14, yPos);
-    yPos += 6;
-    
-    if (studentInfo?.thesisTitle) {
-      const titleLines = doc.splitTextToSize(`Judul TA: ${studentInfo.thesisTitle}`, pageWidth - 28);
-      doc.text(titleLines, 14, yPos);
-      yPos += titleLines.length * 5 + 2;
+    setIsGenerating(true);
+    try {
+      await generateGuidanceLogReportPDF({
+        studentName: toTitleCaseName(studentInfo.studentName || "-"),
+        studentId: studentInfo.studentId || "-",
+        supervisorName: toTitleCaseName(studentInfo.supervisorName || "-"),
+        thesisTitle: studentInfo.thesisTitle,
+        guidances: guidances.map((g) => ({
+          id: g.id,
+          approvedDate: g.approvedDate,
+          approvedDateFormatted: g.approvedDateFormatted,
+          type: g.type,
+          duration: g.duration,
+          milestoneName: g.milestoneName,
+          sessionSummary: g.sessionSummary,
+          actionItems: g.actionItems,
+          completedAtFormatted: g.completedAtFormatted,
+        })),
+      });
+    } finally {
+      setIsGenerating(false);
     }
-    
-    yPos += 5;
-
-    // Table data
-    const tableData = guidances.map((g) => {
-      // Kolom 1: Jadwal
-      const jadwal = [
-        g.approvedDateFormatted || "-",
-        `${g.type || "online"}${g.duration ? ` • ${g.duration} menit` : ""}`,
-        g.milestoneName || "",
-      ].filter(Boolean).join("\n");
-
-      // Kolom 2: Catatan
-      const catatanParts = [];
-      if (g.sessionSummary) {
-        catatanParts.push(`Ringkasan:\n${g.sessionSummary}`);
-      }
-      if (g.actionItems) {
-        catatanParts.push(`Arahan/Saran:\n${g.actionItems}`);
-      }
-      const catatan = catatanParts.length > 0 ? catatanParts.join("\n\n") : "Tidak ada catatan";
-
-      return [jadwal, catatan];
-    });
-
-    // Generate table
-    autoTable(doc, {
-      startY: yPos,
-      head: [["Jadwal Bimbingan", "Catatan Bimbingan"]],
-      body: tableData,
-      headStyles: {
-        fillColor: [59, 130, 246], // Blue
-        textColor: 255,
-        fontStyle: "bold",
-        fontSize: 10,
-      },
-      bodyStyles: {
-        fontSize: 9,
-        cellPadding: 4,
-      },
-      columnStyles: {
-        0: { cellWidth: 45 },
-        1: { cellWidth: "auto" },
-      },
-      styles: {
-        overflow: "linebreak",
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-      },
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
-      },
-      margin: { left: 14, right: 14 },
-    });
-
-    // Footer
-    const finalY = (doc as any).lastAutoTable.finalY || yPos + 50;
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text(`Total: ${guidances.length} sesi bimbingan`, 14, finalY + 10);
-
-    // Download
-    const fileName = `Bimbingan_${studentInfo?.studentId || "TA"}_${new Date().toISOString().slice(0, 10)}.pdf`;
-    doc.save(fileName);
   };
 
   return (
@@ -250,9 +187,18 @@ export default function BatchExportDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Tutup
           </Button>
-          <Button onClick={generatePDF} disabled={isLoading || hasError}>
-            <Download className="mr-2 h-4 w-4" />
-            Download PDF ({guidances.length} sesi)
+          <Button onClick={generatePDF} disabled={isLoading || hasError || isGenerating}>
+            {isGenerating ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Mengunduh...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF ({guidances.length} sesi)
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

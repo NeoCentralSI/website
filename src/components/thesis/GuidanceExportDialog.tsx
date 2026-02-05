@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -8,12 +9,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loading } from "@/components/ui/spinner";
+import { Loading, Spinner } from "@/components/ui/spinner";
 import { Download } from "lucide-react";
 import { getGuidanceForExport } from "@/services/studentGuidance.service";
 import { toTitleCaseName } from "@/lib/text";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { generateGuidanceLogReportPDF } from "@/lib/generateGuidanceLogReport";
 
 interface GuidanceExportDialogProps {
   open: boolean;
@@ -26,6 +26,8 @@ export default function GuidanceExportDialog({
   onOpenChange,
   guidanceId,
 }: GuidanceExportDialogProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  
   const { data, isLoading, error } = useQuery({
     queryKey: ["guidance-export", guidanceId],
     queryFn: () => (guidanceId ? getGuidanceForExport(guidanceId) : Promise.reject("No ID")),
@@ -34,90 +36,31 @@ export default function GuidanceExportDialog({
 
   const guidance = data?.guidance;
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (!guidance) return;
     
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // Title
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Bukti Bimbingan Tugas Akhir", pageWidth / 2, 20, { align: "center" });
-    
-    // Student Info
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    let yPos = 35;
-    
-    doc.text(`Nama Mahasiswa: ${toTitleCaseName(guidance.studentName || "-")}`, 14, yPos);
-    yPos += 6;
-    doc.text(`NIM: ${guidance.studentId || "-"}`, 14, yPos);
-    yPos += 6;
-    doc.text(`Dosen Pembimbing: ${toTitleCaseName(guidance.supervisorName || "-")}`, 14, yPos);
-    yPos += 6;
-    
-    if (guidance.thesisTitle) {
-      const titleLines = doc.splitTextToSize(`Judul TA: ${guidance.thesisTitle}`, pageWidth - 28);
-      doc.text(titleLines, 14, yPos);
-      yPos += titleLines.length * 5 + 2;
+    setIsGenerating(true);
+    try {
+      await generateGuidanceLogReportPDF({
+        studentName: toTitleCaseName(guidance.studentName || "-"),
+        studentId: guidance.studentId || "-",
+        supervisorName: toTitleCaseName(guidance.supervisorName || "-"),
+        thesisTitle: guidance.thesisTitle,
+        guidances: [{
+          id: guidance.id,
+          approvedDate: guidance.approvedDate,
+          approvedDateFormatted: guidance.approvedDateFormatted,
+          type: guidance.type,
+          duration: guidance.duration,
+          milestoneName: guidance.milestoneName,
+          sessionSummary: guidance.sessionSummary,
+          actionItems: guidance.actionItems,
+          completedAtFormatted: guidance.completedAtFormatted,
+        }],
+      });
+    } finally {
+      setIsGenerating(false);
     }
-    
-    yPos += 5;
-
-    // Kolom 1: Jadwal
-    const jadwal = [
-      guidance.approvedDateFormatted || "-",
-      `${guidance.type || "online"}${guidance.duration ? ` • ${guidance.duration} menit` : ""}`,
-      guidance.milestoneName || "",
-    ].filter(Boolean).join("\n");
-
-    // Kolom 2: Catatan
-    const catatanParts = [];
-    if (guidance.sessionSummary) {
-      catatanParts.push(`Ringkasan:\n${guidance.sessionSummary}`);
-    }
-    if (guidance.actionItems) {
-      catatanParts.push(`Arahan/Saran:\n${guidance.actionItems}`);
-    }
-    const catatan = catatanParts.length > 0 ? catatanParts.join("\n\n") : "Tidak ada catatan";
-
-    // Generate table
-    autoTable(doc, {
-      startY: yPos,
-      head: [["Jadwal Bimbingan", "Catatan Bimbingan"]],
-      body: [[jadwal, catatan]],
-      headStyles: {
-        fillColor: [59, 130, 246],
-        textColor: 255,
-        fontStyle: "bold",
-        fontSize: 10,
-      },
-      bodyStyles: {
-        fontSize: 9,
-        cellPadding: 4,
-      },
-      columnStyles: {
-        0: { cellWidth: 45 },
-        1: { cellWidth: "auto" },
-      },
-      styles: {
-        overflow: "linebreak",
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-      },
-      margin: { left: 14, right: 14 },
-    });
-
-    // Footer
-    const finalY = (doc as any).lastAutoTable.finalY || yPos + 50;
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text(`Diselesaikan: ${guidance.completedAtFormatted || "-"}`, 14, finalY + 10);
-
-    // Download
-    const fileName = `Bimbingan_${guidance.studentId || "TA"}_${guidance.approvedDateFormatted?.replace(/[^a-zA-Z0-9]/g, "-") || new Date().toISOString().slice(0, 10)}.pdf`;
-    doc.save(fileName);
   };
 
   return (
@@ -226,9 +169,18 @@ export default function GuidanceExportDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Tutup
           </Button>
-          <Button onClick={generatePDF} disabled={isLoading || !!error}>
-            <Download className="mr-2 h-4 w-4" />
-            Download PDF
+          <Button onClick={generatePDF} disabled={isLoading || !!error || isGenerating}>
+            {isGenerating ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Mengunduh...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

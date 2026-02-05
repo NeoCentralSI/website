@@ -18,10 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Calendar } from "lucide-react";
+import { RefreshCw, Calendar, FileDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
-import { Loading } from "@/components/ui/spinner";
+import { Loading, Spinner } from "@/components/ui/spinner";
+import { getProgressReport } from "@/services/monitoring.service";
+import { generateProgressReportPDF } from "@/lib/generateProgressReport";
+import { toast } from "sonner";
 
 export default function MonitoringDashboard() {
   const [searchParams] = useSearchParams();
@@ -29,6 +32,7 @@ export default function MonitoringDashboard() {
   
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const queryClient = useQueryClient();
   
   // Pass academicYear filter to hooks
@@ -59,6 +63,20 @@ export default function MonitoringDashboard() {
       console.error('[Monitoring] Refresh failed:', error);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    setIsGeneratingReport(true);
+    try {
+      const reportData = await getProgressReport(academicYearFilter);
+      await generateProgressReportPDF(reportData);
+      toast.success("Laporan berhasil diunduh!");
+    } catch (error) {
+      console.error('[Monitoring] Generate report failed:', error);
+      toast.error("Gagal mengunduh laporan. Silakan coba lagi.");
+    } finally {
+      setIsGeneratingReport(false);
     }
   };
 
@@ -100,10 +118,30 @@ export default function MonitoringDashboard() {
             Menampilkan: <span className="font-medium text-foreground">{displayAcademicYear}</span>
           </span>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAny}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingAny ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAny}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingAny ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={handleDownloadReport} 
+            disabled={isGeneratingReport || isLoading}
+          >
+            {isGeneratingReport ? (
+              <>
+                <Spinner className="h-4 w-4 mr-2" />
+                Mengunduh...
+              </>
+            ) : (
+              <>
+                <FileDown className="h-4 w-4 mr-2" />
+                Download Laporan
+              </>
+            )}
+          </Button>
+        </div>
       </div>
       {/* Summary Cards */}
       <MonitoringSummaryCards summary={data?.summary} isLoading={isLoadingAny} />
