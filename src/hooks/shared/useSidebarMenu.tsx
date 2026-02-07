@@ -447,8 +447,8 @@ export const useSidebarMenu = () => {
             icon: FileText,
             items: [
               {
-                title: "Data Tugas Akhir",
-                url: "/tugas-akhir/data",
+                title: "Kelola",
+                url: "/tugas-akhir/kelola",
               },
               {
                 title: "Penjadwalan Seminar",

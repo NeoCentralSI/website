@@ -53,7 +53,7 @@ export default function Dashboard() {
 - Pages hanya boleh berisi **composition** dari components
 - Business logic ada di hooks atau services
 - UI logic yang kompleks di components
-- Gunakan layout components yang sudah ada (`AppLayout`, `DashboardLayout`, `ProtectedLayout`, dll)
+- **JANGAN** gunakan `DashboardLayout` di pages yang sudah di-wrap oleh `ProtectedLayout` di App.tsx
 
 ### 3. Project Structure & Layer Architecture
 
@@ -77,27 +77,40 @@ src/
 ##### **Pages Layer** (`src/pages/`)
 - **HANYA** composition dari components
 - **MINIMAL** logic, hanya routing params handling
-- Gunakan layout components
+- **JANGAN** gunakan `DashboardLayout` - gunakan `useOutletContext` untuk set breadcrumbs dan title
 - Connect ke hooks untuk data fetching
 
-**Contoh Structure:**
+**Contoh Structure untuk Protected Routes (di dalam ProtectedLayout):**
 ```tsx
 // pages/admin/UserManagement.tsx
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { useEffect, useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { UserTable } from '@/components/admin/UserTable';
 import { UserFormDialog } from '@/components/admin/UserFormDialog';
 
 export default function UserManagement() {
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+
+  const breadcrumbs = useMemo(() => [
+    { label: 'Master Data' },
+    { label: 'User Management' },
+  ], []);
+
+  useEffect(() => {
+    setBreadcrumbs(breadcrumbs);
+    setTitle('User Management');
+  }, [setBreadcrumbs, setTitle, breadcrumbs]);
+
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <UserFormDialog />
-        </div>
-        <UserTable />
+    <>
+      <div className="flex justify-between items-center mb-6">
+        <UserFormDialog />
       </div>
-    </DashboardLayout>
+      <UserTable />
+    </>
+  );
+}
   );
 }
 ```

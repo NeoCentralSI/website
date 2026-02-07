@@ -37,6 +37,7 @@ import DosenDetailPage from './pages/master-data/DosenDetail'
 // Kelola
 import KelolaTugasAkhirKadepPage from './pages/kelola/kadep/KelolaTugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
+import KelolaThesisPage from './pages/tugas-akhir/KelolaThesis'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
@@ -136,7 +137,7 @@ function App() {
               <Route path="/tugas-akhir/acc-rubrik" element={<Placeholder title="Tugas Akhir - ACC Rubrik Penilaian" />} />
               <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />
               <Route path="/tugas-akhir/kelola-yudisium" element={<Placeholder title="Tugas Akhir - Kelola Yudisium" />} />
-              <Route path="/tugas-akhir/data" element={<Placeholder title="Tugas Akhir - Data" />} />
+              <Route path="/tugas-akhir/kelola" element={<KelolaThesisPage />} />
               <Route path="/tugas-akhir/jadwal-seminar" element={<Placeholder title="Tugas Akhir - Penjadwalan Seminar" />} />
               <Route path="/tugas-akhir/jadwal-sidang" element={<Placeholder title="Tugas Akhir - Penjadwalan Sidang" />} />
 
