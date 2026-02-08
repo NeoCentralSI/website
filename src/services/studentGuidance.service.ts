@@ -472,3 +472,52 @@ export const updateMyThesisTitle = async (title: string): Promise<{ success: boo
   if (!res.ok) throw new Error((await res.json()).message || "Gagal memperbarui judul tugas akhir");
   return res.json();
 };
+
+// ─── Pembimbing 2 Request ───────────────────────────────────────────────────
+
+export interface AvailableSupervisor2Item {
+  id: string;
+  fullName: string;
+  email: string | null;
+  identityNumber: string | null;
+  scienceGroup: string | null;
+}
+
+export interface PendingSupervisor2Request {
+  requestId: string;
+  lecturerId: string;
+  lecturerName: string | null;
+  requestedAt: string;
+}
+
+export const getAvailableSupervisors2 = async (): Promise<AvailableSupervisor2Item[]> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.AVAILABLE_SUPERVISORS_2));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat daftar dosen");
+  const data = await res.json();
+  return data.data ?? [];
+};
+
+export const requestSupervisor2 = async (lecturerId: string): Promise<{ success: boolean; message: string; data: { requestId: string; lecturerName: string } }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.REQUEST_SUPERVISOR_2), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lecturerId }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal mengirim permintaan");
+  return res.json();
+};
+
+export const getPendingSupervisor2Request = async (): Promise<PendingSupervisor2Request | null> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.PENDING_SUPERVISOR_2));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat status permintaan");
+  const data = await res.json();
+  return data.data ?? null;
+};
+
+export const cancelSupervisor2Request = async (): Promise<{ success: boolean }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.CANCEL_SUPERVISOR_2), {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal membatalkan permintaan");
+  return res.json();
+};

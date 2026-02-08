@@ -10,11 +10,14 @@ import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
 import { useQuery } from "@tanstack/react-query";
 import { getCachedStudentsFromSia } from "@/services/sia.service";
+import { useAvatarBlob } from "@/hooks/profile";
 
 export const useSidebarMenu = () => {
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1 } = useRole();
   const { user: authUser } = useAuth();
   const nim = authUser?.identityNumber;
+
+  const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
 
   const { data: siaStudents } = useQuery({
     queryKey: ["sia-cached-students"],
@@ -110,7 +113,7 @@ export const useSidebarMenu = () => {
         user: {
           name: authUser?.fullName || "User",
           email: authUser?.email || "user@example.com",
-          avatar: "/avatars/student.jpg",
+          avatar: avatarBlobUrl || "",
           initials: getInitials(authUser?.fullName),
         },
         navMain: studentNav,
@@ -174,7 +177,7 @@ export const useSidebarMenu = () => {
         user: {
           name: authUser?.fullName || "User",
           email: authUser?.email || "user@example.com",
-          avatar: "/avatars/lecturer.jpg",
+          avatar: avatarBlobUrl || "",
           initials: getInitials(authUser?.fullName),
         },
         navMain: menuItems,
@@ -252,7 +255,7 @@ export const useSidebarMenu = () => {
         user: {
           name: authUser?.fullName || "User",
           email: authUser?.email || "user@example.com",
-          avatar: "/avatars/kadep.jpg",
+          avatar: avatarBlobUrl || "",
           initials: getInitials(authUser?.fullName),
         },
         navMain: menuItems,
@@ -333,7 +336,7 @@ export const useSidebarMenu = () => {
         user: {
           name: authUser?.fullName || "User",
           email: authUser?.email || "user@example.com",
-          avatar: "/avatars/sekdep.jpg",
+          avatar: avatarBlobUrl || "",
           initials: getInitials(authUser?.fullName),
         },
         navMain: menuItems,
@@ -402,7 +405,7 @@ export const useSidebarMenu = () => {
         user: {
           name: authUser?.fullName || "User",
           email: authUser?.email || "user@example.com",
-          avatar: "/avatars/gkm.jpg",
+          avatar: avatarBlobUrl || "",
           initials: getInitials(authUser?.fullName),
         },
         navMain: menuItems,
@@ -416,7 +419,7 @@ export const useSidebarMenu = () => {
         user: {
           name: authUser?.fullName || "User",
           email: authUser?.email || "user@example.com",
-          avatar: "/avatars/admin.jpg",
+          avatar: avatarBlobUrl || "",
           initials: getInitials(authUser?.fullName),
         },
         navMain: [
@@ -493,7 +496,7 @@ export const useSidebarMenu = () => {
       user: {
         name: authUser?.fullName || "User",
         email: authUser?.email || "user@example.com",
-        avatar: "/avatars/user.jpg",
+        avatar: avatarBlobUrl || "",
         initials: getInitials(authUser?.fullName),
       },
       navMain: [
@@ -512,6 +515,7 @@ export const useSidebarMenu = () => {
     isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1,
     // user deps
     authUser?.fullName, authUser?.email, authUser?.identityNumber,
+    avatarBlobUrl,
     siaStudents
   ]);
 

@@ -18,10 +18,11 @@ import {
   Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesis } from "@/services/lecturerGuidance.service";
+import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesis, getSupervisor2Requests } from "@/services/lecturerGuidance.service";
 import { getMilestones, getSeminarReadinessStatus, getDefenceReadinessStatus } from "@/services/milestone.service";
 import { getMyStudents } from "@/services/lecturerGuidance.service";
 import { getKadepQuickActionsStats } from "@/services/admin.service";
+import { UserPlus } from "lucide-react";
 import { useRole } from '@/hooks/shared/useRole';
 import { useLottie } from 'lottie-react';
 import completeAnimation from '@/assets/lottie/complete.json';
@@ -52,6 +53,12 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   
   // Check if user is Kadep
   const isKadepUser = isKadep();
+
+  // Fetch pending supervisor 2 requests
+  const { data: supervisor2RequestsData, isLoading: loadingSupervisor2 } = useQuery({
+    queryKey: ["supervisor2-requests-count"],
+    queryFn: () => getSupervisor2Requests(),
+  });
 
   // Fetch pending guidance requests
   const { data: pendingRequestsData, isLoading: loadingRequests } = useQuery({
@@ -223,6 +230,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     enabled: isKadepUser,
   });
 
+  const pendingSupervisor2Count = supervisor2RequestsData?.length || 0;
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
   const pendingMilestonesCount = pendingMilestonesData?.length || 0;
@@ -245,10 +253,21 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
 
   // Calculate total pending including Kadep specific items
   const kadepPending = isKadepUser ? (failedThesesCount + pendingKadepChangeRequestsCount) : 0;
-  const totalPending = pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount + pendingChangeRequestsCount + kadepPending;
+  const totalPending = pendingSupervisor2Count + pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount + pendingChangeRequestsCount + kadepPending;
 
   // Lecturer quick actions (for pembimbing role)
   const lecturerQuickActions = [
+    {
+      id: "pending-supervisor2",
+      title: "Approval Pembimbing",
+      description: "Approve permintaan Pembimbing 2",
+      count: pendingSupervisor2Count,
+      icon: UserPlus,
+      color: "text-teal-600",
+      bgColor: "bg-teal-50",
+      link: "/tugas-akhir/bimbingan/lecturer/my-students",
+      loading: loadingSupervisor2,
+    },
     {
       id: "pending-requests",
       title: "Permintaan Bimbingan",
@@ -356,7 +375,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   // Combine all quick actions
   const quickActions = [...lecturerQuickActions, ...kadepQuickActions];
 
-  const isLoading = loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence || loadingChangeRequests || (isKadepUser && loadingKadepStats);
+  const isLoading = loadingSupervisor2 || loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence || loadingChangeRequests || (isKadepUser && loadingKadepStats);
 
   return (
     <Card className={cn("flex flex-col", className)}>

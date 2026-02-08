@@ -31,6 +31,7 @@ import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
 
 const getDaysRemaining = (deadlineDate?: string | null) => {
   if (!deadlineDate) return null;
@@ -302,6 +303,9 @@ export default function LecturerMyStudentsPage() {
   return (
     <div className="p-4 space-y-4">
       <TabsNav tabs={tabs} />
+
+      {/* Pembimbing 2 Requests Section */}
+      <Supervisor2RequestsSection />
 
       {/* Loading state - tabs tetap render, loading di content */}
       {isLoading ? (

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { toTitleCaseName } from "@/lib/text";
+import { ROLES } from "@/lib/roles";
 import {
   createThesisAPI,
   updateThesisAPI,
@@ -92,8 +93,8 @@ export default function ThesisFormDialog({
   const roles: SupervisorRole[] = rolesData?.data || [];
   const topics: Topic[] = topicsData || [];
 
-  const pembimbing1Role = roles.find((r) => r.name === "Pembimbing 1");
-  const pembimbing2Role = roles.find((r) => r.name === "Pembimbing 2");
+  const pembimbing1Role = roles.find((r) => r.name === ROLES.PEMBIMBING_1);
+  const pembimbing2Role = roles.find((r) => r.name === ROLES.PEMBIMBING_2);
 
   // Populate form when editing
   useEffect(() => {
@@ -103,8 +104,8 @@ export default function ThesisFormDialog({
       setTopicId(thesis.topicId || "");
 
       // Set supervisors - use lecturerId directly from thesis data
-      const sup1 = thesis.supervisors?.find((s) => s.role === "Pembimbing 1");
-      const sup2 = thesis.supervisors?.find((s) => s.role === "Pembimbing 2");
+      const sup1 = thesis.supervisors?.find((s) => s.role === ROLES.PEMBIMBING_1);
+      const sup2 = thesis.supervisors?.find((s) => s.role === ROLES.PEMBIMBING_2);
 
       // Only set if we have the lecturer ID, otherwise wait for roles to load
       if (sup1?.lecturerId) {
@@ -319,9 +320,9 @@ export default function ThesisFormDialog({
                 ))}
               </SelectContent>
             </Select>
-            {isEdit && thesis?.supervisors?.find((s) => s.role === "Pembimbing 1") && (
+            {isEdit && thesis?.supervisors?.find((s) => s.role === ROLES.PEMBIMBING_1) && (
               <p className="text-xs text-muted-foreground">
-                Saat ini: {toTitleCaseName(thesis.supervisors.find((s) => s.role === "Pembimbing 1")?.fullName || "-")}
+                Saat ini: {toTitleCaseName(thesis.supervisors.find((s) => s.role === ROLES.PEMBIMBING_1)?.fullName || "-")}
               </p>
             )}
           </div>
@@ -346,9 +347,9 @@ export default function ThesisFormDialog({
                 ))}
               </SelectContent>
             </Select>
-            {isEdit && thesis?.supervisors?.find((s) => s.role === "Pembimbing 2") && (
+            {isEdit && thesis?.supervisors?.find((s) => s.role === ROLES.PEMBIMBING_2) && (
               <p className="text-xs text-muted-foreground">
-                Saat ini: {toTitleCaseName(thesis.supervisors.find((s) => s.role === "Pembimbing 2")?.fullName || "-")}
+                Saat ini: {toTitleCaseName(thesis.supervisors.find((s) => s.role === ROLES.PEMBIMBING_2)?.fullName || "-")}
               </p>
             )}
           </div>

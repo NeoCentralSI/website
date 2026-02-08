@@ -4,7 +4,7 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/spinner";
-import { getStudentSupervisors } from "@/services/studentGuidance.service";
+import { getStudentSupervisors, getPendingSupervisor2Request } from "@/services/studentGuidance.service";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import EmptyState from "@/components/ui/empty-state";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +12,8 @@ import { toTitleCaseName, formatRoleName } from "@/lib/text";
 import { Copy, Check, Mail, User } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { RequestSupervisor2Dialog } from "@/components/bimbingan/RequestSupervisor2Dialog";
+import { PendingRequestCard } from "@/components/bimbingan/PendingRequestCard";
 
 export default function SupervisorsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -28,7 +30,14 @@ export default function SupervisorsPage() {
     queryFn: getStudentSupervisors,
   });
 
+  const { data: pendingRequest } = useQuery({
+    queryKey: ['pending-supervisor2-request'],
+    queryFn: getPendingSupervisor2Request,
+  });
+
   const items = Array.isArray(data?.supervisors) ? data.supervisors : [];
+  const hasPembimbing2 = items.some((s) => formatRoleName(s.role).toLowerCase().includes("pembimbing 2"));
+
 
   const copyEmail = async (id: string, email: string) => {
     try {
@@ -71,7 +80,20 @@ export default function SupervisorsPage() {
           size="sm"
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-4">
+          {/* Request Pembimbing 2 button */}
+          <div className="flex justify-end">
+            <RequestSupervisor2Dialog
+              hasPembimbing2={hasPembimbing2}
+              hasPendingRequest={!!pendingRequest}
+            />
+          </div>
+
+          {/* Pending Request Card */}
+          {pendingRequest && <PendingRequestCard request={pendingRequest} />}
+
+          {/* Supervisor Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {items.map((supervisor) => {
             const name = supervisor.name || 'Pembimbing';
             const email = supervisor.email;
@@ -119,6 +141,7 @@ export default function SupervisorsPage() {
               </Card>
             );
           })}
+          </div>
         </div>
       )}
     </div>

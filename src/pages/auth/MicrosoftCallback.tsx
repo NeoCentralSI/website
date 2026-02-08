@@ -4,6 +4,7 @@ import { saveAuthTokens } from '@/services/auth.service';
 import { useAuth } from '@/hooks/shared';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { toTitleCaseName } from '@/lib/text';
 
 export default function MicrosoftCallback() {
   console.log('🔵 [MicrosoftCallback] Component MOUNTED');
@@ -65,16 +66,10 @@ export default function MicrosoftCallback() {
         console.log('⏳ Finalizing...');
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Show calendar sync status notification
-        if (hasCalendarAccess) {
-          toast.success('Login berhasil! Outlook Calendar tersinkronisasi.', {
-            description: 'Jadwal bimbingan akan otomatis muncul di Outlook Calendar Anda.'
-          });
-        } else {
-          toast.info('Login berhasil!', {
-            description: 'Calendar sync tidak tersedia. Anda mungkin perlu login ulang dengan izin calendar.'
-          });
-        }
+        // Show login success notification
+        toast.success('Login berhasil', {
+          description: `Selamat datang, ${toTitleCaseName(user.fullName)}`,
+        });
 
         // Redirect to dashboard dengan SPA navigation
         console.log('🚀 Redirecting to dashboard...');

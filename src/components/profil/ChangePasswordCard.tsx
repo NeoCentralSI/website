@@ -1,4 +1,4 @@
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Lock } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,114 +23,111 @@ export function ChangePasswordCard() {
   } = useChangePassword();
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-start gap-3 mb-6">
-        <div className="bg-red-100 p-2 rounded-lg">
-          <Lock className="h-5 w-5 text-red-600" />
-        </div>
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-gray-900">Keamanan Akun</h2>
-          <p className="text-sm text-gray-600 mt-1">Ubah password untuk meningkatkan keamanan</p>
-        </div>
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="flex items-center gap-3 mb-5">
+        <Lock className="h-6 w-6 text-primary" />
+        <h3 className="text-lg font-bold text-gray-900">Ubah Password</h3>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit}>
         {error && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="p-2 rounded-lg bg-red-50 border border-red-200 mb-4">
+            <p className="text-xs text-red-600">{error}</p>
           </div>
         )}
 
-        <div>
-          <Label htmlFor="currentPassword" className="text-sm font-medium text-gray-700 mb-2 block">
-            Password Saat Ini
-          </Label>
-          <div className="relative">
-            <Input
-              id="currentPassword"
-              type={showCurrentPassword ? 'text' : 'password'}
-              value={formData.currentPassword}
-              onChange={(e) => updateField('currentPassword', e.target.value)}
-              placeholder="••••••••••••••"
-              disabled={isChanging}
-              className="pr-10 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="currentPassword" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">
+              Password Saat Ini
+            </Label>
+            <div className="relative">
+              <Input
+                id="currentPassword"
+                type={showCurrentPassword ? 'text' : 'password'}
+                value={formData.currentPassword}
+                onChange={(e) => updateField('currentPassword', e.target.value)}
+                placeholder="••••••••"
+                disabled={isChanging}
+                className="h-9 text-sm pr-9 border-gray-300 focus:border-primary focus:ring-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="newPassword" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">
+              Password Baru
+            </Label>
+            <div className="relative">
+              <Input
+                id="newPassword"
+                type={showNewPassword ? 'text' : 'password'}
+                value={formData.newPassword}
+                onChange={(e) => updateField('newPassword', e.target.value)}
+                placeholder="Min. 8 karakter"
+                disabled={isChanging}
+                className="h-9 text-sm pr-9 border-gray-300 focus:border-primary focus:ring-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="confirmPassword" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">
+              Konfirmasi
+            </Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={formData.confirmPassword}
+                onChange={(e) => updateField('confirmPassword', e.target.value)}
+                placeholder="Ketik ulang password"
+                disabled={isChanging}
+                className="h-9 text-sm pr-9 border-gray-300 focus:border-primary focus:ring-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700 mb-2 block">
-            Password Baru
-          </Label>
-          <div className="relative">
-            <Input
-              id="newPassword"
-              type={showNewPassword ? 'text' : 'password'}
-              value={formData.newPassword}
-              onChange={(e) => updateField('newPassword', e.target.value)}
-              placeholder="Min. 6 karakter"
-              disabled={isChanging}
-              className="pr-10 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-            />
-            <button
-              type="button"
-              onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 mb-2 block">
-            Konfirmasi Password
-          </Label>
-          <div className="relative">
-            <Input
-              id="confirmPassword"
-              type={showConfirmPassword ? 'text' : 'password'}
-              value={formData.confirmPassword}
-              onChange={(e) => updateField('confirmPassword', e.target.value)}
-              placeholder="Ketik ulang password"
-              disabled={isChanging}
-              className="pr-10 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+        <div className="flex justify-end gap-2 mt-4">
           <Button
             type="button"
             variant="outline"
             onClick={resetForm}
             disabled={isChanging}
-            className="px-6 py-2 border-gray-300 hover:bg-gray-50"
+            className="border-gray-300 hover:bg-gray-50 h-9"
           >
             Reset
           </Button>
           <Button
             type="submit"
             disabled={isChanging}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-8"
+            className="bg-primary hover:bg-primary/90 text-white h-9"
           >
             {isChanging ? (
               <>
-                <Spinner className="mr-2" />
+                <Spinner className="mr-1.5 h-4 w-4" />
                 Menyimpan...
               </>
             ) : (

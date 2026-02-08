@@ -406,3 +406,41 @@ export const reviewChangeRequest = async (requestId: string, data: { status: 'ap
   }
   return res.json();
 };
+
+// ─── Pembimbing 2 Requests ─────────────────────────────────────────────────
+
+export interface Supervisor2RequestItem {
+  requestId: string;
+  thesisId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string | null;
+  studentNim: string | null;
+  thesisTitle: string;
+  requestedAt: string;
+}
+
+export const getSupervisor2Requests = async (): Promise<Supervisor2RequestItem[]> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.SUPERVISOR2_REQUESTS));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan");
+  const data = await res.json();
+  return data.data ?? [];
+};
+
+export const approveSupervisor2Request = async (requestId: string): Promise<{ success: boolean; message: string }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.SUPERVISOR2_APPROVE(requestId)), {
+    method: "PATCH",
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui permintaan");
+  return res.json();
+};
+
+export const rejectSupervisor2Request = async (requestId: string, reason?: string): Promise<{ success: boolean; message: string }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.SUPERVISOR2_REJECT(requestId)), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak permintaan");
+  return res.json();
+};

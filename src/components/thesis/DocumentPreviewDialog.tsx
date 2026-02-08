@@ -18,9 +18,9 @@ export default function DocumentPreviewDialog({ open, onOpenChange, fileName, fi
     if (filePath.startsWith("http")) {
       url = filePath;
     }
-    // If path already starts with /uploads/, use it as-is
-    else if (filePath.startsWith("/uploads/")) {
-      url = getApiUrl(filePath);
+    // If path already starts with /uploads/ or uploads/, use it as-is
+    else if (filePath.startsWith("/uploads/") || filePath.startsWith("uploads/")) {
+      url = getApiUrl(filePath.startsWith("/") ? filePath : `/${filePath}`);
     }
     // Otherwise, add /uploads/ prefix
     else {

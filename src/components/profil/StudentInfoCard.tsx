@@ -1,5 +1,5 @@
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { GraduationCap } from 'lucide-react';
 import type { User } from '@/services/auth.service';
 
 interface StudentInfoCardProps {
@@ -10,37 +10,41 @@ export function StudentInfoCard({ student }: StudentInfoCardProps) {
   if (!student) return null;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Informasi Mahasiswa</h2>
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label className="text-sm text-gray-600">Tahun Masuk</Label>
-            <p className="text-sm font-medium text-gray-900 mt-1">
-              {student.enrollmentYear || <span className="text-gray-400 italic">Belum diisi</span>}
-            </p>
-          </div>
-          <div>
-            <Label className="text-sm text-gray-600">SKS Selesai</Label>
-            <p className="text-sm font-medium text-gray-900 mt-1">
-              {student.sksCompleted !== undefined ? (
-                `${student.sksCompleted} SKS`
-              ) : (
-                <span className="text-gray-400 italic">Belum diisi</span>
-              )}
-            </p>
-          </div>
-          <div>
-            <Label className="text-sm text-gray-600">Status Mahasiswa</Label>
-            <div className="mt-1">
-              {student.status ? (
-                <Badge variant={student.status === 'Aktif' ? 'default' : 'secondary'}>
-                  {student.status}
-                </Badge>
-              ) : (
-                <span className="text-sm text-gray-400 italic">Belum diisi</span>
-              )}
-            </div>
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="flex items-center gap-3 mb-5">
+        <GraduationCap className="h-6 w-6 text-primary" />
+        <h3 className="text-lg font-bold text-gray-900">Informasi Mahasiswa</h3>
+      </div>
+
+      <div className="grid grid-cols-3 gap-x-8 gap-y-4">
+        <div>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Tahun Masuk
+          </span>
+          <p className="text-base font-medium text-gray-900 mt-0.5">
+            {student.enrollmentYear || '-'}
+          </p>
+        </div>
+        <div>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            SKS Selesai
+          </span>
+          <p className="text-base font-medium text-gray-900 mt-0.5">
+            {student.sksCompleted !== undefined ? `${student.sksCompleted} SKS` : '-'}
+          </p>
+        </div>
+        <div>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Status
+          </span>
+          <div className="mt-0.5">
+            {student.status ? (
+              <Badge variant={student.status === 'Aktif' ? 'default' : 'secondary'}>
+                {student.status}
+              </Badge>
+            ) : (
+              <span className="text-gray-400 italic">-</span>
+            )}
           </div>
         </div>
       </div>

@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { activateAccountAPI } from '@/services/auth.service';
 import { toast } from 'sonner';
 
 export const useActivateAccount = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -27,14 +29,13 @@ export const useActivateAccount = () => {
         });
       } else if (result.code === 'ALREADY_VERIFIED') {
         toast.info('Akun sudah aktif', {
-          description: 'Akun Anda sudah aktif. Silakan login dengan Microsoft.',
+          description: 'Akun Anda sudah aktif. Silakan login.',
         });
         setEmail('');
         return true;
       } else {
-        toast.success('Email aktivasi terkirim!', {
-          description: 'Link aktivasi telah dikirim. Setelah aktivasi, login dengan Microsoft.',
-        });
+        // Navigate to email sent confirmation page
+        navigate('/activation-email-sent', { state: { email } });
         setEmail('');
         return true;
       }

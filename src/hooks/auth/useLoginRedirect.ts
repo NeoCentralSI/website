@@ -21,12 +21,7 @@ export const useLoginRedirect = () => {
     const oauthError = urlParams.get('error');
 
     if (verified && message) {
-      if (verified === 'success') {
-        toast.success('Aktivasi Berhasil!', {
-          description: 'Akun Anda sudah aktif. Silakan login dengan Microsoft.',
-          duration: 5000,
-        });
-      } else if (verified === 'error') {
+      if (verified === 'error') {
         toast.error('Aktivasi Gagal', {
           description: decodeURIComponent(message),
           duration: 5000,

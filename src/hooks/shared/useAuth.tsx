@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { clearAuthTokens, getAuthTokens, getUserProfileAPI, loginAPI, logoutAPI, saveAuthTokens, type User } from '@/services/auth.service';
 import { unregisterFcmToken } from '@/services/notification.service';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { toTitleCaseName } from '@/lib/text';
 
 // Key untuk menyimpan FCM token di localStorage
 const FCM_TOKEN_KEY = 'fcm_token';
@@ -66,8 +68,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       saveAuthTokens(response.accessToken, response.refreshToken);
       queryClient.setQueryData(['auth-user'], response.user);
+      toast.success('Login berhasil', {
+        description: `Selamat datang, ${toTitleCaseName(response.user.fullName)}`,
+      });
       navigate('/dashboard');
     } catch (error) {
+      // If account is not verified, redirect to account-inactive page
+      if ((error as any)?.code === 'NOT_VERIFIED') {
+        navigate('/account-inactive', { state: { email } });
+        return;
+      }
       throw error;
     }
   };

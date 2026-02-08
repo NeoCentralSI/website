@@ -21,6 +21,7 @@ export interface User {
   identityType?: 'NIM' | 'NIP' | 'OTHER';
   phoneNumber?: string;
   isVerified: boolean;
+  avatarUrl?: string | null;
   roles: Role[];
   student?: {
     id: string;
@@ -31,9 +32,25 @@ export interface User {
   lecturer?: {
     id: string;
     scienceGroup: string | null;
+    data: LecturerData | null;
   };
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface LecturerEducation {
+  jenjang: string;
+  program_studi: string;
+  fakultas: string | null;
+  universitas: string;
+}
+
+export interface LecturerData {
+  nidn?: string;
+  nuptk?: string;
+  pangkat_golongan?: string;
+  jabatan_fungsional?: string;
+  riwayat_pendidikan?: LecturerEducation[];
 }
 
 export interface LoginResponse {
@@ -55,7 +72,10 @@ export const loginAPI = async (credentials: LoginRequest): Promise<LoginResponse
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Login gagal');
+      const error = new Error(errorData.message || 'Login gagal');
+      (error as any).code = errorData.code;
+      (error as any).statusCode = errorData.status;
+      throw error;
     }
 
     const data: LoginResponse = await response.json();

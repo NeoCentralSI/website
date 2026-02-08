@@ -6,6 +6,9 @@ import Login from './pages/Login'
 import Landing from './pages/Landing'
 import Profil from './pages/profil/Profil'
 import MicrosoftCallback from './pages/auth/MicrosoftCallback'
+import ActivationSuccess from './pages/auth/ActivationSuccess'
+import AccountInactive from './pages/auth/AccountInactive'
+import ActivationEmailSent from './pages/auth/ActivationEmailSent'
 import ResetPassword from './pages/ResetPassword'
 import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
@@ -77,6 +80,9 @@ function App() {
             <Route path="/" element={<RootRoute />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
+            <Route path="/activation-success" element={<ActivationSuccess />} />
+            <Route path="/account-inactive" element={<AccountInactive />} />
+            <Route path="/activation-email-sent" element={<ActivationEmailSent />} />
             <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected layout routes - sidebar persists */}

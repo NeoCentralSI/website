@@ -20,6 +20,12 @@ export const API_CONFIG = {
     USER: {
       PROFILE: '/user/profile',
     },
+    PROFILE: {
+      UPLOAD_AVATAR: '/profile/avatar',
+      DELETE_AVATAR: '/profile/avatar',
+      SERVE_AVATAR: (fileName: string) => `/profile/avatar/${fileName}`,
+      LECTURER_DATA: '/profile/lecturer-data',
+    },
     NOTIFICATION: {
       BASE: '/notification',
       UNREAD_COUNT: '/notification/unread-count',
@@ -53,6 +59,11 @@ export const API_CONFIG = {
       // My Thesis
       MY_THESIS: '/thesisGuidance/student/my-thesis',
       UPDATE_THESIS_TITLE: '/thesisGuidance/student/my-thesis/title',
+      // Pembimbing 2 Request
+      AVAILABLE_SUPERVISORS_2: '/thesisGuidance/student/available-supervisors-2',
+      REQUEST_SUPERVISOR_2: '/thesisGuidance/student/request-supervisor-2',
+      PENDING_SUPERVISOR_2: '/thesisGuidance/student/pending-supervisor-2-request',
+      CANCEL_SUPERVISOR_2: '/thesisGuidance/student/cancel-supervisor-2-request',
     },
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',
@@ -75,6 +86,10 @@ export const API_CONFIG = {
       APPROVE_SUMMARY: (guidanceId: string) => `/thesisGuidance/lecturer/guidance/${guidanceId}/approve-summary`,
       // Guidance Detail
       GUIDANCE_DETAIL: (guidanceId: string) => `/thesisGuidance/lecturer/guidance/${guidanceId}`,
+      // Pembimbing 2 Requests
+      SUPERVISOR2_REQUESTS: '/thesisGuidance/lecturer/supervisor2-requests',
+      SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
+      SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
     },
   },
   TIMEOUT: 10000, // 10 detik
