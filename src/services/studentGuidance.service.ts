@@ -76,7 +76,6 @@ export interface ProgressDetailItem {
   validatedBySupervisor?: boolean;
   validatedAt?: string | null; // ISO
   notes?: string | null; // catatan dari supervisor
-  evidenceUrl?: string | null; // link bukti/dokumen
   [key: string]: unknown;
 }
 

@@ -43,7 +43,7 @@ export interface ThesisChangeRequest {
       id: string;
       name: string;
     };
-    thesisParticipants?: Array<{
+    thesisSupervisors?: Array<{
       lecturer: {
         user: {
           id: string;

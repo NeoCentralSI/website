@@ -58,8 +58,6 @@ export interface Milestone {
   validatedBy?: string | null;
   validatedAt?: string | null;
   supervisorNotes?: string | null;
-  evidenceUrl?: string | null;
-  evidenceDescription?: string | null;
   studentNotes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -124,8 +122,6 @@ export interface UpdateMilestoneDto {
   targetDate?: string | null;
   orderIndex?: number;
   studentNotes?: string | null;
-  evidenceUrl?: string | null;
-  evidenceDescription?: string | null;
 }
 
 export interface CreateFromTemplatesDto {
@@ -144,7 +140,6 @@ export interface UpdateProgressDto {
 }
 
 export interface SubmitForReviewDto {
-  evidenceUrl?: string | null;
   studentNotes?: string | null;
 }
 
@@ -237,7 +232,6 @@ export interface PendingMilestoneItem {
   title: string;
   status: MilestoneStatus;
   progressPercentage: number;
-  evidenceUrl?: string | null;
   studentNotes?: string | null;
   createdAt: string;
   updatedAt: string;

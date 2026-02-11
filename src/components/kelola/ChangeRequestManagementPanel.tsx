@@ -159,7 +159,7 @@ export function ChangeRequestManagementPanel() {
   };
 
   const getSupervisors = (request: ThesisChangeRequest) => {
-    return request.thesis?.thesisParticipants
+    return request.thesis?.thesisSupervisors
       ?.filter((p) => SUPERVISOR_ROLES.includes(p.role?.name as typeof SUPERVISOR_ROLES[number]))
       ?.map((p) => ({
         name: toTitleCaseName(p.lecturer?.user?.fullName || ''),
