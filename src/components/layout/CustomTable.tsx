@@ -109,32 +109,32 @@ export function CustomTable<T extends Record<string, any>>({
 
 	return (
 		<Card className={cn("p-4", className)}>
-					<div className="flex flex-col gap-3">
-								<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-									<div className="flex-1 flex items-center gap-2">
-										{loading ? (
-										<div className="flex items-center gap-2 text-sm text-muted-foreground">
-											<Spinner className="size-4" />
-											<span>Memuat...</span>
-										</div>
-										) : onSearchChange !== undefined ? (
-											<div className="relative w-full sm:max-w-md">
-												<SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-												<Input
-													placeholder="Cari..."
-													className="pl-8"
-													value={searchValue ?? ""}
-													onChange={(e) => onSearchChange(e.target.value)}
-												/>
-											</div>
-										) : null}
-									</div>
-									{!loading && actions && (
-										<div className="flex items-center gap-2">
-											{actions}
-										</div>
-									)}
-								</div>
+			<div className="flex flex-col gap-3">
+				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+					<div className="flex-1 flex items-center gap-2">
+						{loading ? (
+							<div className="flex items-center gap-2 text-sm text-muted-foreground">
+								<Spinner className="size-4" />
+								<span>Memuat...</span>
+							</div>
+						) : onSearchChange !== undefined ? (
+							<div className="relative w-full sm:max-w-md">
+								<SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+								<Input
+									placeholder="Cari..."
+									className="pl-8"
+									value={searchValue ?? ""}
+									onChange={(e) => onSearchChange(e.target.value)}
+								/>
+							</div>
+						) : null}
+					</div>
+					{!loading && actions && (
+						<div className="flex items-center gap-2">
+							{actions}
+						</div>
+					)}
+				</div>
 
 				<div className="rounded-md border border-black/10 relative">
 					{isRefreshing && !loading && (
@@ -142,107 +142,107 @@ export function CustomTable<T extends Record<string, any>>({
 							<Spinner className="h-8 w-8" />
 						</div>
 					)}
-								<Table>
-									<TableHeader>
-										<TableRow>
-											{columns.map((col) => (
-												<TableHead key={col.key} className={cn("align-middle", col.className)} style={{ width: col.width }}>
-													<div className="flex items-center gap-2">
-														<div className="truncate">{col.header}</div>
-																				{enableColumnFilters && col.filter ? (
-																					(col.filter as ColumnFilterElement).kind === 'element' ? (
-																						<Popover>
-																							<PopoverTrigger asChild>
-																								<Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
-																									<FilterIcon className="size-3.5" />
-																								</Button>
-																							</PopoverTrigger>
-																							<PopoverContent align="start" className="w-56 p-3">
-																								{(col.filter as ColumnFilterElement).element}
-																							</PopoverContent>
-																						</Popover>
-																					) : (
-																						((col.filter as ColumnFilterControl).type ?? 'text') === 'select' ? (
-																							<DropdownMenu>
-																								<DropdownMenuTrigger asChild>
-																									<Button
-																										variant="ghost"
-																										size="icon"
-																										className={cn(
-																											"h-6 w-6 shrink-0",
-																											(col.filter as any)?.value ? "text-primary" : undefined
-																										)}
-																									>
-																										<FilterIcon className="size-3.5" />
-																									</Button>
-																								</DropdownMenuTrigger>
-																								<DropdownMenuContent align="start" className="w-56">
-																									{((col.filter as ColumnFilterControl).options ?? []).map((opt: { label: string; value: string }) => {
-																										const active = ((col.filter as ColumnFilterControl).value ?? '') === opt.value;
-																										return (
-																											<DropdownMenuItem 
-																												key={opt.value} 
-																												onClick={() => (col.filter as ColumnFilterControl).onChange?.(opt.value)}
-																												className="cursor-pointer hover:bg-accent focus:bg-accent"
-																											>
-																												<div className="flex items-center w-full gap-2">
-																													<div className={cn(
-																														"size-4 rounded flex items-center justify-center border-2 transition-all",
-																														active 
-																															? "border-primary bg-primary shadow-sm" 
-																															: "border-gray-300 hover:border-gray-400 bg-background"
-																													)}>
-																														<CheckIcon className={cn(
-																															"size-3 transition-all",
-																															active ? "text-primary-foreground opacity-100 scale-100" : "text-transparent opacity-0 scale-50"
-																														)} />
-																													</div>
-																													<span className={cn(
-																														"flex-1",
-																														active && "font-medium"
-																													)}>{opt.label}</span>
-																												</div>
-																											</DropdownMenuItem>
-																										);
-																									})}
-																								</DropdownMenuContent>
-																							</DropdownMenu>
-																						) : (
-																							<Popover>
-																								<PopoverTrigger asChild>
-																									<Button
-																										variant="ghost"
-																										size="icon"
-																										className={cn(
-																											"h-6 w-6 shrink-0",
-																											(col.filter as any)?.value ? "text-primary" : undefined
-																										)}
-																									>
-																										<FilterIcon className="size-3.5" />
-																									</Button>
-																								</PopoverTrigger>
-																								<PopoverContent align="start" className="w-56 p-3">
-																									<Input
-																										placeholder={(col.filter as ColumnFilterControl).placeholder ?? 'Filter...'}
-																										className="h-8 text-xs"
-																										value={(col.filter as ColumnFilterControl).value ?? ''}
-																										onChange={(e) => (col.filter as ColumnFilterControl).onChange?.(e.target.value)}
-																									/>
-																									<div className="flex justify-end mt-2">
-																										<Button size="sm" variant="secondary" className="h-7 px-2 text-xs" onClick={() => (col.filter as ColumnFilterControl).onChange?.('')}>
-																											Reset
-																										</Button>
-																									</div>
-																								</PopoverContent>
-																							</Popover>
-																						)
-																					)
-																				) : null}
-													</div>
-												</TableHead>
-											))}
-										</TableRow>
-									</TableHeader>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								{columns.map((col) => (
+									<TableHead key={col.key} className={cn("align-middle", col.className)} style={{ width: col.width }}>
+										<div className={cn("flex items-center gap-2", col.className?.includes("text-center") && "justify-center")}>
+											<div className="truncate">{col.header}</div>
+											{enableColumnFilters && col.filter ? (
+												(col.filter as ColumnFilterElement).kind === 'element' ? (
+													<Popover>
+														<PopoverTrigger asChild>
+															<Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+																<FilterIcon className="size-3.5" />
+															</Button>
+														</PopoverTrigger>
+														<PopoverContent align="start" className="w-56 p-3">
+															{(col.filter as ColumnFilterElement).element}
+														</PopoverContent>
+													</Popover>
+												) : (
+													((col.filter as ColumnFilterControl).type ?? 'text') === 'select' ? (
+														<DropdownMenu>
+															<DropdownMenuTrigger asChild>
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	className={cn(
+																		"h-6 w-6 shrink-0",
+																		(col.filter as any)?.value ? "text-primary" : undefined
+																	)}
+																>
+																	<FilterIcon className="size-3.5" />
+																</Button>
+															</DropdownMenuTrigger>
+															<DropdownMenuContent align="start" className="w-56">
+																{((col.filter as ColumnFilterControl).options ?? []).map((opt: { label: string; value: string }) => {
+																	const active = ((col.filter as ColumnFilterControl).value ?? '') === opt.value;
+																	return (
+																		<DropdownMenuItem
+																			key={opt.value}
+																			onClick={() => (col.filter as ColumnFilterControl).onChange?.(opt.value)}
+																			className="cursor-pointer hover:bg-accent focus:bg-accent"
+																		>
+																			<div className="flex items-center w-full gap-2">
+																				<div className={cn(
+																					"size-4 rounded flex items-center justify-center border-2 transition-all",
+																					active
+																						? "border-primary bg-primary shadow-sm"
+																						: "border-gray-300 hover:border-gray-400 bg-background"
+																				)}>
+																					<CheckIcon className={cn(
+																						"size-3 transition-all",
+																						active ? "text-primary-foreground opacity-100 scale-100" : "text-transparent opacity-0 scale-50"
+																					)} />
+																				</div>
+																				<span className={cn(
+																					"flex-1",
+																					active && "font-medium"
+																				)}>{opt.label}</span>
+																			</div>
+																		</DropdownMenuItem>
+																	);
+																})}
+															</DropdownMenuContent>
+														</DropdownMenu>
+													) : (
+														<Popover>
+															<PopoverTrigger asChild>
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	className={cn(
+																		"h-6 w-6 shrink-0",
+																		(col.filter as any)?.value ? "text-primary" : undefined
+																	)}
+																>
+																	<FilterIcon className="size-3.5" />
+																</Button>
+															</PopoverTrigger>
+															<PopoverContent align="start" className="w-56 p-3">
+																<Input
+																	placeholder={(col.filter as ColumnFilterControl).placeholder ?? 'Filter...'}
+																	className="h-8 text-xs"
+																	value={(col.filter as ColumnFilterControl).value ?? ''}
+																	onChange={(e) => (col.filter as ColumnFilterControl).onChange?.(e.target.value)}
+																/>
+																<div className="flex justify-end mt-2">
+																	<Button size="sm" variant="secondary" className="h-7 px-2 text-xs" onClick={() => (col.filter as ColumnFilterControl).onChange?.('')}>
+																		Reset
+																	</Button>
+																</div>
+															</PopoverContent>
+														</Popover>
+													)
+												)
+											) : null}
+										</div>
+									</TableHead>
+								))}
+							</TableRow>
+						</TableHeader>
 						<TableBody>
 							{loading ? (
 								<TableRow>
@@ -253,8 +253,8 @@ export function CustomTable<T extends Record<string, any>>({
 							) : data.length === 0 ? (
 								<TableRow>
 									<TableCell colSpan={columns.length} className="p-0">
-										<EmptyState 
-											title="Tidak Ada Data" 
+										<EmptyState
+											title="Tidak Ada Data"
 											description={emptyText}
 											size="sm"
 											className="py-8"

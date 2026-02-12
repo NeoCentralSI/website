@@ -56,9 +56,9 @@ export const useSidebarMenu = () => {
           icon: SquareTerminal,
           isActive: true,
         },
-        // Kerja Praktek - always show with submenus
+        // Kerja Praktik - always show with submenus
         {
-          title: "Kerja Praktek",
+          title: "Kerja Praktik",
           url: "/kerja-praktik",
           icon: Briefcase,
           items: [
@@ -67,11 +67,11 @@ export const useSidebarMenu = () => {
               url: "/kerja-praktik/pendaftaran",
             },
             {
-              title: "Log Book",
+              title: "Kegiatan",
               url: "/kerja-praktik/logbook",
             },
             {
-              title: "Seminar",
+              title: "Seminar & Nilai",
               url: "/kerja-praktik/seminar",
             },
           ],
@@ -131,16 +131,20 @@ export const useSidebarMenu = () => {
           isActive: true,
         },
         {
-          title: "Kerja Praktek",
+          title: "Kerja Praktik",
           url: "/kerja-praktik",
           icon: Briefcase,
           items: [
+            {
+              title: "Monitoring",
+              url: "/kerja-praktik/monitoring",
+            },
             {
               title: "Bimbingan",
               url: "/kerja-praktik/bimbingan",
             },
             {
-              title: "Seminar",
+              title: "Seminar & Nilai",
               url: "/kerja-praktik/seminar",
             },
           ],
@@ -195,20 +199,20 @@ export const useSidebarMenu = () => {
           isActive: true,
         },
         {
-          title: "Kerja Praktek",
+          title: "Kerja Praktik",
           url: "/kerja-praktik",
           icon: Briefcase,
           items: [
             {
-              title: "ACC Proposal",
-              url: "/kerja-praktik/acc-proposal",
+              title: "Monitoring",
+              url: "/kerja-praktik/monitoring",
             },
             {
               title: "Bimbingan",
               url: "/kerja-praktik/bimbingan",
             },
             {
-              title: "Seminar",
+              title: "Seminar & Nilai",
               url: "/kerja-praktik/seminar",
             },
           ],
@@ -245,7 +249,8 @@ export const useSidebarMenu = () => {
         icon: Database,
         items: [
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/kadep" },
-          { title: "Kerja Praktek", url: "/kelola/kerja-praktik" },
+          { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
+          { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
         ],
       });
 
@@ -273,20 +278,20 @@ export const useSidebarMenu = () => {
           isActive: true,
         },
         {
-          title: "Kerja Praktek",
+          title: "Kerja Praktik",
           url: "/kerja-praktik",
           icon: Briefcase,
           items: [
             {
-              title: "ACC Proposal",
-              url: "/kerja-praktik/acc-proposal",
+              title: "Monitoring",
+              url: "/kerja-praktik/monitoring",
             },
             {
               title: "Bimbingan",
               url: "/kerja-praktik/bimbingan",
             },
             {
-              title: "Seminar",
+              title: "Seminar & Nilai",
               url: "/kerja-praktik/seminar",
             },
           ],
@@ -323,7 +328,8 @@ export const useSidebarMenu = () => {
         url: "/kelola",
         icon: Database,
         items: [
-          { title: "Kerja Praktek", url: "/kelola/kerja-praktik" },
+          { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
+          { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
           { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
@@ -354,20 +360,20 @@ export const useSidebarMenu = () => {
           isActive: true,
         },
         {
-          title: "Kerja Praktek",
+          title: "Kerja Praktik",
           url: "/kerja-praktik",
           icon: Briefcase,
           items: [
             {
-              title: "ACC Proposal",
-              url: "/kerja-praktik/acc-proposal",
+              title: "Monitoring",
+              url: "/kerja-praktik/monitoring",
             },
             {
               title: "Bimbingan",
               url: "/kerja-praktik/bimbingan",
             },
             {
-              title: "Seminar",
+              title: "Seminar & Nilai",
               url: "/kerja-praktik/seminar",
             },
           ],
@@ -430,7 +436,7 @@ export const useSidebarMenu = () => {
             isActive: true,
           },
           {
-            title: "Kerja Praktek",
+            title: "Kerja Praktik",
             url: "/kerja-praktik",
             icon: Briefcase,
             items: [
@@ -509,7 +515,7 @@ export const useSidebarMenu = () => {
       ],
       navSecondary: [],
     };
-  // Only recompute when role flags or auth user identity change
+    // Only recompute when role flags or auth user identity change
   }, [
     // role flags
     isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1,
