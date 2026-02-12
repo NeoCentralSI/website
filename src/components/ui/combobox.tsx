@@ -2,23 +2,28 @@
 
 import { Button } from "@/components/ui/button"
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from "@/components/ui/command"
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
 import * as React from "react"
 
-type ComboBoxItem = { value: string; label: string }
+type ComboBoxItem = {
+  value: string;
+  label: string;
+  disabled?: boolean;
+  rightLabel?: React.ReactNode;
+}
 
 type ComboBoxProps = {
   items?: ComboBoxItem[]
@@ -43,6 +48,9 @@ export function ComboBox({
   const selectedItem = items.find((item: ComboBoxItem) => item.value === value)
 
   const handleSelect = (currentValue: string) => {
+    const item = items.find(i => i.value === currentValue);
+    if (item?.disabled) return;
+
     const newValue = currentValue === value ? "" : currentValue
     setValue(newValue)
     setOpen(false)
@@ -57,9 +65,9 @@ export function ComboBox({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={`${width} justify-between`}
+          className={`${width} justify-between truncate`}
         >
-          {selectedItem ? selectedItem.label : placeholder}
+          <span className="truncate">{selectedItem ? selectedItem.label : placeholder}</span>
           <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -75,14 +83,26 @@ export function ComboBox({
                   key={item.value}
                   value={item.value}
                   onSelect={handleSelect}
+                  disabled={item.disabled}
+                  className={cn(
+                    "flex items-center justify-between",
+                    item.disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+                  )}
                 >
-                  <CheckIcon
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === item.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {item.label}
+                  <div className="flex items-center flex-1 truncate">
+                    <CheckIcon
+                      className={cn(
+                        "mr-2 h-4 w-4 shrink-0",
+                        value === item.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {item.rightLabel && (
+                    <div className="ml-2 shrink-0">
+                      {item.rightLabel}
+                    </div>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

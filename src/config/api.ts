@@ -91,6 +91,23 @@ export const API_CONFIG = {
       SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
       SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
     },
+    INTERNSHIP_STUDENT: {
+      BASE: '/insternship/registration',
+      PROPOSALS: '/insternship/registration/proposals',
+      RESPOND_INVITATION: (id: string) => `/insternship/registration/proposals/${id}/respond`,
+      COMPANIES: '/insternship/registration/companies',
+      ELIGIBLE_STUDENTS: '/insternship/registration/eligible-students',
+      SUBMIT_PROPOSAL: '/insternship/registration/submit',
+      UPLOAD: '/documents/upload',
+    },
+    INTERNSHIP_SEKDEP: {
+      BASE: '/insternship/sekdep',
+      PROPOSALS: '/insternship/sekdep/proposals',
+      PROPOSAL_DETAIL: (id: string) => `/insternship/sekdep/proposals/${id}`,
+      COMPANY_STATS: '/insternship/sekdep/companies/stats',
+      COMPANIES: '/insternship/sekdep/companies',
+      COMPANY_DETAIL: (id: string) => `/insternship/sekdep/companies/${id}`,
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };
