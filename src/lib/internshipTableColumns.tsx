@@ -1,4 +1,4 @@
-import type { InternshipProposalItem, SekdepInternshipProposalItem, CompanyStatsItem } from '@/services/internship.service';
+import type { InternshipProposalItem, SekdepInternshipProposalItem, CompanyStatsItem, AdminApprovedProposalItem } from '@/services/internship.service';
 import type { Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -94,7 +94,7 @@ export const getInternshipProposalColumns = ({
                 return (
                     <div className="flex items-center justify-center">
                         <Badge variant={variant as any} className="whitespace-nowrap text-[10px] px-2 py-0">
-                            {status.replace(/_/g, ' ')}
+                            {status === 'APPROVED_BY_SEKDEP' ? 'APPROVED' : status === 'REJECTED_BY_SEKDEP' ? 'REJECTED' : status.replace(/_/g, ' ')}
                         </Badge>
                     </div>
                 );
@@ -144,11 +144,17 @@ export const getInternshipProposalColumns = ({
     ];
 
 interface SekdepColumnProps {
+    onViewProposalDoc: (item: SekdepInternshipProposalItem) => void;
+    onViewAppLetterDoc: (item: SekdepInternshipProposalItem) => void;
     onViewDetail: (item: SekdepInternshipProposalItem) => void;
+    onRespond: (item: SekdepInternshipProposalItem, response: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP') => void;
 }
 
 export const getSekdepInternshipProposalColumns = ({
+    onViewProposalDoc,
+    onViewAppLetterDoc,
     onViewDetail,
+    onRespond,
 }: SekdepColumnProps): Column<SekdepInternshipProposalItem>[] => [
         {
             key: 'koordinator',
@@ -177,6 +183,50 @@ export const getSekdepInternshipProposalColumns = ({
             className: 'text-center',
         },
         {
+            key: 'proposalDoc',
+            header: 'Proposal',
+            render: (item) => (
+                <div className="flex justify-center">
+                    {item.dokumenProposal ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => onViewProposalDoc(item)}
+                        >
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs">Lihat</span>
+                        </Button>
+                    ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
+            key: 'appLetterDoc',
+            header: 'Permohonan',
+            render: (item) => (
+                <div className="flex justify-center">
+                    {item.dokumenSuratPermohonan ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => onViewAppLetterDoc(item)}
+                        >
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs">Lihat</span>
+                        </Button>
+                    ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
             key: 'status',
             header: 'Status',
             render: (item) => {
@@ -190,7 +240,7 @@ export const getSekdepInternshipProposalColumns = ({
                 return (
                     <div className="flex items-center justify-center">
                         <Badge variant={variant as any} className="whitespace-nowrap text-[10px] px-2 py-0">
-                            {status.replace(/_/g, ' ')}
+                            {status === 'APPROVED_BY_SEKDEP' ? 'APPROVED' : status === 'REJECTED_BY_SEKDEP' ? 'REJECTED' : status.replace(/_/g, ' ')}
                         </Badge>
                     </div>
                 );
@@ -198,26 +248,32 @@ export const getSekdepInternshipProposalColumns = ({
             className: 'text-center',
         },
         {
-            key: 'createdAt',
-            header: 'Tanggal Diajukan',
-            render: (item) => (
-                <div className="flex justify-center">
-                    <span className="text-sm">
-                        {item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                        }) : '-'}
-                    </span>
-                </div>
-            ),
-            className: 'text-center',
-        },
-        {
             key: 'actions',
             header: 'Aksi',
             render: (item) => (
                 <div className="flex items-center justify-center gap-1">
+                    {item.status === 'PENDING' && (
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                title="Setujui"
+                                onClick={() => onRespond(item, 'APPROVED_BY_SEKDEP')}
+                            >
+                                <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Tolak"
+                                onClick={() => onRespond(item, 'REJECTED_BY_SEKDEP')}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -234,9 +290,9 @@ export const getSekdepInternshipProposalColumns = ({
     ];
 
 interface CompanyColumnProps {
-    onEdit: (item: CompanyStatsItem) => void;
+    onEdit?: (item: CompanyStatsItem) => void;
     onDetail: (item: CompanyStatsItem) => void;
-    onDelete: (item: CompanyStatsItem) => void;
+    onDelete?: (item: CompanyStatsItem) => void;
 }
 
 export const getCompanyStatsColumns = ({
@@ -309,23 +365,139 @@ export const getCompanyStatsColumns = ({
                     >
                         <Eye className="h-4 w-4" />
                     </Button>
+                    {onEdit && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Edit"
+                            onClick={() => onEdit(item)}
+                        >
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {onDelete && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Hapus"
+                            onClick={() => onDelete(item)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
+        },
+    ];
+
+interface AdminApprovedProposalColumnProps {
+    onViewLetterDoc: (item: AdminApprovedProposalItem) => void;
+    onAction: (item: AdminApprovedProposalItem) => void;
+}
+
+export const getAdminApprovedProposalColumns = ({
+    onViewLetterDoc,
+    onAction,
+}: AdminApprovedProposalColumnProps): Column<AdminApprovedProposalItem>[] => [
+        {
+            key: 'koordinator',
+            header: 'Nama',
+            render: (item) => (
+                <div className="flex flex-col py-1">
+                    <span className="font-medium text-sm leading-tight">{item.coordinatorName}</span>
+                    <span className="text-xs text-muted-foreground">{item.coordinatorNim}</span>
+                </div>
+            ),
+        },
+        {
+            key: 'companyName',
+            header: 'Perusahaan',
+            accessor: 'companyName',
+            className: 'text-sm',
+        },
+        {
+            key: 'members',
+            header: 'Anggota',
+            render: (item) => (
+                <div className="flex items-center justify-center gap-1">
+                    <span className="text-sm">{item.members.length} Mahasiswa</span>
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
+            key: 'periode',
+            header: 'Periode',
+            render: (item) => (
+                <div className="flex flex-col text-center">
+                    {item.period ? (
+                        <>
+                            <span className="text-xs font-medium">
+                                {new Date(item.period.start).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground italic">s/d</span>
+                            <span className="text-xs font-medium">
+                                {new Date(item.period.end).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                        </>
+                    ) : (
+                        <span className="text-xs text-muted-foreground italic">Belum Diatur</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center min-w-[120px]',
+        },
+        {
+            key: 'letterNumber',
+            header: 'No. Surat Pengantar',
+            render: (item) => (
+                <div className="flex justify-center">
+                    <code className="text-[10px] font-mono px-1.5 py-0.5">
+                        {item.letterNumber}
+                    </code>
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
+            key: 'file',
+            header: 'File',
+            render: (item) => (
+                <div className="flex items-center justify-center">
+                    {item.letterFile ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Lihat Surat Pengantar"
+                            onClick={() => onViewLetterDoc(item)}
+                        >
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs">Lihat</span>
+                        </Button>
+                    ) : (
+                        <span className="text-xs text-muted-foreground italic">Belum Ada</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
+            key: 'actions',
+            header: 'Aksi',
+            render: (item) => (
+                <div className="flex items-center justify-center">
                     <Button
                         variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        title="Edit"
-                        onClick={() => onEdit(item)}
+                        size="sm"
+                        className="h-8 gap-2 px-2 text-primary hover:bg-primary/5"
+                        onClick={() => onAction(item)}
                     >
                         <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Hapus"
-                        onClick={() => onDelete(item)}
-                    >
-                        <Trash2 className="h-4 w-4" />
+                        <span className="text-xs">Kelola SP</span>
                     </Button>
                 </div>
             ),

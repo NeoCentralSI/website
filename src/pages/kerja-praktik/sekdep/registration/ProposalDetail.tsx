@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useOutletContext, useParams } from 'react-router-dom';
+import { Link, useOutletContext, useParams, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useQuery } from '@tanstack/react-query';
-import { getSekdepProposalDetail } from '@/services/internship.service';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getSekdepProposalDetail, respondToSekdepProposal } from '@/services/internship.service';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,16 +17,26 @@ import {
     FileText,
     Eye,
     Clock,
-    AlertTriangle
+    AlertTriangle,
+    Check,
+    X
 } from 'lucide-react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
+import { toast } from 'sonner';
+import ProposalResponseDialog from '@/components/internship/ProposalResponseDialog';
 
 export default function SekdepInternshipProposalDetail() {
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
     const { proposalId } = useParams<{ proposalId: string }>();
 
     const [docOpen, setDocOpen] = useState(false);
     const [docInfo, setDocInfo] = useState<{ fileName: string; filePath: string } | null>(null);
+
+    // Response Dialog State
+    const [responseDialogOpen, setResponseDialogOpen] = useState(false);
+    const [responseType, setResponseType] = useState<'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP' | null>(null);
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kerja Praktik', href: '/kelola/kerja-praktik/pendaftaran' },
@@ -45,9 +55,29 @@ export default function SekdepInternshipProposalDetail() {
         enabled: !!proposalId,
     });
 
+    const respondMutation = useMutation({
+        mutationFn: ({ response, notes }: { response: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP', notes?: string }) =>
+            respondToSekdepProposal(proposalId!, response, notes),
+        onSuccess: (res) => {
+            toast.success(res.message);
+            setResponseDialogOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['sekdep-internship-proposal-detail', proposalId] });
+            queryClient.invalidateQueries({ queryKey: ['sekdep-internship-proposals'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Gagal merespon proposal');
+        }
+    });
+
     const openDocumentPreview = (fileName: string, filePath: string) => {
         setDocInfo({ fileName, filePath });
         setDocOpen(true);
+    };
+
+    const handleConfirmResponse = (notes?: string) => {
+        if (responseType) {
+            respondMutation.mutate({ response: responseType, notes });
+        }
     };
 
     if (isLoading) {
@@ -77,13 +107,21 @@ export default function SekdepInternshipProposalDetail() {
 
     const getStatusBadge = (status: string) => {
         let variant: 'outline' | 'default' | 'secondary' | 'destructive' | 'success' = 'outline';
-        if (status === 'APPROVED_BY_SEKDEP') variant = 'success';
-        if (status === 'REJECTED_BY_SEKDEP') variant = 'destructive';
-        if (status === 'PENDING') variant = 'secondary';
+        let label = status.replace(/_/g, ' ');
+
+        if (status === 'APPROVED_BY_SEKDEP') {
+            variant = 'success';
+            label = 'APPROVED';
+        } else if (status === 'REJECTED_BY_SEKDEP') {
+            variant = 'destructive';
+            label = 'REJECTED';
+        } else if (status === 'PENDING') {
+            variant = 'secondary';
+        }
 
         return (
             <Badge variant={variant as any} className="px-3 py-1">
-                {status.replace(/_/g, ' ')}
+                {label}
             </Badge>
         );
     };
@@ -93,10 +131,8 @@ export default function SekdepInternshipProposalDetail() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" asChild className="shrink-0">
-                        <Link to="/kelola/kerja-praktik/pendaftaran">
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
+                    <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="shrink-0">
+                        <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Detail Proposal KP</h1>
@@ -106,7 +142,36 @@ export default function SekdepInternshipProposalDetail() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {getStatusBadge(data.status)}
+                    {data.status === 'PENDING' ? (
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                className="text-destructive hover:bg-destructive/10 border-destructive/20 hover:border-destructive/30 shadow-none"
+                                onClick={() => {
+                                    setResponseType('REJECTED_BY_SEKDEP');
+                                    setResponseDialogOpen(true);
+                                }}
+                                disabled={respondMutation.isPending}
+                            >
+                                <X className="mr-2 h-4 w-4" />
+                                Tolak
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="text-green-600 hover:bg-green-600/10 border-green-600/20 hover:border-green-600/30 shadow-none"
+                                onClick={() => {
+                                    setResponseType('APPROVED_BY_SEKDEP');
+                                    setResponseDialogOpen(true);
+                                }}
+                                disabled={respondMutation.isPending}
+                            >
+                                <Check className="mr-2 h-4 w-4" />
+                                Setujui
+                            </Button>
+                        </div>
+                    ) : (
+                        getStatusBadge(data.status)
+                    )}
                 </div>
             </div>
 
@@ -126,7 +191,7 @@ export default function SekdepInternshipProposalDetail() {
                                 <h3 className="text-lg font-semibold">{data.targetCompany.companyName}</h3>
                                 <div className="flex items-start gap-2 text-muted-foreground mt-1">
                                     <MapPin className="h-4 w-4 mt-1 shrink-0" />
-                                    <p className="text-sm">{data.targetCompany.address}</p>
+                                    <p className="text-sm">{data.targetCompany.companyAddress}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -137,7 +202,7 @@ export default function SekdepInternshipProposalDetail() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <Users className="h-4 w-4" />
-                                Anggota Kelompok (ACCEPTED)
+                                Anggota Kelompok
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -209,6 +274,23 @@ export default function SekdepInternshipProposalDetail() {
                             ) : (
                                 <p className="text-sm text-muted-foreground italic">Dokumen proposal belum diunggah.</p>
                             )}
+
+                            {data.applicationLetters?.[0]?.document && (
+                                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <FileText className="h-4 w-4 text-green-600 shrink-0" />
+                                        <span className="text-xs font-medium truncate">{data.applicationLetters[0].document.fileName}</span>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 text-green-600"
+                                        onClick={() => openDocumentPreview(data.applicationLetters[0].document.fileName, data.applicationLetters[0].document.filePath)}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -230,8 +312,16 @@ export default function SekdepInternshipProposalDetail() {
                                 {data.status !== 'PENDING' && (
                                     <div className="relative">
                                         <div className={`absolute -left-[23px] top-1 h-3 w-3 rounded-full ring-4 ring-background ${data.status.includes('REJECTED') ? 'bg-destructive' : 'bg-success'}`} />
-                                        <p className="text-sm font-semibold">{data.status.replace(/_/g, ' ')}</p>
+                                        <p className="text-sm font-semibold">
+                                            {data.status === 'APPROVED_BY_SEKDEP' ? 'APPROVED' : data.status === 'REJECTED_BY_SEKDEP' ? 'REJECTED' : data.status.replace(/_/g, ' ')}
+                                        </p>
                                         <p className="text-xs text-muted-foreground">{formatDateId(data.updatedAt)}</p>
+                                        {data.status === 'REJECTED_BY_SEKDEP' && data.sekdepNotes && (
+                                            <div className="mt-2 p-2 bg-destructive/5 border border-destructive/10 rounded text-xs text-destructive">
+                                                <p className="font-semibold mb-1">Catatan Sekdep:</p>
+                                                <p>{data.sekdepNotes}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -245,6 +335,15 @@ export default function SekdepInternshipProposalDetail() {
                 onOpenChange={setDocOpen}
                 fileName={docInfo?.fileName ?? undefined}
                 filePath={docInfo?.filePath ?? undefined}
+            />
+
+            <ProposalResponseDialog
+                open={responseDialogOpen}
+                onOpenChange={setResponseDialogOpen}
+                onConfirm={handleConfirmResponse}
+                isLoading={respondMutation.isPending}
+                type={responseType}
+                companyName={data?.targetCompany?.companyName}
             />
         </div>
     );

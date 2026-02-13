@@ -1,15 +1,17 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCompanyStats } from '@/services/internship.service';
+import { useRole } from '../shared';
 
 export function useCompanyStats() {
+    const { isAdmin } = useRole();
     const [q, setQ] = useState('');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
     const { data, isLoading, isFetching, refetch, error } = useQuery({
-        queryKey: ['sekdep-company-stats'],
-        queryFn: getCompanyStats,
+        queryKey: ['company-stats', isAdmin()],
+        queryFn: () => getCompanyStats(isAdmin()),
     });
 
     const items = data?.data || [];

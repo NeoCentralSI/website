@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Loading } from '@/components/ui/spinner';
@@ -7,10 +7,24 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSekdepProposals } from '@/hooks/internship/useSekdepProposals';
 import { getSekdepInternshipProposalColumns } from '@/lib/internshipTableColumns';
 import { FileText } from 'lucide-react';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { respondToSekdepProposal, type SekdepInternshipProposalItem } from '@/services/internship.service';
+import { toast } from 'sonner';
+import ProposalResponseDialog from '@/components/internship/ProposalResponseDialog';
 
 export default function SekdepInternshipProposalPage() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+
+    const [docOpen, setDocOpen] = useState(false);
+    const [docInfo, setDocInfo] = useState<{ fileName: string; filePath: string } | null>(null);
+
+    // Response Dialog State
+    const [responseDialogOpen, setResponseDialogOpen] = useState(false);
+    const [selectedProposal, setSelectedProposal] = useState<SekdepInternshipProposalItem | null>(null);
+    const [responseType, setResponseType] = useState<'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP' | null>(null);
 
     const {
         displayItems: proposalItems,
@@ -26,6 +40,34 @@ export default function SekdepInternshipProposalPage() {
         refetch: refetchProposals,
     } = useSekdepProposals();
 
+    const respondMutation = useMutation({
+        mutationFn: ({ id, response, notes }: { id: string, response: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP', notes?: string }) =>
+            respondToSekdepProposal(id, response, notes),
+        onSuccess: (data) => {
+            toast.success(data.message);
+            setResponseDialogOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['sekdep-internship-proposals'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Gagal merespon proposal');
+        }
+    });
+
+    const openDocumentPreview = (fileName: string, filePath: string) => {
+        setDocInfo({ fileName, filePath });
+        setDocOpen(true);
+    };
+
+    const handleConfirmResponse = (notes?: string) => {
+        if (selectedProposal && responseType) {
+            respondMutation.mutate({
+                id: selectedProposal.id,
+                response: responseType,
+                notes
+            });
+        }
+    };
+
     const breadcrumb = useMemo(() => [{ label: 'Kerja Praktik' }, { label: 'Pendaftaran' }], []);
 
     useEffect(() => {
@@ -34,9 +76,24 @@ export default function SekdepInternshipProposalPage() {
     }, [breadcrumb, setBreadcrumbs, setTitle]);
 
     const proposalColumns = useMemo(() => getSekdepInternshipProposalColumns({
+        onViewProposalDoc: (item) => {
+            if (item.dokumenProposal) {
+                openDocumentPreview(item.dokumenProposal.fileName, item.dokumenProposal.filePath);
+            }
+        },
+        onViewAppLetterDoc: (item) => {
+            if (item.dokumenSuratPermohonan) {
+                openDocumentPreview(item.dokumenSuratPermohonan.fileName, item.dokumenSuratPermohonan.filePath);
+            }
+        },
         onViewDetail: (item) => {
             navigate(`/kelola/kerja-praktik/pendaftaran/${item.id}`);
         },
+        onRespond: (item, response) => {
+            setSelectedProposal(item);
+            setResponseType(response);
+            setResponseDialogOpen(true);
+        }
     }), [navigate]);
 
     return (
@@ -79,6 +136,22 @@ export default function SekdepInternshipProposalPage() {
                     }
                 />
             )}
+
+            <DocumentPreviewDialog
+                open={docOpen}
+                onOpenChange={setDocOpen}
+                fileName={docInfo?.fileName ?? undefined}
+                filePath={docInfo?.filePath ?? undefined}
+            />
+
+            <ProposalResponseDialog
+                open={responseDialogOpen}
+                onOpenChange={setResponseDialogOpen}
+                onConfirm={handleConfirmResponse}
+                isLoading={respondMutation.isPending}
+                type={responseType}
+                companyName={selectedProposal?.companyName}
+            />
         </div>
     );
 }

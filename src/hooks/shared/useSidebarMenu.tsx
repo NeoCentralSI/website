@@ -441,12 +441,20 @@ export const useSidebarMenu = () => {
             icon: Briefcase,
             items: [
               {
-                title: "Kelola Surat Pengantar",
-                url: "/kerja-praktik/surat-pengantar",
+                title: "Perusahaan",
+                url: "/admin/kerja-praktik/perusahaan",
               },
               {
-                title: "Data KP",
-                url: "/kerja-praktik/data",
+                title: "Surat Pengantar",
+                url: "/admin/kerja-praktik/surat-pengantar",
+              },
+              {
+                title: "Surat Balasan",
+                url: "/admin/kerja-praktik/surat-balasan",
+              },
+              {
+                title: "Seminar & Nilai",
+                url: "/admin/kerja-praktik/seminar",
               },
             ],
           },

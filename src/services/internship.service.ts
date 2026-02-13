@@ -47,7 +47,7 @@ export interface InternshipProposalDetail {
     status: string;
     targetCompany: {
         companyName: string;
-        address?: string;
+        companyAddress?: string;
     };
     proposalDocument: {
         id: string;
@@ -56,6 +56,7 @@ export interface InternshipProposalDetail {
     };
     members: InternshipProposalMember[];
     applicationLetters: any[];
+    sekdepNotes?: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -98,6 +99,17 @@ export interface SekdepInternshipProposalItem {
     status: string;
     memberCount: number;
     createdAt: string;
+    dokumenProposal: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    dokumenSuratPermohonan: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    sekdepNotes?: string | null;
 }
 
 export interface CompanyStatsItem {
@@ -210,8 +222,12 @@ export const getSekdepProposalDetail = async (id: string): Promise<{ success: bo
     return res.json();
 };
 
-export const getCompanyStats = async (): Promise<{ success: boolean; data: CompanyStatsItem[] }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_STATS));
+export const getCompanyStats = async (isAdmin?: boolean): Promise<{ success: boolean; data: CompanyStatsItem[] }> => {
+    const endpoint = isAdmin
+        ? API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.COMPANY_STATS
+        : API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_STATS;
+
+    const res = await apiRequest(getApiUrl(endpoint));
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat statistik perusahaan" }));
         throw new Error(errorData.message || "Gagal memuat statistik perusahaan");
@@ -250,6 +266,71 @@ export const deleteSekdepCompany = async (id: string): Promise<{ success: boolea
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal menghapus perusahaan" }));
         throw new Error(errorData.message || "Gagal menghapus perusahaan");
+    }
+    return res.json();
+};
+
+export const respondToSekdepProposal = async (id: string, response: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP', notes?: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.PROPOSAL_DETAIL(id)) + '/respond';
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: JSON.stringify({ response, notes }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal merespon proposal" }));
+        throw new Error(errorData.message || "Gagal merespon proposal");
+    }
+    return res.json();
+};
+
+export interface AdminApprovedProposalItem {
+    id: string;
+    coordinatorName: string;
+    coordinatorNim: string;
+    companyName: string;
+    companyAddress?: string;
+    members: { name: string; nim: string }[];
+    letterNumber: string;
+    letterFile: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    period: {
+        start: string;
+        end: string;
+    } | null;
+    updatedAt: string;
+}
+
+export const getAdminApprovedProposals = async (): Promise<{ success: boolean; data: AdminApprovedProposalItem[] }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.APPROVED_PROPOSALS));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar pengajuan" }));
+        throw new Error(errorData.message || "Gagal memuat daftar pengajuan");
+    }
+    return res.json();
+};
+
+export const getAdminProposalLetterDetail = async (id: string): Promise<{ success: boolean; data: AdminApprovedProposalItem }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.APPROVED_PROPOSAL_DETAIL(id));
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail pengajuan" }));
+        throw new Error(errorData.message || "Gagal memuat detail pengajuan");
+    }
+    return res.json();
+};
+
+export const updateAdminProposalLetter = async (id: string, body: { documentNumber: string, startDatePlanned?: string, endDatePlanned?: string }): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.UPDATE_LETTER(id));
+    const res = await apiRequest(url, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui data surat pengantar" }));
+        throw new Error(errorData.message || "Gagal memperbarui data surat pengantar");
     }
     return res.json();
 };

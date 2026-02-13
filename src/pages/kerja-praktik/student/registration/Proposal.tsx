@@ -7,10 +7,13 @@ import CustomTable from '@/components/layout/CustomTable';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
+import { FileText } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useStudentProposals } from '@/hooks/internship/useStudentProposals';
 import { getInternshipProposalColumns } from '@/lib/internshipTableColumns';
 import RegisterInternshipDialog from '@/components/internship/RegisterInternshipDialog';
 import { respondToInvitation, type InternshipProposalItem } from '@/services/internship.service';
+import { getSopDownloadUrl } from '@/services/sop.service';
 
 import { toast } from 'sonner';
 
@@ -93,6 +96,23 @@ export default function InternshipProposalPage() {
         onRespond: handleRespondInvitation,
     }), [navigate, refetch]);
 
+    const { data: publicSops = [] } = useQuery({
+        queryKey: ['public-sop-files'],
+        queryFn: () => import('@/services/sop.service').then(m => m.getSopFilesPublic()),
+    });
+
+    const proposalTemplate = useMemo(() => {
+        return publicSops.find((s: any) => s.type === 'TEMPLATE_KP');
+    }, [publicSops]);
+
+    const handleDownloadTemplate = () => {
+        if (!proposalTemplate) {
+            toast.error("Template proposal belum tersedia.");
+            return;
+        }
+        window.open(getSopDownloadUrl(proposalTemplate.url), '_blank');
+    };
+
     return (
         <div className="p-4">
             <TabsNav
@@ -134,6 +154,16 @@ export default function InternshipProposalPage() {
                                 onClick={() => refetch()}
                                 isRefreshing={isFetching && !isLoading}
                             />
+                            {proposalTemplate && (
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    onClick={handleDownloadTemplate}
+                                >
+                                    <FileText className="h-4 w-4" />
+                                    Download Template Proposal
+                                </Button>
+                            )}
                             <Button onClick={handleRegisterClick}>
                                 Daftar KP
                             </Button>

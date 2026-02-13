@@ -34,6 +34,9 @@ import InternshipProposalDetailPage from './pages/kerja-praktik/student/registra
 import SekdepInternshipProposalPage from './pages/kerja-praktik/sekdep/registration/Proposal'
 import SekdepInternshipProposalDetailPage from './pages/kerja-praktik/sekdep/registration/ProposalDetail'
 import SekdepCompanyListPage from './pages/kerja-praktik/sekdep/companies/CompanyList'
+import AdminCompanyListPage from './pages/kerja-praktik/admin/companies/CompanyList'
+import AdminApplicationPage from './pages/kerja-praktik/admin/application/ApplicationList'
+import ManageApplicationLetter from './pages/kerja-praktik/admin/application/ManageApplicationLetter'
 // Tugas Akhir - Monitoring Module
 import MonitoringDashboard from './pages/tugas-akhir/monitoring/MonitoringDashboard'
 import StudentProgressDetail from './pages/tugas-akhir/monitoring/StudentProgressDetail'
@@ -181,6 +184,11 @@ function App() {
                 <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
               </Route>
 
+              {/* Shared Kelola - Sekdep & Kadep */}
+              <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
+                <Route path="/kelola/sop" element={<KelolaSopPage />} />
+              </Route>
+
               {/* Kelola - Kadep */}
               <Route element={<RoleGuard allowedRoles={[ROLES.KETUA_DEPARTEMEN]} />}>
                 <Route path="/kelola/tugas-akhir/kadep" element={<Navigate to="/kelola/tugas-akhir/kadep/pergantian" replace />} />
@@ -189,12 +197,14 @@ function App() {
                 <Route path="/kelola/tugas-akhir/kadep/penguji" element={<KelolaTugasAkhirKadepPage />} />
                 <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<KelolaTugasAkhirKadepPage />} />
                 <Route path="/kelola/tugas-akhir/kadep/acc-rubrik" element={<KelolaTugasAkhirKadepPage />} />
-                <Route path="/kelola/sop" element={<KelolaSopPage />} />
               </Route>
 
               {/* Master Data (Admin) */}
               <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN]} />}>
                 <Route path="/master-data" element={<Placeholder title="main menu Master Data" />} />
+                <Route path="/admin/kerja-praktik/perusahaan" element={<AdminCompanyListPage />} />
+                <Route path="/admin/kerja-praktik/surat-pengantar" element={<AdminApplicationPage />} />
+                <Route path="/admin/kerja-praktik/surat-pengantar/:id" element={<ManageApplicationLetter />} />
                 <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
                 <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />
                 <Route path="/master-data/dosen" element={<DosenPage />} />
