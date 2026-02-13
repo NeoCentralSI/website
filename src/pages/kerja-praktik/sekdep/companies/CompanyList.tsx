@@ -156,10 +156,6 @@ export default function SekdepCompanyListPage() {
                     <Building2 className="h-6 w-6 text-primary" />
                     <h1>Daftar Perusahaan Terdaftar</h1>
                 </div>
-                <Button onClick={handleAdd} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Tambah Perusahaan
-                </Button>
             </div>
 
             {isLoading ? (
@@ -188,10 +184,16 @@ export default function SekdepCompanyListPage() {
                     }}
                     emptyText={q ? 'Pencarian tidak menemukan hasil. Coba kata kunci lain.' : 'Belum ada data perusahaan.'}
                     actions={
-                        <RefreshButton
-                            onClick={() => refetch()}
-                            isRefreshing={isFetching && !isLoading}
-                        />
+                        <div className="flex items-center gap-2">
+                            <RefreshButton
+                                onClick={() => refetch()}
+                                isRefreshing={isFetching && !isLoading}
+                            />
+                            <Button onClick={handleAdd} className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Tambah Perusahaan
+                            </Button>
+                        </div>
                     }
                 />
             )}

@@ -108,6 +108,13 @@ export const API_CONFIG = {
       COMPANIES: '/insternship/sekdep/companies',
       COMPANY_DETAIL: (id: string) => `/insternship/sekdep/companies/${id}`,
     },
+    INTERNSHIP_ADMIN: {
+      BASE: '/insternship/admin',
+      COMPANY_STATS: '/insternship/admin/companies/stats',
+      APPROVED_PROPOSALS: '/insternship/admin/proposals/approved',
+      APPROVED_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/proposals/${id}`,
+      UPDATE_LETTER: (id: string) => `/insternship/admin/proposals/${id}/letter`,
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };
