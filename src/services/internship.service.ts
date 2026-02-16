@@ -300,6 +300,7 @@ export interface AdminApprovedProposalItem {
         start: string;
         end: string;
     } | null;
+    isSigned: boolean;
     updatedAt: string;
 }
 
@@ -331,6 +332,94 @@ export const updateAdminProposalLetter = async (id: string, body: { documentNumb
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui data surat pengantar" }));
         throw new Error(errorData.message || "Gagal memperbarui data surat pengantar");
+    }
+    return res.json();
+};
+
+export interface InternshipTemplate {
+    id: string;
+    name: string;
+    type: "HTML" | "DOCX";
+    content: string | null;
+    filePath: string | null;
+}
+
+export const getInternshipTemplate = async (name: string): Promise<{ success: boolean; data: InternshipTemplate }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_TEMPLATES.GET(name)));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat template" }));
+        throw new Error(errorData.message || "Gagal memuat template");
+    }
+    return res.json();
+};
+
+export const saveInternshipTemplate = async (name: string, content?: string | null, file?: File | null): Promise<{ success: boolean; message: string }> => {
+    const fd = new FormData();
+    fd.append("name", name);
+    if (content) fd.append("content", content);
+    if (file) fd.append("file", file);
+
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_TEMPLATES.SAVE), {
+        method: "POST",
+        body: file ? fd : JSON.stringify({ name, content }),
+        // Note: apiRequest handles headers, but for FormData we must let the browser set it
+        headers: file ? {} : { "Content-Type": "application/json" }
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyimpan template" }));
+        throw new Error(errorData.message || "Gagal menyimpan template");
+    }
+    return res.json();
+};
+
+export interface InternshipPendingLetter {
+    id: string;
+    type: 'APPLICATION' | 'ASSIGNMENT';
+    documentNumber: string;
+    coordinatorName: string;
+    coordinatorNim: string;
+    companyName: string;
+    members: { name: string; nim: string }[];
+    createdAt: string;
+    signedById: string | null;
+    document: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+}
+
+export const getKadepPendingLetters = async (): Promise<{ success: boolean; data: { applicationLetters: InternshipPendingLetter[], assignmentLetters: InternshipPendingLetter[] } }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.PENDING_LETTERS));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar surat" }));
+        throw new Error(errorData.message || "Gagal memuat daftar surat");
+    }
+    return res.json();
+};
+
+export const approveKadepLetter = async (
+    id: string,
+    type: 'APPLICATION' | 'ASSIGNMENT',
+    signaturePositions?: { x: number, y: number, pageNumber: number }[]
+): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.APPROVE_LETTER), {
+        method: "POST",
+        body: JSON.stringify({ id, type, signaturePositions }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyetujui surat" }));
+        throw new Error(errorData.message || "Gagal menyetujui surat");
+    }
+    return res.json();
+};
+
+export const verifyInternshipLetter = async (id: string) => {
+    const res = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_PUBLIC.VERIFY_LETTER(id)));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Dokumen tidak valid atau tidak ditemukan." }));
+        throw new Error(errorData.message || "Gagal memverifikasi surat");
     }
     return res.json();
 };

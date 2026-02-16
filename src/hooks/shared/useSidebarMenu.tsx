@@ -250,7 +250,7 @@ export const useSidebarMenu = () => {
         items: [
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/kadep" },
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
-          { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
+          { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
         ],
       });
 

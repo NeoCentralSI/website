@@ -115,6 +115,19 @@ export const API_CONFIG = {
       APPROVED_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/proposals/${id}`,
       UPDATE_LETTER: (id: string) => `/insternship/admin/proposals/${id}/letter`,
     },
+    INTERNSHIP_KADEP: {
+      BASE: '/insternship/kadep',
+      PENDING_LETTERS: '/insternship/kadep/pending-letters',
+      APPROVE_LETTER: '/insternship/kadep/approve-letter',
+    },
+    INTERNSHIP_TEMPLATES: {
+      GET: (name: string) => `/insternship/templates/${name}`,
+      SAVE: '/insternship/templates',
+      PREVIEW: (name: string) => `/insternship/templates/${name}/preview`,
+    },
+    INTERNSHIP_PUBLIC: {
+      VERIFY_LETTER: (id: string) => `/insternship/public/verify/${id}`,
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };

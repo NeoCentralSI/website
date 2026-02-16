@@ -20,10 +20,10 @@ interface EligibilityResult {
 }
 
 export function useStudentEligibility(): EligibilityResult {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isLoading: isAuthLoading } = useAuth();
   const nim = authUser?.identityNumber;
 
-  const { data: siaStudents, isLoading } = useQuery({
+  const { data: siaStudents, isLoading: isSiaLoading } = useQuery({
     queryKey: ["sia-cached-students"],
     queryFn: getCachedStudentsFromSia,
     enabled: !!nim,
@@ -40,7 +40,7 @@ export function useStudentEligibility(): EligibilityResult {
   const canAccessTugasAkhir = sks >= 110 && hasTugasAkhirCourse;
 
   return {
-    isLoading,
+    isLoading: isAuthLoading || isSiaLoading,
     sks,
     hasTugasAkhirCourse,
     canAccessKerjaPraktek,

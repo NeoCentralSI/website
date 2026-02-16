@@ -8,6 +8,8 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { getAdminApprovedProposals, type AdminApprovedProposalItem } from '@/services/internship.service';
 import { getAdminApprovedProposalColumns } from '@/lib/internshipTableColumns';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
+import { Button } from '@/components/ui/button';
+import { Settings2 } from 'lucide-react';
 
 export default function AdminApplicationPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -102,10 +104,21 @@ export default function AdminApplicationPage() {
                     }}
                     emptyText={q ? 'Pencarian tidak menemukan hasil.' : 'Belum ada pengajuan yang disetujui Sekdep.'}
                     actions={
-                        <RefreshButton
-                            onClick={() => refetch()}
-                            isRefreshing={isFetching && !isLoading}
-                        />
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate('/admin/kerja-praktik/templates/INTERNSHIP_APPLICATION_LETTER')}
+                                className="h-9"
+                            >
+                                <Settings2 className="h-4 w-4 mr-2" />
+                                Kelola Template
+                            </Button>
+                            <RefreshButton
+                                onClick={() => refetch()}
+                                isRefreshing={isFetching && !isLoading}
+                            />
+                        </div>
                     }
                 />
             )}
