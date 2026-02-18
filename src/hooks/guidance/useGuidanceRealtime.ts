@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { acquireFcmToken, getFirebaseMessaging, onMessage } from "@/config/firebase";
 import { registerFcmToken } from "@/services/notification.service";
 import { useAuth } from "@/hooks/shared";
-import { getAuthTokens } from "@/services/auth.service";
+
 
 // Key untuk menyimpan FCM token di localStorage (shared dengan useAuth)
 const FCM_TOKEN_KEY = 'fcm_token';
@@ -36,7 +36,7 @@ export function useGuidanceRealtime() {
       if (!ctx) return;
       if (ctx.state === "suspended") {
         // try to resume (requires user gesture in some browsers)
-        ctx.resume().catch(() => {});
+        ctx.resume().catch(() => { });
       }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -86,15 +86,15 @@ export function useGuidanceRealtime() {
             console.log("[FCM] Full payload:", JSON.stringify(payload, null, 2));
             console.log("[FCM] payload.data:", payload?.data);
             console.log("[FCM] payload.notification:", payload?.notification);
-            
+
             const type = payload?.data?.type as PushEventType;
             const role = payload?.data?.role;
-            
+
             console.log("[FCM] Extracted type:", type);
             console.log("[FCM] Extracted role:", role);
             console.log("[FCM] Type is thesis-guidance:approved?", type === "thesis-guidance:approved");
             console.log("[FCM] Type is thesis-guidance:rejected?", type === "thesis-guidance:rejected");
-            
+
             switch (type) {
               case "thesis-guidance:requested": {
                 if (role === "supervisor") {
@@ -225,10 +225,10 @@ export function useGuidanceRealtime() {
               console.log('[FCM SW] msg.data:', msg?.data);
               console.log('[FCM SW] msg.title:', msg?.title);
               console.log('[FCM SW] msg.body:', msg?.body);
-              
+
               const type = msg?.data?.type as PushEventType;
               const role = msg?.data?.role;
-              
+
               console.log('[FCM SW] Extracted type:', type);
               console.log('[FCM SW] Extracted role:', role);
               console.log('[FCM SW] Type is thesis-guidance:approved?', type === 'thesis-guidance:approved');
@@ -306,7 +306,7 @@ export function useGuidanceRealtime() {
                   break;
                 }
               }
-            } catch {}
+            } catch { }
           };
           navigator.serviceWorker.addEventListener('message', swListener as unknown as EventListener);
         }
@@ -322,9 +322,9 @@ export function useGuidanceRealtime() {
       try {
         const ctx = audioCtxRef.current;
         if (ctx && ctx.state === "suspended") {
-          ctx.resume().catch(() => {});
+          ctx.resume().catch(() => { });
         }
-      } catch {}
+      } catch { }
       document.removeEventListener("click", unlock);
       document.removeEventListener("keydown", unlock);
     };
@@ -338,7 +338,7 @@ export function useGuidanceRealtime() {
         if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
           audioCtxRef.current.close();
         }
-      } catch {}
+      } catch { }
       if (navigator?.serviceWorker && swListener) {
         navigator.serviceWorker.removeEventListener('message', swListener as unknown as EventListener);
       }

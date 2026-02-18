@@ -47,7 +47,7 @@ export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps
       <Card className={cn("h-full", className)}>
         <CardHeader>
           <CardTitle>Agenda Mendatang</CardTitle>
-           <CardDescription>Kegiatan anda dalam waktu dekat</CardDescription>
+          <CardDescription>Kegiatan anda dalam waktu dekat</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center items-center min-h-[200px]">
           <EmptyState
@@ -80,7 +80,7 @@ export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps
               const eventDate = new Date(event.startDate);
               const now = new Date();
               const isToday = isSameDay(eventDate, now);
-              
+
               // Calculate remaining days
               // We reset time to midnight for accurate day comparison
               const date1 = new Date(eventDate);
@@ -88,7 +88,7 @@ export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps
               const date2 = new Date(now);
               date2.setHours(0, 0, 0, 0);
               const daysLeft = differenceInDays(date1, date2);
-              
+
               let daysText = '';
               if (daysLeft === 0) daysText = 'Hari ini';
               else if (daysLeft === 1) daysText = 'Besok';
@@ -100,13 +100,13 @@ export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps
                   {!isLast && (
                     <div className="absolute left-[9px] top-3 -bottom-6 w-0.5 bg-border group-hover:bg-primary/20 transition-colors" />
                   )}
-                  
+
                   {/* Dot Indicator */}
                   <div className={cn(
                     "absolute left-0 top-1.5 h-5 w-5 rounded-full border-4 border-background flex items-center justify-center transition-colors",
                     isToday ? "bg-primary shadow-sm" : "bg-muted-foreground/30 group-hover:bg-primary/50"
                   )}>
-                     {isToday && <div className="h-1.5 w-1.5 bg-white rounded-full" />}
+                    {isToday && <div className="h-1.5 w-1.5 bg-white rounded-full" />}
                   </div>
 
                   {/* Content */}
@@ -121,7 +121,7 @@ export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps
                         </Badge>
                       ) : (
                         <span className="shrink-0 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm whitespace-nowrap">
-                           {daysText}
+                          {daysText}
                         </span>
                       )}
                     </div>
@@ -132,17 +132,17 @@ export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps
                         {format(eventDate, 'EEE, d MMM yyyy • HH:mm', { locale: idLocale })}
                       </span>
                     </div>
-                    
-                     {/* Location / Link */}
+
+                    {/* Location / Link */}
                     {(event.location || event.meetingLink) && (
                       <div className="flex items-center gap-2 mt-1">
                         {event.meetingLink ? (
-                           <Badge variant="outline" className="gap-1 p-0.5 px-2 font-normal text-xs hover:bg-muted cursor-pointer as-child" >
-                              <a href={event.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
-                                <VideoIcon className="h-3 w-3" />
-                                <span>Online Meeting</span>
-                              </a>
-                           </Badge>
+                          <Badge variant="outline" className="gap-1 p-0.5 px-2 font-normal text-xs hover:bg-muted cursor-pointer as-child" >
+                            <a href={event.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                              <VideoIcon className="h-3 w-3" />
+                              <span>Online Meeting</span>
+                            </a>
+                          </Badge>
                         ) : (
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <MapPin className="h-3.5 w-3.5" />
@@ -151,12 +151,12 @@ export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps
                         )}
                       </div>
                     )}
-                    
+
                     {/* Event Type Badge - Optional, clean look */}
                     <div className="mt-1">
-                         <Badge variant="secondary" className="text-[10px] font-normal px-2 h-5">
-                            {formatEventType(event.type)}
-                         </Badge>
+                      <Badge variant="secondary" className="text-[10px] font-normal px-2 h-5">
+                        {formatEventType(event.type)}
+                      </Badge>
                     </div>
 
                   </div>

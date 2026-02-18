@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,11 +32,7 @@ import {
 } from '@/services/thesisChangeRequest.service';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
 
-const REQUEST_TYPE_OPTIONS = [
-  { value: 'topic', label: 'Pergantian Topik', description: 'Ganti topik penelitian dengan tetap mempertahankan pembimbing' },
-  { value: 'supervisor', label: 'Pergantian Pembimbing', description: 'Ganti dosen pembimbing dengan tetap mempertahankan topik' },
-  { value: 'both', label: 'Pergantian Topik & Pembimbing', description: 'Ganti topik penelitian dan dosen pembimbing' },
-] as const;
+
 
 const STATUS_CONFIG = {
   pending: { label: 'Menunggu', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -98,7 +94,12 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
   };
 
   const getRequestTypeLabel = (type: string) => {
-    return REQUEST_TYPE_OPTIONS.find((o) => o.value === type)?.label || type;
+    const labels: Record<string, string> = {
+      topic: 'Pergantian Topik',
+      supervisor: 'Pergantian Pembimbing',
+      both: 'Pergantian Topik & Pembimbing',
+    };
+    return labels[type] || type;
   };
 
   if (isLoading) {
@@ -117,10 +118,10 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <RefreshCw className="h-5 w-5" />
-            Pergantian Topik/Pembimbing
+            Pergantian Topik
           </CardTitle>
           <CardDescription>
-            Ajukan permintaan pergantian topik atau pembimbing tugas akhir
+            Ajukan permintaan pergantian topik tugas akhir
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -130,8 +131,8 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
             <div className="text-sm text-amber-800">
               <p className="font-medium">Perhatian!</p>
               <p>
-                Jika permintaan disetujui, <strong>semua data tugas akhir Anda akan dihapus</strong> termasuk
-                bimbingan, milestone, dan dokumen. Anda harus mendaftar ulang tugas akhir dengan topik/pembimbing baru.
+                Jika permintaan disetujui, <strong>status tugas akhir Anda akan menjadi tidak aktif (diarsip)</strong>.
+                Anda harus mendaftar ulang tugas akhir dengan topik/pembimbing baru.
               </p>
             </div>
           </div>
@@ -160,7 +161,7 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                         Diajukan: {formatDateId(request.createdAt)}
                       </p>
                       <p className="text-muted-foreground line-clamp-2">{request.reason}</p>
-                      
+
                       {/* Approval tracking for each request */}
                       {request.approvals && request.approvals.length > 0 && (
                         <div className="mt-2 rounded border bg-muted/30 p-2">
@@ -182,7 +183,7 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                           </div>
                         </div>
                       )}
-                      
+
                       {request.status === 'rejected' && request.reviewNotes && (
                         <div className="mt-2 rounded bg-red-50 p-2 text-xs text-red-700">
                           <strong>Alasan Penolakan:</strong> {request.reviewNotes}
@@ -190,7 +191,7 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                       )}
                       {request.status === 'approved' && (
                         <div className="mt-2 rounded bg-green-50 p-2 text-xs text-green-700">
-                          Data TA telah dihapus. Silakan daftar ulang dengan topik/pembimbing baru.
+                          Tugas Akhir anda sudah tidak aktif, Silahkan daftar ulang tugas akhir ke admin Departemen.
                         </div>
                       )}
                     </div>
@@ -211,22 +212,16 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                 <div className="space-y-4 rounded-lg border p-4">
                   <div className="space-y-3">
                     <Label>Jenis Pergantian</Label>
-                    <RadioGroup
-                      value={requestType}
-                      onValueChange={(v) => setRequestType(v as typeof requestType)}
-                    >
-                      {REQUEST_TYPE_OPTIONS.map((option) => (
-                        <div key={option.value} className="flex items-start space-x-3">
-                          <RadioGroupItem value={option.value} id={option.value} className="mt-1" />
-                          <div className="grid gap-0.5">
-                            <Label htmlFor={option.value} className="font-medium cursor-pointer">
-                              {option.label}
-                            </Label>
-                            <p className="text-xs text-muted-foreground">{option.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </RadioGroup>
+                    <div className="flex items-start space-x-3 p-3 border rounded-md bg-muted/50">
+                      <div className="grid gap-0.5">
+                        <Label className="font-medium">
+                          Pergantian Topik
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Ganti topik penelitian dengan tetap mempertahankan pembimbing (memulai ulang proses tugas akhir).
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -282,14 +277,14 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                   Permintaan Anda sedang menunggu persetujuan.
                 </p>
               </div>
-              
+
               {/* Approval Tracking for pending request */}
               {(() => {
                 const pendingRequest = requests.find(r => r.status === 'pending');
                 if (!pendingRequest?.approvals?.length) return null;
-                
+
                 const allApproved = pendingRequest.approvals.every(a => a.status === 'approved');
-                
+
                 return (
                   <div className="rounded-lg border p-3 space-y-2">
                     <p className="text-sm font-medium flex items-center gap-2">
@@ -333,9 +328,9 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Pengajuan</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>Anda akan mengajukan permintaan <strong>{getRequestTypeLabel(requestType)}</strong>.</p>
+              <p>Anda akan mengajukan permintaan <strong>Pergantian Topik</strong>.</p>
               <p className="text-amber-600">
-                ⚠️ Jika disetujui, semua data tugas akhir Anda akan dihapus permanen dan tidak dapat dikembalikan.
+                ⚠️ Jika disetujui, tugas akhir saat ini akan diarsipkan (status tidak aktif) dan Anda perlu mendaftar ulang.
               </p>
               <p>Apakah Anda yakin ingin melanjutkan?</p>
             </AlertDialogDescription>

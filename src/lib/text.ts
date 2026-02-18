@@ -12,7 +12,7 @@ export function formatRoleName(input?: string | null): string {
   if (!input) return "-";
   const s = String(input).trim().toLowerCase();
   if (!s) return "-";
-  
+
   // Map common role names to readable format
   const roleMap: Record<string, string> = {
     'pembimbing1': 'Pembimbing 1',
@@ -28,7 +28,7 @@ export function formatRoleName(input?: string | null): string {
     'mahasiswa': 'Mahasiswa',
     'dosen': 'Dosen',
   };
-  
+
   return roleMap[s] || toTitleCaseName(s);
 }
 
@@ -52,4 +52,13 @@ export function formatDateId(date?: string | Date | null): string {
     return d.toLocaleString();
   }
 }
+
+export function getInitials(name?: string | null): string {
+  if (!name) return "??";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return "??";
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 

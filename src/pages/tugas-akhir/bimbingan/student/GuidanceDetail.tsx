@@ -60,7 +60,7 @@ export default function GuidanceDetailPage() {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Lokasi</div>
-                <div className="font-medium">{guidance.location || '-'}</div>
+                <div className="font-medium">{(guidance.location as string) || '-'}</div>
               </div>
             </div>
 

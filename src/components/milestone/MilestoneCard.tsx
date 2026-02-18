@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
+
 import { MilestoneStatusBadge } from "./MilestoneStatusBadge";
 import type { Milestone, MilestoneStatus } from "@/types/milestone.types";
-import { formatDateId, toTitleCaseName } from "@/lib/text";
+import { formatDateId } from "@/lib/text";
 import {
   Calendar,
   Clock,
@@ -16,7 +16,7 @@ import {
   RotateCcw,
   MessageSquare,
   GripVertical,
-  BookOpen,
+
   Save,
   X,
   Loader2,
@@ -272,68 +272,68 @@ export function MilestoneCard({
         <div className="flex items-center justify-end gap-2 pt-2">
           {/* Owner actions */}
           {isOwner && !isCompleted && (
-              <>
-                {canStartWorking && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onStatusChange?.(milestone, "in_progress")}
-                    disabled={isStatusUpdating}
-                  >
-                    {isStatusUpdating ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <Clock className="h-4 w-4 mr-1" />
-                    )}
-                    Mulai
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => onEdit?.(milestone)}>
-                  <Edit2 className="h-4 w-4" />
+            <>
+              {canStartWorking && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStatusChange?.(milestone, "in_progress")}
+                  disabled={isStatusUpdating}
+                >
+                  {isStatusUpdating ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Clock className="h-4 w-4 mr-1" />
+                  )}
+                  Mulai
                 </Button>
-                {milestone.status === "not_started" && !milestone.validatedBy && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete?.(milestone)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </>
-            )}
+              )}
+              <Button variant="ghost" size="sm" onClick={() => onEdit?.(milestone)}>
+                <Edit2 className="h-4 w-4" />
+              </Button>
+              {milestone.status === "not_started" && !milestone.validatedBy && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDelete?.(milestone)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </>
+          )}
 
-            {/* Supervisor actions */}
-            {isSupervisor && (
-              <>
-                {canValidate && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => onValidate?.(milestone)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Validasi
-                  </Button>
-                )}
-                {canRequestRevision && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onRequestRevision?.(milestone)}
-                    className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1" />
-                    Minta Revisi
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => onAddFeedback?.(milestone)}>
-                  <MessageSquare className="h-4 w-4" />
+          {/* Supervisor actions */}
+          {isSupervisor && (
+            <>
+              {canValidate && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onValidate?.(milestone)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Validasi
                 </Button>
-              </>
-            )}
+              )}
+              {canRequestRevision && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onRequestRevision?.(milestone)}
+                  className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                >
+                  <RotateCcw className="h-4 w-4 mr-1" />
+                  Minta Revisi
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => onAddFeedback?.(milestone)}>
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

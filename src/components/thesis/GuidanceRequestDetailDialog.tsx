@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
-import { CheckIcon, XIcon, FileTextIcon, ExternalLink } from "lucide-react";
+import { FileTextIcon, ExternalLink } from "lucide-react";
 import StatusBadge from "@/components/thesis/StatusBadge";
 import type { GuidanceItem } from "@/services/lecturerGuidance.service";
 import { approveGuidanceRequest, rejectGuidanceRequest } from "@/services/lecturerGuidance.service";
@@ -20,12 +20,12 @@ type Props = {
   onViewDocument?: (fileName: string, filePath: string) => void;
 };
 
-export default function GuidanceRequestDetailDialog({ 
-  guidance, 
-  open, 
-  onOpenChange, 
+export default function GuidanceRequestDetailDialog({
+  guidance,
+  open,
+  onOpenChange,
   onUpdated,
-  onViewDocument 
+  onViewDocument
 }: Props) {
   const [mode, setMode] = useState<'view' | 'approve' | 'reject'>('view');
   const [approveFeedback, setApproveFeedback] = useState("");
@@ -60,12 +60,12 @@ export default function GuidanceRequestDetailDialog({
 
   const handleReject = async () => {
     if (!guidance.id) return;
-    
+
     if (!rejectFeedback.trim()) {
       toast.error("Mohon isi alasan penolakan");
       return;
     }
-    
+
     setSubmitting(true);
     try {
       await rejectGuidanceRequest(guidance.id, {
@@ -124,16 +124,16 @@ export default function GuidanceRequestDetailDialog({
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Jadwal Diminta</Label>
                   <div className="font-medium">
-                    {(guidance as any)?.requestedDateFormatted || 
-                     (guidance as any)?.approvedDateFormatted || 
-                     (guidance.requestedDate ? formatDateId(guidance.requestedDate) : '-')}
+                    {(guidance as any)?.requestedDateFormatted ||
+                      (guidance as any)?.approvedDateFormatted ||
+                      (guidance.requestedDate ? formatDateId(guidance.requestedDate) : '-')}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Tanggal Pengajuan</Label>
                   <div className="text-sm">
-                    {(guidance as any)?.createdAtFormatted || 
-                     ((guidance as any)?.createdAt ? formatDateId((guidance as any).createdAt as string) : '-')}
+                    {(guidance as any)?.createdAtFormatted ||
+                      ((guidance as any)?.createdAt ? formatDateId((guidance as any).createdAt as string) : '-')}
                   </div>
                 </div>
               </div>
@@ -147,19 +147,19 @@ export default function GuidanceRequestDetailDialog({
               </div>
 
               {/* Milestone (if any) */}
-              {(((guidance as any)?.milestoneTitles && (guidance as any).milestoneTitles.length > 0) || 
+              {(((guidance as any)?.milestoneTitles && (guidance as any).milestoneTitles.length > 0) ||
                 (guidance as any)?.milestone?.title) && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Milestone</Label>
-                  <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                    {((guidance as any)?.milestoneTitles && (guidance as any).milestoneTitles.length > 0) ? (
-                      (guidance as any).milestoneTitles.join(", ")
-                    ) : (
-                      (guidance as any)?.milestone?.title || '-'
-                    )}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Milestone</Label>
+                    <div className="p-3 rounded-lg bg-muted/50 text-sm">
+                      {((guidance as any)?.milestoneTitles && (guidance as any).milestoneTitles.length > 0) ? (
+                        (guidance as any).milestoneTitles.join(", ")
+                      ) : (
+                        (guidance as any)?.milestone?.title || '-'
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Dokumen - Compact */}
               {fileName && (
@@ -169,8 +169,8 @@ export default function GuidanceRequestDetailDialog({
                     <FileTextIcon className="size-4 text-muted-foreground shrink-0" />
                     <span className="flex-1 text-sm truncate">{fileName}</span>
                     {isPdf && filePath && (
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         className="h-7 px-2"
                         onClick={() => onViewDocument?.(fileName, filePath)}
@@ -187,9 +187,9 @@ export default function GuidanceRequestDetailDialog({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Link</Label>
                   <div className="space-y-2">
-                    <a 
-                      href={(guidance as any).documentUrl} 
-                      target="_blank" 
+                    <a
+                      href={(guidance as any).documentUrl}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-sm text-primary hover:underline"
                     >
@@ -295,9 +295,9 @@ export default function GuidanceRequestDetailDialog({
               <Button variant="outline" onClick={() => setMode('view')} disabled={submitting}>
                 Batal
               </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleReject} 
+              <Button
+                variant="destructive"
+                onClick={handleReject}
                 disabled={submitting || !rejectFeedback.trim()}
               >
                 {submitting ? (
