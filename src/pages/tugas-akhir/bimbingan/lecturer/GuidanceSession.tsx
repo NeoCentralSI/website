@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+
 import { Loading } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,9 +21,9 @@ import {
   Loader2,
   Clock,
   CheckCircle2,
-  AlertCircle,
+
   Mail,
-  Hash,
+
   NotebookPen,
   BookOpen,
   ListTodo,
@@ -33,8 +33,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { PdfViewer } from "@/components/pdf";
-import { 
-  getLecturerGuidanceDetail, 
+import {
+  getLecturerGuidanceDetail,
   approveSessionSummary,
 } from "@/services/lecturerGuidance.service";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
@@ -194,7 +194,7 @@ export default function LecturerGuidanceSessionPage() {
             </p>
           </div>
         </div>
-        
+
         {getStatusBadge()}
       </div>
 
@@ -239,7 +239,7 @@ export default function LecturerGuidanceSessionPage() {
                       <p className="text-sm text-muted-foreground">{guidance.studentNim || "-"}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Mail className="h-4 w-4" />
                     <span className="truncate">{guidance.studentEmail || "-"}</span>
@@ -265,8 +265,8 @@ export default function LecturerGuidanceSessionPage() {
                           (guidance.approvedDate
                             ? formatDateId(guidance.approvedDate)
                             : guidance.requestedDate
-                            ? formatDateId(guidance.requestedDate)
-                            : "-")}
+                              ? formatDateId(guidance.requestedDate)
+                              : "-")}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {isCompleted ? "Selesai" : isPendingApproval ? "Menunggu Approval" : isAccepted ? "Berjalan" : guidance?.status}

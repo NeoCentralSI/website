@@ -299,6 +299,7 @@ export interface GuidanceNeedingSummary {
   duration?: number;
   studentNotes?: string;
   milestoneName?: string;
+  type?: string;
 }
 
 export interface CompletedGuidance {
@@ -331,6 +332,7 @@ export interface GuidanceExport {
   actionItems?: string;
   milestoneName?: string;
   thesisTitle?: string;
+  type?: string;
 }
 
 /**
@@ -426,12 +428,14 @@ export interface MyThesisDetail {
     name: string | null;
     email: string | null;
     role: string | null;
+    avatarUrl?: string;
   }>;
   examiners: Array<{
     id: string;
     name: string | null;
     email: string | null;
     role: string | null;
+    avatarUrl?: string;
   }>;
   stats: {
     totalGuidances: number;
@@ -518,5 +522,26 @@ export const cancelSupervisor2Request = async (): Promise<{ success: boolean }> 
     method: "DELETE",
   });
   if (!res.ok) throw new Error((await res.json()).message || "Gagal membatalkan permintaan");
+  return res.json();
+};
+
+// ─── THESIS HISTORY ─────────────────────────────────────────────────────────
+
+export interface ThesisHistoryItem {
+  id: string;
+  title: string;
+  status: string;
+  topic: string;
+  academicYear: string;
+  createdAt: string;
+  stats: {
+    guidances: number;
+    completedMilestones: number;
+  };
+}
+
+export const getStudentThesisHistory = async (): Promise<{ success: boolean; theses: ThesisHistoryItem[] }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.THESIS_HISTORY));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat riwayat tugas akhir");
   return res.json();
 };

@@ -58,6 +58,7 @@ export const API_CONFIG = {
       EXPORT_GUIDANCE: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/export`,
       // My Thesis
       MY_THESIS: '/thesisGuidance/student/my-thesis',
+      THESIS_HISTORY: '/thesisGuidance/student/history/theses',
       UPDATE_THESIS_TITLE: '/thesisGuidance/student/my-thesis/title',
       // Pembimbing 2 Request
       AVAILABLE_SUPERVISORS_2: '/thesisGuidance/student/available-supervisors-2',

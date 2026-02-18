@@ -10,13 +10,13 @@ import { toTitleCaseName } from "@/lib/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
 } from "@/components/ui/tooltip";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -61,7 +61,7 @@ export default function LecturerMyStudentsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
   const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/requests" }, { label: "Mahasiswa Bimbingan" }], []);
-  
+
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
     setTitle(undefined);
@@ -70,7 +70,7 @@ export default function LecturerMyStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  
+
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
@@ -108,9 +108,9 @@ export default function LecturerMyStudentsPage() {
   const filteredData = useMemo(() => {
     if (!data?.students) return [];
     if (!searchQuery.trim()) return data.students;
-    
+
     const query = searchQuery.toLowerCase();
-    return data.students.filter((student: MyStudentItem) => 
+    return data.students.filter((student: MyStudentItem) =>
       toTitleCaseName(student.fullName).toLowerCase().includes(query) ||
       student.email?.toLowerCase().includes(query)
     );
@@ -153,7 +153,7 @@ export default function LecturerMyStudentsPage() {
         const total = row.totalMilestones || 0;
         const completed = row.completedMilestones || 0;
         const progress = row.milestoneProgress || 0;
-        
+
         return (
           <div className="space-y-1.5 min-w-35">
             <div className="flex items-center justify-between text-xs">
@@ -198,30 +198,30 @@ export default function LecturerMyStudentsPage() {
       render: (row) => {
         const days = getDaysRemaining(row.deadlineDate);
         if (days === null) return <span className="text-muted-foreground">-</span>;
-        
+
         if (days < 0) {
           return (
             <Badge variant="destructive" className="items-center gap-1">
-               <Clock className="h-3 w-3" />
-               Lewat {Math.abs(days)} hari
+              <Clock className="h-3 w-3" />
+              Lewat {Math.abs(days)} hari
             </Badge>
           );
         }
-        
+
         if (days <= 30) {
-           return (
+          return (
             <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 items-center gap-1">
-               <Clock className="h-3 w-3" />
-               {days} hari
+              <Clock className="h-3 w-3" />
+              {days} hari
             </Badge>
-           );
+          );
         }
 
         return (
-           <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              <span>{days} hari</span>
-           </div>
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            <span>{days} hari</span>
+          </div>
         );
       }
     },
@@ -253,9 +253,9 @@ export default function LecturerMyStudentsPage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setWarningDialog({ open: true, student: row })}
                       className="h-8 w-8 p-0 text-orange-500 hover:text-orange-600 hover:bg-orange-50"
                     >
@@ -272,9 +272,9 @@ export default function LecturerMyStudentsPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/my-students/${row.thesisId}`)}
                     className="h-8 w-8 p-0"
                   >
@@ -301,7 +301,14 @@ export default function LecturerMyStudentsPage() {
   ];
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Mahasiswa Bimbingan</h1>
+          <p className="text-gray-500">Daftar mahasiswa yang Anda bimbing</p>
+        </div>
+      </div>
+
       <TabsNav tabs={tabs} />
 
       {/* Pembimbing 2 Requests Section */}
@@ -331,9 +338,9 @@ export default function LecturerMyStudentsPage() {
           emptyText="Tidak ada mahasiswa bimbingan"
           rowKey={(row) => row.studentId}
           actions={
-            <RefreshButton 
-              onClick={() => refetch()} 
-              isRefreshing={isFetching && !isLoading} 
+            <RefreshButton
+              onClick={() => refetch()}
+              isRefreshing={isFetching && !isLoading}
             />
           }
         />
@@ -358,7 +365,7 @@ export default function LecturerMyStudentsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Status saat ini:</span>
-                  <Badge 
+                  <Badge
                     variant={getRatingConfig(warningDialog.student?.thesisRating).variant}
                     className={getRatingConfig(warningDialog.student?.thesisRating).className}
                   >
@@ -373,7 +380,7 @@ export default function LecturerMyStudentsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={sendWarningMutation.isPending}>Batal</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleSendWarning}
               disabled={sendWarningMutation.isPending}
               className="bg-orange-500 hover:bg-orange-600"

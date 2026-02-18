@@ -10,17 +10,16 @@ import { id as idLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Calendar, MapPin, Users, Video } from "lucide-react";
 import { UpcomingEventsCard } from "@/components/dashboard/UpcomingEventsCard";
-import { MilestoneProgressCard } from "@/components/dashboard/MilestoneProgressCard";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { useRole } from "@/hooks/shared";
 
 export default function Dashboard() {
   console.log('🎯 [Dashboard] Component rendering');
-  
+
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [createEventOpen, setCreateEventOpen] = useState(false);
-  const { isStudent, isDosen } = useRole();
+  const { isDosen } = useRole();
 
   useEffect(() => {
     console.log('📋 [Dashboard] Setting breadcrumbs and title');
@@ -40,7 +39,7 @@ export default function Dashboard() {
       startDate: event.startDate,
       status: event.status
     });
-    
+
     if (event.type === 'outlook_event') {
       // For Outlook events, use the webLink if available
       const webLink = (event as any)?.metadata?.webLink;
@@ -49,23 +48,23 @@ export default function Dashboard() {
         return webLink;
       }
     }
-    
+
     // For any event (internal or Outlook), try to construct specific event link
-    const outlookEventId = (event as any)?.outlookEventId || 
-                           (event as any)?.studentCalendarEventId || 
-                           (event as any)?.supervisorCalendarEventId;
-    
+    const outlookEventId = (event as any)?.outlookEventId ||
+      (event as any)?.studentCalendarEventId ||
+      (event as any)?.supervisorCalendarEventId;
+
     if (outlookEventId) {
       console.log('[Dashboard] Using specific event ID:', outlookEventId);
       return `https://outlook.live.com/calendar/0/view/event/${outlookEventId}`;
     }
-    
+
     // Fallback: Open Outlook Calendar to the event date and time
     const eventDate = new Date(event.startDate);
     const dateString = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
-    
+
     console.log('[Dashboard] Using fallback calendar view for date:', dateString);
-    
+
     // Use the calendar view with date parameter - this will navigate to the specific day
     return `https://outlook.live.com/calendar/0/view/day/${dateString}`;
   };
@@ -118,7 +117,6 @@ export default function Dashboard() {
           />
         </div>
         <div className="lg:col-span-1 h-full min-h-0 flex flex-col gap-6">
-          {isStudent() && <MilestoneProgressCard className="flex-1 min-h-0" />}
           {isDosen() && <QuickActionsCard className="shrink-0" />}
           <UpcomingEventsCard limit={20} className="flex-1 min-h-0" />
         </div>
@@ -133,14 +131,14 @@ export default function Dashboard() {
               {selectedEvent && format(new Date(selectedEvent.startDate), 'EEEE, dd MMMM yyyy HH:mm', { locale: idLocale })}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedEvent && (
             <div className="space-y-4">
               {/* Event Type */}
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <Badge 
-                  variant="outline" 
+                <Badge
+                  variant="outline"
                   className={getEventTypeBadgeColor(selectedEvent.type)}
                 >
                   {getEventTypeLabel(selectedEvent.type)}
@@ -184,15 +182,15 @@ export default function Dashboard() {
                   <Video className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">Link Meeting</div>
-                    <a 
-                      href={selectedEvent.meetingLink} 
-                      target="_blank" 
+                    <a
+                      href={selectedEvent.meetingLink}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-primary hover:underline truncate block"
                       title={selectedEvent.meetingLink}
                     >
-                      {selectedEvent.meetingLink.length > 50 
-                        ? selectedEvent.meetingLink.substring(0, 50) + '...' 
+                      {selectedEvent.meetingLink.length > 50
+                        ? selectedEvent.meetingLink.substring(0, 50) + '...'
                         : selectedEvent.meetingLink}
                     </a>
                   </div>
@@ -210,9 +208,9 @@ export default function Dashboard() {
                         <div key={idx} className="flex items-center justify-between text-sm">
                           <span>{participant.name}</span>
                           <Badge variant="secondary" className="text-xs">
-                            {participant.role === 'student' ? 'Mahasiswa' 
+                            {participant.role === 'student' ? 'Mahasiswa'
                               : participant.role === 'lecturer' ? 'Dosen'
-                              : 'Admin'}
+                                : 'Admin'}
                           </Badge>
                         </div>
                       ))}
@@ -226,7 +224,7 @@ export default function Dashboard() {
                 <Button variant="outline" className="flex-1" onClick={() => setSelectedEvent(null)}>
                   Tutup
                 </Button>
-                
+
                 {/* Meeting Link Button */}
                 {selectedEvent.meetingLink && (
                   <Button className="flex-1 gap-2" asChild>
@@ -236,20 +234,20 @@ export default function Dashboard() {
                     </a>
                   </Button>
                 )}
-                
+
                 {/* View in Outlook Button - Show for all accepted events or outlook events */}
-                {(selectedEvent.type === 'outlook_event' || 
-                  selectedEvent.status === 'accepted' || 
+                {(selectedEvent.type === 'outlook_event' ||
+                  selectedEvent.status === 'accepted' ||
                   selectedEvent.type === 'student_guidance' ||
                   selectedEvent.type === 'guidance_scheduled'
                 ) && (
-                  <Button variant="outline" className="flex-1 gap-2" asChild>
-                    <a href={getOutlookWebLink(selectedEvent)} target="_blank" rel="noopener noreferrer">
-                      <Calendar className="h-4 w-4" />
-                      Lihat di Outlook
-                    </a>
-                  </Button>
-                )}
+                    <Button variant="outline" className="flex-1 gap-2" asChild>
+                      <a href={getOutlookWebLink(selectedEvent)} target="_blank" rel="noopener noreferrer">
+                        <Calendar className="h-4 w-4" />
+                        Lihat di Outlook
+                      </a>
+                    </Button>
+                  )}
               </div>
             </div>
           )}

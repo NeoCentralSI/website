@@ -48,37 +48,44 @@ export default function LecturerHistoryPage() {
   }
 
   return (
-      <div className="p-4">
-        <Card className="p-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Waktu</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={2}>
-                    <EmptyState 
-                      size="sm" 
-                      title="Tidak Ada Riwayat" 
-                      description="Belum ada riwayat bimbingan" 
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((g) => (
-                  <TableRow key={g.id}>
-                    <TableCell>{g.approvedDate ? new Date(g.approvedDate).toLocaleString() : (g.requestedDate ? new Date(g.requestedDate).toLocaleString() : '-')}</TableCell>
-                    <TableCell className="capitalize">{g.status}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </Card>
+    <div className="p-4 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Riwayat Bimbingan</h1>
+          <p className="text-gray-500">Riwayat bimbingan yang telah selesai</p>
+        </div>
       </div>
+
+      <Card className="p-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Waktu</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={2}>
+                  <EmptyState
+                    size="sm"
+                    title="Tidak Ada Riwayat"
+                    description="Belum ada riwayat bimbingan"
+                  />
+                </TableCell>
+              </TableRow>
+            ) : (
+              items.map((g) => (
+                <TableRow key={g.id}>
+                  <TableCell>{g.approvedDate ? new Date(g.approvedDate).toLocaleString() : (g.requestedDate ? new Date(g.requestedDate).toLocaleString() : '-')}</TableCell>
+                  <TableCell className="capitalize">{g.status}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
   );
 }

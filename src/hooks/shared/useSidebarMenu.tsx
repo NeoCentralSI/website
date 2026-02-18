@@ -3,7 +3,8 @@ import {
   Briefcase,
   Database,
   FileText,
-  SquareTerminal
+  SquareTerminal,
+  GraduationCap
 } from "lucide-react";
 import { useMemo } from "react";
 import { useRole } from '@/hooks/shared';
@@ -101,11 +102,14 @@ export const useSidebarMenu = () => {
               title: "Sidang",
               url: "/tugas-akhir/sidang",
             },
-            {
-              title: "Yudisium",
-              url: "/yudisium",
-            },
           ],
+        },
+        // Yudisium - moved to top level
+        {
+          title: "Yudisium",
+          url: "/yudisium",
+          icon: GraduationCap, // Use GraduationCap or similar
+          items: [],
         },
       ];
 
@@ -132,7 +136,7 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Kerja Praktik",
-          url: "/kerja-praktik",
+          url: "#",
           icon: Briefcase,
           items: [
             {
@@ -155,7 +159,7 @@ export const useSidebarMenu = () => {
       if (role.pembimbing1) {
         menuItems.push({
           title: "Metode Penelitian",
-          url: "/metopel",
+          url: "#",
           icon: BookOpen,
           items: [],
         });
@@ -170,7 +174,7 @@ export const useSidebarMenu = () => {
 
       menuItems.push({
         title: "Tugas Akhir",
-        url: "/tugas-akhir",
+        url: "#",
         icon: FileText,
         items: tugasAkhirItems,
       });
@@ -200,7 +204,7 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Kerja Praktik",
-          url: "/kerja-praktik",
+          url: "#",
           icon: Briefcase,
           items: [
             {
@@ -223,7 +227,7 @@ export const useSidebarMenu = () => {
       if (role.pembimbing1) {
         menuItems.push({
           title: "Metode Penelitian",
-          url: "/metopel",
+          url: "#",
           icon: BookOpen,
           items: [],
         });
@@ -232,7 +236,7 @@ export const useSidebarMenu = () => {
       // Menu Tugas Akhir (hanya aktivitas dosen)
       menuItems.push({
         title: "Tugas Akhir",
-        url: "/tugas-akhir",
+        url: "#",
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
@@ -245,7 +249,7 @@ export const useSidebarMenu = () => {
       // Menu Kelola (fitur manajemen Kadep)
       menuItems.push({
         title: "Kelola",
-        url: "/kelola",
+        url: "#",
         icon: Database,
         items: [
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/kadep" },
@@ -279,7 +283,7 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Kerja Praktik",
-          url: "/kerja-praktik",
+          url: "#",
           icon: Briefcase,
           items: [
             {
@@ -302,7 +306,7 @@ export const useSidebarMenu = () => {
       if (role.pembimbing1) {
         menuItems.push({
           title: "Metode Penelitian",
-          url: "/metopel",
+          url: "#",
           icon: BookOpen,
           items: [],
         });
@@ -318,14 +322,14 @@ export const useSidebarMenu = () => {
 
       menuItems.push({
         title: "Tugas Akhir",
-        url: "/tugas-akhir",
+        url: "#",
         icon: FileText,
         items: tugasAkhirItems,
       });
 
       menuItems.push({
         title: "Kelola",
-        url: "/kelola",
+        url: "#",
         icon: Database,
         items: [
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
@@ -361,7 +365,7 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Kerja Praktik",
-          url: "/kerja-praktik",
+          url: "#",
           icon: Briefcase,
           items: [
             {
@@ -384,7 +388,7 @@ export const useSidebarMenu = () => {
       if (role.pembimbing1) {
         menuItems.push({
           title: "Metode Penelitian",
-          url: "/metopel",
+          url: "#",
           icon: BookOpen,
           items: [],
         });
@@ -400,7 +404,7 @@ export const useSidebarMenu = () => {
 
       menuItems.push({
         title: "Tugas Akhir",
-        url: "/tugas-akhir",
+        url: "#",
         icon: FileText,
         items: tugasAkhirItems,
       });
@@ -437,7 +441,7 @@ export const useSidebarMenu = () => {
           },
           {
             title: "Kerja Praktik",
-            url: "/kerja-praktik",
+            url: "#",
             icon: Briefcase,
             items: [
               {
@@ -452,7 +456,7 @@ export const useSidebarMenu = () => {
           },
           {
             title: "Tugas Akhir",
-            url: "/tugas-akhir",
+            url: "#",
             icon: FileText,
             items: [
               {
@@ -471,7 +475,7 @@ export const useSidebarMenu = () => {
           },
           {
             title: "Master Data",
-            url: "/master-data",
+            url: "#",
             icon: Database,
             items: [
               {

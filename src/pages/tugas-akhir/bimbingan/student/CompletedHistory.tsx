@@ -18,14 +18,21 @@ export default function CompletedHistoryPage() {
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Riwayat Bimbingan</h1>
+          <p className="text-gray-500">Arsip seluruh kegiatan bimbingan</p>
+        </div>
+      </div>
+
       <TabsNav
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
-          { label: 'Tugas Akhir Saya', to: '/tugas-akhir/bimbingan/milestone' },
+          { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
           { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
+          { label: 'Zona Berbahaya', to: '/tugas-akhir/bimbingan/danger-zone' },
         ]}
       />
 

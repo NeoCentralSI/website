@@ -6,7 +6,7 @@ import { getStudentsAPI, triggerSiaSyncAPI, type Student } from '@/services/admi
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { Eye, RefreshCw } from 'lucide-react';
@@ -19,7 +19,7 @@ export default function Mahasiswa() {
   const { isAdmin } = useRole();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const queryClient = useQueryClient();
-  
+
   // Local UI state only
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -128,7 +128,7 @@ export default function Mahasiswa() {
   // Extract data from query result
   const students = data?.students || [];
   const total = data?.meta?.total || 0;
-  const isTableLoading = isLoading || syncMutation.isPending;
+
 
   return (
     <div className="p-6 space-y-4">
@@ -174,9 +174,9 @@ export default function Mahasiswa() {
         onSearchChange={setSearchValue}
         enableColumnFilters
         actions={
-          <RefreshButton 
-            onClick={() => refetch()} 
-            isRefreshing={isFetching && !isLoading} 
+          <RefreshButton
+            onClick={() => refetch()}
+            isRefreshing={isFetching && !isLoading}
           />
         }
       />
