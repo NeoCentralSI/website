@@ -13,9 +13,9 @@ const resolveFileUrl = (path: string): string => {
   return new URL(path, `${window.location.origin}${base || ""}`).toString();
 };
 
-export async function getSopFiles(type?: SopType): Promise<SopFile[]> {
+export async function getSopFiles(category?: 'SOP' | 'TEMPLATE'): Promise<SopFile[]> {
   const url = new URL(getApiUrl("/sop"));
-  if (type) url.searchParams.set("type", type);
+  if (category) url.searchParams.set("category", category);
   const response = await apiRequest(url.toString());
   if (!response.ok) {
     const error = await response.json();
@@ -29,9 +29,8 @@ export async function getSopFiles(type?: SopType): Promise<SopFile[]> {
 }
 
 // Public fetch (no auth handling) for landing page
-export async function getSopFilesPublic(type?: SopType): Promise<SopFile[]> {
-  const url = new URL(getApiUrl("/sop"));
-  if (type) url.searchParams.set("type", type);
+export async function getSopFilesPublic(): Promise<SopFile[]> {
+  const url = new URL(getApiUrl("/sop/public"));
   const response = await fetch(url.toString(), { cache: "no-store" });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -49,10 +48,13 @@ export function getSopDownloadUrl(fileUrl: string): string {
   return getApiUrl(`/sop/download?path=${encodeURIComponent(pathName)}`);
 }
 
-export async function uploadSop(params: { type: SopType; file: File }): Promise<SopFile> {
+export async function uploadSop(params: { type: SopType; file: File; title?: string }): Promise<SopFile> {
   const formData = new FormData();
   formData.append("type", params.type);
   formData.append("file", params.file);
+  if (params.title) {
+    formData.append("title", params.title);
+  }
 
   const response = await apiRequest(getApiUrl("/sop"), {
     method: "POST",
@@ -65,5 +67,40 @@ export async function uploadSop(params: { type: SopType; file: File }): Promise<
   }
 
   const result = await response.json();
-  return result.data;
+  return {
+    ...result.data,
+    url: resolveFileUrl(result.data.url),
+  };
+}
+
+export async function updateSop(id: string, payload: { type: SopType; title?: string }): Promise<SopFile> {
+  const response = await apiRequest(getApiUrl(`/sop/${id}`), {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal memperbarui SOP");
+  }
+
+  const result = await response.json();
+  return {
+    ...result.data,
+    url: resolveFileUrl(result.data.url),
+  };
+}
+
+export async function deleteSop(id: string): Promise<void> {
+  const response = await apiRequest(getApiUrl(`/sop/${id}`), {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal menghapus SOP");
+  }
 }

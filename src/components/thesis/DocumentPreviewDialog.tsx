@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DownloadIcon, ExternalLinkIcon, XIcon } from "lucide-react";
 import { getApiUrl } from "@/config/api";
@@ -14,19 +14,21 @@ export type DocumentPreviewDialogProps = {
 export default function DocumentPreviewDialog({ open, onOpenChange, fileName, filePath, mode = "fullscreen" }: DocumentPreviewDialogProps) {
   let url: string | undefined;
   if (filePath) {
+    const normalizedPath = filePath.replace(/\\/g, "/");
     // If path starts with http, it's already a full URL
-    if (filePath.startsWith("http")) {
-      url = filePath;
+    if (normalizedPath.startsWith("http")) {
+      url = normalizedPath;
     }
     // If path already starts with /uploads/ or uploads/, use it as-is
-    else if (filePath.startsWith("/uploads/") || filePath.startsWith("uploads/")) {
-      url = getApiUrl(filePath.startsWith("/") ? filePath : `/${filePath}`);
+    else if (normalizedPath.startsWith("/uploads/") || normalizedPath.startsWith("uploads/")) {
+      url = getApiUrl(normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`);
     }
     // Otherwise, add /uploads/ prefix
     else {
-      url = getApiUrl(`/uploads/${filePath}`);
+      url = getApiUrl(`/uploads/${normalizedPath}`);
     }
   }
+
   // Basic preview via iframe; we rely on browser PDF viewer
   const contentClass =
     mode === "fullscreen"
@@ -37,9 +39,11 @@ export default function DocumentPreviewDialog({ open, onOpenChange, fileName, fi
       ? "px-4 sm:px-6 pt-3 pb-2 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b sticky top-0 z-10"
       : "px-6 pt-6 pb-4";
   const viewerClass = mode === "fullscreen" ? "w-full h-[calc(100vh-48px)]" : "w-full h-full";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={contentClass}>
+        <DialogDescription className="hidden">Preview dokumen {fileName}</DialogDescription>
         <DialogHeader className={headerClass}>
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="truncate" title={fileName || "Dokumen"}>{fileName || "Dokumen"}</DialogTitle>
@@ -52,7 +56,7 @@ export default function DocumentPreviewDialog({ open, onOpenChange, fileName, fi
                     </a>
                   </Button>
                   <Button asChild variant="secondary" size="sm">
-                    <a href={url} download>
+                    <a href={url} download={fileName || "document"}>
                       <DownloadIcon className="mr-2 size-4" /> Unduh
                     </a>
                   </Button>
@@ -66,7 +70,7 @@ export default function DocumentPreviewDialog({ open, onOpenChange, fileName, fi
             </div>
           </div>
         </DialogHeader>
-        <div className="w-full border-t">
+        <div className="w-full border-t h-full bg-gray-100 overflow-auto">
           {url ? (
             <iframe title="preview" src={url} className={viewerClass} />
           ) : (

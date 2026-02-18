@@ -77,13 +77,21 @@ export default function InternshipProposalDetail() {
 
     const getStatusBadge = (status: string) => {
         let variant: 'outline' | 'default' | 'secondary' | 'destructive' | 'success' = 'outline';
-        if (status === 'APPROVED_BY_SEKDEP') variant = 'success';
-        if (status === 'REJECTED_BY_SEKDEP') variant = 'destructive';
-        if (status === 'PENDING') variant = 'secondary';
+        let label = status.replace(/_/g, ' ');
+
+        if (status === 'APPROVED_BY_SEKDEP') {
+            variant = 'success';
+            label = 'APPROVED';
+        } else if (status === 'REJECTED_BY_SEKDEP') {
+            variant = 'destructive';
+            label = 'REJECTED';
+        } else if (status === 'PENDING') {
+            variant = 'secondary';
+        }
 
         return (
             <Badge variant={variant as any} className="px-3 py-1">
-                {status.replace(/_/g, ' ')}
+                {label}
             </Badge>
         );
     };
@@ -232,8 +240,16 @@ export default function InternshipProposalDetail() {
                                 {data.status !== 'PENDING' && (
                                     <div className="relative">
                                         <div className={`absolute -left-[23px] top-1 h-3 w-3 rounded-full ring-4 ring-background ${data.status.includes('REJECTED') ? 'bg-destructive' : 'bg-success'}`} />
-                                        <p className="text-sm font-semibold">{data.status.replace(/_/g, ' ')}</p>
+                                        <p className="text-sm font-semibold">
+                                            {data.status === 'APPROVED_BY_SEKDEP' ? 'APPROVED' : data.status === 'REJECTED_BY_SEKDEP' ? 'REJECTED' : data.status.replace(/_/g, ' ')}
+                                        </p>
                                         <p className="text-xs text-muted-foreground">{formatDateId(data.updatedAt)}</p>
+                                        {data.status === 'REJECTED_BY_SEKDEP' && data.sekdepNotes && (
+                                            <div className="mt-2 p-2 bg-destructive/5 border border-destructive/10 rounded text-xs text-destructive">
+                                                <p className="font-semibold mb-1">Catatan Sekdep:</p>
+                                                <p>{data.sekdepNotes}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

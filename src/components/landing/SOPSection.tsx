@@ -14,13 +14,13 @@ type SopMeta = {
 
 const sopDocuments: SopMeta[] = [
   {
-    key: 'kerja-praktik',
-    title: 'Panduan Kerja Praktek',
+    key: 'SOP_KP',
+    title: 'Panduan Kerja Praktik',
     description:
-      'Panduan lengkap prosedur untuk Kerja Praktek mahasiswa Departemen Sistem Informasi',
+      'Panduan lengkap prosedur untuk Kerja Praktik mahasiswa Departemen Sistem Informasi',
   },
   {
-    key: 'tugas-akhir',
+    key: 'SOP_TA',
     title: 'Panduan Tugas Akhir',
     description:
       'Panduan lengkap prosedur untuk Tugas Akhir mahasiswa Departemen Sistem Informasi',
@@ -151,19 +151,19 @@ export function SOPSection() {
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-12">
-            {sopDocuments.map((doc, index) => {
-              const sopFile = sopMap.get(doc.key);
-              const preview = previews[doc.key];
+          {sopDocuments.map((doc, index) => {
+            const sopFile = sopMap.get(doc.key);
+            const preview = previews[doc.key];
             return (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: index * 0.2 }}
-              className="relative group"
-            >
-              {/* PDF Preview */}
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: index * 0.2 }}
+                className="relative group"
+              >
+                {/* PDF Preview */}
                 <div
                   className="bg-gray-100 aspect-3/4 mb-6 flex items-center justify-center relative overflow-hidden rounded-2xl cursor-pointer"
                   onClick={() => openPdf(sopFile?.url)}
@@ -197,47 +197,47 @@ export function SOPSection() {
                   </div>
                 </div>
 
-              {/* Document Info */}
-              <div className="space-y-4">
-                <h3 className="text-3xl font-black text-black">
-                  {doc.title}
-                </h3>
-                
-                <p className="text-lg text-gray-600 leading-relaxed">
-                  {doc.description}
-                </p>
+                {/* Document Info */}
+                <div className="space-y-4">
+                  <h3 className="text-3xl font-black text-black">
+                    {doc.title}
+                  </h3>
 
-                <div className="flex items-center gap-6 text-sm font-bold text-gray-500">
-                  <span>{sopFile ? formatSize(sopFile.size) : '—'}</span>
-                  <span>-</span>
-                  <span>{preview?.pages ? `${preview.pages} halaman` : '—'}</span>
-                  <span>-</span>
-                  <span>PDF</span>
+                  <p className="text-lg text-gray-600 leading-relaxed">
+                    {doc.description}
+                  </p>
+
+                  <div className="flex items-center gap-6 text-sm font-bold text-gray-500">
+                    <span>{sopFile ? formatSize(sopFile.size) : '—'}</span>
+                    <span>-</span>
+                    <span>{preview?.pages ? `${preview.pages} halaman` : '—'}</span>
+                    <span>-</span>
+                    <span>PDF</span>
+                  </div>
+
+                  <button
+                    disabled={!sopFile || loading}
+                    className="bg-[#F7931E] text-white px-8 py-4 rounded-2xl hover:bg-[#E08319] transition-all flex items-center gap-3 group font-bold text-lg w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => downloadPdf(sopFile?.url, sopFile?.fileName)}
+                  >
+                    {loading && <span className="text-sm">Memuat...</span>}
+                    <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
+                    UNDUH PANDUAN
+                  </button>
+                  {error && (
+                    <p className="text-sm text-red-600">{error}</p>
+                  )}
                 </div>
 
-                <button
-                  disabled={!sopFile || loading}
-                  className="bg-[#F7931E] text-white px-8 py-4 rounded-2xl hover:bg-[#E08319] transition-all flex items-center gap-3 group font-bold text-lg w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={() => downloadPdf(sopFile?.url, sopFile?.fileName)}
-                >
-                  {loading && <span className="text-sm">Memuat...</span>}
-                  <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
-                  UNDUH PANDUAN
-                </button>
-                {error && (
-                  <p className="text-sm text-red-600">{error}</p>
-                )}
-              </div>
-
-              {/* Decorative Line */}
-              <motion.div 
-                className="absolute -bottom-6 left-0 h-1 bg-[#F7931E] rounded-full"
-                initial={{ width: 0 }}
-                whileInView={{ width: '40%' }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: index * 0.2 + 0.3 }}
-              />
-            </motion.div>
+                {/* Decorative Line */}
+                <motion.div
+                  className="absolute -bottom-6 left-0 h-1 bg-[#F7931E] rounded-full"
+                  initial={{ width: 0 }}
+                  whileInView={{ width: '40%' }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: index * 0.2 + 0.3 }}
+                />
+              </motion.div>
             );
           })}
         </div>
