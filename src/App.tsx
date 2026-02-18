@@ -17,7 +17,6 @@ import BimbinganEntry from './pages/tugas-akhir/bimbingan/BimbinganEntry'
 import StudentGuidancePage from './pages/tugas-akhir/bimbingan/student/StudentGuidance'
 import StudentGuidanceSessionPage from './pages/tugas-akhir/bimbingan/student/GuidanceSession'
 import GuidanceHistoryPage from './pages/tugas-akhir/bimbingan/student/History'
-import SupervisorsPage from './pages/tugas-akhir/bimbingan/student/Supervisors'
 import StudentMilestonePage from './pages/tugas-akhir/bimbingan/student/Milestone'
 import CompletedHistoryPage from './pages/tugas-akhir/bimbingan/student/CompletedHistory'
 import DangerZonePage from './pages/tugas-akhir/bimbingan/student/DangerZone'
@@ -99,25 +98,29 @@ function App() {
                   <Route path="/kerja-praktik/acc-proposal" element={<Placeholder title="Kerja Praktek - ACC Proposal" />} />
                   <Route path="/kerja-praktik/surat-pengantar" element={<Placeholder title="Kerja Praktek - Surat Pengantar" />} />
                   <Route path="/kerja-praktik/data" element={<Placeholder title="Kerja Praktek - Data KP" />} />
+                </Route>
                 <Route path="/kerja-praktik" element={<KerjaPraktekGuard />}>
                   <Route path="pendaftaran" element={<InternshipProposalPage />} />
                   <Route path="pendaftaran/:id" element={<InternshipProposalDetailPage />} />
                   <Route path="logbook" element={<Placeholder title="KP - Logbook" />} />
                   <Route path="seminar" element={<Placeholder title="KP - Seminar" />} />
                 </Route>
+              </Route>
+
 
               {/* Metode Penelitian - Protected by eligibility guard */}
               <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
                 <Route element={<MetopelGuard />}>
                   <Route path="/metopel" element={<MetopenOverviewPage />} />
+                </Route>
                 <Route path="/tugas-akhir" element={<TugasAkhirGuard />}>
                   <Route path="bimbingan" element={<StudentGuidancePage />} />
                   <Route path="bimbingan/session/:id" element={<StudentGuidanceSessionPage />} />
                   <Route path="bimbingan/history" element={<GuidanceHistoryPage />} />
-                  <Route path="bimbingan/supervisors" element={<SupervisorsPage />} />
                   <Route path="milestone" element={<StudentMilestonePage />} />
                   <Route path="completed-history" element={<CompletedHistoryPage />} />
                 </Route>
+              </Route>
 
               <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
                 <Route element={<TugasAkhirGuard />}>
@@ -127,10 +130,10 @@ function App() {
                   <Route path="/tugas-akhir/bimbingan/student" element={<StudentGuidancePage />} />
                   <Route path="/tugas-akhir/bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                   <Route path="/tugas-akhir/bimbingan/history" element={<GuidanceHistoryPage />} />
-                  <Route path="/tugas-akhir/bimbingan/supervisors" element={<SupervisorsPage />} />
                   <Route path="/tugas-akhir/bimbingan/milestone" element={<StudentMilestonePage />} />
                   <Route path="/tugas-akhir/bimbingan/completed-history" element={<CompletedHistoryPage />} />
                   <Route path="/tugas-akhir/bimbingan/danger-zone" element={<DangerZonePage />} />
+                </Route>
                 <Route path="/metopel" element={<MetopelGuard />}>
                   <Route index element={<BimbinganEntry />} />
                 </Route>
