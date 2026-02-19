@@ -5,7 +5,7 @@ import { Loading } from '@/components/ui/spinner';
 import CustomTable from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useCompanyStats } from '@/hooks/internship/useCompanyStats';
-import { getCompanyStatsColumns } from '@/lib/internshipTableColumns';
+import { getCompanyStatsColumns } from '@/lib/internship';
 import { Building2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

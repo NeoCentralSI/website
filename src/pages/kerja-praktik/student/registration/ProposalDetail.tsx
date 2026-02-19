@@ -134,7 +134,7 @@ export default function InternshipProposalDetail() {
                                 <h3 className="text-lg font-semibold">{data.targetCompany.companyName}</h3>
                                 <div className="flex items-start gap-2 text-muted-foreground mt-1">
                                     <MapPin className="h-4 w-4 mt-1 shrink-0" />
-                                    <p className="text-sm">{data.targetCompany.address}</p>
+                                    <p className="text-sm">{data.targetCompany.companyAddress}</p>
                                 </div>
                             </div>
                         </CardContent>

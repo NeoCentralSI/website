@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useStudentProposals } from '@/hooks/internship/useStudentProposals';
-import { getInternshipProposalColumns } from '@/lib/internshipTableColumns';
+import { getInternshipProposalColumns } from '@/lib/internship';
 import RegisterInternshipDialog from '@/components/internship/RegisterInternshipDialog';
 import { respondToInvitation, type InternshipProposalItem } from '@/services/internship.service';
 import { getSopDownloadUrl } from '@/services/sop.service';
@@ -49,10 +49,20 @@ export default function InternshipProposalPage() {
     }, [breadcrumb, setBreadcrumbs, setTitle]);
 
     const activeProposal = useMemo(() => {
-        return items.find(item =>
-            ['PENDING', 'APPROVED_BY_SEKDEP'].includes(item.status) &&
-            item.memberStatus !== 'REJECTED'
-        );
+        return items.find(item => {
+            // If the proposal is cancelled or fully rejected, it's not active
+            if (['REJECTED_BY_SEKDEP', 'REJECTED_BY_COMPANY', 'CANCELLED'].includes(item.status)) {
+                return false;
+            }
+
+            // If the member is rejected (either by declining invite or by company in partial acceptance), it's not active for them
+            if (['REJECTED', 'REJECTED_BY_COMPANY'].includes(item.memberStatus as string)) {
+                return false;
+            }
+
+            // Otherwise, it's an active proposal
+            return true;
+        });
     }, [items]);
 
     const handleRegisterClick = () => {
@@ -114,7 +124,11 @@ export default function InternshipProposalPage() {
     };
 
     return (
-        <div className="p-4">
+        <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">Pendaftaran Kerja Praktik</h1>
+                <p className="text-muted-foreground">Ajukan proposal dan surat permohonan.</p>
+            </div>
             <TabsNav
                 preserveSearch
                 tabs={[

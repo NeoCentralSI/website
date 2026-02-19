@@ -100,6 +100,7 @@ export const API_CONFIG = {
       ELIGIBLE_STUDENTS: '/insternship/registration/eligible-students',
       SUBMIT_PROPOSAL: '/insternship/registration/submit',
       UPLOAD: '/documents/upload',
+      SUBMIT_COMPANY_RESPONSE: (proposalId: string) => `/insternship/registration/proposals/${proposalId}/company-response`,
     },
     INTERNSHIP_SEKDEP: {
       BASE: '/insternship/sekdep',
@@ -108,6 +109,8 @@ export const API_CONFIG = {
       COMPANY_STATS: '/insternship/sekdep/companies/stats',
       COMPANIES: '/insternship/sekdep/companies',
       COMPANY_DETAIL: (id: string) => `/insternship/sekdep/companies/${id}`,
+      COMPANY_RESPONSES: '/insternship/sekdep/company-responses',
+      VERIFY_COMPANY_RESPONSE: (id: string) => `/insternship/sekdep/company-responses/${id}/verify`,
     },
     INTERNSHIP_ADMIN: {
       BASE: '/insternship/admin',
@@ -115,11 +118,17 @@ export const API_CONFIG = {
       APPROVED_PROPOSALS: '/insternship/admin/proposals/approved',
       APPROVED_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/proposals/${id}`,
       UPDATE_LETTER: (id: string) => `/insternship/admin/proposals/${id}/letter`,
+      ASSIGNMENT_PROPOSALS: '/insternship/admin/proposals/assignments',
+      ASSIGNMENT_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/proposals/${id}/assignment`,
+      UPDATE_ASSIGNMENT_LETTER: (id: string) => `/insternship/admin/proposals/${id}/assignment-letter`,
     },
     INTERNSHIP_KADEP: {
       BASE: '/insternship/kadep',
       PENDING_LETTERS: '/insternship/kadep/pending-letters',
       APPROVE_LETTER: '/insternship/kadep/approve-letter',
+      COMPANY_STATS: '/insternship/kadep/companies/stats',
+      COMPANIES: '/insternship/kadep/companies',
+      COMPANY_DETAIL: (id: string) => `/insternship/kadep/companies/${id}`,
     },
     INTERNSHIP_TEMPLATES: {
       GET: (name: string) => `/insternship/templates/${name}`,

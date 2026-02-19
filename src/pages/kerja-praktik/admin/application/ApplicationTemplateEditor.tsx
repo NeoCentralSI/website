@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +19,14 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 
+import type { InternshipTemplate } from "@/services/internship.service";
+
 const InternshipTemplateEditor = () => {
     const { name } = useParams<{ name: string }>();
     const navigate = useNavigate();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
-    const [templateType, setTemplateType] = useState<"HTML" | "DOCX">("DOCX");
+    const [template, setTemplate] = useState<InternshipTemplate | null>(null);
     const [templateFile, setTemplateFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -32,8 +34,7 @@ const InternshipTemplateEditor = () => {
     // Upload Dialog State
     const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-    // Preview States
-    const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+    // Preview States - Using Blob URL for authenticated access
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const breadcrumbs = useMemo(() => [
@@ -42,6 +43,8 @@ const InternshipTemplateEditor = () => {
         { label: 'Kelola Template' }
     ], []);
 
+    const backPath = '/admin/kerja-praktik/surat-pengantar';
+
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
         setTitle(undefined);
@@ -49,9 +52,7 @@ const InternshipTemplateEditor = () => {
 
     useEffect(() => {
         if (name) {
-            fetchTemplate().then(() => {
-                if (name) handlePreview();
-            });
+            fetchTemplate();
         }
     }, [name]);
 
@@ -65,10 +66,37 @@ const InternshipTemplateEditor = () => {
     const fetchTemplate = async () => {
         try {
             setLoading(true);
-            const res = await getInternshipTemplate(name!);
-            setTemplateType(res.data.type || "DOCX");
+            const res = await getInternshipTemplate(name!).catch(err => {
+                if (err.message?.includes("404") || err.message?.includes("not found")) {
+                    return { data: null };
+                }
+                throw err;
+            });
+
+            setTemplate(res.data);
+
+            if (res.data) {
+                // Silently fetch preview blob with auth headers
+                const previewRes = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_TEMPLATES.PREVIEW(name!)));
+                if (previewRes.ok) {
+                    const blob = await previewRes.blob();
+                    const url = URL.createObjectURL(blob);
+                    setPreviewUrl(prev => {
+                        if (prev) URL.revokeObjectURL(prev);
+                        return url;
+                    });
+                }
+            } else {
+                setPreviewUrl(prev => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return null;
+                });
+            }
         } catch (error: any) {
-            toast.error(error.message || "Gagal memuat template");
+            console.error("Failed to fetch template:", error);
+            if (!error.message?.includes("404") && !error.message?.includes("not found")) {
+                toast.error(error.message || "Gagal memuat template");
+            }
         } finally {
             setLoading(false);
         }
@@ -84,11 +112,10 @@ const InternshipTemplateEditor = () => {
             setSaving(true);
             await saveInternshipTemplate(name!, null, templateFile);
             toast.success("Template berhasil disimpan");
-            // Refresh to ensure we have the latest
+
             setTemplateFile(null);
             setIsUploadOpen(false); // Close dialog
-            await fetchTemplate();
-            await handlePreview();
+            await fetchTemplate(); // This will also refresh the preview blob
         } catch (error: any) {
             toast.error(error.message || "Gagal menyimpan template");
         } finally {
@@ -99,27 +126,6 @@ const InternshipTemplateEditor = () => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setTemplateFile(e.target.files[0]);
-            setTemplateType("DOCX"); // Always DOCX now
-        }
-    };
-
-    const handlePreview = async () => {
-        try {
-            toast.info("Memuat preview...");
-            const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_TEMPLATES.PREVIEW(name!));
-            const res = await apiRequest(url, { method: 'GET' });
-            if (!res.ok) throw new Error("Gagal memuat preview");
-
-            const blob = await res.blob();
-            setPreviewBlob(blob);
-
-            if (previewUrl) URL.revokeObjectURL(previewUrl);
-            setPreviewUrl(URL.createObjectURL(blob));
-
-            toast.success("Preview berhasil dimuat");
-        } catch (err) {
-            toast.error("Gagal membuat preview. Pastikan template sudah diupload.");
-            console.error(err);
         }
     };
 
@@ -130,12 +136,11 @@ const InternshipTemplateEditor = () => {
         { tag: "{alamat_perusahaan}", desc: "Alamat perusahaan tujuan" },
         { tag: "{tanggal_mulai}", desc: "Tanggal mulai KP" },
         { tag: "{tanggal_selesai}", desc: "Tanggal selesai KP" },
-        { tag: "{#mahasiswa} ... {/mahasiswa}", desc: "Looping untuk Tabel. Gunakan tag ini untuk membungkus baris tabel." },
+        { tag: "{#m} ... {/m}", desc: "Looping untuk Tabel Mahasiswa (Gunakan tag ini untuk membungkus baris tabel)." },
         { tag: "{no}", desc: "Nomor urut (Gunakan di dalam loop)" },
         { tag: "{nama}", desc: "Nama Mahasiswa (Gunakan di dalam loop)" },
         { tag: "{nim}", desc: "NIM Mahasiswa (Gunakan di dalam loop)" },
         { tag: "{prodi}", desc: "Program Studi (Gunakan di dalam loop)" },
-        { tag: "{isi_surat}", desc: "Area teks bebas (Optional, jika ingin menyisipkan paragraf tambahan)" },
     ];
 
     if (loading) {
@@ -149,10 +154,10 @@ const InternshipTemplateEditor = () => {
 
     return (
         <div className="p-6 space-y-6 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                        <ArrowLeft className="h-5 w-5" />
+                    <Button variant="outline" size="icon" className="shrink-0" onClick={() => navigate(backPath)}>
+                        <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Kelola Template Surat</h1>
@@ -164,12 +169,12 @@ const InternshipTemplateEditor = () => {
             <div className="grid grid-cols-12 gap-6">
                 {/* Preview Panel - WIDER (9 cols) */}
                 <div className="col-span-12 lg:col-span-7 space-y-6">
-                    <Card className="h-full border-none shadow-none">
+                    <Card className="h-full border">
                         <CardHeader className=" pt-0 flex flex-row items-center justify-between space-y-0">
                             <div className="space-y-1">
                                 <CardTitle className="text-lg">Preview Template</CardTitle>
                                 <CardDescription>
-                                    {templateType === "DOCX" ? "Menampilkan file Word (.docx) yang aktif saat ini." : "Belum ada template yang diupload."}
+                                    {template ? `Menampilkan file Word (.docx) yang aktif saat ini.` : "Belum ada template yang diupload."}
                                 </CardDescription>
                             </div>
 
@@ -219,11 +224,11 @@ const InternshipTemplateEditor = () => {
                         </CardHeader>
                         <CardContent className="px-0 relative">
 
-                            {previewUrl ? (
-                                <div className="border rounded-lg overflow-hidden bg-white shadow-sm ring-1 ring-gray-200">
+                            {(template && template.filePath) ? (
+                                <div className="overflow-hidden border">
                                     <iframe
                                         title="Template Preview"
-                                        src={previewUrl}
+                                        src={previewUrl || ""}
                                         className="w-full bg-gray-100/50"
                                         style={{ height: 'calc(100vh - 300px)', minHeight: '600px', border: 'none' }}
                                     />

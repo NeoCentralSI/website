@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useRole } from '@/hooks/shared';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Loading } from '@/components/ui/spinner';
 import CustomTable from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useCompanyStats } from '@/hooks/internship/useCompanyStats';
-import { getCompanyStatsColumns } from '@/lib/internshipTableColumns';
+import { getCompanyStatsColumns } from '@/lib/internship';
 import { Building2, Plus, Info, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -62,6 +63,9 @@ export default function SekdepCompanyListPage() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const { isKadep } = useRole();
+    const role = isKadep() ? 'kadep' : 'sekdep';
+
     const breadcrumb = useMemo(() => [
         { label: 'Kerja Praktik' },
         { label: 'Kelola Perusahaan' }
@@ -101,7 +105,7 @@ export default function SekdepCompanyListPage() {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await createSekdepCompany(formData);
+            await createSekdepCompany(formData, role);
             toast.success('Perusahaan berhasil ditambahkan');
             setIsAddOpen(false);
             refetch();
@@ -117,7 +121,7 @@ export default function SekdepCompanyListPage() {
         if (!selectedCompany) return;
         setIsSubmitting(true);
         try {
-            await updateSekdepCompany(selectedCompany.id, formData);
+            await updateSekdepCompany(selectedCompany.id, formData, role);
             toast.success('Perusahaan berhasil diperbarui');
             setIsEditOpen(false);
             refetch();
@@ -132,7 +136,7 @@ export default function SekdepCompanyListPage() {
         if (!selectedCompany) return;
         setIsSubmitting(true);
         try {
-            await deleteSekdepCompany(selectedCompany.id);
+            await deleteSekdepCompany(selectedCompany.id, role);
             toast.success('Perusahaan berhasil dihapus');
             setIsDeleteOpen(false);
             refetch();

@@ -18,7 +18,20 @@ export interface InternshipProposalItem {
         filePath: string;
     } | null;
     status: string;
+    isSigned?: boolean;
+    isAssignmentSigned?: boolean;
     memberStatus?: string;
+    responseStatus?: string;
+    dokumenSuratBalasan?: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    dokumenSuratTugas?: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
     [key: string]: unknown;
 }
 
@@ -56,6 +69,18 @@ export interface InternshipProposalDetail {
     };
     members: InternshipProposalMember[];
     applicationLetters: any[];
+    companyResponses: {
+        id: string;
+        status: string;
+        sekdepNotes?: string | null;
+        document: {
+            id: string;
+            fileName: string;
+            filePath: string;
+        };
+        updatedAt: string;
+    }[];
+    isSigned?: boolean;
     sekdepNotes?: string | null;
     createdAt: string;
     updatedAt: string;
@@ -110,6 +135,30 @@ export interface SekdepInternshipProposalItem {
         filePath: string;
     } | null;
     sekdepNotes?: string | null;
+}
+
+export interface SekdepAssignmentItem {
+    id: string;
+    responseId: string;
+    coordinatorName: string;
+    coordinatorNim: string;
+    companyName: string;
+    status: string;
+    responseStatus: string;
+    sekdepNotes?: string | null;
+    memberCount: number;
+    members?: { id: string; name: string; nim: string; role: string; status: string }[];
+    updatedAt: string;
+    dokumenSuratBalasan: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    dokumenSuratTugas: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
 }
 
 export interface CompanyStatsItem {
@@ -203,6 +252,19 @@ export const respondToInvitation = async (proposalId: string, response: 'ACCEPTE
     return res.json();
 };
 
+export const submitCompanyResponse = async (proposalId: string, documentId: string, acceptedMemberIds?: string[]): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.SUBMIT_COMPANY_RESPONSE(proposalId));
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: JSON.stringify({ documentId, acceptedMemberIds }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah surat balasan" }));
+        throw new Error(errorData.message || "Gagal mengunggah surat balasan");
+    }
+    return res.json();
+};
+
 // Sekdep Methods
 export const getSekdepProposals = async (): Promise<{ success: boolean; data: SekdepInternshipProposalItem[] }> => {
     const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.PROPOSALS));
@@ -222,10 +284,10 @@ export const getSekdepProposalDetail = async (id: string): Promise<{ success: bo
     return res.json();
 };
 
-export const getCompanyStats = async (isAdmin?: boolean): Promise<{ success: boolean; data: CompanyStatsItem[] }> => {
-    const endpoint = isAdmin
-        ? API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.COMPANY_STATS
-        : API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_STATS;
+export const getCompanyStats = async (role: 'admin' | 'kadep' | 'sekdep' = 'sekdep'): Promise<{ success: boolean; data: CompanyStatsItem[] }> => {
+    let endpoint = API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_STATS;
+    if (role === 'admin') endpoint = API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.COMPANY_STATS;
+    else if (role === 'kadep') endpoint = API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.COMPANY_STATS;
 
     const res = await apiRequest(getApiUrl(endpoint));
     if (!res.ok) {
@@ -235,8 +297,9 @@ export const getCompanyStats = async (isAdmin?: boolean): Promise<{ success: boo
     return res.json();
 };
 
-export const createSekdepCompany = async (body: any): Promise<{ success: boolean; message: string; data: any }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANIES), {
+export const createSekdepCompany = async (body: any, role: 'sekdep' | 'kadep' = 'sekdep'): Promise<{ success: boolean; message: string; data: any }> => {
+    const endpoint = role === 'kadep' ? API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.COMPANIES : API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANIES;
+    const res = await apiRequest(getApiUrl(endpoint), {
         method: "POST",
         body: JSON.stringify(body),
     });
@@ -247,8 +310,9 @@ export const createSekdepCompany = async (body: any): Promise<{ success: boolean
     return res.json();
 };
 
-export const updateSekdepCompany = async (id: string, body: any): Promise<{ success: boolean; message: string; data: any }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_DETAIL(id)), {
+export const updateSekdepCompany = async (id: string, body: any, role: 'sekdep' | 'kadep' = 'sekdep'): Promise<{ success: boolean; message: string; data: any }> => {
+    const endpoint = role === 'kadep' ? API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.COMPANY_DETAIL(id) : API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_DETAIL(id);
+    const res = await apiRequest(getApiUrl(endpoint), {
         method: "PUT",
         body: JSON.stringify(body),
     });
@@ -259,13 +323,35 @@ export const updateSekdepCompany = async (id: string, body: any): Promise<{ succ
     return res.json();
 };
 
-export const deleteSekdepCompany = async (id: string): Promise<{ success: boolean; message: string }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_DETAIL(id)), {
+export const deleteSekdepCompany = async (id: string, role: 'sekdep' | 'kadep' = 'sekdep'): Promise<{ success: boolean; message: string }> => {
+    const endpoint = role === 'kadep' ? API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.COMPANY_DETAIL(id) : API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_DETAIL(id);
+    const res = await apiRequest(getApiUrl(endpoint), {
         method: "DELETE",
     });
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal menghapus perusahaan" }));
         throw new Error(errorData.message || "Gagal menghapus perusahaan");
+    }
+    return res.json();
+};
+
+export const getSekdepAssignments = async (): Promise<{ success: boolean; data: SekdepAssignmentItem[] }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_RESPONSES));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar surat balasan" }));
+        throw new Error(errorData.message || "Gagal memuat daftar surat balasan");
+    }
+    return res.json();
+};
+
+export const verifyCompanyResponse = async (id: string, status: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP' | 'REJECTED_BY_COMPANY', notes?: string, acceptedMemberIds?: string[]): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.VERIFY_COMPANY_RESPONSE(id)), {
+        method: "POST",
+        body: JSON.stringify({ status, notes, acceptedMemberIds }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memverifikasi surat balasan" }));
+        throw new Error(errorData.message || "Gagal memverifikasi surat balasan");
     }
     return res.json();
 };
@@ -289,7 +375,7 @@ export interface AdminApprovedProposalItem {
     coordinatorNim: string;
     companyName: string;
     companyAddress?: string;
-    members: { name: string; nim: string }[];
+    members: { name: string; nim: string; isCoordinator: boolean }[];
     letterNumber: string;
     letterFile: {
         id: string;
@@ -332,6 +418,42 @@ export const updateAdminProposalLetter = async (id: string, body: { documentNumb
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui data surat pengantar" }));
         throw new Error(errorData.message || "Gagal memperbarui data surat pengantar");
+    }
+    return res.json();
+};
+
+export interface AdminAssignmentProposalItem extends AdminApprovedProposalItem {
+    responseId?: string;
+}
+
+export const getAdminAssignmentProposals = async (): Promise<{ success: boolean; data: AdminAssignmentProposalItem[] }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.ASSIGNMENT_PROPOSALS));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar pengajuan" }));
+        throw new Error(errorData.message || "Gagal memuat daftar pengajuan");
+    }
+    return res.json();
+};
+
+export const getAdminAssignmentLetterDetail = async (id: string): Promise<{ success: boolean; data: AdminAssignmentProposalItem }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.ASSIGNMENT_PROPOSAL_DETAIL(id));
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail pengajuan" }));
+        throw new Error(errorData.message || "Gagal memuat detail pengajuan");
+    }
+    return res.json();
+};
+
+export const updateAdminAssignmentLetter = async (id: string, body: { documentNumber: string, startDateActual?: string, endDateActual?: string }): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.UPDATE_ASSIGNMENT_LETTER(id));
+    const res = await apiRequest(url, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui data surat tugas" }));
+        throw new Error(errorData.message || "Gagal memperbarui data surat tugas");
     }
     return res.json();
 };
@@ -379,8 +501,10 @@ export interface InternshipPendingLetter {
     documentNumber: string;
     coordinatorName: string;
     coordinatorNim: string;
+    coordinatorStudentId: string;
+    coordinatorStatus: string;
     companyName: string;
-    members: { name: string; nim: string }[];
+    members: { studentId: string; name: string; nim: string; status: string }[];
     createdAt: string;
     signedById: string | null;
     document: {

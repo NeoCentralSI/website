@@ -7,6 +7,7 @@ import {
   GraduationCap
 } from "lucide-react";
 import { useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ import { getCachedStudentsFromSia } from "@/services/sia.service";
 import { useAvatarBlob } from "@/hooks/profile";
 
 export const useSidebarMenu = () => {
+  const { pathname } = useLocation();
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1 } = useRole();
   const { user: authUser } = useAuth();
   const nim = authUser?.identityNumber;
@@ -66,6 +68,7 @@ export const useSidebarMenu = () => {
             {
               title: "Pendaftaran",
               url: "/kerja-praktik/pendaftaran",
+              isActive: pathname.startsWith("/kerja-praktik/pendaftaran") || pathname === "/kerja-praktik/penugasan",
             },
             {
               title: "Kegiatan",
@@ -453,8 +456,8 @@ export const useSidebarMenu = () => {
                 url: "/admin/kerja-praktik/surat-pengantar",
               },
               {
-                title: "Surat Balasan",
-                url: "/admin/kerja-praktik/surat-balasan",
+                title: "Surat Tugas",
+                url: "/admin/kerja-praktik/surat-tugas",
               },
               {
                 title: "Seminar & Nilai",

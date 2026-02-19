@@ -5,13 +5,14 @@ import { Loading } from '@/components/ui/spinner';
 import CustomTable from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSekdepProposals } from '@/hooks/internship/useSekdepProposals';
-import { getSekdepInternshipProposalColumns } from '@/lib/internshipTableColumns';
+import { getSekdepInternshipProposalColumns } from '@/lib/internship';
 import { FileText } from 'lucide-react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { respondToSekdepProposal, type SekdepInternshipProposalItem } from '@/services/internship.service';
 import { toast } from 'sonner';
 import ProposalResponseDialog from '@/components/internship/ProposalResponseDialog';
+import { TabsNav } from '@/components/ui/tabs-nav';
 
 export default function SekdepInternshipProposalPage() {
     const navigate = useNavigate();
@@ -101,6 +102,13 @@ export default function SekdepInternshipProposalPage() {
             <div className="flex items-center gap-2 mb-6 text-2xl font-semibold">
                 <FileText className="h-6 w-6 text-primary" />
                 <h1>Pendaftaran Kerja Praktik</h1>
+            </div>
+
+            <div className="mb-6">
+                <TabsNav tabs={[
+                    { label: 'Pendaftaran', to: '/kelola/kerja-praktik/pendaftaran', end: true },
+                    { label: 'Penugasan', to: '/kelola/kerja-praktik/penugasan' }
+                ]} />
             </div>
 
             {proposalLoading ? (

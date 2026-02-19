@@ -19,6 +19,7 @@ import {
 export interface NavSubItem {
   title: string
   url: string
+  isActive?: boolean
 }
 
 export interface NavItem {

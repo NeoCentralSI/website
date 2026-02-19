@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -29,6 +29,20 @@ const SignLetterPage = () => {
     const [scale, setScale] = useState(1.1);
     const [signaturePositions, setSignaturePositions] = useState<SignaturePos[]>([]);
     const [pageDimensions, setPageDimensions] = useState<Map<number, { width: number; height: number }>>(new Map());
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // State for dragging signature
+    const [dragState, setDragState] = useState<{
+        index: number;
+        startX: number;
+        startY: number;
+        startSigX: number;
+        startSigY: number;
+        pageWidth: number;
+        pageHeight: number;
+        containerWidth: number;
+        containerHeight: number;
+    } | null>(null);
 
     // Fetch letters to find the one we need
     const { data: letters, isLoading } = useQuery({
@@ -76,7 +90,76 @@ const SignLetterPage = () => {
     };
 
     const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    // Handle Drag Events
+    useEffect(() => {
+        if (!dragState) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            e.preventDefault();
+            const deltaX = e.clientX - dragState.startX;
+            const deltaY = e.clientY - dragState.startY;
+
+            // Calculate new position in PDF coordinates
+            // deltaX (px) / containerWidth (px) * pageWidth (pdf units)
+            const deltaPdfX = (deltaX / dragState.containerWidth) * dragState.pageWidth;
+            const deltaPdfY = (deltaY / dragState.containerHeight) * dragState.pageHeight;
+
+            const newX = Math.max(0, Math.min(dragState.pageWidth, dragState.startSigX + deltaPdfX));
+            const newY = Math.max(0, Math.min(dragState.pageHeight, dragState.startSigY + deltaPdfY));
+
+            setSignaturePositions(prev => {
+                const next = [...prev];
+                if (next[dragState.index]) {
+                    next[dragState.index] = {
+                        ...next[dragState.index],
+                        x: newX,
+                        y: newY
+                    };
+                }
+                return next;
+            });
+        };
+
+        const handleMouseUp = () => {
+            setDragState(null);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [dragState]);
+
+    const startDrag = (e: React.MouseEvent, index: number, pageNum: number) => {
+        e.stopPropagation(); // Prevent adding new signature on page click
+        e.preventDefault(); // Prevent selection
+
+        const pageDim = pageDimensions.get(pageNum);
+        if (!pageDim) return;
+
+        // Find the page container element to get current rendered dimensions
+        const pageContainer = (e.currentTarget.closest('.relative') as HTMLElement);
+        const rect = pageContainer.getBoundingClientRect();
+
+        setDragState({
+            index,
+            startX: e.clientX,
+            startY: e.clientY,
+            startSigX: signaturePositions[index].x,
+            startSigY: signaturePositions[index].y,
+            pageWidth: pageDim.width,
+            pageHeight: pageDim.height,
+            containerWidth: rect.width,
+            containerHeight: rect.height
+        });
     };
 
     if (isLoading) {
@@ -103,14 +186,14 @@ const SignLetterPage = () => {
             {/* Header */}
             <div className="flex items-center justify-between border-b pb-6">
                 <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="rounded-full">
+                    <Button variant="outline" size="icon" className="shrink-0" onClick={() => navigate(-1)}>
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Tanda Tangani Dokumen</h1>
                         <p className="text-muted-foreground text-sm flex items-center gap-2">
                             <Info className="h-3 w-3" />
-                            Klik pada dokumen untuk menentukan posisi tanda tangan digital. Anda bisa menambahkan lebih dari satu posisi.
+                            Klik pada dokumen untuk menambahkan posisi tanda tangan. Drag untuk memindahkan posisi.
                         </p>
                     </div>
                 </div>
@@ -163,13 +246,12 @@ const SignLetterPage = () => {
 
                 {/* Left Sidebar: Info & Instructions (1/3 ratio - lg:col-span-1) */}
                 <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6">
-                    <Card className="shadow-sm border-primary/10">
-                        <CardHeader className="pb-3 flex flex-row items-center gap-2">
+                    <Card className="border">
+                        <CardHeader className="flex flex-row items-center gap-2">
                             <FileText className="h-5 w-5 text-primary" />
                             <CardTitle className="text-lg">Detail Dokumen</CardTitle>
                         </CardHeader>
-                        <Separator className="mx-6 opacity-50" />
-                        <CardContent className="pt-4 space-y-5 text-sm">
+                        <CardContent className="space-y-5 text-sm">
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nomor Surat</p>
                                 <p className="font-mono text-primary font-medium">{letter.documentNumber}</p>
@@ -197,8 +279,8 @@ const SignLetterPage = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-amber-500/10 bg-amber-50/30">
-                        <CardHeader className="pb-2">
+                    <Card className="border">
+                        <CardHeader>
                             <CardTitle className="text-base font-bold text-amber-800 flex items-center gap-2">
                                 <Info className="h-4 w-4" />
                                 Petunjuk
@@ -212,10 +294,14 @@ const SignLetterPage = () => {
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-800 font-bold">2</span>
-                                    <span>Klik pada indicator di dokumen atau list di bawah untuk menghapus posisi.</span>
+                                    <span>Klik dan tahan (drag) pada tanda tangan untuk memindahkan posisi.</span>
                                 </li>
                                 <li className="flex gap-2">
                                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-800 font-bold">3</span>
+                                    <span>Klik pada list di kiri untuk menghapus posisi.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-800 font-bold">4</span>
                                     <span>Klik <strong>Selesaikan & Simpan</strong> untuk memproses.</span>
                                 </li>
                             </ul>
@@ -223,8 +309,8 @@ const SignLetterPage = () => {
                     </Card>
 
                     {signaturePositions.length > 0 && (
-                        <Card className="shadow-sm border-green-500/20 bg-green-50/30 animate-in slide-in-from-bottom duration-300">
-                            <CardHeader className="pb-2">
+                        <Card className="border bg-green-50/30 animate-in slide-in-from-bottom duration-300">
+                            <CardHeader>
                                 <CardTitle className="text-sm font-bold text-green-800 flex items-center gap-2">
                                     <Check className="h-4 w-4" />
                                     Posisi Tanda Tangan ({signaturePositions.length})
@@ -240,7 +326,7 @@ const SignLetterPage = () => {
                                             </div>
                                             <Button
                                                 variant="ghost"
-                                                size="sm"
+                                                size="lg"
                                                 className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
                                                 onClick={() => removeSignature(idx)}
                                             >
@@ -255,16 +341,22 @@ const SignLetterPage = () => {
                 </div>
 
                 {/* Main: PDF Preview Scrollable (2/3 ratio - lg:col-span-2) */}
-                <div className="lg:col-span-2">
-                    <Card className="shadow-xl bg-slate-100 border-inner min-h-[800px] relative overflow-hidden">
-                        <CardContent className="p-0 overflow-auto flex flex-col items-center py-10 gap-8 h-[calc(100vh-280px)]">
+                <div className="lg:col-span-2 h-[calc(100vh-140px)] sticky top-6">
+                    <Card className="bg-slate-100/50 border h-full flex flex-col overflow-hidden shadow-inner">
+                        <CardContent ref={scrollContainerRef} className="p-0 flex-1 overflow-y-auto w-full flex flex-col items-center py-8 gap-6 scroll-smooth">
                             <Document
                                 file={fileUrl}
                                 onLoadSuccess={onDocumentLoadSuccess}
                                 loading={
-                                    <div className="flex flex-col items-center gap-4 my-20">
+                                    <div className="flex flex-col items-center gap-4 my-auto h-full justify-center">
                                         <Loader2 className="h-12 w-12 animate-spin text-primary opacity-50" />
-                                        <p className="text-muted-foreground animate-pulse">Menyiapkan dokumen...</p>
+                                        <p className="text-muted-foreground animate-pulse font-medium text-sm">Menyiapkan dokumen...</p>
+                                    </div>
+                                }
+                                error={
+                                    <div className="flex flex-col items-center gap-4 my-auto h-full justify-center text-destructive">
+                                        <Info className="h-12 w-12 opacity-50" />
+                                        <p className="font-medium">Gagal memuat dokumen PD.</p>
                                     </div>
                                 }
                             >
@@ -317,40 +409,48 @@ const SignLetterPage = () => {
                                             {/* Signature Indicator Overlays */}
                                             {signaturePositions
                                                 .filter(pos => pos.pageNumber === pageNum)
-                                                .map((pos, sIdx) => (
-                                                    <div
-                                                        key={`sig_${sIdx}`}
-                                                        className="absolute border-2 border-green-500 bg-green-500/20 flex items-center justify-center pointer-events-none transition-all duration-300 ring-4 ring-green-500/10"
-                                                        style={{
-                                                            left: `${(pos.x / (pageDim?.width || 595)) * 100}%`,
-                                                            top: `${(pos.y / (pageDim?.height || 842)) * 100}%`,
-                                                            width: `${60 * scale}px`,
-                                                            height: `${60 * scale}px`,
-                                                            transform: 'translate(-50%, -50%)'
-                                                        }}
-                                                    >
-                                                        <div className="bg-green-600 rounded-full h-5 w-5 flex items-center justify-center -mt-8 -mr-8 absolute top-0 right-0">
-                                                            <span className="text-[10px] text-white font-bold">{
-                                                                signaturePositions.indexOf(pos) + 1
-                                                            }</span>
+                                                .map((pos) => {
+                                                    // Find the original index of this signature position to handle updates correctly
+                                                    const globalIndex = signaturePositions.indexOf(pos);
+
+                                                    return (
+                                                        <div
+                                                            key={`sig_${globalIndex}`}
+                                                            className={`absolute border-2 border-green-500 bg-green-500/20 flex items-center justify-center transition-all duration-75 ring-4 ring-green-500/10 ${dragState?.index === globalIndex ? 'cursor-grabbing scale-105 z-50' : 'cursor-grab hover:scale-110 z-10'}`}
+                                                            style={{
+                                                                left: `${(pos.x / (pageDim?.width || 595)) * 100}%`,
+                                                                top: `${(pos.y / (pageDim?.height || 842)) * 100}%`,
+                                                                width: `${60 * scale}px`,
+                                                                height: `${60 * scale}px`,
+                                                                transform: 'translate(-50%, -50%)',
+                                                                // If dragging, disable transitions for smooth movement
+                                                                transition: dragState?.index === globalIndex ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                                            }}
+                                                            onMouseDown={(e) => startDrag(e, globalIndex, pageNum)}
+                                                        >
+                                                            <div className="bg-green-600 rounded-full h-5 w-5 flex items-center justify-center -mt-8 -mr-8 absolute top-0 right-0 pointer-events-none select-none">
+                                                                <span className="text-[10px] text-white font-bold">{
+                                                                    globalIndex + 1
+                                                                }</span>
+                                                            </div>
+                                                            <MousePointer2 className="text-green-600 h-6 w-6 pointer-events-none select-none" />
                                                         </div>
-                                                        <MousePointer2 className="text-green-600 h-6 w-6 animate-pulse" />
-                                                    </div>
-                                                ))
+                                                    );
+                                                })
                                             }
                                         </div>
                                     );
                                 })}
                             </Document>
+
+                            {/* Footer for navigation help */}
+                            <div className="mt-4 mb-8 flex justify-center">
+                                <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-white/50" onClick={scrollToTop}>
+                                    <ChevronUp className="h-3 w-3 mr-2" /> Kembali ke Atas
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
-
-                    {/* Footer for navigation help */}
-                    <div className="mt-8 flex justify-center pb-20">
-                        <Button variant="ghost" className="text-muted-foreground" onClick={scrollToTop}>
-                            <ChevronUp className="h-4 w-4 mr-2" /> Kembali ke Atas
-                        </Button>
-                    </div>
                 </div>
             </div>
         </div>

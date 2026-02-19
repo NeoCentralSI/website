@@ -8,7 +8,7 @@ import { Signature } from 'lucide-react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { useQuery } from '@tanstack/react-query';
 import { getKadepPendingLetters } from '@/services/internship.service';
-import { getKadepInternshipLetterColumns } from '@/lib/internshipTableColumns';
+import { getKadepInternshipLetterColumns } from '@/lib/internship';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function KadepInternshipManagementPage() {
@@ -17,6 +17,7 @@ export default function KadepInternshipManagementPage() {
 
     const [docOpen, setDocOpen] = useState(false);
     const [docInfo, setDocInfo] = useState<{ fileName: string; filePath: string } | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const { data, isLoading, isFetching, refetch } = useQuery({
         queryKey: ['kadep-pending-letters'],
@@ -49,13 +50,27 @@ export default function KadepInternshipManagementPage() {
         }
     }), [navigate]);
 
-    const sortedApplicationLetters = useMemo(() =>
-        [...(data?.applicationLetters || [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-        [data?.applicationLetters]);
+    const filteredApplicationLetters = useMemo(() => {
+        const letters = data?.applicationLetters || [];
+        const filtered = letters.filter(l =>
+            l.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.coordinatorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.coordinatorNim.includes(searchQuery) ||
+            l.documentNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        return [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [data?.applicationLetters, searchQuery]);
 
-    const sortedAssignmentLetters = useMemo(() =>
-        [...(data?.assignmentLetters || [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-        [data?.assignmentLetters]);
+    const filteredAssignmentLetters = useMemo(() => {
+        const letters = data?.assignmentLetters || [];
+        const filtered = letters.filter(l =>
+            l.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.coordinatorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.coordinatorNim.includes(searchQuery) ||
+            l.documentNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        return [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [data?.assignmentLetters, searchQuery]);
 
     return (
         <div className="p-4 space-y-6">
@@ -66,8 +81,8 @@ export default function KadepInternshipManagementPage() {
 
             <Tabs defaultValue="application" className="w-full">
                 <TabsList className="mb-4">
-                    <TabsTrigger value="application" className="px-6">Surat Permohonan ({data?.applicationLetters.length || 0})</TabsTrigger>
-                    <TabsTrigger value="assignment" className="px-6">Surat Tugas ({data?.assignmentLetters.length || 0})</TabsTrigger>
+                    <TabsTrigger value="application" className="px-6">Permohonan ({filteredApplicationLetters.length})</TabsTrigger>
+                    <TabsTrigger value="assignment" className="px-6">Penugasan ({filteredAssignmentLetters.length})</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="application">
@@ -78,15 +93,17 @@ export default function KadepInternshipManagementPage() {
                     ) : (
                         <CustomTable
                             columns={columns as any}
-                            data={sortedApplicationLetters}
+                            data={filteredApplicationLetters}
                             loading={isLoading}
                             isRefreshing={isFetching && !isLoading}
-                            total={sortedApplicationLetters.length}
+                            total={filteredApplicationLetters.length}
                             page={1}
                             onPageChange={() => { }}
                             pageSize={10}
                             enableColumnFilters
-                            emptyText="Tidak ada data surat permohonan."
+                            searchValue={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            emptyText={searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat permohonan."}
                             actions={<RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />}
                         />
                     )}
@@ -100,15 +117,17 @@ export default function KadepInternshipManagementPage() {
                     ) : (
                         <CustomTable
                             columns={columns as any}
-                            data={sortedAssignmentLetters}
+                            data={filteredAssignmentLetters}
                             loading={isLoading}
                             isRefreshing={isFetching && !isLoading}
-                            total={sortedAssignmentLetters.length}
+                            total={filteredAssignmentLetters.length}
                             page={1}
                             onPageChange={() => { }}
                             pageSize={10}
                             enableColumnFilters
-                            emptyText="Tidak ada data surat tugas."
+                            searchValue={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            emptyText={searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat tugas."}
                             actions={<RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />}
                         />
                     )}

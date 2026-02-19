@@ -4,6 +4,7 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSekdepProposalDetail, respondToSekdepProposal } from '@/services/internship.service';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
+import { getInternshipStatusBadge } from '@/lib/internship/status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -105,29 +106,12 @@ export default function SekdepInternshipProposalDetail() {
         );
     }
 
-    const getStatusBadge = (status: string) => {
-        let variant: 'outline' | 'default' | 'secondary' | 'destructive' | 'success' = 'outline';
-        let label = status.replace(/_/g, ' ');
 
-        if (status === 'APPROVED_BY_SEKDEP') {
-            variant = 'success';
-            label = 'APPROVED';
-        } else if (status === 'REJECTED_BY_SEKDEP') {
-            variant = 'destructive';
-            label = 'REJECTED';
-        } else if (status === 'PENDING') {
-            variant = 'secondary';
-        }
 
-        return (
-            <Badge variant={variant as any} className="px-3 py-1">
-                {label}
-            </Badge>
-        );
-    };
+    // ...
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-6 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -135,7 +119,7 @@ export default function SekdepInternshipProposalDetail() {
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Detail Proposal KP</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">Detail Pendaftaran KP</h1>
                         <p className="text-muted-foreground text-sm">
                             ID: {data.id} • Dibuat pada {formatDateId(data.createdAt)}
                         </p>
@@ -169,9 +153,20 @@ export default function SekdepInternshipProposalDetail() {
                                 Setujui
                             </Button>
                         </div>
-                    ) : (
-                        getStatusBadge(data.status)
-                    )}
+                    ) : (() => {
+                        const responseStatus = data.companyResponses?.[0]?.status;
+                        if (responseStatus) {
+                            return getInternshipStatusBadge(responseStatus);
+                        }
+                        if (data.isSigned) {
+                            return (
+                                <Badge variant="success" className="px-3 py-1">
+                                    DITANDATANGANI
+                                </Badge>
+                            );
+                        }
+                        return getInternshipStatusBadge(data.status);
+                    })()}
                 </div>
             </div>
 
@@ -233,7 +228,7 @@ export default function SekdepInternshipProposalDetail() {
                                                 <p className="text-xs text-muted-foreground">{member.student.user.identityNumber}</p>
                                             </div>
                                         </div>
-                                        <Badge variant="outline" className="text-[10px] uppercase">{member.status.replace(/_/g, ' ')}</Badge>
+                                        {getInternshipStatusBadge(member.status)}
                                     </div>
                                 ))}
 
@@ -255,40 +250,66 @@ export default function SekdepInternshipProposalDetail() {
                                 Dokumen
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="space-y-4">
                             {data.proposalDocument ? (
-                                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <FileText className="h-4 w-4 text-blue-600 shrink-0" />
-                                        <span className="text-xs font-medium truncate">{data.proposalDocument.fileName}</span>
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase px-1">Proposal</span>
+                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <FileText className="h-4 w-4 text-blue-600 shrink-0" />
+                                            <span className="text-xs font-medium truncate">{data.proposalDocument.fileName}</span>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 text-blue-600"
+                                            onClick={() => openDocumentPreview(data.proposalDocument!.fileName, data.proposalDocument!.filePath)}
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 text-blue-600"
-                                        onClick={() => openDocumentPreview(data.proposalDocument!.fileName, data.proposalDocument!.filePath)}
-                                    >
-                                        <Eye className="h-4 w-4" />
-                                    </Button>
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground italic">Dokumen proposal belum diunggah.</p>
                             )}
 
                             {data.applicationLetters?.[0]?.document && (
-                                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <FileText className="h-4 w-4 text-green-600 shrink-0" />
-                                        <span className="text-xs font-medium truncate">{data.applicationLetters[0].document.fileName}</span>
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase px-1">Surat Permohonan</span>
+                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <FileText className="h-4 w-4 text-green-600 shrink-0" />
+                                            <span className="text-xs font-medium truncate">{data.applicationLetters[0].document.fileName}</span>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 text-green-600"
+                                            onClick={() => openDocumentPreview(data.applicationLetters[0].document.fileName, data.applicationLetters[0].document.filePath)}
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 text-green-600"
-                                        onClick={() => openDocumentPreview(data.applicationLetters[0].document.fileName, data.applicationLetters[0].document.filePath)}
-                                    >
-                                        <Eye className="h-4 w-4" />
-                                    </Button>
+                                </div>
+                            )}
+
+                            {data.companyResponses?.[0] && (
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase px-1">Surat Balasan</span>
+                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <FileText className="h-4 w-4 text-primary shrink-0" />
+                                            <span className="text-xs font-medium truncate">{data.companyResponses[0].document.fileName}</span>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 text-primary"
+                                            onClick={() => openDocumentPreview(data.companyResponses[0].document.fileName, data.companyResponses[0].document.filePath)}
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </CardContent>
@@ -309,11 +330,13 @@ export default function SekdepInternshipProposalDetail() {
                                     <p className="text-sm font-semibold">Terkirim</p>
                                     <p className="text-xs text-muted-foreground">{formatDateId(data.createdAt)}</p>
                                 </div>
+
                                 {data.status !== 'PENDING' && (
-                                    <div className="relative">
+                                    <div key="history-status" className="relative">
                                         <div className={`absolute -left-[23px] top-1 h-3 w-3 rounded-full ring-4 ring-background ${data.status.includes('REJECTED') ? 'bg-destructive' : 'bg-success'}`} />
-                                        <p className="text-sm font-semibold">
-                                            {data.status === 'APPROVED_BY_SEKDEP' ? 'APPROVED' : data.status === 'REJECTED_BY_SEKDEP' ? 'REJECTED' : data.status.replace(/_/g, ' ')}
+                                        <p className="text-sm font-semibold">Review Proposal</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {data.status === 'APPROVED_BY_SEKDEP' ? 'PROPOSAL DISETUJUI' : data.status === 'REJECTED_BY_SEKDEP' ? 'PROPOSAL DITOLAK' : data.status.replace(/_/g, ' ')}
                                         </p>
                                         <p className="text-xs text-muted-foreground">{formatDateId(data.updatedAt)}</p>
                                         {data.status === 'REJECTED_BY_SEKDEP' && data.sekdepNotes && (
@@ -324,6 +347,29 @@ export default function SekdepInternshipProposalDetail() {
                                         )}
                                     </div>
                                 )}
+
+                                {data.isSigned && (
+                                    <div key="history-signed" className="relative">
+                                        <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-success ring-4 ring-background" />
+                                        <p className="text-sm font-semibold">Ditandatangani oleh Kadep</p>
+                                        <p className="text-xs text-muted-foreground">Surat permohonan telah selesai.</p>
+                                    </div>
+                                )}
+
+                                {data.companyResponses?.map((response: any) => (
+                                    <div key={response.id} className="relative">
+                                        <div className={`absolute -left-[23px] top-1 h-3 w-3 rounded-full ring-4 ring-background ${response.status === 'REJECTED_BY_SEKDEP' ? 'bg-destructive' : response.status === 'APPROVED_BY_SEKDEP' ? 'bg-success' : 'bg-primary'}`} />
+                                        <p className="text-sm font-semibold">Surat Balasan Perusahaan</p>
+                                        <p className="text-xs text-muted-foreground uppercase">{response.status.replace(/_/g, ' ')}</p>
+                                        <p className="text-xs text-muted-foreground">{formatDateId(response.updatedAt)}</p>
+                                        {response.status === 'REJECTED_BY_SEKDEP' && response.sekdepNotes && (
+                                            <div className="mt-2 p-2 bg-destructive/5 border border-destructive/10 rounded text-xs text-destructive">
+                                                <p className="font-semibold mb-1">Catatan Sekdep:</p>
+                                                <p>{response.sekdepNotes}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </CardContent>
                     </Card>

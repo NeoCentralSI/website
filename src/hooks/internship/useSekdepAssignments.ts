@@ -1,19 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getCompanyStats } from '@/services/internship.service';
-import { useRole } from '../shared';
+import { getSekdepAssignments } from '@/services/internship.service';
 
-export function useCompanyStats() {
-    const { isAdmin, isKadep } = useRole();
+export function useSekdepAssignments() {
     const [q, setQ] = useState('');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-
-    const role = isAdmin() ? 'admin' : (isKadep() ? 'kadep' : 'sekdep');
+    const [status, setStatus] = useState<string>('all');
 
     const { data, isLoading, isFetching, refetch, error } = useQuery({
-        queryKey: ['company-stats', role],
-        queryFn: () => getCompanyStats(role),
+        queryKey: ['sekdep-internship-assignments'],
+        queryFn: getSekdepAssignments,
     });
 
     const items = data?.data || [];
@@ -21,31 +18,40 @@ export function useCompanyStats() {
     const displayItems = useMemo(() => {
         let filtered = [...items];
 
+        if (status !== 'all') {
+            filtered = filtered.filter((item) => item.responseStatus === status);
+        }
+
         if (q) {
             const lowQ = q.toLowerCase();
             filtered = filtered.filter(
                 (item) =>
-                    item.companyName.toLowerCase().includes(lowQ) ||
-                    item.address.toLowerCase().includes(lowQ)
+                    item.coordinatorName.toLowerCase().includes(lowQ) ||
+                    item.coordinatorNim.toLowerCase().includes(lowQ) ||
+                    item.companyName.toLowerCase().includes(lowQ)
             );
         }
 
         const start = (page - 1) * pageSize;
         return filtered.slice(start, start + pageSize);
-    }, [items, q, page, pageSize]);
+    }, [items, q, status, page, pageSize]);
 
     const total = useMemo(() => {
         let filtered = [...items];
+        if (status !== 'all') {
+            filtered = filtered.filter((item) => item.responseStatus === status);
+        }
         if (q) {
             const lowQ = q.toLowerCase();
             filtered = filtered.filter(
                 (item) =>
-                    item.companyName.toLowerCase().includes(lowQ) ||
-                    item.address.toLowerCase().includes(lowQ)
+                    item.coordinatorName.toLowerCase().includes(lowQ) ||
+                    item.coordinatorNim.toLowerCase().includes(lowQ) ||
+                    item.companyName.toLowerCase().includes(lowQ)
             );
         }
         return filtered.length;
-    }, [items, q]);
+    }, [items, q, status]);
 
     return {
         items,
@@ -53,6 +59,8 @@ export function useCompanyStats() {
         total,
         isLoading,
         isFetching,
+        status,
+        setStatus,
         q,
         setQ,
         page,

@@ -5,13 +5,13 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import CustomTable from '@/components/layout/CustomTable';
 import { Loading } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { getAdminApprovedProposals, type AdminApprovedProposalItem } from '@/services/internship.service';
-import { getAdminApprovedProposalColumns } from '@/lib/internshipTableColumns';
+import { getAdminAssignmentProposals, type AdminAssignmentProposalItem } from '@/services/internship.service';
+import { getAdminAssignmentProposalColumns } from '@/lib/internship';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Button } from '@/components/ui/button';
-import { Settings2 } from 'lucide-react';
+import { Settings2, ClipboardList } from 'lucide-react';
 
-export default function AdminApplicationPage() {
+export default function AdminAssignmentPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
     const navigate = useNavigate();
 
@@ -21,21 +21,21 @@ export default function AdminApplicationPage() {
     const [pageSize, setPageSize] = useState(10);
 
     const { data, isLoading, isFetching, refetch } = useQuery({
-        queryKey: ['admin-approved-proposals'],
+        queryKey: ['admin-assignment-proposals'],
         queryFn: async () => {
-            const res = await getAdminApprovedProposals();
+            const res = await getAdminAssignmentProposals();
             return res.data;
         }
     });
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kerja Praktik' },
-        { label: 'Surat Pengantar' }
+        { label: 'Surat Tugas' }
     ], []);
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle(undefined);
+        setTitle('Surat Tugas');
     }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
     const [docOpen, setDocOpen] = useState(false);
@@ -46,17 +46,17 @@ export default function AdminApplicationPage() {
         setDocOpen(true);
     };
 
-    const handleManageLetter = (item: AdminApprovedProposalItem) => {
-        navigate(`/admin/kerja-praktik/surat-pengantar/${item.id}`);
+    const handleManageLetter = (item: AdminAssignmentProposalItem) => {
+        navigate(`/admin/kerja-praktik/surat-tugas/${item.id}`);
     };
 
-    const columns = useMemo(() => getAdminApprovedProposalColumns({
-        onViewLetterDoc: (item: AdminApprovedProposalItem) => {
+    const columns = useMemo(() => getAdminAssignmentProposalColumns({
+        onViewLetterDoc: (item: AdminAssignmentProposalItem) => {
             if (item.letterFile) {
                 openDocumentPreview(item.letterFile.fileName, item.letterFile.filePath);
             }
         },
-        onAction: (item: AdminApprovedProposalItem) => handleManageLetter(item)
+        onAction: (item: AdminAssignmentProposalItem) => handleManageLetter(item)
     }), []);
 
     const filteredData = useMemo(() => {
@@ -78,6 +78,11 @@ export default function AdminApplicationPage() {
 
     return (
         <div className="p-4">
+            <div className="flex items-center gap-2 mb-6 text-2xl font-semibold">
+                <ClipboardList className="h-6 w-6 text-primary" />
+                <h1>Surat Tugas Kerja Praktik</h1>
+            </div>
+
             {isLoading ? (
                 <div className="flex h-[calc(100vh-200px)] items-center justify-center">
                     <Loading size="lg" text="Memuat data pengajuan..." />
@@ -102,13 +107,13 @@ export default function AdminApplicationPage() {
                         setQ(v);
                         setPage(1);
                     }}
-                    emptyText={q ? 'Pencarian tidak menemukan hasil.' : 'Belum ada pengajuan yang disetujui Sekdep.'}
+                    emptyText={q ? 'Pencarian tidak menemukan hasil.' : 'Belum ada pengajuan yang memiliki surat balasan disetujui Sekdep.'}
                     actions={
                         <div className="flex items-center gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => navigate('/admin/kerja-praktik/templates/INTERNSHIP_APPLICATION_LETTER')}
+                                onClick={() => navigate('/admin/kerja-praktik/surat-tugas/template')}
                                 className="h-9"
                             >
                                 <Settings2 className="h-4 w-4 mr-2" />

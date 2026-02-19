@@ -10,26 +10,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { getAdminProposalLetterDetail, updateAdminProposalLetter, type AdminApprovedProposalItem } from "@/services/internship.service";
+import { getAdminAssignmentLetterDetail, updateAdminAssignmentLetter, type AdminAssignmentProposalItem } from "@/services/internship.service";
 import { toTitleCaseName } from "@/lib/text";
 import { Users, MapPin, User, Settings2 } from "lucide-react";
 import { API_CONFIG } from "@/config/api";
 
 interface LetterFormValues {
     documentNumber: string;
-    startDatePlanned: string;
-    endDatePlanned: string;
+    startDateActual: string;
+    endDateActual: string;
 }
 
-const ManageApplicationLetter: React.FC = () => {
+const ManageAssignmentLetter: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [proposal, setProposal] = useState<AdminApprovedProposalItem | null>(null);
+    const [proposal, setProposal] = useState<AdminAssignmentProposalItem | null>(null);
 
     const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<LetterFormValues>();
-    const watchDates = watch(["startDatePlanned", "endDatePlanned"]);
+    const watchDates = watch(["startDateActual", "endDateActual"]);
 
     const calculateBusinessDays = (startStr: string, endStr: string) => {
         if (!startStr || !endStr) return 0;
@@ -60,7 +60,7 @@ const ManageApplicationLetter: React.FC = () => {
     const fetchDetail = async () => {
         try {
             setLoading(true);
-            const res = await getAdminProposalLetterDetail(id!);
+            const res = await getAdminAssignmentLetterDetail(id!);
             setProposal(res.data);
 
             const formatDate = (dateStr: string | null) => {
@@ -69,13 +69,13 @@ const ManageApplicationLetter: React.FC = () => {
             };
 
             reset({
-                documentNumber: res.data.letterNumber || "",
-                startDatePlanned: formatDate(res.data.period?.start || null),
-                endDatePlanned: formatDate(res.data.period?.end || null)
+                documentNumber: res.data.letterNumber === "—" ? "" : res.data.letterNumber,
+                startDateActual: formatDate(res.data.period?.start || null),
+                endDateActual: formatDate(res.data.period?.end || null)
             });
         } catch (error: any) {
             toast.error(error.message || "Gagal memuat detail pengajuan");
-            navigate("/admin/kerja-praktik/surat-pengantar");
+            navigate("/admin/kerja-praktik/surat-tugas");
         } finally {
             setLoading(false);
         }
@@ -84,7 +84,7 @@ const ManageApplicationLetter: React.FC = () => {
     const onSubmit = async (values: LetterFormValues) => {
         try {
             setSubmitting(true);
-            await updateAdminProposalLetter(id!, values);
+            await updateAdminAssignmentLetter(id!, values);
             toast.success("Data berhasil disimpan", {
                 description: "Preview dokumen akan diperbarui..."
             });
@@ -103,8 +103,7 @@ const ManageApplicationLetter: React.FC = () => {
         const link = document.createElement("a");
         link.href = fileUrl;
 
-        // Ensure extension is correct for download
-        const fileName = proposal.letterFile.fileName || "Surat_Permohonan.pdf";
+        const fileName = proposal.letterFile.fileName || "Surat_Tugas.pdf";
         link.download = fileName;
 
         document.body.appendChild(link);
@@ -136,19 +135,17 @@ const ManageApplicationLetter: React.FC = () => {
     return (
         <div className="p-6 space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" className="shrink-0" onClick={() => navigate(-1)}>
+                <Button variant="outline" size="icon" className="shrink-0" onClick={() => navigate("/admin/kerja-praktik/surat-tugas")}>
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight pt-2">Kelola Surat Pengantar</h1>
-                    <p className="text-muted-foreground text-sm">Update nomor surat dan rentang waktu magang</p>
+                    <h1 className="text-2xl font-bold tracking-tight pt-2">Kelola Surat Tugas</h1>
+                    <p className="text-muted-foreground text-sm">Update nomor surat dan rentang waktu pelaksanaan magang</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Information Sidebar */}
                 <div className="space-y-6">
-                    {/* Informasi Perusahaan */}
                     <Card>
                         <CardHeader className="pb-3 text-base">
                             <CardTitle className="flex items-center gap-2 text-base">
@@ -167,7 +164,6 @@ const ManageApplicationLetter: React.FC = () => {
                         </CardContent>
                     </Card>
 
-                    {/* Anggota Kelompok */}
                     <Card>
                         <CardHeader className="pb-3 text-base">
                             <CardTitle className="flex items-center gap-2 text-base">
@@ -178,7 +174,7 @@ const ManageApplicationLetter: React.FC = () => {
                         <CardContent>
                             <div className="space-y-4">
                                 {proposal.members.map((m, idx) => {
-                                    const isCoordinator = m.nim === proposal.coordinatorNim;
+                                    const isCoordinator = m.isCoordinator;
                                     return (
                                         <div
                                             key={idx}
@@ -213,15 +209,14 @@ const ManageApplicationLetter: React.FC = () => {
                     </Card>
                 </div>
 
-                {/* Edit Form & Preview */}
                 <div className="lg:col-span-2 space-y-6">
                     <Card className="border">
                         <CardHeader>
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
                                 <FileText className="h-5 w-5 text-primary" />
-                                Identitas Surat & Periode
+                                Identitas Surat & Periode Pelaksanaan
                             </CardTitle>
-                            <CardDescription>Data ini akan digunakan untuk proses generate Dokumen Surat Pengantar.</CardDescription>
+                            <CardDescription>Data ini akan digunakan untuk proses generate Dokumen Surat Tugas Kerja Praktik.</CardDescription>
                         </CardHeader>
                         <Separator className="opacity-50" />
                         <CardContent className="pt-6">
@@ -231,13 +226,13 @@ const ManageApplicationLetter: React.FC = () => {
                                         <Info className="h-5 w-5 shrink-0" />
                                         <div className="text-sm">
                                             <p className="font-bold">Dokumen Telah Ditandatangani</p>
-                                            <p className="opacity-90">Surat pengantar ini sudah ditandatangani oleh Kadep, sehingga data tidak dapat diubah kembali untuk menjaga validitas tanda tangan digital.</p>
+                                            <p className="opacity-90">Surat tugas ini sudah ditandatangani oleh Kadep, sehingga data tidak dapat diubah kembali untuk menjaga validitas tanda tangan digital.</p>
                                         </div>
                                     </div>
                                 )}
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="documentNumber">No. Surat Pengantar</Label>
+                                    <Label htmlFor="documentNumber">No. Surat Tugas</Label>
                                     <Input
                                         id="documentNumber"
                                         placeholder="Contoh: 123/UN27.02.1/PP/2024"
@@ -252,33 +247,33 @@ const ManageApplicationLetter: React.FC = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <Label htmlFor="startDatePlanned" className="flex items-center gap-2">
+                                        <Label htmlFor="startDateActual" className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            Tanggal Mulai Magang
+                                            Tanggal Mulai Pelaksanaan
                                         </Label>
                                         <Input
-                                            id="startDatePlanned"
+                                            id="startDateActual"
                                             type="date"
                                             disabled={proposal.isSigned}
-                                            {...register("startDatePlanned", { required: "Tanggal mulai wajib diisi" })}
+                                            {...register("startDateActual", { required: "Tanggal mulai wajib diisi" })}
                                         />
-                                        {errors.startDatePlanned && (
-                                            <p className="text-xs text-destructive">{errors.startDatePlanned.message}</p>
+                                        {errors.startDateActual && (
+                                            <p className="text-xs text-destructive">{errors.startDateActual.message}</p>
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="endDatePlanned" className="flex items-center gap-2">
+                                        <Label htmlFor="endDateActual" className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            Tanggal Selesai Magang
+                                            Tanggal Selesai Pelaksanaan
                                         </Label>
                                         <Input
-                                            id="endDatePlanned"
+                                            id="endDateActual"
                                             type="date"
                                             disabled={proposal.isSigned}
-                                            {...register("endDatePlanned", { required: "Tanggal selesai wajib diisi" })}
+                                            {...register("endDateActual", { required: "Tanggal selesai wajib diisi" })}
                                         />
-                                        {errors.endDatePlanned && (
-                                            <p className="text-xs text-destructive">{errors.endDatePlanned.message}</p>
+                                        {errors.endDateActual && (
+                                            <p className="text-xs text-destructive">{errors.endDateActual.message}</p>
                                         )}
                                     </div>
                                 </div>
@@ -287,7 +282,7 @@ const ManageApplicationLetter: React.FC = () => {
                                     <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-between">
                                         <div className="flex items-center gap-2 text-sm text-primary font-medium">
                                             <Calendar className="h-4 w-4" />
-                                            Durasi Magang
+                                            Durasi Pelaksanaan
                                         </div>
                                         <div className="text-sm">
                                             <span className="font-bold text-lg">{businessDays}</span>
@@ -304,7 +299,7 @@ const ManageApplicationLetter: React.FC = () => {
                                             <Button
                                                 type="button"
                                                 variant="secondary"
-                                                onClick={() => navigate('/admin/kerja-praktik/templates/INTERNSHIP_APPLICATION_LETTER')}
+                                                onClick={() => navigate('/admin/kerja-praktik/surat-tugas/template')}
                                                 disabled={submitting}
                                             >
                                                 <Settings2 className="h-4 w-4 mr-2" />
@@ -335,7 +330,6 @@ const ManageApplicationLetter: React.FC = () => {
                         </CardContent>
                     </Card>
 
-                    {/* Preview Section */}
                     {proposal.letterFile && (
                         <Card className="border overflow-hidden">
                             <CardHeader className="flex flex-row items-center justify-between">
@@ -370,4 +364,4 @@ const ManageApplicationLetter: React.FC = () => {
     );
 };
 
-export default ManageApplicationLetter;
+export default ManageAssignmentLetter;
