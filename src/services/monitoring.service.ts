@@ -92,6 +92,7 @@ export interface ThesisListItem {
   seminarApproval: {
     supervisor1: boolean;
     supervisor2: boolean;
+    hasPembimbing2: boolean;
     isFullyApproved: boolean;
   };
   lastActivity: string;
@@ -164,6 +165,7 @@ export interface ThesisDetail {
   seminarApproval: {
     supervisor1: boolean;
     supervisor2: boolean;
+    hasPembimbing2: boolean;
     isFullyApproved: boolean;
     approvedAt: string | null;
   };
@@ -245,7 +247,7 @@ const ENDPOINTS = {
  * Get monitoring dashboard data (summary, status distribution, etc.)
  */
 export async function getMonitoringDashboard(academicYear?: string): Promise<MonitoringDashboard> {
-  const url = academicYear && academicYear !== "all" 
+  const url = academicYear && academicYear !== "all"
     ? `${ENDPOINTS.DASHBOARD}?academicYear=${academicYear}`
     : ENDPOINTS.DASHBOARD;
   const response = await apiRequest(getApiUrl(url));
@@ -262,7 +264,7 @@ export async function getMonitoringDashboard(academicYear?: string): Promise<Mon
  */
 export async function getThesesList(filters: ThesesFilters = {}): Promise<ThesesListResponse> {
   const params = new URLSearchParams();
-  
+
   if (filters.status) params.append("status", filters.status);
   if (filters.lecturerId) params.append("lecturerId", filters.lecturerId);
   if (filters.academicYear) params.append("academicYear", filters.academicYear);
@@ -429,7 +431,7 @@ export async function getProgressReport(academicYear?: string): Promise<Progress
   const url = academicYear && academicYear !== "all"
     ? `${getApiUrl("/thesisGuidance/monitoring/report")}?academicYear=${academicYear}`
     : getApiUrl("/thesisGuidance/monitoring/report");
-  
+
   const response = await apiRequest(url);
   if (!response.ok) {
     const error = await response.json();

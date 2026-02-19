@@ -50,14 +50,14 @@ const statusVariants: Record<string, "default" | "secondary" | "destructive" | "
 
 function getStatusBadge(status: string) {
   const variant = statusVariants[status] || "outline";
-  
+
   if (status === "Acc Seminar") {
     return <Badge className="bg-amber-100 text-amber-800">{status}</Badge>;
   }
   if (status === "Selesai") {
     return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
   }
-  
+
   return <Badge variant={variant}>{status}</Badge>;
 }
 
@@ -94,10 +94,10 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isKadep } = useRole();
-  
+
   // Check if user is Kadep (can delete FAILED thesis)
   const canDeleteThesis = isKadep();
-  
+
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
@@ -156,7 +156,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [lecturerFilter, setLecturerFilter] = useState<string | undefined>(undefined);
   const [ratingFilter, setRatingFilter] = useState<string | undefined>(initialRating);
-  
+
   // Frontend pagination & search state
   const [frontendSearch, setFrontendSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -179,18 +179,18 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   // Frontend search & rating filter applied to ALL data
   const searchFilteredData = useMemo(() => {
     if (!data?.data) return [];
-    
+
     let filtered = data.data;
-    
+
     // Apply rating filter (frontend)
     if (ratingFilter) {
       filtered = filtered.filter((thesis) => thesis.rating === ratingFilter);
     }
-    
+
     // Apply search filter
     if (frontendSearch.trim()) {
       const searchLower = frontendSearch.toLowerCase();
-      filtered = filtered.filter((thesis) => 
+      filtered = filtered.filter((thesis) =>
         thesis.student.name.toLowerCase().includes(searchLower) ||
         thesis.student.nim.toLowerCase().includes(searchLower) ||
         thesis.title?.toLowerCase().includes(searchLower) ||
@@ -198,7 +198,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         thesis.supervisors.pembimbing2?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     return filtered;
   }, [data?.data, frontendSearch, ratingFilter]);
 
@@ -317,13 +317,15 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
               <XCircle className="h-4 w-4 text-muted-foreground/40" />
             )}
           </span>
-          <span title="Pembimbing 2">
-            {thesis.seminarApproval.supervisor2 ? (
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            ) : (
-              <XCircle className="h-4 w-4 text-muted-foreground/40" />
-            )}
-          </span>
+          {thesis.seminarApproval.hasPembimbing2 && (
+            <span title="Pembimbing 2">
+              {thesis.seminarApproval.supervisor2 ? (
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              ) : (
+                <XCircle className="h-4 w-4 text-muted-foreground/40" />
+              )}
+            </span>
+          )}
         </div>
       ),
     },
@@ -365,9 +367,9 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setWarningDialog({ open: true, thesis })}
                       className="h-8 w-8 p-0 text-orange-500 hover:text-orange-600 hover:bg-orange-50"
                     >
@@ -386,9 +388,9 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setDeleteDialog({ open: true, thesis })}
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
                     >
@@ -490,9 +492,9 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         </Button>
       )}
 
-      <RefreshButton 
-        onClick={() => refetch()} 
-        isRefreshing={isFetching && !isLoading} 
+      <RefreshButton
+        onClick={() => refetch()}
+        isRefreshing={isFetching && !isLoading}
       />
     </>
   );
@@ -535,7 +537,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Status saat ini:</span>
-                  <Badge 
+                  <Badge
                     variant={getRatingConfig(warningDialog.thesis?.rating).variant}
                     className={getRatingConfig(warningDialog.thesis?.rating).className}
                   >
@@ -550,7 +552,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={sendWarningMutation.isPending}>Batal</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleSendWarning}
               disabled={sendWarningMutation.isPending}
               className="bg-orange-500 hover:bg-orange-600"
@@ -584,7 +586,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
                 <p>Apakah Anda yakin ingin menghapus tugas akhir ini?</p>
                 {deleteDialog.thesis && (
                   <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
-                    <p className="font-medium">{deleteDialog.thesis.student?.fullName}</p>
+                    <p className="font-medium">{deleteDialog.thesis.student?.name}</p>
                     <p className="text-sm text-muted-foreground">{deleteDialog.thesis.student?.nim}</p>
                     <p className="text-sm">{deleteDialog.thesis.title}</p>
                     <Badge variant="destructive" className="mt-2">
@@ -605,7 +607,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteThesisMutation.isPending}>Batal</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteThesis}
               disabled={deleteThesisMutation.isPending}
               className="bg-red-500 hover:bg-red-600"

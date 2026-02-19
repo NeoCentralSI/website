@@ -51,8 +51,6 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
   const progress = milestoneData?.progress;
   const milestones = milestoneData?.milestones;
   const isFullyApproved = seminarData?.seminarReadiness?.isFullyApproved;
-  const canRegisterSeminar = seminarData?.canRegisterSeminar;
-
   // Filter next active milestones (not completed)
   const nextMilestones = milestones
     ?.filter(m => m.status !== 'completed')
@@ -76,7 +74,7 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
 
   if (!thesisId) {
     return (
-       <Card className={cn("h-full", className)}>
+      <Card className={cn("h-full", className)}>
         <CardHeader>
           <CardTitle>Milestone Tugas Akhir</CardTitle>
           <CardDescription>Progress pengerjaan tugas akhir</CardDescription>
@@ -141,38 +139,38 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
         ) : (
           /* Show normal progress view */
           <div className="flex flex-col items-center justify-center gap-5">
-          
+
             {/* Circular Progress */}
             <div className="relative flex items-center justify-center w-28 h-28">
-               <CircularProgress percentage={progress?.percentComplete ?? 0} />
-               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-semibold text-primary">{Math.round(progress?.percentComplete ?? 0)}%</span>
-                  <span className="text-xs text-muted-foreground">Total</span>
-               </div>
+              <CircularProgress percentage={progress?.percentComplete ?? 0} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-semibold text-primary">{Math.round(progress?.percentComplete ?? 0)}%</span>
+                <span className="text-xs text-muted-foreground">Total</span>
+              </div>
             </div>
-          
+
             {/* Ongoing Indicator */}
             <div className="w-full space-y-3">
-               {nextMilestones && nextMilestones.length > 0 ? (
-                  <div className="space-y-2">
-                     <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium truncate pr-2 max-w-50" title={nextMilestones[0].title}>
-                          {nextMilestones[0].title}
-                        </span>
-                        <Badge variant="secondary" className="text-[10px] h-5">
-                           Proses
-                        </Badge>
-                     </div>
-                     {/* Indikator horizontal "ongoing" - using indeterminate or fixed for visual */}
-                     <Progress value={35} className="h-2" />
-                     <p className="text-xs text-muted-foreground text-right w-full">Sedang dikerjakan</p>
+              {nextMilestones && nextMilestones.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium truncate pr-2 max-w-50" title={nextMilestones[0].title}>
+                      {nextMilestones[0].title}
+                    </span>
+                    <Badge variant="secondary" className="text-[10px] h-5">
+                      Proses
+                    </Badge>
                   </div>
-               ) : (
-                  <div className="text-center py-2 bg-green-50 rounded-md border border-green-100">
-                    <p className="text-sm font-medium text-green-700">Semua Milestone Selesai</p>
-                    <p className="text-xs text-muted-foreground mt-1">Menunggu persetujuan pembimbing</p>
-                  </div>
-               )}
+                  {/* Indikator horizontal "ongoing" - using indeterminate or fixed for visual */}
+                  <Progress value={35} className="h-2" />
+                  <p className="text-xs text-muted-foreground text-right w-full">Sedang dikerjakan</p>
+                </div>
+              ) : (
+                <div className="text-center py-2 bg-green-50 rounded-md border border-green-100">
+                  <p className="text-sm font-medium text-green-700">Semua Milestone Selesai</p>
+                  <p className="text-xs text-muted-foreground mt-1">Menunggu persetujuan pembimbing</p>
+                </div>
+              )}
             </div>
 
             <Button variant="ghost" className="w-full text-xs" asChild>
@@ -227,7 +225,7 @@ function CircularProgress({ percentage }: { percentage: number }) {
 
 function CompleteLottie() {
   const { View, setSpeed } = useLottie(completeLottieOptions);
-  
+
   React.useEffect(() => {
     setSpeed(0.5);
   }, [setSpeed]);

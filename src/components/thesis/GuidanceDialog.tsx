@@ -29,7 +29,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-  
+
   // Can only edit/reschedule if status is "requested" (not accepted or rejected)
   const canEdit = guidance && guidance.status === "requested";
   // Can only cancel (delete) if status is "requested"
@@ -59,25 +59,25 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
   const handleUpdate = async () => {
     if (!guidanceId) return;
     setIsSubmitting(true);
-    
+
     try {
       // Update notes
       await updateStudentGuidanceNotes(guidanceId, { studentNotes: notes });
-      
+
       // If reschedule date changed, update it
       const originalDate = guidance?.approvedDate || guidance?.requestedDate;
-      const hasDateChanged = rescheduleDate && originalDate && 
+      const hasDateChanged = rescheduleDate && originalDate &&
         new Date(rescheduleDate).getTime() !== new Date(originalDate).getTime();
-      
+
       if (hasDateChanged && rescheduleDate) {
-        await rescheduleStudentGuidance(guidanceId, { 
+        await rescheduleStudentGuidance(guidanceId, {
           guidanceDate: rescheduleDate.toISOString(),
         });
         toast.success("Bimbingan berhasil diperbarui", { id: "guidance-updated" });
       } else {
         toast.success("Catatan diperbarui", { id: "guidance-notes-updated" });
       }
-      
+
       onUpdated?.();
       onOpenChange(false);
     } catch (e: any) {
@@ -90,7 +90,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
   const handleCancel = async () => {
     if (!guidanceId) return;
     setIsCancelling(true);
-    
+
     try {
       await cancelStudentGuidance(guidanceId, { reason: "Dibatalkan oleh mahasiswa" });
       toast.success("Permintaan bimbingan dihapus", { id: "guidance-deleted" });
@@ -131,7 +131,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Lokasi</div>
-                <div className="font-medium">{guidance.location || '-'}</div>
+                <div className="font-medium">{(guidance.location as string) || '-'}</div>
               </div>
               {guidance.milestoneTitles && guidance.milestoneTitles.length > 0 && (
                 <div className="col-span-2">
@@ -152,7 +152,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
                   ℹ️ Bimbingan sudah disetujui. Jadwal dan catatan tidak dapat diubah.
                 </div>
               )}
-              
+
               {guidance.status === "rejected" && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
                   ℹ️ Bimbingan ditolak. Tidak dapat melakukan perubahan.
@@ -161,8 +161,8 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
 
               <div className="space-y-2">
                 <Label htmlFor="reschedule-date">Reschedule</Label>
-                <DateTimePicker 
-                  value={rescheduleDate} 
+                <DateTimePicker
+                  value={rescheduleDate}
                   onChange={setRescheduleDate}
                   disabled={!canEdit}
                   placeholder="Pilih jadwal baru"
@@ -174,10 +174,10 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Catatan</Label>
-                <Textarea 
+                <Textarea
                   id="notes"
-                  value={notes} 
-                  onChange={(e) => setNotes(e.target.value)} 
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                   placeholder="Tambahkan catatan..."
                   disabled={!canEdit}
                   rows={3}
@@ -188,8 +188,8 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
             {/* Action Buttons */}
             <div className="flex justify-end gap-2 pt-4 border-t">
               {canCancel && (
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   onClick={handleCancel}
                   disabled={isCancelling || isSubmitting}
                 >
@@ -203,8 +203,8 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
                   )}
                 </Button>
               )}
-              <Button 
-                onClick={handleUpdate} 
+              <Button
+                onClick={handleUpdate}
                 disabled={!canEdit || isSubmitting || isCancelling}
               >
                 {isSubmitting ? (
@@ -219,10 +219,10 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
             </div>
           </div>
         ) : (
-          <EmptyState 
-            size="sm" 
-            title="Data Tidak Ditemukan" 
-            description="Data bimbingan tidak ditemukan" 
+          <EmptyState
+            size="sm"
+            title="Data Tidak Ditemukan"
+            description="Data bimbingan tidak ditemukan"
           />
         )}
       </DialogContent>

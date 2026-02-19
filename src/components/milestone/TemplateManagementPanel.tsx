@@ -58,7 +58,7 @@ type TemplateFormState = {
   id?: string;
   name: string;
   description: string;
-  topicId: string;
+  topicId: string | null;
   orderIndex?: number;
   isActive: boolean;
 };

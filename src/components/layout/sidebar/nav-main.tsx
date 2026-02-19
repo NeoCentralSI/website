@@ -14,7 +14,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 
 export interface NavSubItem {
@@ -37,14 +36,8 @@ export function NavMain({
   items: NavItem[]
 }) {
   const { pathname } = useLocation()
-  const { state, setOpen } = useSidebar()
 
-  // Handler untuk expand sidebar ketika klik menu dengan submenu saat collapsed
-  const handleMenuClick = () => {
-    if (state === "collapsed") {
-      setOpen(true)
-    }
-  }
+
 
   return (
     <SidebarGroup>
@@ -57,41 +50,54 @@ export function NavMain({
           const isItemActive = pathname === item.url || pathname.startsWith(item.url + "/") || isAnyChildActive
 
           return (
-            <Collapsible key={item.title} asChild defaultOpen={isItemActive}>
+            <Collapsible key={item.title} asChild defaultOpen={isItemActive} className="group/collapsible">
               <SidebarMenuItem>
-                {hasChildren ? (
-                  // Jika ada submenu, button menjadi trigger untuk expand/collapse
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      tooltip={item.title}
-                      className="group/trigger"
-                      isActive={isItemActive}
-                      onClick={handleMenuClick}
-                    >
-                      <item.icon />
-                      <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none transform-gpu">{item.title}</span>
-                      <ChevronRight className="ml-auto transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[state=open]/trigger:rotate-90 motion-reduce:transition-none transform-gpu will-change-transform origin-center" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                ) : (
-                  // Jika tidak ada submenu, button bisa diklik untuk navigasi
+                {/* Main Button: Link if URL is valid, otherwise Trigger or Static */}
+                {item.url && item.url !== "#" ? (
                   <SidebarMenuButton asChild tooltip={item.title} isActive={isItemActive}>
                     <Link to={item.url}>
                       <item.icon />
-                      <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none">{item.title}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
+                ) : hasChildren ? (
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton tooltip={item.title} isActive={isItemActive} className="cursor-pointer">
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                ) : (
+                  <SidebarMenuButton tooltip={item.title} isActive={isItemActive} className="cursor-default">
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
                 )}
-                {hasChildren ? (
+
+                {/* Submenu Trigger: Only if has children */}
+                {hasChildren && (
+                  <CollapsibleTrigger asChild>
+                    {/* Using a custom styled trigger positioned similarly to SidebarMenuAction */}
+                    <div
+                      role="button"
+                      className="absolute right-1 top-1.5 flex h-6 w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:outline-hidden transition-all [&>svg]:size-4 [&>svg]:shrink-0 cursor-pointer"
+                    >
+                      <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      <span className="sr-only">Toggle {item.title}</span>
+                    </div>
+                  </CollapsibleTrigger>
+                )}
+
+                {hasChildren && (
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => {
-                        const isSubActive = subItem.isActive ?? (pathname === subItem.url || pathname.startsWith(subItem.url + "/"))
+                        const isSubActive = pathname === subItem.url || pathname.startsWith(subItem.url + "/")
                         return (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild isActive={isSubActive}>
                               <Link to={subItem.url}>
-                                <span className="transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:-translate-x-2 motion-reduce:transition-none">{subItem.title}</span>
+                                <span className="truncate">{subItem.title}</span>
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
@@ -99,7 +105,7 @@ export function NavMain({
                       })}
                     </SidebarMenuSub>
                   </CollapsibleContent>
-                ) : null}
+                )}
               </SidebarMenuItem>
             </Collapsible>
           )

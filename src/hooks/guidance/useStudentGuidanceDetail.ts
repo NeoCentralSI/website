@@ -40,7 +40,7 @@ export function useStudentGuidanceDetail(guidanceId: string | undefined) {
       return false;
     }
     try {
-      await rescheduleStudentGuidance(guidanceId, data);
+      await rescheduleStudentGuidance(guidanceId, { guidanceDate: data.requestedDate, studentNotes: data.studentNotes });
       toast.success('Jadwal diperbarui', { id: 'guidance-rescheduled' });
       load();
       qc.invalidateQueries({ queryKey: ['notification-unread'] });

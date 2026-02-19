@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { getStudentSupervisors, rescheduleStudentGuidance, cancelStudentGuidance } from '@/services/studentGuidance.service';
@@ -54,6 +54,9 @@ export default function StudentGuidancePage() {
     refetch,
   } = useStudentGuidance();
 
+  /* ADDED: Search params for Quick Actions */
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const {
     openRequest,
     setOpenRequest,
@@ -62,6 +65,19 @@ export default function StudentGuidancePage() {
     docInfo,
     openDocumentPreview,
   } = useGuidanceDialogs();
+
+  // Auto-open request dialog if action=create
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      if (!hasPendingRequest) {
+        setOpenRequest(true);
+      }
+      // Clear param
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("action");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, hasPendingRequest, setOpenRequest, setSearchParams]);
 
   const [rescheduleGuidance, setRescheduleGuidance] = useState<{ id: string; supervisorId: string } | null>(null);
   const [cancelGuidanceId, setCancelGuidanceId] = useState<string | null>(null);
@@ -107,13 +123,13 @@ export default function StudentGuidancePage() {
 
   const handleReschedule = async (data: { requestedDate: string; studentNotes: string }) => {
     if (!rescheduleGuidance) return false;
-    
+
     try {
       await rescheduleStudentGuidance(rescheduleGuidance.id, {
         guidanceDate: new Date(data.requestedDate).toISOString(),
         studentNotes: data.studentNotes,
       });
-      
+
       toast.success('Jadwal bimbingan berhasil diubah');
       qc.invalidateQueries({ queryKey: ['student-guidance'] });
       qc.invalidateQueries({ queryKey: ['notification-unread'] });
@@ -126,14 +142,21 @@ export default function StudentGuidancePage() {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Bimbingan Tugas Akhir</h1>
+          <p className="text-gray-500">Jadwal bimbingan Tugas Akhir</p>
+        </div>
+      </div>
+
       <TabsNav
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Pembimbing', to: '/tugas-akhir/bimbingan/supervisors' },
-          { label: 'Tugas Akhir Saya', to: '/tugas-akhir/bimbingan/milestone' },
+          { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
           { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
+          { label: 'Zona Berbahaya', to: '/tugas-akhir/bimbingan/danger-zone' },
         ]}
       />
 
@@ -174,9 +197,9 @@ export default function StudentGuidancePage() {
             emptyText={q || supervisorFilter ? 'Tidak ditemukan' : 'Tidak ada data'}
             actions={
               <div className="flex items-center gap-2">
-                <RefreshButton 
-                  onClick={() => refetch()} 
-                  isRefreshing={isFetching && !isLoading} 
+                <RefreshButton
+                  onClick={() => refetch()}
+                  isRefreshing={isFetching && !isLoading}
                 />
                 <Button
                   onClick={() => setOpenRequest(true)}

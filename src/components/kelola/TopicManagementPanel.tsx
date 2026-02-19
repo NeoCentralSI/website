@@ -3,16 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2, BookOpen, FileText } from "lucide-react";
 import * as topicService from "@/services/topic.service";
-import EmptyState from "@/components/ui/empty-state";
+
 import type { Topic, CreateTopicDto, UpdateTopicDto } from "@/types/topic.types";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -34,17 +27,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner, Loading } from "@/components/ui/spinner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { formatDateId } from "@/lib/text";
 
 type TopicFormState = {
@@ -58,7 +44,11 @@ const emptyForm: TopicFormState = {
 
 export function TopicManagementPanel() {
   const queryClient = useQueryClient();
+  // State for CustomTable
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formState, setFormState] = useState<TopicFormState>(emptyForm);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -140,6 +130,12 @@ export function TopicManagementPanel() {
     return topics.filter((t) => t.name.toLowerCase().includes(term));
   }, [search, topics]);
 
+  // Pagination logic
+  const paginatedTopics = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredTopics.slice(start, start + pageSize);
+  }, [filteredTopics, page, pageSize]);
+
   const isBusy =
     topicsQuery.isLoading ||
     createTopic.isPending ||
@@ -211,6 +207,115 @@ export function TopicManagementPanel() {
     setDeleteDialogOpen(true);
   };
 
+  // Define Columns
+  const columns = useMemo<Column<Topic>[]>(
+    () => [
+      {
+        key: "select",
+        header: (
+          <Checkbox
+            checked={
+              filteredTopics.length > 0 &&
+              selectedIds.size === filteredTopics.length
+            }
+            onCheckedChange={toggleSelectAll}
+            aria-label="Select all"
+          />
+        ),
+        width: "50px",
+        render: (topic) => (
+          <Checkbox
+            checked={selectedIds.has(topic.id)}
+            onCheckedChange={() => toggleSelect(topic.id)}
+            aria-label={`Select ${topic.name}`}
+          />
+        ),
+      },
+      {
+        key: "name",
+        header: "Nama Topik",
+        accessor: "name",
+        className: "font-medium",
+      },
+      {
+        key: "thesisCount",
+        header: "Tugas Akhir",
+        className: "text-center",
+        width: "120px",
+        render: (topic) => (
+          <Badge variant="outline" className="gap-1">
+            <BookOpen className="h-3 w-3" />
+            {topic.thesisCount}
+          </Badge>
+        ),
+      },
+      {
+        key: "templateCount",
+        header: "Template",
+        className: "text-center",
+        width: "120px",
+        render: (topic) => (
+          <Badge variant="outline" className="gap-1">
+            <FileText className="h-3 w-3" />
+            {topic.templateCount}
+          </Badge>
+        ),
+      },
+      {
+        key: "createdAt",
+        header: "Dibuat",
+        width: "150px",
+        render: (topic) => (
+          <span className="text-sm text-muted-foreground">
+            {formatDateId(topic.createdAt)}
+          </span>
+        ),
+      },
+      {
+        key: "actions",
+        header: "Aksi",
+        className: "text-right",
+        width: "100px",
+        render: (topic) => (
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => startEdit(topic)}
+              disabled={isBusy}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleDelete(topic)}
+              disabled={
+                isBusy || topic.thesisCount > 0 || topic.templateCount > 0
+              }
+              title={
+                topic.thesisCount > 0 || topic.templateCount > 0
+                  ? "Topik tidak dapat dihapus karena masih digunakan"
+                  : "Hapus topik"
+              }
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [
+      filteredTopics.length,
+      selectedIds,
+      toggleSelectAll,
+      toggleSelect,
+      isBusy,
+      startEdit,
+      handleDelete, // Ensure this is stable or included
+    ]
+  );
+
   // Loading state
   if (topicsQuery.isLoading && topics.length === 0) {
     return (
@@ -222,14 +327,19 @@ export function TopicManagementPanel() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Kelola Topik Tugas Akhir</CardTitle>
-            <CardDescription>
-              Buat, perbarui, atau hapus topik tugas akhir. Topik digunakan untuk mengelompokkan template milestone.
-            </CardDescription>
-          </div>
+      <CustomTable
+        columns={columns}
+        data={paginatedTopics}
+        loading={topicsQuery.isLoading}
+        total={filteredTopics.length}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        searchValue={search}
+        onSearchChange={setSearch}
+        emptyText="Tidak ada topik yang cocok dengan pencarian."
+        actions={
           <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
               <Button
@@ -242,122 +352,13 @@ export function TopicManagementPanel() {
                 Hapus ({selectedIds.size})
               </Button>
             )}
-            <Button onClick={startCreate} disabled={isBusy}>
+            <Button onClick={startCreate} disabled={isBusy} size="sm">
               <Plus className="mr-2 h-4 w-4" />
               Tambah Topik
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-muted-foreground">
-              {topics.length} topik tersedia
-            </div>
-            <div className="w-full md:w-64">
-              <Input
-                id="search"
-                placeholder="Cari topik..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {filteredTopics.length === 0 ? (
-            <EmptyState
-              title={search.trim() ? "Tidak Ditemukan" : "Belum Ada Topik"}
-              description={search.trim()
-                ? "Tidak ada topik yang cocok dengan pencarian."
-                : "Klik 'Tambah Topik' untuk membuat topik baru."}
-              size="sm"
-            />
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={
-                          selectedIds.size === filteredTopics.length &&
-                          filteredTopics.length > 0
-                        }
-                        onCheckedChange={toggleSelectAll}
-                        aria-label="Select all"
-                      />
-                    </TableHead>
-                    <TableHead>Nama Topik</TableHead>
-                    <TableHead className="text-center">Tugas Akhir</TableHead>
-                    <TableHead className="text-center">Template</TableHead>
-                    <TableHead>Dibuat</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTopics.map((topic) => (
-                    <TableRow key={topic.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(topic.id)}
-                          onCheckedChange={() => toggleSelect(topic.id)}
-                          aria-label={`Select ${topic.name}`}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{topic.name}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          {topic.thesisCount}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="gap-1">
-                          <FileText className="h-3 w-3" />
-                          {topic.templateCount}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateId(topic.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => startEdit(topic)}
-                            disabled={isBusy}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(topic)}
-                            disabled={
-                              isBusy ||
-                              topic.thesisCount > 0 ||
-                              topic.templateCount > 0
-                            }
-                            title={
-                              topic.thesisCount > 0 || topic.templateCount > 0
-                                ? "Topik tidak dapat dihapus karena masih digunakan"
-                                : "Hapus topik"
-                            }
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        }
+      />
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -468,6 +469,6 @@ export function TopicManagementPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div >
   );
 }

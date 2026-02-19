@@ -22,7 +22,6 @@ import {
   Loader2,
   Clock,
   CheckCircle2,
-  AlertCircle,
   NotebookPen,
   GraduationCap,
   CalendarClock,
@@ -182,8 +181,8 @@ export default function GuidanceSessionPage() {
             isCompleted
               ? "bg-green-100 text-green-700 border-green-200 h-9 px-3"
               : needsSummary
-              ? "bg-amber-100 text-amber-700 border-amber-200 h-9 px-3"
-              : "h-9 px-3"
+                ? "bg-amber-100 text-amber-700 border-amber-200 h-9 px-3"
+                : "h-9 px-3"
           }
         >
           {isCompleted ? "Selesai" : needsSummary ? "Perlu Diisi Catatan" : guidance.status}
@@ -254,8 +253,8 @@ export default function GuidanceSessionPage() {
                           (guidance.approvedDate
                             ? formatDateId(guidance.approvedDate)
                             : guidance.requestedDate
-                            ? formatDateId(guidance.requestedDate)
-                            : "-")}
+                              ? formatDateId(guidance.requestedDate)
+                              : "-")}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {isCompleted ? "✓ Selesai" : needsSummary ? "Perlu Isi Catatan" : guidance?.status}
@@ -319,7 +318,7 @@ export default function GuidanceSessionPage() {
                       <div>
                         <CardTitle className="text-lg">Catatan Sesi Bimbingan</CardTitle>
                         <CardDescription className="text-xs">
-                          {isCompleted || hasSummary 
+                          {isCompleted || hasSummary
                             ? "Ringkasan dan feedback dari sesi bimbingan"
                             : "Isi catatan setelah sesi bimbingan selesai"
                           }
@@ -331,8 +330,8 @@ export default function GuidanceSessionPage() {
                         isCompleted
                           ? "bg-green-100 text-green-700 border-green-200"
                           : hasSummary
-                          ? "bg-blue-100 text-blue-700 border-blue-200"
-                          : "bg-amber-100 text-amber-700 border-amber-200"
+                            ? "bg-blue-100 text-blue-700 border-blue-200"
+                            : "bg-amber-100 text-amber-700 border-amber-200"
                       }
                     >
                       {isCompleted ? (
@@ -355,7 +354,7 @@ export default function GuidanceSessionPage() {
                           {isCompleted ? "Sesi Bimbingan Selesai" : "Menunggu Approval Dosen"}
                         </AlertTitle>
                         <AlertDescription className="text-green-600 dark:text-green-500 text-sm">
-                          {isCompleted 
+                          {isCompleted
                             ? "Catatan bimbingan sudah diisi dan disetujui dosen pembimbing."
                             : "Catatan sudah dikirim dan menunggu persetujuan dosen pembimbing."
                           }

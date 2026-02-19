@@ -555,7 +555,7 @@ export function useBulkValidateMilestones() {
     onSuccess: (data) => {
       // Invalidate all milestone queries to refresh data
       queryClient.invalidateQueries({ queryKey: milestoneKeys.all });
-      toast.success(`${data.validatedCount} milestone berhasil divalidasi`);
+      toast.success(`${data.validated} milestone berhasil divalidasi`);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Gagal memvalidasi milestone");

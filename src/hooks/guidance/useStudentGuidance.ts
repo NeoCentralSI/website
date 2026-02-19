@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
@@ -7,7 +7,7 @@ import { listStudentGuidance } from '@/services/studentGuidance.service';
 export function useStudentGuidance() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const initialStatus = (searchParams.get('status') as GuidanceStatus | '') || '';
   const initialQ = searchParams.get('q') || '';
   const initialSupervisor = searchParams.get('supervisor') || '';
@@ -71,8 +71,8 @@ export function useStudentGuidance() {
       (pending.approvedDate
         ? new Date(pending.approvedDate).toLocaleString()
         : pending.requestedDate
-        ? new Date(pending.requestedDate).toLocaleString()
-        : 'belum ditentukan');
+          ? new Date(pending.requestedDate).toLocaleString()
+          : 'belum ditentukan');
     return {
       id: pending.id,
       dateStr,
@@ -99,8 +99,8 @@ export function useStudentGuidance() {
           (it.approvedDate
             ? new Date(it.approvedDate).toLocaleString()
             : it.requestedDate
-            ? new Date(it.requestedDate).toLocaleString()
-            : '')
+              ? new Date(it.requestedDate).toLocaleString()
+              : '')
         ).toLowerCase();
         return sup.includes(needle) || statusText.includes(needle) || when.includes(needle);
       });

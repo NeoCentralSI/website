@@ -55,7 +55,14 @@ export default function KelolaTugasAkhirPage() {
   };
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Kelola Tugas Akhir</h1>
+          <p className="text-gray-500">Manajemen topik, milestone, dan rubrik penilaian</p>
+        </div>
+      </div>
+
       <TabsNav tabs={TAB_ITEMS} />
       {renderContent()}
     </div>

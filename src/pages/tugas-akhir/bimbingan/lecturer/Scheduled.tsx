@@ -88,7 +88,14 @@ export default function ScheduledGuidancesPage() {
   ];
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Jadwal Bimbingan</h1>
+          <p className="text-gray-500">Lihat jadwal bimbingan yang akan datang</p>
+        </div>
+      </div>
+
       <TabsNav tabs={tabs} />
 
       {/* Loading state - tabs tetap render, loading di content */}
@@ -113,9 +120,9 @@ export default function ScheduledGuidancesPage() {
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           actions={
-            <RefreshButton 
-              onClick={() => refetch()} 
-              isRefreshing={isFetching && !isLoading} 
+            <RefreshButton
+              onClick={() => refetch()}
+              isRefreshing={isFetching && !isLoading}
             />
           }
         />
