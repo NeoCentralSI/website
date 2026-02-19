@@ -29,15 +29,20 @@ import LecturerHistoryPage from './pages/tugas-akhir/bimbingan/lecturer/History'
 import SecretaryKelolaTugasAkhirPage from './pages/tugas-akhir/bimbingan/secretary/TugasAkhir'
 // Kerja Praktik
 import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
-import InternshipProposalDetailPage from './pages/kerja-praktik/student/registration/ProposalDetail'
+import InternshipProposalDetailPage from './pages/kerja-praktik/student/registration/PendaftaranDetail'
+import InternshipAssignmentPage from './pages/kerja-praktik/student/registration/Assignment'
 // Sekdep Internship
 import SekdepInternshipProposalPage from './pages/kerja-praktik/sekdep/registration/Proposal'
-import SekdepInternshipProposalDetailPage from './pages/kerja-praktik/sekdep/registration/ProposalDetail'
+import SekdepInternshipProposalDetailPage from './pages/kerja-praktik/sekdep/registration/PendaftaranDetail'
+import SekdepInternshipAssignmentPage from './pages/kerja-praktik/sekdep/registration/Assignment'
 import SekdepCompanyListPage from './pages/kerja-praktik/sekdep/companies/CompanyList'
 import AdminCompanyListPage from './pages/kerja-praktik/admin/companies/CompanyList'
-import AdminApplicationPage from './pages/kerja-praktik/admin/application/ApplicationList'
+import AdminApplicationPage from './pages/kerja-praktik/admin/application/Application'
 import ManageApplicationLetter from './pages/kerja-praktik/admin/application/ManageApplicationLetter'
-import InternshipTemplateEditor from './pages/kerja-praktik/admin/application/InternshipTemplateEditor'
+import AdminAssignmentPage from './pages/kerja-praktik/admin/assignment/Assignment'
+import ManageAssignmentLetter from './pages/kerja-praktik/admin/assignment/ManageAssignmentLetter'
+import AssignmentTemplateEditor from './pages/kerja-praktik/admin/assignment/AssignmentTemplateEditor'
+import InternshipTemplateEditor from './pages/kerja-praktik/admin/application/ApplicationTemplateEditor'
 import KadepInternshipManagementPage from './pages/kerja-praktik/kadep/ManageInternship';
 import SignLetterPage from './pages/kerja-praktik/kadep/SignLetterPage';
 import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification';
@@ -88,6 +93,7 @@ function App() {
                 <Route path="/kerja-praktik" element={<KerjaPraktekGuard />}>
                   <Route path="pendaftaran" element={<InternshipProposalPage />} />
                   <Route path="pendaftaran/:id" element={<InternshipProposalDetailPage />} />
+                  <Route path="penugasan" element={<InternshipAssignmentPage />} />
                   <Route path="logbook" element={<Placeholder title="KP - Logbook" />} />
                   <Route path="seminar" element={<Placeholder title="KP - Seminar" />} />
                 </Route>
@@ -142,6 +148,7 @@ function App() {
                 <Route path="/kelola/kerja-praktik" element={<Navigate to="/kelola/kerja-praktik/pendaftaran" replace />} />
                 <Route path="/kelola/kerja-praktik/pendaftaran" element={<SekdepInternshipProposalPage />} />
                 <Route path="/kelola/kerja-praktik/pendaftaran/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
+                <Route path="/kelola/kerja-praktik/penugasan" element={<SekdepInternshipAssignmentPage />} />
                 <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                 <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/monitor" element={<SecretaryKelolaTugasAkhirPage />} />
@@ -169,6 +176,9 @@ function App() {
                 <Route path="/admin/kerja-praktik/perusahaan" element={<AdminCompanyListPage />} />
                 <Route path="/admin/kerja-praktik/surat-pengantar" element={<AdminApplicationPage />} />
                 <Route path="/admin/kerja-praktik/surat-pengantar/:id" element={<ManageApplicationLetter />} />
+                <Route path="/admin/kerja-praktik/surat-tugas" element={<AdminAssignmentPage />} />
+                <Route path="/admin/kerja-praktik/surat-tugas/:id" element={<ManageAssignmentLetter />} />
+                <Route path="/admin/kerja-praktik/surat-tugas/template" element={<AssignmentTemplateEditor />} />
                 <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
                 <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
                 <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />

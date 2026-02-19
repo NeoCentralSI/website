@@ -23,6 +23,8 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -61,6 +63,8 @@
   --accent: #FFF8F0; /* warm cream for accent */
   --accent-foreground: #111827;
   --destructive: #ef4444; /* red-500 */
+  --success: #22c55e; /* green-500 */
+  --success-foreground: #ffffff;
   --border: #fed7aa; /* orange-200 for subtle border */
   --input: #e5e7eb; /* gray-200 for input border */
   --ring: #F7931E; /* main orange for focus */
@@ -98,6 +102,8 @@
   --accent: #FFF8F0;
   --accent-foreground: #111827;
   --destructive: #ef4444;
+  --success: #22c55e;
+  --success-foreground: #ffffff;
   --border: #fed7aa;
   --input: #e5e7eb;
   --ring: #F7931E;

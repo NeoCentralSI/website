@@ -10,14 +10,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ProposalResponseDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onConfirm: (notes?: string) => void;
+    onConfirm: (notes?: string, acceptedMemberIds?: string[]) => void;
     isLoading?: boolean;
-    type: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP' | null;
+    type: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP' | 'REJECTED_BY_COMPANY' | null;
     companyName?: string;
+    members?: { id: string; name: string; nim: string; role: string; status?: string }[];
 }
 
 const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
@@ -26,48 +28,102 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
     onConfirm,
     isLoading,
     type,
-    companyName
+    companyName,
+    members = []
 }) => {
     const [notes, setNotes] = useState('');
+    const [acceptedMemberIds, setAcceptedMemberIds] = useState<string[]>([]);
 
     useEffect(() => {
-        if (!open) {
+        if (open) {
             setNotes('');
-        }
-    }, [open]);
+            // Logic to pre-select members based on their current status
+            const hasCompanyDecision = members.some(m => m.status === 'ACCEPTED_BY_COMPANY' || m.status === 'REJECTED_BY_COMPANY');
 
-    const isReject = type === 'REJECTED_BY_SEKDEP';
-    const label = isReject ? 'Tolak' : 'Setujui';
+            if (hasCompanyDecision) {
+                // If there's a decision recorded (from student upload), select only those accepted
+                // Always select Coordinator by default as they are not part of the selection list in student view
+                setAcceptedMemberIds(members.filter(m =>
+                    m.status === 'ACCEPTED_BY_COMPANY' || m.role === 'Koordinator'
+                ).map(m => m.id));
+            } else {
+                // Default select all members if no decision yet
+                setAcceptedMemberIds(members.map(m => m.id));
+            }
+        }
+    }, [open, members]);
+
+    const isRejectSekdep = type === 'REJECTED_BY_SEKDEP';
+    const isRejectCompany = type === 'REJECTED_BY_COMPANY';
+    const isApprove = type === 'APPROVED_BY_SEKDEP';
+
+    let label = 'Proses';
+    if (isRejectSekdep) label = 'Tolak (Dokumen Invalid)';
+    if (isRejectCompany) label = 'Tolak (Ditolak Perusahaan)';
+    if (isApprove) label = 'Verifikasi Diterima';
 
     const handleConfirm = () => {
-        onConfirm(notes);
+        onConfirm(notes, isApprove ? acceptedMemberIds : undefined);
+    };
+
+    const toggleMember = (id: string) => {
+        setAcceptedMemberIds(prev =>
+            prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]
+        );
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>{label} Proposal KP</DialogTitle>
                     <DialogDescription>
-                        Apakah Anda yakin ingin {label.toLowerCase()} proposal KP {companyName ? `ke ${companyName}` : ''}?
-                        {isReject ? ' Anda dapat memberikan alasan penolakan (opsional).' : ' Tindakan ini tidak dapat dibatalkan.'}
+                        {isRejectSekdep && "Tolak karena dokumen tidak valid/buram/salah. Mahasiswa harus upload ulang."}
+                        {isRejectCompany && `Verifikasi bahwa perusahaan ${companyName || ''} MENOLAK lamaran ini.`}
+                        {isApprove && `Verifikasi bahwa perusahaan ${companyName || ''} MENERIMA lamaran ini. Centang mahasiswa yang diterima.`}
                     </DialogDescription>
                 </DialogHeader>
 
-                {isReject && (
-                    <div className="grid gap-4 py-4">
+                <div className="grid gap-4 py-4">
+                    {isApprove && members.length > 0 && (
                         <div className="grid gap-2">
-                            <Label htmlFor="notes">Catatan Alasan Penolakan (Opsional)</Label>
+                            <Label>Daftar Mahasiswa Diterima</Label>
+                            <div className="border rounded-md p-3 space-y-2 max-h-[200px] overflow-y-auto">
+                                {members.map(member => (
+                                    <div key={member.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={member.id}
+                                            checked={acceptedMemberIds.includes(member.id)}
+                                            onCheckedChange={() => toggleMember(member.id)}
+                                        />
+                                        <label
+                                            htmlFor={member.id}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        >
+                                            {member.name} ({member.nim})
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Mahasiswa yang tidak dicentang akan berstatus DITOLAK PERUSAHAAN.
+                            </p>
+                        </div>
+                    )}
+
+                    {(isRejectSekdep || isRejectCompany) && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="notes">Catatan {isRejectCompany ? '(Opsional)' : '(Wajib jika ada)'}</Label>
                             <Textarea
                                 id="notes"
-                                placeholder="Masukkan alasan penolakan..."
+                                placeholder={isRejectSekdep ? "Alasan dokumen ditolak..." : "Catatan tambahan..."}
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 className="min-h-[100px]"
                             />
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 <DialogFooter>
                     <Button
@@ -80,10 +136,10 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
                     </Button>
                     <Button
                         type="button"
-                        variant={isReject ? "destructive" : "default"}
-                        className={!isReject ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                        variant={isRejectSekdep || isRejectCompany ? "destructive" : "default"}
+                        className={isApprove ? "bg-green-600 hover:bg-green-700 text-white" : ""}
                         onClick={handleConfirm}
-                        disabled={isLoading}
+                        disabled={isLoading || (isApprove && acceptedMemberIds.length === 0)}
                     >
                         {isLoading ? (
                             <span className="flex items-center gap-2">
@@ -91,7 +147,7 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
                                 Memproses...
                             </span>
                         ) : (
-                            `Konfirmasi ${label}`
+                            isApprove && acceptedMemberIds.length < members.length && acceptedMemberIds.length > 0 ? "Konfirmasi Diterima Sebagian" : "Konfirmasi"
                         )}
                     </Button>
                 </DialogFooter>
