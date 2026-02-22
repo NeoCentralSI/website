@@ -5,8 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { uploadInternshipDocument, submitCompanyResponse, getProposalDetail, type InternshipProposalItem, type InternshipProposalMember } from "@/services/internship.service";
-import { FileText, Upload, Check, AlertCircle } from "lucide-react";
+import { uploadInternshipDocument, submitCompanyResponse, getProposalDetail, type InternshipProposalItem } from "@/services/internship.service";
+import { FileText, Upload, AlertCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
