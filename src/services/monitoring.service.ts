@@ -68,7 +68,7 @@ export interface MonitoringDashboard {
 export interface ThesisListItem {
   id: string;
   title: string;
-  rating: 'ONGOING' | 'SLOW' | 'AT_RISK' | 'FAILED';
+  rating: 'ONGOING' | 'SLOW' | 'AT_RISK' | 'FAILED' | 'CANCELLED';
   student: {
     id: string;
     userId: string;
@@ -156,6 +156,7 @@ export interface ThesisDetail {
   id: string;
   title: string;
   status: string | null;
+  rating: string;
   topic: string | null;
   academicYear: string | null;
   startDate: string | null;

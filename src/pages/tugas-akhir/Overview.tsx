@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import {
     BookOpen,
     GraduationCap,
@@ -23,6 +23,7 @@ import {
     History,
     AlertCircle,
     Archive,
+    ShieldAlert,
 } from "lucide-react";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
 import { useMilestones } from "@/hooks/milestone";
@@ -35,6 +36,8 @@ import { RequestSupervisor2Dialog } from "@/components/bimbingan/RequestSupervis
 import { getPendingSupervisor2Request } from "@/services/studentGuidance.service";
 import { PendingRequestCard } from "@/components/bimbingan/PendingRequestCard";
 import { toast } from "sonner";
+import { ThesisProposalForm } from "@/components/thesis/ThesisProposalForm";
+import { PendingApprovalCard } from "@/components/thesis/PendingApprovalCard";
 
 const STATUS_LABELS: Record<string, string> = {
     not_started: "Belum Dimulai",
@@ -97,8 +100,12 @@ export default function TugasAkhirOverviewPage() {
         (s.role || "").toLowerCase().includes("pembimbing2")
     );
 
-    // Determines if current thesis is active or cancelled/failed
-    const isThesisActive = thesisDetail?.status !== "Dibatalkan" && thesisDetail?.status !== "Gagal";
+    // Determines statuses
+    const isFailed = thesisDetail?.status === "Gagal";
+    const isCancelled = thesisDetail?.status === "Dibatalkan";
+    const isProposed = thesisDetail?.status === "Diajukan";
+    // Show dashboard only if active and NOT proposed (proposed has its own view)
+    const isThesisActive = thesisDetail?.status !== "Dibatalkan" && thesisDetail?.status !== "Gagal" && thesisDetail?.status !== "Diajukan";
 
     const copyEmail = async (id: string, email: string) => {
         try {
@@ -112,7 +119,20 @@ export default function TugasAkhirOverviewPage() {
     };
 
     const getRemainingTime = () => {
-        return "2 Bulan 15 Hari"; // Placeholder
+        const deadlineDate = thesisDetail?.deadlineDate;
+        if (!deadlineDate) return "-";
+
+        const deadline = new Date(deadlineDate);
+        const now = new Date();
+        const diffTime = deadline.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) return `Terlewat ${Math.abs(diffDays)} Hari`;
+        if (diffDays < 30) return `${diffDays} Hari`;
+
+        const months = Math.floor(diffDays / 30);
+        const days = diffDays % 30;
+        return days > 0 ? `${months} Bulan ${days} Hari` : `${months} Bulan`;
     };
 
     if (isLoadingThesis || isLoadingMilestones || isLoadingHistory) {
@@ -129,30 +149,95 @@ export default function TugasAkhirOverviewPage() {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <Tabs defaultValue={isThesisActive ? "overview" : "history"} className="space-y-6">
+        <div className="p-6 max-w-7xl mx-auto w-full">
+            <Tabs defaultValue={hasThesis ? "overview" : "history"} className="space-y-6 w-full">
                 <TabsList>
                     <TabsTrigger value="overview" disabled={!isThesisActive && !hasThesis}>Status Terkini</TabsTrigger>
                     <TabsTrigger value="history">Riwayat Tugas Akhir</TabsTrigger>
                 </TabsList>
 
                 {/* --- TAB: OVERVIEW (CURRENT THESIS) --- */}
-                <TabsContent value="overview" className="space-y-6">
-                    {!isThesisActive && (
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Tugas Akhir Tidak Aktif</AlertTitle>
-                            <AlertDescription>
-                                Status tugas akhir Anda saat ini adalah <strong>{thesisDetail?.status}</strong>.
-                                Silakan hubungi Departemen untuk melakukan pendaftaran ulang judul baru.
-                            </AlertDescription>
-                        </Alert>
+                <TabsContent value="overview" className="w-full space-y-6">
+                    {/* If Proposed (Diajukan) -> Show Pending Card */}
+                    {isProposed && (
+                        <PendingApprovalCard status={thesisDetail?.status || "Diajukan"} />
+                    )}
+
+                    {/* If Failed (Gagal) -> Show warning message, must go to department */}
+                    {isFailed && (
+                        <div className="space-y-6">
+                            <Card className="w-full border-destructive/30 bg-destructive/5">
+                                <CardHeader className="pb-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
+                                                <AlertCircle className="h-6 w-6 text-destructive" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-xl text-destructive">Tugas Akhir Gagal</CardTitle>
+                                                <CardDescription>Tugas akhir Anda telah melewati batas waktu</CardDescription>
+                                            </div>
+                                        </div>
+                                        <Badge variant="destructive">
+                                            GAGAL
+                                        </Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4">
+                                        <p className="text-sm font-medium text-destructive">
+                                            Tugas akhir Anda telah melewati deadline. Silakan ke departemen untuk mendaftar ulang tugas akhir.
+                                        </p>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground space-y-2">
+                                        <p>Untuk mendaftar ulang tugas akhir, Anda perlu:</p>
+                                        <ul className="list-disc list-inside space-y-1 ml-2">
+                                            <li>Datang ke departemen secara langsung</li>
+                                            <li>Menentukan pembimbing baru bersama departemen</li>
+                                            <li>Mencari dan memilih topik serta judul baru</li>
+                                        </ul>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* If Cancelled (Dibatalkan) -> Show Proposal Form */}
+                    {isCancelled && (
+                        <div className="space-y-6">
+                            <Card className="w-full border-destructive/20 bg-destructive/5">
+                                <CardHeader className="pb-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
+                                                <AlertCircle className="h-6 w-6 text-destructive" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-xl text-destructive">Tugas Akhir Tidak Aktif</CardTitle>
+                                                <CardDescription>Status tugas akhir Anda saat ini: <strong>{thesisDetail?.status}</strong></CardDescription>
+                                            </div>
+                                        </div>
+                                        <Badge variant="destructive">
+                                            {thesisDetail?.status}
+                                        </Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-muted-foreground">
+                                        Tugas Akhir Anda sebelumnya telah dibatalkan.
+                                        Anda dapat mengajukan judul baru di bawah ini. Dosen pembimbing akan disalin otomatis dari penugasan sebelumnya.
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            <ThesisProposalForm />
+                        </div>
                     )}
 
                     {isThesisActive && (
                         <>
                             {/* 1. INFO CARD TUGAS AKHIR */}
-                            <Card className="border-primary/20 bg-linear-to-br from-primary/5 via-background to-background">
+                            <Card className="w-full border-primary/20 bg-linear-to-br from-primary/5 via-background to-background">
                                 <CardHeader className="pb-4">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex items-center gap-3">
@@ -317,6 +402,16 @@ export default function TugasAkhirOverviewPage() {
                                             </div>
                                             <span>Cetak Riwayat Bimbingan</span>
                                         </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-start text-left font-normal hover:bg-destructive/5 hover:text-destructive hover:border-destructive/20 transition-all group"
+                                            onClick={() => navigate('/tugas-akhir/bimbingan/danger-zone')}
+                                        >
+                                            <div className="h-8 w-8 rounded-full bg-destructive/10 flex items-center justify-center mr-3 group-hover:bg-destructive/20 transition-colors">
+                                                <ShieldAlert className="h-4 w-4 text-destructive" />
+                                            </div>
+                                            <span>Zona Berbahaya</span>
+                                        </Button>
                                     </CardContent>
                                 </Card>
 
@@ -420,65 +515,95 @@ export default function TugasAkhirOverviewPage() {
                 </TabsContent>
 
                 {/* --- TAB: RIWAYAT (HISTORY) --- */}
-                <TabsContent value="history" className="space-y-6">
-                    {!isThesisActive && (
-                        <Card className="border-yellow-200 bg-yellow-50 mb-6">
-                            <CardContent className="flex items-start gap-4 p-4">
-                                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-1" />
-                                <div>
-                                    <h4 className="font-semibold text-yellow-800">Pendaftaran Ulang Diperlukan</h4>
-                                    <p className="text-sm text-yellow-700 mt-1">
-                                        Karena tugas akhir sebelumnya telah dibatalkan atau tidak lulus, Anda perlu melakukan pendaftaran judul baru melalui Departemen.
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                <TabsContent value="history" className="w-full space-y-6">
 
-                    <div className="grid gap-4">
+                    <div className="w-full flex flex-col gap-6">
                         {historyData?.theses?.map((thesis: any) => (
-                            <Card key={thesis.id} className={cn(
-                                "border transition-all",
-                                (thesis.status === 'Dibatalkan' || thesis.status === 'Gagal') ? "bg-muted/30 opacity-75 hover:opacity-100" : ""
-                            )}>
-                                <CardHeader className="pb-3">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant={
-                                                    thesis.status === 'aktif' ? 'default' :
-                                                        thesis.status === 'Selesai' ? 'default' : // Green usually
-                                                            'secondary'
-                                                }>
-                                                    {thesis.status}
-                                                </Badge>
-                                                <span className="text-xs text-muted-foreground">{formatDateId(thesis.createdAt)}</span>
+                            <Card key={thesis.id} className="w-full border-primary/20 bg-linear-to-br from-primary/5 via-background to-background">
+                                <CardHeader className="pb-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                                                <History className="h-6 w-6 text-primary" />
                                             </div>
-                                            <CardTitle className="text-lg leading-snug">{thesis.title}</CardTitle>
+                                            <div>
+                                                <CardTitle className="text-xl">Riwayat Tugas Akhir</CardTitle>
+                                                <CardDescription>Detail riwayat pengerjaan tugas akhir</CardDescription>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <Badge
+                                                variant={
+                                                    thesis.status === "aktif" || thesis.status === "Selesai"
+                                                        ? "default"
+                                                        : "secondary"
+                                                }
+                                            >
+                                                {thesis.status.toUpperCase()}
+                                            </Badge>
+                                            <span className="text-xs text-muted-foreground">
+                                                {formatDateId(thesis.createdAt)}
+                                            </span>
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <Target className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-muted-foreground">Topik:</span>
-                                            <span className="font-medium">{thesis.topic}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <History className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-muted-foreground">Periode:</span>
-                                            <span className="font-medium">{thesis.academicYear}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <FileText className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-muted-foreground">Total Bimbingan:</span>
-                                            <span className="font-medium">{thesis.stats.guidances} kali</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-muted-foreground">Milestone Selesai:</span>
-                                            <span className="font-medium">{thesis.stats.completedMilestones} tahapan</span>
+                                <CardContent className="space-y-6">
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold leading-relaxed mb-3">
+                                            {thesis.title}
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                <Target className="h-4 w-4" />
+                                                <span>
+                                                    Topik:{" "}
+                                                    <span className="text-foreground font-medium">
+                                                        {thesis.topic}
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                <Clock className="h-4 w-4" />
+                                                <span>
+                                                    Periode:{" "}
+                                                    <span className="text-foreground font-medium">
+                                                        {thesis.academicYear}
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                <FileText className="h-4 w-4" />
+                                                <span>
+                                                    Total Bimbingan:{" "}
+                                                    <span className="text-foreground font-medium">
+                                                        {thesis.stats.guidances} kali
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                <span>
+                                                    Milestone Selesai:{" "}
+                                                    <span className="text-foreground font-medium">
+                                                        {thesis.stats.completedMilestones} tahapan
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            {(thesis.status === "Gagal" || thesis.rating === "FAILED") && thesis.supervisors && thesis.supervisors.length > 0 && (
+                                                <div className="flex items-start gap-2 text-muted-foreground md:col-span-2 mt-2 pt-2 border-t border-border/50">
+                                                    <GraduationCap className="h-4 w-4 mt-0.5 shrink-0" />
+                                                    <div className="flex flex-col gap-1.5 w-full">
+                                                        <span className="text-xs font-medium">Dosen Pembimbing:</span>
+                                                        <div className="flex flex-wrap gap-2 text-foreground font-medium">
+                                                            {thesis.supervisors.map((sup: any) => (
+                                                                <Badge key={sup.id} variant="secondary" className="text-xs font-normal bg-primary/5 hover:bg-primary/10 transition-colors">
+                                                                    {toTitleCaseName(sup.name)}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </CardContent>

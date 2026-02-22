@@ -1,7 +1,6 @@
 import { useMemo, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { TabsNav } from "@/components/ui/tabs-nav";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -12,8 +11,7 @@ import { Loading } from "@/components/ui/spinner";
 export default function DangerZonePage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
     const breadcrumb = useMemo(() => [
-        { label: "Tugas Akhir" },
-        { label: "Bimbingan", href: "/tugas-akhir/bimbingan" },
+        { label: "Tugas Akhir", href: "/tugas-akhir" },
         { label: "Zona Berbahaya" }
     ], []);
 
@@ -42,16 +40,6 @@ export default function DangerZonePage() {
                     <p className="text-gray-500">Pengaturan krusial tugas akhir</p>
                 </div>
             </div>
-
-            <TabsNav
-                preserveSearch
-                tabs={[
-                    { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-                    { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
-                    { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
-                    { label: 'Zona Berbahaya', to: '/tugas-akhir/bimbingan/danger-zone' },
-                ]}
-            />
 
             <div className="space-y-4">
                 <Alert variant="destructive">

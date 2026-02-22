@@ -11,16 +11,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
 import EmptyState from '@/components/ui/empty-state';
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  GraduationCap, 
-  BookOpen, 
-  CheckCircle2, 
-  Clock, 
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  GraduationCap,
+  BookOpen,
+  CheckCircle2,
+  Clock,
   AlertTriangle,
   Users,
   Target,
@@ -31,7 +31,7 @@ import {
 const STATUS_COLORS: Record<string, string> = {
   'Berjalan': 'bg-blue-100 text-blue-700 border-blue-200',
   'Selesai': 'bg-green-100 text-green-700 border-green-200',
-  'Dibatalkan': 'bg-red-100 text-red-700 border-red-200',
+  'Dibatalkan': 'bg-red-500 text-white border-red-600',
   'Menunggu': 'bg-yellow-100 text-yellow-700 border-yellow-200',
 };
 
@@ -373,10 +373,10 @@ export default function MahasiswaDetail() {
                         ))}
                       </div>
                     ) : (
-                      <EmptyState 
-                        size="sm" 
-                        title="Belum Ada Seminar" 
-                        description="Belum ada seminar terdaftar" 
+                      <EmptyState
+                        size="sm"
+                        title="Belum Ada Seminar"
+                        description="Belum ada seminar terdaftar"
                       />
                     )}
                   </div>
@@ -394,10 +394,10 @@ export default function MahasiswaDetail() {
                         ))}
                       </div>
                     ) : (
-                      <EmptyState 
-                        size="sm" 
-                        title="Belum Ada Sidang" 
-                        description="Belum ada sidang terdaftar" 
+                      <EmptyState
+                        size="sm"
+                        title="Belum Ada Sidang"
+                        description="Belum ada sidang terdaftar"
                       />
                     )}
                   </div>
@@ -410,9 +410,9 @@ export default function MahasiswaDetail() {
           {!activeThesis && (
             <Card>
               <CardContent className="py-12">
-                <EmptyState 
-                  title="Tidak Ada Skripsi Aktif" 
-                  description="Mahasiswa ini belum memiliki skripsi yang sedang berjalan" 
+                <EmptyState
+                  title="Tidak Ada Skripsi Aktif"
+                  description="Mahasiswa ini belum memiliki skripsi yang sedang berjalan"
                 />
               </CardContent>
             </Card>

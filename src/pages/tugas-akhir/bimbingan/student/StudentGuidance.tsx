@@ -54,6 +54,16 @@ export default function StudentGuidancePage() {
     refetch,
   } = useStudentGuidance();
 
+  const { data: thesisDetail } = useQuery({
+    queryKey: ["my-thesis-detail"],
+    queryFn: async () => {
+      const { getMyThesisDetail } = await import('@/services/studentGuidance.service');
+      return getMyThesisDetail();
+    },
+  });
+
+  const isThesisInactive = thesisDetail?.status === "Gagal" || thesisDetail?.status === "Dibatalkan" || thesisDetail?.status === "Selesai";
+
   /* ADDED: Search params for Quick Actions */
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -156,7 +166,6 @@ export default function StudentGuidancePage() {
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
           { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
           { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
-          { label: 'Zona Berbahaya', to: '/tugas-akhir/bimbingan/danger-zone' },
         ]}
       />
 
@@ -175,46 +184,53 @@ export default function StudentGuidancePage() {
             />
           )}
 
-          <CustomTable
-            columns={columns as any}
-            data={displayItems}
-            loading={isLoading}
-            isRefreshing={isFetching && !isLoading}
-            total={total}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={(s) => {
-              setPageSize(s);
-              setPage(1);
-            }}
-            enableColumnFilters
-            searchValue={q}
-            onSearchChange={(v) => {
-              setQ(v);
-              setPage(1);
-            }}
-            emptyText={q || supervisorFilter ? 'Tidak ditemukan' : 'Tidak ada data'}
-            actions={
-              <div className="flex items-center gap-2">
-                <RefreshButton
-                  onClick={() => refetch()}
-                  isRefreshing={isFetching && !isLoading}
-                />
-                <Button
-                  onClick={() => setOpenRequest(true)}
-                  disabled={hasPendingRequest}
-                  title={
-                    hasPendingRequest
-                      ? `Anda masih memiliki pengajuan yang belum direspon (${pendingRequestInfo?.dateStr}). Tunggu hingga dosen menyetujui atau menolak pengajuan tersebut.`
-                      : 'Ajukan bimbingan baru'
-                  }
-                >
-                  Ajukan Bimbingan
-                </Button>
-              </div>
-            }
-          />
+          {isThesisInactive ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
+              <h3 className="text-lg font-semibold mb-2">Tugas Akhir Tidak Aktif</h3>
+              <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{thesisDetail?.status}</strong>. Anda tidak dapat mengakses fitur bimbingan.</p>
+            </div>
+          ) : (
+            <CustomTable
+              columns={columns as any}
+              data={displayItems}
+              loading={isLoading}
+              isRefreshing={isFetching && !isLoading}
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(s) => {
+                setPageSize(s);
+                setPage(1);
+              }}
+              enableColumnFilters
+              searchValue={q}
+              onSearchChange={(v) => {
+                setQ(v);
+                setPage(1);
+              }}
+              emptyText={q || supervisorFilter ? 'Tidak ditemukan' : 'Tidak ada data'}
+              actions={
+                <div className="flex items-center gap-2">
+                  <RefreshButton
+                    onClick={() => refetch()}
+                    isRefreshing={isFetching && !isLoading}
+                  />
+                  <Button
+                    onClick={() => setOpenRequest(true)}
+                    disabled={hasPendingRequest}
+                    title={
+                      hasPendingRequest
+                        ? `Anda masih memiliki pengajuan yang belum direspon (${pendingRequestInfo?.dateStr}). Tunggu hingga dosen menyetujui atau menolak pengajuan tersebut.`
+                        : 'Ajukan bimbingan baru'
+                    }
+                  >
+                    Ajukan Bimbingan
+                  </Button>
+                </div>
+              }
+            />
+          )}
         </>
       )}
 

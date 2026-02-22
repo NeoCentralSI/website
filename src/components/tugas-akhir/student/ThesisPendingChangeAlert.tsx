@@ -29,7 +29,7 @@ const STATUS_CONFIG = {
   },
   rejected: {
     label: 'Ditolak',
-    color: 'bg-red-100 text-red-800',
+    color: 'bg-red-500 text-white',
     icon: XCircle,
   },
 };
@@ -52,7 +52,7 @@ export function ThesisPendingChangeAlert({ className }: ThesisPendingChangeAlert
 
   // Get the latest pending request (should only be one at a time)
   const pendingRequest = requests?.find((r) => r.status === 'pending');
-  
+
   if (!pendingRequest) return null;
 
   const statusConfig = STATUS_CONFIG[pendingRequest.status];
@@ -191,9 +191,9 @@ export function useHasPendingChangeRequest(enabled: boolean = true) {
 
   const pendingRequest = data?.find((r) => r.status === 'pending');
 
-  return { 
+  return {
     hasPendingRequest: !!pendingRequest,
     pendingRequest,
-    isLoading 
+    isLoading
   };
 }

@@ -5,20 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/spinner";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  CheckCircle, 
-  ClipboardCheck, 
-  FileCheck, 
+import {
+  CheckCircle,
+  ClipboardCheck,
+  FileCheck,
   ArrowRight,
   AlertCircle,
   GraduationCap,
   Award,
   RefreshCw,
   AlertTriangle,
-  Trash2
+  ArrowRightLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesis, getSupervisor2Requests } from "@/services/lecturerGuidance.service";
+import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesis, getSupervisor2Requests, getIncomingTransfers } from "@/services/lecturerGuidance.service";
 import { getMilestones, getSeminarReadinessStatus, getDefenceReadinessStatus } from "@/services/milestone.service";
 import { getMyStudents } from "@/services/lecturerGuidance.service";
 import { getKadepQuickActionsStats } from "@/services/admin.service";
@@ -36,7 +36,7 @@ const completeLottieOptions = {
 
 function CompleteLottie({ size = "w-24 h-24" }: { size?: string }) {
   const { View, setSpeed } = useLottie(completeLottieOptions);
-  
+
   React.useEffect(() => {
     setSpeed(0.5);
   }, [setSpeed]);
@@ -50,7 +50,7 @@ interface QuickActionsCardProps {
 
 export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const { isKadep } = useRole();
-  
+
   // Check if user is Kadep
   const isKadepUser = isKadep();
 
@@ -58,6 +58,12 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const { data: supervisor2RequestsData, isLoading: loadingSupervisor2 } = useQuery({
     queryKey: ["supervisor2-requests-count"],
     queryFn: () => getSupervisor2Requests(),
+  });
+
+  // Fetch incoming transfer requests
+  const { data: incomingTransfersData, isLoading: loadingTransfers } = useQuery({
+    queryKey: ["incoming-transfers-count"],
+    queryFn: () => getIncomingTransfers(),
   });
 
   // Fetch pending guidance requests
@@ -83,7 +89,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     queryKey: ["pending-milestone-validations"],
     queryFn: async () => {
       if (!studentsData?.students) return [];
-      
+
       // Get all students' thesis IDs
       const studentsWithThesis = studentsData.students
         .filter((s: any) => !!s.thesisId)
@@ -120,7 +126,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     queryKey: ["pending-seminar-approvals"],
     queryFn: async () => {
       if (!studentsData?.students) return [];
-      
+
       // Get all students' thesis IDs
       const studentsWithThesis = studentsData.students
         .filter((s: any) => !!s.thesisId)
@@ -156,7 +162,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     queryKey: ["pending-defence-approvals"],
     queryFn: async () => {
       if (!studentsData?.students) return [];
-      
+
       // Get all students' thesis IDs
       const studentsWithThesis = studentsData.students
         .filter((s: any) => !!s.thesisId)
@@ -193,7 +199,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     queryKey: ["pending-change-requests-lecturer"],
     queryFn: async () => {
       if (!studentsData?.students) return [];
-      
+
       // Get all students' thesis IDs
       const studentsWithThesis = studentsData.students
         .filter((s: any) => !!s.thesisId)
@@ -237,9 +243,9 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const pendingSeminarCount = pendingSeminarData?.length || 0;
   const pendingDefenceCount = pendingDefenceData?.length || 0;
   const pendingChangeRequestsCount = pendingChangeRequestsData?.length || 0;
-  const failedThesesCount = kadepStatsData?.failedThesesCount || 0;
   const pendingKadepChangeRequestsCount = kadepStatsData?.pendingChangeRequestsCount || 0;
-  
+  const incomingTransfersCount = incomingTransfersData?.count || 0;
+
   // Get first pending approval's guidanceId for direct link to session page
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
   // Get first pending milestone's thesisId for direct link to student detail
@@ -252,8 +258,8 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const firstPendingChangeRequestThesisId = pendingChangeRequestsData?.[0]?.thesisId;
 
   // Calculate total pending including Kadep specific items
-  const kadepPending = isKadepUser ? (failedThesesCount + pendingKadepChangeRequestsCount) : 0;
-  const totalPending = pendingSupervisor2Count + pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount + pendingChangeRequestsCount + kadepPending;
+  const kadepPending = isKadepUser ? (pendingKadepChangeRequestsCount) : 0;
+  const totalPending = pendingSupervisor2Count + pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount + pendingChangeRequestsCount + incomingTransfersCount + kadepPending;
 
   // Lecturer quick actions (for pembimbing role)
   const lecturerQuickActions = [
@@ -287,7 +293,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
       icon: FileCheck,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      link: firstPendingApprovalId 
+      link: firstPendingApprovalId
         ? `/tugas-akhir/bimbingan/lecturer/session/${firstPendingApprovalId}`
         : "/tugas-akhir/bimbingan/lecturer/requests",
       loading: loadingApprovals,
@@ -300,7 +306,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
       icon: CheckCircle,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-      link: firstPendingMilestoneThesisId 
+      link: firstPendingMilestoneThesisId
         ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingMilestoneThesisId}`
         : "/tugas-akhir/bimbingan/lecturer/my-students",
       loading: loadingMilestones,
@@ -313,7 +319,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
       icon: GraduationCap,
       color: "text-amber-600",
       bgColor: "bg-amber-50",
-      link: firstPendingSeminarThesisId 
+      link: firstPendingSeminarThesisId
         ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingSeminarThesisId}`
         : "/tugas-akhir/bimbingan/lecturer/my-students",
       loading: loadingSeminar,
@@ -326,7 +332,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
       icon: Award,
       color: "text-rose-600",
       bgColor: "bg-rose-50",
-      link: firstPendingDefenceThesisId 
+      link: firstPendingDefenceThesisId
         ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingDefenceThesisId}`
         : "/tugas-akhir/bimbingan/lecturer/my-students",
       loading: loadingDefence,
@@ -339,26 +345,26 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
       icon: RefreshCw,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
-      link: firstPendingChangeRequestThesisId 
+      link: firstPendingChangeRequestThesisId
         ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingChangeRequestThesisId}`
         : "/tugas-akhir/bimbingan/lecturer/my-students",
       loading: loadingChangeRequests,
+    },
+    {
+      id: "incoming-transfers",
+      title: "Transfer Masuk",
+      description: "Approve transfer mahasiswa",
+      count: incomingTransfersCount,
+      icon: ArrowRightLeft,
+      color: "text-cyan-600",
+      bgColor: "bg-cyan-50",
+      link: "/tugas-akhir/bimbingan/lecturer/my-students",
+      loading: loadingTransfers,
     },
   ];
 
   // Kadep specific quick actions
   const kadepQuickActions = isKadepUser ? [
-    {
-      id: "failed-theses",
-      title: "Thesis Gagal",
-      description: "Kelola thesis > 1 tahun",
-      count: failedThesesCount,
-      icon: Trash2,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      link: "/tugas-akhir/monitoring?rating=FAILED",
-      loading: loadingKadepStats,
-    },
     {
       id: "kadep-change-requests",
       title: "Approval Pergantian",
@@ -375,7 +381,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   // Combine all quick actions
   const quickActions = [...lecturerQuickActions, ...kadepQuickActions];
 
-  const isLoading = loadingSupervisor2 || loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence || loadingChangeRequests || (isKadepUser && loadingKadepStats);
+  const isLoading = loadingSupervisor2 || loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence || loadingChangeRequests || loadingTransfers || (isKadepUser && loadingKadepStats);
 
   return (
     <Card className={cn("flex flex-col", className)}>

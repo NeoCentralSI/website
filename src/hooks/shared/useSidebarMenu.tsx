@@ -498,6 +498,10 @@ export const useSidebarMenu = () => {
                 url: "/master-data/dosen",
               },
               {
+                title: "Data TA",
+                url: "/master-data/tugas-akhir",
+              },
+              {
                 title: "Kelola User",
                 url: "/master-data/user",
               },

@@ -60,6 +60,7 @@ export const API_CONFIG = {
       MY_THESIS: '/thesisGuidance/student/my-thesis',
       THESIS_HISTORY: '/thesisGuidance/student/history/theses',
       UPDATE_THESIS_TITLE: '/thesisGuidance/student/my-thesis/title',
+      PROPOSE_THESIS: '/thesisGuidance/student/propose',
       // Pembimbing 2 Request
       AVAILABLE_SUPERVISORS_2: '/thesisGuidance/student/available-supervisors-2',
       REQUEST_SUPERVISOR_2: '/thesisGuidance/student/request-supervisor-2',
@@ -70,6 +71,7 @@ export const API_CONFIG = {
       BASE: '/thesisGuidance/lecturer',
       MY_STUDENTS: '/thesisGuidance/lecturer/my-students',
       MY_STUDENTS_DETAIL: (thesisId: string) => `/thesisGuidance/lecturer/my-students/${thesisId}`,
+      APPROVE_THESIS_PROPOSAL: (thesisId: string) => `/thesisGuidance/lecturer/my-students/${thesisId}/approve-proposal`,
       REQUESTS: '/thesisGuidance/lecturer/requests',
       SCHEDULED: '/thesisGuidance/lecturer/scheduled',
       REQUEST_REJECT: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/reject`,
@@ -91,6 +93,12 @@ export const API_CONFIG = {
       SUPERVISOR2_REQUESTS: '/thesisGuidance/lecturer/supervisor2-requests',
       SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
       SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
+      // Student Transfer
+      TRANSFER_ELIGIBLE_LECTURERS: '/thesisGuidance/lecturer/transfer/eligible-lecturers',
+      TRANSFER_REQUEST: '/thesisGuidance/lecturer/transfer/request',
+      TRANSFER_INCOMING: '/thesisGuidance/lecturer/transfer/incoming',
+      TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/approve`,
+      TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/reject`,
     },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',

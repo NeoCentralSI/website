@@ -8,16 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Loading } from '@/components/ui/spinner';
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  GraduationCap, 
-  BookOpen, 
-  CheckCircle2, 
-  Clock, 
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  GraduationCap,
+  BookOpen,
+  CheckCircle2,
+  Clock,
   AlertTriangle,
   Users,
   Target,
@@ -32,7 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
   'Bimbingan': 'bg-blue-100 text-blue-700 border-blue-200',
   'Acc Seminar': 'bg-amber-100 text-amber-700 border-amber-200',
   'Selesai': 'bg-green-100 text-green-700 border-green-200',
-  'Gagal': 'bg-red-100 text-red-700 border-red-200',
+  'Gagal': 'bg-red-500 text-white border-red-600',
 };
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
@@ -47,17 +48,17 @@ const GUIDANCE_STATUS_COLORS: Record<string, string> = {
   completed: 'bg-green-100 text-green-700',
   approved: 'bg-blue-100 text-blue-700',
   pending: 'bg-yellow-100 text-yellow-700',
-  rejected: 'bg-red-100 text-red-700',
+  rejected: 'bg-red-500 text-white',
   cancelled: 'bg-gray-100 text-gray-700',
 };
 
 function EmptyState({ message, icon: Icon }: { message: string; icon: React.ElementType }) {
   return (
     <div className="flex flex-col items-center justify-center py-8">
-      <Lottie 
-        animationData={emptyAnimation} 
-        loop 
-        className="w-32 h-32 opacity-70" 
+      <Lottie
+        animationData={emptyAnimation}
+        loop
+        className="w-32 h-32 opacity-70"
       />
       <div className="flex items-center gap-2 text-muted-foreground mt-2">
         <Icon className="h-4 w-4" />
@@ -147,6 +148,18 @@ export default function StudentProgressDetail() {
           )}
         </div>
       </div>
+
+      {/* Inactive Thesis Alert */}
+      {(data.status === 'Gagal' || data.rating === 'FAILED' || data.status === 'Dibatalkan' || data.rating === 'CANCELLED') && (
+        <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800 dark:bg-red-950/50 dark:border-red-900 dark:text-red-200">
+          <AlertTriangle className="h-5 w-5 !text-red-600 dark:!text-red-400" />
+          <AlertTitle className="font-semibold">Perhatian: Tugas Akhir Tidak Aktif</AlertTitle>
+          <AlertDescription className="mt-2 text-red-700 dark:text-red-300">
+            Tugas akhir ini sudah tidak aktif karena memiliki status <strong>{data.status || "Gagal/Dibatalkan"}</strong>.
+            Mahasiswa bersangkutan perlu mengulang pengajuan judul pada periode selanjutnya atau berkoordinasi dengan pihak prodi.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -328,7 +341,7 @@ export default function StudentProgressDetail() {
               ) : (
                 <EmptyState message="Belum ada pembimbing" icon={Users} />
               )}
-              
+
               {data.examiners.length > 0 && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Penguji</p>
@@ -383,10 +396,10 @@ export default function StudentProgressDetail() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{m.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          {m.completedAt 
-                            ? `Selesai: ${formatDateId(m.completedAt)}` 
-                            : m.targetDate 
-                              ? `Target: ${formatDateId(m.targetDate)}` 
+                          {m.completedAt
+                            ? `Selesai: ${formatDateId(m.completedAt)}`
+                            : m.targetDate
+                              ? `Target: ${formatDateId(m.targetDate)}`
                               : 'Belum ada target'}
                         </p>
                       </div>

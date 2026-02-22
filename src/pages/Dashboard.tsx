@@ -14,7 +14,6 @@ import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { useRole } from "@/hooks/shared";
 
 export default function Dashboard() {
-  console.log('🎯 [Dashboard] Component rendering');
 
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -22,7 +21,6 @@ export default function Dashboard() {
   const { isDosen } = useRole();
 
   useEffect(() => {
-    console.log('📋 [Dashboard] Setting breadcrumbs and title');
     setBreadcrumbs([{ label: "Dashboard" }]);
     setTitle(undefined);
   }, [setBreadcrumbs, setTitle]);
@@ -33,18 +31,11 @@ export default function Dashboard() {
 
   // Generate Outlook web link for viewing event in Outlook Calendar
   const getOutlookWebLink = (event: CalendarEvent) => {
-    console.log('[Dashboard] Generating Outlook link for event:', {
-      type: event.type,
-      title: event.title,
-      startDate: event.startDate,
-      status: event.status
-    });
 
     if (event.type === 'outlook_event') {
       // For Outlook events, use the webLink if available
       const webLink = (event as any)?.metadata?.webLink;
       if (webLink) {
-        console.log('[Dashboard] Using webLink for Outlook event:', webLink);
         return webLink;
       }
     }
@@ -55,7 +46,6 @@ export default function Dashboard() {
       (event as any)?.supervisorCalendarEventId;
 
     if (outlookEventId) {
-      console.log('[Dashboard] Using specific event ID:', outlookEventId);
       return `https://outlook.live.com/calendar/0/view/event/${outlookEventId}`;
     }
 
@@ -63,7 +53,6 @@ export default function Dashboard() {
     const eventDate = new Date(event.startDate);
     const dateString = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    console.log('[Dashboard] Using fallback calendar view for date:', dateString);
 
     // Use the calendar view with date parameter - this will navigate to the specific day
     return `https://outlook.live.com/calendar/0/view/day/${dateString}`;

@@ -10,9 +10,17 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import {
   AlertDialog,
@@ -30,6 +38,7 @@ import {
   getMyChangeRequests,
   type SubmitChangeRequestDto,
 } from '@/services/thesisChangeRequest.service';
+import { getTopics } from '@/services/topic.service';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
 
 
@@ -37,7 +46,7 @@ import { formatDateId, toTitleCaseName } from '@/lib/text';
 const STATUS_CONFIG = {
   pending: { label: 'Menunggu', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
   approved: { label: 'Disetujui', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  rejected: { label: 'Ditolak', color: 'bg-red-100 text-red-800', icon: XCircle },
+  rejected: { label: 'Ditolak', color: 'bg-red-500 text-white', icon: XCircle },
 };
 
 const APPROVAL_STATUS_CONFIG = {
@@ -55,13 +64,21 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [requestType, setRequestType] = useState<'topic' | 'supervisor' | 'both'>('topic');
+  const [requestType] = useState<'topic' | 'supervisor' | 'both'>('topic');
   const [reason, setReason] = useState('');
+  const [newTitle, setNewTitle] = useState('');
+  const [newTopicId, setNewTopicId] = useState('');
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ['my-change-requests', thesisId],
     queryFn: getMyChangeRequests,
     enabled: !!thesisId,
+  });
+
+  const { data: topics = [] } = useQuery({
+    queryKey: ['thesis-topics'],
+    queryFn: getTopics,
+    enabled: showForm,
   });
 
   const submitMutation = useMutation({
@@ -71,7 +88,8 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
       queryClient.invalidateQueries({ queryKey: ['my-change-requests'] });
       setShowForm(false);
       setReason('');
-      setRequestType('topic');
+      setNewTitle('');
+      setNewTopicId('');
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal mengajukan permintaan');
@@ -85,21 +103,20 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
       toast.error('Alasan minimal 20 karakter');
       return;
     }
+    if (newTitle.length < 5) {
+      toast.error('Judul baru minimal 5 karakter');
+      return;
+    }
+    if (!newTopicId) {
+      toast.error('Topik baru harus dipilih');
+      return;
+    }
     setShowConfirmDialog(true);
   };
 
   const confirmSubmit = () => {
-    submitMutation.mutate({ requestType, reason });
+    submitMutation.mutate({ requestType, reason, newTitle, newTopicId });
     setShowConfirmDialog(false);
-  };
-
-  const getRequestTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      topic: 'Pergantian Topik',
-      supervisor: 'Pergantian Pembimbing',
-      both: 'Pergantian Topik & Pembimbing',
-    };
-    return labels[type] || type;
   };
 
   if (isLoading) {
@@ -131,8 +148,8 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
             <div className="text-sm text-amber-800">
               <p className="font-medium">Perhatian!</p>
               <p>
-                Jika permintaan disetujui, <strong>status tugas akhir Anda akan menjadi tidak aktif (diarsip)</strong>.
-                Anda harus mendaftar ulang tugas akhir dengan topik/pembimbing baru.
+                Jika permintaan disetujui, <strong>tugas akhir lama akan dibatalkan</strong> dan
+                tugas akhir baru akan otomatis dibuat dengan topik dan judul yang Anda pilih.
               </p>
             </div>
           </div>
@@ -151,7 +168,7 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                       className="rounded-lg border p-3 text-sm"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">{getRequestTypeLabel(request.requestType)}</span>
+                        <span className="font-medium">Pergantian Topik</span>
                         <Badge className={status.color}>
                           <StatusIcon className="h-3 w-3 mr-1" />
                           {status.label}
@@ -191,7 +208,7 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                       )}
                       {request.status === 'approved' && (
                         <div className="mt-2 rounded bg-green-50 p-2 text-xs text-green-700">
-                          Tugas Akhir anda sudah tidak aktif, Silahkan daftar ulang tugas akhir ke admin Departemen.
+                          Permintaan disetujui. Tugas akhir baru Anda telah aktif.
                         </div>
                       )}
                     </div>
@@ -224,6 +241,38 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                     </div>
                   </div>
 
+                  {/* New Title Input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="newTitle">Judul Baru (min. 5 karakter)</Label>
+                    <Input
+                      id="newTitle"
+                      placeholder="Masukkan judul tugas akhir baru..."
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground text-right">
+                      {newTitle.length}/500 karakter
+                    </p>
+                  </div>
+
+                  {/* Topic Select */}
+                  <div className="space-y-2">
+                    <Label>Topik Baru</Label>
+                    <Select value={newTopicId} onValueChange={setNewTopicId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih topik baru..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {topics.map((topic) => (
+                          <SelectItem key={topic.id} value={topic.id}>
+                            {topic.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Reason Textarea */}
                   <div className="space-y-2">
                     <Label htmlFor="reason">Alasan Pergantian (min. 20 karakter)</Label>
                     <Textarea
@@ -244,6 +293,8 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                       onClick={() => {
                         setShowForm(false);
                         setReason('');
+                        setNewTitle('');
+                        setNewTopicId('');
                       }}
                       className="flex-1"
                     >
@@ -251,7 +302,7 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                     </Button>
                     <Button
                       onClick={handleSubmit}
-                      disabled={reason.length < 20 || submitMutation.isPending}
+                      disabled={reason.length < 20 || newTitle.length < 5 || !newTopicId || submitMutation.isPending}
                       className="flex-1"
                     >
                       {submitMutation.isPending ? (
@@ -329,8 +380,14 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
             <AlertDialogTitle>Konfirmasi Pengajuan</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>Anda akan mengajukan permintaan <strong>Pergantian Topik</strong>.</p>
+              <p className="text-sm">
+                <strong>Judul baru:</strong> {newTitle}
+              </p>
+              <p className="text-sm">
+                <strong>Topik baru:</strong> {topics.find(t => t.id === newTopicId)?.name || '-'}
+              </p>
               <p className="text-amber-600">
-                ⚠️ Jika disetujui, tugas akhir saat ini akan diarsipkan (status tidak aktif) dan Anda perlu mendaftar ulang.
+                ⚠️ Jika disetujui, tugas akhir lama akan dibatalkan dan tugas akhir baru akan otomatis dibuat.
               </p>
               <p>Apakah Anda yakin ingin melanjutkan?</p>
             </AlertDialogDescription>

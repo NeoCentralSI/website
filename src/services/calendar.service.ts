@@ -25,9 +25,6 @@ export const getMyCalendarEventsAPI = async (filter: {
   }
 
   const url = getApiUrl(`/calendar/my-events?${queryParams}`);
-  console.log('[Calendar Service] Fetching URL:', url);
-  console.log('[Calendar Service] Query params:', queryParams.toString());
-  console.log('[Calendar Service] Filter:', filter);
 
   const response = await fetch(url, {
     method: 'GET',
@@ -36,8 +33,6 @@ export const getMyCalendarEventsAPI = async (filter: {
     },
   });
 
-  console.log('[Calendar Service] Response status:', response.status);
-  console.log('[Calendar Service] Response ok:', response.ok);
 
   if (!response.ok) {
     const errorData = await response.json();
@@ -46,7 +41,6 @@ export const getMyCalendarEventsAPI = async (filter: {
   }
 
   const data = await response.json();
-  console.log('[Calendar Service] Response data:', data);
   return data;
 };
 

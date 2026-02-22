@@ -12,7 +12,6 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMyCalendarEventsAPI, checkOutlookCalendarAccess, getOutlookCalendarEvents } from '@/services/calendar.service';
 import type { CalendarEvent } from '@/types/calendar.types';
-import { useRole } from '@/hooks/shared';
 import { cn } from '@/lib/utils';
 
 // FullCalendar imports
@@ -36,7 +35,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
   const calendarRef = useRef<FullCalendar>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  
+
   // Handle Resize for responsive layout
   useEffect(() => {
     const container = containerRef.current;
@@ -57,9 +56,6 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
       resizeObserver.disconnect();
     };
   }, []);
-
-  const { getRoleNames } = useRole();
-  const role = getRoleNames()[0] as 'student' | 'lecturer' | 'admin' | undefined;
 
   // Check Outlook calendar sync status
   const { data: outlookStatus } = useQuery({
@@ -82,15 +78,12 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
     queryKey: ['calendar-events'],
     queryFn: async () => {
       try {
-        console.log('[Calendar Dashboard] ===== FETCHING INTERNAL EVENTS =====');
-        console.log('[Calendar Dashboard] Role:', role);
-        
+
         const result = await getMyCalendarEventsAPI({
           startDate: dateRange.startDate.toISOString(),
           endDate: dateRange.endDate.toISOString(),
         });
-        
-        console.log('[Calendar Dashboard] Internal events count:', result?.events?.length || 0);
+
         return result;
       } catch (err) {
         console.error('[Calendar Dashboard] Error fetching internal events:', err);
@@ -105,12 +98,10 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
     queryKey: ['outlook-calendar-events', dateRange],
     queryFn: async () => {
       try {
-        console.log('[Calendar Dashboard] ===== FETCHING OUTLOOK EVENTS =====');
         const result = await getOutlookCalendarEvents(
           dateRange.startDate.toISOString(),
           dateRange.endDate.toISOString()
         );
-        console.log('[Calendar Dashboard] Outlook events count:', result?.events?.length || 0);
         return result;
       } catch (err) {
         console.error('[Calendar Dashboard] Error fetching Outlook events:', err);
@@ -120,7 +111,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
     enabled: outlookStatus?.hasCalendarAccess === true,
     staleTime: 2 * 60 * 1000,
   });
-  
+
   if (error) {
     console.error('[Calendar Dashboard] Query error:', error);
   }
@@ -132,16 +123,14 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      console.log('[Calendar Dashboard] Manual sync triggered');
-      
+
       // Use refetch instead of invalidateQueries for better loading feedback
       await Promise.all([
         refetchInternal(),
         outlookStatus?.hasCalendarAccess && refetchOutlook(),
         queryClient.invalidateQueries({ queryKey: ['outlook-calendar-status'] })
       ].filter(Boolean));
-      
-      console.log('[Calendar Dashboard] Manual sync completed');
+
     } catch (error) {
       console.error('[Calendar Dashboard] Manual sync failed:', error);
     } finally {
@@ -152,7 +141,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
   // Combine internal events with Outlook events
   const events = useMemo(() => {
     const internalEvents = data?.events || [];
-    
+
     // Transform Outlook events to display format (partial CalendarEvent)
     const transformedOutlookEvents = (outlookEvents?.events || []).map((event) => ({
       id: `outlook-${event.id}`,
@@ -178,88 +167,55 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
 
     // Merge and deduplicate (avoid showing same event twice if synced)
     const allEvents = [...internalEvents];
-    
+
     // Add Outlook events that don't have matching internal events
     transformedOutlookEvents.forEach((outlookEvent) => {
       // Check if this Outlook event is already synced as an internal event
       const isDuplicate = internalEvents.some((internalEvent) => {
         // Enhanced matching logic for better deduplication
-        
+
         // 1. Check if the internal event has an Outlook calendar event ID that matches
         const hasMatchingOutlookId = (internalEvent as any)?.outlookEventId === outlookEvent.id.replace('outlook-', '');
         if (hasMatchingOutlookId) {
-          console.log('[Calendar Dashboard] Found exact Outlook ID match:', {
-            internalEventId: internalEvent.id,
-            outlookEventId: outlookEvent.id,
-            title: internalEvent.title
-          });
           return true;
         }
-        
+
         // 2. Time-based matching with tolerance for timezone conversion issues
         const internalTime = new Date(internalEvent.startDate);
         const outlookTime = new Date(outlookEvent.startDate);
         const timeDifferenceMinutes = Math.abs(internalTime.getTime() - outlookTime.getTime()) / (1000 * 60);
-        
+
         // Allow up to 12 hours difference to account for timezone conversion issues
         const timeMatch = timeDifferenceMinutes <= (12 * 60);
-        
+
         // 3. Title matching (case insensitive, partial match)
         const internalTitle = (internalEvent.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
         const outlookTitle = (outlookEvent.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        
+
         // Check if titles have common words (for "Bimbingan - Student Name" vs "Bimbingan ...")
         const titleMatch = (
           internalTitle.includes('bimbingan') && outlookTitle.includes('bimbingan') ||
-          internalTitle.includes(outlookTitle) || 
+          internalTitle.includes(outlookTitle) ||
           outlookTitle.includes(internalTitle) ||
           (internalTitle.split(' ').some(word => word.length > 3 && outlookTitle.includes(word)))
         );
-        
+
         const isMatch = timeMatch && titleMatch;
-        
+
         if (isMatch) {
-          console.log('[Calendar Dashboard] Found potential duplicate:', {
-            internalEvent: {
-              id: internalEvent.id,
-              title: internalEvent.title,
-              startDate: internalEvent.startDate,
-              type: internalEvent.type
-            },
-            outlookEvent: {
-              id: outlookEvent.id,
-              title: outlookEvent.title,
-              startDate: outlookEvent.startDate,
-              type: outlookEvent.type
-            },
-            timeDifferenceMinutes,
-            timeMatch,
-            titleMatch
-          });
         }
-        
+
         return isMatch;
       });
 
       if (!isDuplicate) {
-        console.log('[Calendar Dashboard] Adding Outlook event (no duplicate found):', {
-          id: outlookEvent.id,
-          title: outlookEvent.title,
-          startDate: outlookEvent.startDate
-        });
         // Cast to any to bypass strict type check since we're displaying only
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         allEvents.push(outlookEvent as any);
       } else {
-        console.log('[Calendar Dashboard] Skipping Outlook event (duplicate found):', {
-          id: outlookEvent.id,
-          title: outlookEvent.title,
-          startDate: outlookEvent.startDate
-        });
       }
     });
 
-    console.log('[Calendar Dashboard] Combined events:', allEvents.length);
     return allEvents;
   }, [data?.events, outlookEvents?.events]);
 
@@ -274,22 +230,22 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
       seminar_scheduled: '#8b5cf6',       // purple-500
       defense_scheduled: '#f97316',       // orange-500
       submission_deadline: '#ec4899',     // pink-500
-      
+
       // Lecturer events
       student_guidance: '#14b8a6',        // teal-500 - accepted guidance
       seminar_as_examiner: '#6366f1',     // indigo-500
       defense_as_examiner: '#ea580c',     // orange-600
-      
+
       // Admin events
       academic_year_start: '#84cc16',     // lime-500
       academic_year_end: '#eab308',       // yellow-500
       registration_period: '#a855f7',     // purple-500
-      
+
       // Common events
       meeting: '#64748b',                 // slate-500
       holiday: '#dc2626',                 // red-600
       announcement: '#059669',            // emerald-600
-      
+
       // Outlook events
       outlook_event: '#0078d4',           // Microsoft blue
     };
@@ -356,7 +312,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {outlookStatus?.hasCalendarAccess 
+                    {outlookStatus?.hasCalendarAccess
                       ? 'Jadwal bimbingan akan otomatis sync ke Outlook Calendar'
                       : 'Login dengan Microsoft untuk sync ke Outlook Calendar'}
                   </TooltipContent>
@@ -365,7 +321,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
             </div>
             <p className="text-sm text-muted-foreground">Kelola jadwal dan event Anda</p>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
             {/* Sync Button */}
             <TooltipProvider>
@@ -397,7 +353,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
         </div>
 
         {/* FullCalendar */}
-        <div 
+        <div
           ref={containerRef}
           className="fullcalendar-wrapper relative flex-1 min-h-0"
         >
