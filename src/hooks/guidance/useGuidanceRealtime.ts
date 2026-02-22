@@ -62,7 +62,6 @@ export function useGuidanceRealtime() {
     async function setup() {
       try {
         const permission = await Notification.requestPermission();
-        console.log("[FCM] Notification permission:", permission);
         if (permission !== "granted") {
           console.warn("[FCM] Notification permission not granted");
           return;
@@ -75,25 +74,15 @@ export function useGuidanceRealtime() {
         tokenRef.current = token;
         // Store token in localStorage so useAuth can unregister it on logout
         localStorage.setItem(FCM_TOKEN_KEY, token);
-        console.log("[FCM] acquired token", token.length > 12 ? `${token.slice(0, 6)}...${token.slice(-6)}` : token);
         await registerFcmToken(token);
-        console.log("[FCM] token registered with backend");
         const messaging = await getFirebaseMessaging();
         if (!messaging) return;
         unsubscribe = onMessage(messaging, (payload: any) => {
           try {
-            console.log("[FCM] ========== FOREGROUND MESSAGE RECEIVED ==========");
-            console.log("[FCM] Full payload:", JSON.stringify(payload, null, 2));
-            console.log("[FCM] payload.data:", payload?.data);
-            console.log("[FCM] payload.notification:", payload?.notification);
 
             const type = payload?.data?.type as PushEventType;
             const role = payload?.data?.role;
 
-            console.log("[FCM] Extracted type:", type);
-            console.log("[FCM] Extracted role:", role);
-            console.log("[FCM] Type is thesis-guidance:approved?", type === "thesis-guidance:approved");
-            console.log("[FCM] Type is thesis-guidance:rejected?", type === "thesis-guidance:rejected");
 
             switch (type) {
               case "thesis-guidance:requested": {
@@ -102,7 +91,6 @@ export function useGuidanceRealtime() {
                   const msg = when ? `Permintaan bimbingan baru • ${when}` : "Permintaan bimbingan baru";
                   toast(msg, { id: "guidance-requested" });
                   if (payload?.data?.playSound === "true") {
-                    console.log("[FCM] play beep");
                     playBeep();
                   }
                   qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
@@ -129,24 +117,18 @@ export function useGuidanceRealtime() {
                 break;
               }
               case "thesis-guidance:approved": {
-                console.log("[FCM] ✅ Matched case: thesis-guidance:approved");
                 const title = payload?.notification?.title || "Bimbingan Disetujui ✓";
                 const body = payload?.notification?.body || "Permintaan bimbingan Anda telah disetujui";
-                console.log("[FCM] Calling toast with title:", title, "body:", body);
                 toast(title, { description: body, duration: 5000 });
-                console.log("[FCM] Toast called successfully");
                 qc.invalidateQueries({ queryKey: ["student-guidance"] });
                 qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }
               case "thesis-guidance:rejected": {
-                console.log("[FCM] ❌ Matched case: thesis-guidance:rejected");
                 const title = payload?.notification?.title || "Bimbingan Ditolak";
                 const body = payload?.notification?.body || "Permintaan bimbingan Anda ditolak";
-                console.log("[FCM] Calling toast.error with title:", title, "body:", body);
                 toast.error(title, { description: body, duration: 5000 });
-                console.log("[FCM] Toast.error called successfully");
                 qc.invalidateQueries({ queryKey: ["student-guidance"] });
                 qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
@@ -169,7 +151,6 @@ export function useGuidanceRealtime() {
                     duration: 5000,
                   });
                   if (payload?.data?.playSound === "true") {
-                    console.log("[FCM] play beep for summary submitted");
                     playBeep();
                   }
                   qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
@@ -220,19 +201,10 @@ export function useGuidanceRealtime() {
             try {
               const msg: any = event?.data || {};
               if (!msg || msg.__from !== 'fcm-sw') return;
-              console.log('[FCM SW] ========== MESSAGE FROM SERVICE WORKER ==========');
-              console.log('[FCM SW] Full message:', JSON.stringify(msg, null, 2));
-              console.log('[FCM SW] msg.data:', msg?.data);
-              console.log('[FCM SW] msg.title:', msg?.title);
-              console.log('[FCM SW] msg.body:', msg?.body);
 
               const type = msg?.data?.type as PushEventType;
               const role = msg?.data?.role;
 
-              console.log('[FCM SW] Extracted type:', type);
-              console.log('[FCM SW] Extracted role:', role);
-              console.log('[FCM SW] Type is thesis-guidance:approved?', type === 'thesis-guidance:approved');
-              console.log('[FCM SW] Type is thesis-guidance:rejected?', type === 'thesis-guidance:rejected');
               switch (type) {
                 case 'thesis-guidance:requested': {
                   if (role === 'supervisor') {
@@ -266,10 +238,8 @@ export function useGuidanceRealtime() {
                   break;
                 }
                 case 'thesis-guidance:approved': {
-                  console.log("[FCM SW] ✅ Matched case: thesis-guidance:approved");
                   const title = msg?.title || "Bimbingan Disetujui ✓";
                   const body = msg?.body || "Permintaan bimbingan Anda telah disetujui";
-                  console.log("[FCM SW] Calling toast with title:", title, "body:", body);
                   toast(title, { description: body, duration: 5000 });
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
@@ -277,10 +247,8 @@ export function useGuidanceRealtime() {
                   break;
                 }
                 case 'thesis-guidance:rejected': {
-                  console.log("[FCM SW] ❌ Matched case: thesis-guidance:rejected");
                   const title = msg?.title || "Bimbingan Ditolak";
                   const body = msg?.body || "Permintaan bimbingan Anda ditolak";
-                  console.log("[FCM SW] Calling toast.error with title:", title, "body:", body);
                   toast.error(title, { description: body, duration: 5000 });
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['lecturer-requests'] });

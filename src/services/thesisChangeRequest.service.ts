@@ -66,6 +66,8 @@ export interface ThesisChangeRequest {
 export interface SubmitChangeRequestDto {
   requestType: 'topic' | 'supervisor' | 'both';
   reason: string;
+  newTitle: string;
+  newTopicId: string;
 }
 
 export interface ReviewRequestDto {

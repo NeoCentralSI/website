@@ -38,7 +38,7 @@ type ColumnFilterControl = {
 
 export type Column<T> = {
 	key: string;
-	header: React.ReactNode;
+	header: React.ReactNode | (() => React.ReactNode);
 	className?: string;
 	width?: string | number;
 	accessor?: keyof T | ((row: T, index: number) => React.ReactNode);
@@ -148,7 +148,7 @@ export function CustomTable<T extends Record<string, any>>({
 								{columns.map((col) => (
 									<TableHead key={col.key} className={cn("align-middle", col.className)} style={{ width: col.width }}>
 										<div className={cn("flex items-center gap-2", col.className?.includes("text-center") && "justify-center")}>
-											<div className="truncate">{col.header}</div>
+											<div className="truncate">{typeof col.header === 'function' ? col.header() : col.header}</div>
 											{enableColumnFilters && col.filter ? (
 												(col.filter as ColumnFilterElement).kind === 'element' ? (
 													<Popover>

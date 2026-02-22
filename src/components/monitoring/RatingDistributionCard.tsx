@@ -18,6 +18,8 @@ const ratingColors: Record<string, string> = {
   "At Risk": "bg-orange-500",
   "FAILED": "bg-red-500",
   "Gagal": "bg-red-500",
+  "CANCELLED": "bg-slate-500",
+  "Cancelled": "bg-slate-500",
 };
 
 function getRatingColor(rating: string): string {
@@ -58,10 +60,10 @@ export function RatingDistributionCard({ ratingDistribution, isLoading }: Rating
       </CardHeader>
       <CardContent className="space-y-4">
         {orderedRatings.length === 0 || total === 0 ? (
-          <EmptyState 
-            size="sm" 
-            title="Tidak Ada Data" 
-            description="Belum ada data rating progress" 
+          <EmptyState
+            size="sm"
+            title="Tidak Ada Data"
+            description="Belum ada data rating progress"
           />
         ) : (
           orderedRatings.map((rating) => {
@@ -70,8 +72,8 @@ export function RatingDistributionCard({ ratingDistribution, isLoading }: Rating
               <div key={rating.id} className="space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium flex items-center gap-2">
-                    <span 
-                      className={`w-2.5 h-2.5 rounded-full ${getRatingColor(rating.value)}`} 
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full ${getRatingColor(rating.value)}`}
                     />
                     {rating.name}
                   </span>

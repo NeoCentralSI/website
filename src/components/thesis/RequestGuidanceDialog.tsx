@@ -44,7 +44,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [slotConflict, setSlotConflict] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  
+
   const minDate = new Date(Date.now() + 60 * 1000);
   const durationMinutes = parseInt(duration, 10);
 
@@ -143,10 +143,10 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
     { label: "Pilih otomatis (Pembimbing 1)", value: "" },
     ...supervisors.map((s) => ({ label: s.name || s.id, value: s.id }))
   ];
-  
+
   const activeMilestones = milestones.filter((m) => m.status !== "completed");
-  
-  const canSubmit = !!when && !slotConflict && !checkingAvailability;
+
+  const canSubmit = !!when && !slotConflict && !checkingAvailability && selectedMilestoneIds.length > 0;
 
   const toggleMilestone = (id: string) => {
     setSelectedMilestoneIds((prev) =>
@@ -163,16 +163,16 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
             Pilih waktu bimbingan dan tulis agenda yang ingin dibahas
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 overflow-y-auto flex-1 pr-1">
           {/* Required: Date/Time */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">
               Kapan? <span className="text-destructive">*</span>
             </Label>
-            <DateTimePicker 
-              value={when} 
-              onChange={setWhen} 
+            <DateTimePicker
+              value={when}
+              onChange={setWhen}
               min={minDate}
               busySlots={busySlots}
               duration={durationMinutes}
@@ -212,9 +212,9 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
           {/* Optional: Notes */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Apa yang ingin dibahas?</Label>
-            <Textarea 
-              value={note} 
-              onChange={(e) => setNote(e.target.value)} 
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
               placeholder="Contoh: Review Bab 3, diskusi metodologi, dll..."
               rows={3}
             />
@@ -233,6 +233,42 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
             </p>
           </div>
 
+          {/* Required: Milestone Selection */}
+          {activeMilestones.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Milestone yang Dibahas <span className="text-destructive">*</span>
+              </Label>
+              <div className="space-y-1 rounded-lg border p-3 max-h-32 overflow-auto">
+                {activeMilestones.map((m) => (
+                  <label key={m.id} className="flex items-start gap-2 text-sm cursor-pointer hover:bg-muted/50 py-1 px-1 rounded">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 accent-primary"
+                      checked={selectedMilestoneIds.includes(m.id)}
+                      onChange={() => toggleMilestone(m.id)}
+                    />
+                    <span className="flex-1">
+                      <span className="font-medium">{m.title}</span>
+                      {m.status === "in_progress" && (
+                        <span className="ml-1 text-xs text-muted-foreground">(Sedang dikerjakan)</span>
+                      )}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {selectedMilestoneIds.length === 0 && (
+                <p className="text-xs text-destructive">Pilih minimal 1 milestone</p>
+              )}
+            </div>
+          )}
+
+          {activeMilestones.length === 0 && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+              <p className="text-sm text-yellow-800">Tidak ada milestone aktif. Buat milestone terlebih dahulu di halaman Milestone sebelum mengajukan bimbingan.</p>
+            </div>
+          )}
+
           {/* Advanced Options - Collapsed by default */}
           <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
             <CollapsibleTrigger asChild>
@@ -248,38 +284,13 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
               {/* Supervisor Selection */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Pilih Pembimbing</Label>
-                <ComboBox 
-                  items={supervisorOptions} 
-                  defaultValue={supervisorId} 
-                  onChange={setSupervisorId} 
+                <ComboBox
+                  items={supervisorOptions}
+                  defaultValue={supervisorId}
+                  onChange={setSupervisorId}
                   width="w-full"
                 />
               </div>
-              
-              {/* Milestone Selection */}
-              {activeMilestones.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Milestone yang Dibahas</Label>
-                  <div className="space-y-1 rounded-lg border p-3 max-h-32 overflow-auto">
-                    {activeMilestones.map((m) => (
-                      <label key={m.id} className="flex items-start gap-2 text-sm cursor-pointer hover:bg-muted/50 py-1 px-1 rounded">
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 h-4 w-4 accent-primary"
-                          checked={selectedMilestoneIds.includes(m.id)}
-                          onChange={() => toggleMilestone(m.id)}
-                        />
-                        <span className="flex-1">
-                          <span className="font-medium">{m.title}</span>
-                          {m.status === "in_progress" && (
-                            <span className="ml-1 text-xs text-muted-foreground">(Sedang dikerjakan)</span>
-                          )}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Document URL */}
               <div className="space-y-2">

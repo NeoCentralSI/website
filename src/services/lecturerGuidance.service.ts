@@ -13,7 +13,7 @@ export interface MyStudentItem {
   thesisTitle?: string;
   thesisStatus?: string;
   roles?: string[]; // e.g., ["pembimbing1"]
-  thesisRating?: "ONGOING" | "SLOW" | "AT_RISK" | "FAILED";
+  thesisRating?: "ONGOING" | "SLOW" | "AT_RISK" | "FAILED" | "CANCELLED";
   latestMilestone?: string;
   // Milestone progress info
   totalMilestones?: number;
@@ -74,56 +74,56 @@ export interface ApproveGuidanceBody {
 
 // API calls
 export interface StudentDetail {
-    thesisId: string;
+  thesisId: string;
+  title: string;
+  status: string;
+  rating: string;
+  startDate: string | null;
+  deadlineDate: string | null;
+  student: {
+    id: string;
+    fullName: string;
+    nim: string;
+    email: string;
+  };
+  document: {
+    id: string;
+    fileName: string;
+    url: string;
+  } | null;
+  proposalDocument: {
+    id: string;
+    fileName: string;
+    url: string;
+  } | null;
+  milestones: {
+    id: string;
     title: string;
     status: string;
-    rating: string;
-    startDate: string | null;
-    deadlineDate: string | null;
-    student: {
-        id: string;
-        fullName: string;
-        nim: string;
-        email: string;
-    };
-    document: {
-        id: string;
-        fileName: string;
-        url: string;
-    } | null;
-    proposalDocument: {
-        id: string;
-        fileName: string;
-        url: string;
-    } | null;
-    milestones: {
-        id: string;
-        title: string;
-        status: string;
-        updatedAt: string;
-        progressPercentage: number;
-    }[];
+    updatedAt: string;
+    progressPercentage: number;
+  }[];
 }
 
 export const validateMilestone = async (milestoneId: string, notes?: string): Promise<{ success: boolean; data: any }> => {
-    const res = await apiRequest(getApiUrl(`/milestones/${milestoneId}/validate`), {
-        method: "POST",
-        body: JSON.stringify({ supervisorNotes: notes }),
-    });
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Gagal memvalidasi milestone" }));
-        throw new Error(errorData.message || "Gagal memvalidasi milestone");
-    }
-    return res.json();
+  const res = await apiRequest(getApiUrl(`/milestones/${milestoneId}/validate`), {
+    method: "POST",
+    body: JSON.stringify({ supervisorNotes: notes }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memvalidasi milestone" }));
+    throw new Error(errorData.message || "Gagal memvalidasi milestone");
+  }
+  return res.json();
 };
 
 export const getStudentDetail = async (thesisId: string): Promise<{ success: boolean; data: StudentDetail }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS_DETAIL(thesisId)));
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail mahasiswa" }));
-        throw new Error(errorData.message || "Gagal memuat detail mahasiswa");
-    }
-    return res.json();
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS_DETAIL(thesisId)));
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail mahasiswa" }));
+    throw new Error(errorData.message || "Gagal memuat detail mahasiswa");
+  }
+  return res.json();
 };
 
 export const getMyStudents = async (params?: { roles?: string }): Promise<{ success: boolean; count: number; students: MyStudentItem[] }> => {
@@ -252,7 +252,7 @@ export const getPendingApproval = async (params?: { page?: number; pageSize?: nu
     if (params?.pageSize) qs.set("pageSize", String(params.pageSize));
     return `${base}?${qs.toString()}`;
   })();
-  
+
   const res = await apiRequest(url);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Gagal memuat catatan bimbingan" }));
@@ -372,6 +372,14 @@ export interface PendingChangeRequest {
       };
     };
   };
+  proposedThesis?: {
+    id: string;
+    title: string;
+    topic?: {
+      id: string;
+      name: string;
+    };
+  };
 }
 
 /**
@@ -442,5 +450,85 @@ export const rejectSupervisor2Request = async (requestId: string, reason?: strin
     body: JSON.stringify({ reason }),
   });
   if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak permintaan");
+  return res.json();
+};
+
+export const approveThesisProposalAPI = async (thesisId: string): Promise<{ success: boolean; message: string; thesis: any }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.APPROVE_THESIS_PROPOSAL(thesisId)), {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui proposal tugas akhir");
+  return res.json();
+};
+
+// ==================== STUDENT TRANSFER ====================
+
+export interface TransferLecturer {
+  id: string;
+  fullName: string;
+  identityNumber: string;
+  currentStudentCount: number;
+}
+
+export interface TransferStudent {
+  thesisId: string;
+  thesisSupervisorId: string;
+  studentName: string;
+  studentNim: string;
+  thesisTitle: string;
+  role: string;
+}
+
+export interface IncomingTransfer {
+  notificationId: string;
+  sourceLecturerId: string;
+  sourceLecturerName: string;
+  students: TransferStudent[];
+  reason: string;
+  createdAt: string;
+}
+
+export const getEligibleTransferLecturers = async (): Promise<{ success: boolean; lecturers: TransferLecturer[] }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_ELIGIBLE_LECTURERS));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat daftar dosen");
+  return res.json();
+};
+
+export const requestStudentTransfer = async (body: {
+  thesisIds: string[];
+  targetLecturerId: string;
+  reason: string;
+}): Promise<{ success: boolean; message: string; studentCount: number }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_REQUEST), {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal mengirim permintaan transfer" }));
+    throw new Error(errorData.message || "Gagal mengirim permintaan transfer");
+  }
+  return res.json();
+};
+
+export const getIncomingTransfers = async (): Promise<{ success: boolean; count: number; transfers: IncomingTransfer[] }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_INCOMING));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan transfer masuk");
+  return res.json();
+};
+
+export const approveTransfer = async (notificationId: string): Promise<{ success: boolean; message: string }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_APPROVE(notificationId)), {
+    method: "PATCH",
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui transfer");
+  return res.json();
+};
+
+export const rejectTransfer = async (notificationId: string, reason?: string): Promise<{ success: boolean; message: string }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_REJECT(notificationId)), {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak transfer");
   return res.json();
 };

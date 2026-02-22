@@ -49,7 +49,7 @@ export function NavUser({
   }
 
   const handleProfileClick = () => {
-    navigate('/profil')
+    navigate('/profile')
   }
 
   const handleSettingsClick = () => {
@@ -75,7 +75,7 @@ export function NavUser({
                 <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
-           
+
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

@@ -141,6 +141,25 @@ export function ChangeRequestReviewCard({ thesisId, studentName }: ChangeRequest
             </p>
           </div>
 
+          {/* Proposed New Thesis Info */}
+          {request.proposedThesis && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">Topik & Judul Baru:</p>
+              <div className="bg-white p-3 rounded-md border space-y-1">
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Judul:</span>{' '}
+                  <strong>{request.proposedThesis.title}</strong>
+                </p>
+                {request.proposedThesis.topic && (
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Topik:</span>{' '}
+                    <Badge variant="secondary" className="ml-1">{request.proposedThesis.topic.name}</Badge>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">Status Approval:</p>
             <div className="flex flex-wrap gap-2">
@@ -151,8 +170,8 @@ export function ChangeRequestReviewCard({ thesisId, studentName }: ChangeRequest
                     approval.status === "approved"
                       ? "default"
                       : approval.status === "rejected"
-                      ? "destructive"
-                      : "outline"
+                        ? "destructive"
+                        : "outline"
                   }
                   className="gap-1"
                 >

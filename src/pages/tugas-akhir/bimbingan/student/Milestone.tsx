@@ -53,6 +53,17 @@ export default function StudentMilestonePage() {
   const thesisId = supervisorsData?.thesisId || "";
   const hasThesis = !supervisorsError && !!thesisId;
 
+  const { data: thesisDetail } = useQuery({
+    queryKey: ["my-thesis-detail"],
+    queryFn: async () => {
+      const { getMyThesisDetail } = await import('@/services/studentGuidance.service');
+      return getMyThesisDetail();
+    },
+    enabled: hasThesis,
+  });
+
+  const isThesisInactive = thesisDetail?.status === "Gagal" || thesisDetail?.status === "Dibatalkan" || thesisDetail?.status === "Selesai";
+
 
 
 
@@ -263,7 +274,6 @@ export default function StudentMilestonePage() {
     { label: "Bimbingan", to: "/tugas-akhir/bimbingan/student", end: true },
     { label: "Milestone", to: "/tugas-akhir/bimbingan/milestone" },
     { label: "Riwayat", to: "/tugas-akhir/bimbingan/completed-history" },
-    { label: "Zona Berbahaya", to: "/tugas-akhir/bimbingan/danger-zone" },
   ];
 
 
@@ -296,72 +306,72 @@ export default function StudentMilestonePage() {
         </div>
       ) : (
         <>
-          {/* Thesis Detail Card MOVED TO OVERVIEW PAGE */}
+          {isThesisInactive ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
+              <h3 className="text-lg font-semibold mb-2">Tugas Akhir Tidak Aktif</h3>
+              <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{thesisDetail?.status}</strong>. Anda tidak dapat mengakses fitur milestone.</p>
+            </div>
+          ) : (
+            <>
+              {/* Seminar Readiness Status for Student */}
+              {thesisId && (
+                <SeminarReadinessStatusCard thesisId={thesisId} className="mb-4" />
+              )}
 
-          {/* Seminar Readiness Status for Student */}
-          {thesisId && (
-            <SeminarReadinessStatusCard thesisId={thesisId} className="mb-4" />
+              <MilestoneList
+                milestones={milestones}
+                progress={progress ?? null}
+                isLoading={isLoading}
+                isOwner={true}
+                isSupervisor={false}
+                onCreateNew={handleCreateNew}
+                onCreateFromTemplates={handleCreateFromTemplates}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onProgressChange={handleProgressChange}
+                onStatusChange={handleStatusChange}
+                isProgressUpdating={updateProgressMutation.isPending}
+                progressUpdatingId={progressUpdatingId}
+                statusUpdatingId={statusUpdatingId}
+                onReorder={handleReorder}
+                isReordering={reorderMutation.isPending}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
+                onClearSelection={() => setSelectedIds([])}
+                onBulkStart={handleBulkStart}
+                isBulkStarting={isBulkStarting}
+              />
+
+              {/* Create/Edit Dialog */}
+              <MilestoneFormDialog
+                open={formDialogOpen}
+                onOpenChange={setFormDialogOpen}
+                milestone={selectedMilestone}
+                onSubmit={handleFormSubmit}
+                isSubmitting={createMutation.isPending || updateMutation.isPending}
+                hideTargetDateOnEdit
+              />
+
+              {/* Template Selector Dialog */}
+              <TemplateSelectorDialog
+                open={templateDialogOpen}
+                onOpenChange={setTemplateDialogOpen}
+                templates={templates}
+                isLoading={isLoadingTemplates}
+                isSubmitting={createFromTemplatesMutation.isPending}
+                onSubmit={handleTemplateSubmit}
+              />
+
+              {/* Delete Confirmation Dialog */}
+              <DeleteMilestoneDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                milestone={selectedMilestone}
+                isDeleting={deleteMutation.isPending}
+                onConfirm={handleConfirmDelete}
+              />
+            </>
           )}
-
-          {/* Defence Readiness Request MOVED TO OVERVIEW/SIDANG PAGE (Optional, or keep here if needed, but per request "pindahkan saja card info") */
-            /* User said "pindahkan saja dari tab tugas akhir saya dari sub menu bimbingan... card info tugas akhir" */
-            /* The Info card is the one with BookOpen icon. keeping others. */
-          }
-
-
-
-          <MilestoneList
-            milestones={milestones}
-            progress={progress ?? null}
-            isLoading={isLoading}
-            isOwner={true}
-            isSupervisor={false}
-            onCreateNew={handleCreateNew}
-            onCreateFromTemplates={handleCreateFromTemplates}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onProgressChange={handleProgressChange}
-            onStatusChange={handleStatusChange}
-            isProgressUpdating={updateProgressMutation.isPending}
-            progressUpdatingId={progressUpdatingId}
-            statusUpdatingId={statusUpdatingId}
-            onReorder={handleReorder}
-            isReordering={reorderMutation.isPending}
-            selectedIds={selectedIds}
-            onToggleSelect={handleToggleSelect}
-            onClearSelection={() => setSelectedIds([])}
-            onBulkStart={handleBulkStart}
-            isBulkStarting={isBulkStarting}
-          />
-
-          {/* Create/Edit Dialog */}
-          <MilestoneFormDialog
-            open={formDialogOpen}
-            onOpenChange={setFormDialogOpen}
-            milestone={selectedMilestone}
-            onSubmit={handleFormSubmit}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
-            hideTargetDateOnEdit
-          />
-
-          {/* Template Selector Dialog */}
-          <TemplateSelectorDialog
-            open={templateDialogOpen}
-            onOpenChange={setTemplateDialogOpen}
-            templates={templates}
-            isLoading={isLoadingTemplates}
-            isSubmitting={createFromTemplatesMutation.isPending}
-            onSubmit={handleTemplateSubmit}
-          />
-
-          {/* Delete Confirmation Dialog */}
-          <DeleteMilestoneDialog
-            open={deleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
-            milestone={selectedMilestone}
-            isDeleting={deleteMutation.isPending}
-            onConfirm={handleConfirmDelete}
-          />
         </>
       )}
     </div>

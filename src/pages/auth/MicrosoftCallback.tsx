@@ -7,24 +7,19 @@ import { toast } from 'sonner';
 import { toTitleCaseName } from '@/lib/text';
 
 export default function MicrosoftCallback() {
-  console.log('🔵 [MicrosoftCallback] Component MOUNTED');
   
   const navigate = useNavigate();
   const { setUserDirectly } = useAuth();
 
   useEffect(() => {
-    console.log('🔵 [MicrosoftCallback] useEffect RUNNING');
     
     const handleCallback = async () => {
       try {
-        console.log('🔍 Callback started');
-        console.log('📍 Current URL:', window.location.href);
         
         // Get tokens from URL query params (backend redirect with tokens)
         const urlParams = new URLSearchParams(window.location.search);
         const tokensString = urlParams.get('tokens');
         
-        console.log('🔑 Tokens string:', tokensString ? 'EXISTS' : 'MISSING');
 
         if (!tokensString) {
           console.error('⚠️ Tokens not found, redirecting to login...');
@@ -35,15 +30,11 @@ export default function MicrosoftCallback() {
         }
 
         // Decode base64 tokens
-        console.log('🔓 Decoding tokens...');
         const decodedString = atob(tokensString);
         const { accessToken, refreshToken, user, hasCalendarAccess } = JSON.parse(decodedString);
         
-        console.log('✅ User:', user.fullName);
-        console.log('📅 Calendar Access:', hasCalendarAccess ? 'Yes' : 'No');
 
         // Save tokens
-        console.log('💾 Saving tokens...');
         saveAuthTokens(accessToken, refreshToken);
 
         // Save calendar access status
@@ -53,7 +44,6 @@ export default function MicrosoftCallback() {
         await new Promise(resolve => setTimeout(resolve, 300));
 
         // Set user langsung tanpa fetch API (hindari double load)
-        console.log('👤 Setting user directly...');
         setUserDirectly(user);
 
         // Delay untuk ensure state updated
@@ -63,7 +53,6 @@ export default function MicrosoftCallback() {
         window.history.replaceState(null, '', '/auth/microsoft/callback');
 
         // Final delay before redirect
-        console.log('⏳ Finalizing...');
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Show login success notification
@@ -72,7 +61,6 @@ export default function MicrosoftCallback() {
         });
 
         // Redirect to dashboard dengan SPA navigation
-        console.log('🚀 Redirecting to dashboard...');
         navigate('/dashboard', { replace: true });
       } catch (error) {
         console.error('❌ Callback error:', error);

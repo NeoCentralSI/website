@@ -5,11 +5,12 @@ import type { MyStudentItem } from "@/services/lecturerGuidance.service";
 import { getMyStudents, sendWarningToStudent, type WarningType } from "@/services/lecturerGuidance.service";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toTitleCaseName } from "@/lib/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -26,12 +27,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle } from "lucide-react";
+import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft } from "lucide-react";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
+import { IncomingTransfersSection } from "@/components/bimbingan/IncomingTransfersSection";
+import { TransferStudentsDialog } from "@/components/bimbingan/TransferStudentsDialog";
 
 const getDaysRemaining = (deadlineDate?: string | null) => {
   if (!deadlineDate) return null;
@@ -51,9 +54,11 @@ const getRatingConfig = (rating?: string) => {
     case "AT_RISK":
       return { variant: "destructive" as const, label: "At Risk", className: "", needsWarning: true };
     case "FAILED":
-      return { variant: "destructive" as const, label: "Gagal", className: "", needsWarning: true };
+      return { variant: "destructive" as const, label: "Failed", className: "bg-red-500 hover:bg-red-600", needsWarning: true };
+    case "CANCELLED":
+      return { variant: "secondary" as const, label: "Cancelled", className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
     default:
-      return { variant: "outline" as const, label: "Ongoing", className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
+      return { variant: "secondary" as const, label: "Unknown", className: "", needsWarning: false };
   }
 };
 
@@ -70,6 +75,11 @@ export default function LecturerMyStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const queryClient = useQueryClient();
+
+  // Student selection state for transfer
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
@@ -124,6 +134,40 @@ export default function LecturerMyStudentsPage() {
   }, [filteredData, page, pageSize]);
 
   const columns: Column<MyStudentItem>[] = useMemo(() => [
+    {
+      key: 'select',
+      header: () => {
+        const allSelected = paginatedData.length > 0 && paginatedData.every(s => selectedStudentIds.has(s.studentId));
+        return (
+          <Checkbox
+            checked={allSelected}
+            onCheckedChange={(checked) => {
+              const next = new Set(selectedStudentIds);
+              if (checked) {
+                paginatedData.forEach(s => next.add(s.studentId));
+              } else {
+                paginatedData.forEach(s => next.delete(s.studentId));
+              }
+              setSelectedStudentIds(next);
+            }}
+          />
+        );
+      },
+      render: (row) => (
+        <Checkbox
+          checked={selectedStudentIds.has(row.studentId)}
+          onCheckedChange={(checked) => {
+            const next = new Set(selectedStudentIds);
+            if (checked) {
+              next.add(row.studentId);
+            } else {
+              next.delete(row.studentId);
+            }
+            setSelectedStudentIds(next);
+          }}
+        />
+      ),
+    },
     {
       key: 'fullName',
       header: 'Mahasiswa',
@@ -291,7 +335,13 @@ export default function LecturerMyStudentsPage() {
         );
       }
     }
-  ], [navigate]);
+  ], [navigate, selectedStudentIds, paginatedData]);
+
+  // Get selected student items
+  const selectedStudents = useMemo(() => {
+    if (!data?.students) return [];
+    return data.students.filter((s: MyStudentItem) => selectedStudentIds.has(s.studentId));
+  }, [data?.students, selectedStudentIds]);
 
   // Define tabs for reuse
   const tabs = [
@@ -310,6 +360,9 @@ export default function LecturerMyStudentsPage() {
       </div>
 
       <TabsNav tabs={tabs} />
+
+      {/* Incoming Transfer Requests Section */}
+      <IncomingTransfersSection />
 
       {/* Pembimbing 2 Requests Section */}
       <Supervisor2RequestsSection />
@@ -338,10 +391,23 @@ export default function LecturerMyStudentsPage() {
           emptyText="Tidak ada mahasiswa bimbingan"
           rowKey={(row) => row.studentId}
           actions={
-            <RefreshButton
-              onClick={() => refetch()}
-              isRefreshing={isFetching && !isLoading}
-            />
+            <div className="flex items-center gap-2">
+              {selectedStudents.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setTransferDialogOpen(true)}
+                >
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Transfer ({selectedStudents.length})
+                </Button>
+              )}
+              <RefreshButton
+                onClick={() => refetch()}
+                isRefreshing={isFetching && !isLoading}
+              />
+            </div>
           }
         />
       )}
@@ -400,6 +466,17 @@ export default function LecturerMyStudentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Transfer Students Dialog */}
+      <TransferStudentsDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        selectedStudents={selectedStudents}
+        onSuccess={() => {
+          setSelectedStudentIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
+        }}
+      />
     </div>
   );
 }

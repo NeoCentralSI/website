@@ -1,4 +1,8 @@
+import { useState, useEffect } from 'react'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import Lottie from 'lottie-react'
+import serverErrorAnimation from '@/assets/lottie/server_eror.json'
+import { Button } from '@/components/ui/button'
 import { AuthProvider, NotificationProvider } from '@/hooks/shared'
 import { Toaster } from './components/ui/sonner'
 import Dashboard from './pages/Dashboard'
@@ -56,10 +60,10 @@ import MahasiswaPage from './pages/master-data/Mahasiswa'
 import MahasiswaDetailPage from './pages/master-data/MahasiswaDetail'
 import DosenPage from './pages/master-data/Dosen'
 import DosenDetailPage from './pages/master-data/DosenDetail'
+import MasterDataTugasAkhirPage from './pages/master-data/TugasAkhir'
 // Kelola
 import KelolaTugasAkhirKadepPage from './pages/kelola/kadep/KelolaTugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
-import KelolaThesisPage from './pages/tugas-akhir/KelolaThesis'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
@@ -70,6 +74,33 @@ import NotFoundPage from './pages/NotFound'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
 
 function App() {
+  const [showServerError, setShowServerError] = useState(false);
+
+  useEffect(() => {
+    const handleServerError = () => setShowServerError(true);
+    window.addEventListener('server-error', handleServerError);
+    return () => window.removeEventListener('server-error', handleServerError);
+  }, []);
+
+  if (showServerError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-6">
+        <div className="max-w-md w-full text-center space-y-6">
+          <Lottie animationData={serverErrorAnimation} loop={true} className="w-64 h-64 mx-auto" />
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight">Terjadi Kesalahan Server</h1>
+            <p className="text-muted-foreground text-sm">
+              Maaf, server sedang mengalami gangguan atau masalah internal saat ini. Silakan coba beberapa saat lagi.
+            </p>
+          </div>
+          <Button onClick={() => setShowServerError(false)} className="w-full sm:w-auto">
+            Kembali & Coba Lagi
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <AuthProvider>
@@ -113,32 +144,18 @@ function App() {
                 <Route element={<MetopelGuard />}>
                   <Route path="/metopel" element={<MetopenOverviewPage />} />
                 </Route>
+
                 <Route path="/tugas-akhir" element={<TugasAkhirGuard />}>
-                  <Route path="bimbingan" element={<StudentGuidancePage />} />
+                  <Route index element={<TugasAkhirOverviewPage />} />
+                  {/* Removed bimbingan/ route to allow BimbinganEntry to handle role-based redirection */}
+                  <Route path="bimbingan/student" element={<StudentGuidancePage />} />
                   <Route path="bimbingan/session/:id" element={<StudentGuidanceSessionPage />} />
+                  <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                   <Route path="bimbingan/history" element={<GuidanceHistoryPage />} />
-                  <Route path="milestone" element={<StudentMilestonePage />} />
-                  <Route path="completed-history" element={<CompletedHistoryPage />} />
+                  <Route path="bimbingan/milestone" element={<StudentMilestonePage />} />
+                  <Route path="bimbingan/completed-history" element={<CompletedHistoryPage />} />
+                  <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
                 </Route>
-              </Route>
-
-              <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
-                <Route element={<TugasAkhirGuard />}>
-                  <Route path="/tugas-akhir" element={<TugasAkhirOverviewPage />} />
-
-                  {/* Student - Tugas Akhir - Bimbingan Specific */}
-                  <Route path="/tugas-akhir/bimbingan/student" element={<StudentGuidancePage />} />
-                  <Route path="/tugas-akhir/bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
-                  <Route path="/tugas-akhir/bimbingan/history" element={<GuidanceHistoryPage />} />
-                  <Route path="/tugas-akhir/bimbingan/milestone" element={<StudentMilestonePage />} />
-                  <Route path="/tugas-akhir/bimbingan/completed-history" element={<CompletedHistoryPage />} />
-                  <Route path="/tugas-akhir/bimbingan/danger-zone" element={<DangerZonePage />} />
-                </Route>
-                <Route path="/metopel" element={<MetopelGuard />}>
-                  <Route index element={<BimbinganEntry />} />
-                </Route>
-
-                <Route path="/yudisium" element={<Placeholder title="Yudisium" />} />
               </Route>
 
               {/* Shared Routes (Student & Lecturer & Others) */}
@@ -175,7 +192,7 @@ function App() {
               <Route path="/tugas-akhir/acc-rubrik" element={<Placeholder title="Tugas Akhir - ACC Rubrik Penilaian" />} />
               <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />
               <Route path="/tugas-akhir/kelola-yudisium" element={<Placeholder title="Tugas Akhir - Kelola Yudisium" />} />
-              <Route path="/tugas-akhir/kelola" element={<KelolaThesisPage />} />
+              <Route path="/tugas-akhir/kelola" element={<Placeholder title="Tugas Akhir - Kelola (Deprecated)" />} />
               <Route path="/tugas-akhir/jadwal-seminar" element={<Placeholder title="Tugas Akhir - Penjadwalan Seminar" />} />
               <Route path="/tugas-akhir/jadwal-sidang" element={<Placeholder title="Tugas Akhir - Penjadwalan Sidang" />} />
 
@@ -197,6 +214,7 @@ function App() {
                 <Route path="/kelola/tugas-akhir/milestone" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
+                <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
               </Route>
 
@@ -207,6 +225,7 @@ function App() {
                 <Route path="/kelola/tugas-akhir/kadep/penguji" element={<KelolaTugasAkhirKadepPage />} />
                 <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<KelolaTugasAkhirKadepPage />} />
                 <Route path="/kelola/tugas-akhir/kadep/acc-rubrik" element={<KelolaTugasAkhirKadepPage />} />
+                <Route path="/kelola/tugas-akhir/kadep/master-data" element={<KelolaTugasAkhirKadepPage />} />
                 <Route path="/kelola/kerja-praktik/kadep/persetujuan" element={<KadepInternshipManagementPage />} />
                 <Route path="/kelola/kerja-praktik/kadep/sign/:type/:id" element={<SignLetterPage />} />
               </Route>
@@ -223,6 +242,7 @@ function App() {
                 <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />
                 <Route path="/master-data/dosen" element={<DosenPage />} />
                 <Route path="/master-data/dosen/:id" element={<DosenDetailPage />} />
+                <Route path="/master-data/tugas-akhir" element={<MasterDataTugasAkhirPage />} />
                 <Route path="/master-data/user" element={<UserManagementPage />} />
                 <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
               </Route>

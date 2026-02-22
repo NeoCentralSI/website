@@ -45,7 +45,7 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
 const STATUS_CONFIG = {
   pending: { label: 'Menunggu', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
   approved: { label: 'Disetujui', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  rejected: { label: 'Ditolak', color: 'bg-red-100 text-red-800', icon: XCircle },
+  rejected: { label: 'Ditolak', color: 'bg-red-500 text-white', icon: XCircle },
 };
 
 const APPROVAL_STATUS_CONFIG = {
@@ -171,10 +171,10 @@ export function ChangeRequestManagementPanel() {
     if (!request.approvals || request.approvals.length === 0) {
       return { allApproved: false, hasRejected: false, approvals: [] };
     }
-    
+
     const allApproved = request.approvals.every((a) => a.status === 'approved');
     const hasRejected = request.approvals.some((a) => a.status === 'rejected');
-    
+
     return { allApproved, hasRejected, approvals: request.approvals };
   };
 
@@ -227,11 +227,10 @@ export function ChangeRequestManagementPanel() {
                 const ApprovalIcon = approvalConfig.icon;
                 return (
                   <div key={approval.id} className="flex items-center gap-1.5">
-                    <ApprovalIcon className={`h-3.5 w-3.5 ${
-                      approval.status === 'approved' ? 'text-green-600' :
-                      approval.status === 'rejected' ? 'text-red-600' :
-                      'text-yellow-600'
-                    }`} />
+                    <ApprovalIcon className={`h-3.5 w-3.5 ${approval.status === 'approved' ? 'text-green-600' :
+                        approval.status === 'rejected' ? 'text-red-600' :
+                          'text-yellow-600'
+                      }`} />
                     <span className="text-xs">
                       {toTitleCaseName(approval.lecturer?.user?.fullName || '')}
                     </span>
@@ -241,7 +240,7 @@ export function ChangeRequestManagementPanel() {
               {allApproved && (
                 <Badge variant="default" className="w-fit mt-1 text-[10px]">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  Siap Approve Kadep
+                  Kadep Approve
                 </Badge>
               )}
               {hasRejected && (
@@ -323,9 +322,8 @@ export function ChangeRequestManagementPanel() {
                 variant="ghost"
                 size="icon"
                 onClick={() => handleApprove(request)}
-                className={`text-green-600 hover:text-green-700 hover:bg-green-50 ${
-                  !canKadepApprove(request) ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`text-green-600 hover:text-green-700 hover:bg-green-50 ${!canKadepApprove(request) ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 title={canKadepApprove(request) ? "Setujui" : "Menunggu approval pembimbing"}
                 disabled={!canKadepApprove(request)}
               >
@@ -352,9 +350,9 @@ export function ChangeRequestManagementPanel() {
   // View mode toggle actions
   const tableActions = (
     <div className="flex items-center gap-2">
-      <RefreshButton 
-        onClick={() => refetch()} 
-        isRefreshing={isFetching && !isLoading} 
+      <RefreshButton
+        onClick={() => refetch()}
+        isRefreshing={isFetching && !isLoading}
       />
       <Button
         variant={viewMode === 'pending' ? 'default' : 'outline'}
@@ -467,11 +465,10 @@ export function ChangeRequestManagementPanel() {
                       return (
                         <div key={approval.id} className="flex items-start justify-between gap-2 text-sm">
                           <div className="flex items-center gap-2">
-                            <ApprovalIcon className={`h-4 w-4 ${
-                              approval.status === 'approved' ? 'text-green-600' :
-                              approval.status === 'rejected' ? 'text-red-600' :
-                              'text-yellow-600'
-                            }`} />
+                            <ApprovalIcon className={`h-4 w-4 ${approval.status === 'approved' ? 'text-green-600' :
+                                approval.status === 'rejected' ? 'text-red-600' :
+                                  'text-yellow-600'
+                              }`} />
                             <span>{toTitleCaseName(approval.lecturer?.user?.fullName || '')}</span>
                           </div>
                           <Badge variant={approvalConfig.variant} className="text-xs">

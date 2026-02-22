@@ -25,7 +25,6 @@ export function useStudentGuidance() {
     queryFn: async () => {
       try {
         const res = await listStudentGuidance({ status: status || undefined });
-        console.log('[useStudentGuidance] API response:', res);
         return (res?.items ?? []) as GuidanceItem[];
       } catch (error) {
         console.error('[useStudentGuidance] API error:', error);

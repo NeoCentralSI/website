@@ -399,6 +399,8 @@ export interface MyThesisDetail {
   title: string;
   status: string;
   rating: number | null;
+  startDate?: string | null;
+  deadlineDate?: string | null;
   createdAt: string;
   updatedAt: string;
   student: {
@@ -543,5 +545,15 @@ export interface ThesisHistoryItem {
 export const getStudentThesisHistory = async (): Promise<{ success: boolean; theses: ThesisHistoryItem[] }> => {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.THESIS_HISTORY));
   if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat riwayat tugas akhir");
+  return res.json();
+};
+
+export const proposeThesisAPI = async (data: { title: string; topicId: string }): Promise<{ success: boolean; message: string; thesis: any }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.PROPOSE_THESIS), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal mengajukan judul tugas akhir");
   return res.json();
 };
