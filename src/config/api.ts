@@ -146,6 +146,11 @@ export const API_CONFIG = {
     INTERNSHIP_PUBLIC: {
       VERIFY_LETTER: (id: string) => `/insternship/public/verify/${id}`,
     },
+    LECTURER_AVAILABILITY: {
+      BASE: '/lecturer-availability',
+      BY_ID: (id: string) => `/lecturer-availability/${id}`,
+      TOGGLE: (id: string) => `/lecturer-availability/${id}/toggle`,
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };

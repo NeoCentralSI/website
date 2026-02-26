@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Briefcase,
+  Clock,
   Database,
   FileText,
   SquareTerminal,
@@ -182,7 +183,13 @@ export const useSidebarMenu = () => {
         items: tugasAkhirItems,
       });
 
-      // no Profil for lecturer normal
+      // Jadwal Ketersediaan
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
+      });
 
       return {
         user: {
@@ -247,6 +254,14 @@ export const useSidebarMenu = () => {
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
+      });
+
+      // Jadwal Ketersediaan
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
       });
 
       // Menu Kelola (fitur manajemen Kadep)
@@ -330,6 +345,14 @@ export const useSidebarMenu = () => {
         items: tugasAkhirItems,
       });
 
+      // Jadwal Ketersediaan
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
+      });
+
       menuItems.push({
         title: "Kelola",
         url: "#",
@@ -410,6 +433,14 @@ export const useSidebarMenu = () => {
         url: "#",
         icon: FileText,
         items: tugasAkhirItems,
+      });
+
+      // Jadwal Ketersediaan
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
       });
 
       // no Profil for gkm

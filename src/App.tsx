@@ -74,6 +74,8 @@ import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
+// Lecturer Availability
+import JadwalKetersediaan from './pages/kelola/JadwalKetersediaan'
 // Others
 import NotFoundPage from './pages/NotFound'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
@@ -188,6 +190,7 @@ function App() {
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/history/:studentId" element={<LecturerHistoryPage />} />
+                <Route path="/jadwal-ketersediaan" element={<JadwalKetersediaan />} />
               </Route>
 
               {/* Tugas Akhir - Non-student routes (monitoring, etc) */}
