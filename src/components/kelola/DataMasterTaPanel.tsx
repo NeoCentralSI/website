@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { getMasterDataTheses, createMasterDataThesis, updateMasterDataThesis, type MasterDataThesis, type SupervisorData } from "@/services/masterDataTa.service";
+import { getMasterDataTheses, createMasterDataThesis, updateMasterDataThesis, getMasterDataThesisStatuses, type MasterDataThesis, type SupervisorData } from "@/services/masterDataTa.service";
 import { getStudentsAPI, getLecturersAPI, getAcademicYearsAPI } from "@/services/admin.service";
 import { getTopics } from "@/services/topic.service";
 
@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Spinner, Loading } from "@/components/ui/spinner";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { RefreshButton } from '@/components/ui/refresh-button';
 
 interface FormState {
@@ -25,6 +24,7 @@ interface FormState {
     academicYearId: string;
     startDate: string;
     rating: string;
+    thesisStatusId: string;
     supervisors: SupervisorData[];
     pembimbing1: string;
     pembimbing2: string;
@@ -37,6 +37,7 @@ const emptyForm: FormState = {
     academicYearId: "none",
     startDate: "",
     rating: "ONGOING",
+    thesisStatusId: "none",
     supervisors: [],
     pembimbing1: "none",
     pembimbing2: "none",
@@ -57,6 +58,8 @@ export function DataMasterTaPanel() {
         queryKey: ["master-data-ta"],
         queryFn: getMasterDataTheses,
     });
+
+    const { data: statusesData = [] } = useQuery({ queryKey: ["master-data-ta-statuses"], queryFn: getMasterDataThesisStatuses });
 
     const { data: studentsData } = useQuery({ queryKey: ["admin-students"], queryFn: () => getStudentsAPI({ pageSize: 1000 }) });
     const { data: lecturersData } = useQuery({ queryKey: ["admin-lecturers"], queryFn: () => getLecturersAPI({ pageSize: 1000 }) });
@@ -118,36 +121,12 @@ export function DataMasterTaPanel() {
             academicYearId: thesis.academicYear?.id || "none",
             startDate: thesis.startDate ? new Date(thesis.startDate).toISOString().split('T')[0] : "",
             rating: thesis.rating || "ONGOING",
-            supervisors: thesis.supervisors.map(s => ({
-                lecturerId: s.lecturerId,
-                roleId: s.roleId,
-            })),
-            pembimbing1: "none",
-            pembimbing2: "none",
+            thesisStatusId: thesis.thesisStatusId || "none",
+            supervisors: [],
+            pembimbing1: thesis.supervisors.find((s) => s.roleName === "Pembimbing 1")?.lecturerId || "none",
+            pembimbing2: thesis.supervisors.find((s) => s.roleName === "Pembimbing 2")?.lecturerId || "none",
         });
         setDialogOpen(true);
-    };
-
-    const addSupervisor = () => {
-        setFormState(prev => ({
-            ...prev,
-            supervisors: [...prev.supervisors, { lecturerId: "", roleId: "" }]
-        }));
-    };
-
-    const removeSupervisor = (index: number) => {
-        setFormState(prev => ({
-            ...prev,
-            supervisors: prev.supervisors.filter((_, i) => i !== index)
-        }));
-    };
-
-    const updateSupervisor = (index: number, field: keyof SupervisorData, value: string) => {
-        setFormState(prev => {
-            const newSups = [...prev.supervisors];
-            newSups[index] = { ...newSups[index], [field]: value };
-            return { ...prev, supervisors: newSups };
-        });
     };
 
     const handleSubmit = () => {
@@ -169,6 +148,7 @@ export function DataMasterTaPanel() {
             title: formState.title || null,
             pembimbing1: formState.pembimbing1 !== "none" ? formState.pembimbing1 : undefined,
             pembimbing2: formState.pembimbing2 !== "none" ? formState.pembimbing2 : undefined,
+            thesisStatusId: formState.id ? formState.thesisStatusId : undefined,
         };
 
         if (formState.id) {
@@ -220,6 +200,19 @@ export function DataMasterTaPanel() {
                     "CANCELLED": "bg-gray-500",
                 };
                 return <Badge className={`${colors[t.rating] || "bg-primary"}`}>{t.rating}</Badge>;
+            }
+        },
+        {
+            key: "status",
+            header: "Status",
+            render: (t) => {
+                const colors: Record<string, string> = {
+                    "Aktif": "bg-green-500",
+                    "Selesai": "bg-blue-600",
+                    "Dibatalkan": "bg-red-600",
+                    "Lulus": "bg-blue-600",
+                };
+                return <Badge className={`${colors[t.status] || "bg-primary"}`}>{t.status}</Badge>;
             }
         },
         {
@@ -285,7 +278,7 @@ export function DataMasterTaPanel() {
                         <DialogDescription>Isi form di bawah ini untuk mengelola master data tugas akhir.</DialogDescription>
                     </DialogHeader>
 
-                    <ScrollArea className="flex-1 px-1">
+                    <div className="flex-1 overflow-y-auto px-1">
                         <div className="space-y-4 py-4 pr-3">
                             <div className="grid gap-2">
                                 <Label>Mahasiswa *</Label>
@@ -345,119 +338,86 @@ export function DataMasterTaPanel() {
                                         </Select>
                                     </div>
                                 )}
+
+                                {formState.id && (
+                                    <>
+                                        <div className="grid gap-2">
+                                            <Label>Tanggal Mulai</Label>
+                                            <Input
+                                                type="date"
+                                                value={formState.startDate}
+                                                onChange={(e) => setFormState(prev => ({ ...prev, startDate: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label>Rating</Label>
+                                            <Select
+                                                value={formState.rating}
+                                                onValueChange={(v) => setFormState(prev => ({ ...prev, rating: v }))}
+                                            >
+                                                <SelectTrigger><SelectValue placeholder="Pilih rating..." /></SelectTrigger>
+                                                <SelectContent>
+                                                    {ratings.map(r => (
+                                                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label>Status Tugas Akhir</Label>
+                                            <Select
+                                                value={formState.thesisStatusId}
+                                                onValueChange={(v) => setFormState(prev => ({ ...prev, thesisStatusId: v }))}
+                                            >
+                                                <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
+                                                <SelectContent>
+                                                    {statusesData.map(s => (
+                                                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
-                            {formState.id && (
+                            <div className="border-t pt-4 mt-4">
+                                <Label className="text-base mb-4 block">Pembimbing</Label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label>Tanggal Mulai</Label>
-                                        <Input
-                                            type="date"
-                                            value={formState.startDate}
-                                            onChange={(e) => setFormState(prev => ({ ...prev, startDate: e.target.value }))}
-                                        />
+                                        <Label>Pembimbing 1 *</Label>
+                                        <Select
+                                            value={formState.pembimbing1}
+                                            onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing1: v }))}
+                                        >
+                                            <SelectTrigger><SelectValue placeholder="Pilih pembimbing 1..." /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
+                                                {lecturers.map(l => (
+                                                    <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label>Rating</Label>
+                                        <Label>Pembimbing 2 (Opsional)</Label>
                                         <Select
-                                            value={formState.rating}
-                                            onValueChange={(v) => setFormState(prev => ({ ...prev, rating: v }))}
+                                            value={formState.pembimbing2}
+                                            onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing2: v }))}
                                         >
-                                            <SelectTrigger><SelectValue placeholder="Pilih rating..." /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder="Pilih pembimbing 2..." /></SelectTrigger>
                                             <SelectContent>
-                                                {ratings.map(r => (
-                                                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                                                <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
+                                                {lecturers.map(l => (
+                                                    <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
-                            )}
-
-                            <div className="border-t pt-4 mt-4">
-                                {formState.id ? (
-                                    <>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <Label className="text-base">Pembimbing</Label>
-                                            <Button type="button" variant="outline" size="sm" onClick={addSupervisor}>
-                                                <Plus className="w-4 h-4 mr-1" /> Tambah
-                                            </Button>
-                                        </div>
-                                        {formState.supervisors.length === 0 ? (
-                                            <p className="text-sm text-muted-foreground italic">Belum ada pembimbing.</p>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {formState.supervisors.map((sup, idx) => (
-                                                    <div key={idx} className="flex items-start gap-2 bg-muted/30 p-2 rounded-md border">
-                                                        <div className="flex-1 grid gap-2">
-                                                            <Select
-                                                                value={sup.lecturerId}
-                                                                onValueChange={(v) => updateSupervisor(idx, "lecturerId", v)}
-                                                            >
-                                                                <SelectTrigger><SelectValue placeholder="Pilih Dosen..." /></SelectTrigger>
-                                                                <SelectContent>
-                                                                    {lecturers.map(l => (
-                                                                        <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <Input
-                                                                placeholder="Role ID Pembimbing (UUID)"
-                                                                value={sup.roleId}
-                                                                onChange={(e) => updateSupervisor(idx, "roleId", e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <Button variant="ghost" size="icon" className="text-destructive mt-1" onClick={() => removeSupervisor(idx)}>
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <p className="text-xs text-muted-foreground mt-2">
-                                            * Catatan: Role ID UUID dapat diambil dari database / tabel UserRole.
-                                        </p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Label className="text-base mb-4 block">Pembimbing</Label>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="grid gap-2">
-                                                <Label>Pembimbing 1 *</Label>
-                                                <Select
-                                                    value={formState.pembimbing1}
-                                                    onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing1: v }))}
-                                                >
-                                                    <SelectTrigger><SelectValue placeholder="Pilih pembimbing 1..." /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
-                                                        {lecturers.map(l => (
-                                                            <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="grid gap-2">
-                                                <Label>Pembimbing 2 (Opsional)</Label>
-                                                <Select
-                                                    value={formState.pembimbing2}
-                                                    onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing2: v }))}
-                                                >
-                                                    <SelectTrigger><SelectValue placeholder="Pilih pembimbing 2..." /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
-                                                        {lecturers.map(l => (
-                                                            <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
                             </div>
                         </div>
-                    </ScrollArea>
+                    </div>
 
                     <DialogFooter className="mt-4 pt-2 border-t">
                         <Button variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>

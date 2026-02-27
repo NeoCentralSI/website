@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2, XCircle, Clock, Loader2, PartyPopper } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, PartyPopper, AlertCircle } from "lucide-react";
 import { useSeminarReadinessStatus } from "@/hooks/milestone/useMilestone";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -32,16 +32,17 @@ export function SeminarReadinessStatusCard({
     return null;
   }
 
-  const { milestoneProgress, seminarReadiness, supervisors } = readinessStatus;
+  const { milestoneProgress, guidanceProgress, seminarReadiness, supervisors } = readinessStatus;
   const isMilestoneComplete = milestoneProgress?.isComplete;
+  const isGuidanceComplete = guidanceProgress?.isComplete;
   const isFullyApproved = seminarReadiness?.isFullyApproved;
 
   // Find supervisors
   const supervisor1 = supervisors?.find(s => s.role === ROLES.PEMBIMBING_1);
   const supervisor2 = supervisors?.find(s => s.role === ROLES.PEMBIMBING_2);
 
-  // If milestone not complete, show different message
-  if (!isMilestoneComplete) {
+  // If milestone not complete OR guidance not complete, show requirements
+  if (!isMilestoneComplete || !isGuidanceComplete) {
     return (
       <Card className={cn("border-muted", className)}>
         <CardHeader className="pb-3">
@@ -50,16 +51,37 @@ export function SeminarReadinessStatusCard({
             Kesiapan Seminar
           </CardTitle>
           <CardDescription>
-            Selesaikan semua milestone untuk mendapat persetujuan seminar
+            Penuhi persyaratan bimbingan dan milestone untuk mendapat persetujuan seminar
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Progress:</span>
-            <Badge variant="secondary">
-              {milestoneProgress?.completed ?? 0} / {milestoneProgress?.total ?? 0} milestone
-            </Badge>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Progress Bimbingan:</span>
+              <Badge variant={isGuidanceComplete ? "default" : "secondary"}>
+                {guidanceProgress?.completed ?? 0} / {guidanceProgress?.required ?? 8} sesi
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Progress Milestone:</span>
+              <Badge variant={isMilestoneComplete ? "default" : "secondary"}>
+                {milestoneProgress?.completed ?? 0} / {milestoneProgress?.total ?? 0} milestone
+              </Badge>
+            </div>
           </div>
+
+          {!isGuidanceComplete && (
+            <p className="text-xs text-yellow-600 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Selesaikan minimal 8 sesi bimbingan
+            </p>
+          )}
+          {!isMilestoneComplete && (
+            <p className="text-xs text-yellow-600 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Selesaikan semua target milestone (Progress: 100%)
+            </p>
+          )}
         </CardContent>
       </Card>
     );
@@ -92,7 +114,7 @@ export function SeminarReadinessStatusCard({
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertTitle className="text-green-800">Siap Daftar Seminar!</AlertTitle>
             <AlertDescription className="text-green-700">
-              Selamat! Kedua pembimbing telah menyetujui kesiapan seminar Anda. 
+              Selamat! Kedua pembimbing telah menyetujui kesiapan seminar Anda.
               Silakan hubungi admin atau akses menu pendaftaran seminar.
             </AlertDescription>
           </Alert>

@@ -14,6 +14,7 @@ export interface MasterDataThesis {
     rating: string;
     startDate: string | null;
     status: string;
+    thesisStatusId: string;
     student: {
         id: string;
         nim: string;
@@ -31,11 +32,27 @@ export interface MasterDataThesis {
     supervisors: SupervisorData[];
 }
 
+export interface ThesisStatusData {
+    id: string;
+    name: string;
+    description: string | null;
+}
+
 export const getMasterDataTheses = async (): Promise<MasterDataThesis[]> => {
     const response = await apiRequest(getApiUrl('/master-data-ta'));
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Gagal mengambil master data tugas akhir");
+    }
+    const result = await response.json();
+    return result.data;
+};
+
+export const getMasterDataThesisStatuses = async (): Promise<ThesisStatusData[]> => {
+    const response = await apiRequest(getApiUrl('/master-data-ta/statuses'));
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Gagal mengambil status tugas akhir");
     }
     const result = await response.json();
     return result.data;
@@ -62,6 +79,18 @@ export const updateMasterDataThesis = async (id: string, payload: any): Promise<
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Gagal memperbarui master data tugas akhir");
+    }
+    const result = await response.json();
+    return result.data;
+};
+
+export const syncSiaData = async (): Promise<any> => {
+    const response = await apiRequest(getApiUrl(`/master-data-ta/sync-sia`), {
+        method: 'POST'
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Gagal melakukan sinkronisasi dengan SIA");
     }
     const result = await response.json();
     return result.data;

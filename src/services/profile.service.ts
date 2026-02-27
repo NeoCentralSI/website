@@ -42,3 +42,30 @@ export const getAvatarUrl = (avatarUrl: string | null | undefined): string | und
   if (!fileName) return undefined;
   return getApiUrl(API_CONFIG.ENDPOINTS.PROFILE.SERVE_AVATAR(fileName));
 };
+
+export const getLecturerDataAPI = async (): Promise<{ data: any }> => {
+  const response = await fetch(getApiUrl('/profile/lecturer-data'), {
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal memuat data dosen');
+  }
+  return response.json();
+};
+
+export const updateLecturerDataAPI = async (data: any): Promise<{ data: any }> => {
+  const response = await fetch(getApiUrl('/profile/lecturer-data'), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify({ data }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal menyimpan data dosen');
+  }
+  return response.json();
+};

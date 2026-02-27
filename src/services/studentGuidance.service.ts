@@ -56,7 +56,7 @@ export interface StudentRequestGuidanceBody {
 
 export interface StudentRescheduleGuidanceBody {
   guidanceDate: string; // ISO datetime
-  studentNotes?: string; // optional reason/notes
+  studentNotes: string; // required reason/notes
   duration?: number;
   [key: string]: unknown;
 }

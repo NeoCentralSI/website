@@ -22,7 +22,7 @@ export const useActivateAccount = () => {
 
     try {
       const result = await activateAccountAPI(email);
-      
+
       if (result.code === 'EMAIL_NOT_FOUND') {
         toast.error('Email tidak ditemukan', {
           description: result.message || 'Email tidak terdaftar. Silakan hubungi admin untuk aktivasi akun.',
@@ -35,7 +35,7 @@ export const useActivateAccount = () => {
         return true;
       } else {
         // Navigate to email sent confirmation page
-        navigate('/activation-email-sent', { state: { email } });
+        navigate('/auth/activate/email-sent', { state: { email } });
         setEmail('');
         return true;
       }

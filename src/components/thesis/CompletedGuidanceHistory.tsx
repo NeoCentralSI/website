@@ -112,15 +112,7 @@ export default function CompletedGuidanceHistory() {
         </span>
       ),
     },
-    {
-      key: "milestoneName",
-      header: "Milestone",
-      render: (row) => (
-        <span className="text-sm text-muted-foreground truncate max-w-40 block">
-          {row.milestoneName || "-"}
-        </span>
-      ),
-    },
+    
     {
       key: "sessionSummary",
       header: "Ringkasan",

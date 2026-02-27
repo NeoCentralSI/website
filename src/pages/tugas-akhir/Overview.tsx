@@ -149,7 +149,7 @@ export default function TugasAkhirOverviewPage() {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto w-full">
+        <div className="flex flex-1 flex-col p-6 w-full">
             <Tabs defaultValue={hasThesis ? "overview" : "history"} className="space-y-6 w-full">
                 <TabsList>
                     <TabsTrigger value="overview" disabled={!isThesisActive && !hasThesis}>Status Terkini</TabsTrigger>
