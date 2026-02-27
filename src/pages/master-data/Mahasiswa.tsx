@@ -9,10 +9,16 @@ import { Button } from '@/components/ui/button';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Eye, RefreshCw } from 'lucide-react';
+import { Eye, RefreshCw, Edit } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { adminUpdateStudentAPI } from '@/services/admin.service';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -24,6 +30,13 @@ export default function Mahasiswa() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
+
+  // Edit states
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [editSks, setEditSks] = useState<number>(0);
+  const [editStatus, setEditStatus] = useState<string>('');
 
   // Memoized breadcrumbs to avoid unnecessary re-renders
   const breadcrumbs = useMemo(() => [
@@ -48,6 +61,16 @@ export default function Mahasiswa() {
     queryFn: () => getStudentsAPI({ page, pageSize, search: searchValue }),
     placeholderData: (previousData) => previousData, // Keep previous data while fetching
     staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { sksCompleted: number, status: string }) => adminUpdateStudentAPI(selectedStudent!.id, data),
+    onSuccess: () => {
+      toast.success('Data mahasiswa berhasil diperbarui');
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      setIsEditOpen(false);
+    },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const syncMutation = useMutation({
@@ -102,11 +125,20 @@ export default function Mahasiswa() {
     {
       key: 'status',
       header: 'Status',
-      render: (row: Student) => (
-        <Badge variant={row.student?.status === 'Aktif' ? 'default' : 'secondary'}>
-          {row.student?.status || '-'}
-        </Badge>
-      ),
+      render: (row: Student) => {
+        const rawStatus = row.student?.status || '-';
+        const displayStatus = rawStatus === 'active' ? 'Aktif'
+          : rawStatus === 'lulus' ? 'Lulus'
+            : rawStatus === 'bss' ? 'Cuti (BSS)'
+              : rawStatus === 'dropout' ? 'Drop Out'
+                : rawStatus === 'mengundurkan_diri' ? 'Mengundurkan Diri'
+                  : rawStatus;
+        return (
+          <Badge variant={rawStatus === 'active' ? 'default' : 'secondary'}>
+            {displayStatus}
+          </Badge>
+        );
+      },
     },
     {
       key: 'actions',
@@ -120,6 +152,21 @@ export default function Mahasiswa() {
           >
             <Eye className="w-4 h-4" />
           </Button>
+          {isAdmin() && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+              onClick={() => {
+                setSelectedStudent(row);
+                setEditSks(row.student?.sksCompleted || 0);
+                setEditStatus(row.student?.status || 'active');
+                setIsEditOpen(true);
+              }}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -180,6 +227,71 @@ export default function Mahasiswa() {
           />
         }
       />
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Data Mahasiswa</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label>SKS Selesai</Label>
+              <Input
+                type="number"
+                min="0"
+                value={editSks}
+                onChange={(e) => setEditSks(Number(e.target.value))}
+                placeholder="Masukkan jumlah SKS selesai"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih status mahasiswa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Aktif</SelectItem>
+                  <SelectItem value="lulus">Lulus</SelectItem>
+                  <SelectItem value="bss">Cuti</SelectItem>
+                  <SelectItem value="dropout">Drop Out</SelectItem>
+                  <SelectItem value="mengundurkan_diri">Mengundurkan Diri</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Mahasiswa yang diedit: {toTitleCaseName(selectedStudent?.fullName || '')}</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+            <Button onClick={() => setIsConfirmOpen(true)} disabled={updateMutation.isPending}>Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Edit Data</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menyimpan perubahan data mahasiswa ini? Perubahan akan langsung berdampak pada sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={updateMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                updateMutation.mutate({ sksCompleted: editSks, status: editStatus }, {
+                  onSuccess: () => setIsConfirmOpen(false)
+                });
+              }}
+              disabled={updateMutation.isPending}
+            >
+              Ya, Simpan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

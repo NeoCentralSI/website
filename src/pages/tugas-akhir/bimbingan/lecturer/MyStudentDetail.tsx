@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import EmptyState from "@/components/ui/empty-state";
-import { FileText, CheckCircle2, Clock, AlertTriangle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
+import { FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarReadinessCard";
 import { DefenceReadinessCard } from "@/components/milestone/lecturer/DefenceReadinessCard";
+import { useSeminarReadinessStatus } from "@/hooks/milestone/useMilestone";
 import { ChangeRequestReviewCard } from "@/components/tugas-akhir/lecturer/ChangeRequestReviewCard";
 import { RefreshButton } from "@/components/ui/refresh-button";
 
@@ -108,6 +109,8 @@ export default function LecturerMyStudentDetailPage() {
         queryFn: () => getStudentDetail(thesisId!).then(res => res.data),
         enabled: !!thesisId
     });
+
+    const { data: readinessStatus } = useSeminarReadinessStatus(thesisId);
 
     const progressPercentage = useMemo(() => {
         if (!detailData?.milestones?.length) return 0;
@@ -311,11 +314,22 @@ export default function LecturerMyStudentDetailPage() {
 
             {/* Alert Banner ketika milestone 100% */}
             {progressPercentage === 100 && (
-                <Alert className="border-green-200 bg-green-50">
-                    <PartyPopper className="h-5 w-5 text-green-600" />
-                    <AlertTitle className="text-green-800">Milestone Selesai 100%!</AlertTitle>
-                    <AlertDescription className="text-green-700">
-                        Mahasiswa ini telah menyelesaikan keseluruhan milestone. Silakan review kembali progress dan berikan approval agar mahasiswa dapat mendaftar seminar.
+                <Alert className={cn(
+                    "border-green-200 bg-green-50",
+                    readinessStatus?.guidanceProgress?.isComplete ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"
+                )}>
+                    {readinessStatus?.guidanceProgress?.isComplete ? (
+                        <PartyPopper className="h-5 w-5 text-green-600" />
+                    ) : (
+                        <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    )}
+                    <AlertTitle className={readinessStatus?.guidanceProgress?.isComplete ? "text-green-800" : "text-yellow-800"}>
+                        {readinessStatus?.guidanceProgress?.isComplete ? "Milestone Selesai 100%!" : "Milestone Selesai, Menunggu Bimbingan"}
+                    </AlertTitle>
+                    <AlertDescription className={readinessStatus?.guidanceProgress?.isComplete ? "text-green-700" : "text-yellow-700"}>
+                        {readinessStatus?.guidanceProgress?.isComplete
+                            ? "Mahasiswa ini telah menyelesaikan keseluruhan milestone dan syarat bimbingan. Silakan review kembali progress dan berikan approval agar mahasiswa dapat mendaftar seminar."
+                            : "Mahasiswa telah menyelesaikan milestone, namun syarat minimal 8 sesi bimbingan belum terpenuhi. Approval seminar dapat diberikan setelah syarat bimbingan tercapai."}
                     </AlertDescription>
                 </Alert>
             )}
@@ -328,8 +342,8 @@ export default function LecturerMyStudentDetailPage() {
                 />
             )}
 
-            {/* Seminar Readiness Card - tampilkan jika milestone 100% */}
-            {progressPercentage === 100 && thesisId && (
+            {/* Seminar Readiness Card - tampilkan bagi mahasiswa aktif untuk monitoring */}
+            {detailData.status === "Aktif" && thesisId && (
                 <SeminarReadinessCard
                     thesisId={thesisId}
                     studentName={detailData.student.fullName}
@@ -504,83 +518,85 @@ export default function LecturerMyStudentDetailPage() {
                             </Button>
                         </CardHeader>
                         <CardContent className="px-2 sm:px-6">
-                            <div className="relative border-l ml-3 space-y-8 my-2">
-                                {detailData.milestones && detailData.milestones.length > 0 ? (
-                                    detailData.milestones.map((milestone) => (
-                                        <div key={milestone.id} className="ml-6 relative group pb-2">
-                                            {validatingId === milestone.id && (
-                                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded transition-all">
-                                                    <Spinner className="h-6 w-6 text-primary" />
-                                                </div>
-                                            )}
-                                            <span className={cn(
-                                                "absolute -left-9.25 top-1 p-1 rounded-full border bg-background z-10",
-                                                milestone.status === 'completed' ? "border-green-500 text-green-500" : "border-border text-muted-foreground"
-                                            )}>
-                                                {getStatusIcon(milestone.status)}
-                                            </span>
-                                            <div className="flex flex-col gap-2">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <h4 className="font-medium text-sm leading-snug mt-0.5">{milestone.title}</h4>
-                                                    {milestone.status !== 'completed' && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className={cn(
-                                                                "h-6 w-6 transition-opacity",
-                                                                milestone.progressPercentage < 100 ? "opacity-50 cursor-not-allowed" : "opacity-100 hover:bg-green-50 text-green-600"
-                                                            )}
-                                                            title={
-                                                                isCancelled
-                                                                    ? "Tidak dapat memvalidasi karena tugas akhir dibatalkan"
-                                                                    : milestone.progressPercentage < 100
-                                                                        ? "Milestone belum mencapai 100%"
-                                                                        : "Validasi Milestone"
-                                                            }
-                                                            disabled={milestone.progressPercentage < 100 || isCancelled}
-                                                            onClick={() => setSelectedMilestoneId(milestone.id)}
-                                                        >
-                                                            <Check className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span>Proses</span>
-                                                        <span>{milestone.progressPercentage || 0}%</span>
+                            <div className="h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                                <div className="relative border-l ml-3 space-y-8 my-2 pt-2">
+                                    {detailData.milestones && detailData.milestones.length > 0 ? (
+                                        detailData.milestones.map((milestone) => (
+                                            <div key={milestone.id} className="ml-6 relative group pb-2">
+                                                {validatingId === milestone.id && (
+                                                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded transition-all">
+                                                        <Spinner className="h-6 w-6 text-primary" />
                                                     </div>
-                                                    <Progress value={milestone.progressPercentage || 0} className="h-1.5" />
-                                                </div>
+                                                )}
+                                                <span className={cn(
+                                                    "absolute -left-9.25 top-1 p-1 rounded-full border bg-background z-10",
+                                                    milestone.status === 'completed' ? "border-green-500 text-green-500" : "border-border text-muted-foreground"
+                                                )}>
+                                                    {getStatusIcon(milestone.status)}
+                                                </span>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <h4 className="font-medium text-sm leading-snug mt-0.5">{milestone.title}</h4>
+                                                        {milestone.status !== 'completed' && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className={cn(
+                                                                    "h-6 w-6 transition-opacity",
+                                                                    milestone.progressPercentage < 100 ? "opacity-50 cursor-not-allowed" : "opacity-100 hover:bg-green-50 text-green-600"
+                                                                )}
+                                                                title={
+                                                                    isCancelled
+                                                                        ? "Tidak dapat memvalidasi karena tugas akhir dibatalkan"
+                                                                        : milestone.progressPercentage < 100
+                                                                            ? "Milestone belum mencapai 100%"
+                                                                            : "Validasi Milestone"
+                                                                }
+                                                                disabled={milestone.progressPercentage < 100 || isCancelled}
+                                                                onClick={() => setSelectedMilestoneId(milestone.id)}
+                                                            >
+                                                                <Check className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
 
-                                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
-                                                    <Badge variant={STATUS_VARIANTS[milestone.status] || "outline"} className="text-[10px] h-5 px-1.5 font-normal">
-                                                        {STATUS_LABELS[milestone.status] || milestone.status.replace(/_/g, " ")}
-                                                    </Badge>
-                                                    {milestone.progressPercentage === 100 && milestone.status === 'in_progress' && (
-                                                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal gap-1 animate-pulse text-red-600 border-red-600 bg-transparent">
-                                                            <Bell className="h-3 w-3" />
-                                                            Perlu Approval
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-xs text-muted-foreground">
+                                                            <span>Proses</span>
+                                                            <span>{milestone.progressPercentage || 0}%</span>
+                                                        </div>
+                                                        <Progress value={milestone.progressPercentage || 0} className="h-1.5" />
+                                                    </div>
+
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
+                                                        <Badge variant={STATUS_VARIANTS[milestone.status] || "outline"} className="text-[10px] h-5 px-1.5 font-normal">
+                                                            {STATUS_LABELS[milestone.status] || milestone.status.replace(/_/g, " ")}
                                                         </Badge>
-                                                    )}
-                                                    {milestone.updatedAt && (
-                                                        <span className="text-xs text-muted-foreground/70">
-                                                            {formatDateId(milestone.updatedAt)}
-                                                        </span>
-                                                    )}
+                                                        {milestone.progressPercentage === 100 && milestone.status === 'in_progress' && (
+                                                            <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal gap-1 animate-pulse text-red-600 border-red-600 bg-transparent">
+                                                                <Bell className="h-3 w-3" />
+                                                                Perlu Approval
+                                                            </Badge>
+                                                        )}
+                                                        {milestone.updatedAt && (
+                                                            <span className="text-xs text-muted-foreground/70">
+                                                                {formatDateId(milestone.updatedAt)}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
+                                        ))
+                                    ) : (
+                                        <div className="-ml-3">
+                                            <EmptyState
+                                                size="sm"
+                                                title="Belum Ada Milestone"
+                                                description="Belum ada milestone yang tercatat"
+                                            />
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="-ml-3">
-                                        <EmptyState
-                                            size="sm"
-                                            title="Belum Ada Milestone"
-                                            description="Belum ada milestone yang tercatat"
-                                        />
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

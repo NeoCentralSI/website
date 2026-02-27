@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, UserPlus, Upload, CheckCircle2, XCircle } from 'lucide-react';
+import { Pencil, UserPlus, Upload, Download, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
@@ -13,11 +13,12 @@ import { formatRoleName, ROLES } from '@/lib/roles';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserFormDialog, ImportStudentDialog } from '@/components/master-data';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function UserManagementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const queryClient = useQueryClient();
-  
+
   // Local UI state only
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -25,15 +26,16 @@ export default function UserManagementPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
-  
+
   // Server-side filters
   const [identityTypeFilter, setIdentityTypeFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  
+
   // Form state (local UI state)
   const [formData, setFormData] = useState<CreateUserRequest | UpdateUserRequest>({
     fullName: '',
@@ -63,17 +65,17 @@ export default function UserManagementPage() {
 
   // Use TanStack Query for server state with all filters
   const { data, isLoading, isFetching, refetch, error } = useQuery({
-    queryKey: ['users', { 
-      page, 
-      pageSize, 
+    queryKey: ['users', {
+      page,
+      pageSize,
       search: searchValue,
       identityType: identityTypeFilter,
       role: roleFilter,
       isVerified: isVerifiedFilter
     }],
-    queryFn: () => getUsersAPI({ 
-      page, 
-      pageSize, 
+    queryFn: () => getUsersAPI({
+      page,
+      pageSize,
       search: searchValue,
       identityType: identityTypeFilter || undefined,
       role: roleFilter || undefined,
@@ -131,7 +133,7 @@ export default function UserManagementPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       if (editingUser) {
         await updateUserAPI(editingUser.id, formData as UpdateUserRequest);
@@ -140,7 +142,7 @@ export default function UserManagementPage() {
         await createUserAPI(formData as CreateUserRequest);
         toast.success('User berhasil dibuat');
       }
-      
+
       setDialogOpen(false);
       invalidateUsers(); // Invalidate cache to refetch data
     } catch (error) {
@@ -169,6 +171,63 @@ export default function UserManagementPage() {
       setIsImporting(false);
     }
   };
+
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    try {
+      // Fetch all targeted users based on filters
+      const response = await getUsersAPI({
+        page: 1,
+        pageSize: total > 0 ? total : 1000,
+        search: searchValue,
+        identityType: identityTypeFilter || undefined,
+        role: roleFilter || undefined,
+        isVerified: isVerifiedFilter
+      });
+
+      const usersToExport = response.users || [];
+      if (usersToExport.length === 0) {
+        toast.info('Tidak ada data untuk diexport');
+        setIsExporting(false);
+        return;
+      }
+
+      // Format to CSV
+      const headers = ['Nama Lengkap', 'Email', 'NIM/NIP', 'Tipe Identitas', 'Role', 'Status Verifikasi'];
+      const csvRows = [headers.join(',')];
+
+      for (const user of usersToExport) {
+        const roles = user.roles.map((r: any) => formatRoleName(r.name)).join('; ');
+        const row = [
+          `"${user.fullName || ''}"`,
+          `"${user.email || ''}"`,
+          `"${user.identityNumber || ''}"`,
+          `"${user.identityType || ''}"`,
+          `"${roles}"`,
+          `"${user.isVerified ? 'Terverifikasi' : 'Belum Verifikasi'}"`
+        ];
+        csvRows.push(row.join(','));
+      }
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'export_users.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Berhasil export ${usersToExport.length} user`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal export data');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
 
   // Role options for form - using ROLES constants from lib/roles.ts
   const roleOptions = [
@@ -306,6 +365,14 @@ export default function UserManagementPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
+            onClick={handleExportCsv}
+            disabled={isExporting}
+          >
+            {isExporting ? <Spinner className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => setImportDialogOpen(true)}
           >
             <Upload className="w-4 h-4 mr-2" />
@@ -333,9 +400,9 @@ export default function UserManagementPage() {
         onSearchChange={setSearchValue}
         enableColumnFilters={true}
         actions={
-          <RefreshButton 
-            onClick={() => refetch()} 
-            isRefreshing={isFetching && !isLoading} 
+          <RefreshButton
+            onClick={() => refetch()}
+            isRefreshing={isFetching && !isLoading}
           />
         }
       />

@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Gunakan React Query untuk management state user & auth checking
   // Ini otomatis handle caching, deduplication, dan revalidation
-  const { data: user, isLoading, error, refetch } = useQuery({
+  const { data: user, isLoading: isQueryLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['auth-user'],
     queryFn: async () => {
       const { accessToken } = getAuthTokens();
@@ -52,6 +52,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     retry: false, // Jangan retry jika 401, langsung logout
     enabled: location.pathname !== '/auth/microsoft/callback', // Skip fetch saat callback process
   });
+
+  const isLoading = isQueryLoading || isFetching;
 
   // Handle error (misal token expired atau invalid)
   useEffect(() => {
@@ -65,7 +67,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (email: string, password: string) => {
     try {
       const response = await loginAPI({ email, password });
-      
+
       saveAuthTokens(response.accessToken, response.refreshToken);
       queryClient.setQueryData(['auth-user'], response.user);
       toast.success('Login berhasil', {
@@ -73,9 +75,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
       navigate('/dashboard');
     } catch (error) {
-      // If account is not verified, redirect to account-inactive page
+      // If account is not verified, redirect to auth-inactive page
       if ((error as any)?.code === 'NOT_VERIFIED') {
-        navigate('/account-inactive', { state: { email } });
+        navigate('/auth/inactive', { state: { email } });
         return;
       }
       throw error;
@@ -94,7 +96,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           console.error('FCM unregister error (ignored):', fcmError);
         }
       }
-      
+
       // Now call logout API
       if (getAuthTokens().accessToken) {
         await logoutAPI();
@@ -134,7 +136,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     refreshUser,
     setUserDirectly
   };
-
 
   return (
     <AuthContext.Provider value={value}>

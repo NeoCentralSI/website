@@ -66,6 +66,7 @@ import MahasiswaDetailPage from './pages/master-data/MahasiswaDetail'
 import DosenPage from './pages/master-data/Dosen'
 import DosenDetailPage from './pages/master-data/DosenDetail'
 import MasterDataTugasAkhirPage from './pages/master-data/TugasAkhir'
+import ScienceGroupPage from './pages/master-data/ScienceGroup'
 // Kelola
 import KelolaTugasAkhirKadepPage from './pages/kelola/kadep/KelolaTugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
@@ -225,6 +226,7 @@ function App() {
                 <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
+                <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
                 <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
               </Route>
 
@@ -238,6 +240,7 @@ function App() {
                 <Route path="/kelola/tugas-akhir/kadep/master-data" element={<KelolaTugasAkhirKadepPage />} />
                 <Route path="/kelola/kerja-praktik/kadep/persetujuan" element={<KadepInternshipManagementPage />} />
                 <Route path="/kelola/kerja-praktik/kadep/sign/:type/:id" element={<SignLetterPage />} />
+                <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
               </Route>
 
               {/* Master Data (Admin) */}

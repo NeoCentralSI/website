@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Users, 
-  AlertTriangle, 
+import {
+  Users,
+  AlertTriangle,
   GraduationCap,
-  TrendingUp 
+  TrendingUp
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProgressStats } from "@/services/monitoring.service";

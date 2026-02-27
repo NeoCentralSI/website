@@ -283,6 +283,8 @@ export interface Lecturer {
     activeGuidances: number;
     seminarJuries: number;
     defenceJuries: number;
+    scienceGroup: string | null;
+    scienceGroupId: string | null;
   };
 }
 
@@ -342,6 +344,7 @@ export const getLecturersAPI = async (params?: {
   page?: number;
   pageSize?: number;
   search?: string;
+  scienceGroupId?: string;
 }): Promise<{
   lecturers: Lecturer[];
   meta: {
@@ -355,6 +358,7 @@ export const getLecturersAPI = async (params?: {
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.scienceGroupId) queryParams.append('scienceGroupId', params.scienceGroupId);
 
   const response = await fetch(getApiUrl(`/adminfeatures/lecturers?${queryParams}`), {
     method: 'GET',
@@ -606,5 +610,104 @@ export const getFailedThesesList = async (): Promise<{ data: FailedThesis[]; tot
     throw new Error(errorData.message || 'Gagal memuat data thesis gagal');
   }
 
+  return response.json();
+};
+
+export const updateLecturerByAdminAPI = async (id: string, data: { scienceGroupId: string | null }): Promise<{ data: any }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/lecturers/${id}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal mengupdate dosen');
+  }
+  return response.json();
+};
+
+export const adminUpdateStudentAPI = async (id: string, data: { status: string; sksCompleted: number }): Promise<{ data: any }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/students/${id}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify({
+      status: data.status,
+      skscompleted: data.sksCompleted
+    }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal mengupdate mahasiswa');
+  }
+  return response.json();
+};
+
+// ========== Science Groups ==========
+
+export interface ScienceGroup {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getScienceGroupsAPI = async (): Promise<{ data: ScienceGroup[] }> => {
+  const response = await fetch(getApiUrl('/science-groups'), {
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal memuat Kelompok Keilmuan');
+  }
+  return response.json();
+};
+
+export const createScienceGroupAPI = async (data: { name: string }): Promise<{ data: ScienceGroup }> => {
+  const response = await fetch(getApiUrl('/science-groups'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal membuat Kelompok Keilmuan');
+  }
+  return response.json();
+};
+
+export const updateScienceGroupAPI = async (id: string, data: { name: string }): Promise<{ data: ScienceGroup }> => {
+  const response = await fetch(getApiUrl(`/science-groups/${id}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal mengupdate Kelompok Keilmuan');
+  }
+  return response.json();
+};
+
+export const deleteScienceGroupAPI = async (id: string): Promise<{ message: string }> => {
+  const response = await fetch(getApiUrl(`/science-groups/${id}`), {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal menghapus Kelompok Keilmuan');
+  }
   return response.json();
 };

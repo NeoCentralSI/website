@@ -273,6 +273,7 @@ export const useSidebarMenu = () => {
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/kadep" },
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
+          { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
         ],
       });
 
@@ -363,6 +364,7 @@ export const useSidebarMenu = () => {
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
           { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
+          { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
         ],
       });
 

@@ -10,21 +10,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import EmptyState from '@/components/ui/empty-state';
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  BookOpen, 
-  CheckCircle2, 
+
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  BookOpen,
+  CheckCircle2,
   AlertTriangle,
   Users,
   GraduationCap,
   FileText,
   Shield,
   Briefcase,
-  Clock
+  Clock,
+  
 } from 'lucide-react';
 
 export default function DosenDetail() {
@@ -38,6 +40,11 @@ export default function DosenDetail() {
     { label: 'Data Dosen', href: '/master-data/dosen' },
     { label: 'Detail' },
   ], []);
+
+
+ 
+
+ 
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
@@ -176,13 +183,14 @@ export default function DosenDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - User Info */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <User className="h-4 w-4" />
               Informasi Pribadi
             </CardTitle>
+            
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <div className="flex items-center gap-3">
               <Mail className="h-4 w-4 text-muted-foreground" />
               <div>
@@ -262,7 +270,7 @@ export default function DosenDetail() {
                           <Badge variant="outline" className="text-xs">
                             {formatRoleName(item.role)}
                           </Badge>
-                          <Badge 
+                          <Badge
                             className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-100"
                           >
                             {item.status || 'Berjalan'}
@@ -273,10 +281,10 @@ export default function DosenDetail() {
                   ))}
                 </div>
               ) : (
-                <EmptyState 
-                  size="sm" 
-                  title="Tidak Ada Bimbingan" 
-                  description="Tidak ada mahasiswa bimbingan aktif" 
+                <EmptyState
+                  size="sm"
+                  title="Tidak Ada Bimbingan"
+                  description="Tidak ada mahasiswa bimbingan aktif"
                 />
               )}
             </CardContent>
@@ -312,10 +320,10 @@ export default function DosenDetail() {
                   ))}
                 </div>
               ) : (
-                <EmptyState 
-                  size="sm" 
-                  title="Tidak Ada Penguji" 
-                  description="Tidak menjadi penguji skripsi manapun" 
+                <EmptyState
+                  size="sm"
+                  title="Tidak Ada Penguji"
+                  description="Tidak menjadi penguji skripsi manapun"
                 />
               )}
             </CardContent>
@@ -349,10 +357,10 @@ export default function DosenDetail() {
                   ))}
                 </div>
               ) : (
-                <EmptyState 
-                  size="sm" 
-                  title="Belum Ada Riwayat" 
-                  description="Belum ada riwayat bimbingan" 
+                <EmptyState
+                  size="sm"
+                  title="Belum Ada Riwayat"
+                  description="Belum ada riwayat bimbingan"
                 />
               )}
             </CardContent>
@@ -390,6 +398,8 @@ export default function DosenDetail() {
           )}
         </div>
       </div>
+
+      
     </div>
   );
 }
