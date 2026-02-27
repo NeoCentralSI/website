@@ -76,7 +76,7 @@ import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
 // Lecturer Availability
-import JadwalKetersediaan from './pages/kelola/JadwalKetersediaan'
+import JadwalKetersediaan from './pages/lecturer/JadwalKetersediaan'
 // Others
 import NotFoundPage from './pages/NotFound'
 import { ROLES, LECTURER_ROLES } from './lib/roles'

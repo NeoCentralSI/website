@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useLecturerAvailability } from '@/hooks/useLecturerAvailability';
+import { useLecturerAvailability } from '@/hooks/lecturer/useLecturerAvailability';
 import { AvailabilityTable } from '@/components/lecturer-availability/AvailabilityTable';
 import { AvailabilityFormDialog } from '@/components/lecturer-availability/AvailabilityFormDialog';
 
