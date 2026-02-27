@@ -123,6 +123,10 @@ export default function GuidanceSessionPage() {
   const isCompleted = guidance?.status === "completed";
   const hasSummary = !!guidance?.sessionSummary;
 
+  // Timing check
+  const guidanceDate = guidance?.approvedDate || guidance?.requestedDate;
+  const isTimeArrived = guidanceDate ? new Date(guidanceDate) <= new Date() : false;
+
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-200px)] items-center justify-center">
@@ -413,87 +417,99 @@ export default function GuidanceSessionPage() {
                   ) : (
                     // Edit mode - needs to fill
                     <>
-                      <Alert className="border-amber-200 bg-linear-to-r from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20">
-                        <PenLine className="h-4 w-4 text-amber-600" />
-                        <AlertTitle className="text-amber-700 dark:text-amber-400">Isi Catatan Bimbingan</AlertTitle>
-                        <AlertDescription className="text-amber-600 dark:text-amber-500 text-sm">
-                          Silakan isi catatan bimbingan setelah sesi selesai. Dosen pembimbing akan mereview dan menyetujui catatan Anda.
-                        </AlertDescription>
-                      </Alert>
-
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center">
-                              <BookOpen className="h-3.5 w-3.5 text-blue-600" />
-                            </div>
-                            <Label htmlFor="sessionSummary" className="text-sm font-semibold">
-                              Ringkasan Bimbingan <span className="text-destructive">*</span>
-                            </Label>
-                          </div>
-                          <Textarea
-                            id="sessionSummary"
-                            value={sessionSummary}
-                            onChange={(e) => setSessionSummary(e.target.value)}
-                            placeholder="Tuliskan ringkasan pembahasan selama sesi bimbingan..."
-                            rows={5}
-                            className="resize-none border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Deskripsikan apa saja yang dibahas dalam sesi bimbingan
+                      {!isTimeArrived ? (
+                        <div className="py-12 flex flex-col items-center justify-center text-center border-2 border-dashed rounded-lg bg-muted/20">
+                          <Clock className="h-12 w-12 mb-4 text-muted-foreground/50" />
+                          <h3 className="text-lg font-semibold mb-2">Belum Waktu Bimbingan</h3>
+                          <p className="text-muted-foreground text-sm max-w-sm">
+                            Catatan sesi bimbingan baru dapat diisi setelah waktu bimbingan tiba {guidance.approvedDateFormatted ? `(${guidance.approvedDateFormatted})` : ''}.
                           </p>
                         </div>
+                      ) : (
+                        <>
+                          <Alert className="border-amber-200 bg-linear-to-r from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20">
+                            <PenLine className="h-4 w-4 text-amber-600" />
+                            <AlertTitle className="text-amber-700 dark:text-amber-400">Isi Catatan Bimbingan</AlertTitle>
+                            <AlertDescription className="text-amber-600 dark:text-amber-500 text-sm">
+                              Silakan isi catatan bimbingan setelah sesi selesai. Dosen pembimbing akan mereview dan menyetujui catatan Anda.
+                            </AlertDescription>
+                          </Alert>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center">
-                              <ListTodo className="h-3.5 w-3.5 text-amber-600" />
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center">
+                                  <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+                                </div>
+                                <Label htmlFor="sessionSummary" className="text-sm font-semibold">
+                                  Ringkasan Bimbingan <span className="text-destructive">*</span>
+                                </Label>
+                              </div>
+                              <Textarea
+                                id="sessionSummary"
+                                value={sessionSummary}
+                                onChange={(e) => setSessionSummary(e.target.value)}
+                                placeholder="Tuliskan ringkasan pembahasan selama sesi bimbingan..."
+                                rows={5}
+                                className="resize-none border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Deskripsikan apa saja yang dibahas dalam sesi bimbingan
+                              </p>
                             </div>
-                            <Label htmlFor="actionItems" className="text-sm font-semibold">
-                              Arahan / Action Items
-                            </Label>
-                          </div>
-                          <Textarea
-                            id="actionItems"
-                            value={actionItems}
-                            onChange={(e) => setActionItems(e.target.value)}
-                            placeholder="Tuliskan saran, arahan, atau tugas yang diberikan dosen pembimbing..."
-                            rows={4}
-                            className="resize-none border-amber-200 focus:border-amber-400 focus:ring-amber-400/20"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Apa yang harus dikerjakan sebelum bimbingan selanjutnya
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button
-                          variant="outline"
-                          onClick={() => navigate("/tugas-akhir/bimbingan/student")}
-                          disabled={isSubmitting}
-                        >
-                          <ArrowLeft className="h-4 w-4 mr-2" />
-                          Kembali
-                        </Button>
-                        <Button
-                          onClick={handleSubmit}
-                          disabled={isSubmitting || !sessionSummary.trim()}
-                          className="bg-primary hover:bg-primary/90"
-                        >
-                          {submitMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Mengirim...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4 mr-2" />
-                              Kirim Catatan
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center">
+                                  <ListTodo className="h-3.5 w-3.5 text-amber-600" />
+                                </div>
+                                <Label htmlFor="actionItems" className="text-sm font-semibold">
+                                  Arahan / Action Items
+                                </Label>
+                              </div>
+                              <Textarea
+                                id="actionItems"
+                                value={actionItems}
+                                onChange={(e) => setActionItems(e.target.value)}
+                                placeholder="Tuliskan saran, arahan, atau tugas yang diberikan dosen pembimbing..."
+                                rows={4}
+                                className="resize-none border-amber-200 focus:border-amber-400 focus:ring-amber-400/20"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Apa yang harus dikerjakan sebelum bimbingan selanjutnya
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end gap-3 pt-4 border-t">
+                            <Button
+                              variant="outline"
+                              onClick={() => navigate("/tugas-akhir/bimbingan/student")}
+                              disabled={isSubmitting}
+                            >
+                              <ArrowLeft className="h-4 w-4 mr-2" />
+                              Kembali
+                            </Button>
+                            <Button
+                              onClick={handleSubmit}
+                              disabled={isSubmitting || !sessionSummary.trim()}
+                              className="bg-primary hover:bg-primary/90"
+                            >
+                              {submitMutation.isPending ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Mengirim...
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="h-4 w-4 mr-2" />
+                                  Kirim Catatan
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                 </CardContent>

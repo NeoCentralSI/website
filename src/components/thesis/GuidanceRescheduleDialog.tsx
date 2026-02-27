@@ -107,7 +107,7 @@ export function GuidanceRescheduleDialog({ onReschedule, trigger, open: external
   const handleSubmit = async () => {
     if (!when) return;
     if (slotConflict) return;
-    
+
     setIsSubmitting(true);
     try {
       const success = await onReschedule({
@@ -122,7 +122,7 @@ export function GuidanceRescheduleDialog({ onReschedule, trigger, open: external
     }
   };
 
-  const canSubmit = !!when && !slotConflict && !checkingAvailability;
+  const canSubmit = !!when && !slotConflict && !checkingAvailability && studentNotes.trim().length > 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -160,7 +160,7 @@ export function GuidanceRescheduleDialog({ onReschedule, trigger, open: external
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* Fixed height area for messages */}
           <div className="min-h-6">
             {checkingAvailability && (
@@ -175,7 +175,7 @@ export function GuidanceRescheduleDialog({ onReschedule, trigger, open: external
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="notes">Alasan (opsional)</Label>
+            <Label htmlFor="notes">Alasan <span className="text-destructive">*</span></Label>
             <Input
               id="notes"
               value={studentNotes}

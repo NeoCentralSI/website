@@ -2,25 +2,49 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useRole } from '@/hooks/shared/useRole';
-import { getLecturersAPI, type Lecturer } from '@/services/admin.service';
+import { getLecturersAPI, getScienceGroupsAPI, updateLecturerByAdminAPI, type Lecturer } from '@/services/admin.service';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye } from 'lucide-react';
+import { Eye, Edit } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Dosen() {
   const navigate = useNavigate();
   const { isAdmin } = useRole();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  
+
   // Local UI state only
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
+  const [scienceGroupFilter, setScienceGroupFilter] = useState('');
+
+  // Edit states
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedLecturer, setSelectedLecturer] = useState<Lecturer | null>(null);
+  const [selectedScienceGroup, setSelectedScienceGroup] = useState<string>('');
+  const queryClient = useQueryClient();
+
+  const { data: scienceGroups } = useQuery({
+    queryKey: ['science-groups'],
+    queryFn: getScienceGroupsAPI,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (sgId: string | null) => updateLecturerByAdminAPI(selectedLecturer!.id, { scienceGroupId: sgId }),
+    onSuccess: () => {
+      toast.success('Kelompok Keilmuan berhasil diperbarui');
+      queryClient.invalidateQueries({ queryKey: ['lecturers'] });
+      setIsEditOpen(false);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
 
   // Memoized breadcrumbs to avoid unnecessary re-renders
   const breadcrumbs = useMemo(() => [
@@ -41,8 +65,8 @@ export default function Dosen() {
 
   // Use TanStack Query for server state management
   const { data, isLoading, isFetching, refetch, error } = useQuery({
-    queryKey: ['lecturers', { page, pageSize, search: searchValue }],
-    queryFn: () => getLecturersAPI({ page, pageSize, search: searchValue }),
+    queryKey: ['lecturers', { page, pageSize, search: searchValue, scienceGroupId: scienceGroupFilter }],
+    queryFn: () => getLecturersAPI({ page, pageSize, search: searchValue, scienceGroupId: scienceGroupFilter }),
     placeholderData: (previousData) => previousData, // Keep previous data while fetching
     staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
   });
@@ -79,6 +103,19 @@ export default function Dosen() {
       key: 'phone',
       header: 'Telepon',
       render: (row: Lecturer) => row.phone || '-',
+    },
+    {
+      key: 'scienceGroup',
+      header: 'Kelompok Keilmuan',
+      render: (row: Lecturer) => row.lecturer?.scienceGroup || <span className="text-gray-400 italic">-</span>,
+      filter: {
+        kind: 'control',
+        type: 'select',
+        value: scienceGroupFilter,
+        onChange: setScienceGroupFilter,
+        options: scienceGroups?.data?.map((sg: any) => ({ value: sg.id, label: sg.name })) || [],
+        placeholder: 'Semua Kelompok Keilmuan'
+      }
     },
     {
       key: 'activeGuidances',
@@ -119,6 +156,20 @@ export default function Dosen() {
           >
             <Eye className="w-4 h-4" />
           </Button>
+          {isAdmin() && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+              onClick={() => {
+                setSelectedLecturer(row);
+                setSelectedScienceGroup(row.lecturer?.scienceGroupId || '');
+                setIsEditOpen(true);
+              }}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -151,12 +202,49 @@ export default function Dosen() {
         onSearchChange={setSearchValue}
         enableColumnFilters
         actions={
-          <RefreshButton 
-            onClick={() => refetch()} 
-            isRefreshing={isFetching && !isLoading} 
+          <RefreshButton
+            onClick={() => refetch()}
+            isRefreshing={isFetching && !isLoading}
           />
         }
       />
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Kelompok Keilmuan Dosen</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">Kelompok Keilmuan</label>
+            <div className="flex items-center gap-2">
+              <Select value={selectedScienceGroup} onValueChange={setSelectedScienceGroup}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih Kelompok Keilmuan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- Hapus Kelompok Keilmuan --</SelectItem>
+                  {scienceGroups?.data?.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Dosen yang diedit: {toTitleCaseName(selectedLecturer?.fullName || '')}</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
+            <Button onClick={() => {
+              let value = selectedScienceGroup;
+              if (value === 'none') {
+                value = '';
+              }
+              updateMutation.mutate(value === '' ? null : value);
+            }} disabled={updateMutation.isPending}>Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

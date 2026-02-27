@@ -107,6 +107,13 @@ export function TemplateManagementPanel() {
     }
   }, [templates, reorderEnabled]);
 
+  // Auto-select first topic if none selected and topics are loaded
+  useEffect(() => {
+    if (!topicFilter && templateTopics.length > 0) {
+      setTopicFilter(templateTopics[0].id);
+    }
+  }, [templateTopics, topicFilter]);
+
   const filteredTemplates = useMemo(() => {
     const term = search.trim().toLowerCase();
     const source = orderedTemplates;
@@ -310,14 +317,7 @@ export function TemplateManagementPanel() {
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant={!topicFilter ? "secondary" : "outline"}
-                onClick={() => setTopicFilter(null)}
-                disabled={isBusy}
-              >
-                Semua Topik
-              </Button>
+
               {templateTopics.map((topic) => (
                 <Button
                   key={topic.id}

@@ -37,7 +37,7 @@ export default function AccountInactive() {
         navigate('/login');
       } else {
         // Navigate to email sent confirmation page
-        navigate('/activation-email-sent', { state: { email } });
+        navigate('/auth/activate/email-sent', { state: { email } });
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Terjadi kesalahan');

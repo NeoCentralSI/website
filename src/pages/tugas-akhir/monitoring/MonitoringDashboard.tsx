@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import {
   MonitoringSummaryCards,
   StatusDistributionCard,
   RatingDistributionCard,
-  AtRiskStudentsCard,
+  SlowStudentsCard,
   ReadyForSeminarCard,
   ThesesTable,
 } from "@/components/monitoring";
@@ -29,17 +29,32 @@ import { toast } from "sonner";
 export default function MonitoringDashboard() {
   const [searchParams] = useSearchParams();
   const initialRating = searchParams.get("rating") || undefined;
-  
+
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const queryClient = useQueryClient();
-  
+
   // Pass academicYear filter to hooks
   const academicYearFilter = selectedAcademicYear === "all" ? undefined : selectedAcademicYear;
   const { data, isLoading, isFetching, refetch } = useMonitoringDashboard(academicYearFilter);
   const { data: filterOptions } = useFilterOptions();
   const { setBreadcrumbs } = useOutletContext<LayoutContext>();
+
+  const hasInitialized = React.useRef(false);
+
+  // Default to active academic year once loaded if not set yet
+  useEffect(() => {
+    if (filterOptions?.academicYears && !hasInitialized.current) {
+      if (selectedAcademicYear === "all") {
+        const active = filterOptions.academicYears.find(ay => ay.isActive);
+        if (active) {
+          setSelectedAcademicYear(active.value);
+        }
+      }
+      hasInitialized.current = true;
+    }
+  }, [filterOptions, selectedAcademicYear]);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -80,10 +95,9 @@ export default function MonitoringDashboard() {
     }
   };
 
-  const activeAcademicYear = filterOptions?.academicYears?.find((ay) => ay.isActive);
   const displayAcademicYear =
     selectedAcademicYear === "all"
-      ? activeAcademicYear?.label || "Ganji 2025"
+      ? "Semua Semester"
       : filterOptions?.academicYears?.find((ay) => ay.value === selectedAcademicYear)?.label || "";
 
   // Full blank loading on browser reload (no cached data)
@@ -106,7 +120,7 @@ export default function MonitoringDashboard() {
               <SelectValue placeholder="Pilih Tahun Ajaran" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
+              <SelectItem value="all">Semua Semester</SelectItem>
               {filterOptions?.academicYears?.map((ay) => (
                 <SelectItem key={ay.value} value={ay.value}>
                   {ay.label} {ay.isActive && "(Aktif)"}
@@ -123,10 +137,10 @@ export default function MonitoringDashboard() {
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingAny ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button 
-            variant="default" 
-            size="sm" 
-            onClick={handleDownloadReport} 
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleDownloadReport}
             disabled={isGeneratingReport || isLoading}
           >
             {isGeneratingReport ? (
@@ -156,8 +170,8 @@ export default function MonitoringDashboard() {
           ratingDistribution={data?.ratingDistribution}
           isLoading={isLoadingAny}
         />
-        <AtRiskStudentsCard
-          students={data?.atRiskStudents}
+        <SlowStudentsCard
+          students={data?.slowStudents}
           isLoading={isLoadingAny}
         />
         <ReadyForSeminarCard

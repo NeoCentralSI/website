@@ -12,6 +12,7 @@ export interface ProgressStats {
   studentsWithNoProgress: number;
   totalReadyForSeminar: number;
   totalAtRisk: number;
+  totalSlow?: number;
 }
 
 export interface StatusDistribution {
@@ -62,6 +63,7 @@ export interface MonitoringDashboard {
   statusDistribution: StatusDistribution[];
   ratingDistribution: RatingDistribution[];
   atRiskStudents: AtRiskStudent[];
+  slowStudents: AtRiskStudent[];
   readyForSeminar: ReadyForSeminarStudent[];
 }
 
@@ -78,6 +80,7 @@ export interface ThesisListItem {
   };
   status: string;
   academicYear: string;
+  startSemester: string;
   progress: {
     completed: number;
     total: number;
@@ -268,7 +271,7 @@ export async function getThesesList(filters: ThesesFilters = {}): Promise<Theses
 
   if (filters.status) params.append("status", filters.status);
   if (filters.lecturerId) params.append("lecturerId", filters.lecturerId);
-  if (filters.academicYear) params.append("academicYear", filters.academicYear);
+  if (filters.academicYear && filters.academicYear !== "all") params.append("academicYear", filters.academicYear);
   if (filters.search) params.append("search", filters.search);
   if (filters.page) params.append("page", filters.page.toString());
   if (filters.pageSize) params.append("pageSize", filters.pageSize.toString());
@@ -310,6 +313,22 @@ export async function getAtRiskStudents(academicYear?: string): Promise<AtRiskSt
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Gagal mengambil mahasiswa berisiko");
+  }
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Get slow students list
+ */
+export async function getSlowStudents(academicYear?: string): Promise<AtRiskStudent[]> {
+  const url = academicYear && academicYear !== "all"
+    ? `${getApiUrl("/thesisGuidance/monitoring/slow")}?academicYear=${academicYear}`
+    : getApiUrl("/thesisGuidance/monitoring/slow");
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil mahasiswa slow");
   }
   const result = await response.json();
   return result.data;

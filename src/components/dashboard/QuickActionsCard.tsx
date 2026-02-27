@@ -149,9 +149,10 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
 
       // Filter for students where:
       // 1. Milestone is 100% complete
-      // 2. Current user has not yet approved
+      // 2. Guidance requirement is met (8+ completed sessions)
+      // 3. Current user has not yet approved
       return readinessStatuses.filter(
-        (r: any) => r && r.milestoneProgress?.isComplete && r.currentUserRole && !r.currentUserHasApproved
+        (r: any) => r && r.milestoneProgress?.isComplete && r.guidanceProgress?.isComplete && r.currentUserRole && !r.currentUserHasApproved
       );
     },
     enabled: !!studentsData?.students,

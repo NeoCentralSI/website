@@ -100,7 +100,7 @@ export function SeminarReadinessCard({
         <CardTitle className="flex items-center gap-2">
           {isFullyApproved ? (
             <CheckCircle2 className="h-5 w-5 text-green-500" />
-          ) : isMilestoneComplete ? (
+          ) : (isMilestoneComplete && readinessStatus.guidanceProgress?.isComplete) ? (
             <AlertCircle className="h-5 w-5 text-yellow-500" />
           ) : (
             <XCircle className="h-5 w-5 text-muted-foreground" />
@@ -117,6 +117,30 @@ export function SeminarReadinessCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Guidance Progress */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span>Progress Bimbingan</span>
+            <Badge variant={readinessStatus.guidanceProgress?.isComplete ? "default" : "secondary"}>
+              {readinessStatus.guidanceProgress?.completed ?? 0} / {readinessStatus.guidanceProgress?.required ?? 8}
+            </Badge>
+          </div>
+          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full transition-all",
+                readinessStatus.guidanceProgress?.isComplete ? "bg-green-500" : "bg-primary"
+              )}
+              style={{ width: `${Math.min(((readinessStatus.guidanceProgress?.completed ?? 0) / 8) * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {readinessStatus.guidanceProgress?.isComplete
+              ? "Syarat minimal 8 sesi bimbingan terpenuhi"
+              : `Kurang ${8 - (readinessStatus.guidanceProgress?.completed ?? 0)} sesi bimbingan lagi`}
+          </p>
+        </div>
+
         {/* Milestone Progress */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
@@ -209,17 +233,30 @@ export function SeminarReadinessCard({
         {/* Actions */}
         {isSupervisor && (
           <div className="pt-4 border-t space-y-2">
-            {!isMilestoneComplete && (
-              <p className="text-sm text-muted-foreground">
-                <AlertCircle className="h-4 w-4 inline mr-1" />
-                Milestone harus 100% selesai sebelum dapat disetujui untuk seminar.
-              </p>
+            {(!isMilestoneComplete || !readinessStatus.guidanceProgress?.isComplete) && (
+              <div className="space-y-2">
+                {!isMilestoneComplete && (
+                  <p className="text-sm text-muted-foreground flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-2 text-yellow-500" />
+                    Milestone harus 100% selesai.
+                  </p>
+                )}
+                {!readinessStatus.guidanceProgress?.isComplete && (
+                  <p className="text-sm text-muted-foreground flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-2 text-yellow-500" />
+                    Minimal 8 sesi bimbingan harus berstatus 'completed'.
+                  </p>
+                )}
+              </div>
             )}
 
-            {isMilestoneComplete && !currentUserHasApproved && (
+            {!currentUserHasApproved && (
               <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full" disabled={isApproving}>
+                  <Button
+                    className="w-full mt-2"
+                    disabled={isApproving || !isMilestoneComplete || !readinessStatus.guidanceProgress?.isComplete}
+                  >
                     {isApproving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Setujui Kesiapan Seminar

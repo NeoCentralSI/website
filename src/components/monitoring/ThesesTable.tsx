@@ -224,12 +224,10 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
       ),
     },
     {
-      key: "title",
-      header: "Judul",
+      key: "startSemester",
+      header: "Mulai TA",
       render: (thesis) => (
-        <p className="max-w-62.5 truncate" title={thesis.title}>
-          {thesis.title}
-        </p>
+        <span className="whitespace-nowrap">{thesis.startSemester || thesis.academicYear}</span>
       ),
     },
     {

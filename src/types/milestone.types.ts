@@ -369,6 +369,11 @@ export interface SeminarReadinessStatus {
     percentComplete: number;
     isComplete: boolean;
   };
+  guidanceProgress: {
+    completed: number;
+    required: number;
+    isComplete: boolean;
+  };
   seminarReadiness: {
     approvedBySupervisor1: boolean;
     approvedBySupervisor2: boolean;
