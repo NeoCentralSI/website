@@ -156,6 +156,11 @@ export const API_CONFIG = {
       BY_ID: (id: string) => `/cpl/${id}`,
       TOGGLE: (id: string) => `/cpl/${id}/toggle`,
     },
+    CPMK: {
+      BASE: '/cpmk',
+      BY_ID: (id: string) => `/cpmk/${id}`,
+      TOGGLE: (id: string) => `/cpmk/${id}/toggle`,
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };

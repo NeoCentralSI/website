@@ -228,6 +228,7 @@ function App() {
                 <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
+                <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
                 <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
               </Route>
