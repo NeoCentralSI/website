@@ -274,6 +274,7 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
+          { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
         ],
       });
 
@@ -365,6 +366,7 @@ export const useSidebarMenu = () => {
           { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
+          { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
         ],
       });
 

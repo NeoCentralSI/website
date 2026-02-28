@@ -70,6 +70,7 @@ import ScienceGroupPage from './pages/master-data/ScienceGroup'
 // Kelola
 import KelolaTugasAkhirKadepPage from './pages/kelola/kadep/KelolaTugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
+import KelolaCpl from './pages/kelola/KelolaCpl'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
@@ -210,6 +211,7 @@ function App() {
               <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                 <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                 <Route path="/kelola/sop" element={<KelolaSopPage />} />
+                <Route path="/kelola/data-cpl" element={<KelolaCpl />} />
               </Route>
 
               {/* Kelola - Sekretaris */}

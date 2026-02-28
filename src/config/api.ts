@@ -151,6 +151,11 @@ export const API_CONFIG = {
       BY_ID: (id: string) => `/lecturer-availability/${id}`,
       TOGGLE: (id: string) => `/lecturer-availability/${id}/toggle`,
     },
+    CPL: {
+      BASE: '/cpl',
+      BY_ID: (id: string) => `/cpl/${id}`,
+      TOGGLE: (id: string) => `/cpl/${id}/toggle`,
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };
