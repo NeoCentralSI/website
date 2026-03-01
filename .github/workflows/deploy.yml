@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────────────────────────────
+# CI/CD – Frontend (website)
+# Triggers on push to main branch
+# Self-hosted runner on VM → build Docker image locally → deploy
+# ─────────────────────────────────────────────────────────────────
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DEPLOY_DIR: /www/wwwroot/neocentral
+  IMAGE_TAG: neocentral/website:latest
+
+jobs:
+  # ── Build & Deploy ─────────────────────────────────────────────
+  deploy:
+    name: Build & Deploy
+    runs-on: self-hosted
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image locally
+        run: |
+          docker build -t ${{ env.IMAGE_TAG }} \
+            --build-arg VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }} \
+            --build-arg VITE_NODE_ENV=production \
+            --build-arg VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }} \
+            --build-arg VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }} \
+            --build-arg VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }} \
+            --build-arg VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }} \
+            --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }} \
+            --build-arg VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }} \
+            --build-arg VITE_FIREBASE_VAPID_KEY=${{ secrets.VITE_FIREBASE_VAPID_KEY }} \
+            .
+
+      - name: Deploy frontend
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          docker compose up -d frontend --force-recreate
+
+      - name: Cleanup old images
+        run: docker image prune -f
+
+      - name: Verify deployment
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          docker compose ps frontend
+          echo "✅ Frontend deployed successfully"

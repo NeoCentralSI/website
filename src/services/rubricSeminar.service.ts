@@ -37,6 +37,14 @@ export interface CpmkWithRubrics {
     assessmentCriterias: AssessmentCriteria[];
 }
 
+export interface QuickAddRubricPayload {
+    criteriaMaxScore: number;
+    description: string;
+    minScore: number;
+    maxScore: number;
+    criteriaName?: string;
+}
+
 export interface CreateCriteriaPayload {
     cpmkId: string;
     name?: string;
