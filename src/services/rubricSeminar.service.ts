@@ -56,6 +56,14 @@ export interface CreateRubricPayload {
 
 export type UpdateRubricPayload = Partial<CreateRubricPayload>;
 
+export interface QuickAddRubricPayload {
+    criteriaMaxScore: number;
+    description: string;
+    minScore: number;
+    maxScore: number;
+    criteriaName?: string;
+}
+
 export interface WeightSummaryDetail {
     cpmkId: string;
     cpmkCode: string;
