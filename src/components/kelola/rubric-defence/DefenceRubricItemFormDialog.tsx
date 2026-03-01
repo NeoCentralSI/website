@@ -15,9 +15,9 @@ import type {
     AssessmentRubric,
     CreateRubricPayload,
     UpdateRubricPayload,
-} from '@/services/rubricSeminar.service';
+} from '@/services/rubricDefence.service';
 
-interface RubricItemFormDialogProps {
+interface DefenceRubricItemFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     criteriaMaxScore: number | null;
@@ -27,13 +27,13 @@ interface RubricItemFormDialogProps {
         | ((data: UpdateRubricPayload) => Promise<unknown>);
 }
 
-export function RubricItemFormDialog({
+export function DefenceRubricItemFormDialog({
     open,
     onOpenChange,
     criteriaMaxScore,
     editData,
     onSubmit,
-}: RubricItemFormDialogProps) {
+}: DefenceRubricItemFormDialogProps) {
     const [description, setDescription] = useState('');
     const [minScore, setMinScore] = useState('');
     const [maxScore, setMaxScore] = useState('');
@@ -76,7 +76,6 @@ export function RubricItemFormDialog({
     const parsedMin = parseInt(minScore, 10);
     const parsedMax = parseInt(maxScore, 10);
 
-    // Validation
     const minValid = !isNaN(parsedMin) && parsedMin >= 0;
     const maxValid = !isNaN(parsedMax) && parsedMax > 0;
     const rangeValid = minValid && maxValid && parsedMin < parsedMax;
@@ -95,9 +94,7 @@ export function RubricItemFormDialog({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEdit
-                            ? 'Edit Level Rubrik'
-                            : 'Tambah Level Rubrik'}
+                        {isEdit ? 'Edit Level Rubrik Sidang' : 'Tambah Level Rubrik Sidang'}
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -159,7 +156,6 @@ export function RubricItemFormDialog({
                         </div>
                     </div>
 
-                    {/* Validation messages */}
                     {maxScore.trim() && maxValid && !withinCriteria && (
                         <p className="text-xs text-destructive">
                             Skor maksimum ({parsedMax}) melebihi skor kriteria ({criteriaMaxScore}).

@@ -173,6 +173,18 @@ export const API_CONFIG = {
       RUBRICS_REORDER: '/rubric-seminar/rubrics/reorder',
       WEIGHT_SUMMARY: '/rubric-seminar/weight-summary',
     },
+    RUBRIC_DEFENCE: {
+      CPMKS: (role: string) => `/rubric-defence/cpmks?role=${role}`,
+      CRITERIA: '/rubric-defence/criteria',
+      CRITERIA_BY_ID: (criteriaId: string) => `/rubric-defence/criteria/${criteriaId}`,
+      CRITERIA_TOGGLE: (criteriaId: string) => `/rubric-defence/criteria/${criteriaId}/toggle`,
+      CRITERIA_REORDER: '/rubric-defence/criteria/reorder',
+      CPMK_CONFIG: (cpmkId: string, role: string) => `/rubric-defence/cpmk/${cpmkId}?role=${role}`,
+      CRITERIA_RUBRICS: (criteriaId: string) => `/rubric-defence/criteria/${criteriaId}/rubrics`,
+      RUBRIC_BY_ID: (rubricId: string) => `/rubric-defence/rubrics/${rubricId}`,
+      RUBRICS_REORDER: '/rubric-defence/rubrics/reorder',
+      WEIGHT_SUMMARY: (role: string) => `/rubric-defence/weight-summary?role=${role}`,
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };
