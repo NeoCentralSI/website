@@ -44,7 +44,7 @@ interface ExitSurveyQuestionTableProps {
 
 export function ExitSurveyQuestionTable({
   formId,
-  formName,
+  formName: _formName,
   data,
   isLoading,
   isFetching,

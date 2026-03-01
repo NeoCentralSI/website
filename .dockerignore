@@ -1,0 +1,13 @@
+node_modules
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.github
+README.md
+*.log
+dist
+build_logs.txt
+tsc_errors.txt
+remove_logs.js
