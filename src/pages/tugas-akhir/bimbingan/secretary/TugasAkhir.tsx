@@ -5,8 +5,7 @@ import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
 import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
 import { DataMasterTaPanel } from "@/components/kelola/DataMasterTaPanel";
-import { CpmkManagementPanel } from "@/components/kelola/cpmk/CpmkManagementPanel";
-
+import { CpmkManagementPanel } from "@/components/kelola/cpmk/CpmkManagementPanel";import { RubricSeminarManagementPanel } from '@/components/kelola/rubric-seminar/RubricSeminarManagementPanel';
 const TAB_ITEMS: TabItem[] = [
   { label: "Kelola Topik", to: "/kelola/tugas-akhir/topik" },
   { label: "Kelola Milestone", to: "/kelola/tugas-akhir/milestone" },
@@ -56,6 +55,10 @@ export default function KelolaTugasAkhirPage() {
 
     if (activeTab.label === "Kelola CPMK") {
       return <CpmkManagementPanel />;
+    }
+
+    if (activeTab.label === "Kelola Rubrik Seminar") {
+      return <RubricSeminarManagementPanel />;
     }
 
     return (

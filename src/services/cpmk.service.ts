@@ -6,9 +6,7 @@ export interface Cpmk {
     code: string;
     description: string;
     type: 'research_method' | 'thesis';
-    proposalWeight: number | null;
-    seminarWeight: number | null;
-    defenceWeight: number | null;
+    maxScore: number | null;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;

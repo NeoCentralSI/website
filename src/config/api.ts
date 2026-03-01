@@ -161,6 +161,18 @@ export const API_CONFIG = {
       BY_ID: (id: string) => `/cpmk/${id}`,
       TOGGLE: (id: string) => `/cpmk/${id}/toggle`,
     },
+    RUBRIC_SEMINAR: {
+      CPMKS: '/rubric-seminar/cpmks',
+      CRITERIA: '/rubric-seminar/criteria',
+      CRITERIA_BY_ID: (criteriaId: string) => `/rubric-seminar/criteria/${criteriaId}`,
+      CRITERIA_TOGGLE: (criteriaId: string) => `/rubric-seminar/criteria/${criteriaId}/toggle`,
+      CRITERIA_REORDER: '/rubric-seminar/criteria/reorder',
+      CPMK_CONFIG: (cpmkId: string) => `/rubric-seminar/cpmk/${cpmkId}`,
+      CRITERIA_RUBRICS: (criteriaId: string) => `/rubric-seminar/criteria/${criteriaId}/rubrics`,
+      RUBRIC_BY_ID: (rubricId: string) => `/rubric-seminar/rubrics/${rubricId}`,
+      RUBRICS_REORDER: '/rubric-seminar/rubrics/reorder',
+      WEIGHT_SUMMARY: '/rubric-seminar/weight-summary',
+    },
   },
   TIMEOUT: 10000, // 10 detik
 };
