@@ -72,6 +72,7 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
       if (hasDateChanged && rescheduleDate) {
         await rescheduleStudentGuidance(guidanceId, {
           guidanceDate: rescheduleDate.toISOString(),
+          studentNotes: notes || "",
         });
         toast.success("Bimbingan berhasil diperbarui", { id: "guidance-updated" });
       } else {

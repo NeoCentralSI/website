@@ -79,7 +79,9 @@ export interface StudentDetail {
   status: string;
   rating: string;
   startDate: string | null;
+  startDateFormatted: string | null;
   deadlineDate: string | null;
+  deadlineDateFormatted: string | null;
   student: {
     id: string;
     fullName: string;
@@ -101,8 +103,15 @@ export interface StudentDetail {
     title: string;
     status: string;
     updatedAt: string;
+    updatedAtFormatted?: string;
     progressPercentage: number;
+    targetDate?: string;
+    targetDateFormatted?: string;
   }[];
+  guidanceHistory: {
+    count: number;
+    items: GuidanceItem[];
+  };
 }
 
 export const validateMilestone = async (milestoneId: string, notes?: string): Promise<{ success: boolean; data: any }> => {

@@ -20,7 +20,6 @@ import Placeholder from './pages/Placeholder'
 import BimbinganEntry from './pages/tugas-akhir/bimbingan/BimbinganEntry'
 import StudentGuidancePage from './pages/tugas-akhir/bimbingan/student/StudentGuidance'
 import StudentGuidanceSessionPage from './pages/tugas-akhir/bimbingan/student/GuidanceSession'
-import GuidanceHistoryPage from './pages/tugas-akhir/bimbingan/student/History'
 import StudentMilestonePage from './pages/tugas-akhir/bimbingan/student/Milestone'
 import CompletedHistoryPage from './pages/tugas-akhir/bimbingan/student/CompletedHistory'
 import DangerZonePage from './pages/tugas-akhir/bimbingan/student/DangerZone'
@@ -29,7 +28,6 @@ import LecturerScheduledPage from './pages/tugas-akhir/bimbingan/lecturer/Schedu
 import LecturerGuidanceSessionPage from './pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'
 import LecturerMyStudentsPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudents'
 import LecturerMyStudentDetailPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'
-import LecturerHistoryPage from './pages/tugas-akhir/bimbingan/lecturer/History'
 import SecretaryKelolaTugasAkhirPage from './pages/tugas-akhir/bimbingan/secretary/TugasAkhir'
 // Kerja Praktik
 import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
@@ -156,9 +154,7 @@ function App() {
                   <Route index element={<TugasAkhirOverviewPage />} />
                   {/* Removed bimbingan/ route to allow BimbinganEntry to handle role-based redirection */}
                   <Route path="bimbingan/student" element={<StudentGuidancePage />} />
-                  <Route path="bimbingan/session/:id" element={<StudentGuidanceSessionPage />} />
                   <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
-                  <Route path="bimbingan/history" element={<GuidanceHistoryPage />} />
                   <Route path="bimbingan/milestone" element={<StudentMilestonePage />} />
                   <Route path="bimbingan/completed-history" element={<CompletedHistoryPage />} />
                   <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
@@ -188,7 +184,6 @@ function App() {
                 <Route path="/tugas-akhir/bimbingan/lecturer/session/:guidanceId" element={<LecturerGuidanceSessionPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
-                <Route path="/tugas-akhir/bimbingan/lecturer/history/:studentId" element={<LecturerHistoryPage />} />
               </Route>
 
               {/* Tugas Akhir - Non-student routes (monitoring, etc) */}
