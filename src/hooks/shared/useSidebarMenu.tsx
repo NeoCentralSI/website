@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Briefcase,
+  Clock,
   Database,
   FileText,
   SquareTerminal,
@@ -182,7 +183,13 @@ export const useSidebarMenu = () => {
         items: tugasAkhirItems,
       });
 
-      // no Profil for lecturer normal
+      // Jadwal Ketersediaan
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
+      });
 
       return {
         user: {
@@ -249,6 +256,14 @@ export const useSidebarMenu = () => {
         ],
       });
 
+      // Jadwal Ketersediaan
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
+      });
+
       // Menu Kelola (fitur manajemen Kadep)
       menuItems.push({
         title: "Kelola",
@@ -259,6 +274,7 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
+          { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
         ],
       });
 
@@ -331,6 +347,14 @@ export const useSidebarMenu = () => {
         items: tugasAkhirItems,
       });
 
+      // Jadwal Ketersediaan
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
+      });
+
       menuItems.push({
         title: "Kelola",
         url: "#",
@@ -342,6 +366,7 @@ export const useSidebarMenu = () => {
           { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
+          { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
         ],
       });
 
@@ -412,6 +437,14 @@ export const useSidebarMenu = () => {
         url: "#",
         icon: FileText,
         items: tugasAkhirItems,
+      });
+
+      // Jadwal Ketersediaan
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
       });
 
       // no Profil for gkm

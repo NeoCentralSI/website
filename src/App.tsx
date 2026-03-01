@@ -41,7 +41,8 @@ import SekdepCompanyListPage from './pages/kerja-praktik/sekdep/companies/Compan
 // Overview Pages
 import KerjaPraktekOverviewPage from './pages/kerja-praktik/Overview'
 import MetopenOverviewPage from './pages/metopel/Overview'
-import YudisiumOverviewPage from './pages/yudisium/Overview'
+import YudisiumOverviewPage from './pages/yudisium/student/Overview'
+import KelolaYudisiumPage from './pages/yudisium/KelolaYudisium'
 import TugasAkhirOverviewPage from './pages/tugas-akhir/Overview'
 import AdminCompanyListPage from './pages/kerja-praktik/admin/companies/CompanyList'
 import AdminApplicationPage from './pages/kerja-praktik/admin/application/Application'
@@ -68,11 +69,14 @@ import ScienceGroupPage from './pages/master-data/ScienceGroup'
 // Kelola
 import KelolaTugasAkhirKadepPage from './pages/kelola/kadep/KelolaTugasAkhir'
 import KelolaSopPage from './pages/kelola/Sop'
+import KelolaCpl from './pages/kelola/KelolaCpl'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
+// Lecturer Availability
+import JadwalKetersediaan from './pages/lecturer/JadwalKetersediaan'
 // Others
 import NotFoundPage from './pages/NotFound'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
@@ -184,6 +188,7 @@ function App() {
                 <Route path="/tugas-akhir/bimbingan/lecturer/session/:guidanceId" element={<LecturerGuidanceSessionPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
+                <Route path="/jadwal-ketersediaan" element={<JadwalKetersediaan />} />
               </Route>
 
               {/* Tugas Akhir - Non-student routes (monitoring, etc) */}
@@ -202,6 +207,7 @@ function App() {
               <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                 <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                 <Route path="/kelola/sop" element={<KelolaSopPage />} />
+                <Route path="/kelola/data-cpl" element={<KelolaCpl />} />
               </Route>
 
               {/* Kelola - Sekretaris */}
@@ -218,8 +224,12 @@ function App() {
                 <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
+                <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
-                <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
+                <Route path="/kelola/yudisium" element={<Navigate to="/kelola/yudisium/event" replace />} />
+                <Route path="/kelola/yudisium/event" element={<KelolaYudisiumPage />} />
+                <Route path="/kelola/yudisium/persyaratan" element={<KelolaYudisiumPage />} />
+                <Route path="/kelola/yudisium/exit-survey" element={<KelolaYudisiumPage />} />
               </Route>
 
               {/* Kelola - Kadep */}

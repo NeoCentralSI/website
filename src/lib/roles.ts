@@ -11,6 +11,8 @@ export const ROLES = {
   PENGUJI: "Penguji",
   MAHASISWA: "Mahasiswa",
   GKM: "GKM",
+  KOORDINATOR_YUDISIUM: "Koordinator Yudisium",
+  TIM_PENGELOLA_CPL: "Tim Pengelola CPL",
 } as const;
 
 export type RoleName = typeof ROLES[keyof typeof ROLES];
@@ -29,6 +31,8 @@ export const LECTURER_ROLES = [
   ROLES.PEMBIMBING_2,
   ROLES.PENGUJI,
   ROLES.GKM,
+  ROLES.KOORDINATOR_YUDISIUM,
+  ROLES.TIM_PENGELOLA_CPL,
 ] as const;
 
 // Staff roles (admin + management)
@@ -36,6 +40,8 @@ export const STAFF_ROLES = [
   ROLES.ADMIN,
   ROLES.KETUA_DEPARTEMEN,
   ROLES.SEKRETARIS_DEPARTEMEN,
+  ROLES.KOORDINATOR_YUDISIUM,
+  ROLES.TIM_PENGELOLA_CPL,
 ] as const;
 
 // Display name mapping (untuk tampilan UI yang lebih singkat jika diperlukan)
@@ -49,6 +55,8 @@ export const formatRoleName = (roleName: string): string => {
     [ROLES.PEMBIMBING_2]: 'Pembimbing 2',
     [ROLES.MAHASISWA]: 'Mahasiswa',
     [ROLES.PENGUJI]: 'Penguji',
+    [ROLES.KOORDINATOR_YUDISIUM]: 'Koordinator Yudisium',
+    [ROLES.TIM_PENGELOLA_CPL]: 'Tim Pengelola CPL',
   };
   return roleMap[roleName] || roleName;
 };
@@ -63,6 +71,8 @@ export const roleOptions = [
   { value: ROLES.PEMBIMBING_2, label: 'Pembimbing 2' },
   { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
   { value: ROLES.PENGUJI, label: 'Penguji' },
+  { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
+  { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
 ];
 
 // Helper functions

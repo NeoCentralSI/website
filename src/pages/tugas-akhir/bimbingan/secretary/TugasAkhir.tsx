@@ -5,10 +5,13 @@ import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
 import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
 import { DataMasterTaPanel } from "@/components/kelola/DataMasterTaPanel";
-
+import { CpmkManagementPanel } from "@/components/kelola/cpmk/CpmkManagementPanel";
+import { RubricSeminarManagementPanel } from '@/components/kelola/rubric-seminar/RubricSeminarManagementPanel';
+import { RubricDefenceManagementPanel } from '@/components/kelola/rubric-defence/RubricDefenceManagementPanel';
 const TAB_ITEMS: TabItem[] = [
   { label: "Kelola Topik", to: "/kelola/tugas-akhir/topik" },
   { label: "Kelola Milestone", to: "/kelola/tugas-akhir/milestone" },
+  { label: "Kelola CPMK", to: "/kelola/tugas-akhir/cpmk" },
   { label: "Kelola Rubrik Seminar", to: "/kelola/tugas-akhir/rubrik-seminar" },
   { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" },
   { label: "Data Master Tugas Akhir", to: "/kelola/tugas-akhir/master-data" },
@@ -50,6 +53,18 @@ export default function KelolaTugasAkhirPage() {
 
     if (activeTab.label === "Data Master Tugas Akhir") {
       return <DataMasterTaPanel />;
+    }
+
+    if (activeTab.label === "Kelola CPMK") {
+      return <CpmkManagementPanel />;
+    }
+
+    if (activeTab.label === "Kelola Rubrik Seminar") {
+      return <RubricSeminarManagementPanel />;
+    }
+
+    if (activeTab.label === "Kelola Rubrik Sidang") {
+      return <RubricDefenceManagementPanel />;
     }
 
     return (
