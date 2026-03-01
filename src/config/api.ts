@@ -161,6 +161,21 @@ export const API_CONFIG = {
       BY_ID: (id: string) => `/cpmk/${id}`,
       TOGGLE: (id: string) => `/cpmk/${id}/toggle`,
     },
+    YUDISIUM_REQUIREMENTS: {
+        BASE: '/yudisium-requirements',
+        BY_ID: (id: string) => `/yudisium-requirements/${id}`,
+        TOGGLE: (id: string) => `/yudisium-requirements/${id}/toggle`,
+      MOVE_TOP: (id: string) => `/yudisium-requirements/${id}/move-top`,
+      MOVE_BOTTOM: (id: string) => `/yudisium-requirements/${id}/move-bottom`,
+    },
+    EXIT_SURVEY: {
+      BASE: '/exit-survey',
+      BY_ID: (id: string) => `/exit-survey/${id}`,
+      TOGGLE: (id: string) => `/exit-survey/${id}/toggle`,
+      DUPLICATE: (id: string) => `/exit-survey/${id}/duplicate`,
+      QUESTIONS: (formId: string) => `/exit-survey/${formId}/questions`,
+      QUESTION_BY_ID: (formId: string, questionId: string) => `/exit-survey/${formId}/questions/${questionId}`,
+    },
     RUBRIC_SEMINAR: {
       CPMKS: '/rubric-seminar/cpmks',
       CRITERIA: '/rubric-seminar/criteria',

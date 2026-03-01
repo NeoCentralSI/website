@@ -43,7 +43,8 @@ import SekdepCompanyListPage from './pages/kerja-praktik/sekdep/companies/Compan
 // Overview Pages
 import KerjaPraktekOverviewPage from './pages/kerja-praktik/Overview'
 import MetopenOverviewPage from './pages/metopel/Overview'
-import YudisiumOverviewPage from './pages/yudisium/Overview'
+import YudisiumOverviewPage from './pages/yudisium/student/Overview'
+import KelolaYudisiumPage from './pages/yudisium/KelolaYudisium'
 import TugasAkhirOverviewPage from './pages/tugas-akhir/Overview'
 import AdminCompanyListPage from './pages/kerja-praktik/admin/companies/CompanyList'
 import AdminApplicationPage from './pages/kerja-praktik/admin/application/Application'
@@ -230,7 +231,10 @@ function App() {
                 <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
-                <Route path="/kelola/yudisium" element={<Placeholder title="Kelola - Yudisium" />} />
+                <Route path="/kelola/yudisium" element={<Navigate to="/kelola/yudisium/event" replace />} />
+                <Route path="/kelola/yudisium/event" element={<KelolaYudisiumPage />} />
+                <Route path="/kelola/yudisium/persyaratan" element={<KelolaYudisiumPage />} />
+                <Route path="/kelola/yudisium/exit-survey" element={<KelolaYudisiumPage />} />
               </Route>
 
               {/* Kelola - Kadep */}

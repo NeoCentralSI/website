@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, Pencil, Plus, Trash2, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react';
+import { ChevronDown, Pencil, Plus, Trash2, ArrowUp, ArrowDown, Power } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -285,28 +285,6 @@ export function DefenceCriteriaTable({
                                                         {/* Header kriteria */}
                                                         <div className="flex items-center justify-between flex-wrap gap-2">
                                                             <div className="flex items-center gap-2 flex-wrap">
-                                                                <div className="flex flex-col gap-0.5">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-5 w-5"
-                                                                        title="Pindah ke atas"
-                                                                        disabled={criteriaIdx === 0}
-                                                                        onClick={() => handleMoveCriteria(cpmk, criteria.id, 'up')}
-                                                                    >
-                                                                        <ArrowUp className="h-3 w-3" />
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-5 w-5"
-                                                                        title="Pindah ke bawah"
-                                                                        disabled={criteriaIdx === cpmk.assessmentCriterias.length - 1}
-                                                                        onClick={() => handleMoveCriteria(cpmk, criteria.id, 'down')}
-                                                                    >
-                                                                        <ArrowDown className="h-3 w-3" />
-                                                                    </Button>
-                                                                </div>
                                                                 <span className="text-sm font-medium">
                                                                     {criteria.name || 'Tanpa Nama'}
                                                                 </span>
@@ -329,15 +307,35 @@ export function DefenceCriteriaTable({
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     className="h-7 w-7"
+                                                                    title="Pindah ke atas"
+                                                                    disabled={criteriaIdx === 0}
+                                                                    onClick={() => handleMoveCriteria(cpmk, criteria.id, 'up')}
+                                                                >
+                                                                    <ArrowUp className="h-3 w-3" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-7 w-7"
+                                                                    title="Pindah ke bawah"
+                                                                    disabled={criteriaIdx === cpmk.assessmentCriterias.length - 1}
+                                                                    onClick={() => handleMoveCriteria(cpmk, criteria.id, 'down')}
+                                                                >
+                                                                    <ArrowDown className="h-3 w-3" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className={`h-7 w-7 ${
+                                                                        criteria.isActive
+                                                                            ? 'text-muted-foreground hover:text-amber-600'
+                                                                            : 'text-muted-foreground hover:text-emerald-600'
+                                                                    }`}
                                                                     title={criteria.isActive ? 'Nonaktifkan kriteria' : 'Aktifkan kriteria'}
                                                                     disabled={isTogglingCriteria}
                                                                     onClick={() => onToggleCriteriaActive(criteria.id, !criteria.isActive)}
                                                                 >
-                                                                    {criteria.isActive ? (
-                                                                        <Eye className="h-3.5 w-3.5" />
-                                                                    ) : (
-                                                                        <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
-                                                                    )}
+                                                                    <Power className="h-3.5 w-3.5" />
                                                                 </Button>
                                                                 <Button
                                                                     variant="ghost"
@@ -351,7 +349,7 @@ export function DefenceCriteriaTable({
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-7 w-7 text-destructive"
+                                                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                                                     title="Hapus kriteria"
                                                                     onClick={() => setDeleteCriteriaId(criteria.id)}
                                                                 >
@@ -374,39 +372,14 @@ export function DefenceCriteriaTable({
                                                                 <Table>
                                                                     <TableHeader>
                                                                         <TableRow>
-                                                                            <TableHead className="w-16">Urutan</TableHead>
                                                                             <TableHead className="w-32">Rentang Skor</TableHead>
                                                                             <TableHead>Deskripsi</TableHead>
-                                                                            <TableHead className="w-20 text-right">Aksi</TableHead>
+                                                                            <TableHead className="w-40 text-right">Aksi</TableHead>
                                                                         </TableRow>
                                                                     </TableHeader>
                                                                     <TableBody>
                                                                         {criteria.assessmentRubrics.map((rubric, rubricIdx) => (
                                                                             <TableRow key={rubric.id}>
-                                                                                <TableCell>
-                                                                                    <div className="flex items-center gap-0.5">
-                                                                                        <Button
-                                                                                            variant="ghost"
-                                                                                            size="icon"
-                                                                                            className="h-5 w-5"
-                                                                                            title="Pindah ke atas"
-                                                                                            disabled={rubricIdx === 0}
-                                                                                            onClick={() => handleMoveRubric(criteria, rubric.id, 'up')}
-                                                                                        >
-                                                                                            <ArrowUp className="h-3 w-3" />
-                                                                                        </Button>
-                                                                                        <Button
-                                                                                            variant="ghost"
-                                                                                            size="icon"
-                                                                                            className="h-5 w-5"
-                                                                                            title="Pindah ke bawah"
-                                                                                            disabled={rubricIdx === criteria.assessmentRubrics.length - 1}
-                                                                                            onClick={() => handleMoveRubric(criteria, rubric.id, 'down')}
-                                                                                        >
-                                                                                            <ArrowDown className="h-3 w-3" />
-                                                                                        </Button>
-                                                                                    </div>
-                                                                                </TableCell>
                                                                                 <TableCell className="text-sm">
                                                                                     {rubric.minScore}–{rubric.maxScore}
                                                                                 </TableCell>
@@ -419,6 +392,26 @@ export function DefenceCriteriaTable({
                                                                                             variant="ghost"
                                                                                             size="icon"
                                                                                             className="h-7 w-7"
+                                                                                            title="Pindah ke atas"
+                                                                                            disabled={rubricIdx === 0}
+                                                                                            onClick={() => handleMoveRubric(criteria, rubric.id, 'up')}
+                                                                                        >
+                                                                                            <ArrowUp className="h-3 w-3" />
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="icon"
+                                                                                            className="h-7 w-7"
+                                                                                            title="Pindah ke bawah"
+                                                                                            disabled={rubricIdx === criteria.assessmentRubrics.length - 1}
+                                                                                            onClick={() => handleMoveRubric(criteria, rubric.id, 'down')}
+                                                                                        >
+                                                                                            <ArrowDown className="h-3 w-3" />
+                                                                                        </Button>
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="icon"
+                                                                                            className="h-7 w-7"
                                                                                             title="Ubah rubrik"
                                                                                             onClick={() => handleEditRubric(rubric, criteria.maxScore)}
                                                                                         >
@@ -427,7 +420,7 @@ export function DefenceCriteriaTable({
                                                                                         <Button
                                                                                             variant="ghost"
                                                                                             size="icon"
-                                                                                            className="h-7 w-7 text-destructive"
+                                                                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                                                                             title="Hapus rubrik"
                                                                                             onClick={() => setDeleteRubricId(rubric.id)}
                                                                                         >
