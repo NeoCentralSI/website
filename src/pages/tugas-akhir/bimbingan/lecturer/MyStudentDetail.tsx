@@ -7,7 +7,8 @@ import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import EmptyState from "@/components/ui/empty-state";
 import { FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
@@ -49,6 +50,7 @@ import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarRea
 import { DefenceReadinessCard } from "@/components/milestone/lecturer/DefenceReadinessCard";
 import { useSeminarReadinessStatus } from "@/hooks/milestone/useMilestone";
 import { ChangeRequestReviewCard } from "@/components/tugas-akhir/lecturer/ChangeRequestReviewCard";
+import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/GuidanceHistorySection";
 import { RefreshButton } from "@/components/ui/refresh-button";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -360,247 +362,239 @@ export default function LecturerMyStudentDetailPage() {
                 />
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Thesis Info & Documents */}
-                <div className="lg:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader className="pb-4">
-                            <CardTitle className="flex items-center gap-2 text-base">
-                                <BookOpen className="h-4 w-4" />
-                                Informasi Skripsi
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
+            {/* Thesis Info & Documents */}
+            <Card className="w-full border-primary/20 bg-linear-to-br from-primary/5 via-background to-background">
+                <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                                <BookOpen className="h-6 w-6 text-primary" />
+                            </div>
                             <div>
-                                <h3 className="font-medium text-lg leading-relaxed text-foreground">
-                                    {detailData.title || <span className="text-muted-foreground italic">Judul belum ditentukan</span>}
-                                </h3>
-                                <div className="flex flex-wrap items-center gap-2 mt-3">
-                                    <Badge variant="secondary" className="font-normal rounded-md">
-                                        {toTitleCaseName(detailData.status)}
-                                    </Badge>
-                                </div>
+                                <CardTitle className="text-xl">Informasi Tugas Akhir</CardTitle>
+                                <CardDescription>Detail status pengerjaan tugas akhir mahasiswa</CardDescription>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-6 text-sm">
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <Calendar className="h-4 w-4" />
-                                        <span>Mulai</span>
-                                    </div>
-                                    <p className="font-medium pl-6">
-                                        {detailData.startDate ? formatDateId(detailData.startDate) : '-'}
-                                    </p>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <Clock className="h-4 w-4" />
-                                        <span>Deadline</span>
-                                    </div>
-                                    <div className="pl-6">
-                                        <p className="font-medium">
-                                            {detailData.deadlineDate ? formatDateId(detailData.deadlineDate) : '-'}
-                                        </p>
-                                        {detailData.deadlineDate && (() => {
-                                            const days = Math.ceil((new Date(detailData.deadlineDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                                            if (days < 0) return (
-                                                <Badge variant="destructive" className="mt-1 h-5 px-1.5 text-[10px] font-normal">
-                                                    Expired {Math.abs(days)} hari
-                                                </Badge>
-                                            );
-                                            if (days <= 30) return (
-                                                <Badge variant="outline" className="mt-1 h-5 px-1.5 text-[10px] font-normal text-orange-600 bg-orange-50 border-orange-200">
-                                                    Sisa {days} hari
-                                                </Badge>
-                                            );
-                                            return (
-                                                <span className="text-xs text-muted-foreground mt-0.5 block">
-                                                    {days} hari lagi
-                                                </span>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-2 space-y-3">
-                                <div className="space-y-1">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground font-medium">Progres Kelulusan</span>
-                                        <span className="font-bold text-primary">{progressPercentage}%</span>
-                                    </div>
-                                    <Progress value={progressPercentage} className="h-2" />
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Mahasiswa telah menyelesaikan <span className="font-medium text-foreground">{detailData.milestones.filter(m => m.status === 'completed').length}</span> dari <span className="font-medium text-foreground">{detailData.milestones.length}</span> tahapan skripsi.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-medium">Dokumen Proposal</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {detailData.proposalDocument ? (
-                                    <div className="flex items-center justify-between p-3 bg-muted rounded-md border">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <FileText className="h-8 w-8 text-blue-500 shrink-0" />
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-medium truncate">{detailData.proposalDocument.fileName}</p>
-                                                <p className="text-xs text-muted-foreground">Proposal</p>
-                                            </div>
-                                        </div>
-                                        <Button variant="ghost" size="icon" asChild>
-                                            <a href={getDocumentUrl(detailData.proposalDocument.url)} target="_blank" rel="noopener noreferrer">
-                                                <Download className="h-4 w-4" />
-                                            </a>
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <EmptyState
-                                        size="sm"
-                                        title="Belum Ada Proposal"
-                                        description="Belum ada dokumen proposal"
-                                    />
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-medium">Dokumen Skripsi (Draft Akhir)</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {detailData.document ? (
-                                    <div className="flex items-center justify-between p-3 bg-muted rounded-md border">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <FileText className="h-8 w-8 text-green-500 shrink-0" />
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-medium truncate">{detailData.document.fileName}</p>
-                                                <p className="text-xs text-muted-foreground">Draft Skripsi</p>
-                                            </div>
-                                        </div>
-                                        <Button variant="ghost" size="icon" asChild>
-                                            <a href={getDocumentUrl(detailData.document.url)} target="_blank" rel="noopener noreferrer">
-                                                <Download className="h-4 w-4" />
-                                            </a>
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <EmptyState
-                                        size="sm"
-                                        title="Belum Ada Draft"
-                                        description="Belum ada draft skripsi"
-                                    />
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-
-                {/* Right Column: Milestones */}
-                <div className="space-y-6">
-                    <Card className="h-full border-none shadow-none lg:border lg:shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Riwayat Milestone</CardTitle>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setCreateMilestoneOpen(true)}
-                                disabled={isCancelled}
+                        </div>
+                        {detailData.status && (
+                            <Badge
+                                variant={detailData.status === "Aktif" ? "default" : "secondary"}
                             >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Tambah
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="px-2 sm:px-6">
-                            <div className="h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
-                                <div className="relative border-l ml-3 space-y-8 my-2 pt-2">
-                                    {detailData.milestones && detailData.milestones.length > 0 ? (
-                                        detailData.milestones.map((milestone) => (
-                                            <div key={milestone.id} className="ml-6 relative group pb-2">
-                                                {validatingId === milestone.id && (
-                                                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded transition-all">
-                                                        <Spinner className="h-6 w-6 text-primary" />
-                                                    </div>
-                                                )}
-                                                <span className={cn(
-                                                    "absolute -left-9.25 top-1 p-1 rounded-full border bg-background z-10",
-                                                    milestone.status === 'completed' ? "border-green-500 text-green-500" : "border-border text-muted-foreground"
-                                                )}>
-                                                    {getStatusIcon(milestone.status)}
-                                                </span>
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <h4 className="font-medium text-sm leading-snug mt-0.5">{milestone.title}</h4>
-                                                        {milestone.status !== 'completed' && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className={cn(
-                                                                    "h-6 w-6 transition-opacity",
-                                                                    milestone.progressPercentage < 100 ? "opacity-50 cursor-not-allowed" : "opacity-100 hover:bg-green-50 text-green-600"
-                                                                )}
-                                                                title={
-                                                                    isCancelled
-                                                                        ? "Tidak dapat memvalidasi karena tugas akhir dibatalkan"
-                                                                        : milestone.progressPercentage < 100
-                                                                            ? "Milestone belum mencapai 100%"
-                                                                            : "Validasi Milestone"
-                                                                }
-                                                                disabled={milestone.progressPercentage < 100 || isCancelled}
-                                                                onClick={() => setSelectedMilestoneId(milestone.id)}
-                                                            >
-                                                                <Check className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
+                                {detailData.status.toUpperCase()}
+                            </Badge>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                        {/* Judul & Detail Utama */}
+                        <div>
+                            <h3 className="text-lg font-semibold leading-relaxed mb-3">
+                                {detailData.title || <span className="text-muted-foreground italic">Judul belum ditentukan</span>}
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                {/* Tanggal Mulai */}
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>Mulai: <span className="text-foreground font-medium">{detailData.startDate ? formatDateId(detailData.startDate) : '-'}</span></span>
+                                </div>
+                                {/* Sisa Waktu */}
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Clock className="h-4 w-4" />
+                                    <span>Sisa Waktu: <span className="text-foreground font-medium">
+                                        {detailData.deadlineDate ? (() => {
+                                            const days = Math.ceil((new Date(detailData.deadlineDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                            if (days < 0) return `Terlewat ${Math.abs(days)} Hari`;
+                                            if (days < 30) return `${days} Hari`;
+                                            const months = Math.floor(days / 30);
+                                            const rem = days % 30;
+                                            return rem > 0 ? `${months} Bulan ${rem} Hari` : `${months} Bulan`;
+                                        })() : '-'}
+                                    </span></span>
+                                    {detailData.deadlineDate && (() => {
+                                        const days = Math.ceil((new Date(detailData.deadlineDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                        if (days < 0) return (
+                                            <Badge variant="destructive" className="h-5 px-1.5 text-[10px] font-normal">
+                                                Expired
+                                            </Badge>
+                                        );
+                                        if (days <= 30) return (
+                                            <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-normal text-orange-600 bg-orange-50 border-orange-200">
+                                                Segera
+                                            </Badge>
+                                        );
+                                        return null;
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
 
-                                                    <div className="space-y-1">
-                                                        <div className="flex justify-between text-xs text-muted-foreground">
-                                                            <span>Proses</span>
-                                                            <span>{milestone.progressPercentage || 0}%</span>
-                                                        </div>
-                                                        <Progress value={milestone.progressPercentage || 0} className="h-1.5" />
-                                                    </div>
+                
+                        <Separator />
 
-                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
-                                                        <Badge variant={STATUS_VARIANTS[milestone.status] || "outline"} className="text-[10px] h-5 px-1.5 font-normal">
-                                                            {STATUS_LABELS[milestone.status] || milestone.status.replace(/_/g, " ")}
-                                                        </Badge>
-                                                        {milestone.progressPercentage === 100 && milestone.status === 'in_progress' && (
-                                                            <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal gap-1 animate-pulse text-red-600 border-red-600 bg-transparent">
-                                                                <Bell className="h-3 w-3" />
-                                                                Perlu Approval
-                                                            </Badge>
-                                                        )}
-                                                        {milestone.updatedAt && (
-                                                            <span className="text-xs text-muted-foreground/70">
-                                                                {formatDateId(milestone.updatedAt)}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                        {/* Documents Section */}
+                        <div className="pt-2">
+                            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-3">
+                                <FileText className="h-4 w-4" /> Dokumen
+                            </span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Proposal Document */}
+                                <div className="p-3 rounded-xl bg-background/50 border hover:bg-background/80 transition-colors">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-600">
+                                            Proposal
+                                        </Badge>
+                                    </div>
+                                    {detailData.proposalDocument ? (
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="h-8 w-8 text-blue-500 shrink-0" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-medium truncate">{detailData.proposalDocument.fileName}</p>
+                                                <p className="text-xs text-muted-foreground">Dokumen Proposal</p>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className="-ml-3">
-                                            <EmptyState
-                                                size="sm"
-                                                title="Belum Ada Milestone"
-                                                description="Belum ada milestone yang tercatat"
-                                            />
+                                            <Button variant="ghost" size="icon" className="shrink-0" asChild>
+                                                <a href={getDocumentUrl(detailData.proposalDocument.url)} target="_blank" rel="noopener noreferrer">
+                                                    <Download className="h-4 w-4" />
+                                                </a>
+                                            </Button>
                                         </div>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground italic">Belum ada dokumen proposal</p>
+                                    )}
+                                </div>
+
+                                {/* Thesis Draft Document */}
+                                <div className="p-3 rounded-xl bg-background/50 border hover:bg-background/80 transition-colors">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-600">
+                                            Draft Skripsi
+                                        </Badge>
+                                    </div>
+                                    {detailData.document ? (
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="h-8 w-8 text-green-500 shrink-0" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-medium truncate">{detailData.document.fileName}</p>
+                                                <p className="text-xs text-muted-foreground">Draft Akhir</p>
+                                            </div>
+                                            <Button variant="ghost" size="icon" className="shrink-0" asChild>
+                                                <a href={getDocumentUrl(detailData.document.url)} target="_blank" rel="noopener noreferrer">
+                                                    <Download className="h-4 w-4" />
+                                                </a>
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground italic">Belum ada draft skripsi</p>
                                     )}
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Guidance History & Milestone side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {detailData.guidanceHistory && (
+                    <GuidanceHistorySection guidanceHistory={detailData.guidanceHistory} />
+                )}
+
+                {/* Milestones */}
+                <Card className="h-full">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Riwayat Milestone</CardTitle>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCreateMilestoneOpen(true)}
+                            disabled={isCancelled}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Tambah
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="px-2 sm:px-6">
+                        <div className="h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                            <div className="relative border-l ml-3 space-y-8 my-2 pt-2">
+                                {detailData.milestones && detailData.milestones.length > 0 ? (
+                                    detailData.milestones.map((milestone) => (
+                                        <div key={milestone.id} className="ml-6 relative group pb-2">
+                                            {validatingId === milestone.id && (
+                                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded transition-all">
+                                                    <Spinner className="h-6 w-6 text-primary" />
+                                                </div>
+                                            )}
+                                            <span className={cn(
+                                                "absolute -left-9.25 top-1 p-1 rounded-full border bg-background z-10",
+                                                milestone.status === 'completed' ? "border-green-500 text-green-500" : "border-border text-muted-foreground"
+                                            )}>
+                                                {getStatusIcon(milestone.status)}
+                                            </span>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <h4 className="font-medium text-sm leading-snug mt-0.5">{milestone.title}</h4>
+                                                    {milestone.status !== 'completed' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className={cn(
+                                                                "h-6 w-6 transition-opacity",
+                                                                milestone.progressPercentage < 100 ? "opacity-50 cursor-not-allowed" : "opacity-100 hover:bg-green-50 text-green-600"
+                                                            )}
+                                                            title={
+                                                                isCancelled
+                                                                    ? "Tidak dapat memvalidasi karena tugas akhir dibatalkan"
+                                                                    : milestone.progressPercentage < 100
+                                                                        ? "Milestone belum mencapai 100%"
+                                                                        : "Validasi Milestone"
+                                                            }
+                                                            disabled={milestone.progressPercentage < 100 || isCancelled}
+                                                            onClick={() => setSelectedMilestoneId(milestone.id)}
+                                                        >
+                                                            <Check className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>Proses</span>
+                                                        <span>{milestone.progressPercentage || 0}%</span>
+                                                    </div>
+                                                    <Progress value={milestone.progressPercentage || 0} className="h-1.5" />
+                                                </div>
+
+                                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
+                                                    <Badge variant={STATUS_VARIANTS[milestone.status] || "outline"} className="text-[10px] h-5 px-1.5 font-normal">
+                                                        {STATUS_LABELS[milestone.status] || milestone.status.replace(/_/g, " ")}
+                                                    </Badge>
+                                                    {milestone.progressPercentage === 100 && milestone.status === 'in_progress' && (
+                                                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal gap-1 animate-pulse text-red-600 border-red-600 bg-transparent">
+                                                            <Bell className="h-3 w-3" />
+                                                            Perlu Approval
+                                                        </Badge>
+                                                    )}
+                                                    {milestone.updatedAt && (
+                                                        <span className="text-xs text-muted-foreground/70">
+                                                            {formatDateId(milestone.updatedAt)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="-ml-3">
+                                        <EmptyState
+                                            size="sm"
+                                            title="Belum Ada Milestone"
+                                            description="Belum ada milestone yang tercatat"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             <AlertDialog open={!!selectedMilestoneId} onOpenChange={(open) => !open && setSelectedMilestoneId(null)}>
