@@ -1,31 +1,37 @@
-import { FileText, Upload, AlertCircle } from 'lucide-react';
+import { useRef, useCallback } from 'react';
+import { FileText, Upload, AlertCircle, Eye, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-import type { SeminarDocument } from '@/types/seminar.types';
-
-// Hardcoded seminar document types
-const DOCUMENT_TYPES = [
-  { id: 'laporan-ta', label: 'Laporan Tugas Akhir (PDF)', accept: '.pdf', maxSize: 5 },
-  { id: 'slide-presentasi', label: 'Slide Presentasi (PPT)', accept: '.ppt,.pptx', maxSize: 10 },
-  { id: 'draft-jurnal', label: 'Draft Jurnal TEKNOSI (PDF)', accept: '.pdf', maxSize: 5 },
-] as const;
+import {
+  useSeminarDocumentTypes,
+  useStudentSeminarDocuments,
+  useUploadSeminarDocument,
+} from '@/hooks/seminar';
+import type { SeminarDocument, SeminarDocumentType } from '@/types/seminar.types';
+import { API_CONFIG } from '@/config/api';
 
 interface UploadDokumenSeminarProps {
-  documents: SeminarDocument[];
   allChecklistMet: boolean;
-  seminarId: string | null;
 }
 
 export function UploadDokumenSeminar({
-  documents,
   allChecklistMet,
-  seminarId,
 }: UploadDokumenSeminarProps) {
-  const isLocked = !allChecklistMet || !seminarId;
+  const isLocked = !allChecklistMet;
 
-  const getDocStatus = (docTypeId: string) => {
-    return documents.find((d) => d.documentTypeId === docTypeId);
-  };
+  const { data: docTypes } = useSeminarDocumentTypes();
+  const { data: docsData } = useStudentSeminarDocuments();
+  const uploadMutation = useUploadSeminarDocument();
+
+  const documents = docsData?.documents ?? [];
+
+  const getDocStatus = useCallback(
+    (docTypeId: string): SeminarDocument | undefined => {
+      return documents.find((d) => d.documentTypeId === docTypeId);
+    },
+    [documents]
+  );
 
   return (
     <div className="rounded-lg border bg-card p-6">
@@ -39,63 +45,163 @@ export function UploadDokumenSeminar({
       )}
 
       <div className="space-y-3">
-        {DOCUMENT_TYPES.map((docType) => {
-          const doc = getDocStatus(docType.id);
-          const isUploaded = !!doc;
-          const isApproved = doc?.status === 'approved';
-          const isDeclined = doc?.status === 'declined';
+        {(docTypes ?? []).map((docType) => (
+          <DocumentRow
+            key={docType.id}
+            docType={docType}
+            doc={getDocStatus(docType.id)}
+            isLocked={isLocked}
+            isUploading={
+              uploadMutation.isPending &&
+              uploadMutation.variables?.documentTypeName === docType.name
+            }
+            onUpload={(file) =>
+              uploadMutation.mutate({ file, documentTypeName: docType.name })
+            }
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-          return (
-            <div
-              key={docType.id}
-              className={cn(
-                'flex items-center justify-between gap-4 rounded-lg border p-4',
-                isLocked && 'opacity-50'
-              )}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-                    isApproved && 'bg-green-100 text-green-600',
-                    isDeclined && 'bg-red-100 text-red-600',
-                    isUploaded && !isApproved && !isDeclined && 'bg-blue-100 text-blue-600',
-                    !isUploaded && 'bg-muted text-muted-foreground'
-                  )}
-                >
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{docType.label}</p>
-                  {isUploaded && (
-                    <p
-                      className={cn(
-                        'text-xs mt-0.5',
-                        isApproved && 'text-green-600',
-                        isDeclined && 'text-red-600',
-                        !isApproved && !isDeclined && 'text-blue-600'
-                      )}
-                    >
-                      {isApproved && 'Terverifikasi'}
-                      {isDeclined && `Ditolak${doc?.notes ? `: ${doc.notes}` : ''}`}
-                      {!isApproved && !isDeclined && 'Menunggu verifikasi'}
-                    </p>
-                  )}
-                </div>
-              </div>
+// ============================================================
+// Sub-component: DocumentRow
+// ============================================================
 
-              <Button
-                variant={isDeclined ? 'destructive' : 'outline'}
-                size="sm"
-                disabled={isLocked || isApproved}
-                className="shrink-0"
+interface DocumentRowProps {
+  docType: SeminarDocumentType;
+  doc: SeminarDocument | undefined;
+  isLocked: boolean;
+  isUploading: boolean;
+  onUpload: (file: File) => void;
+}
+
+function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: DocumentRowProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isUploaded = !!doc;
+  const isApproved = doc?.status === 'approved';
+  const isDeclined = doc?.status === 'declined';
+  const canUpload = !isLocked && !isApproved && !isUploading;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onUpload(file);
+    }
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+  };
+
+  const handleUploadClick = () => {
+    if (canUpload) {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleViewClick = () => {
+    if (doc?.filePath) {
+      const url = `${API_CONFIG.BASE_URL.replace('/api', '')}/${doc.filePath}`;
+      window.open(url, '_blank');
+    }
+  };
+
+  // Build accept string from docType.accept array
+  const acceptStr = docType.accept
+    .map((ext) => (ext.startsWith('.') ? ext : `.${ext}`))
+    .join(',');
+
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between gap-4 rounded-lg border p-4',
+        isLocked && 'opacity-50'
+      )}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+            isApproved && 'bg-green-100 text-green-600',
+            isDeclined && 'bg-red-100 text-red-600',
+            isUploaded && !isApproved && !isDeclined && 'bg-blue-100 text-blue-600',
+            !isUploaded && 'bg-muted text-muted-foreground'
+          )}
+        >
+          <FileText className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium truncate">{docType.label}</p>
+          {isUploaded && (
+            <>
+              <p
+                className={cn(
+                  'text-xs mt-0.5',
+                  isApproved && 'text-green-600',
+                  isDeclined && 'text-red-600',
+                  !isApproved && !isDeclined && 'text-blue-600'
+                )}
               >
+                {isApproved && 'Terverifikasi'}
+                {isDeclined && `Ditolak${doc?.notes ? `: ${doc.notes}` : ''}`}
+                {!isApproved && !isDeclined && 'Menunggu verifikasi'}
+              </p>
+              {doc?.fileName && (
+                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                  {doc.fileName}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={acceptStr}
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        {/* View button (when document exists) */}
+        {isUploaded && doc?.filePath && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleViewClick}
+            title="Lihat dokumen"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+        )}
+
+        {/* Upload / Re-upload button */}
+        <Button
+          variant={isDeclined ? 'destructive' : 'outline'}
+          size="sm"
+          disabled={!canUpload}
+          onClick={handleUploadClick}
+        >
+          {isUploading ? (
+            <>
+              <Spinner className="mr-1.5 h-4 w-4" />
+              Mengupload...
+            </>
+          ) : (
+            <>
+              {isUploaded && !isApproved ? (
+                <RefreshCw className="h-4 w-4 mr-1.5" />
+              ) : (
                 <Upload className="h-4 w-4 mr-1.5" />
-                {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Upload') : 'Upload'}
-              </Button>
-            </div>
-          );
-        })}
+              )}
+              {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Ganti File') : 'Upload'}
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );

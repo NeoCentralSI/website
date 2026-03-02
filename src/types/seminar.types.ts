@@ -38,6 +38,30 @@ export interface SeminarDocument {
   submittedAt: string;
   verifiedAt: string | null;
   notes: string | null;
+  verifiedBy?: string | null;
+  fileName?: string | null;
+  filePath?: string | null;
+}
+
+export interface SeminarDocumentType {
+  id: string;
+  name: string;
+  accept: string[];
+  label: string;
+}
+
+export interface SeminarDocumentsResponse {
+  seminarId: string | null;
+  documents: SeminarDocument[];
+}
+
+export interface SeminarDocumentUploadResponse {
+  documentTypeId: string;
+  documentId: string;
+  fileName: string;
+  filePath: string;
+  status: DocumentSubmitStatus;
+  submittedAt: string;
 }
 
 export interface SeminarExaminer {

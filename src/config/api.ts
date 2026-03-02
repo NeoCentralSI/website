@@ -103,6 +103,10 @@ export const API_CONFIG = {
     THESIS_SEMINAR_STUDENT: {
       OVERVIEW: '/thesisSeminar/student/overview',
       ATTENDANCE: '/thesisSeminar/student/attendance',
+      DOCUMENT_TYPES: '/thesisSeminar/student/documents/types',
+      DOCUMENTS: '/thesisSeminar/student/documents',
+      DOCUMENT_UPLOAD: '/thesisSeminar/student/documents/upload',
+      DOCUMENT_VIEW: (documentTypeId: string) => `/thesisSeminar/student/documents/${documentTypeId}`,
     },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',

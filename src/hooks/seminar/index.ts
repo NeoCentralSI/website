@@ -1,1 +1,7 @@
-export { useStudentSeminarOverview, useStudentAttendanceHistory } from './useStudentSeminar';
+export {
+  useStudentSeminarOverview,
+  useStudentAttendanceHistory,
+  useSeminarDocumentTypes,
+  useStudentSeminarDocuments,
+  useUploadSeminarDocument,
+} from './useStudentSeminar';

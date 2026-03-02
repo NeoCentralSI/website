@@ -58,9 +58,7 @@ export default function StudentThesisSeminar() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ChecklistPersyaratan checklist={data.checklist} />
             <UploadDokumenSeminar
-              documents={data.seminar?.documents ?? []}
               allChecklistMet={data.allChecklistMet}
-              seminarId={data.seminar?.id ?? null}
             />
           </div>
         </div>
