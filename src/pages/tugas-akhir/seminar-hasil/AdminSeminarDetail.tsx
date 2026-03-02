@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useOutletContext } from 'react-router-dom';
+import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,8 @@ import {
   BookOpen,
   Calendar,
   ClipboardCheck,
+  ArrowLeft,
+  CheckCircle2,
 } from 'lucide-react';
 import type { DocumentSubmitStatus, AdminSeminarListItem } from '@/types/seminar.types';
 import { ENV } from '@/config/env';
@@ -37,6 +39,7 @@ function getDocStatusDisplay(status: DocumentSubmitStatus) {
 
 export default function AdminSeminarDetail() {
   const { seminarId } = useParams<{ seminarId: string }>();
+  const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { data: detail, isLoading } = useAdminSeminarDetail(seminarId);
 
@@ -95,27 +98,37 @@ export default function AdminSeminarDetail() {
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {toTitleCaseName(detail.student.name)}
-            </h2>
-            <p className="text-sm text-muted-foreground">{detail.student.nim}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <SeminarStatusBadge status={detail.status} />
-            {detail.status === 'registered' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setValidationOpen(true)}
-              >
-                <ClipboardCheck className="h-4 w-4 mr-1" />
-                Validasi Dokumen
-              </Button>
-            )}
+      <div className="p-4 space-y-6">
+        {/* Back + Header */}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">
+                {toTitleCaseName(detail.student.name)}
+              </h1>
+              <p className="text-gray-500">{detail.student.nim}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <SeminarStatusBadge status={detail.status} />
+              {detail.status === 'registered' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setValidationOpen(true)}
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-1" />
+                  Validasi Dokumen
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -195,6 +208,35 @@ export default function AdminSeminarDetail() {
                         <span className="text-xs text-muted-foreground">
                           (Penguji {e.order})
                         </span>
+                        {e.availabilityStatus === 'available' && (
+                          <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        )}
+                        {e.availabilityStatus === 'pending' && (
+                          <Badge variant="warning" className="text-[10px] px-1 py-0">
+                            Menunggu
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {detail.rejectedExaminers && detail.rejectedExaminers.length > 0 && (
+                <div className="pt-2 border-t">
+                  <span className="text-muted-foreground text-xs">Riwayat Penolakan:</span>
+                  <div className="mt-1 space-y-1">
+                    {detail.rejectedExaminers.map((e) => (
+                      <div key={e.id} className="flex items-center gap-2 opacity-60">
+                        <XCircle className="h-3 w-3 text-red-400" />
+                        <span className="text-xs line-through">{toTitleCaseName(e.lecturerName)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          (Penguji {e.order})
+                        </span>
+                        {e.respondedAt && (
+                          <span className="text-[10px] text-muted-foreground">
+                            — {formatDateId(e.respondedAt)}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>

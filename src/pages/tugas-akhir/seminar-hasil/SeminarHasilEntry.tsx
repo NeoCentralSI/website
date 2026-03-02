@@ -12,7 +12,8 @@ export default function SeminarHasilEntry() {
     } else if (isAdmin()) {
       navigate('/tugas-akhir/seminar/admin', { replace: true })
     } else if (isDosen()) {
-      navigate('/tugas-akhir/seminar/lecturer', { replace: true })
+      // All lecturers (including Kadep) go to Mahasiswa Bimbingan as first tab
+      navigate('/tugas-akhir/seminar/lecturer/my-students', { replace: true })
     } else {
       navigate('/dashboard', { replace: true })
     }

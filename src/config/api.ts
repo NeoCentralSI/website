@@ -114,6 +114,17 @@ export const API_CONFIG = {
       VALIDATE_DOCUMENT: (seminarId: string, documentTypeId: string) =>
         `/thesisSeminar/admin/${seminarId}/documents/${documentTypeId}/validate`,
     },
+    THESIS_SEMINAR_LECTURER: {
+      EXAMINER_REQUESTS: '/thesisSeminar/lecturer/examiner-requests',
+      SUPERVISED_STUDENTS: '/thesisSeminar/lecturer/supervised-students',
+      SEMINAR_DETAIL: (seminarId: string) => `/thesisSeminar/lecturer/seminars/${seminarId}`,
+      RESPOND: (examinerId: string) => `/thesisSeminar/lecturer/seminars/${examinerId}/respond`,
+      ASSIGNMENT_LIST: '/thesisSeminar/lecturer/assignment',
+      ELIGIBLE_EXAMINERS: (seminarId: string) =>
+        `/thesisSeminar/lecturer/assignment/${seminarId}/eligible-examiners`,
+      ASSIGN_EXAMINERS: (seminarId: string) =>
+        `/thesisSeminar/lecturer/assignment/${seminarId}`,
+    },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',
       PROPOSALS: '/insternship/registration/proposals',
