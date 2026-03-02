@@ -347,7 +347,7 @@ export default function TugasAkhirOverviewPage() {
 
                                                 {/* Request Pembimbing 2 Logic */}
                                                 {(!hasPembimbing2 && !pendingRequest && (thesisDetail?.supervisors?.length || 0) > 0) && (
-                                                    <div className="flex items-center justify-center p-3 rounded-xl border border-dashed hover:bg-background/50 transition-colors min-h-[100px]">
+                                                    <div className="flex items-center justify-center p-3 rounded-xl border border-dashed hover:bg-background/50 transition-colors min-h-25">
                                                         <div className="text-center space-y-2 w-full">
                                                             <p className="text-xs text-muted-foreground">Belum ada Pembimbing 2?</p>
                                                             <div className="flex justify-center">
@@ -434,7 +434,7 @@ export default function TugasAkhirOverviewPage() {
                                             </p>
                                         </div>
 
-                                        <div className="h-[400px] overflow-y-auto pr-4 pl-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                                        <div className="h-100 overflow-y-auto pr-4 pl-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                                             <div className="relative border-l ml-2 space-y-8 my-2 pt-2">
                                                 {milestones
                                                     .sort((a: any, b: any) => {
@@ -462,7 +462,7 @@ export default function TugasAkhirOverviewPage() {
                                                         return (
                                                             <div key={milestone.id} className="ml-6 relative group pb-2">
                                                                 <span className={cn(
-                                                                    "absolute -left-[41px] top-0 p-1 rounded-full border bg-background z-10",
+                                                                    "absolute -left-10.25 top-0 p-1 rounded-full border bg-background z-10",
                                                                     milestone.status === 'completed' ? "border-green-500" :
                                                                         milestone.status === 'in_progress' ? "border-blue-500" : "border-border"
                                                                 )}>
