@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 import { ValidationModal } from '@/components/seminar/ValidationModal';
+import { SeminarSchedulingSection } from '@/components/seminar/SeminarSchedulingSection';
 import { useAdminSeminarDetail } from '@/hooks/seminar/useAdminSeminar';
 import { toTitleCaseName, formatDateId, formatRoleName } from '@/lib/text';
 import {
@@ -319,21 +320,12 @@ export default function AdminSeminarDetail() {
           </CardContent>
         </Card>
 
-        {/* Scheduling placeholder */}
-        {(detail.status === 'examiner_assigned' || detail.status === 'verified') && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Penjadwalan Seminar
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground text-center py-6">
-                Fitur penjadwalan akan segera tersedia.
-              </div>
-            </CardContent>
-          </Card>
+        {/* Scheduling Section */}
+        {(detail.status === 'examiner_assigned' || detail.status === 'scheduled') && (
+          <SeminarSchedulingSection
+            seminarId={detail.id}
+            isEditable={detail.status === 'examiner_assigned' || detail.status === 'scheduled'}
+          />
         )}
       </div>
 

@@ -6,8 +6,8 @@ const STEPS = [
   { key: 'checklist', label: 'Checklist Persyaratan' },
   { key: 'verified', label: 'Dokumen Seminar Tervalidasi' },
   { key: 'examiner_assigned', label: 'Penetapan Dosen Penguji' },
-  { key: 'scheduled', label: 'Penetapan Jadwal' },
-  { key: 'seminar', label: 'Seminar' },
+  { key: 'scheduled', label: 'Penetapan Jadwal Seminar Hasil' },
+  { key: 'seminar', label: 'Pelaksanaan Seminar Hasil' },
 ] as const;
 
 function getActiveStepIndex(status: ThesisSeminarStatus | null, allChecklistMet: boolean): number {

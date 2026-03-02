@@ -5,6 +5,9 @@ import type {
   AdminSeminarDetailResponse,
   ValidateDocumentPayload,
   ValidateDocumentResponse,
+  SeminarSchedulingData,
+  SetSchedulePayload,
+  SetScheduleResponse,
 } from '@/types/seminar.types';
 
 /**
@@ -63,5 +66,37 @@ export async function validateSeminarDocument(
   );
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Gagal memvalidasi dokumen');
+  return json.data;
+}
+
+/**
+ * Get scheduling data (rooms + lecturer availabilities) for a seminar
+ */
+export async function getSchedulingData(seminarId: string): Promise<SeminarSchedulingData> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ADMIN.SCHEDULING_DATA(seminarId))
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat data penjadwalan');
+  return json.data;
+}
+
+/**
+ * Set or update the seminar schedule
+ */
+export async function setSchedule(
+  seminarId: string,
+  payload: SetSchedulePayload
+): Promise<SetScheduleResponse> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ADMIN.SET_SCHEDULE(seminarId)),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menyimpan jadwal seminar');
   return json.data;
 }

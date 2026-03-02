@@ -113,6 +113,8 @@ export const API_CONFIG = {
       DETAIL: (seminarId: string) => `/thesisSeminar/admin/${seminarId}`,
       VALIDATE_DOCUMENT: (seminarId: string, documentTypeId: string) =>
         `/thesisSeminar/admin/${seminarId}/documents/${documentTypeId}/validate`,
+      SCHEDULING_DATA: (seminarId: string) => `/thesisSeminar/admin/${seminarId}/scheduling-data`,
+      SET_SCHEDULE: (seminarId: string) => `/thesisSeminar/admin/${seminarId}/schedule`,
     },
     THESIS_SEMINAR_LECTURER: {
       EXAMINER_REQUESTS: '/thesisSeminar/lecturer/examiner-requests',

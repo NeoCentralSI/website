@@ -217,6 +217,53 @@ export interface ValidateDocumentResponse {
 }
 
 // ============================================================
+// Admin Seminar Scheduling Types
+// ============================================================
+
+export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
+
+export interface LecturerAvailabilitySlot {
+  id: string;
+  lecturerId: string;
+  lecturerName: string;
+  day: DayOfWeek;
+  startTime: string; // ISO string from DB Time field
+  endTime: string;   // ISO string from DB Time field
+  validFrom: string;
+  validUntil: string;
+}
+
+export interface RoomOption {
+  id: string;
+  name: string;
+}
+
+export interface SeminarCurrentSchedule {
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  room: RoomOption | null;
+}
+
+export interface SeminarSchedulingData {
+  rooms: RoomOption[];
+  lecturerAvailabilities: LecturerAvailabilitySlot[];
+  currentSchedule: SeminarCurrentSchedule | null;
+}
+
+export interface SetSchedulePayload {
+  roomId: string;
+  date: string;       // YYYY-MM-DD
+  startTime: string;  // HH:MM
+  endTime: string;    // HH:MM
+}
+
+export interface SetScheduleResponse {
+  seminarId: string;
+  status: ThesisSeminarStatus;
+}
+
+// ============================================================
 // Lecturer Seminar Types
 // ============================================================
 
