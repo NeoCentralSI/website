@@ -100,6 +100,10 @@ export const API_CONFIG = {
       TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/approve`,
       TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/reject`,
     },
+    THESIS_SEMINAR_STUDENT: {
+      OVERVIEW: '/thesisSeminar/student/overview',
+      ATTENDANCE: '/thesisSeminar/student/attendance',
+    },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',
       PROPOSALS: '/insternship/registration/proposals',

@@ -99,7 +99,7 @@ export const useSidebarMenu = () => {
               url: "/tugas-akhir/bimbingan",
             },
             {
-              title: "Seminar",
+              title: "Seminar Hasil",
               url: "/tugas-akhir/seminar",
             },
             {
@@ -172,7 +172,7 @@ export const useSidebarMenu = () => {
       // Menu Tugas Akhir (selalu ada)
       const tugasAkhirItems = [
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-        { title: "Seminar", url: "/tugas-akhir/seminar" },
+        { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
       ];
 
@@ -250,7 +250,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar" },
+          { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
@@ -335,7 +335,7 @@ export const useSidebarMenu = () => {
       // Menu Tugas Akhir
       const tugasAkhirItems = [
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-        { title: "Seminar", url: "/tugas-akhir/seminar" },
+        { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
         { title: "Monitoring", url: "/tugas-akhir/monitoring" },
       ];
@@ -427,7 +427,7 @@ export const useSidebarMenu = () => {
       // Menu Tugas Akhir
       const tugasAkhirItems = [
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-        { title: "Seminar", url: "/tugas-akhir/seminar" },
+        { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
         { title: "Monitoring", url: "/tugas-akhir/monitoring" },
       ];
@@ -510,11 +510,11 @@ export const useSidebarMenu = () => {
                 url: "/tugas-akhir/kelola",
               },
               {
-                title: "Penjadwalan Seminar",
-                url: "/tugas-akhir/jadwal-seminar",
+                title: "Seminar Hasil",
+                url: "/tugas-akhir/seminar",
               },
               {
-                title: "Penjadwalan Sidang",
+                title: "Sidang",
                 url: "/tugas-akhir/jadwal-sidang",
               },
             ],
