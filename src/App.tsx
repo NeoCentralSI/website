@@ -33,6 +33,7 @@ import SeminarHasilEntry from './pages/tugas-akhir/seminar-hasil/SeminarHasilEnt
 import StudentThesisSeminarPage from './pages/tugas-akhir/seminar-hasil/StudentThesisSeminar'
 import StudentSeminarAttendancePage from './pages/tugas-akhir/seminar-hasil/StudentSeminarAttendance'
 import AdminThesisSeminarManagementPage from './pages/tugas-akhir/seminar-hasil/AdminThesisSeminarManagement'
+import AdminSeminarDetailPage from './pages/tugas-akhir/seminar-hasil/AdminSeminarDetail'
 import LecturerThesisSeminarPage from './pages/tugas-akhir/seminar-hasil/LecturerThesisSeminar'
 // Kerja Praktik
 import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
@@ -267,6 +268,7 @@ function App() {
                 <Route path="/admin/kerja-praktik/surat-tugas/template" element={<AssignmentTemplateEditor />} />
                 <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
                 <Route path="/tugas-akhir/seminar/admin" element={<AdminThesisSeminarManagementPage />} />
+                <Route path="/tugas-akhir/seminar/admin/:seminarId" element={<AdminSeminarDetailPage />} />
                 <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
                 <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />
                 <Route path="/master-data/dosen" element={<DosenPage />} />
