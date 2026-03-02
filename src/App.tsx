@@ -87,6 +87,10 @@ import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
 // Lecturer Availability
 import JadwalKetersediaan from './pages/lecturer/JadwalKetersediaan'
+// Pengumuman
+import SeminarHasilAnnouncementPage from './pages/pengumuman/SeminarHasilAnnouncement'
+import YudisiumAnnouncementPage from './pages/pengumuman/YudisiumAnnouncement'
+import PengumumanOverviewPage from './pages/pengumuman/Overview'
 // Others
 import NotFoundPage from './pages/NotFound'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
@@ -177,6 +181,11 @@ function App() {
                     <Route path="seminar/student/attendance" element={<StudentSeminarAttendancePage />} />
                   </Route>
                 </Route>
+
+                {/* Pengumuman routes */}
+                <Route path="/pengumuman" element={<PengumumanOverviewPage />} />
+                <Route path="/pengumuman/seminar-hasil" element={<SeminarHasilAnnouncementPage />} />
+                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
               </Route>
 
               {/* Shared Routes (Student & Lecturer & Others) */}

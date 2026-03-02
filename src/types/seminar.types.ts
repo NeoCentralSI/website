@@ -378,3 +378,37 @@ export interface RespondAssignmentResponse {
   availabilityStatus: ExaminerAvailabilityStatus;
   seminarTransitioned: boolean;
 }
+
+// ============================================================
+// Student Seminar Announcement Types
+// ============================================================
+
+export interface AnnouncementSupervisor {
+  role: string;
+  name: string;
+}
+
+export interface AnnouncementExaminer {
+  order: number;
+  name: string;
+}
+
+export interface SeminarAnnouncementItem {
+  id: string;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  status: ThesisSeminarStatus;
+  meetingLink: string | null;
+  room: { id: string; name: string } | null;
+  thesisTitle: string;
+  presenterName: string;
+  presenterStudentId: string | null;
+  supervisors: AnnouncementSupervisor[];
+  examiners: AnnouncementExaminer[];
+  isOwn: boolean;
+  isPast: boolean;
+  isRegistered: boolean;
+  isPresent: boolean;
+  registeredAt: string | null;
+}

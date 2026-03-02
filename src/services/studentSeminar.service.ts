@@ -6,6 +6,7 @@ import type {
   SeminarDocumentType,
   SeminarDocumentsResponse,
   SeminarDocumentUploadResponse,
+  SeminarAnnouncementItem,
 } from '@/types/seminar.types';
 
 /**
@@ -76,5 +77,43 @@ export async function uploadSeminarDocument(
   );
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Gagal mengupload dokumen');
+  return json.data;
+}
+
+/**
+ * Get all seminar announcements (scheduled/past) visible to the student
+ */
+export async function getSeminarAnnouncements(): Promise<SeminarAnnouncementItem[]> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.ANNOUNCEMENTS)
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat pengumuman seminar');
+  return json.data;
+}
+
+/**
+ * Register the student as an audience for a seminar
+ */
+export async function registerToSeminar(seminarId: string): Promise<{ message: string }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REGISTER_AUDIENCE(seminarId)),
+    { method: 'POST' }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal mendaftar seminar');
+  return json.data;
+}
+
+/**
+ * Cancel the student's audience registration for a seminar
+ */
+export async function cancelSeminarRegistration(seminarId: string): Promise<{ message: string }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REGISTER_AUDIENCE(seminarId)),
+    { method: 'DELETE' }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal membatalkan pendaftaran');
   return json.data;
 }

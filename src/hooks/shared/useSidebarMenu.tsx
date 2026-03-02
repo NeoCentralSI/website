@@ -4,6 +4,7 @@ import {
   Clock,
   Database,
   FileText,
+  Megaphone,
   SquareTerminal,
   GraduationCap
 } from "lucide-react";
@@ -105,6 +106,24 @@ export const useSidebarMenu = () => {
             {
               title: "Sidang",
               url: "/tugas-akhir/sidang",
+            },
+          ],
+        },
+        // Pengumuman - seminar hasil & yudisium announcements
+        {
+          title: "Pengumuman",
+          url: "/pengumuman",
+          icon: Megaphone,
+          items: [
+            {
+              title: "Seminar Hasil",
+              url: "/pengumuman/seminar-hasil",
+              isActive: pathname.startsWith("/pengumuman/seminar-hasil"),
+            },
+            {
+              title: "Yudisium",
+              url: "/pengumuman/yudisium",
+              isActive: pathname.startsWith("/pengumuman/yudisium"),
             },
           ],
         },

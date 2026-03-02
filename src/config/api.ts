@@ -107,6 +107,8 @@ export const API_CONFIG = {
       DOCUMENTS: '/thesisSeminar/student/documents',
       DOCUMENT_UPLOAD: '/thesisSeminar/student/documents/upload',
       DOCUMENT_VIEW: (documentTypeId: string) => `/thesisSeminar/student/documents/${documentTypeId}`,
+      ANNOUNCEMENTS: '/thesisSeminar/student/announcements',
+      REGISTER_AUDIENCE: (seminarId: string) => `/thesisSeminar/student/announcements/${seminarId}/register`,
     },
     THESIS_SEMINAR_ADMIN: {
       LIST: '/thesisSeminar/admin',
