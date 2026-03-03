@@ -148,6 +148,7 @@ export interface SekdepAssignmentItem {
     sekdepNotes?: string | null;
     memberCount: number;
     members?: { id: string; name: string; nim: string; role: string; status: string }[];
+    isAssignmentSigned: boolean;
     updatedAt: string;
     dokumenSuratBalasan: {
         id: string;

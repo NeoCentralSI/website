@@ -238,26 +238,30 @@ export const getSekdepAssignmentColumns = ({
             render: (item: SekdepAssignmentItem) => {
                 return (
                     <div className="flex justify-center gap-1">
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-700 px-2"
-                            onClick={() => onVerify(item, 'APPROVED_BY_SEKDEP')}
-                            disabled={item.responseStatus === 'APPROVED_BY_SEKDEP'}
-                            title="Verifikasi (Terima)"
-                        >
-                            <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 border-destructive text-destructive hover:bg-destructive/5 px-2"
-                            onClick={() => onVerify(item, 'REJECTED_BY_SEKDEP')}
-                            disabled={item.responseStatus === 'REJECTED_BY_SEKDEP'}
-                            title="Tolak (Dokumen Invalid)"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
+                        {!item.isAssignmentSigned && (
+                            <>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-700 px-2"
+                                    onClick={() => onVerify(item, 'APPROVED_BY_SEKDEP')}
+                                    disabled={item.responseStatus === 'APPROVED_BY_SEKDEP'}
+                                    title="Verifikasi (Terima)"
+                                >
+                                    <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 border-destructive text-destructive hover:bg-destructive/5 px-2"
+                                    onClick={() => onVerify(item, 'REJECTED_BY_SEKDEP')}
+                                    disabled={item.responseStatus === 'REJECTED_BY_SEKDEP'}
+                                    title="Tolak (Dokumen Invalid)"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </>
+                        )}
                         <Button
                             size="sm"
                             variant="ghost"
