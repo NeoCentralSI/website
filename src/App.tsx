@@ -129,16 +129,8 @@ function App() {
 
               {/* Student routes */}
               <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
-                <Route element={<KerjaPraktekGuard />}>
-                  <Route path="/kerja-praktik" element={<KerjaPraktekOverviewPage />} />
-                  <Route path="/kerja-praktik/pendaftaran" element={<InternshipProposalPage />} />
-                  <Route path="/kerja-praktik/pendaftaran/:proposalId" element={<InternshipProposalDetailPage />} />
-                  <Route path="/kerja-praktik/logbook" element={<Placeholder title="Kerja Praktek - Log Book" />} />
-                  <Route path="/kerja-praktik/acc-proposal" element={<Placeholder title="Kerja Praktek - ACC Proposal" />} />
-                  <Route path="/kerja-praktik/surat-pengantar" element={<Placeholder title="Kerja Praktek - Surat Pengantar" />} />
-                  <Route path="/kerja-praktik/data" element={<Placeholder title="Kerja Praktek - Data KP" />} />
-                </Route>
                 <Route path="/kerja-praktik" element={<KerjaPraktekGuard />}>
+                  <Route index element={<KerjaPraktekOverviewPage />} />
                   <Route path="pendaftaran" element={<InternshipProposalPage />} />
                   <Route path="pendaftaran/:id" element={<InternshipProposalDetailPage />} />
                   <Route path="penugasan" element={<InternshipAssignmentPage />} />
