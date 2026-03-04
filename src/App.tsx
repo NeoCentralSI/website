@@ -33,6 +33,8 @@ import SecretaryKelolaTugasAkhirPage from './pages/tugas-akhir/bimbingan/secreta
 import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
 import InternshipProposalDetailPage from './pages/kerja-praktik/student/registration/PendaftaranDetail'
 import InternshipAssignmentPage from './pages/kerja-praktik/student/registration/Assignment'
+import InternshipLogbookPage from './pages/kerja-praktik/student/activity/Logbook'
+import InternshipGuidancePage from './pages/kerja-praktik/student/activity/Guidance'
 // Sekdep Internship
 import SekdepInternshipProposalPage from './pages/kerja-praktik/sekdep/registration/Proposal'
 import SekdepInternshipProposalDetailPage from './pages/kerja-praktik/sekdep/registration/PendaftaranDetail'
@@ -134,7 +136,8 @@ function App() {
                   <Route path="pendaftaran" element={<InternshipProposalPage />} />
                   <Route path="pendaftaran/:id" element={<InternshipProposalDetailPage />} />
                   <Route path="penugasan" element={<InternshipAssignmentPage />} />
-                  <Route path="logbook" element={<Placeholder title="KP - Logbook" />} />
+                  <Route path="logbook" element={<InternshipLogbookPage />} />
+                  <Route path="bimbingan" element={<InternshipGuidancePage />} />
                   <Route path="seminar" element={<Placeholder title="KP - Seminar" />} />
                 </Route>
               </Route>
@@ -165,7 +168,6 @@ function App() {
 
               {/* Kerja Praktik Shared */}
               <Route path="/kerja-praktik/monitoring" element={<Placeholder title="Kerja Praktek - Monitoring" />} />
-              <Route path="/kerja-praktik/bimbingan" element={<Placeholder title="Kerja Praktek - Bimbingan" />} />
               <Route path="/kerja-praktik/seminar" element={<Placeholder title="Kerja Praktek - Seminar" />} />
 
               {/* Yudisium - Top Level for Student */}

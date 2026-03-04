@@ -18,6 +18,7 @@ import {
     DialogTrigger,
     DialogFooter
 } from "@/components/ui/dialog";
+import DocxViewer from "@/components/pdf/DocxViewer";
 
 import type { InternshipTemplate } from "@/services/internship.service";
 
@@ -225,14 +226,10 @@ const AssignmentTemplateEditor = () => {
                         <CardContent className="px-0 relative">
 
                             {(template && template.filePath) ? (
-                                <div className="overflow-hidden border">
-                                    <iframe
-                                        title="Template Preview"
-                                        src={previewUrl || ""}
-                                        className="w-full bg-gray-100/50"
-                                        style={{ height: 'calc(100vh - 300px)', minHeight: '600px', border: 'none' }}
-                                    />
-                                </div>
+                                <DocxViewer
+                                    url={previewUrl || ""}
+                                    style={{ height: 'calc(100vh - 300px)', minHeight: '600px' }}
+                                />
                             ) : (
                                 <div className="h-[500px] flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/5">
                                     <FileText className="h-12 w-12 mb-4 opacity-20" />

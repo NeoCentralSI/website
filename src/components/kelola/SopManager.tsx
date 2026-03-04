@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Trash2, FileDigit, FileText, Edit } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDigit, FileText, Edit, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import * as sopService from "@/services/sop.service";
 import type { SopFile, SopType } from "@/types/sop.types";
@@ -323,6 +324,37 @@ export function SopManager() {
               onClick={() => refetch()}
               isRefreshing={isFetching && !isLoading}
             />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9 text-muted-foreground" title="Panduan Placeholder">
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-4" align="end">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm leading-none">Panduan Template Logbook</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Gunakan tag berikut (dengan satu kurung kurawal `{ }`) di file DOCX Anda agar data terisi otomatis:
+                  </p>
+                  <div className="grid grid-cols-2 gap-y-1 text-xs">
+                    <span className="font-bold">Instansi:</span> <span>{'{instansi}'}</span>
+                    <span className="font-bold">Nama:</span> <span>{'{nama}'}</span>
+                    <span className="font-bold">NIM:</span> <span>{'{nim}'}</span>
+                    <span className="font-bold">Tgl Cetak:</span> <span>{'{tanggal_cetak}'}</span>
+                    <span className="font-bold">Pembimbing:</span> <span>{'{pembimbing}'}</span>
+                  </div>
+                  <div className="pt-2 border-t">
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Tabel (Looping):</p>
+                    <code className="text-[10px] bg-muted p-1 block rounded">
+                      #a ... {'{no}'} | {'{kegiatan}'} | {'{tanggal}'} ... /a
+                    </code>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      *Buka baris dengan {'{#a}'} dan tutup baris terakhir dengan {'{/a}'}.
+                    </p>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Dialog open={addDialogOpen} onOpenChange={(open) => {
               setAddDialogOpen(open);
               if (!open) resetForm();
@@ -384,26 +416,32 @@ export function SopManager() {
                         </Select>
                       </div>
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="file" className="text-xs font-bold uppercase text-muted-foreground">File Panduan (PDF)</Label>
-                      <Input
-                        id="file"
-                        type="file"
-                        accept="application/pdf"
-                        required
-                        className="h-9 text-xs file:text-xs file:bg-primary/10 file:text-primary file:border-0 file:rounded-full file:px-3 file:mr-2 cursor-pointer pt-1.5"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f && f.type !== "application/pdf") {
-                            toast.error("File harus PDF");
-                            e.target.value = "";
-                            setFile(null);
-                          } else {
-                            setFile(f || null);
-                          }
-                        }}
-                      />
-                    </div>
+                    <Label htmlFor="file" className="text-xs font-bold uppercase text-muted-foreground">
+                      File Dokumen (PDF/DOCX)
+                    </Label>
+                    <Input
+                      id="file"
+                      type="file"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      required
+                      className="h-9 text-xs file:text-xs file:bg-primary/10 file:text-primary file:border-0 file:rounded-full file:px-3 file:mr-2 cursor-pointer pt-1.5"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        const allowedTypes = [
+                          "application/pdf",
+                          "application/msword",
+                          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        ];
+
+                        if (f && !allowedTypes.includes(f.type) && !f.name.endsWith('.docx') && !f.name.endsWith('.doc')) {
+                          toast.error("File harus PDF, DOC, atau DOCX");
+                          e.target.value = "";
+                          setFile(null);
+                        } else {
+                          setFile(f || null);
+                        }
+                      }}
+                    />
                   </div>
                   <DialogFooter>
                     <Button type="button" variant="outline" size="sm" onClick={() => setAddDialogOpen(false)}>Batal</Button>
