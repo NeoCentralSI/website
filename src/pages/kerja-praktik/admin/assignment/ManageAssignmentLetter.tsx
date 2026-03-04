@@ -279,15 +279,27 @@ const ManageAssignmentLetter: React.FC = () => {
                                 </div>
 
                                 {watchDates[0] && watchDates[1] && (
-                                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                                            <Calendar className="h-4 w-4" />
-                                            Durasi Pelaksanaan
+                                    <div className="space-y-3">
+                                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                                                <Calendar className="h-4 w-4" />
+                                                Durasi Pelaksanaan
+                                            </div>
+                                            <div className="text-sm">
+                                                <span className="font-bold text-lg">{businessDays}</span>
+                                                <span className="ml-1 text-muted-foreground">Hari Kerja</span>
+                                            </div>
                                         </div>
-                                        <div className="text-sm">
-                                            <span className="font-bold text-lg">{businessDays}</span>
-                                            <span className="ml-1 text-muted-foreground">Hari Kerja</span>
-                                        </div>
+
+                                        {businessDays < 30 && (
+                                            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex gap-3 text-amber-800 animate-in shake duration-500">
+                                                <Info className="h-5 w-5 shrink-0" />
+                                                <div className="text-xs">
+                                                    <p className="font-bold">Peringatan: Durasi Kurang</p>
+                                                    <p className="opacity-90">Total hari kerja kurang dari 30 hari (Minimal standar KP). Pastikan rentang waktu sudah sesuai dengan kebijakan.</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

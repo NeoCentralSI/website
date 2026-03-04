@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDe
 import { Button } from "@/components/ui/button";
 import { DownloadIcon, ExternalLinkIcon, XIcon } from "lucide-react";
 import { getApiUrl } from "@/config/api";
+import { DocxViewer } from "@/components/pdf/DocxViewer";
 
 export type DocumentPreviewDialogProps = {
   open: boolean;
@@ -12,19 +13,16 @@ export type DocumentPreviewDialogProps = {
 };
 
 export default function DocumentPreviewDialog({ open, onOpenChange, fileName, filePath, mode = "fullscreen" }: DocumentPreviewDialogProps) {
+  const isDocx = fileName?.toLowerCase().endsWith(".docx") || filePath?.toLowerCase().endsWith(".docx");
+
   let url: string | undefined;
   if (filePath) {
     const normalizedPath = filePath.replace(/\\/g, "/");
-    // If path starts with http, it's already a full URL
     if (normalizedPath.startsWith("http")) {
       url = normalizedPath;
-    }
-    // If path already starts with /uploads/ or uploads/, use it as-is
-    else if (normalizedPath.startsWith("/uploads/") || normalizedPath.startsWith("uploads/")) {
+    } else if (normalizedPath.startsWith("/uploads/") || normalizedPath.startsWith("uploads/")) {
       url = getApiUrl(normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`);
-    }
-    // Otherwise, add /uploads/ prefix
-    else {
+    } else {
       url = getApiUrl(`/uploads/${normalizedPath}`);
     }
   }
@@ -32,13 +30,15 @@ export default function DocumentPreviewDialog({ open, onOpenChange, fileName, fi
   // Basic preview via iframe; we rely on browser PDF viewer
   const contentClass =
     mode === "fullscreen"
-      ? "max-w-[100vw] w-[100vw] sm:max-w-[100vw] sm:w-[100vw] h-[100vh] p-0 overflow-hidden rounded-none"
-      : "max-w-[96vw] w-[96vw] h-[92vh] p-0 overflow-hidden";
+      ? "max-w-[100vw] w-[100vw] sm:max-w-[100vw] sm:w-[100vw] h-[100vh] p-0 overflow-hidden rounded-none flex flex-col"
+      : "max-w-[96vw] w-[96vw] h-[92vh] p-0 overflow-hidden flex flex-col";
+
   const headerClass =
     mode === "fullscreen"
-      ? "px-4 sm:px-6 pt-3 pb-2 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b sticky top-0 z-10"
-      : "px-6 pt-6 pb-4";
-  const viewerClass = mode === "fullscreen" ? "w-full h-[calc(100vh-48px)]" : "w-full h-full";
+      ? "px-4 sm:px-6 pt-3 pb-2 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b sticky top-0 z-10 flex-shrink-0"
+      : "px-6 pt-6 pb-4 flex-shrink-0";
+
+  const viewerClass = mode === "fullscreen" ? "w-full h-full" : "w-full h-full";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,9 +70,13 @@ export default function DocumentPreviewDialog({ open, onOpenChange, fileName, fi
             </div>
           </div>
         </DialogHeader>
-        <div className="w-full border-t h-full bg-gray-100 overflow-auto">
+        <div className="flex-1 w-full border-t bg-gray-100 overflow-auto relative">
           {url ? (
-            <iframe title="preview" src={url} className={viewerClass} />
+            isDocx ? (
+              <DocxViewer url={url} className="h-full" />
+            ) : (
+              <iframe title="preview" src={url} className={viewerClass} />
+            )
           ) : (
             <div className="p-6 text-sm text-muted-foreground">Dokumen tidak tersedia.</div>
           )}

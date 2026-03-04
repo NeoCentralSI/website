@@ -548,3 +548,74 @@ export const verifyInternshipLetter = async (id: string) => {
     }
     return res.json();
 };
+export interface InternshipLogbookItem {
+    id: string;
+    internshipId: string;
+    activityDate: string;
+    activityDescription: string;
+    internshipNotes?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface StudentLogbookData {
+    internship: {
+        id: string;
+        fieldSupervisorName: string | null;
+        unitSection: string | null;
+        student?: {
+            user: {
+                fullName: string;
+                identityNumber: string;
+            }
+        };
+        proposal: {
+            targetCompany: {
+                companyName: string;
+            }
+        }
+    } | null;
+    logbooks: InternshipLogbookItem[];
+}
+
+export const getStudentLogbooks = async (): Promise<{ success: boolean; data: StudentLogbookData }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.LOGBOOK));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat logbook" }));
+        throw new Error(errorData.message || "Gagal memuat logbook");
+    }
+    return res.json();
+};
+
+export const updateLogbookEntry = async (id: string, activityDescription: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.UPDATE_LOGBOOK(id)), {
+        method: "PUT",
+        body: JSON.stringify({ activityDescription }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui logbook" }));
+        throw new Error(errorData.message || "Gagal memperbarui logbook");
+    }
+    return res.json();
+};
+
+export const updateInternshipDetails = async (body: { fieldSupervisorName: string; unitSection: string }): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.UPDATE_DETAILS), {
+        method: "PUT",
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui informasi KP" }));
+        throw new Error(errorData.message || "Gagal memperbarui informasi KP");
+    }
+    return res.json();
+};
+
+export const downloadLogbookPdf = async (): Promise<Blob> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.LOGBOOK) + "/download");
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunduh PDF" }));
+        throw new Error(errorData.message || "Gagal mengunduh PDF");
+    }
+    return res.blob();
+};
