@@ -24,11 +24,13 @@ import {
     AlertCircle,
     Archive,
     ShieldAlert,
+    Download,
 } from "lucide-react";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
 import { useMilestones } from "@/hooks/milestone";
 import { Loading } from "@/components/ui/spinner";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
+import { getApiUrl } from "@/config/api";
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -364,6 +366,115 @@ export default function TugasAkhirOverviewPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* DOKUMEN TUGAS AKHIR */}
+                            {(thesisDetail?.document || thesisDetail?.proposalDocument || (thesisDetail?.uploadedFiles && thesisDetail.uploadedFiles.length > 0)) && (
+                                <Card className="w-full">
+                                    <CardHeader className="pb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                                                <FileText className="h-5 w-5 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-lg">Dokumen Tugas Akhir</CardTitle>
+                                                <CardDescription>File yang telah Anda upload</CardDescription>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {/* Proposal */}
+                                            {thesisDetail.proposalDocument && (
+                                                <div className="flex items-center gap-3 p-3 rounded-lg border bg-blue-50/50">
+                                                    <FileText className="h-8 w-8 text-blue-500 shrink-0" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium truncate">{thesisDetail.proposalDocument.fileName}</p>
+                                                        <p className="text-xs text-muted-foreground">Proposal</p>
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" className="shrink-0" asChild>
+                                                        <a
+                                                            href={(() => {
+                                                                const path = thesisDetail.proposalDocument!.filePath;
+                                                                let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
+                                                                const token = localStorage.getItem('accessToken');
+                                                                if (token && path.includes('thesis/')) url += `?token=${token}`;
+                                                                return url;
+                                                            })()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {/* Latest Draft */}
+                                            {thesisDetail.document && (
+                                                <div className="flex items-center gap-3 p-3 rounded-lg border bg-green-50/50">
+                                                    <FileText className="h-8 w-8 text-green-500 shrink-0" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium truncate">{thesisDetail.document.fileName}</p>
+                                                        <p className="text-xs text-muted-foreground">Draft Terbaru</p>
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" className="shrink-0" asChild>
+                                                        <a
+                                                            href={(() => {
+                                                                const path = thesisDetail.document!.filePath;
+                                                                let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
+                                                                const token = localStorage.getItem('accessToken');
+                                                                if (token && path.includes('thesis/')) url += `?token=${token}`;
+                                                                return url;
+                                                            })()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* File Versions */}
+                                        {thesisDetail.uploadedFiles && thesisDetail.uploadedFiles.length > 1 && (
+                                            <div className="space-y-2">
+                                                <Separator />
+                                                <p className="text-sm font-medium text-muted-foreground">Riwayat File Upload ({thesisDetail.uploadedFiles.length} versi)</p>
+                                                <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                                                    {thesisDetail.uploadedFiles.map((file, idx) => (
+                                                        <div key={file.id} className="flex items-center gap-3 p-2 rounded-md border text-sm">
+                                                            <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate font-medium">{file.fileName}</p>
+                                                                <p className="text-xs text-muted-foreground">{formatDateId(file.uploadedAt)}</p>
+                                                            </div>
+                                                            {idx === 0 && (
+                                                                <Badge variant="outline" className="text-[10px] shrink-0">Terbaru</Badge>
+                                                            )}
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
+                                                                <a
+                                                                    href={(() => {
+                                                                        const path = file.filePath;
+                                                                        let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
+                                                                        const token = localStorage.getItem('accessToken');
+                                                                        if (token && path.includes('thesis/')) url += `?token=${token}`;
+                                                                        return url;
+                                                                    })()}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    <Download className="h-3.5 w-3.5" />
+                                                                </a>
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             {/* 2. QUICK ACCESS & STATS */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

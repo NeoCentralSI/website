@@ -183,6 +183,11 @@ export interface ThesisDetail {
   };
   supervisors: ThesisDetailParticipant[];
   examiners: ThesisDetailParticipant[];
+  latestDocument: {
+    id: string;
+    fileName: string;
+    filePath: string;
+  } | null;
   progress: {
     completed: number;
     total: number;
@@ -459,4 +464,26 @@ export async function getProgressReport(academicYear?: string): Promise<Progress
   }
   const result = await response.json();
   return result.data;
+}
+
+/**
+ * Download progress report as PDF (server-side generation via Gotenberg)
+ */
+export async function downloadProgressReportPdf(academicYear?: string): Promise<Blob> {
+  const url = academicYear && academicYear !== "all"
+    ? `${getApiUrl("/thesisGuidance/monitoring/report/download")}?academicYear=${academicYear}`
+    : getApiUrl("/thesisGuidance/monitoring/report/download");
+
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    let message = "Gagal mengunduh laporan";
+    try {
+      const json = await response.json();
+      if (json.message) message = json.message;
+    } catch {
+      // response is not JSON
+    }
+    throw new Error(message);
+  }
+  return response.blob();
 }

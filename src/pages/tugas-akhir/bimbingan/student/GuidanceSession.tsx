@@ -117,7 +117,7 @@ export default function GuidanceSessionPage() {
       url = getApiUrl(`/uploads/${path}`);
     }
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (token && path.includes("thesis/")) {
       url += (url.includes("?") ? "&" : "?") + `token=${token}`;
     }

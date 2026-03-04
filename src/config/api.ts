@@ -56,6 +56,7 @@ export const API_CONFIG = {
       COMPLETE_SESSION: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/complete`,
       COMPLETED_HISTORY: '/thesisGuidance/student/completed-history',
       EXPORT_GUIDANCE: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/export`,
+      GENERATE_LOG: '/thesisGuidance/student/guidance/generate-log',
       // My Thesis
       MY_THESIS: '/thesisGuidance/student/my-thesis',
       THESIS_HISTORY: '/thesisGuidance/student/history/theses',

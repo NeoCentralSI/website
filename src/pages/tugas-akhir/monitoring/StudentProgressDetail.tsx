@@ -24,8 +24,10 @@ import {
   Target,
   FileText,
   Activity,
-  Award
+  Award,
+  Download
 } from 'lucide-react';
+import { getApiUrl } from '@/config/api';
 import Lottie from 'lottie-react';
 import emptyAnimation from '@/assets/lottie/empty.json';
 
@@ -309,6 +311,42 @@ export default function StudentProgressDetail() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Latest Document */}
+          {data.latestDocument && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="h-4 w-4" />
+                  Dokumen Terbaru
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3 p-3 rounded-lg border bg-green-50/50">
+                  <FileText className="h-8 w-8 text-green-500 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{data.latestDocument.fileName}</p>
+                    <p className="text-xs text-muted-foreground">Draft Terbaru</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="shrink-0" asChild>
+                    <a
+                      href={(() => {
+                        const path = data.latestDocument!.filePath;
+                        let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
+                        const token = localStorage.getItem('accessToken');
+                        if (token && path.includes('thesis/')) url += `?token=${token}`;
+                        return url;
+                      })()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Supervisors & Examiners */}
           <Card>

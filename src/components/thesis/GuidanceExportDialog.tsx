@@ -11,9 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { Download } from "lucide-react";
-import { getGuidanceForExport } from "@/services/studentGuidance.service";
+import { getGuidanceForExport, generateGuidanceLogPdf } from "@/services/studentGuidance.service";
 import { toTitleCaseName } from "@/lib/text";
-import { generateGuidanceLogReportPDF } from "@/lib/generateGuidanceLogReport";
+import { toast } from "sonner";
 
 interface GuidanceExportDialogProps {
   open: boolean;
@@ -36,28 +36,22 @@ export default function GuidanceExportDialog({
 
   const guidance = data?.guidance;
 
-  const generatePDF = async () => {
-    if (!guidance) return;
-    
+  const handleDownload = async () => {
+    if (!guidanceId) return;
+
     setIsGenerating(true);
     try {
-      await generateGuidanceLogReportPDF({
-        studentName: toTitleCaseName(guidance.studentName || "-"),
-        studentId: guidance.studentId || "-",
-        supervisorName: toTitleCaseName(guidance.supervisorName || "-"),
-        thesisTitle: guidance.thesisTitle,
-        guidances: [{
-          id: guidance.id,
-          approvedDate: guidance.approvedDate,
-          approvedDateFormatted: guidance.approvedDateFormatted,
-          type: guidance.type,
-          duration: guidance.duration,
-          milestoneName: guidance.milestoneName,
-          sessionSummary: guidance.sessionSummary,
-          actionItems: guidance.actionItems,
-          completedAtFormatted: guidance.completedAtFormatted,
-        }],
-      });
+      const blob = await generateGuidanceLogPdf([guidanceId]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Log_Bimbingan_${guidance?.studentId || "export"}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal generate log bimbingan");
     } finally {
       setIsGenerating(false);
     }
@@ -124,10 +118,11 @@ export default function GuidanceExportDialog({
                   <td className="border px-3 py-2 align-top">
                     <div className="space-y-1">
                       <p className="font-medium">{guidance.approvedDateFormatted || "-"}</p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {guidance.type || "online"}
-                        {guidance.duration && ` • ${guidance.duration} menit`}
-                      </p>
+                      {guidance.duration && (
+                        <p className="text-xs text-muted-foreground">
+                          {guidance.duration} menit
+                        </p>
+                      )}
                       {guidance.milestoneName && (
                         <p className="text-xs text-muted-foreground">
                           {guidance.milestoneName}
@@ -169,7 +164,7 @@ export default function GuidanceExportDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Tutup
           </Button>
-          <Button onClick={generatePDF} disabled={isLoading || !!error || isGenerating}>
+          <Button onClick={handleDownload} disabled={isLoading || !!error || isGenerating}>
             {isGenerating ? (
               <>
                 <Spinner className="mr-2 h-4 w-4" />
