@@ -34,7 +34,7 @@ export default function JadwalKetersediaan() {
         <div className="p-4 space-y-6">
             <div>
                 <h1 className="text-2xl font-bold">Jadwal Ketersediaan</h1>
-                <p className="text-gray-500">Kelola jadwal ketersediaan Anda untuk bimbingan mahasiswa.</p>
+                <p className="text-gray-500">Kelola jadwal ketersediaan sebagai referensi admin dalam menjadwalkan seminar hasil atau sidang</p>
             </div>
 
             <AvailabilityTable

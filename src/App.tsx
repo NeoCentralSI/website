@@ -27,6 +27,20 @@ import LecturerGuidanceSessionPage from './pages/tugas-akhir/bimbingan/lecturer/
 import LecturerMyStudentsPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudents'
 import LecturerMyStudentDetailPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'
 import SecretaryKelolaTugasAkhirPage from './pages/tugas-akhir/bimbingan/secretary/TugasAkhir'
+import SeminarHasilEntry from './pages/tugas-akhir/seminar-hasil/SeminarHasilEntry'
+import StudentThesisSeminarPage from './pages/tugas-akhir/seminar-hasil/StudentThesisSeminar'
+import StudentSeminarAttendancePage from './pages/tugas-akhir/seminar-hasil/StudentSeminarAttendance'
+import StudentSeminarRevisionPage from './pages/tugas-akhir/seminar-hasil/StudentSeminarRevision'
+import StudentSeminarDetailPage from './pages/tugas-akhir/seminar-hasil/StudentSeminarDetail'
+import AdminThesisSeminarManagementPage from './pages/tugas-akhir/seminar-hasil/AdminThesisSeminarManagement'
+import AdminSeminarDetailPage from './pages/tugas-akhir/seminar-hasil/AdminSeminarDetail'
+import LecturerThesisSeminarPage from './pages/tugas-akhir/seminar-hasil/LecturerThesisSeminar'
+import LecturerExaminerAssignmentPage from './pages/tugas-akhir/seminar-hasil/LecturerExaminerAssignment'
+import LecturerSupervisedStudentsPage from './pages/tugas-akhir/seminar-hasil/LecturerSupervisedStudents'
+import LecturerSeminarDetailIdentityPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailIdentity'
+import LecturerSeminarDetailAssessmentPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'
+import LecturerSeminarDetailRevisionPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'
+import LecturerSeminarDetailAttendancePage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'
 // Kerja Praktik
 import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
 import InternshipProposalDetailPage from './pages/kerja-praktik/student/registration/PendaftaranDetail'
@@ -73,10 +87,15 @@ import KelolaCpl from './pages/kelola/KelolaCpl'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
+import SeminarHasilGuard from './pages/guards/SeminarHasilGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
 // Lecturer Availability
 import JadwalKetersediaan from './pages/lecturer/JadwalKetersediaan'
+// Pengumuman
+import SeminarHasilAnnouncementPage from './pages/pengumuman/SeminarHasilAnnouncement'
+import YudisiumAnnouncementPage from './pages/pengumuman/YudisiumAnnouncement'
+import PengumumanOverviewPage from './pages/pengumuman/Overview'
 // Others
 import NotFoundPage from './pages/NotFound'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
@@ -154,13 +173,24 @@ function App() {
                   <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                   <Route path="bimbingan/milestone" element={<StudentMilestonePage />} />
                   <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
+                  <Route element={<SeminarHasilGuard />}>
+                    <Route path="seminar/student" element={<StudentThesisSeminarPage />} />
+                    <Route path="seminar/student/revision" element={<StudentSeminarRevisionPage />} />
+                    <Route path="seminar/student/attendance" element={<StudentSeminarAttendancePage />} />
+                    <Route path="seminar/student/history/:seminarId" element={<StudentSeminarDetailPage />} />
+                  </Route>
                 </Route>
+
+                {/* Pengumuman routes */}
+                <Route path="/pengumuman" element={<PengumumanOverviewPage />} />
+                <Route path="/pengumuman/seminar-hasil" element={<SeminarHasilAnnouncementPage />} />
+                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
               </Route>
 
               {/* Shared Routes (Student & Lecturer & Others) */}
               {/* Tugas Akhir Shared */}
               <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
-              <Route path="/tugas-akhir/seminar" element={<Placeholder title="Tugas Akhir - Seminar" />} />
+              <Route path="/tugas-akhir/seminar" element={<SeminarHasilEntry />} />
               <Route path="/tugas-akhir/sidang" element={<Placeholder title="Tugas Akhir - Sidang" />} />
 
               {/* Kerja Praktik Shared */}
@@ -178,6 +208,13 @@ function App() {
                 <Route path="/tugas-akhir/bimbingan/lecturer/session/:guidanceId" element={<LecturerGuidanceSessionPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer" element={<LecturerThesisSeminarPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/assignment" element={<LecturerExaminerAssignmentPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/my-students" element={<LecturerSupervisedStudentsPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/:seminarId" element={<LecturerSeminarDetailIdentityPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/:seminarId/assessment" element={<LecturerSeminarDetailAssessmentPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/:seminarId/revision" element={<LecturerSeminarDetailRevisionPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/:seminarId/attendance" element={<LecturerSeminarDetailAttendancePage />} />
                 <Route path="/jadwal-ketersediaan" element={<JadwalKetersediaan />} />
               </Route>
 
@@ -190,7 +227,6 @@ function App() {
               <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />
               <Route path="/tugas-akhir/kelola-yudisium" element={<Placeholder title="Tugas Akhir - Kelola Yudisium" />} />
               <Route path="/tugas-akhir/kelola" element={<Placeholder title="Tugas Akhir - Kelola (Deprecated)" />} />
-              <Route path="/tugas-akhir/jadwal-seminar" element={<Placeholder title="Tugas Akhir - Penjadwalan Seminar" />} />
               <Route path="/tugas-akhir/jadwal-sidang" element={<Placeholder title="Tugas Akhir - Penjadwalan Sidang" />} />
 
               {/* Shared Kelola - Sekdep & Kadep */}
@@ -246,6 +282,8 @@ function App() {
                 <Route path="/admin/kerja-praktik/surat-tugas/:id" element={<ManageAssignmentLetter />} />
                 <Route path="/admin/kerja-praktik/surat-tugas/template" element={<AssignmentTemplateEditor />} />
                 <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
+                <Route path="/tugas-akhir/seminar/admin" element={<AdminThesisSeminarManagementPage />} />
+                <Route path="/tugas-akhir/seminar/admin/:seminarId" element={<AdminSeminarDetailPage />} />
                 <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
                 <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />
                 <Route path="/master-data/dosen" element={<DosenPage />} />

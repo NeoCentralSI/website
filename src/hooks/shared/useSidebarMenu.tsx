@@ -4,6 +4,7 @@ import {
   Clock,
   Database,
   FileText,
+  Megaphone,
   SquareTerminal,
   GraduationCap
 } from "lucide-react";
@@ -99,12 +100,30 @@ export const useSidebarMenu = () => {
               url: "/tugas-akhir/bimbingan",
             },
             {
-              title: "Seminar",
+              title: "Seminar Hasil",
               url: "/tugas-akhir/seminar",
             },
             {
               title: "Sidang",
               url: "/tugas-akhir/sidang",
+            },
+          ],
+        },
+        // Pengumuman - seminar hasil & yudisium announcements
+        {
+          title: "Pengumuman",
+          url: "/pengumuman",
+          icon: Megaphone,
+          items: [
+            {
+              title: "Seminar Hasil",
+              url: "/pengumuman/seminar-hasil",
+              isActive: pathname.startsWith("/pengumuman/seminar-hasil"),
+            },
+            {
+              title: "Yudisium",
+              url: "/pengumuman/yudisium",
+              isActive: pathname.startsWith("/pengumuman/yudisium"),
             },
           ],
         },
@@ -172,7 +191,7 @@ export const useSidebarMenu = () => {
       // Menu Tugas Akhir (selalu ada)
       const tugasAkhirItems = [
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-        { title: "Seminar", url: "/tugas-akhir/seminar" },
+        { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
       ];
 
@@ -250,7 +269,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar" },
+          { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
@@ -335,7 +354,7 @@ export const useSidebarMenu = () => {
       // Menu Tugas Akhir
       const tugasAkhirItems = [
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-        { title: "Seminar", url: "/tugas-akhir/seminar" },
+        { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
         { title: "Monitoring", url: "/tugas-akhir/monitoring" },
       ];
@@ -427,7 +446,7 @@ export const useSidebarMenu = () => {
       // Menu Tugas Akhir
       const tugasAkhirItems = [
         { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-        { title: "Seminar", url: "/tugas-akhir/seminar" },
+        { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
         { title: "Sidang", url: "/tugas-akhir/sidang" },
         { title: "Monitoring", url: "/tugas-akhir/monitoring" },
       ];
@@ -510,11 +529,11 @@ export const useSidebarMenu = () => {
                 url: "/tugas-akhir/kelola",
               },
               {
-                title: "Penjadwalan Seminar",
-                url: "/tugas-akhir/jadwal-seminar",
+                title: "Seminar Hasil",
+                url: "/tugas-akhir/seminar",
               },
               {
-                title: "Penjadwalan Sidang",
+                title: "Sidang",
                 url: "/tugas-akhir/jadwal-sidang",
               },
             ],
