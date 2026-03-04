@@ -295,14 +295,12 @@ export default function StudentProgressDetail() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Mulai</p>
                     <p className="text-sm font-medium">{data.startDate ? formatDateId(data.startDate) : '-'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Deadline</p>
                     <p className="text-sm font-medium">{data.deadlineDate ? formatDateId(data.deadlineDate) : '-'}</p>

@@ -90,7 +90,12 @@ export default function LecturerMyStudentDetailPage() {
         }
         // Backend returns paths WITH /uploads/ prefix, so we need to use it as-is
         // getApiUrl() just prepends base URL: http://localhost:3000 + /uploads/thesis/file.pdf
-        return getApiUrl(path);
+        let url = getApiUrl(path);
+        const token = localStorage.getItem("token");
+        if (token && path.includes("thesis/")) {
+            url += (url.includes("?") ? "&" : "?") + `token=${token}`;
+        }
+        return url;
     };
 
     // Initial breadcrumb, will be updated when data is loaded
@@ -428,7 +433,7 @@ export default function LecturerMyStudentDetailPage() {
                             </div>
                         </div>
 
-                
+
                         <Separator />
 
                         {/* Documents Section */}

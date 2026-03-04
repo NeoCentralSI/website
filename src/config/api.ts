@@ -76,6 +76,7 @@ export const API_CONFIG = {
       SCHEDULED: '/thesisGuidance/lecturer/scheduled',
       REQUEST_REJECT: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/reject`,
       REQUEST_APPROVE: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/approve`,
+      REQUEST_CANCEL: (guidanceId: string) => `/thesisGuidance/lecturer/requests/${guidanceId}/cancel`,
       PROGRESS_SUMMARY: '/thesisGuidance/lecturer/progress',
       PROGRESS_DETAIL: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}`,
       PROGRESS_APPROVE_COMPONENTS: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}/approve`,
