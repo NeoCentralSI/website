@@ -91,7 +91,7 @@ export default function LecturerMyStudentDetailPage() {
         // Backend returns paths WITH /uploads/ prefix, so we need to use it as-is
         // getApiUrl() just prepends base URL: http://localhost:3000 + /uploads/thesis/file.pdf
         let url = getApiUrl(path);
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("accessToken");
         if (token && path.includes("thesis/")) {
             url += (url.includes("?") ? "&" : "?") + `token=${token}`;
         }
@@ -493,11 +493,48 @@ export default function LecturerMyStudentDetailPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* File Version History */}
+                        {detailData.uploadedFiles && detailData.uploadedFiles.length > 0 && (
+                            <div className="pt-2">
+                                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-3">
+                                    <Clock className="h-4 w-4" /> Riwayat File Upload ({detailData.uploadedFiles.length})
+                                </span>
+                                <div className="max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent space-y-2">
+                                    {detailData.uploadedFiles.map((file, idx) => {
+                                        const fileUrl = getDocumentUrl(
+                                            file.filePath.startsWith('uploads/') || file.filePath.startsWith('/uploads/')
+                                                ? (file.filePath.startsWith('/') ? file.filePath : `/${file.filePath}`)
+                                                : `/uploads/${file.filePath}`
+                                        );
+                                        return (
+                                            <div key={file.id} className="flex items-center gap-3 p-2 rounded-lg border bg-background/50 hover:bg-background/80 transition-colors">
+                                                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-medium truncate">{file.fileName}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {file.guidanceDate ? formatDateId(file.guidanceDate) : formatDateId(file.uploadedAt)}
+                                                    </p>
+                                                </div>
+                                                {idx === 0 && (
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal bg-green-50 border-green-200 text-green-600 shrink-0">
+                                                        Terbaru
+                                                    </Badge>
+                                                )}
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
+                                                    <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                                                        <Download className="h-3.5 w-3.5" />
+                                                    </a>
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
-
-            {/* Guidance History & Milestone side by side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {detailData.guidanceHistory && (
                     <GuidanceHistorySection guidanceHistory={detailData.guidanceHistory} />

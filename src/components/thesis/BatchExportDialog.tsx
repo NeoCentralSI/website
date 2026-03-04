@@ -11,9 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { Download } from "lucide-react";
-import { getGuidanceForExport } from "@/services/studentGuidance.service";
+import { getGuidanceForExport, generateGuidanceLogPdf } from "@/services/studentGuidance.service";
 import { toTitleCaseName } from "@/lib/text";
-import { generateGuidanceLogReportPDF } from "@/lib/generateGuidanceLogReport";
+import { toast } from "sonner";
 
 interface BatchExportDialogProps {
   open: boolean;
@@ -52,28 +52,22 @@ export default function BatchExportDialog({
   // Get student info from first guidance
   const studentInfo = guidances[0];
 
-  const generatePDF = async () => {
-    if (!studentInfo || guidances.length === 0) return;
+  const handleDownload = async () => {
+    if (guidanceIds.length === 0) return;
     
     setIsGenerating(true);
     try {
-      await generateGuidanceLogReportPDF({
-        studentName: toTitleCaseName(studentInfo.studentName || "-"),
-        studentId: studentInfo.studentId || "-",
-        supervisorName: toTitleCaseName(studentInfo.supervisorName || "-"),
-        thesisTitle: studentInfo.thesisTitle,
-        guidances: guidances.map((g) => ({
-          id: g.id,
-          approvedDate: g.approvedDate,
-          approvedDateFormatted: g.approvedDateFormatted,
-          type: g.type,
-          duration: g.duration,
-          milestoneName: g.milestoneName,
-          sessionSummary: g.sessionSummary,
-          actionItems: g.actionItems,
-          completedAtFormatted: g.completedAtFormatted,
-        })),
-      });
+      const blob = await generateGuidanceLogPdf(guidanceIds);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Log_Bimbingan_${studentInfo?.studentId || "batch"}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal generate log bimbingan");
     } finally {
       setIsGenerating(false);
     }
@@ -187,7 +181,7 @@ export default function BatchExportDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Tutup
           </Button>
-          <Button onClick={generatePDF} disabled={isLoading || hasError || isGenerating}>
+          <Button onClick={handleDownload} disabled={isLoading || hasError || isGenerating}>
             {isGenerating ? (
               <>
                 <Spinner className="mr-2 h-4 w-4" />

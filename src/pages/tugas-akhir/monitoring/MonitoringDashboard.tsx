@@ -22,8 +22,7 @@ import { RefreshCw, Calendar, FileDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
 import { Loading, Spinner } from "@/components/ui/spinner";
-import { getProgressReport } from "@/services/monitoring.service";
-import { generateProgressReportPDF } from "@/lib/generateProgressReport";
+import { downloadProgressReportPdf } from "@/services/monitoring.service";
 import { toast } from "sonner";
 
 export default function MonitoringDashboard() {
@@ -84,12 +83,19 @@ export default function MonitoringDashboard() {
   const handleDownloadReport = async () => {
     setIsGeneratingReport(true);
     try {
-      const reportData = await getProgressReport(academicYearFilter);
-      await generateProgressReportPDF(reportData);
+      const blob = await downloadProgressReportPdf(academicYearFilter);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Laporan_Progress_TA_${displayAcademicYear.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       toast.success("Laporan berhasil diunduh!");
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Monitoring] Generate report failed:', error);
-      toast.error("Gagal mengunduh laporan. Silakan coba lagi.");
+      toast.error(error.message || "Gagal mengunduh laporan. Silakan coba lagi.");
     } finally {
       setIsGeneratingReport(false);
     }

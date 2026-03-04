@@ -67,7 +67,7 @@ export default function LecturerGuidanceSessionPage() {
       queryClient.invalidateQueries({ queryKey: ["pending-approval"] });
       queryClient.invalidateQueries({ queryKey: ["lecturer-requests"] });
       queryClient.invalidateQueries({ queryKey: ["lecturer-guidance-session", guidanceId] });
-      navigate("/tugas-akhir/bimbingan/lecturer/scheduled");
+      navigate("/tugas-akhir/bimbingan/lecturer/requests");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Gagal menyetujui catatan bimbingan");
@@ -78,7 +78,7 @@ export default function LecturerGuidanceSessionPage() {
   const breadcrumb = useMemo(
     () => [
       { label: "Tugas Akhir" },
-      { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/scheduled" },
+      { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/requests" },
       { label: "Sesi Bimbingan" },
     ],
     []
@@ -106,7 +106,7 @@ export default function LecturerGuidanceSessionPage() {
       url = getApiUrl(`/uploads/${path}`);
     }
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (token && path.includes("thesis/")) {
       url += (url.includes("?") ? "&" : "?") + `token=${token}`;
     }
@@ -164,7 +164,7 @@ export default function LecturerGuidanceSessionPage() {
       <div className="space-y-6 mt-6">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" asChild>
-            <Link to="/tugas-akhir/bimbingan/lecturer/scheduled">
+            <Link to="/tugas-akhir/bimbingan/lecturer/requests">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -191,7 +191,7 @@ export default function LecturerGuidanceSessionPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" asChild className="shrink-0">
-            <Link to="/tugas-akhir/bimbingan/lecturer/scheduled">
+            <Link to="/tugas-akhir/bimbingan/lecturer/requests">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -439,7 +439,7 @@ export default function LecturerGuidanceSessionPage() {
                         <div className="flex justify-end gap-3 pt-4 border-t">
                           <Button
                             variant="outline"
-                            onClick={() => navigate("/tugas-akhir/bimbingan/lecturer/scheduled")}
+                            onClick={() => navigate("/tugas-akhir/bimbingan/lecturer/requests")}
                           >
                             <ArrowLeft className="h-4 w-4 mr-2" />
                             Kembali

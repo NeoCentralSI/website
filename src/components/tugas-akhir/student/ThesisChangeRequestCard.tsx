@@ -154,71 +154,7 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
             </div>
           </div>
 
-          {/* History */}
-          {requests.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Riwayat Permintaan</h4>
-              <div className="space-y-2">
-                {requests.map((request) => {
-                  const status = STATUS_CONFIG[request.status];
-                  const StatusIcon = status.icon;
-                  return (
-                    <div
-                      key={request.id}
-                      className="rounded-lg border p-3 text-sm"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">Pergantian Topik</span>
-                        <Badge className={status.color}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {status.label}
-                        </Badge>
-                      </div>
-                      <p className="text-muted-foreground text-xs mb-1">
-                        Diajukan: {formatDateId(request.createdAt)}
-                      </p>
-                      <p className="text-muted-foreground line-clamp-2">{request.reason}</p>
-
-                      {/* Approval tracking for each request */}
-                      {request.approvals && request.approvals.length > 0 && (
-                        <div className="mt-2 rounded border bg-muted/30 p-2">
-                          <p className="text-xs font-medium mb-1 flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            Status Pembimbing:
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {request.approvals.map((approval) => {
-                              const config = APPROVAL_STATUS_CONFIG[approval.status];
-                              const ApprovalIcon = config.icon;
-                              return (
-                                <div key={approval.id} className="flex items-center gap-1 text-xs">
-                                  <ApprovalIcon className={`h-3 w-3 ${config.color}`} />
-                                  <span>{toTitleCaseName(approval.lecturer?.user?.fullName || '')}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {request.status === 'rejected' && request.reviewNotes && (
-                        <div className="mt-2 rounded bg-red-50 p-2 text-xs text-red-700">
-                          <strong>Alasan Penolakan:</strong> {request.reviewNotes}
-                        </div>
-                      )}
-                      {request.status === 'approved' && (
-                        <div className="mt-2 rounded bg-green-50 p-2 text-xs text-green-700">
-                          Permintaan disetujui. Tugas akhir baru Anda telah aktif.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Form */}
+          {/* Form / Button - ATAS */}
           {!hasPendingRequest && (
             <>
               {!showForm ? (
@@ -368,6 +304,70 @@ export function ThesisChangeRequestCard({ thesisId, className }: ThesisChangeReq
                   </div>
                 );
               })()}
+            </div>
+          )}
+
+          {/* Riwayat Permintaan - BAWAH */}
+          {requests.length > 0 && (
+            <div className="space-y-2 pt-2 border-t">
+              <h4 className="text-sm font-medium">Riwayat Permintaan</h4>
+              <div className="space-y-2">
+                {requests.map((request) => {
+                  const status = STATUS_CONFIG[request.status];
+                  const StatusIcon = status.icon;
+                  return (
+                    <div
+                      key={request.id}
+                      className="rounded-lg border p-3 text-sm"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">Pergantian Topik</span>
+                        <Badge className={status.color}>
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {status.label}
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground text-xs mb-1">
+                        Diajukan: {formatDateId(request.createdAt)}
+                      </p>
+                      <p className="text-muted-foreground line-clamp-2">{request.reason}</p>
+
+                      {/* Approval tracking for each request */}
+                      {request.approvals && request.approvals.length > 0 && (
+                        <div className="mt-2 rounded border bg-muted/30 p-2">
+                          <p className="text-xs font-medium mb-1 flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            Status Pembimbing:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {request.approvals.map((approval) => {
+                              const config = APPROVAL_STATUS_CONFIG[approval.status];
+                              const ApprovalIcon = config.icon;
+                              return (
+                                <div key={approval.id} className="flex items-center gap-1 text-xs">
+                                  <ApprovalIcon className={`h-3 w-3 ${config.color}`} />
+                                  <span>{toTitleCaseName(approval.lecturer?.user?.fullName || '')}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {request.status === 'rejected' && request.reviewNotes && (
+                        <div className="mt-2 rounded bg-red-50 p-2 text-xs text-red-700">
+                          <strong>Alasan Penolakan:</strong> {request.reviewNotes}
+                        </div>
+                      )}
+                      {request.status === 'approved' && (
+                        <div className="mt-2 rounded bg-green-50 p-2 text-xs text-green-700">
+                          Permintaan disetujui. Tugas akhir baru Anda telah aktif.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </CardContent>

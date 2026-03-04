@@ -99,6 +99,13 @@ export interface StudentDetail {
     fileName: string;
     url: string;
   } | null;
+  uploadedFiles: Array<{
+    id: string;
+    fileName: string;
+    filePath: string;
+    uploadedAt: string;
+    guidanceDate: string;
+  }>;
   milestones: {
     id: string;
     title: string;
