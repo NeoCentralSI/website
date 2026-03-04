@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -95,7 +96,9 @@ interface PendingSchedule {
   date: string;      // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string;   // HH:MM
-  roomId: string;
+  roomId: string | null;
+  isOnline: boolean;
+  meetingLink: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -168,9 +171,12 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
     const cs = schedulingData?.currentSchedule;
     if (!cs?.date || !cs.startTime || !cs.endTime) return [];
     const dateStr = cs.date.slice(0, 10);
+    const scheduleTitle = cs.isOnline
+      ? '📌 Seminar Daring'
+      : `📌 Seminar${cs.room ? ` · ${cs.room.name}` : ''}`;
     return [{
       id: 'seminar-schedule',
-      title: `📌 Seminar${cs.room ? ` · ${cs.room.name}` : ''}`,
+      title: scheduleTitle,
       start: `${dateStr}T${extractTime(cs.startTime)}:00`,
       end:   `${dateStr}T${extractTime(cs.endTime)}:00`,
       backgroundColor: '#16a34a',
@@ -194,7 +200,9 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
       date:      info.startStr.slice(0, 10),
       startTime: info.startStr.slice(11, 16) || '08:00',
       endTime:   info.endStr?.slice(11, 16)  || '10:00',
-      roomId:    schedulingData?.rooms[0]?.id || '',
+      roomId:    schedulingData?.rooms[0]?.id || null,
+      isOnline: false,
+      meetingLink: '',
     });
   };
 
@@ -205,6 +213,15 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
     const selected = new Date(s.date);
     if (selected < today) return 'Tanggal tidak boleh berada di masa lalu.';
     if (s.startTime >= s.endTime) return 'Waktu mulai harus sebelum waktu selesai.';
+    if (s.isOnline) {
+      if (!s.meetingLink.trim()) return 'URL meeting wajib diisi untuk seminar daring.';
+      try {
+        new URL(s.meetingLink);
+      } catch {
+        return 'URL meeting tidak valid.';
+      }
+      return null;
+    }
     if (!s.roomId) return 'Ruangan harus dipilih.';
     return null;
   };
@@ -215,7 +232,17 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
     if (err) { setFormError(err); return; }
     setFormError(null);
     doSetSchedule(
-      { seminarId, payload: pendingSchedule },
+      {
+        seminarId,
+        payload: {
+          date: pendingSchedule.date,
+          startTime: pendingSchedule.startTime,
+          endTime: pendingSchedule.endTime,
+          isOnline: pendingSchedule.isOnline,
+          roomId: pendingSchedule.isOnline ? null : pendingSchedule.roomId,
+          meetingLink: pendingSchedule.isOnline ? pendingSchedule.meetingLink.trim() : null,
+        },
+      },
       {
         onSuccess: () => {
           toast.success('Jadwal seminar berhasil ditetapkan.');
@@ -302,9 +329,19 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-green-600 shrink-0" />
-                    <span>{current.room?.name || '-'}</span>
+                    <span>{current.isOnline ? 'Seminar Daring' : (current.room?.name || '-')}</span>
                   </div>
                 </div>
+                {current.isOnline && current.meetingLink && (
+                  <a
+                    href={current.meetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-green-700 underline break-all"
+                  >
+                    {current.meetingLink}
+                  </a>
+                )}
               </div>
               {isEditable && (
                 <p className="text-xs text-green-600 flex items-center gap-1 self-center">
@@ -442,34 +479,79 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
               </div>
 
               {/* Room select */}
-              <div className="space-y-1.5">
-                <Label htmlFor="sched-room" className="text-xs">Ruangan</Label>
-                <Select
-                  value={pendingSchedule.roomId}
-                  onValueChange={(val) => {
-                    setFormError(null);
-                    setPendingSchedule((prev) => prev ? { ...prev, roomId: val } : prev);
-                  }}
-                >
-                  <SelectTrigger id="sched-room">
-                    <SelectValue placeholder="Pilih ruangan..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rooms.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="sched-is-online"
+                    checked={pendingSchedule.isOnline}
+                    onCheckedChange={(checked) => {
+                      const nextOnline = checked === true;
+                      setFormError(null);
+                      setPendingSchedule((prev) => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          isOnline: nextOnline,
+                          roomId: nextOnline ? null : (prev.roomId || rooms[0]?.id || null),
+                          meetingLink: nextOnline ? prev.meetingLink : '',
+                        };
+                      });
+                    }}
+                  />
+                  <Label htmlFor="sched-is-online" className="text-xs cursor-pointer">
+                    Seminar daring (tanpa ruangan)
+                  </Label>
+                </div>
+
+                {pendingSchedule.isOnline ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sched-meeting-link" className="text-xs">URL Meeting</Label>
+                    <Input
+                      id="sched-meeting-link"
+                      type="url"
+                      placeholder="https://meet.google.com/..."
+                      value={pendingSchedule.meetingLink}
+                      onChange={(e) => {
+                        setFormError(null);
+                        setPendingSchedule((prev) => prev ? { ...prev, meetingLink: e.target.value } : prev);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sched-room" className="text-xs">Ruangan</Label>
+                    <Select
+                      value={pendingSchedule.roomId || ''}
+                      onValueChange={(val) => {
+                        setFormError(null);
+                        setPendingSchedule((prev) => prev ? { ...prev, roomId: val } : prev);
+                      }}
+                    >
+                      <SelectTrigger id="sched-room">
+                        <SelectValue placeholder="Pilih ruangan..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rooms.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {/* Preview summary */}
-              {pendingSchedule.roomId && pendingSchedule.date && (
+              {pendingSchedule.date && (pendingSchedule.isOnline || pendingSchedule.roomId) && (
                 <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2.5 text-sm space-y-0.5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary/70">Pratinjau</p>
                   <p className="font-medium text-foreground">{formatDateLong(pendingSchedule.date)}</p>
                   <p className="text-muted-foreground text-xs">
-                    {pendingSchedule.startTime} – {pendingSchedule.endTime}&nbsp;·&nbsp;{selectedRoom?.name}
+                    {pendingSchedule.startTime} – {pendingSchedule.endTime}&nbsp;·&nbsp;
+                    {pendingSchedule.isOnline ? 'Seminar Daring' : selectedRoom?.name}
                   </p>
+                  {pendingSchedule.isOnline && pendingSchedule.meetingLink.trim() && (
+                    <p className="text-muted-foreground text-xs break-all">{pendingSchedule.meetingLink.trim()}</p>
+                  )}
                 </div>
               )}
             </div>

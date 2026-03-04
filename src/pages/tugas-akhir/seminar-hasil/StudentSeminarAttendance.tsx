@@ -9,7 +9,7 @@ import { AttendanceHistoryTable } from '@/components/seminar/AttendanceHistoryTa
 
 const TABS = [
   { label: 'Seminar Hasil', to: '/tugas-akhir/seminar/student', end: true },
-  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar/student/attendance' },
+  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar/student/attendance', end: false },
 ];
 
 export default function StudentSeminarAttendance() {

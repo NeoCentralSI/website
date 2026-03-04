@@ -32,12 +32,17 @@ import SecretaryKelolaTugasAkhirPage from './pages/tugas-akhir/bimbingan/secreta
 import SeminarHasilEntry from './pages/tugas-akhir/seminar-hasil/SeminarHasilEntry'
 import StudentThesisSeminarPage from './pages/tugas-akhir/seminar-hasil/StudentThesisSeminar'
 import StudentSeminarAttendancePage from './pages/tugas-akhir/seminar-hasil/StudentSeminarAttendance'
+import StudentSeminarRevisionPage from './pages/tugas-akhir/seminar-hasil/StudentSeminarRevision'
+import StudentSeminarDetailPage from './pages/tugas-akhir/seminar-hasil/StudentSeminarDetail'
 import AdminThesisSeminarManagementPage from './pages/tugas-akhir/seminar-hasil/AdminThesisSeminarManagement'
 import AdminSeminarDetailPage from './pages/tugas-akhir/seminar-hasil/AdminSeminarDetail'
 import LecturerThesisSeminarPage from './pages/tugas-akhir/seminar-hasil/LecturerThesisSeminar'
 import LecturerExaminerAssignmentPage from './pages/tugas-akhir/seminar-hasil/LecturerExaminerAssignment'
 import LecturerSupervisedStudentsPage from './pages/tugas-akhir/seminar-hasil/LecturerSupervisedStudents'
-import LecturerSeminarDetailPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetail'
+import LecturerSeminarDetailIdentityPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailIdentity'
+import LecturerSeminarDetailAssessmentPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'
+import LecturerSeminarDetailRevisionPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'
+import LecturerSeminarDetailAttendancePage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'
 // Kerja Praktik
 import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
 import InternshipProposalDetailPage from './pages/kerja-praktik/student/registration/PendaftaranDetail'
@@ -178,7 +183,9 @@ function App() {
                   <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
                   <Route element={<SeminarHasilGuard />}>
                     <Route path="seminar/student" element={<StudentThesisSeminarPage />} />
+                    <Route path="seminar/student/revision" element={<StudentSeminarRevisionPage />} />
                     <Route path="seminar/student/attendance" element={<StudentSeminarAttendancePage />} />
+                    <Route path="seminar/student/history/:seminarId" element={<StudentSeminarDetailPage />} />
                   </Route>
                 </Route>
 
@@ -214,7 +221,10 @@ function App() {
                 <Route path="/tugas-akhir/seminar/lecturer" element={<LecturerThesisSeminarPage />} />
                 <Route path="/tugas-akhir/seminar/lecturer/assignment" element={<LecturerExaminerAssignmentPage />} />
                 <Route path="/tugas-akhir/seminar/lecturer/my-students" element={<LecturerSupervisedStudentsPage />} />
-                <Route path="/tugas-akhir/seminar/lecturer/:seminarId" element={<LecturerSeminarDetailPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/:seminarId" element={<LecturerSeminarDetailIdentityPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/:seminarId/assessment" element={<LecturerSeminarDetailAssessmentPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/:seminarId/revision" element={<LecturerSeminarDetailRevisionPage />} />
+                <Route path="/tugas-akhir/seminar/lecturer/:seminarId/attendance" element={<LecturerSeminarDetailAttendancePage />} />
                 <Route path="/jadwal-ketersediaan" element={<JadwalKetersediaan />} />
               </Route>
 

@@ -23,15 +23,22 @@ const STATUS_MAP: Record<ThesisSeminarStatus, StatusConfig> = {
   },
   scheduled: {
     label: 'Terjadwalkan',
-    variant: 'success',
+    variant: 'default',
+    className: 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent',
+  },
+  ongoing: {
+    label: 'Sedang Berlangsung',
+    variant: 'warning',
+    className: 'bg-orange-100 text-orange-700 border-orange-200 animate-pulse',
   },
   passed: {
     label: 'Lulus',
-    variant: 'secondary',
+    variant: 'success',
   },
   passed_with_revision: {
-    label: 'Lulus Bersyarat',
-    variant: 'secondary',
+    label: 'Lulus dengan Revisi',
+    variant: 'success',
+    className: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-transparent',
   },
   failed: {
     label: 'Tidak Lulus',
@@ -77,6 +84,7 @@ export function getStatusFilterOptions() {
     { label: 'Menunggu Penetapan Penguji', value: 'verified' },
     { label: 'Menunggu Jadwal', value: 'examiner_assigned' },
     { label: 'Terjadwalkan', value: 'scheduled' },
+    { label: 'Sedang Berlangsung', value: 'ongoing' },
     { label: 'Selesai', value: 'finished' },
   ];
 }

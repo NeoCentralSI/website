@@ -77,6 +77,11 @@ const STATUS_CONFIG: Record<ThesisSeminarStatus, StatusConfig> = {
     variant: 'default',
     className: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
   },
+  ongoing: {
+    label: 'Sedang Berlangsung',
+    variant: 'default',
+    className: 'bg-orange-100 text-orange-700 hover:bg-orange-100 animate-pulse',
+  },
   registered: {
     label: 'Terdaftar',
     variant: 'secondary',

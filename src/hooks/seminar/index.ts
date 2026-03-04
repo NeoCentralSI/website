@@ -7,4 +7,13 @@ export {
   useSeminarAnnouncements,
   useRegisterToSeminar,
   useCancelSeminarRegistration,
+  useStudentRevisions,
+  useCreateRevision,
+  useSubmitRevisionAction,
+  useStudentSeminarHistory,
+  useStudentSeminarDetail,
+  useStudentSeminarAssessment,
+  useSaveRevisionAction,
+  useSubmitRevision,
+  useCancelRevisionSubmission,
 } from './useStudentSeminar';

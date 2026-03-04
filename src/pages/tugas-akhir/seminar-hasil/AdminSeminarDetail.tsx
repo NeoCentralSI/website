@@ -8,8 +8,17 @@ import { Loading } from '@/components/ui/spinner';
 import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 import { ValidationModal } from '@/components/seminar/ValidationModal';
 import { SeminarSchedulingSection } from '@/components/seminar/SeminarSchedulingSection';
+import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
 import { useAdminSeminarDetail } from '@/hooks/seminar/useAdminSeminar';
-import { toTitleCaseName, formatDateId, formatRoleName } from '@/lib/text';
+import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId, formatRoleName } from '@/lib/text';
+
+/** Extract HH.mm display from a @db.Time(0) ISO string (1970-01-01T{HH}:{mm}:{ss}Z).
+ *  The UTC hour directly represents the stored WIB hour. */
+function extractSeminarTime(timeIso?: string | null): string {
+  if (!timeIso) return '--';
+  const d = new Date(timeIso);
+  return `${String(d.getUTCHours()).padStart(2, '0')}.${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
 import {
   FileText,
   Download,
@@ -17,6 +26,7 @@ import {
   XCircle,
   Clock,
   User,
+  Users,
   BookOpen,
   Calendar,
   ClipboardCheck,
@@ -105,7 +115,7 @@ export default function AdminSeminarDetail() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/tugas-akhir/seminar/admin')}
             className="shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -175,11 +185,19 @@ export default function AdminSeminarDetail() {
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tanggal Daftar:</span>
-                <span>{detail.registeredAt ? formatDateId(detail.registeredAt) : '-'}</span>
+                <span>{detail.registeredAt ? formatDateTimeId(detail.registeredAt) : '-'}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground shrink-0">Tanggal Seminar:</span>
+                <span className="text-right">
+                  {detail.date
+                    ? `${formatDateOnlyId(detail.date)}, ${extractSeminarTime(detail.startTime)} – ${extractSeminarTime(detail.endTime)}`
+                    : 'Belum dijadwalkan'}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Tanggal Seminar:</span>
-                <span>{detail.date ? formatDateId(detail.date) : 'Belum dijadwalkan'}</span>
+                <span className="text-muted-foreground">Mode:</span>
+                <span>{detail.room ? 'Luring' : (detail.meetingLink ? 'Daring' : '-')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Ruangan:</span>
@@ -235,7 +253,7 @@ export default function AdminSeminarDetail() {
                         </span>
                         {e.respondedAt && (
                           <span className="text-[10px] text-muted-foreground">
-                            — {formatDateId(e.respondedAt)}
+                            — {formatDateTimeId(e.respondedAt)}
                           </span>
                         )}
                       </div>
@@ -280,7 +298,7 @@ export default function AdminSeminarDetail() {
                         {doc ? (
                           <div className="text-xs text-muted-foreground truncate">
                             {doc.fileName || 'File'} •{' '}
-                            {formatDateId(doc.submittedAt)}
+                            {formatDateShortId(doc.submittedAt)}
                           </div>
                         ) : (
                           <div className="text-xs text-muted-foreground">
@@ -326,6 +344,21 @@ export default function AdminSeminarDetail() {
             seminarId={detail.id}
             isEditable={detail.status === 'examiner_assigned' || detail.status === 'scheduled'}
           />
+        )}
+
+        {/* Audience / Attendance Section */}
+        {detail.audiences && detail.audiences.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Daftar Hadir Peserta ({detail.audiences.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SeminarAudienceTable rows={detail.audiences} />
+            </CardContent>
+          </Card>
         )}
       </div>
 

@@ -34,7 +34,7 @@ export function UploadDokumenSeminar({
   );
 
   return (
-    <div className="rounded-lg border bg-card p-6">
+    <div className="rounded-lg border border-gray-200 bg-card p-6">
       <h3 className="text-lg font-semibold mb-4">Upload Dokumen Seminar</h3>
 
       {isLocked && (

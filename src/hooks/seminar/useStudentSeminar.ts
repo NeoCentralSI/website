@@ -8,8 +8,18 @@ import {
   getSeminarAnnouncements,
   registerToSeminar,
   cancelSeminarRegistration,
+  getStudentRevisions,
+  createRevision,
+  submitRevisionAction,
+  getStudentSeminarHistory,
+  getStudentSeminarDetail,
+  getStudentSeminarAssessment,
+  saveRevisionAction,
+  submitRevision,
+  cancelRevisionSubmission,
 } from '@/services/studentSeminar.service';
 import { toast } from 'sonner';
+import type { CreateRevisionPayload, SubmitRevisionActionPayload, SaveRevisionActionPayload } from '@/types/seminar.types';
 
 const seminarKeys = {
   all: ['student-seminar'] as const,
@@ -18,6 +28,9 @@ const seminarKeys = {
   documentTypes: () => [...seminarKeys.all, 'document-types'] as const,
   documents: () => [...seminarKeys.all, 'documents'] as const,
   announcements: () => [...seminarKeys.all, 'announcements'] as const,
+  revisions: () => [...seminarKeys.all, 'revisions'] as const,
+  history: () => [...seminarKeys.all, 'history'] as const,
+  detail: (seminarId: string) => [...seminarKeys.all, 'detail', seminarId] as const,
 };
 
 export function useStudentSeminarOverview() {
@@ -101,6 +114,133 @@ export function useCancelSeminarRegistration() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal membatalkan pendaftaran');
+    },
+  });
+}
+
+// ============================================================
+// Student Revision Hooks
+// ============================================================
+
+export function useStudentRevisions() {
+  return useQuery({
+    queryKey: seminarKeys.revisions(),
+    queryFn: getStudentRevisions,
+  });
+}
+
+export function useCreateRevision() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateRevisionPayload) => createRevision(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      toast.success('Item revisi berhasil ditambahkan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal menambahkan item revisi');
+    },
+  });
+}
+
+export function useSubmitRevisionAction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SubmitRevisionActionPayload }) =>
+      submitRevisionAction(revisionId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      toast.success('Perbaikan berhasil disubmit');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal mengsubmit perbaikan');
+    },
+  });
+}
+
+// ============================================================
+// Student Seminar History Hook
+// ============================================================
+
+export function useStudentSeminarHistory() {
+  return useQuery({
+    queryKey: seminarKeys.history(),
+    queryFn: getStudentSeminarHistory,
+  });
+}
+
+// ============================================================
+// Student Seminar Detail Hook
+// ============================================================
+
+export function useStudentSeminarDetail(seminarId: string | undefined) {
+  return useQuery({
+    queryKey: seminarKeys.detail(seminarId!),
+    queryFn: () => getStudentSeminarDetail(seminarId!),
+    enabled: !!seminarId,
+  });
+}
+
+// ============================================================
+// Student Assessment Hook
+// ============================================================
+
+export function useStudentSeminarAssessment(seminarId: string | undefined) {
+  return useQuery({
+    queryKey: [...seminarKeys.all, 'assessment', seminarId] as const,
+    queryFn: () => getStudentSeminarAssessment(seminarId!),
+    enabled: !!seminarId,
+  });
+}
+
+// ============================================================
+// Separated Revision Flow Hooks
+// ============================================================
+
+export function useSaveRevisionAction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SaveRevisionActionPayload }) =>
+      saveRevisionAction(revisionId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      toast.success('Perbaikan berhasil disimpan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal menyimpan perbaikan');
+    },
+  });
+}
+
+export function useSubmitRevision() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (revisionId: string) => submitRevision(revisionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      toast.success('Perbaikan berhasil diajukan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal mengajukan perbaikan');
+    },
+  });
+}
+
+export function useCancelRevisionSubmission() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (revisionId: string) => cancelRevisionSubmission(revisionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      toast.success('Pengajuan berhasil dibatalkan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal membatalkan pengajuan');
     },
   });
 }

@@ -3,6 +3,7 @@ export type ThesisSeminarStatus =
   | 'verified'
   | 'examiner_assigned'
   | 'scheduled'
+  | 'ongoing'
   | 'passed'
   | 'passed_with_revision'
   | 'failed'
@@ -67,6 +68,7 @@ export interface SeminarDocumentUploadResponse {
 export interface SeminarExaminer {
   id: string;
   lecturerId: string;
+  lecturerName?: string;
   order: number;
   availabilityStatus: ExaminerAvailabilityStatus;
   assessmentScore: number | null;
@@ -202,6 +204,7 @@ export interface AdminSeminarDetailResponse {
   documentTypes: AdminSeminarDocType[];
   examiners: AdminSeminarExaminer[];
   rejectedExaminers: RejectedExaminer[];
+  audiences: SeminarAudienceItem[];
 }
 
 export interface ValidateDocumentPayload {
@@ -242,6 +245,8 @@ export interface SeminarCurrentSchedule {
   date: string;
   startTime: string | null;
   endTime: string | null;
+  isOnline: boolean;
+  meetingLink: string | null;
   room: RoomOption | null;
 }
 
@@ -252,7 +257,9 @@ export interface SeminarSchedulingData {
 }
 
 export interface SetSchedulePayload {
-  roomId: string;
+  roomId?: string | null;
+  isOnline?: boolean;
+  meetingLink?: string | null;
   date: string;       // YYYY-MM-DD
   startTime: string;  // HH:MM
   endTime: string;    // HH:MM
@@ -362,11 +369,143 @@ export interface LecturerSeminarDetailResponse {
   room: { id: string; name: string } | null;
   thesis: { id: string; title: string };
   student: { name: string; nim: string };
+  viewerRole: 'examiner' | 'supervisor' | 'none';
+  mySupervisorRole: string | null;
+  myExaminerId: string | null;
+  myExaminerOrder: number | null;
+  myExaminerAvailabilityStatus: ExaminerAvailabilityStatus | null;
+  myAssessmentSubmittedAt: string | null;
+  canOpenExaminerAssessment: boolean;
+  canOpenSupervisorFinalization: boolean;
+  canOpenSupervisorRevision: boolean;
+  resultFinalizedAt: string | null;
+  allExaminerSubmitted: boolean;
   supervisors: AdminSeminarSupervisor[];
   documents: AdminSeminarDocumentDetail[];
   documentTypes: AdminSeminarDocType[];
   examiners: LecturerSeminarExaminer[];
   rejectedExaminers: RejectedExaminer[];
+  audiences: SeminarAudienceItem[];
+}
+
+export interface SeminarAssessmentCriterionInput {
+  id: string;
+  name: string;
+  maxScore: number;
+  score: number | null;
+  rubrics: {
+    id: string;
+    minScore: number;
+    maxScore: number;
+    description: string;
+  }[];
+}
+
+export interface SeminarAssessmentGroup {
+  id: string;
+  code: string;
+  description: string;
+  criteria: SeminarAssessmentCriterionInput[];
+}
+
+export interface ExaminerAssessmentFormResponse {
+  seminar: {
+    id: string;
+    status: ThesisSeminarStatus;
+    studentName: string;
+    studentNim: string;
+    thesisTitle: string;
+    date: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    room: { id: string; name: string } | null;
+  };
+  examiner: {
+    id: string;
+    order: number;
+    assessmentScore: number | null;
+    revisionNotes: string | null;
+    assessmentSubmittedAt: string | null;
+  };
+  criteriaGroups: SeminarAssessmentGroup[];
+}
+
+export interface SubmitExaminerAssessmentPayload {
+  scores: { assessmentCriteriaId: string; score: number }[];
+  revisionNotes?: string | null;
+}
+
+export interface SubmitExaminerAssessmentResponse {
+  examinerId: string;
+  assessmentScore: number | null;
+  assessmentSubmittedAt: string | null;
+}
+
+export interface SupervisorFinalizationDataResponse {
+  seminar: {
+    id: string;
+    status: ThesisSeminarStatus;
+    finalScore: number | null;
+    grade: string | null;
+    resultFinalizedAt?: string | null;
+    studentName: string;
+    studentNim: string;
+    thesisTitle: string;
+  };
+  supervisor: {
+    roleName: string;
+    canFinalize: boolean;
+  };
+  examiners: {
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    assessmentScore: number | null;
+    revisionNotes: string | null;
+    assessmentSubmittedAt: string | null;
+    assessmentDetails: {
+      id: string;
+      code: string;
+      description: string;
+      criteria: {
+        id: string;
+        name: string;
+        maxScore: number;
+        score: number;
+        displayOrder: number;
+      }[];
+    }[];
+  }[];
+  allExaminerSubmitted: boolean;
+  averageScore: number | null;
+  averageGrade: string | null;
+  recommendationUnlocked: boolean;
+}
+
+export interface FinalizeSeminarPayload {
+  status: 'passed' | 'passed_with_revision' | 'failed';
+}
+
+export interface FinalizeSeminarResponse {
+  seminarId: string;
+  status: ThesisSeminarStatus;
+  finalScore: number | null;
+  grade: string | null;
+  resultFinalizedAt: string | null;
+}
+
+export interface SeminarRevisionBoardItem {
+  id: string;
+  examinerOrder: number | null;
+  examinerLecturerId: string | null;
+  description: string;
+  revisionAction: string | null;
+  isFinished: boolean;
+  studentSubmittedAt: string | null;
+  supervisorApprovedAt: string | null;
+  approvedBySupervisorId: string | null;
+  approvedBySupervisorName: string | null;
 }
 
 export interface RespondAssignmentPayload {
@@ -411,4 +550,186 @@ export interface SeminarAnnouncementItem {
   isRegistered: boolean;
   isPresent: boolean;
   registeredAt: string | null;
+}
+
+// ============================================================
+// Student Revision Types
+// ============================================================
+
+export interface StudentRevisionExaminerNote {
+  examinerOrder: number;
+  lecturerName: string;
+  revisionNotes: string;
+}
+
+export interface StudentRevisionItem {
+  id: string;
+  examinerOrder: number | null;
+  examinerLecturerId: string | null;
+  examinerName: string;
+  description: string;
+  revisionAction: string | null;
+  isFinished: boolean;
+  studentSubmittedAt: string | null;
+  supervisorApprovedAt: string | null;
+  approvedBySupervisorName: string | null;
+}
+
+export interface StudentRevisionResponse {
+  seminarId: string;
+  examinerNotes: StudentRevisionExaminerNote[];
+  summary: {
+    total: number;
+    finished: number;
+    pendingApproval: number;
+  };
+  revisions: StudentRevisionItem[];
+}
+
+export interface CreateRevisionPayload {
+  seminarExaminerId: string;
+  description: string;
+}
+
+export interface SubmitRevisionActionPayload {
+  revisionAction: string;
+}
+
+// ============================================================
+// Student Seminar History Types
+// ============================================================
+
+export interface SeminarHistoryExaminer {
+  order: number;
+  lecturerName: string;
+  assessmentScore: number | null;
+}
+
+export interface SeminarHistoryItem {
+  id: string;
+  status: ThesisSeminarStatus;
+  registeredAt: string | null;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  meetingLink: string | null;
+  finalScore: number | null;
+  grade: string | null;
+  resultFinalizedAt: string | null;
+  cancelledReason: string | null;
+  room: { id: string; name: string } | null;
+  examiners: SeminarHistoryExaminer[];
+}
+
+// ============================================================
+// Student Seminar Detail Types (for history detail page)
+// ============================================================
+
+export interface StudentSeminarDetailDocument {
+  documentTypeId: string;
+  documentTypeName: string;
+  fileName: string | null;
+  status: DocumentSubmitStatus;
+  submittedAt: string | null;
+  verifiedAt: string | null;
+  notes: string | null;
+}
+
+export interface StudentSeminarDetailExaminer {
+  id: string;
+  order: number;
+  lecturerName: string;
+  assessmentScore: number | null;
+  assessmentSubmittedAt: string | null;
+}
+
+export interface SeminarAudienceItem {
+  studentName: string;
+  nim: string;
+  registeredAt: string | null;
+  isPresent: boolean;
+  approvedAt: string | null;
+  approvedByName?: string | null;
+}
+
+export interface StudentSeminarDetailResponse {
+  id: string;
+  status: ThesisSeminarStatus;
+  registeredAt: string | null;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  meetingLink: string | null;
+  finalScore: number | null;
+  grade: string | null;
+  resultFinalizedAt: string | null;
+  cancelledReason: string | null;
+  room: { id: string; name: string } | null;
+  thesis: { id: string; title: string };
+  examiners: StudentSeminarDetailExaminer[];
+  documents: StudentSeminarDetailDocument[];
+  examinerNotes: StudentRevisionExaminerNote[];
+  revisions: StudentRevisionItem[];
+  revisionSummary: {
+    total: number;
+    finished: number;
+    pendingApproval: number;
+  };
+  audiences: SeminarAudienceItem[];
+}
+
+// ============================================================
+// Lecturer Audience Types
+// ============================================================
+
+export interface LecturerAudienceItem {
+  studentId: string;
+  studentName: string;
+  nim: string;
+  registeredAt: string | null;
+  isPresent: boolean;
+  approvedAt: string | null;
+  approvedByName: string | null;
+}
+
+// ============================================================
+// Student Assessment View Types (read-only rubric)
+// ============================================================
+
+export interface StudentAssessmentResponse {
+  seminar: {
+    id: string;
+    status: ThesisSeminarStatus;
+    finalScore: number | null;
+    grade: string | null;
+    resultFinalizedAt: string | null;
+  };
+  examiners: {
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    assessmentScore: number | null;
+    revisionNotes: string | null;
+    assessmentSubmittedAt: string | null;
+    assessmentDetails: {
+      id: string;
+      code: string;
+      description: string;
+      criteria: {
+        id: string;
+        name: string;
+        maxScore: number;
+        score: number;
+        displayOrder: number;
+      }[];
+    }[];
+  }[];
+  allExaminerSubmitted: boolean;
+  averageScore: number | null;
+  averageGrade: string | null;
+}
+
+export interface SaveRevisionActionPayload {
+  revisionAction: string;
 }

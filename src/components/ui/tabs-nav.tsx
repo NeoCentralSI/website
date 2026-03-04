@@ -31,3 +31,46 @@ export function TabsNav({ tabs, preserveSearch }: { tabs: TabItem[]; preserveSea
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────
+// Local (state-based) variant – same look, no routing
+// ────────────────────────────────────────────────────────────
+
+export type LocalTabItem = {
+  label: string;
+  value: string;
+};
+
+export function LocalTabsNav({
+  tabs,
+  activeTab,
+  onTabChange,
+}: {
+  tabs: LocalTabItem[];
+  activeTab: string;
+  onTabChange: (value: string) => void;
+}) {
+  return (
+    <div className="border-b mb-4">
+      <nav className="flex gap-2">
+        {tabs.map((t) => {
+          const isActive = activeTab === t.value;
+          return (
+            <button
+              key={t.value}
+              type="button"
+              onClick={() => onTabChange(t.value)}
+              className={`px-3 py-2 text-sm rounded-t-md border-b-2 -mb-px ${
+                isActive
+                  ? "border-primary text-primary font-medium"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}

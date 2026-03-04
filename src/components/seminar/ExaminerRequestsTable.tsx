@@ -82,15 +82,15 @@ export function ExaminerRequestsTable() {
         </div>
       ),
     },
-    {
-      key: 'role',
-      header: 'Peran',
-      render: (row) => (
-        <Badge variant="outline" className="text-xs">
-          Penguji {row.myExaminerOrder}
-        </Badge>
-      ),
-    },
+    // {
+    //   key: 'role',
+    //   header: 'Peran',
+    //   render: (row) => (
+    //     <Badge variant="outline" className="text-xs">
+    //       Penguji {row.myExaminerOrder}
+    //     </Badge>
+    //   ),
+    // },
     {
       key: 'examinerStatus',
       header: 'Status Persetujuan',

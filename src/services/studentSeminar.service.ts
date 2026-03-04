@@ -7,6 +7,13 @@ import type {
   SeminarDocumentsResponse,
   SeminarDocumentUploadResponse,
   SeminarAnnouncementItem,
+  StudentRevisionResponse,
+  CreateRevisionPayload,
+  SubmitRevisionActionPayload,
+  SaveRevisionActionPayload,
+  SeminarHistoryItem,
+  StudentSeminarDetailResponse,
+  StudentAssessmentResponse,
 } from '@/types/seminar.types';
 
 /**
@@ -115,5 +122,136 @@ export async function cancelSeminarRegistration(seminarId: string): Promise<{ me
   );
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Gagal membatalkan pendaftaran');
+  return json.data;
+}
+
+/**
+ * Get student's revision items
+ */
+export async function getStudentRevisions(): Promise<StudentRevisionResponse> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REVISIONS)
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat data revisi');
+  return json.data;
+}
+
+/**
+ * Create a new revision item
+ */
+export async function createRevision(payload: CreateRevisionPayload): Promise<{ id: string }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REVISIONS),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal membuat item revisi');
+  return json.data;
+}
+
+/**
+ * Submit revision action for a revision item
+ */
+export async function submitRevisionAction(
+  revisionId: string,
+  payload: SubmitRevisionActionPayload
+): Promise<{ id: string }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REVISION_SUBMIT(revisionId)),
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal mengsubmit perbaikan');
+  return json.data;
+}
+
+/**
+ * Get student's seminar history
+ */
+export async function getStudentSeminarHistory(): Promise<SeminarHistoryItem[]> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.HISTORY)
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat riwayat seminar');
+  return json.data;
+}
+
+/**
+ * Get student's specific seminar detail (for history detail page)
+ */
+export async function getStudentSeminarDetail(seminarId: string): Promise<StudentSeminarDetailResponse> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.SEMINAR_DETAIL(seminarId))
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat detail seminar');
+  return json.data;
+}
+
+/**
+ * Get student's assessment/rubric data (read-only)
+ */
+export async function getStudentSeminarAssessment(seminarId: string): Promise<StudentAssessmentResponse> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.SEMINAR_ASSESSMENT(seminarId))
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat data penilaian');
+  return json.data;
+}
+
+/**
+ * Save perbaikan text (revisionAction) without submitting
+ */
+export async function saveRevisionAction(
+  revisionId: string,
+  payload: SaveRevisionActionPayload
+): Promise<{ id: string }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REVISION_SAVE_ACTION(revisionId)),
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menyimpan perbaikan');
+  return json.data;
+}
+
+/**
+ * Submit revision (set studentSubmittedAt)
+ */
+export async function submitRevision(revisionId: string): Promise<{ id: string }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REVISION_SUBMIT_NEW(revisionId)),
+    { method: 'POST' }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal mengajukan revisi');
+  return json.data;
+}
+
+/**
+ * Cancel revision submission (clear studentSubmittedAt)
+ */
+export async function cancelRevisionSubmission(revisionId: string): Promise<{ id: string }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REVISION_CANCEL_SUBMIT(revisionId)),
+    { method: 'POST' }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal membatalkan pengajuan');
   return json.data;
 }
