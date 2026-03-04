@@ -21,10 +21,8 @@ import BimbinganEntry from './pages/tugas-akhir/bimbingan/BimbinganEntry'
 import StudentGuidancePage from './pages/tugas-akhir/bimbingan/student/StudentGuidance'
 import StudentGuidanceSessionPage from './pages/tugas-akhir/bimbingan/student/GuidanceSession'
 import StudentMilestonePage from './pages/tugas-akhir/bimbingan/student/Milestone'
-import CompletedHistoryPage from './pages/tugas-akhir/bimbingan/student/CompletedHistory'
 import DangerZonePage from './pages/tugas-akhir/bimbingan/student/DangerZone'
 import LecturerRequestsPage from './pages/tugas-akhir/bimbingan/lecturer/Requests'
-import LecturerScheduledPage from './pages/tugas-akhir/bimbingan/lecturer/Scheduled'
 import LecturerGuidanceSessionPage from './pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'
 import LecturerMyStudentsPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudents'
 import LecturerMyStudentDetailPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'
@@ -47,6 +45,8 @@ import LecturerSeminarDetailAttendancePage from './pages/tugas-akhir/seminar-has
 import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
 import InternshipProposalDetailPage from './pages/kerja-praktik/student/registration/PendaftaranDetail'
 import InternshipAssignmentPage from './pages/kerja-praktik/student/registration/Assignment'
+import InternshipLogbookPage from './pages/kerja-praktik/student/activity/Logbook'
+import InternshipGuidancePage from './pages/kerja-praktik/student/activity/Guidance'
 // Sekdep Internship
 import SekdepInternshipProposalPage from './pages/kerja-praktik/sekdep/registration/Proposal'
 import SekdepInternshipProposalDetailPage from './pages/kerja-praktik/sekdep/registration/PendaftaranDetail'
@@ -148,20 +148,13 @@ function App() {
 
               {/* Student routes */}
               <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
-                <Route element={<KerjaPraktekGuard />}>
-                  <Route path="/kerja-praktik" element={<KerjaPraktekOverviewPage />} />
-                  <Route path="/kerja-praktik/pendaftaran" element={<InternshipProposalPage />} />
-                  <Route path="/kerja-praktik/pendaftaran/:proposalId" element={<InternshipProposalDetailPage />} />
-                  <Route path="/kerja-praktik/logbook" element={<Placeholder title="Kerja Praktek - Log Book" />} />
-                  <Route path="/kerja-praktik/acc-proposal" element={<Placeholder title="Kerja Praktek - ACC Proposal" />} />
-                  <Route path="/kerja-praktik/surat-pengantar" element={<Placeholder title="Kerja Praktek - Surat Pengantar" />} />
-                  <Route path="/kerja-praktik/data" element={<Placeholder title="Kerja Praktek - Data KP" />} />
-                </Route>
                 <Route path="/kerja-praktik" element={<KerjaPraktekGuard />}>
+                  <Route index element={<KerjaPraktekOverviewPage />} />
                   <Route path="pendaftaran" element={<InternshipProposalPage />} />
                   <Route path="pendaftaran/:id" element={<InternshipProposalDetailPage />} />
                   <Route path="penugasan" element={<InternshipAssignmentPage />} />
-                  <Route path="logbook" element={<Placeholder title="KP - Logbook" />} />
+                  <Route path="logbook" element={<InternshipLogbookPage />} />
+                  <Route path="bimbingan" element={<InternshipGuidancePage />} />
                   <Route path="seminar" element={<Placeholder title="KP - Seminar" />} />
                 </Route>
               </Route>
@@ -179,7 +172,6 @@ function App() {
                   <Route path="bimbingan/student" element={<StudentGuidancePage />} />
                   <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                   <Route path="bimbingan/milestone" element={<StudentMilestonePage />} />
-                  <Route path="bimbingan/completed-history" element={<CompletedHistoryPage />} />
                   <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
                   <Route element={<SeminarHasilGuard />}>
                     <Route path="seminar/student" element={<StudentThesisSeminarPage />} />
@@ -203,7 +195,6 @@ function App() {
 
               {/* Kerja Praktik Shared */}
               <Route path="/kerja-praktik/monitoring" element={<Placeholder title="Kerja Praktek - Monitoring" />} />
-              <Route path="/kerja-praktik/bimbingan" element={<Placeholder title="Kerja Praktek - Bimbingan" />} />
               <Route path="/kerja-praktik/seminar" element={<Placeholder title="Kerja Praktek - Seminar" />} />
 
               {/* Yudisium - Top Level for Student */}
@@ -214,7 +205,6 @@ function App() {
               {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
               <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
                 <Route path="/tugas-akhir/bimbingan/lecturer/requests" element={<LecturerRequestsPage />} />
-                <Route path="/tugas-akhir/bimbingan/lecturer/scheduled" element={<LecturerScheduledPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/session/:guidanceId" element={<LecturerGuidanceSessionPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />

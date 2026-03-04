@@ -345,8 +345,7 @@ export default function LecturerMyStudentsPage() {
 
   // Define tabs for reuse
   const tabs = [
-    { label: 'Permintaan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
-    { label: 'Terjadwal', to: '/tugas-akhir/bimbingan/lecturer/scheduled' },
+    { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
     { label: 'Mahasiswa', to: '/tugas-akhir/bimbingan/lecturer/my-students' },
   ];
 

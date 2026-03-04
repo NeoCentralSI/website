@@ -10,6 +10,7 @@ export interface GuidanceItem {
   supervisorName?: string;
   studentId?: string;
   studentName?: string;
+  studentNim?: string;
   status: GuidanceStatus;
   // New schema: requestedDate and approvedDate instead of schedule
   requestedDate?: string; // ISO datetime - tanggal diminta mahasiswa

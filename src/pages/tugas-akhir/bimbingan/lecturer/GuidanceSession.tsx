@@ -93,16 +93,24 @@ export default function LecturerGuidanceSessionPage() {
   const getDocumentUrl = () => {
     if (!guidance?.document?.filePath) return null;
     const path = guidance.document.filePath;
+    let url = "";
     // If path starts with http, it's already a full URL
     if (path.startsWith("http")) return path;
     // If path starts with /uploads/ or uploads/, use it as-is (just prepend base URL)
     if (path.startsWith("/uploads/") || path.startsWith("uploads/")) {
       // Add leading slash if missing
       const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-      return getApiUrl(normalizedPath);
+      url = getApiUrl(normalizedPath);
+    } else {
+      // Otherwise, add /uploads/ prefix
+      url = getApiUrl(`/uploads/${path}`);
     }
-    // Otherwise, add /uploads/ prefix
-    return getApiUrl(`/uploads/${path}`);
+
+    const token = localStorage.getItem("token");
+    if (token && path.includes("thesis/")) {
+      url += (url.includes("?") ? "&" : "?") + `token=${token}`;
+    }
+    return url;
   };
 
   const documentUrl = getDocumentUrl();

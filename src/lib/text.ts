@@ -124,4 +124,17 @@ export function getInitials(name?: string | null): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+/**
+ * Format thesis document display name: NIM_Nama_LaporanTA
+ * e.g. "2011521001_John Doe_LaporanTA"
+ */
+export function formatThesisDocName(nim?: string | null, fullName?: string | null): string {
+  if (!nim && !fullName) return "Dokumen TA";
+  const nimPart = nim || "unknown";
+  const namePart = fullName
+    ? toTitleCaseName(fullName).replace(/\s+/g, '_')
+    : "unknown";
+  return `${nimPart}_${namePart}_LaporanTA`;
+}
+
 

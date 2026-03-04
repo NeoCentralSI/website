@@ -30,6 +30,7 @@ export interface GuidanceItem {
   id: string;
   studentId?: string;
   studentName?: string;
+  studentNim?: string;
   supervisorId?: string;
   supervisorName?: string;
   thesisId?: string;
@@ -203,6 +204,18 @@ export const approveGuidanceRequest = async (guidanceId: string, body?: Record<s
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Gagal menyetujui permintaan" }));
     throw new Error(errorData.message || "Gagal menyetujui permintaan");
+  }
+  return res.json();
+};
+
+export const cancelGuidanceByLecturer = async (guidanceId: string, body: { reason: string }): Promise<{ success: boolean; guidance: GuidanceItem }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUEST_CANCEL(guidanceId)), {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal membatalkan bimbingan" }));
+    throw new Error(errorData.message || "Gagal membatalkan bimbingan");
   }
   return res.json();
 };

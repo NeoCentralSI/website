@@ -19,6 +19,8 @@ import CustomTable from '@/components/layout/CustomTable';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import RequestGuidanceDialog from '@/components/thesis/RequestGuidanceDialog';
 import { GuidanceRescheduleDialog } from '@/components/thesis/GuidanceRescheduleDialog';
+import GuidanceExportDialog from '@/components/thesis/GuidanceExportDialog';
+import BatchExportDialog from '@/components/thesis/BatchExportDialog';
 import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
@@ -27,6 +29,7 @@ import { useMilestones } from '@/hooks/milestone';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { Download, FileDown } from 'lucide-react';
 
 export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -91,7 +94,46 @@ export default function StudentGuidancePage() {
 
   const [rescheduleGuidance, setRescheduleGuidance] = useState<{ id: string; supervisorId: string } | null>(null);
   const [cancelGuidanceId, setCancelGuidanceId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [exportGuidanceId, setExportGuidanceId] = useState<string | null>(null);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBatchExport, setShowBatchExport] = useState(false);
+
+  // Compute exportable IDs (completed/summary_pending with sessionSummary)
+  const exportableIds = useMemo(() => {
+    return (items || []).filter(
+      (g) => (g.status === 'completed' || g.status === 'summary_pending') && !!g.sessionSummary
+    ).map((g) => g.id);
+  }, [items]);
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = (ids: string[], selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) ids.forEach((id) => next.add(id));
+      else ids.forEach((id) => next.delete(id));
+      return next;
+    });
+  };
+
+  // Determine if the cancel target is an accepted guidance (needs reason + confirmation)
+  const cancelTargetGuidance = useMemo(() => {
+    if (!cancelGuidanceId) return null;
+    return (items || []).find(g => g.id === cancelGuidanceId) || null;
+  }, [cancelGuidanceId, items]);
+  const isAcceptedCancel = cancelTargetGuidance?.status === 'accepted';
 
   const supervisorsQuery = useQuery({
     queryKey: ['student-supervisors'],
@@ -120,6 +162,12 @@ export default function StudentGuidancePage() {
     setPage,
     onViewDocument: openDocumentPreview,
     navigate,
+    studentNim: thesisDetail?.student?.nim,
+    studentName: thesisDetail?.student?.name,
+    selectedIds,
+    onToggleSelect: handleToggleSelect,
+    onToggleSelectAll: handleToggleSelectAll,
+    exportableIds,
     onReschedule: (guidanceId: string) => {
       const guidance = (items || []).find(g => g.id === guidanceId);
       if (guidance && guidance.supervisorId) {
@@ -129,7 +177,11 @@ export default function StudentGuidancePage() {
     onCancel: (guidanceId: string) => {
       setCancelGuidanceId(guidanceId);
     },
-  }), [items, supervisorFilter, setSupervisorFilter, status, setStatus, setPage, openDocumentPreview, navigate]);
+    onExport: (guidanceId: string) => {
+      setExportGuidanceId(guidanceId);
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [items, supervisorFilter, setSupervisorFilter, status, setStatus, setPage, openDocumentPreview, navigate, thesisDetail?.student?.nim, thesisDetail?.student?.name, selectedIds, exportableIds]);
 
   const handleReschedule = async (data: { requestedDate: string; studentNotes: string }) => {
     if (!rescheduleGuidance) return false;
@@ -165,7 +217,6 @@ export default function StudentGuidancePage() {
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
           { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
-          { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
         ]}
       />
 
@@ -212,6 +263,29 @@ export default function StudentGuidancePage() {
               emptyText={q || supervisorFilter ? 'Tidak ditemukan' : 'Tidak ada data'}
               actions={
                 <div className="flex items-center gap-2">
+                  {selectedIds.size > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowBatchExport(true)}
+                    >
+                      <Download className="h-4 w-4 mr-1.5" />
+                      Download ({selectedIds.size})
+                    </Button>
+                  )}
+                  {exportableIds.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedIds(new Set(exportableIds));
+                        setShowBatchExport(true);
+                      }}
+                    >
+                      <FileDown className="h-4 w-4 mr-1.5" />
+                      Download Semua
+                    </Button>
+                  )}
                   <RefreshButton
                     onClick={() => refetch()}
                     isRefreshing={isFetching && !isLoading}
@@ -260,18 +334,105 @@ export default function StudentGuidancePage() {
         supervisorId={rescheduleGuidance?.supervisorId}
       />
 
-      {/* Cancel Confirmation Dialog */}
-      <AlertDialog open={!!cancelGuidanceId} onOpenChange={(open) => !open && setCancelGuidanceId(null)}>
+      {/* Cancel Dialog - Different flow for requested vs accepted */}
+      {/* Step 1: For requested = simple confirm, for accepted = reason input */}
+      <AlertDialog open={!!cancelGuidanceId && !showCancelConfirm} onOpenChange={(open) => {
+        if (!open) {
+          setCancelGuidanceId(null);
+          setCancelReason('');
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Batalkan Pengajuan Bimbingan?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isAcceptedCancel ? 'Batalkan Bimbingan Terjadwal?' : 'Batalkan Pengajuan Bimbingan?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Pengajuan bimbingan akan dibatalkan dan dosen pembimbing akan diberitahu.
-              Anda dapat mengajukan bimbingan baru setelah membatalkan pengajuan ini.
+              {isAcceptedCancel
+                ? 'Bimbingan yang sudah disetujui akan dibatalkan. Silakan isi alasan pembatalan.'
+                : 'Pengajuan bimbingan akan dibatalkan dan dosen pembimbing akan diberitahu. Anda dapat mengajukan bimbingan baru setelah membatalkan pengajuan ini.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {isAcceptedCancel && (
+            <div className="py-2">
+              <label className="text-sm font-medium mb-1.5 block">Alasan Pembatalan <span className="text-destructive">*</span></label>
+              <textarea
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-none"
+                placeholder="Contoh: Saya tidak dapat hadir karena..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                maxLength={1000}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{cancelReason.length}/1000</p>
+            </div>
+          )}
+
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isCancelling}>Tidak</AlertDialogCancel>
+            {isAcceptedCancel ? (
+              <AlertDialogAction
+                disabled={!cancelReason.trim()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowCancelConfirm(true);
+                }}
+              >
+                Lanjutkan
+              </AlertDialogAction>
+            ) : (
+              <AlertDialogAction
+                disabled={isCancelling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!cancelGuidanceId) return;
+                  setIsCancelling(true);
+                  try {
+                    await cancelStudentGuidance(cancelGuidanceId);
+                    toast.success('Pengajuan bimbingan berhasil dibatalkan');
+                    qc.invalidateQueries({ queryKey: ['student-guidance'] });
+                    qc.invalidateQueries({ queryKey: ['notification-unread'] });
+                    setCancelGuidanceId(null);
+                  } catch (error: any) {
+                    toast.error(error.message || 'Gagal membatalkan pengajuan bimbingan');
+                  } finally {
+                    setIsCancelling(false);
+                  }
+                }}
+              >
+                {isCancelling ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Membatalkan...
+                  </>
+                ) : (
+                  'Ya, Batalkan'
+                )}
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Step 2: Confirmation dialog for accepted guidance cancellation */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={(open) => {
+        if (!open) setShowCancelConfirm(false);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Pembatalan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin membatalkan bimbingan ini? Tindakan ini tidak dapat dibatalkan dan dosen pembimbing akan diberitahu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="rounded-md bg-muted p-3 text-sm">
+            <p className="font-medium mb-1">Alasan:</p>
+            <p className="text-muted-foreground">{cancelReason}</p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling} onClick={() => setShowCancelConfirm(false)}>Kembali</AlertDialogCancel>
             <AlertDialogAction
               disabled={isCancelling}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -280,13 +441,15 @@ export default function StudentGuidancePage() {
                 if (!cancelGuidanceId) return;
                 setIsCancelling(true);
                 try {
-                  await cancelStudentGuidance(cancelGuidanceId);
-                  toast.success('Pengajuan bimbingan berhasil dibatalkan');
+                  await cancelStudentGuidance(cancelGuidanceId, { reason: cancelReason });
+                  toast.success('Bimbingan berhasil dibatalkan');
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });
                   setCancelGuidanceId(null);
+                  setCancelReason('');
+                  setShowCancelConfirm(false);
                 } catch (error: any) {
-                  toast.error(error.message || 'Gagal membatalkan pengajuan bimbingan');
+                  toast.error(error.message || 'Gagal membatalkan bimbingan');
                 } finally {
                   setIsCancelling(false);
                 }
@@ -298,12 +461,29 @@ export default function StudentGuidancePage() {
                   Membatalkan...
                 </>
               ) : (
-                'Ya, Batalkan'
+                'Ya, Saya Yakin'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Export/Download Dialog */}
+      <GuidanceExportDialog
+        guidanceId={exportGuidanceId || ''}
+        open={!!exportGuidanceId}
+        onOpenChange={(open) => !open && setExportGuidanceId(null)}
+      />
+
+      {/* Batch Export Dialog */}
+      <BatchExportDialog
+        open={showBatchExport}
+        onOpenChange={(open) => {
+          setShowBatchExport(open);
+          if (!open) setSelectedIds(new Set());
+        }}
+        guidanceIds={Array.from(selectedIds)}
+      />
     </div>
   );
 }

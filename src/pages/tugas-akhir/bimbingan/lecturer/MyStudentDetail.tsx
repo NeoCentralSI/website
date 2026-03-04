@@ -90,7 +90,12 @@ export default function LecturerMyStudentDetailPage() {
         }
         // Backend returns paths WITH /uploads/ prefix, so we need to use it as-is
         // getApiUrl() just prepends base URL: http://localhost:3000 + /uploads/thesis/file.pdf
-        return getApiUrl(path);
+        let url = getApiUrl(path);
+        const token = localStorage.getItem("token");
+        if (token && path.includes("thesis/")) {
+            url += (url.includes("?") ? "&" : "?") + `token=${token}`;
+        }
+        return url;
     };
 
     // Initial breadcrumb, will be updated when data is loaded
@@ -345,7 +350,7 @@ export default function LecturerMyStudentDetailPage() {
             )}
 
             {/* Seminar Readiness Card - tampilkan bagi mahasiswa aktif untuk monitoring */}
-            {detailData.status === "Aktif" && thesisId && (
+            {(detailData.status === "Bimbingan" || detailData.status === "Acc Seminar") && thesisId && (
                 <SeminarReadinessCard
                     thesisId={thesisId}
                     studentName={detailData.student.fullName}
@@ -377,7 +382,7 @@ export default function LecturerMyStudentDetailPage() {
                         </div>
                         {detailData.status && (
                             <Badge
-                                variant={detailData.status === "Aktif" ? "default" : "secondary"}
+                                variant={detailData.status === "Bimbingan" ? "default" : "secondary"}
                             >
                                 {detailData.status.toUpperCase()}
                             </Badge>
@@ -428,7 +433,7 @@ export default function LecturerMyStudentDetailPage() {
                             </div>
                         </div>
 
-                
+
                         <Separator />
 
                         {/* Documents Section */}
@@ -513,7 +518,7 @@ export default function LecturerMyStudentDetailPage() {
                         </Button>
                     </CardHeader>
                     <CardContent className="px-2 sm:px-6">
-                        <div className="h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                        <div className="h-150 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                             <div className="relative border-l ml-3 space-y-8 my-2 pt-2">
                                 {detailData.milestones && detailData.milestones.length > 0 ? (
                                     detailData.milestones.map((milestone) => (

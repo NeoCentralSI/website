@@ -273,7 +273,6 @@ export default function StudentMilestonePage() {
   const tabs = [
     { label: "Bimbingan", to: "/tugas-akhir/bimbingan/student", end: true },
     { label: "Milestone", to: "/tugas-akhir/bimbingan/milestone" },
-    { label: "Riwayat", to: "/tugas-akhir/bimbingan/completed-history" },
   ];
 
 

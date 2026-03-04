@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { ProgressReportData } from "@/services/monitoring.service";
+import logoUrl from "@/assets/images/neocentral-logo.png";
 
 // Extend jsPDF type for autoTable
 declare module "jspdf" {
@@ -45,9 +46,7 @@ async function fetchLogoAsBase64(): Promise<string | null> {
   if (logoBase64Cache) return logoBase64Cache;
 
   try {
-    const response = await fetch(
-      "https://vylagsnlpgdvlhydvswk.supabase.co/storage/v1/object/public/neocentral-logo/neocentral-logo.png"
-    );
+    const response = await fetch(logoUrl);
     const blob = await response.blob();
     return new Promise((resolve) => {
       const reader = new FileReader();

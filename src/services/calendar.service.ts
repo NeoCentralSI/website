@@ -162,6 +162,7 @@ export const getEventStatisticsAPI = async (): Promise<{
 export const checkOutlookCalendarAccess = async (): Promise<{
   success: boolean;
   hasCalendarAccess: boolean;
+  needsReconnect?: boolean;
   message: string;
 }> => {
   const response = await fetch(getApiUrl('/outlook-calendar/status'), {
@@ -175,6 +176,7 @@ export const checkOutlookCalendarAccess = async (): Promise<{
     return {
       success: false,
       hasCalendarAccess: false,
+      needsReconnect: false,
       message: 'Gagal memeriksa status calendar',
     };
   }
@@ -215,6 +217,26 @@ export const getOutlookCalendarEvents = async (
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Gagal memuat Outlook events');
+  }
+
+  return response.json();
+};
+
+// Get reconnect URL when calendar token is expired
+export const getOutlookReconnectUrl = async (): Promise<{
+  success: boolean;
+  authUrl: string;
+}> => {
+  const response = await fetch(getApiUrl('/outlook-calendar/reconnect'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal mendapatkan URL reconnect');
   }
 
   return response.json();

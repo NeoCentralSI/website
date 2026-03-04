@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Cloud, CloudOff, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Cloud, CloudOff, Loader2, RefreshCw, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getMyCalendarEventsAPI, checkOutlookCalendarAccess, getOutlookCalendarEvents } from '@/services/calendar.service';
+import { getMyCalendarEventsAPI, checkOutlookCalendarAccess, getOutlookCalendarEvents, getOutlookReconnectUrl } from '@/services/calendar.service';
 import type { CalendarEvent } from '@/types/calendar.types';
 import { cn } from '@/lib/utils';
 
@@ -123,18 +123,30 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-
-      // Use refetch instead of invalidateQueries for better loading feedback
-      await Promise.all([
-        refetchInternal(),
-        outlookStatus?.hasCalendarAccess && refetchOutlook(),
-        queryClient.invalidateQueries({ queryKey: ['outlook-calendar-status'] })
-      ].filter(Boolean));
-
+      // Always re-check status first, then refetch if access is available
+      await queryClient.invalidateQueries({ queryKey: ['outlook-calendar-status'] });
+      await refetchInternal();
+      // Re-check if we now have access after status refresh
+      const freshStatus = queryClient.getQueryData<{ hasCalendarAccess: boolean }>(['outlook-calendar-status']);
+      if (freshStatus?.hasCalendarAccess) {
+        await refetchOutlook();
+      }
     } catch (error) {
       console.error('[Calendar Dashboard] Manual sync failed:', error);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  // Reconnect Microsoft account for calendar access
+  const handleReconnect = async () => {
+    try {
+      const result = await getOutlookReconnectUrl();
+      if (result?.authUrl) {
+        window.location.href = result.authUrl;
+      }
+    } catch (error) {
+      console.error('[Calendar Dashboard] Reconnect failed:', error);
     }
   };
 
@@ -301,7 +313,16 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
                       {outlookStatus?.hasCalendarAccess ? (
                         <Badge variant="outline" className="flex items-center gap-1 text-green-600 border-green-200 bg-green-50">
                           <Cloud className="h-3 w-3" />
-                          <span className="text-xs">Celendar Sync</span>
+                          <span className="text-xs">Calendar Sync</span>
+                        </Badge>
+                      ) : outlookStatus?.needsReconnect ? (
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1 text-amber-600 border-amber-200 bg-amber-50 cursor-pointer hover:bg-amber-100"
+                          onClick={handleReconnect}
+                        >
+                          <Link2 className="h-3 w-3" />
+                          <span className="text-xs">Reconnect</span>
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="flex items-center gap-1 text-gray-500 border-gray-200 bg-gray-50">
@@ -314,7 +335,9 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
                   <TooltipContent>
                     {outlookStatus?.hasCalendarAccess
                       ? 'Jadwal bimbingan akan otomatis sync ke Outlook Calendar'
-                      : 'Login dengan Microsoft untuk sync ke Outlook Calendar'}
+                      : outlookStatus?.needsReconnect
+                        ? 'Sesi Microsoft telah berakhir. Klik untuk menghubungkan kembali.'
+                        : 'Login dengan Microsoft untuk sync ke Outlook Calendar'}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
