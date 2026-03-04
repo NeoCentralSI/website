@@ -395,7 +395,7 @@ export default function TugasAkhirOverviewPage() {
                                         <Button
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
-                                            onClick={() => navigate('/tugas-akhir/bimbingan/completed-history')}
+                                            onClick={() => navigate('/tugas-akhir/bimbingan/student?status=completed')}
                                         >
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
                                                 <FileText className="h-4 w-4 text-primary" />

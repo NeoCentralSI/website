@@ -1,23 +1,45 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import CustomTable from '@/components/layout/CustomTable';
-import { getScheduledGuidances } from '@/services/lecturerGuidance.service';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
+import { getScheduledGuidances, cancelGuidanceByLecturer } from '@/services/lecturerGuidance.service';
 import { getLecturerScheduledColumns } from '@/lib/lecturerScheduledColumns';
 import { toTitleCaseName } from '@/lib/text';
-import { Loading } from '@/components/ui/spinner';
+import { Loading, Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 export default function ScheduledGuidancesPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [studentFilter, setStudentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  // Cancel dialog state
+  const [cancelGuidanceId, setCancelGuidanceId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // Document preview state
+  const [docOpen, setDocOpen] = useState(false);
+  const [docInfo, setDocInfo] = useState<{ fileName?: string; filePath?: string } | null>(null);
 
   const breadcrumb = useMemo(
     () => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan', href: '/tugas-akhir/bimbingan/lecturer/requests' }, { label: 'Terjadwal' }],
@@ -78,6 +100,13 @@ export default function ScheduledGuidancesPage() {
     setStatusFilter,
     setPage,
     navigate,
+    onViewDocument: (fileName, filePath) => {
+      setDocInfo({ fileName: fileName || undefined, filePath: filePath || undefined });
+      setDocOpen(true);
+    },
+    onCancel: (guidanceId: string) => {
+      setCancelGuidanceId(guidanceId);
+    },
   });
 
   // Define tabs for reuse
@@ -127,6 +156,77 @@ export default function ScheduledGuidancesPage() {
           }
         />
       )}
+
+      <DocumentPreviewDialog
+        open={docOpen}
+        onOpenChange={setDocOpen}
+        fileName={docInfo?.fileName || undefined}
+        filePath={docInfo?.filePath || undefined}
+      />
+
+      {/* Cancel guidance dialog */}
+      <AlertDialog open={!!cancelGuidanceId} onOpenChange={(open) => {
+        if (!open) {
+          setCancelGuidanceId(null);
+          setCancelReason('');
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Batalkan Bimbingan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bimbingan yang sudah disetujui akan dibatalkan. Mahasiswa akan diberitahu mengenai pembatalan ini.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <label className="text-sm font-medium mb-1.5 block">
+              Alasan Pembatalan <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-none"
+              placeholder="Contoh: Saya berhalangan hadir karena..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              maxLength={1000}
+            />
+            <p className="text-xs text-muted-foreground mt-1">{cancelReason.length}/1000</p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Tidak</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isCancelling || !cancelReason.trim()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!cancelGuidanceId || !cancelReason.trim()) return;
+                setIsCancelling(true);
+                try {
+                  await cancelGuidanceByLecturer(cancelGuidanceId, { reason: cancelReason });
+                  toast.success('Bimbingan berhasil dibatalkan');
+                  qc.invalidateQueries({ queryKey: ['lecturer-scheduled'] });
+                  qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
+                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
+                  setCancelGuidanceId(null);
+                  setCancelReason('');
+                } catch (error: any) {
+                  toast.error(error.message || 'Gagal membatalkan bimbingan');
+                } finally {
+                  setIsCancelling(false);
+                }
+              }}
+            >
+              {isCancelling ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Membatalkan...
+                </>
+              ) : (
+                'Ya, Batalkan'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

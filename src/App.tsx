@@ -21,10 +21,8 @@ import BimbinganEntry from './pages/tugas-akhir/bimbingan/BimbinganEntry'
 import StudentGuidancePage from './pages/tugas-akhir/bimbingan/student/StudentGuidance'
 import StudentGuidanceSessionPage from './pages/tugas-akhir/bimbingan/student/GuidanceSession'
 import StudentMilestonePage from './pages/tugas-akhir/bimbingan/student/Milestone'
-import CompletedHistoryPage from './pages/tugas-akhir/bimbingan/student/CompletedHistory'
 import DangerZonePage from './pages/tugas-akhir/bimbingan/student/DangerZone'
 import LecturerRequestsPage from './pages/tugas-akhir/bimbingan/lecturer/Requests'
-import LecturerScheduledPage from './pages/tugas-akhir/bimbingan/lecturer/Scheduled'
 import LecturerGuidanceSessionPage from './pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'
 import LecturerMyStudentsPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudents'
 import LecturerMyStudentDetailPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'
@@ -152,7 +150,6 @@ function App() {
                   <Route path="bimbingan/student" element={<StudentGuidancePage />} />
                   <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                   <Route path="bimbingan/milestone" element={<StudentMilestonePage />} />
-                  <Route path="bimbingan/completed-history" element={<CompletedHistoryPage />} />
                   <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
                 </Route>
               </Route>
@@ -176,7 +173,6 @@ function App() {
               {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
               <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
                 <Route path="/tugas-akhir/bimbingan/lecturer/requests" element={<LecturerRequestsPage />} />
-                <Route path="/tugas-akhir/bimbingan/lecturer/scheduled" element={<LecturerScheduledPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/session/:guidanceId" element={<LecturerGuidanceSessionPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
                 <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
