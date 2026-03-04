@@ -389,7 +389,20 @@ export interface StudentDetail {
     enrollmentYear: number;
     sksCompleted: number;
     status: string | null;
+    currentSemester?: number | null;
+    mandatoryCoursesCompleted?: boolean | null;
+    mkwuCompleted?: boolean | null;
+    internshipCompleted?: boolean | null;
+    kknCompleted?: boolean | null;
   };
+  cplScores?: Array<{
+    cplId: string;
+    cplCode: string;
+    cplDescription?: string;
+    score: number;
+    minimalScore?: number | null;
+    status: string;
+  }>;
   roles: Array<{
     id: string;
     name: string;

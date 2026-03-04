@@ -310,6 +310,26 @@ export interface AssignmentSeminarItem {
   examiners: LecturerSeminarExaminer[];
 }
 
+/** Combined seminar list item for lecturer views */
+export interface LecturerSeminarListItem {
+  id: string;
+  thesisId: string | null;
+  studentName: string;
+  studentNim: string;
+  thesisTitle: string;
+  supervisors: AdminSeminarSupervisor[];
+  status: ThesisSeminarStatus;
+  registeredAt: string | null;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  room: { id: string; name: string } | null;
+  myRoles: string[];
+  myExaminerStatus: ExaminerAvailabilityStatus | null;
+  myExaminerId: string | null;
+  myExaminerOrder: number | null;
+}
+
 /** Item in the Lecturer "Permintaan Menguji" list */
 export interface ExaminerRequestItem {
   id: string;

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { LecturerSeminarListItem } from '@/types/seminar.types';
 import {
   getExaminerRequests,
   getSupervisedStudentSeminars,
@@ -25,6 +26,60 @@ import type {
   FinalizeSeminarPayload,
 } from '@/types/seminar.types';
 import { toast } from 'sonner';
+
+// ============================================================
+// Lecturer — Combined Seminar List
+// ============================================================
+
+export function useLecturerSeminars(params?: { search?: string }) {
+  const examinerQuery = useQuery({
+    queryKey: ['examiner-requests', params?.search],
+    queryFn: () => getExaminerRequests(params),
+  });
+  const supervisedQuery = useQuery({
+    queryKey: ['supervised-student-seminars', params?.search],
+    queryFn: () => getSupervisedStudentSeminars(params),
+  });
+
+  const data: LecturerSeminarListItem[] | undefined =
+    examinerQuery.data || supervisedQuery.data
+      ? (() => {
+          const map = new Map<string, LecturerSeminarListItem>();
+          for (const item of examinerQuery.data ?? []) {
+            map.set(item.id, {
+              ...item,
+              myRoles: ['examiner'],
+            });
+          }
+          for (const item of supervisedQuery.data ?? []) {
+            const existing = map.get(item.id);
+            if (existing) {
+              existing.myRoles = [...existing.myRoles, item.myRole];
+            } else {
+              map.set(item.id, {
+                ...item,
+                myRoles: [item.myRole],
+                myExaminerStatus: null,
+                myExaminerId: null,
+                myExaminerOrder: null,
+              });
+            }
+          }
+          return Array.from(map.values());
+        })()
+      : undefined;
+
+  return {
+    data,
+    isLoading: examinerQuery.isLoading || supervisedQuery.isLoading,
+    isFetching: examinerQuery.isFetching || supervisedQuery.isFetching,
+    error: examinerQuery.error || supervisedQuery.error,
+    refetch: () => {
+      examinerQuery.refetch();
+      supervisedQuery.refetch();
+    },
+  };
+}
 
 // ============================================================
 // Lecturer — Examiner Requests (Permintaan Menguji)
