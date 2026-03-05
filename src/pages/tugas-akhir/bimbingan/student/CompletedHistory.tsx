@@ -52,7 +52,6 @@ export default function CompletedHistoryPage() {
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
           { label: 'Milestone', to: '/tugas-akhir/bimbingan/milestone' },
-          { label: 'Riwayat', to: '/tugas-akhir/bimbingan/completed-history' },
         ]}
       />
 

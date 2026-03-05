@@ -31,7 +31,7 @@ export function StatusDistributionCard({ statusDistribution, isLoading }: Status
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Distribusi Status</CardTitle>
+          <CardTitle>Distribusi Status Tugas Akhir</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {[...Array(5)].map((_, i) => (
@@ -58,7 +58,7 @@ export function StatusDistributionCard({ statusDistribution, isLoading }: Status
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Distribusi Status</CardTitle>
+        <CardTitle>Distribusi Status Tugas Akhir</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {sortedStatuses.length === 0 ? (

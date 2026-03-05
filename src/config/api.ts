@@ -102,6 +102,13 @@ export const API_CONFIG = {
       TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/approve`,
       TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/reject`,
     },
+    THESIS_MONITORING: {
+      DASHBOARD: '/thesisGuidance/monitoring/dashboard',
+      TRANSFERS_PENDING: '/thesisGuidance/monitoring/transfers/pending',
+      TRANSFERS_ALL: '/thesisGuidance/monitoring/transfers/all',
+      TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/monitoring/transfers/${notificationId}/approve`,
+      TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/monitoring/transfers/${notificationId}/reject`,
+    },
     THESIS_SEMINAR_STUDENT: {
       OVERVIEW: '/thesisSeminar/student/overview',
       ATTENDANCE: '/thesisSeminar/student/attendance',

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useRole } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared/useRole';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Loading } from '@/components/ui/spinner';
 import CustomTable from '@/components/layout/CustomTable';

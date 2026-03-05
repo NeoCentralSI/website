@@ -3,11 +3,15 @@ import { useOutletContext, useSearchParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import {
   MonitoringSummaryCards,
-  StatusDistributionCard,
-  RatingDistributionCard,
+  StatusDistributionChart,
+  RatingDistributionChart,
+  TopicDistributionChart,
+  BatchDistributionChart,
+  ProgressDistributionChart,
   SlowStudentsCard,
   ReadyForSeminarCard,
   ThesesTable,
+  GuidanceTrendChart,
 } from "@/components/monitoring";
 import { useMonitoringDashboard, useFilterOptions } from "@/hooks/monitoring";
 import {
@@ -166,16 +170,36 @@ export default function MonitoringDashboard() {
       {/* Summary Cards */}
       <MonitoringSummaryCards summary={data?.summary} isLoading={isLoadingAny} />
 
-      {/* Status Distribution + Rating Distribution + Quick Lists */}
-      <div className="grid gap-6 lg:grid-cols-4">
-        <StatusDistributionCard
+      {/* Distribution Charts */}
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <StatusDistributionChart
           statusDistribution={data?.statusDistribution}
           isLoading={isLoadingAny}
         />
-        <RatingDistributionCard
+        <RatingDistributionChart
           ratingDistribution={data?.ratingDistribution}
           isLoading={isLoadingAny}
         />
+        <ProgressDistributionChart
+          progressDistribution={data?.progressDistribution}
+          isLoading={isLoadingAny}
+        />
+        <TopicDistributionChart
+          topicDistribution={data?.topicDistribution}
+          isLoading={isLoadingAny}
+        />
+        <BatchDistributionChart
+          batchDistribution={data?.batchDistribution}
+          isLoading={isLoadingAny}
+        />
+        <GuidanceTrendChart
+          guidanceTrend={data?.guidanceTrend}
+          isLoading={isLoadingAny}
+        />
+      </div>
+
+      {/* Quick Lists */}
+      <div className="grid gap-6 md:grid-cols-2">
         <SlowStudentsCard
           students={data?.slowStudents}
           isLoading={isLoadingAny}

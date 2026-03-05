@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink, Calendar, MapPin, Users, Video } from "lucide-react";
 import { UpcomingEventsCard } from "@/components/dashboard/UpcomingEventsCard";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
-import { useRole } from "@/hooks/shared";
+import { useRole } from "@/hooks/shared/useRole";
 
 export default function Dashboard() {
 

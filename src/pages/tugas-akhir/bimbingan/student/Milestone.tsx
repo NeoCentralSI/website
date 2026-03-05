@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav } from "@/components/ui/tabs-nav";
-import { getStudentSupervisors } from "@/services/studentGuidance.service";
+import { getStudentSupervisors, getMyThesisDetail } from "@/services/studentGuidance.service";
 import { Loading } from "@/components/ui/spinner";
 
 
@@ -55,10 +55,7 @@ export default function StudentMilestonePage() {
 
   const { data: thesisDetail } = useQuery({
     queryKey: ["my-thesis-detail"],
-    queryFn: async () => {
-      const { getMyThesisDetail } = await import('@/services/studentGuidance.service');
-      return getMyThesisDetail();
-    },
+    queryFn: getMyThesisDetail,
     enabled: hasThesis,
   });
 

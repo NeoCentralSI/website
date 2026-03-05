@@ -53,7 +53,7 @@ export function NavMain({
             <Collapsible key={item.title} asChild defaultOpen={isItemActive} className="group/collapsible">
               <SidebarMenuItem>
                 {/* Main Button: Link if URL is valid, otherwise Trigger or Static */}
-                {item.url && item.url !== "#" ? (
+                {item.url && item.url !== "#" && !hasChildren ? (
                   <SidebarMenuButton asChild tooltip={item.title} isActive={isItemActive}>
                     <Link to={item.url}>
                       <item.icon />

@@ -121,7 +121,7 @@ export default function BatchExportDialog({
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="border px-3 py-2 text-left font-semibold w-[180px]">
+                  <th className="border px-3 py-2 text-left font-semibold w-45">
                     Jadwal Bimbingan
                   </th>
                   <th className="border px-3 py-2 text-left font-semibold">
@@ -135,10 +135,11 @@ export default function BatchExportDialog({
                     <td className="border px-3 py-2 align-top">
                       <div className="space-y-1">
                         <p className="font-medium">{guidance.approvedDateFormatted || "-"}</p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {guidance.type || "online"}
-                          {guidance.duration && ` • ${guidance.duration} menit`}
-                        </p>
+                        {guidance.duration && (
+                          <p className="text-xs text-muted-foreground">
+                            {guidance.duration} Menit
+                          </p>
+                        )}
                         {guidance.milestoneName && (
                           <p className="text-xs text-muted-foreground">
                             {guidance.milestoneName}

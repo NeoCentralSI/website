@@ -13,7 +13,7 @@ import { useStudentProposals } from '@/hooks/internship/useStudentProposals';
 import { getInternshipProposalColumns } from '@/lib/internship';
 import RegisterInternshipDialog from '@/components/internship/RegisterInternshipDialog';
 import { respondToInvitation, type InternshipProposalItem } from '@/services/internship.service';
-import { getSopDownloadUrl } from '@/services/sop.service';
+import { getSopDownloadUrl, getSopFilesPublic } from '@/services/sop.service';
 
 import { toast } from 'sonner';
 
@@ -108,7 +108,7 @@ export default function InternshipProposalPage() {
 
     const { data: publicSops = [] } = useQuery({
         queryKey: ['public-sop-files'],
-        queryFn: () => import('@/services/sop.service').then(m => m.getSopFilesPublic()),
+        queryFn: getSopFilesPublic,
     });
 
     const proposalTemplate = useMemo(() => {

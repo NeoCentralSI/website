@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
-import { getStudentSupervisors, rescheduleStudentGuidance, cancelStudentGuidance } from '@/services/studentGuidance.service';
+import { getStudentSupervisors, rescheduleStudentGuidance, cancelStudentGuidance, getMyThesisDetail } from '@/services/studentGuidance.service';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,10 +59,7 @@ export default function StudentGuidancePage() {
 
   const { data: thesisDetail } = useQuery({
     queryKey: ["my-thesis-detail"],
-    queryFn: async () => {
-      const { getMyThesisDetail } = await import('@/services/studentGuidance.service');
-      return getMyThesisDetail();
-    },
+    queryFn: getMyThesisDetail,
   });
 
   const isThesisInactive = thesisDetail?.status === "Gagal" || thesisDetail?.status === "Dibatalkan" || thesisDetail?.status === "Selesai";
@@ -358,7 +355,7 @@ export default function StudentGuidancePage() {
             <div className="py-2">
               <label className="text-sm font-medium mb-1.5 block">Alasan Pembatalan <span className="text-destructive">*</span></label>
               <textarea
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-none"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-20 resize-none"
                 placeholder="Contoh: Saya tidak dapat hadir karena..."
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}

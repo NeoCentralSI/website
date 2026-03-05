@@ -4,6 +4,7 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { ChangeRequestManagementPanel } from "@/components/kelola/ChangeRequestManagementPanel";
 import { DataMasterTaPanel } from "@/components/kelola/DataMasterTaPanel";
+import { TransferManagementPanel } from "@/components/kelola/TransferManagementPanel";
 
 const TAB_ITEMS: TabItem[] = [
   { label: "Permintaan Pergantian", to: "/kelola/tugas-akhir/kadep/pergantian" },
@@ -45,6 +46,9 @@ export default function KelolaTugasAkhirKadep() {
   const renderContent = () => {
     if (activeTab.label === "Permintaan Pergantian") {
       return <ChangeRequestManagementPanel />;
+    }
+    if (activeTab.label === "Kelola Pembimbing") {
+      return <TransferManagementPanel />;
     }
     if (activeTab.label === "Data Master Tugas Akhir") {
       return <DataMasterTaPanel />;
