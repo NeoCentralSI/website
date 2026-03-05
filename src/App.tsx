@@ -21,7 +21,6 @@ import InternshipLetterVerification from './pages/kerja-praktik/public/Internshi
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
-import SeminarHasilGuard from './pages/guards/SeminarHasilGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
@@ -55,6 +54,9 @@ const LecturerSeminarDetailIdentityPage = lazy(() => import('./pages/tugas-akhir
 const LecturerSeminarDetailAssessmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'))
 const LecturerSeminarDetailRevisionPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'))
 const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'))
+// Tugas Akhir - Sidang
+const SidangEntry = lazy(() => import('./pages/tugas-akhir/sidang/SidangEntry'))
+const StudentThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/StudentThesisDefence'))
 // Kerja Praktik - Student
 const InternshipProposalPage = lazy(() => import('./pages/kerja-praktik/student/registration/Proposal'))
 const InternshipProposalDetailPage = lazy(() => import('./pages/kerja-praktik/student/registration/PendaftaranDetail'))
@@ -184,12 +186,11 @@ function App() {
                   <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                   <Route path="bimbingan/milestone" element={<StudentMilestonePage />} />
                   <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
-                  <Route element={<SeminarHasilGuard />}>
-                    <Route path="seminar/student" element={<StudentThesisSeminarPage />} />
-                    <Route path="seminar/student/revision" element={<StudentSeminarRevisionPage />} />
-                    <Route path="seminar/student/attendance" element={<StudentSeminarAttendancePage />} />
-                    <Route path="seminar/student/history/:seminarId" element={<StudentSeminarDetailPage />} />
-                  </Route>
+                  <Route path="seminar/student" element={<StudentThesisSeminarPage />} />
+                  <Route path="seminar/student/revision" element={<StudentSeminarRevisionPage />} />
+                  <Route path="seminar/student/attendance" element={<StudentSeminarAttendancePage />} />
+                  <Route path="seminar/student/history/:seminarId" element={<StudentSeminarDetailPage />} />
+                  <Route path="sidang/student" element={<StudentThesisDefencePage />} />
                 </Route>
 
                 {/* Pengumuman routes */}
@@ -202,7 +203,7 @@ function App() {
               {/* Tugas Akhir Shared */}
               <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
               <Route path="/tugas-akhir/seminar" element={<SeminarHasilEntry />} />
-              <Route path="/tugas-akhir/sidang" element={<Placeholder title="Tugas Akhir - Sidang" />} />
+              <Route path="/tugas-akhir/sidang" element={<SidangEntry />} />
 
               {/* Kerja Praktik Shared */}
               <Route path="/kerja-praktik/monitoring" element={<Placeholder title="Kerja Praktek - Monitoring" />} />

@@ -157,6 +157,12 @@ export const API_CONFIG = {
       ASSIGN_EXAMINERS: (seminarId: string) =>
         `/thesisSeminar/lecturer/assignment/${seminarId}`,
     },
+    THESIS_DEFENCE_STUDENT: {
+      OVERVIEW: '/thesisDefence/student/overview',
+      DOCUMENT_TYPES: '/thesisDefence/student/documents/types',
+      DOCUMENTS: '/thesisDefence/student/documents',
+      DOCUMENT_UPLOAD: '/thesisDefence/student/documents/upload',
+    },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',
       PROPOSALS: '/insternship/registration/proposals',

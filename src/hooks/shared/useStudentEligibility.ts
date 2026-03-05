@@ -7,10 +7,8 @@ interface EligibilityResult {
   sks: number;
   semester: number;
   hasTugasAkhirCourse: boolean;
-  hasPassedInternship: boolean;
   canAccessKerjaPraktek: boolean;
   canAccessTugasAkhir: boolean;
-  canAccessSeminarHasil: boolean;
   requirements: {
     kerjaPraktek: {
       sks: { met: boolean; current: number; required: number };
@@ -18,12 +16,6 @@ interface EligibilityResult {
     tugasAkhir: {
       sks: { met: boolean; current: number; required: number };
       course: { met: boolean };
-    };
-    seminarHasil: {
-      semester: { met: boolean; current: number; required: number };
-      sks: { met: boolean; current: number; required: number };
-      course: { met: boolean };
-      internship: { met: boolean };
     };
   };
 }
@@ -40,30 +32,25 @@ export function useStudentEligibility(): EligibilityResult {
   });
 
   const siaStudent = siaStudents?.find((s) => s.nim === nim);
-  const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
+  const sks = Math.max(
+    siaStudent?.sksCompleted ?? 0,
+    authUser?.student?.sksCompleted ?? 0
+  );
   const semester = siaStudent?.currentSemester ?? 0;
   const hasTugasAkhirCourse = !!siaStudent?.currentSemesterCourses?.some(
     (c) => (c.name || "").toLowerCase().includes("tugas akhir")
   );
-  const hasPassedInternship = !!siaStudent?.internshipCompleted;
 
   const canAccessKerjaPraktek = sks >= 90;
   const canAccessTugasAkhir = sks >= 110 && hasTugasAkhirCourse;
-  const canAccessSeminarHasil =
-    semester >= 6 &&
-    sks >= 110 &&
-    hasTugasAkhirCourse &&
-    hasPassedInternship;
 
   return {
     isLoading: isAuthLoading || isSiaLoading,
     sks,
     semester,
     hasTugasAkhirCourse,
-    hasPassedInternship,
     canAccessKerjaPraktek,
     canAccessTugasAkhir,
-    canAccessSeminarHasil,
     requirements: {
       kerjaPraktek: {
         sks: { met: sks >= 90, current: sks, required: 90 },
@@ -71,12 +58,6 @@ export function useStudentEligibility(): EligibilityResult {
       tugasAkhir: {
         sks: { met: sks >= 110, current: sks, required: 110 },
         course: { met: hasTugasAkhirCourse },
-      },
-      seminarHasil: {
-        semester: { met: semester >= 6, current: semester, required: 6 },
-        sks: { met: sks >= 110, current: sks, required: 110 },
-        course: { met: hasTugasAkhirCourse },
-        internship: { met: hasPassedInternship },
       },
     },
   };
