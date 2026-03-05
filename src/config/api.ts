@@ -143,6 +143,7 @@ export const API_CONFIG = {
       FINALIZATION_DATA: (seminarId: string) => `/thesisSeminar/lecturer/seminars/${seminarId}/finalization`,
       FINALIZE_SEMINAR: (seminarId: string) => `/thesisSeminar/lecturer/seminars/${seminarId}/finalize`,
       SEMINAR_REVISIONS: (seminarId: string) => `/thesisSeminar/lecturer/seminars/${seminarId}/revisions`,
+      FINALIZE_REVISIONS: (seminarId: string) => `/thesisSeminar/lecturer/seminars/${seminarId}/revisions/finalize`,
       APPROVE_REVISION: (seminarId: string, revisionId: string) => `/thesisSeminar/lecturer/seminars/${seminarId}/revisions/${revisionId}/approve`,
       UNAPPROVE_REVISION: (seminarId: string, revisionId: string) => `/thesisSeminar/lecturer/seminars/${seminarId}/revisions/${revisionId}/unapprove`,
       SEMINAR_AUDIENCES: (seminarId: string) => `/thesisSeminar/lecturer/seminars/${seminarId}/audiences`,
