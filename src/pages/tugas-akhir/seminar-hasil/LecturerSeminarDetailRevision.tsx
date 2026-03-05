@@ -16,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import {
   Collapsible,
   CollapsibleContent,
@@ -27,9 +28,10 @@ import {
   useSupervisorFinalizationData,
   useApproveRevision,
   useUnapproveRevision,
+  useFinalizeSeminarRevisions,
 } from '@/hooks/seminar/useLecturerSeminar';
 import { toTitleCaseName } from '@/lib/text';
-import { MessageSquareText, ListChecks, CheckCircle2, Undo2, Send, ChevronDown } from 'lucide-react';
+import { MessageSquareText, CheckCircle2, Undo2, Send, ChevronDown } from 'lucide-react';
 import type { SeminarRevisionBoardItem } from '@/types/seminar.types';
 
 export default function LecturerSeminarDetailRevision() {
@@ -53,12 +55,24 @@ export default function LecturerSeminarDetailRevision() {
 }
 
 function RevisionContent({ seminarId }: { seminarId: string }) {
-  const { data: finalizationData, isLoading: isFinalLoading } = useSupervisorFinalizationData(seminarId);
-  const { data: revisionBoard, isLoading: isRevisionLoading } = useSeminarRevisionBoard(seminarId);
+  const {
+    data: finalizationData,
+    isLoading: isFinalLoading,
+    isFetching: isFinalFetching,
+    refetch: refetchFinalization,
+  } = useSupervisorFinalizationData(seminarId);
+  const {
+    data: revisionBoard,
+    isLoading: isRevisionLoading,
+    isFetching: isRevisionFetching,
+    refetch: refetchRevisionBoard,
+  } = useSeminarRevisionBoard(seminarId);
   const approveMutation = useApproveRevision();
   const unapproveMutation = useUnapproveRevision();
+  const finalizeRevisionsMutation = useFinalizeSeminarRevisions();
 
   const [unapproveConfirmId, setUnapproveConfirmId] = useState<string | null>(null);
+  const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -66,6 +80,7 @@ function RevisionContent({ seminarId }: { seminarId: string }) {
   const [search, setSearch] = useState('');
 
   const isLoading = isFinalLoading || isRevisionLoading;
+  const isRefreshing = (isFinalFetching || isRevisionFetching) && !isLoading;
 
   // Examiner notes
   const examinerNotes = useMemo(
@@ -95,6 +110,12 @@ function RevisionContent({ seminarId }: { seminarId: string }) {
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, page, pageSize]);
 
+  const isRevisionFinalized = !!finalizationData?.seminar?.revisionFinalizedAt;
+  const canFinalizeRevisions =
+    !isRevisionFinalized &&
+    visibleItems.length > 0 &&
+    visibleItems.every((item) => item.isFinished);
+
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-280px)] items-center justify-center">
@@ -108,6 +129,13 @@ function RevisionContent({ seminarId }: { seminarId: string }) {
     unapproveMutation.mutate(
       { seminarId, revisionId: unapproveConfirmId },
       { onSuccess: () => setUnapproveConfirmId(null) }
+    );
+  };
+
+  const handleFinalizeRevisions = () => {
+    finalizeRevisionsMutation.mutate(
+      { seminarId },
+      { onSuccess: () => setFinalizeConfirmOpen(false) }
     );
   };
 
@@ -222,6 +250,7 @@ function RevisionContent({ seminarId }: { seminarId: string }) {
       <CustomTable
         columns={columns}
         data={paginatedItems}
+        isRefreshing={isRefreshing}
         total={filteredItems.length}
         page={page}
         pageSize={pageSize}
@@ -233,11 +262,63 @@ function RevisionContent({ seminarId }: { seminarId: string }) {
         rowKey={(row) => row.id}
         actions={
           <div className="flex items-center gap-2">
-            <ListChecks className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Daftar Revisi</span>
+            <RefreshButton
+              onClick={() => {
+                refetchFinalization();
+                refetchRevisionBoard();
+              }}
+              isRefreshing={isRefreshing}
+            />
+
+            {isRevisionFinalized ? (
+              <Badge variant="success" className="text-xs">
+                Revisi Sudah Difinalisasi
+              </Badge>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => setFinalizeConfirmOpen(true)}
+                disabled={!canFinalizeRevisions || finalizeRevisionsMutation.isPending}
+              >
+                {finalizeRevisionsMutation.isPending ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" /> Memfinalisasi...
+                  </>
+                ) : (
+                  'Selesaikan Revisi'
+                )}
+              </Button>
+            )}
           </div>
         }
       />
+
+      {/* Finalize Revisions Confirmation */}
+      <AlertDialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalisasi Revisi Mahasiswa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Konfirmasi ini menandai revisi mahasiswa sudah final dan akan menyimpan waktu finalisasi.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleFinalizeRevisions}
+              disabled={!canFinalizeRevisions || finalizeRevisionsMutation.isPending}
+            >
+              {finalizeRevisionsMutation.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" /> Memproses...
+                </>
+              ) : (
+                'Ya, Finalisasi'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Unapprove Confirmation */}
       <AlertDialog open={!!unapproveConfirmId} onOpenChange={(open) => !open && setUnapproveConfirmId(null)}>

@@ -468,6 +468,7 @@ export interface SupervisorFinalizationDataResponse {
     finalScore: number | null;
     grade: string | null;
     resultFinalizedAt?: string | null;
+    revisionFinalizedAt?: string | null;
     studentName: string;
     studentNim: string;
     thesisTitle: string;

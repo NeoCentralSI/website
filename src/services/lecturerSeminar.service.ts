@@ -163,6 +163,17 @@ export async function unapproveRevision(
   return json.data;
 }
 
+export async function finalizeSeminarRevisions(
+  seminarId: string,
+): Promise<{ seminarId: string; revisionFinalizedAt: string | null; revisionFinalizedBy: string | null }> {
+  const res = await apiRequest(getApiUrl(EP.FINALIZE_REVISIONS(seminarId)), {
+    method: 'POST',
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memfinalisasi revisi seminar');
+  return json.data;
+}
+
 // ============================================================
 // Lecturer — Audience Management
 // ============================================================
