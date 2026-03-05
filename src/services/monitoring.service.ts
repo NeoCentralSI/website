@@ -1,4 +1,4 @@
-import { getApiUrl } from "@/config/api";
+import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
 // ========== Types ==========
@@ -58,10 +58,36 @@ export interface RatingDistribution {
   count: number;
 }
 
+export interface TopicDistribution {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface BatchDistribution {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface ProgressBucket {
+  label: string;
+  count: number;
+}
+
+export interface GuidanceTrend {
+  month: string;
+  count: number;
+}
+
 export interface MonitoringDashboard {
   summary: ProgressStats;
   statusDistribution: StatusDistribution[];
   ratingDistribution: RatingDistribution[];
+  topicDistribution: TopicDistribution[];
+  batchDistribution: BatchDistribution[];
+  progressDistribution: ProgressBucket[];
+  guidanceTrend: GuidanceTrend[];
   atRiskStudents: AtRiskStudent[];
   slowStudents: AtRiskStudent[];
   readyForSeminar: ReadyForSeminarStudent[];
@@ -486,4 +512,73 @@ export async function downloadProgressReportPdf(academicYear?: string): Promise<
     throw new Error(message);
   }
   return response.blob();
+}
+
+// ==================== KADEP TRANSFER APPROVAL ====================
+
+export interface KadepTransferStudent {
+  thesisId: string;
+  thesisSupervisorId: string;
+  studentName: string;
+  studentNim: string;
+  thesisTitle: string;
+  role: string;
+}
+
+export interface KadepTransfer {
+  notificationId: string;
+  sourceLecturerId: string;
+  sourceLecturerName: string;
+  targetLecturerId: string;
+  targetLecturerName: string;
+  students: KadepTransferStudent[];
+  reason: string;
+  targetApproved: boolean;
+  status: 'pending' | 'approved' | 'rejected' | 'target_rejected';
+  createdAt: string;
+}
+
+export async function getKadepPendingTransfers(): Promise<{ success: boolean; count: number; transfers: KadepTransfer[] }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_PENDING));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan transfer");
+  return res.json();
+}
+
+export async function getKadepAllTransfers(params: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+} = {}): Promise<{
+  success: boolean;
+  data: KadepTransfer[];
+  pagination: { total: number; page: number; pageSize: number; totalPages: number };
+}> {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
+  if (params.search) searchParams.set("search", params.search);
+  if (params.status) searchParams.set("status", params.status);
+  const url = `${getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_ALL)}?${searchParams.toString()}`;
+  const res = await apiRequest(url);
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat data transfer");
+  return res.json();
+}
+
+export async function kadepApproveTransfer(notificationId: string): Promise<{ success: boolean; message: string }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFER_APPROVE(notificationId)), {
+    method: "PATCH",
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui transfer");
+  return res.json();
+}
+
+export async function kadepRejectTransfer(notificationId: string, reason?: string): Promise<{ success: boolean; message: string }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFER_REJECT(notificationId)), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak transfer");
+  return res.json();
 }

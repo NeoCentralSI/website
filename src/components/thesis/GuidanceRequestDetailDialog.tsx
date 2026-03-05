@@ -44,7 +44,7 @@ export default function GuidanceRequestDetailDialog({
     setSubmitting(true);
     try {
       await approveGuidanceRequest(guidance.id, {
-        feedback: approveFeedback || "Approved",
+        feedback: approveFeedback || "Dosen pembimbing menyetujui jadwal bimbingan",
       });
       toast.success("Bimbingan disetujui");
       setMode('view');

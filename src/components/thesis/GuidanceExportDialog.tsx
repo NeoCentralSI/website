@@ -105,7 +105,7 @@ export default function GuidanceExportDialog({
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="border px-3 py-2 text-left font-semibold w-[180px]">
+                  <th className="border px-3 py-2 text-left font-semibold w-45">
                     Jadwal Bimbingan
                   </th>
                   <th className="border px-3 py-2 text-left font-semibold">

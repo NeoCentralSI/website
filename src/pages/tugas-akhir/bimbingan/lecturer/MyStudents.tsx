@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
 import { IncomingTransfersSection } from "@/components/bimbingan/IncomingTransfersSection";
 import { TransferStudentsDialog } from "@/components/bimbingan/TransferStudentsDialog";
+import { MyStudentsCharts } from "@/components/bimbingan/MyStudentsCharts";
 
 const getDaysRemaining = (deadlineDate?: string | null) => {
   if (!deadlineDate) return null;
@@ -359,6 +360,11 @@ export default function LecturerMyStudentsPage() {
       </div>
 
       <TabsNav tabs={tabs} />
+
+      {/* Distribution Charts */}
+      {!isLoading && data?.students && data.students.length > 0 && (
+        <MyStudentsCharts students={data.students} />
+      )}
 
       {/* Incoming Transfer Requests Section */}
       <IncomingTransfersSection />

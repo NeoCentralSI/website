@@ -26,7 +26,7 @@ export function SlowStudentsCard({ students, isLoading, showViewAll = true }: Sl
                         <AlertTriangle className="h-5 w-5 text-amber-500" />
                         Mahasiswa Slow
                     </CardTitle>
-                    <CardDescription>Progress lambat, jarang bimbingan, atau melewati target</CardDescription>
+                    <CardDescription>Tidak ada aktivitas 2 bulan</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {[...Array(3)].map((_, i) => (
@@ -54,7 +54,7 @@ export function SlowStudentsCard({ students, isLoading, showViewAll = true }: Sl
                             <AlertTriangle className="h-5 w-5 text-amber-500" />
                             Mahasiswa Slow
                         </CardTitle>
-                        <CardDescription>Progress lambat, jarang bimbingan, atau melewati target</CardDescription>
+                        <CardDescription>Tidak ada aktivitas  2 bulan</CardDescription>
                     </div>
                     {showViewAll && students && students.length > 5 && (
                         <Button

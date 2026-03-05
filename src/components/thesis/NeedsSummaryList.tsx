@@ -55,9 +55,11 @@ export default function NeedsSummaryList() {
                           {guidance.approvedDateFormatted || "-"}
                         </span>
                       </div>
-                      <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
-                        {guidance.type || "online"}
-                      </Badge>
+                      {guidance.duration && (
+                        <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+                          {guidance.duration} Menit
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <User className="h-3.5 w-3.5" />

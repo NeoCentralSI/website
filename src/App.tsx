@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import Lottie from 'lottie-react'
 import serverErrorAnimation from '@/assets/lottie/server_eror.json'
 import { Button } from '@/components/ui/button'
+import { Loading } from '@/components/ui/spinner'
 import { AuthProvider, NotificationProvider } from '@/hooks/shared'
 import { Toaster } from './components/ui/sonner'
-import Dashboard from './pages/Dashboard'
+// Static imports: core pages, layout, guards
 import Login from './pages/Login'
 import Landing from './pages/Landing'
-import Profil from './pages/profil/Profil'
 import MicrosoftCallback from './pages/auth/MicrosoftCallback'
 import ActivationSuccess from './pages/auth/ActivationSuccess'
 import AccountInactive from './pages/auth/AccountInactive'
@@ -16,89 +16,95 @@ import ActivationEmailSent from './pages/auth/ActivationEmailSent'
 import ResetPassword from './pages/ResetPassword'
 import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
-// Tugas Akhir - Bimbingan Module
-import BimbinganEntry from './pages/tugas-akhir/bimbingan/BimbinganEntry'
-import StudentGuidancePage from './pages/tugas-akhir/bimbingan/student/StudentGuidance'
-import StudentGuidanceSessionPage from './pages/tugas-akhir/bimbingan/student/GuidanceSession'
-import StudentMilestonePage from './pages/tugas-akhir/bimbingan/student/Milestone'
-import DangerZonePage from './pages/tugas-akhir/bimbingan/student/DangerZone'
-import LecturerRequestsPage from './pages/tugas-akhir/bimbingan/lecturer/Requests'
-import LecturerGuidanceSessionPage from './pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'
-import LecturerMyStudentsPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudents'
-import LecturerMyStudentDetailPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'
-import SecretaryKelolaTugasAkhirPage from './pages/tugas-akhir/bimbingan/secretary/TugasAkhir'
-import SeminarHasilEntry from './pages/tugas-akhir/seminar-hasil/SeminarHasilEntry'
-import StudentThesisSeminarPage from './pages/tugas-akhir/seminar-hasil/StudentThesisSeminar'
-import StudentSeminarAttendancePage from './pages/tugas-akhir/seminar-hasil/StudentSeminarAttendance'
-import StudentSeminarRevisionPage from './pages/tugas-akhir/seminar-hasil/StudentSeminarRevision'
-import StudentSeminarDetailPage from './pages/tugas-akhir/seminar-hasil/StudentSeminarDetail'
-import AdminThesisSeminarManagementPage from './pages/tugas-akhir/seminar-hasil/AdminThesisSeminarManagement'
-import AdminSeminarDetailPage from './pages/tugas-akhir/seminar-hasil/AdminSeminarDetail'
-import LecturerThesisSeminarPage from './pages/tugas-akhir/seminar-hasil/LecturerThesisSeminar'
-import LecturerExaminerAssignmentPage from './pages/tugas-akhir/seminar-hasil/LecturerExaminerAssignment'
-import LecturerSupervisedStudentsPage from './pages/tugas-akhir/seminar-hasil/LecturerSupervisedStudents'
-import LecturerSeminarDetailIdentityPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailIdentity'
-import LecturerSeminarDetailAssessmentPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'
-import LecturerSeminarDetailRevisionPage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'
-import LecturerSeminarDetailAttendancePage from './pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'
-// Kerja Praktik
-import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
-import InternshipProposalDetailPage from './pages/kerja-praktik/student/registration/PendaftaranDetail'
-import InternshipAssignmentPage from './pages/kerja-praktik/student/registration/Assignment'
-import InternshipLogbookPage from './pages/kerja-praktik/student/activity/Logbook'
-import InternshipGuidancePage from './pages/kerja-praktik/student/activity/Guidance'
-// Sekdep Internship
-import SekdepInternshipProposalPage from './pages/kerja-praktik/sekdep/registration/Proposal'
-import SekdepInternshipProposalDetailPage from './pages/kerja-praktik/sekdep/registration/PendaftaranDetail'
-import SekdepInternshipAssignmentPage from './pages/kerja-praktik/sekdep/registration/Assignment'
-import SekdepCompanyListPage from './pages/kerja-praktik/sekdep/companies/CompanyList'
-// Overview Pages
-import KerjaPraktekOverviewPage from './pages/kerja-praktik/Overview'
-import MetopenOverviewPage from './pages/metopel/Overview'
-import YudisiumOverviewPage from './pages/yudisium/student/Overview'
-import KelolaYudisiumPage from './pages/yudisium/KelolaYudisium'
-import TugasAkhirOverviewPage from './pages/tugas-akhir/Overview'
-import AdminCompanyListPage from './pages/kerja-praktik/admin/companies/CompanyList'
-import AdminApplicationPage from './pages/kerja-praktik/admin/application/Application'
-import ManageApplicationLetter from './pages/kerja-praktik/admin/application/ManageApplicationLetter'
-import AdminAssignmentPage from './pages/kerja-praktik/admin/assignment/Assignment'
-import ManageAssignmentLetter from './pages/kerja-praktik/admin/assignment/ManageAssignmentLetter'
-import AssignmentTemplateEditor from './pages/kerja-praktik/admin/assignment/AssignmentTemplateEditor'
-import InternshipTemplateEditor from './pages/kerja-praktik/admin/application/ApplicationTemplateEditor'
-import KadepInternshipManagementPage from './pages/kerja-praktik/kadep/ManageInternship';
-import SignLetterPage from './pages/kerja-praktik/kadep/SignLetterPage';
-import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification';
-// Tugas Akhir - Monitoring Module
-import MonitoringDashboard from './pages/tugas-akhir/monitoring/MonitoringDashboard'
-import StudentProgressDetail from './pages/tugas-akhir/monitoring/StudentProgressDetail'
-// Master Data
-import UserManagementPage from './pages/master-data/UserManagement'
-import AcademicYearPage from './pages/master-data/AcademicYear'
-import MahasiswaPage from './pages/master-data/Mahasiswa'
-import MahasiswaDetailPage from './pages/master-data/MahasiswaDetail'
-import DosenPage from './pages/master-data/Dosen'
-import DosenDetailPage from './pages/master-data/DosenDetail'
-import MasterDataTugasAkhirPage from './pages/master-data/TugasAkhir'
-import ScienceGroupPage from './pages/master-data/ScienceGroup'
-// Kelola
-import KelolaTugasAkhirKadepPage from './pages/kelola/kadep/KelolaTugasAkhir'
-import KelolaSopPage from './pages/kelola/Sop'
-import KelolaCpl from './pages/kelola/KelolaCpl'
+import NotFoundPage from './pages/NotFound'
+import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
 import SeminarHasilGuard from './pages/guards/SeminarHasilGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
-// Lecturer Availability
-import JadwalKetersediaan from './pages/lecturer/JadwalKetersediaan'
-// Pengumuman
-import SeminarHasilAnnouncementPage from './pages/pengumuman/SeminarHasilAnnouncement'
-import YudisiumAnnouncementPage from './pages/pengumuman/YudisiumAnnouncement'
-import PengumumanOverviewPage from './pages/pengumuman/Overview'
-// Others
-import NotFoundPage from './pages/NotFound'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
+
+// Lazy-loaded pages
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Profil = lazy(() => import('./pages/profil/Profil'))
+// Tugas Akhir - Bimbingan
+const BimbinganEntry = lazy(() => import('./pages/tugas-akhir/bimbingan/BimbinganEntry'))
+const StudentGuidancePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/StudentGuidance'))
+const StudentGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/GuidanceSession'))
+const StudentMilestonePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/Milestone'))
+const DangerZonePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/DangerZone'))
+const LecturerRequestsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/Requests'))
+const LecturerGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'))
+const LecturerMyStudentsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/MyStudents'))
+const LecturerMyStudentDetailPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'))
+const SecretaryKelolaTugasAkhirPage = lazy(() => import('./pages/tugas-akhir/bimbingan/secretary/TugasAkhir'))
+// Tugas Akhir - Seminar Hasil
+const SeminarHasilEntry = lazy(() => import('./pages/tugas-akhir/seminar-hasil/SeminarHasilEntry'))
+const StudentThesisSeminarPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentThesisSeminar'))
+const StudentSeminarAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarAttendance'))
+const StudentSeminarRevisionPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarRevision'))
+const StudentSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarDetail'))
+const AdminThesisSeminarManagementPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/AdminThesisSeminarManagement'))
+const AdminSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/AdminSeminarDetail'))
+const LecturerThesisSeminarPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerThesisSeminar'))
+const LecturerExaminerAssignmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerExaminerAssignment'))
+const LecturerSupervisedStudentsPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSupervisedStudents'))
+const LecturerSeminarDetailIdentityPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailIdentity'))
+const LecturerSeminarDetailAssessmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'))
+const LecturerSeminarDetailRevisionPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'))
+const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'))
+// Kerja Praktik - Student
+const InternshipProposalPage = lazy(() => import('./pages/kerja-praktik/student/registration/Proposal'))
+const InternshipProposalDetailPage = lazy(() => import('./pages/kerja-praktik/student/registration/PendaftaranDetail'))
+const InternshipAssignmentPage = lazy(() => import('./pages/kerja-praktik/student/registration/Assignment'))
+const InternshipLogbookPage = lazy(() => import('./pages/kerja-praktik/student/activity/Logbook'))
+const InternshipGuidancePage = lazy(() => import('./pages/kerja-praktik/student/activity/Guidance'))
+// Kerja Praktik - Sekdep
+const SekdepInternshipProposalPage = lazy(() => import('./pages/kerja-praktik/sekdep/registration/Proposal'))
+const SekdepInternshipProposalDetailPage = lazy(() => import('./pages/kerja-praktik/sekdep/registration/PendaftaranDetail'))
+const SekdepInternshipAssignmentPage = lazy(() => import('./pages/kerja-praktik/sekdep/registration/Assignment'))
+const SekdepCompanyListPage = lazy(() => import('./pages/kerja-praktik/sekdep/companies/CompanyList'))
+// Kerja Praktik - Admin
+const AdminCompanyListPage = lazy(() => import('./pages/kerja-praktik/admin/companies/CompanyList'))
+const AdminApplicationPage = lazy(() => import('./pages/kerja-praktik/admin/application/Application'))
+const ManageApplicationLetter = lazy(() => import('./pages/kerja-praktik/admin/application/ManageApplicationLetter'))
+const AdminAssignmentPage = lazy(() => import('./pages/kerja-praktik/admin/assignment/Assignment'))
+const ManageAssignmentLetter = lazy(() => import('./pages/kerja-praktik/admin/assignment/ManageAssignmentLetter'))
+const AssignmentTemplateEditor = lazy(() => import('./pages/kerja-praktik/admin/assignment/AssignmentTemplateEditor'))
+const InternshipTemplateEditor = lazy(() => import('./pages/kerja-praktik/admin/application/ApplicationTemplateEditor'))
+// Kerja Praktik - Kadep
+const KadepInternshipManagementPage = lazy(() => import('./pages/kerja-praktik/kadep/ManageInternship'))
+const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetterPage'))
+// Overview Pages
+const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/Overview'))
+const MetopenOverviewPage = lazy(() => import('./pages/metopel/Overview'))
+const YudisiumOverviewPage = lazy(() => import('./pages/yudisium/student/Overview'))
+const KelolaYudisiumPage = lazy(() => import('./pages/yudisium/KelolaYudisium'))
+const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview'))
+// Tugas Akhir - Monitoring
+const MonitoringDashboard = lazy(() => import('./pages/tugas-akhir/monitoring/MonitoringDashboard'))
+const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/StudentProgressDetail'))
+// Master Data
+const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
+const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
+const MahasiswaPage = lazy(() => import('./pages/master-data/Mahasiswa'))
+const MahasiswaDetailPage = lazy(() => import('./pages/master-data/MahasiswaDetail'))
+const DosenPage = lazy(() => import('./pages/master-data/Dosen'))
+const DosenDetailPage = lazy(() => import('./pages/master-data/DosenDetail'))
+const MasterDataTugasAkhirPage = lazy(() => import('./pages/master-data/TugasAkhir'))
+const ScienceGroupPage = lazy(() => import('./pages/master-data/ScienceGroup'))
+// Kelola
+const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
+const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
+const KelolaCpl = lazy(() => import('./pages/kelola/KelolaCpl'))
+// Lecturer Availability
+const JadwalKetersediaan = lazy(() => import('./pages/lecturer/JadwalKetersediaan'))
+// Pengumuman
+const SeminarHasilAnnouncementPage = lazy(() => import('./pages/pengumuman/SeminarHasilAnnouncement'))
+const YudisiumAnnouncementPage = lazy(() => import('./pages/pengumuman/YudisiumAnnouncement'))
+const PengumumanOverviewPage = lazy(() => import('./pages/pengumuman/Overview'))
 
 function App() {
   const [showServerError, setShowServerError] = useState(false);
@@ -132,6 +138,11 @@ function App() {
     <Router>
       <AuthProvider>
         <NotificationProvider>
+          <Suspense fallback={
+            <div className="flex h-screen w-screen items-center justify-center bg-background">
+              <Loading size="lg" text="Memuat..." />
+            </div>
+          }>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
@@ -234,6 +245,7 @@ function App() {
                 <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                 <Route path="/kelola/sop" element={<KelolaSopPage />} />
                 <Route path="/kelola/data-cpl" element={<KelolaCpl />} />
+                <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
               </Route>
 
               {/* Kelola - Sekretaris */}
@@ -251,7 +263,6 @@ function App() {
                 <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
-                <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
                 <Route path="/kelola/yudisium" element={<Navigate to="/kelola/yudisium/event" replace />} />
                 <Route path="/kelola/yudisium/event" element={<KelolaYudisiumPage />} />
                 <Route path="/kelola/yudisium/persyaratan" element={<KelolaYudisiumPage />} />
@@ -268,7 +279,6 @@ function App() {
                 <Route path="/kelola/tugas-akhir/kadep/master-data" element={<KelolaTugasAkhirKadepPage />} />
                 <Route path="/kelola/kerja-praktik/kadep/persetujuan" element={<KadepInternshipManagementPage />} />
                 <Route path="/kelola/kerja-praktik/kadep/sign/:type/:id" element={<SignLetterPage />} />
-                <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
               </Route>
 
               {/* Master Data (Admin) */}
@@ -299,6 +309,7 @@ function App() {
             {/* 404 - Catch all undefined routes (outside ProtectedLayout) */}
             <Route path="*" element={<Navigate to="/not-found" replace />} />
           </Routes>
+          </Suspense>
           <Toaster position="top-right" visibleToasts={1} closeButton />
         </NotificationProvider>
       </AuthProvider>

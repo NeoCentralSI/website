@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCompanyStats } from '@/services/internship.service';
-import { useRole } from '../shared';
+import { useRole } from '../shared/useRole';
 
 export function useCompanyStats() {
     const { isAdmin, isKadep } = useRole();
