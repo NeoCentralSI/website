@@ -9,7 +9,8 @@ import {
   useUploadDefenceDocument,
 } from '@/hooks/defence';
 import type { DefenceDocument, DefenceDocumentType } from '@/types/defence.types';
-import { API_CONFIG } from '@/config/api';
+import { openProtectedFile } from '@/lib/protected-file';
+import { toast } from 'sonner';
 
 /** Map doc type name → accepted file extensions */
 const DOC_TYPE_ACCEPT: Record<string, string[]> = {
@@ -115,10 +116,13 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     }
   };
 
-  const handleViewClick = () => {
+  const handleViewClick = async () => {
     if (doc?.filePath) {
-      const url = `${API_CONFIG.BASE_URL.replace('/api', '')}/${doc.filePath}`;
-      window.open(url, '_blank');
+      try {
+        await openProtectedFile(doc.filePath, doc.fileName || undefined);
+      } catch (error) {
+        toast.error((error as Error).message || 'Gagal membuka dokumen');
+      }
     }
   };
 

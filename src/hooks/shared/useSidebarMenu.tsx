@@ -534,7 +534,7 @@ export const useSidebarMenu = () => {
               },
               {
                 title: "Sidang",
-                url: "/tugas-akhir/jadwal-sidang",
+                url: "/tugas-akhir/sidang",
               },
             ],
           },

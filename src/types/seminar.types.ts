@@ -650,6 +650,7 @@ export interface StudentSeminarDetailDocument {
   documentTypeId: string;
   documentTypeName: string;
   fileName: string | null;
+  filePath: string | null;
   status: DocumentSubmitStatus;
   submittedAt: string | null;
   verifiedAt: string | null;

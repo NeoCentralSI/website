@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
 import { toTitleCaseName, formatDateOnlyId, formatDateShortId } from '@/lib/text';
 import { Calendar, FileText, Users, Download } from 'lucide-react';
-import { API_CONFIG, getApiUrl } from '@/config/api';
+import { openProtectedFile } from '@/lib/protected-file';
+import { toast } from 'sonner';
 import type { StudentSeminarDetailResponse } from '@/types/seminar.types';
 
 function extractSeminarTime(timeIso?: string | null): string {
@@ -18,9 +19,12 @@ interface StudentIdentitasTabProps {
 }
 
 export function StudentIdentitasTab({ detail }: StudentIdentitasTabProps) {
-  const handleDownloadDocument = (documentTypeId: string) => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.DOCUMENT_VIEW(documentTypeId));
-    window.open(url, '_blank');
+  const handleDownloadDocument = async (filePath: string, fileName?: string | null) => {
+    try {
+      await openProtectedFile(filePath, fileName || undefined);
+    } catch (error) {
+      toast.error((error as Error).message || 'Gagal membuka dokumen');
+    }
   };
 
   return (
@@ -137,12 +141,12 @@ export function StudentIdentitasTab({ detail }: StudentIdentitasTabProps) {
                           ? 'Ditolak'
                           : 'Menunggu'}
                     </Badge>
-                    {doc.status === 'approved' && (
+                    {doc.filePath && (
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => handleDownloadDocument(doc.documentTypeId)}
+                        onClick={() => handleDownloadDocument(doc.filePath!, doc.fileName)}
                       >
                         <Download className="h-4 w-4" />
                       </Button>

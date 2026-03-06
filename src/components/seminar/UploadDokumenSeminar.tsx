@@ -9,7 +9,8 @@ import {
   useUploadSeminarDocument,
 } from '@/hooks/seminar';
 import type { SeminarDocument, SeminarDocumentType } from '@/types/seminar.types';
-import { API_CONFIG } from '@/config/api';
+import { openProtectedFile } from '@/lib/protected-file';
+import { toast } from 'sonner';
 
 interface UploadDokumenSeminarProps {
   allChecklistMet: boolean;
@@ -100,10 +101,13 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     }
   };
 
-  const handleViewClick = () => {
+  const handleViewClick = async () => {
     if (doc?.filePath) {
-      const url = `${API_CONFIG.BASE_URL.replace('/api', '')}/${doc.filePath}`;
-      window.open(url, '_blank');
+      try {
+        await openProtectedFile(doc.filePath, doc.fileName || undefined);
+      } catch (error) {
+        toast.error((error as Error).message || 'Gagal membuka dokumen');
+      }
     }
   };
 

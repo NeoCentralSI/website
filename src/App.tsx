@@ -57,6 +57,12 @@ const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akh
 // Tugas Akhir - Sidang
 const SidangEntry = lazy(() => import('./pages/tugas-akhir/sidang/SidangEntry'))
 const StudentThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/StudentThesisDefence'))
+const AdminThesisDefenceManagementPage = lazy(() => import('./pages/tugas-akhir/sidang/AdminThesisDefenceManagement'))
+const AdminDefenceDetailPage = lazy(() => import('./pages/tugas-akhir/sidang/AdminDefenceDetail'))
+const LecturerThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerThesisDefence'))
+const LecturerDefenceExaminerAssignmentPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceExaminerAssignment'))
+const LecturerSupervisedStudentDefencesPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerSupervisedStudentDefences'))
+const LecturerDefenceDetailIdentityPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceDetailIdentity'))
 // Kerja Praktik - Student
 const InternshipProposalPage = lazy(() => import('./pages/kerja-praktik/student/registration/Proposal'))
 const InternshipProposalDetailPage = lazy(() => import('./pages/kerja-praktik/student/registration/PendaftaranDetail'))
@@ -227,6 +233,11 @@ function App() {
                 <Route path="/tugas-akhir/seminar/lecturer/:seminarId/assessment" element={<LecturerSeminarDetailAssessmentPage />} />
                 <Route path="/tugas-akhir/seminar/lecturer/:seminarId/revision" element={<LecturerSeminarDetailRevisionPage />} />
                 <Route path="/tugas-akhir/seminar/lecturer/:seminarId/attendance" element={<LecturerSeminarDetailAttendancePage />} />
+                <Route path="/tugas-akhir/sidang/lecturer" element={<Navigate to="/tugas-akhir/sidang/lecturer/my-students" replace />} />
+                <Route path="/tugas-akhir/sidang/lecturer/examiner-requests" element={<LecturerThesisDefencePage />} />
+                <Route path="/tugas-akhir/sidang/lecturer/assignment" element={<LecturerDefenceExaminerAssignmentPage />} />
+                <Route path="/tugas-akhir/sidang/lecturer/my-students" element={<LecturerSupervisedStudentDefencesPage />} />
+                <Route path="/tugas-akhir/sidang/lecturer/:defenceId" element={<LecturerDefenceDetailIdentityPage />} />
                 <Route path="/jadwal-ketersediaan" element={<JadwalKetersediaan />} />
               </Route>
 
@@ -239,7 +250,6 @@ function App() {
               <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />
               <Route path="/tugas-akhir/kelola-yudisium" element={<Placeholder title="Tugas Akhir - Kelola Yudisium" />} />
               <Route path="/tugas-akhir/kelola" element={<Placeholder title="Tugas Akhir - Kelola (Deprecated)" />} />
-              <Route path="/tugas-akhir/jadwal-sidang" element={<Placeholder title="Tugas Akhir - Penjadwalan Sidang" />} />
 
               {/* Shared Kelola - Sekdep & Kadep */}
               <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
@@ -295,6 +305,8 @@ function App() {
                 <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
                 <Route path="/tugas-akhir/seminar/admin" element={<AdminThesisSeminarManagementPage />} />
                 <Route path="/tugas-akhir/seminar/admin/:seminarId" element={<AdminSeminarDetailPage />} />
+                <Route path="/tugas-akhir/sidang/admin" element={<AdminThesisDefenceManagementPage />} />
+                <Route path="/tugas-akhir/sidang/admin/:defenceId" element={<AdminDefenceDetailPage />} />
                 <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
                 <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />
                 <Route path="/master-data/dosen" element={<DosenPage />} />

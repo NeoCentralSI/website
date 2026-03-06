@@ -1,8 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
-import { LecturerSeminarDetailLayout } from '@/components/seminar/LecturerSeminarDetailLayout';
+import { LecturerDefenceDetailLayout } from '@/components/sidang/LecturerDefenceDetailLayout';
 import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId, formatRoleName } from '@/lib/text';
 import {
   BookOpen,
@@ -11,14 +10,13 @@ import {
   Download,
   FileText,
   User,
-  Users,
   XCircle,
 } from 'lucide-react';
-import type { DocumentSubmitStatus } from '@/types/seminar.types';
+import type { DocumentSubmitStatus } from '@/types/defence.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
 
-function extractSeminarTime(timeIso?: string | null): string {
+function extractTime(timeIso?: string | null): string {
   if (!timeIso) return '--';
   const d = new Date(timeIso);
   return `${String(d.getUTCHours()).padStart(2, '0')}.${String(d.getUTCMinutes()).padStart(2, '0')}`;
@@ -36,9 +34,9 @@ function getDocStatusDisplay(status: DocumentSubmitStatus) {
   }
 }
 
-export default function LecturerSeminarDetailIdentity() {
+export default function LecturerDefenceDetailIdentity() {
   return (
-    <LecturerSeminarDetailLayout>
+    <LecturerDefenceDetailLayout>
       {(detail) => (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -69,12 +67,12 @@ export default function LecturerSeminarDetailIdentity() {
               </CardContent>
             </Card>
 
-            {/* Seminar Info */}
+            {/* Defence Info */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Informasi Seminar
+                  Informasi Sidang
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
@@ -83,10 +81,10 @@ export default function LecturerSeminarDetailIdentity() {
                   <span>{detail.registeredAt ? formatDateTimeId(detail.registeredAt) : '-'}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground shrink-0">Tanggal Seminar:</span>
+                  <span className="text-muted-foreground shrink-0">Tanggal Sidang:</span>
                   <span className="text-right">
                     {detail.date
-                      ? `${formatDateOnlyId(detail.date)}, ${extractSeminarTime(detail.startTime)} – ${extractSeminarTime(detail.endTime)}`
+                      ? `${formatDateOnlyId(detail.date)}, ${extractTime(detail.startTime)} – ${extractTime(detail.endTime)}`
                       : 'Belum dijadwalkan'}
                   </span>
                 </div>
@@ -151,7 +149,7 @@ export default function LecturerSeminarDetailIdentity() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Dokumen Seminar
+                Dokumen Sidang
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -202,23 +200,8 @@ export default function LecturerSeminarDetailIdentity() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Audience / Attendance (view-only for examiners) */}
-          {detail.audiences && detail.audiences.length > 0 && detail.viewerRole === 'examiner' && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Daftar Hadir Peserta ({detail.audiences.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SeminarAudienceTable rows={detail.audiences} />
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
-    </LecturerSeminarDetailLayout>
+    </LecturerDefenceDetailLayout>
   );
 }

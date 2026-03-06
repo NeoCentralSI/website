@@ -163,6 +163,23 @@ export const API_CONFIG = {
       DOCUMENTS: '/thesisDefence/student/documents',
       DOCUMENT_UPLOAD: '/thesisDefence/student/documents/upload',
     },
+    THESIS_DEFENCE_ADMIN: {
+      LIST: '/thesisDefence/admin',
+      DETAIL: (defenceId: string) => `/thesisDefence/admin/${defenceId}`,
+      VALIDATE_DOCUMENT: (defenceId: string, documentTypeId: string) =>
+        `/thesisDefence/admin/${defenceId}/documents/${documentTypeId}/validate`,
+    },
+    THESIS_DEFENCE_LECTURER: {
+      EXAMINER_REQUESTS: '/thesisDefence/lecturer/examiner-requests',
+      SUPERVISED_STUDENTS: '/thesisDefence/lecturer/supervised-students',
+      DEFENCE_DETAIL: (defenceId: string) => `/thesisDefence/lecturer/defences/${defenceId}`,
+      RESPOND: (examinerId: string) => `/thesisDefence/lecturer/defences/${examinerId}/respond`,
+      ASSIGNMENT_LIST: '/thesisDefence/lecturer/assignment',
+      ELIGIBLE_EXAMINERS: (defenceId: string) =>
+        `/thesisDefence/lecturer/assignment/${defenceId}/eligible-examiners`,
+      ASSIGN_EXAMINERS: (defenceId: string) =>
+        `/thesisDefence/lecturer/assignment/${defenceId}`,
+    },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',
       PROPOSALS: '/insternship/registration/proposals',
