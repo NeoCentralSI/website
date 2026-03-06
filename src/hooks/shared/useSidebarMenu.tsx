@@ -525,10 +525,6 @@ export const useSidebarMenu = () => {
             icon: FileText,
             items: [
               {
-                title: "Kelola",
-                url: "/tugas-akhir/kelola",
-              },
-              {
                 title: "Seminar Hasil",
                 url: "/tugas-akhir/seminar",
               },
