@@ -67,7 +67,7 @@ export const useSidebarMenu = () => {
         // Kerja Praktik
         {
           title: "Kerja Praktik",
-          url: "#",
+          url: "/kerja-praktik",
           icon: Briefcase,
           items: [
             { title: "Pendaftaran", url: "/kerja-praktik/pendaftaran" },
@@ -78,14 +78,14 @@ export const useSidebarMenu = () => {
         // Metode Penelitian — Overview ditambah sebagai sub-item pertama
         {
           title: "Metode Penelitian",
-          url: "#",
+          url: "/metopel",
           icon: BookOpen,
           items: metopenItems,
         },
         // Tugas Akhir
         {
           title: "Tugas Akhir",
-          url: "#",
+          url: "/tugas-akhir",
           icon: FileText,
           items: [
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },

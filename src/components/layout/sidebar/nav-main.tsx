@@ -1,10 +1,10 @@
 import { ChevronDown, type LucideIcon } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
+import React from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
   SidebarGroup,
@@ -36,6 +36,27 @@ export function NavMain({
   items: NavItem[]
 }) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({})
+
+  // Keep menus with active children or matching parent URL open when route changes
+  React.useEffect(() => {
+    setOpenMenus((prev) => {
+      const next = { ...prev }
+      items.forEach((item) => {
+        const parentMatch =
+          item.url && item.url !== "#" && (pathname === item.url || pathname.startsWith(item.url + "/"))
+        const childMatch = item.items?.some(
+          (s) => pathname === s.url || pathname.startsWith(s.url + "/")
+        )
+        if (parentMatch || childMatch) {
+          next[item.title] = true
+        }
+      })
+      return next
+    })
+  }, [pathname, items])
 
   return (
     <SidebarGroup>
@@ -52,26 +73,46 @@ export function NavMain({
           const isLeafActive = !hasChildren && (pathname === item.url || pathname.startsWith(item.url + "/"))
 
           if (hasChildren) {
-            // Parent with children: entire button is the toggle, no navigation
+            const isOpen = openMenus[item.title] ?? false
+            const isParentActive =
+              item.url !== "#" && (pathname === item.url || pathname.startsWith(item.url + "/"))
+
             return (
               <Collapsible
                 key={item.title}
                 asChild
-                defaultOpen={isAnyChildActive}
+                open={isOpen}
+                onOpenChange={(open) =>
+                  setOpenMenus((prev) => ({ ...prev, [item.title]: open }))
+                }
                 className="group/collapsible"
               >
                 <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      tooltip={item.title}
-                      isActive={isAnyChildActive}
-                      className="cursor-pointer"
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                      <ChevronDown className="ml-auto shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    isActive={isAnyChildActive || isParentActive}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      // Open submenu + navigate to parent's own url
+                      setOpenMenus((prev) => ({ ...prev, [item.title]: true }))
+                      if (item.url && item.url !== "#") {
+                        navigate(item.url)
+                      }
+                    }}
+                  >
+                    <item.icon />
+                    <span>{item.title}</span>
+                    <ChevronDown
+                      className={`ml-auto shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setOpenMenus((prev) => ({
+                          ...prev,
+                          [item.title]: !prev[item.title],
+                        }))
+                      }}
+                    />
+                  </SidebarMenuButton>
 
                   <CollapsibleContent>
                     <SidebarMenuSub>
