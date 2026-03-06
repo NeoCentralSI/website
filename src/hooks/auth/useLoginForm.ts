@@ -8,11 +8,13 @@ export const useLoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [noPassword, setNoPassword] = useState(false);
   const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNoPassword(false);
     
     try {
       await login(email, password);
@@ -22,6 +24,10 @@ export const useLoginForm = () => {
         saveRememberedEmail(email);
       }
     } catch (error) {
+      if ((error as any)?.code === 'NO_PASSWORD') {
+        setNoPassword(true);
+        return;
+      }
       setError(error instanceof Error ? error.message : 'Terjadi kesalahan saat login');
     }
   };
@@ -37,6 +43,7 @@ export const useLoginForm = () => {
     setRememberMe,
     error,
     setError,
+    noPassword,
     isLoading,
     handleSubmit,
   };

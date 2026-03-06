@@ -229,7 +229,6 @@ export default function UserManagementPage() {
   };
 
 
-  // Role options for form - using ROLES constants from lib/roles.ts
   const roleOptions = [
     { value: ROLES.ADMIN, label: 'Admin' },
     { value: ROLES.GKM, label: 'GKM' },
@@ -239,6 +238,9 @@ export default function UserManagementPage() {
     { value: ROLES.PEMBIMBING_2, label: 'Pembimbing 2' },
     { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
     { value: ROLES.PENGUJI, label: 'Penguji' },
+    { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
+    { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
+    { value: ROLES.DOSEN_METOPEN, label: 'Dosen Pengampu Metopel' },
   ];
 
   const columns = [
@@ -302,12 +304,15 @@ export default function UserManagementPage() {
           { label: 'Semua', value: '' },
           { label: 'Admin', value: ROLES.ADMIN },
           { label: 'GKM', value: ROLES.GKM },
-          { label: 'Ketua Departemen', value: ROLES.KETUA_DEPARTEMEN },
-          { label: 'Sekretaris Departemen', value: ROLES.SEKRETARIS_DEPARTEMEN },
+          { label: 'Kadep', value: ROLES.KETUA_DEPARTEMEN },
+          { label: 'Sekdep', value: ROLES.SEKRETARIS_DEPARTEMEN },
           { label: 'Pembimbing 1', value: ROLES.PEMBIMBING_1 },
           { label: 'Pembimbing 2', value: ROLES.PEMBIMBING_2 },
           { label: 'Mahasiswa', value: ROLES.MAHASISWA },
           { label: 'Penguji', value: ROLES.PENGUJI },
+          { label: 'Koordinator Yudisium', value: ROLES.KOORDINATOR_YUDISIUM },
+          { label: 'Tim Pengelola CPL', value: ROLES.TIM_PENGELOLA_CPL },
+          { label: 'Dosen Pengampu Metopel', value: ROLES.DOSEN_METOPEN },
         ],
       },
     },
