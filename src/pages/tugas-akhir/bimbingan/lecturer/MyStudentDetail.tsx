@@ -52,6 +52,7 @@ import { useSeminarReadinessStatus } from "@/hooks/milestone/useMilestone";
 import { ChangeRequestReviewCard } from "@/components/tugas-akhir/lecturer/ChangeRequestReviewCard";
 import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/GuidanceHistorySection";
 import { RefreshButton } from "@/components/ui/refresh-button";
+import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
 
 const STATUS_LABELS: Record<string, string> = {
     not_started: "Belum Dimulai",
@@ -535,6 +536,12 @@ export default function LecturerMyStudentDetailPage() {
                     </div>
                 </CardContent>
             </Card>
+            {/* Supervisor Metopen Score Card */}
+            {thesisId && (
+                <SupervisorScoreCard thesisId={thesisId} scoreData={detailData.researchMethodScore} />
+            )}
+
+            {/* Guidance History & Milestone side by side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {detailData.guidanceHistory && (
                     <GuidanceHistorySection guidanceHistory={detailData.guidanceHistory} />

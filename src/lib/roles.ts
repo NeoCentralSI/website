@@ -13,6 +13,7 @@ export const ROLES = {
   GKM: "GKM",
   KOORDINATOR_YUDISIUM: "Koordinator Yudisium",
   TIM_PENGELOLA_CPL: "Tim Pengelola CPL",
+  DOSEN_METOPEN: "Dosen Pengampu Metopel",
 } as const;
 
 export type RoleName = typeof ROLES[keyof typeof ROLES];
@@ -33,6 +34,7 @@ export const LECTURER_ROLES = [
   ROLES.GKM,
   ROLES.KOORDINATOR_YUDISIUM,
   ROLES.TIM_PENGELOLA_CPL,
+  ROLES.DOSEN_METOPEN,
 ] as const;
 
 // Staff roles (admin + management)
@@ -57,6 +59,7 @@ export const formatRoleName = (roleName: string): string => {
     [ROLES.PENGUJI]: 'Penguji',
     [ROLES.KOORDINATOR_YUDISIUM]: 'Koordinator Yudisium',
     [ROLES.TIM_PENGELOLA_CPL]: 'Tim Pengelola CPL',
+    [ROLES.DOSEN_METOPEN]: 'Dosen Pengampu Metopel',
   };
   return roleMap[roleName] || roleName;
 };
@@ -73,6 +76,7 @@ export const roleOptions = [
   { value: ROLES.PENGUJI, label: 'Penguji' },
   { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
   { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
+  { value: ROLES.DOSEN_METOPEN, label: 'Dosen Pengampu Metopel' },
 ];
 
 // Helper functions

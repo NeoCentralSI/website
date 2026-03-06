@@ -8,7 +8,7 @@ export const useRole = () => {
   // Helper function untuk mengecek apakah user memiliki role tertentu
   const hasRole = (roleName: string): boolean => {
     if (!user || !user.roles) return false;
-    return user.roles.some(role => 
+    return user.roles.some(role =>
       role.name === roleName && role.status === 'active'
     );
   };
@@ -16,7 +16,7 @@ export const useRole = () => {
   // Helper function untuk mengecek apakah user memiliki salah satu dari roles
   const hasAnyRole = (roleNames: string[]): boolean => {
     if (!user || !user.roles) return false;
-    return user.roles.some(role => 
+    return user.roles.some(role =>
       roleNames.includes(role.name) && role.status === 'active'
     );
   };
@@ -24,8 +24,8 @@ export const useRole = () => {
   // Helper function untuk mengecek apakah user memiliki semua roles
   const hasAllRoles = (roleNames: string[]): boolean => {
     if (!user || !user.roles) return false;
-    return roleNames.every(roleName => 
-      user.roles.some(role => 
+    return roleNames.every(roleName =>
+      user.roles.some(role =>
         role.name === roleName && role.status === 'active'
       )
     );
@@ -82,6 +82,11 @@ export const useRole = () => {
     return hasRole(ROLES.GKM);
   };
 
+  // Helper function untuk mengecek apakah user adalah dosen pengampu metopel
+  const isDosenPengampuMetopel = (): boolean => {
+    return hasRole(ROLES.DOSEN_METOPEN);
+  };
+
   // Helper function untuk mengecek apakah user adalah pembimbing (pembimbing1 atau pembimbing2)
   const isPembimbing = (): boolean => {
     return hasAnyRole([...SUPERVISOR_ROLES]);
@@ -104,7 +109,7 @@ export const useRole = () => {
     hasAllRoles,
     getActiveRoles,
     getRoleNames,
-    
+
     // Specific role checking functions
     isAdmin,
     isStudent,
@@ -114,12 +119,13 @@ export const useRole = () => {
     isPembimbing2,
     isPenguji,
     isGkm,
-    
+    isDosenPengampuMetopel,
+
     // Combined role checking functions
     isPembimbing,
     isStaffAkademik,
     isDosen,
-    
+
     // Role data
     roles: user?.roles || [],
     activeRoles: getActiveRoles(),

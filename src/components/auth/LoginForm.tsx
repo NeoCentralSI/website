@@ -24,6 +24,7 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
     rememberMe,
     setRememberMe,
     error,
+    noPassword,
     isLoading,
     handleSubmit,
   } = useLoginForm();
@@ -41,6 +42,29 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
             {error}
+          </div>
+        )}
+
+        {noPassword && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl text-sm space-y-2">
+            <p className="font-semibold">Akun Microsoft Terdeteksi</p>
+            <p>
+              Akun ini terdaftar melalui Microsoft dan belum memiliki password.
+              Silakan pilih salah satu opsi:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-blue-700">
+              <li>Gunakan tombol <strong>"Masuk dengan Microsoft"</strong> di bawah</li>
+              <li>
+                <button
+                  type="button"
+                  onClick={onForgotPassword}
+                  className="underline font-medium hover:text-blue-900"
+                >
+                  Atur password baru
+                </button>{' '}
+                melalui email untuk bisa login dengan form
+              </li>
+            </ul>
           </div>
         )}
 
@@ -99,9 +123,9 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
           </Label>
         </div>
 
-        <Button 
-          type="submit" 
-          disabled={isLoading} 
+        <Button
+          type="submit"
+          disabled={isLoading}
           className="w-full h-12 rounded-xl bg-[#F7931E] hover:bg-[#E08319] text-white font-semibold text-base"
         >
           {isLoading ? (
