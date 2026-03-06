@@ -5,6 +5,9 @@ import type {
   AdminDefenceDetailResponse,
   ValidateDefenceDocumentPayload,
   ValidateDefenceDocumentResponse,
+  DefenceSchedulingData,
+  SetDefenceSchedulePayload,
+  SetDefenceScheduleResponse,
 } from '@/types/defence.types';
 
 export async function getAdminDefenceList(params?: {
@@ -52,5 +55,31 @@ export async function validateDefenceDocument(
   );
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Gagal memvalidasi dokumen sidang');
+  return json.data;
+}
+
+export async function getDefenceSchedulingData(defenceId: string): Promise<DefenceSchedulingData> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE_ADMIN.SCHEDULING_DATA(defenceId))
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat data penjadwalan sidang');
+  return json.data;
+}
+
+export async function setDefenceSchedule(
+  defenceId: string,
+  payload: SetDefenceSchedulePayload
+): Promise<SetDefenceScheduleResponse> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE_ADMIN.SET_SCHEDULE(defenceId)),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menyimpan jadwal sidang');
   return json.data;
 }

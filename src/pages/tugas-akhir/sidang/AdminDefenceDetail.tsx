@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
 import { DefenceValidationModal } from '@/components/sidang/DefenceValidationModal';
+import { DefenceSchedulingSection } from '@/components/sidang/DefenceSchedulingSection';
 import { useAdminDefenceDetail } from '@/hooks/defence';
 import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId, formatRoleName } from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
@@ -333,6 +334,14 @@ export default function AdminDefenceDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Scheduling Section */}
+        {(detail.status === 'examiner_assigned' || detail.status === 'scheduled') && (
+          <DefenceSchedulingSection
+            defenceId={detail.id}
+            isEditable={detail.status === 'examiner_assigned' || detail.status === 'scheduled'}
+          />
+        )}
       </div>
 
       {/* Validation Modal */}

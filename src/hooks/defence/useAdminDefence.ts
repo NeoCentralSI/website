@@ -3,8 +3,10 @@ import {
   getAdminDefenceList,
   getAdminDefenceDetail,
   validateDefenceDocument,
+  getDefenceSchedulingData,
+  setDefenceSchedule,
 } from '@/services/adminDefence.service';
-import type { ValidateDefenceDocumentPayload } from '@/types/defence.types';
+import type { ValidateDefenceDocumentPayload, SetDefenceSchedulePayload } from '@/types/defence.types';
 
 export function useAdminDefenceList(params?: { search?: string; status?: string }) {
   return useQuery({
@@ -38,6 +40,37 @@ export function useValidateDefenceDocument() {
       queryClient.invalidateQueries({ queryKey: ['admin-defences'] });
       queryClient.invalidateQueries({
         queryKey: ['admin-defence-detail', variables.defenceId],
+      });
+    },
+  });
+}
+
+export function useDefenceSchedulingData(defenceId: string | undefined) {
+  return useQuery({
+    queryKey: ['admin-defence-scheduling', defenceId],
+    queryFn: () => getDefenceSchedulingData(defenceId!),
+    enabled: !!defenceId,
+  });
+}
+
+export function useSetDefenceSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      defenceId,
+      payload,
+    }: {
+      defenceId: string;
+      payload: SetDefenceSchedulePayload;
+    }) => setDefenceSchedule(defenceId, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-defences'] });
+      queryClient.invalidateQueries({
+        queryKey: ['admin-defence-detail', variables.defenceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['admin-defence-scheduling', variables.defenceId],
       });
     },
   });

@@ -207,6 +207,57 @@ export interface ValidateDefenceDocumentResponse {
   newDefenceStatus: ThesisDefenceStatus;
 }
 
+// ============================================================
+// Admin Defence Scheduling Types
+// ============================================================
+
+export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
+
+export interface DefenceLecturerAvailabilitySlot {
+  id: string;
+  lecturerId: string;
+  lecturerName: string;
+  day: DayOfWeek;
+  startTime: string;
+  endTime: string;
+  validFrom: string;
+  validUntil: string;
+}
+
+export interface DefenceRoomOption {
+  id: string;
+  name: string;
+}
+
+export interface DefenceCurrentSchedule {
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  isOnline: boolean;
+  meetingLink: string | null;
+  room: DefenceRoomOption | null;
+}
+
+export interface DefenceSchedulingData {
+  rooms: DefenceRoomOption[];
+  lecturerAvailabilities: DefenceLecturerAvailabilitySlot[];
+  currentSchedule: DefenceCurrentSchedule | null;
+}
+
+export interface SetDefenceSchedulePayload {
+  roomId?: string | null;
+  isOnline?: boolean;
+  meetingLink?: string | null;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface SetDefenceScheduleResponse {
+  defenceId: string;
+  status: ThesisDefenceStatus;
+}
+
 export interface DefenceDocumentUploadResponse {
   documentId: string;
   documentTypeId: string;

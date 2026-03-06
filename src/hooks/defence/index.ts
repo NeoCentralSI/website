@@ -9,6 +9,8 @@ export {
   useAdminDefenceList,
   useAdminDefenceDetail,
   useValidateDefenceDocument,
+  useDefenceSchedulingData,
+  useSetDefenceSchedule,
 } from './useAdminDefence';
 
 export {

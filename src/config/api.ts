@@ -168,6 +168,8 @@ export const API_CONFIG = {
       DETAIL: (defenceId: string) => `/thesisDefence/admin/${defenceId}`,
       VALIDATE_DOCUMENT: (defenceId: string, documentTypeId: string) =>
         `/thesisDefence/admin/${defenceId}/documents/${documentTypeId}/validate`,
+      SCHEDULING_DATA: (defenceId: string) => `/thesisDefence/admin/${defenceId}/scheduling-data`,
+      SET_SCHEDULE: (defenceId: string) => `/thesisDefence/admin/${defenceId}/schedule`,
     },
     THESIS_DEFENCE_LECTURER: {
       EXAMINER_REQUESTS: '/thesisDefence/lecturer/examiner-requests',
