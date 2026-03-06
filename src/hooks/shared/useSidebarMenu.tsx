@@ -4,7 +4,6 @@ import {
   Clock,
   Database,
   FileText,
-  Megaphone,
   SquareTerminal,
   GraduationCap
 } from "lucide-react";

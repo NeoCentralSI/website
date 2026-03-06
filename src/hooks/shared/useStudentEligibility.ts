@@ -65,11 +65,6 @@ export function useStudentEligibility(): EligibilityResult {
   const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
   const semester = siaStudent?.currentSemester ?? 0;
   const hasPassedInternship = !!siaStudent?.internshipCompleted;
-  const canAccessSeminarHasil =
-    semester >= 6 &&
-    sks >= 110 &&
-    hasTugasAkhirCourse &&
-    hasPassedInternship;
 
   // Metopen course:
   // - Backend (thesis status "Metopel") is authoritative when it says canAccess.
@@ -90,6 +85,11 @@ export function useStudentEligibility(): EligibilityResult {
         (c) => (c.name || "").toLowerCase().includes("tugas akhir")
       )
     : sks >= 110;
+  const canAccessSeminarHasil =
+    semester >= 6 &&
+    sks >= 110 &&
+    hasTugasAkhirCourse &&
+    hasPassedInternship;
 
   const canAccessKerjaPraktek = sks >= 90;
   const canAccessTugasAkhir = sks >= 110 && hasTugasAkhirCourse;
