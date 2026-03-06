@@ -476,7 +476,6 @@ export const useSidebarMenu = () => {
             url: "#",
             icon: FileText,
             items: [
-              { title: "Data TA", url: "/master-data/tugas-akhir" },
               { title: "Penjadwalan Seminar", url: "/tugas-akhir/jadwal-seminar" },
               { title: "Penjadwalan Sidang", url: "/tugas-akhir/jadwal-sidang" },
             ],
