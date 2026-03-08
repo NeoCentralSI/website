@@ -4,31 +4,47 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import {
-  useSeminarDocumentTypes,
-  useStudentSeminarDocuments,
-  useUploadSeminarDocument,
-} from '@/hooks/seminar';
-import type { SeminarDocument, SeminarDocumentType } from '@/types/seminar.types';
+  useDefenceDocumentTypes,
+  useStudentDefenceDocuments,
+  useUploadDefenceDocument,
+} from '@/hooks/defence';
+import type { DefenceDocument, DefenceDocumentType } from '@/types/defence.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
 
-interface UploadDokumenSeminarProps {
+/** Map doc type name → accepted file extensions */
+const DOC_TYPE_ACCEPT: Record<string, string[]> = {
+  'Laporan Tugas Akhir': ['.pdf'],
+  'Slide Presentasi': ['.ppt', '.pptx'],
+  'Draft Jurnal TEKNOSI': ['.pdf'],
+  'Sertifikat TOEFL': ['.pdf'],
+  'Sertifikat SAPS': ['.pdf'],
+};
+
+/** Display label (with format hint) */
+const DOC_TYPE_LABEL: Record<string, string> = {
+  'Laporan Tugas Akhir': 'Laporan Tugas Akhir (PDF)',
+  'Slide Presentasi': 'Slide Presentasi (PPT)',
+  'Draft Jurnal TEKNOSI': 'Draft Jurnal TEKNOSI (PDF)',
+  'Sertifikat TOEFL': 'Sertifikat TOEFL (PDF)',
+  'Sertifikat SAPS': 'Sertifikat SAPS (PDF)',
+};
+
+interface UploadDokumenSidangProps {
   allChecklistMet: boolean;
 }
 
-export function UploadDokumenSeminar({
-  allChecklistMet,
-}: UploadDokumenSeminarProps) {
+export function UploadDokumenSidang({ allChecklistMet }: UploadDokumenSidangProps) {
   const isLocked = !allChecklistMet;
 
-  const { data: docTypes } = useSeminarDocumentTypes();
-  const { data: docsData } = useStudentSeminarDocuments();
-  const uploadMutation = useUploadSeminarDocument();
+  const { data: docTypes } = useDefenceDocumentTypes();
+  const { data: docsData } = useStudentDefenceDocuments();
+  const uploadMutation = useUploadDefenceDocument();
 
   const documents = docsData?.documents ?? [];
 
   const getDocStatus = useCallback(
-    (docTypeId: string): SeminarDocument | undefined => {
+    (docTypeId: string): DefenceDocument | undefined => {
       return documents.find((d) => d.documentTypeId === docTypeId);
     },
     [documents]
@@ -36,7 +52,7 @@ export function UploadDokumenSeminar({
 
   return (
     <div className="rounded-lg border border-gray-200 bg-card p-6">
-      <h3 className="text-lg font-semibold mb-4">Upload Dokumen Seminar</h3>
+      <h3 className="text-lg font-semibold mb-4">Upload Dokumen Sidang</h3>
 
       {isLocked && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 p-3 bg-muted/30 rounded-md">
@@ -71,8 +87,8 @@ export function UploadDokumenSeminar({
 // ============================================================
 
 interface DocumentRowProps {
-  docType: SeminarDocumentType;
-  doc: SeminarDocument | undefined;
+  docType: DefenceDocumentType;
+  doc: DefenceDocument | undefined;
   isLocked: boolean;
   isUploading: boolean;
   onUpload: (file: File) => void;
@@ -91,7 +107,6 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     if (file) {
       onUpload(file);
     }
-    // Reset input so the same file can be re-selected
     e.target.value = '';
   };
 
@@ -111,10 +126,9 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     }
   };
 
-  // Build accept string from docType.accept array
-  const acceptStr = docType.accept
-    .map((ext) => (ext.startsWith('.') ? ext : `.${ext}`))
-    .join(',');
+  const accept = DOC_TYPE_ACCEPT[docType.name] ?? ['.pdf'];
+  const acceptStr = accept.join(',');
+  const label = DOC_TYPE_LABEL[docType.name] ?? docType.name;
 
   return (
     <div
@@ -136,7 +150,7 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
           <FileText className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{docType.label}</p>
+          <p className="text-sm font-medium truncate">{label}</p>
           {isUploaded && (
             <>
               <p
@@ -162,7 +176,6 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -171,7 +184,6 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
           onChange={handleFileChange}
         />
 
-        {/* View button (when document exists) */}
         {isUploaded && doc?.filePath && (
           <Button
             variant="ghost"
@@ -183,7 +195,6 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
           </Button>
         )}
 
-        {/* Upload / Re-upload button */}
         <Button
           variant={isDeclined ? 'destructive' : 'outline'}
           size="sm"

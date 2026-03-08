@@ -8,11 +8,9 @@ interface EligibilityResult {
   sks: number;
   semester: number;
   hasTugasAkhirCourse: boolean;
-  hasPassedInternship: boolean;
   hasMetopenCourse: boolean;
   canAccessKerjaPraktek: boolean;
   canAccessTugasAkhir: boolean;
-  canAccessSeminarHasil: boolean;
   canAccessMetopen: boolean;
   requirements: {
     kerjaPraktek: {
@@ -21,12 +19,6 @@ interface EligibilityResult {
     tugasAkhir: {
       sks: { met: boolean; current: number; required: number };
       course: { met: boolean };
-    };
-    seminarHasil: {
-      semester: { met: boolean; current: number; required: number };
-      sks: { met: boolean; current: number; required: number };
-      course: { met: boolean };
-      internship: { met: boolean };
     };
     metopen: {
       course: { met: boolean };
@@ -62,9 +54,11 @@ export function useStudentEligibility(): EligibilityResult {
   const hasSiaData = !!siaStudent;
 
   // SKS: from SIA if available, else from user profile (auth/me endpoint)
-  const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
+  const sks = Math.max(
+    siaStudent?.sksCompleted ?? 0,
+    authUser?.student?.sksCompleted ?? 0
+  );
   const semester = siaStudent?.currentSemester ?? 0;
-  const hasPassedInternship = !!siaStudent?.internshipCompleted;
 
   // Metopen course:
   // - Backend (thesis status "Metopel") is authoritative when it says canAccess.
@@ -85,11 +79,6 @@ export function useStudentEligibility(): EligibilityResult {
         (c) => (c.name || "").toLowerCase().includes("tugas akhir")
       )
     : sks >= 110;
-  const canAccessSeminarHasil =
-    semester >= 6 &&
-    sks >= 110 &&
-    hasTugasAkhirCourse &&
-    hasPassedInternship;
 
   const canAccessKerjaPraktek = sks >= 90;
   const canAccessTugasAkhir = sks >= 110 && hasTugasAkhirCourse;
@@ -103,8 +92,6 @@ export function useStudentEligibility(): EligibilityResult {
     sks,
     semester,
     hasTugasAkhirCourse,
-    hasPassedInternship,
-    canAccessSeminarHasil,
     hasMetopenCourse,
     canAccessKerjaPraktek,
     canAccessTugasAkhir,
@@ -116,12 +103,6 @@ export function useStudentEligibility(): EligibilityResult {
       tugasAkhir: {
         sks: { met: sks >= 110, current: sks, required: 110 },
         course: { met: hasTugasAkhirCourse },
-      },
-      seminarHasil: {
-        semester: { met: semester >= 6, current: semester, required: 6 },
-        sks: { met: sks >= 110, current: sks, required: 110 },
-        course: { met: hasTugasAkhirCourse },
-        internship: { met: hasPassedInternship },
       },
       metopen: {
         course: { met: hasMetopenCourse },

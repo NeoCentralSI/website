@@ -650,6 +650,7 @@ export interface StudentSeminarDetailDocument {
   documentTypeId: string;
   documentTypeName: string;
   fileName: string | null;
+  filePath: string | null;
   status: DocumentSubmitStatus;
   submittedAt: string | null;
   verifiedAt: string | null;
@@ -686,7 +687,14 @@ export interface StudentSeminarDetailResponse {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
-  thesis: { id: string; title: string };
+  thesis: {
+    id: string;
+    title: string;
+    supervisors: {
+      role: string;
+      lecturerName: string;
+    }[];
+  };
   examiners: StudentSeminarDetailExaminer[];
   documents: StudentSeminarDetailDocument[];
   examinerNotes: StudentRevisionExaminerNote[];
@@ -752,5 +760,6 @@ export interface StudentAssessmentResponse {
 }
 
 export interface SaveRevisionActionPayload {
-  revisionAction: string;
+  revisionAction?: string;
+  description?: string;
 }

@@ -15,7 +15,7 @@ export default function StudentSeminarDetail() {
   const { seminarId } = useParams<{ seminarId: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { data: detail, isLoading } = useStudentSeminarDetail(seminarId);
+  const { data: detail, isLoading, refetch, isFetching } = useStudentSeminarDetail(seminarId);
   const [activeTab, setActiveTab] = useState('identitas');
 
   const breadcrumbs = useMemo(
@@ -48,12 +48,12 @@ export default function StudentSeminarDetail() {
     );
   }
 
-  const showPenilaian = !!detail.resultFinalizedAt;
+  const showBeritaAcara = !!detail.resultFinalizedAt;
   const showRevisi = detail.status === 'passed_with_revision';
 
   const tabs = [
     { label: 'Identitas', value: 'identitas' },
-    ...(showPenilaian ? [{ label: 'Penilaian', value: 'penilaian' }] : []),
+    ...(showBeritaAcara ? [{ label: 'Berita Acara', value: 'penilaian' }] : []),
     ...(showRevisi ? [{ label: 'Revisi', value: 'revisi' }] : []),
   ];
 
@@ -82,10 +82,16 @@ export default function StudentSeminarDetail() {
       <LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === 'identitas' && <StudentIdentitasTab detail={detail} />}
-      {activeTab === 'penilaian' && showPenilaian && (
+      {activeTab === 'penilaian' && showBeritaAcara && (
         <StudentPenilaianTab seminarId={detail.id} seminarStatus={detail.status} />
       )}
-      {activeTab === 'revisi' && showRevisi && <StudentRevisiTab detail={detail} />}
+      {activeTab === 'revisi' && showRevisi && (
+        <StudentRevisiTab
+          detail={detail}
+          onRefresh={refetch}
+          isRefreshing={isFetching && !isLoading}
+        />
+      )}
     </div>
   );
 }

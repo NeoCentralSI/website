@@ -255,3 +255,16 @@ export async function cancelRevisionSubmission(revisionId: string): Promise<{ id
   if (!json.success) throw new Error(json.message || 'Gagal membatalkan pengajuan');
   return json.data;
 }
+
+/**
+ * Delete revision while still draft (before submission)
+ */
+export async function deleteRevision(revisionId: string): Promise<{ id: string }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.REVISION_DELETE(revisionId)),
+    { method: 'DELETE' }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menghapus revisi');
+  return json.data;
+}

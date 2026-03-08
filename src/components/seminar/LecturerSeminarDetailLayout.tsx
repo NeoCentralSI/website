@@ -22,7 +22,8 @@ export function LecturerSeminarDetailLayout({ children }: LecturerSeminarDetailL
 
   const { data: detail, isLoading } = useLecturerSeminarDetail(seminarId);
 
-  const showAssessmentTab = !!detail?.canOpenExaminerAssessment || !!detail?.canOpenSupervisorFinalization;
+  const showExaminerAssessmentTab = !!detail?.canOpenExaminerAssessment;
+  const showSupervisorFinalizationTab = !!detail?.canOpenSupervisorFinalization;
   // Show revision tab only for supervisor AND only when status is passed_with_revision
   const showRevisionTab = !!detail?.canOpenSupervisorFinalization && detail?.status === 'passed_with_revision';
   // Show attendance tab for supervisors
@@ -45,8 +46,10 @@ export function LecturerSeminarDetailLayout({ children }: LecturerSeminarDetailL
   const tabs = useMemo(() => {
     const base = `/tugas-akhir/seminar/lecturer/${seminarId}`;
     const items: TabItem[] = [{ label: 'Identitas', to: base, end: true }];
-    if (showAssessmentTab) {
+    if (showExaminerAssessmentTab) {
       items.push({ label: 'Penilaian', to: `${base}/assessment` });
+    } else if (showSupervisorFinalizationTab) {
+      items.push({ label: 'Berita Acara', to: `${base}/assessment` });
     }
     if (showRevisionTab) {
       items.push({ label: 'Revisi', to: `${base}/revision` });
@@ -55,7 +58,7 @@ export function LecturerSeminarDetailLayout({ children }: LecturerSeminarDetailL
       items.push({ label: 'Daftar Hadir', to: `${base}/attendance` });
     }
     return items;
-  }, [seminarId, showAssessmentTab, showRevisionTab, showAttendanceTab]);
+  }, [seminarId, showExaminerAssessmentTab, showSupervisorFinalizationTab, showRevisionTab, showAttendanceTab]);
 
   if (isLoading) {
     return (

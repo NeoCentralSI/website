@@ -9,15 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { useAdminSeminarDetail, useValidateSeminarDocument } from '@/hooks/seminar/useAdminSeminar';
+import { useAdminDefenceDetail, useValidateDefenceDocument } from '@/hooks/defence';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
+import { openProtectedFile } from '@/lib/protected-file';
 import { Download, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import type { AdminSeminarListItem, DocumentSubmitStatus } from '@/types/seminar.types';
-import { openProtectedFile } from '@/lib/protected-file';
+import type { AdminDefenceListItem, DocumentSubmitStatus } from '@/types/defence.types';
 
-interface ValidationModalProps {
-  seminar: AdminSeminarListItem | null;
+interface DefenceValidationModalProps {
+  defence: AdminDefenceListItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -34,16 +34,13 @@ function getDocStatusBadge(status: DocumentSubmitStatus) {
   }
 }
 
-export function ValidationModal({ seminar, open, onOpenChange }: ValidationModalProps) {
-  const { data: detail, isLoading } = useAdminSeminarDetail(
-    open && seminar ? seminar.id : undefined
-  );
-  const validateMutation = useValidateSeminarDocument();
+export function DefenceValidationModal({ defence, open, onOpenChange }: DefenceValidationModalProps) {
+  const { data: detail, isLoading } = useAdminDefenceDetail(open && defence ? defence.id : undefined);
+  const validateMutation = useValidateDefenceDocument();
 
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [notes, setNotes] = useState('');
 
-  // Build ordered document list (match docTypes order)
   const orderedDocs = detail
     ? detail.documentTypes.map((dt) => {
         const doc = detail.documents.find((d) => d.documentTypeId === dt.id);
@@ -55,39 +52,35 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
   const currentDoc = currentEntry?.doc || null;
   const currentDocType = currentEntry?.docType || null;
 
-  // Reset state when seminar changes
   useEffect(() => {
     if (open) {
       setActiveDocIndex(0);
       setNotes('');
     }
-  }, [open, seminar?.id]);
+  }, [open, defence?.id]);
 
-  // Update notes when switching docs
   useEffect(() => {
     setNotes('');
   }, [activeDocIndex]);
 
   const handleValidate = useCallback(
     (action: 'approve' | 'decline') => {
-      if (!seminar || !currentDoc || !currentDocType) return;
+      if (!defence || !currentDoc || !currentDocType) return;
 
       validateMutation.mutate(
         {
-          seminarId: seminar.id,
+          defenceId: defence.id,
           documentTypeId: currentDocType.id,
           payload: { action, notes: notes.trim() || undefined },
         },
         {
           onSuccess: (result) => {
-            const msg = action === 'approve' ? 'Dokumen disetujui' : 'Dokumen ditolak';
-            toast.success(msg);
+            toast.success(action === 'approve' ? 'Dokumen disetujui' : 'Dokumen ditolak');
 
-            if (result.seminarTransitioned) {
-              toast.success('Semua dokumen disetujui — seminar berstatus "Terverifikasi"');
+            if (result.defenceTransitioned) {
+              toast.success('Semua dokumen disetujui — sidang berstatus "Terverifikasi"');
               onOpenChange(false);
             } else {
-              // Auto-advance to next unverified document
               const nextIdx = orderedDocs.findIndex(
                 (entry, i) => i > activeDocIndex && entry.doc?.status === 'submitted'
               );
@@ -98,12 +91,12 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
             setNotes('');
           },
           onError: (err) => {
-            toast.error(err.message || 'Gagal memvalidasi dokumen');
+            toast.error(err.message || 'Gagal memvalidasi dokumen sidang');
           },
         }
       );
     },
-    [seminar, currentDoc, currentDocType, notes, validateMutation, onOpenChange, orderedDocs, activeDocIndex]
+    [defence, currentDoc, currentDocType, notes, validateMutation, onOpenChange, orderedDocs, activeDocIndex]
   );
 
   const canValidate = currentDoc?.status === 'submitted';
@@ -113,7 +106,7 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Validasi Dokumen Seminar</DialogTitle>
+          <DialogTitle>Validasi Dokumen Sidang</DialogTitle>
           {detail && (
             <div className="text-sm text-muted-foreground mt-1">
               {toTitleCaseName(detail.student.name)} — {detail.student.nim}
@@ -127,7 +120,6 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
           </div>
         ) : detail && orderedDocs.length > 0 ? (
           <div className="space-y-4">
-            {/* Document navigator */}
             <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
@@ -152,7 +144,6 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
               </Button>
             </div>
 
-            {/* Documents overview pills */}
             <div className="flex gap-2 flex-wrap">
               {orderedDocs.map((entry, idx) => (
                 <button
@@ -176,7 +167,6 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
               ))}
             </div>
 
-            {/* Current document detail */}
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">{currentDocType?.name}</h4>
@@ -194,7 +184,7 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
                         size="sm"
                         onClick={async () => {
                           try {
-                            await openProtectedFile(currentDoc!.filePath!, currentDoc?.fileName || undefined);
+                            await openProtectedFile(currentDoc.filePath!, currentDoc.fileName || undefined);
                           } catch (error) {
                             toast.error((error as Error).message || 'Gagal membuka dokumen');
                           }
@@ -211,7 +201,7 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
                     {currentDoc.verifiedAt && (
                       <div>
                         Diverifikasi: {formatDateId(currentDoc.verifiedAt)} oleh{' '}
-                        {toTitleCaseName(currentDoc.verifiedBy)}
+                        {toTitleCaseName(currentDoc.verifiedBy || '-')}
                       </div>
                     )}
                     {currentDoc.notes && (
@@ -221,7 +211,6 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
                     )}
                   </div>
 
-                  {/* Validation controls - only for 'submitted' status */}
                   {canValidate && (
                     <div className="space-y-3 border-t pt-3">
                       <Textarea

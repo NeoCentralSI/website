@@ -476,8 +476,18 @@ export const useSidebarMenu = () => {
             url: "#",
             icon: FileText,
             items: [
-              { title: "Penjadwalan Seminar", url: "/tugas-akhir/jadwal-seminar" },
-              { title: "Penjadwalan Sidang", url: "/tugas-akhir/jadwal-sidang" },
+              {
+                title: "Kelola",
+                url: "/tugas-akhir/kelola",
+              },
+              {
+                title: "Seminar Hasil",
+                url: "/tugas-akhir/seminar",
+              },
+              {
+                title: "Sidang",
+                url: "/tugas-akhir/sidang",
+              },
             ],
           },
           {

@@ -17,6 +17,7 @@ import {
   saveRevisionAction,
   submitRevision,
   cancelRevisionSubmission,
+  deleteRevision,
 } from '@/services/studentSeminar.service';
 import { toast } from 'sonner';
 import type { CreateRevisionPayload, SubmitRevisionActionPayload, SaveRevisionActionPayload } from '@/types/seminar.types';
@@ -135,7 +136,7 @@ export function useCreateRevision() {
   return useMutation({
     mutationFn: (payload: CreateRevisionPayload) => createRevision(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
       toast.success('Item revisi berhasil ditambahkan');
     },
     onError: (error: Error) => {
@@ -151,7 +152,7 @@ export function useSubmitRevisionAction() {
     mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SubmitRevisionActionPayload }) =>
       submitRevisionAction(revisionId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
       toast.success('Perbaikan berhasil disubmit');
     },
     onError: (error: Error) => {
@@ -206,7 +207,7 @@ export function useSaveRevisionAction() {
     mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SaveRevisionActionPayload }) =>
       saveRevisionAction(revisionId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
       toast.success('Perbaikan berhasil disimpan');
     },
     onError: (error: Error) => {
@@ -221,7 +222,7 @@ export function useSubmitRevision() {
   return useMutation({
     mutationFn: (revisionId: string) => submitRevision(revisionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
       toast.success('Perbaikan berhasil diajukan');
     },
     onError: (error: Error) => {
@@ -236,11 +237,26 @@ export function useCancelRevisionSubmission() {
   return useMutation({
     mutationFn: (revisionId: string) => cancelRevisionSubmission(revisionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.revisions() });
+      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
       toast.success('Pengajuan berhasil dibatalkan');
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal membatalkan pengajuan');
+    },
+  });
+}
+
+export function useDeleteRevision() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (revisionId: string) => deleteRevision(revisionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
+      toast.success('Item revisi berhasil dihapus');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal menghapus item revisi');
     },
   });
 }

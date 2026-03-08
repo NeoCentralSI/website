@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
 import { toTitleCaseName, formatDateOnlyId, formatDateShortId } from '@/lib/text';
 import { Calendar, FileText, Users, Download } from 'lucide-react';
-import { API_CONFIG, getApiUrl } from '@/config/api';
+import { openProtectedFile } from '@/lib/protected-file';
+import { toast } from 'sonner';
 import type { StudentSeminarDetailResponse } from '@/types/seminar.types';
 
 function extractSeminarTime(timeIso?: string | null): string {
@@ -18,9 +19,12 @@ interface StudentIdentitasTabProps {
 }
 
 export function StudentIdentitasTab({ detail }: StudentIdentitasTabProps) {
-  const handleDownloadDocument = (documentTypeId: string) => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.DOCUMENT_VIEW(documentTypeId));
-    window.open(url, '_blank');
+  const handleDownloadDocument = async (filePath: string, fileName?: string | null) => {
+    try {
+      await openProtectedFile(filePath, fileName || undefined);
+    } catch (error) {
+      toast.error((error as Error).message || 'Gagal membuka dokumen');
+    }
   };
 
   return (
@@ -40,13 +44,14 @@ export function StudentIdentitasTab({ detail }: StudentIdentitasTabProps) {
               <span className="text-muted-foreground">Judul:</span>
               <span className="text-right max-w-[60%]">{detail.thesis.title}</span>
             </div>
-            {detail.examiners.length > 0 && (
+
+            {(detail.thesis.supervisors || []).length > 0 && (
               <div className="space-y-1 pt-2 border-t">
-                <span className="text-muted-foreground text-xs">Dosen Penguji:</span>
-                {detail.examiners.map((ex) => (
-                  <div key={ex.id} className="flex justify-between">
-                    <span className="text-muted-foreground">Penguji {ex.order}</span>
-                    <span>{toTitleCaseName(ex.lecturerName)}</span>
+                <span className="text-muted-foreground text-xs">Dosen Pembimbing Tugas Akhir:</span>
+                {detail.thesis.supervisors.map((sup, idx) => (
+                  <div key={`${sup.role}-${idx}`} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">{sup.role}</span>
+                    <span className="text-right">{toTitleCaseName(sup.lecturerName)}</span>
                   </div>
                 ))}
               </div>
@@ -75,6 +80,19 @@ export function StudentIdentitasTab({ detail }: StudentIdentitasTabProps) {
               <span className="text-muted-foreground">Ruangan:</span>
               <span>{detail.room?.name || '-'}</span>
             </div>
+
+            {detail.examiners.length > 0 && (
+              <div className="space-y-1 pt-2 border-t">
+                <span className="text-muted-foreground text-xs">Dosen Penguji:</span>
+                {detail.examiners.map((ex) => (
+                  <div key={ex.id} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Penguji {ex.order}</span>
+                    <span className="text-right">{toTitleCaseName(ex.lecturerName)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {detail.meetingLink && (
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground shrink-0">Link:</span>
@@ -137,12 +155,12 @@ export function StudentIdentitasTab({ detail }: StudentIdentitasTabProps) {
                           ? 'Ditolak'
                           : 'Menunggu'}
                     </Badge>
-                    {doc.status === 'approved' && (
+                    {doc.filePath && (
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => handleDownloadDocument(doc.documentTypeId)}
+                        onClick={() => handleDownloadDocument(doc.filePath!, doc.fileName)}
                       >
                         <Download className="h-4 w-4" />
                       </Button>

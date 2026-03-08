@@ -33,13 +33,14 @@ import {
   useSupervisorFinalizationData,
 } from '@/hooks/seminar/useLecturerSeminar';
 import { formatDateId, formatDateOnlyId, formatDateTimeId, formatRoleName, toTitleCaseName } from '@/lib/text';
+import { openProtectedFile } from '@/lib/protected-file';
+import { toast } from 'sonner';
 import type {
   DocumentSubmitStatus,
   FinalizeSeminarPayload,
   SubmitExaminerAssessmentPayload,
   ThesisSeminarStatus,
 } from '@/types/seminar.types';
-import { ENV } from '@/config/env';
 import LecturerSeminarDetailPage from './LecturerSeminarDetail';
 
 function extractSeminarTime(timeIso?: string | null): string {
@@ -298,7 +299,7 @@ export default function LecturerSeminarDetailOngoingPage() {
                 {detail.documentTypes.map((dt) => {
                   const doc = detail.documents.find((d) => d.documentTypeId === dt.id);
                   const statusDisplay = doc ? getDocStatusDisplay(doc.status) : null;
-                  const downloadUrl = doc?.filePath ? `${ENV.API_BASE_URL}/${doc.filePath}` : null;
+                  const canDownload = !!doc?.filePath;
                   return (
                     <div key={dt.id} className="flex items-center justify-between p-3 rounded-lg border">
                       <div className="flex items-center gap-3 min-w-0">
@@ -314,12 +315,20 @@ export default function LecturerSeminarDetailOngoingPage() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {statusDisplay && <Badge variant={statusDisplay.badge}>{statusDisplay.label}</Badge>}
-                        {downloadUrl && (
-                          <a href={downloadUrl} target="_blank" rel="noopener noreferrer" download>
-                            <Button variant="ghost" size="sm">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </a>
+                        {canDownload && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await openProtectedFile(doc!.filePath!, doc?.fileName || undefined);
+                              } catch (error) {
+                                toast.error((error as Error).message || 'Gagal membuka dokumen');
+                              }
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
                         )}
                       </div>
                     </div>

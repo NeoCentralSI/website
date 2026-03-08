@@ -5,22 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
-import { ValidationModal } from '@/components/seminar/ValidationModal';
-import { SeminarSchedulingSection } from '@/components/seminar/SeminarSchedulingSection';
-import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
-import { useAdminSeminarDetail } from '@/hooks/seminar/useAdminSeminar';
+import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
+import { DefenceValidationModal } from '@/components/sidang/DefenceValidationModal';
+import { DefenceSchedulingSection } from '@/components/sidang/DefenceSchedulingSection';
+import { useAdminDefenceDetail } from '@/hooks/defence';
 import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId, formatRoleName } from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
-
-/** Extract HH.mm display from a @db.Time(0) ISO string (1970-01-01T{HH}:{mm}:{ss}Z).
- *  The UTC hour directly represents the stored WIB hour. */
-function extractSeminarTime(timeIso?: string | null): string {
-  if (!timeIso) return '--';
-  const d = new Date(timeIso);
-  return `${String(d.getUTCHours()).padStart(2, '0')}.${String(d.getUTCMinutes()).padStart(2, '0')}`;
-}
 import {
   FileText,
   Download,
@@ -28,39 +19,44 @@ import {
   XCircle,
   Clock,
   User,
-  Users,
   BookOpen,
   Calendar,
   ClipboardCheck,
   ArrowLeft,
   CheckCircle2,
 } from 'lucide-react';
-import type { DocumentSubmitStatus, AdminSeminarListItem } from '@/types/seminar.types';
+import type { DocumentSubmitStatus, AdminDefenceListItem } from '@/types/defence.types';
+
+function extractTime(timeIso?: string | null): string {
+  if (!timeIso) return '--';
+  const d = new Date(timeIso);
+  return `${String(d.getUTCHours()).padStart(2, '0')}.${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
 
 function getDocStatusDisplay(status: DocumentSubmitStatus) {
   switch (status) {
     case 'approved':
-      return { icon: CheckCircle, label: 'Disetujui', color: 'text-green-600', badge: 'success' as const };
+      return { icon: CheckCircle, label: 'Disetujui', badge: 'success' as const };
     case 'declined':
-      return { icon: XCircle, label: 'Ditolak', color: 'text-red-600', badge: 'destructive' as const };
+      return { icon: XCircle, label: 'Ditolak', badge: 'destructive' as const };
     case 'submitted':
     default:
-      return { icon: Clock, label: 'Menunggu', color: 'text-amber-600', badge: 'warning' as const };
+      return { icon: Clock, label: 'Menunggu', badge: 'warning' as const };
   }
 }
 
-export default function AdminSeminarDetail() {
-  const { seminarId } = useParams<{ seminarId: string }>();
+export default function AdminDefenceDetail() {
+  const { defenceId } = useParams<{ defenceId: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { data: detail, isLoading } = useAdminSeminarDetail(seminarId);
+  const { data: detail, isLoading } = useAdminDefenceDetail(defenceId);
 
   const [validationOpen, setValidationOpen] = useState(false);
 
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir' },
-      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar/admin' },
+      { label: 'Sidang', href: '/tugas-akhir/sidang/admin' },
       { label: 'Detail' },
     ],
     []
@@ -68,13 +64,13 @@ export default function AdminSeminarDetail() {
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-    setTitle('Detail Seminar Hasil');
+    setTitle('Detail Sidang');
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-200px)] items-center justify-center">
-        <Loading size="lg" text="Memuat detail seminar..." />
+        <Loading size="lg" text="Memuat detail sidang..." />
       </div>
     );
   }
@@ -82,13 +78,12 @@ export default function AdminSeminarDetail() {
   if (!detail) {
     return (
       <div className="flex h-[calc(100vh-200px)] items-center justify-center">
-        <div className="text-muted-foreground">Seminar tidak ditemukan.</div>
+        <div className="text-muted-foreground">Sidang tidak ditemukan.</div>
       </div>
     );
   }
 
-  // Build a minimal AdminSeminarListItem for ValidationModal
-  const seminarForModal: AdminSeminarListItem = {
+  const defenceForModal: AdminDefenceListItem = {
     id: detail.id,
     thesisId: detail.thesis.id,
     studentName: detail.student.name,
@@ -116,7 +111,7 @@ export default function AdminSeminarDetail() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/tugas-akhir/seminar/admin')}
+            onClick={() => navigate('/tugas-akhir/sidang/admin')}
             className="shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -129,7 +124,7 @@ export default function AdminSeminarDetail() {
               <p className="text-gray-500">{detail.student.nim}</p>
             </div>
             <div className="flex items-center gap-3">
-              <SeminarStatusBadge status={detail.status} />
+              <DefenceStatusBadge status={detail.status} />
               {detail.status === 'registered' && (
                 <Button
                   variant="outline"
@@ -175,12 +170,12 @@ export default function AdminSeminarDetail() {
             </CardContent>
           </Card>
 
-          {/* Seminar Info */}
+          {/* Defence Info */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Informasi Seminar
+                Informasi Sidang
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
@@ -189,10 +184,10 @@ export default function AdminSeminarDetail() {
                 <span>{detail.registeredAt ? formatDateTimeId(detail.registeredAt) : '-'}</span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground shrink-0">Tanggal Seminar:</span>
+                <span className="text-muted-foreground shrink-0">Tanggal Sidang:</span>
                 <span className="text-right">
                   {detail.date
-                    ? `${formatDateOnlyId(detail.date)}, ${extractSeminarTime(detail.startTime)} – ${extractSeminarTime(detail.endTime)}`
+                    ? `${formatDateOnlyId(detail.date)}, ${extractTime(detail.startTime)} – ${extractTime(detail.endTime)}`
                     : 'Belum dijadwalkan'}
                 </span>
               </div>
@@ -271,7 +266,7 @@ export default function AdminSeminarDetail() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Dokumen Seminar
+              Dokumen Sidang
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -342,31 +337,16 @@ export default function AdminSeminarDetail() {
 
         {/* Scheduling Section */}
         {(detail.status === 'examiner_assigned' || detail.status === 'scheduled') && (
-          <SeminarSchedulingSection
-            seminarId={detail.id}
+          <DefenceSchedulingSection
+            defenceId={detail.id}
             isEditable={detail.status === 'examiner_assigned' || detail.status === 'scheduled'}
           />
-        )}
-
-        {/* Audience / Attendance Section */}
-        {detail.audiences && detail.audiences.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Daftar Hadir Peserta ({detail.audiences.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SeminarAudienceTable rows={detail.audiences} />
-            </CardContent>
-          </Card>
         )}
       </div>
 
       {/* Validation Modal */}
-      <ValidationModal
-        seminar={seminarForModal}
+      <DefenceValidationModal
+        defence={defenceForModal}
         open={validationOpen}
         onOpenChange={setValidationOpen}
       />
