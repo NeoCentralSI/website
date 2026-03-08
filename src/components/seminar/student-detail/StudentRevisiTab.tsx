@@ -550,19 +550,21 @@ function ExaminerNoteCollapsible({ note }: ExaminerNoteProps) {
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
-        <button className="w-full rounded-md border px-3 py-2 text-left hover:bg-muted/40">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">
-              Penguji {note.examinerOrder} - {toTitleCaseName(note.lecturerName)}
-            </p>
-            <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <button className="flex items-center justify-between w-full p-3 rounded-md border text-sm hover:bg-muted/50 transition-colors">
+          <div className="flex items-center gap-2">
+            <MessageSquareText className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">Penguji {note.examinerOrder}</span>
+            <span className="text-muted-foreground">- {toTitleCaseName(note.lecturerName)}</span>
           </div>
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          />
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="px-3 py-2">
-        <p className="text-sm whitespace-pre-wrap break-words text-muted-foreground">
+      <CollapsibleContent>
+        <div className="px-3 pb-3 pt-2 border-x border-b rounded-b-md text-sm whitespace-pre-wrap">
           {note.revisionNotes}
-        </p>
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
