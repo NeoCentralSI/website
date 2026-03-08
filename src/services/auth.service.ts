@@ -27,6 +27,7 @@ export interface User {
     id: string;
     enrollmentYear: number;
     sksCompleted: number;
+    currentSemester?: number | null;
     status: string | null;
   };
   lecturer?: {

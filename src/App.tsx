@@ -90,7 +90,7 @@ const KadepInternshipManagementPage = lazy(() => import('./pages/kerja-praktik/k
 const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetterPage'))
 // Overview Pages
 const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/Overview'))
-const MetopenOverviewPage = lazy(() => import('./pages/metopel/Overview'))
+const MetopenOverviewPage = lazy(() => import('./pages/metopel/Metopel'))
 const YudisiumOverviewPage = lazy(() => import('./pages/yudisium/student/Overview'))
 const KelolaYudisiumPage = lazy(() => import('./pages/yudisium/KelolaYudisium'))
 const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview'))
@@ -108,8 +108,13 @@ const MasterDataTugasAkhirPage = lazy(() => import('./pages/master-data/TugasAkh
 const ScienceGroupPage = lazy(() => import('./pages/master-data/ScienceGroup'))
 // Kelola
 const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
+const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
+const PenilaianAkhirMetopen = lazy(() => import('./pages/dosen/metopen/PenilaianAkhirMetopen'))
+const InboxPembimbing = lazy(() => import('./pages/dosen/InboxPembimbing'))
+const DSSKadep = lazy(() => import('./pages/kelola/kadep/DSSKadep'))
 const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
 const KelolaCpl = lazy(() => import('./pages/kelola/KelolaCpl'))
+const KuotaBimbinganPage = lazy(() => import('./pages/master-data/KuotaBimbingan'))
 // Lecturer Availability
 const JadwalKetersediaan = lazy(() => import('./pages/lecturer/JadwalKetersediaan'))
 // Pengumuman
@@ -186,6 +191,9 @@ function App() {
               <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
                 <Route element={<MetopelGuard />}>
                   <Route path="/metopel" element={<MetopenOverviewPage />} />
+                  <Route path="/metopel/tugas" element={<MetopenOverviewPage />} />
+                  <Route path="/metopel/cari-pembimbing" element={<MetopenOverviewPage />} />
+                  <Route path="/metopel/logbook" element={<MetopenOverviewPage />} />
                 </Route>
 
                 <Route path="/tugas-akhir" element={<TugasAkhirGuard />}>
@@ -245,10 +253,10 @@ function App() {
                 <Route path="/tugas-akhir/sidang/lecturer/:defenceId/minutes" element={<LecturerDefenceDetailMinutesPage />} />
                 <Route path="/tugas-akhir/sidang/lecturer/:defenceId/revision" element={<LecturerDefenceDetailRevisionPage />} />
                 <Route path="/jadwal-ketersediaan" element={<JadwalKetersediaan />} />
+                <Route path="/dosen/inbox-pembimbing" element={<InboxPembimbing />} />
               </Route>
 
               {/* Tugas Akhir - Non-student routes (monitoring, etc) */}
-              <Route path="/tugas-akhir/kelola-penguji" element={<Placeholder title="Tugas Akhir - Kelola Penguji" />} />
               <Route path="/tugas-akhir/monitoring" element={<MonitoringDashboard />} />
               <Route path="/tugas-akhir/monitoring/:thesisId" element={<StudentProgressDetail />} />
               <Route path="/tugas-akhir/acc-pembimbing" element={<Placeholder title="Tugas Akhir - ACC Pembimbing" />} />
@@ -258,11 +266,22 @@ function App() {
               <Route path="/tugas-akhir/kelola" element={<Placeholder title="Tugas Akhir - Kelola (Deprecated)" />} />
 
               {/* Shared Kelola - Sekdep & Kadep */}
-              <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
+              <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
                 <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                 <Route path="/kelola/sop" element={<KelolaSopPage />} />
                 <Route path="/kelola/data-cpl" element={<KelolaCpl />} />
                 <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
+              </Route>
+
+              {/* Kelola Metopen - Dosen Pengampu, Sekdep, Kadep */}
+              <Route element={<RoleGuard allowedRoles={[ROLES.DOSEN_METOPEN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
+                <Route path="/kelola/metopen" element={<Navigate to="/kelola/metopen/template" replace />} />
+                <Route path="/kelola/metopen/mahasiswa" element={<KelolaMetopenPage />} />
+                <Route path="/kelola/metopen/template" element={<KelolaMetopenPage />} />
+                <Route path="/kelola/metopen/publish" element={<KelolaMetopenPage />} />
+                <Route path="/kelola/metopen/penilaian" element={<KelolaMetopenPage />} />
+                <Route path="/kelola/metopen/penilaian-akhir/:classId" element={<PenilaianAkhirMetopen />} />
+                <Route path="/kelola/metopen/monitoring" element={<KelolaMetopenPage />} />
               </Route>
 
               {/* Kelola - Sekretaris */}
@@ -296,6 +315,8 @@ function App() {
                 <Route path="/kelola/tugas-akhir/kadep/master-data" element={<KelolaTugasAkhirKadepPage />} />
                 <Route path="/kelola/kerja-praktik/kadep/persetujuan" element={<KadepInternshipManagementPage />} />
                 <Route path="/kelola/kerja-praktik/kadep/sign/:type/:id" element={<SignLetterPage />} />
+                <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
+                <Route path="/kelola/metopen/dss" element={<DSSKadep />} />
               </Route>
 
               {/* Master Data (Admin) */}
@@ -308,6 +329,7 @@ function App() {
                 <Route path="/admin/kerja-praktik/surat-tugas" element={<AdminAssignmentPage />} />
                 <Route path="/admin/kerja-praktik/surat-tugas/:id" element={<ManageAssignmentLetter />} />
                 <Route path="/admin/kerja-praktik/surat-tugas/template" element={<AssignmentTemplateEditor />} />
+                <Route path="/admin/kerja-praktik/seminar" element={<Placeholder title="Kerja Praktik - Seminar & Nilai" />} />
                 <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
                 <Route path="/tugas-akhir/seminar/admin" element={<AdminThesisSeminarManagementPage />} />
                 <Route path="/tugas-akhir/seminar/admin/:seminarId" element={<AdminSeminarDetailPage />} />
@@ -320,6 +342,7 @@ function App() {
                 <Route path="/master-data/tugas-akhir" element={<MasterDataTugasAkhirPage />} />
                 <Route path="/master-data/user" element={<UserManagementPage />} />
                 <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
+                <Route path="/master-data/kuota-bimbingan" element={<KuotaBimbinganPage />} />
               </Route>
             </Route>
 

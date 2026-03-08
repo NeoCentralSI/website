@@ -116,6 +116,11 @@ export interface StudentDetail {
     targetDate?: string;
     targetDateFormatted?: string;
   }[];
+  researchMethodScore?: {
+    id: string;
+    supervisorScore: number | null;
+    lecturerScore: number | null;
+  } | null;
   guidanceHistory: {
     count: number;
     items: GuidanceItem[];
