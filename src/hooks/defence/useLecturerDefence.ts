@@ -11,6 +11,10 @@ import {
   submitDefenceAssessment,
   getDefenceFinalizationData,
   finalizeDefenceBySupervisor,
+  getDefenceRevisionBoard,
+  approveDefenceRevision,
+  unapproveDefenceRevision,
+  finalizeDefenceRevisions,
 } from '@/services/lecturerDefence.service';
 import type {
   RespondDefenceAssignmentPayload,
@@ -181,6 +185,51 @@ export function useFinalizeDefenceBySupervisor() {
       queryClient.invalidateQueries({ queryKey: ['defence-examiner-requests'] });
       queryClient.invalidateQueries({ queryKey: ['supervised-student-defences'] });
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
+    },
+  });
+}
+
+export function useDefenceRevisionBoard(defenceId: string | undefined) {
+  return useQuery({
+    queryKey: ['defence-revision-board', defenceId],
+    queryFn: () => getDefenceRevisionBoard(defenceId!),
+    enabled: !!defenceId,
+  });
+}
+
+export function useApproveDefenceRevision() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ defenceId, revisionId }: { defenceId: string; revisionId: string }) =>
+      approveDefenceRevision(defenceId, revisionId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['defence-revision-board', variables.defenceId] });
+    },
+  });
+}
+
+export function useUnapproveDefenceRevision() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ defenceId, revisionId }: { defenceId: string; revisionId: string }) =>
+      unapproveDefenceRevision(defenceId, revisionId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['defence-revision-board', variables.defenceId] });
+    },
+  });
+}
+
+export function useFinalizeDefenceRevisions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ defenceId }: { defenceId: string }) => finalizeDefenceRevisions(defenceId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['defence-revision-board', variables.defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['defence-finalization', variables.defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['lecturer-defence-detail', variables.defenceId] });
     },
   });
 }

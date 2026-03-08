@@ -443,6 +443,8 @@ export interface DefenceFinalizationDataResponse {
     computedFinalScore: number | null;
     grade: string | null;
     resultFinalizedAt: string | null;
+    revisionFinalizedAt: string | null;
+    revisionFinalizedBy: string | null;
     studentName: string;
     studentNim: string;
     thesisTitle: string;
@@ -507,6 +509,19 @@ export interface FinalizeDefenceResponse {
   finalScore: number | null;
   grade: string | null;
   resultFinalizedAt: string | null;
+}
+
+export interface DefenceRevisionBoardItem {
+  id: string;
+  examinerOrder: number | null;
+  examinerLecturerId: string | null;
+  description: string;
+  revisionAction: string | null;
+  isFinished: boolean;
+  studentSubmittedAt: string | null;
+  supervisorApprovedAt: string | null;
+  approvedBySupervisorId: string | null;
+  approvedBySupervisorName: string | null;
 }
 
 export interface RespondDefenceAssignmentPayload {
@@ -647,6 +662,7 @@ export interface StudentDefenceAssessmentResponse {
 export interface StudentDefenceRevisionItem {
   id: string;
   defenceExaminerId: string;
+  examinerLecturerId?: string | null;
   description: string;
   revisionAction: string | null;
   studentSubmittedAt: string | null;
@@ -657,11 +673,29 @@ export interface StudentDefenceRevisionItem {
   examinerName?: string;
 }
 
+export interface StudentDefenceRevisionExaminerNote {
+  examinerOrder: number;
+  lecturerName: string;
+  revisionNotes: string;
+}
+
+export interface StudentDefenceRevisionResponse {
+  defenceId: string;
+  examinerNotes: StudentDefenceRevisionExaminerNote[];
+  summary: {
+    total: number;
+    finished: number;
+    pendingApproval: number;
+  };
+  revisions: StudentDefenceRevisionItem[];
+}
+
 export interface CreateDefenceRevisionPayload {
   defenceExaminerId: string;
   description: string;
 }
 
 export interface SaveDefenceRevisionActionPayload {
-  revisionAction: string;
+  revisionAction?: string;
+  description?: string;
 }

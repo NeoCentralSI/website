@@ -15,7 +15,7 @@ export default function StudentSeminarDetail() {
   const { seminarId } = useParams<{ seminarId: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { data: detail, isLoading } = useStudentSeminarDetail(seminarId);
+  const { data: detail, isLoading, refetch, isFetching } = useStudentSeminarDetail(seminarId);
   const [activeTab, setActiveTab] = useState('identitas');
 
   const breadcrumbs = useMemo(
@@ -85,7 +85,13 @@ export default function StudentSeminarDetail() {
       {activeTab === 'penilaian' && showBeritaAcara && (
         <StudentPenilaianTab seminarId={detail.id} seminarStatus={detail.status} />
       )}
-      {activeTab === 'revisi' && showRevisi && <StudentRevisiTab detail={detail} />}
+      {activeTab === 'revisi' && showRevisi && (
+        <StudentRevisiTab
+          detail={detail}
+          onRefresh={refetch}
+          isRefreshing={isFetching && !isLoading}
+        />
+      )}
     </div>
   );
 }

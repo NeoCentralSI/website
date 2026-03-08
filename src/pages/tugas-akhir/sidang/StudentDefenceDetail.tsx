@@ -5,28 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Loading, Spinner } from '@/components/ui/spinner';
+import { Loading } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
+import { StudentRevisiTab } from '@/components/sidang/student-detail/StudentRevisiTab';
 import {
   useStudentDefenceAssessment,
   useStudentDefenceDetail,
   useStudentDefenceHistory,
   useStudentDefenceOverview,
   useStudentDefenceRevisions,
-  useCreateDefenceRevision,
-  useSaveDefenceRevisionAction,
-  useSubmitDefenceRevisionAction,
-  useCancelDefenceRevisionSubmit,
   useDefenceDocumentTypes,
 } from '@/hooks/defence';
 import {
@@ -46,9 +34,6 @@ import {
   ChevronRight,
   Download,
   FileText,
-  ListChecks,
-  Plus,
-  Send,
 } from 'lucide-react';
 
 function mapScoreToGrade(score: number | null): string {
@@ -102,19 +87,14 @@ export default function StudentDefenceDetail() {
   const { data: overview } = useStudentDefenceOverview();
   const { data: docTypes = [] } = useDefenceDocumentTypes();
   const { data: assessment, isLoading: assessmentLoading } = useStudentDefenceAssessment(defenceId);
-  const { data: revisions = [], isLoading: revisionsLoading } = useStudentDefenceRevisions(defenceId);
-
-  const createRevision = useCreateDefenceRevision(defenceId);
-  const saveRevisionAction = useSaveDefenceRevisionAction(defenceId);
-  const submitRevisionAction = useSubmitDefenceRevisionAction(defenceId);
-  const cancelRevisionSubmit = useCancelDefenceRevisionSubmit(defenceId);
+  const {
+    data: revisions = [],
+    isLoading: revisionsLoading,
+    isFetching: revisionsFetching,
+    refetch: refetchRevisions,
+  } = useStudentDefenceRevisions(defenceId);
 
   const [activeTab, setActiveTab] = useState('identitas');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedExaminerId, setSelectedExaminerId] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [editingRevisionId, setEditingRevisionId] = useState<string | null>(null);
-  const [revisionActionText, setRevisionActionText] = useState('');
   const [expandedExaminers, setExpandedExaminers] = useState<Record<string, boolean>>({});
   const [isSupervisorExpanded, setIsSupervisorExpanded] = useState(false);
 
@@ -191,40 +171,6 @@ export default function StudentDefenceDetail() {
     ...(showBeritaAcara ? [{ label: 'Berita Acara', value: 'berita-acara' }] : []),
     ...(showRevisi ? [{ label: 'Revisi', value: 'revisi' }] : []),
   ];
-
-  const handleCreateRevision = () => {
-    if (!detail) return;
-    if (!selectedExaminerId || !newDescription.trim()) return;
-    createRevision.mutate(
-      {
-        defenceExaminerId: selectedExaminerId,
-        description: newDescription.trim(),
-      },
-      {
-        onSuccess: () => {
-          setShowAddForm(false);
-          setSelectedExaminerId('');
-          setNewDescription('');
-        },
-      }
-    );
-  };
-
-  const handleSubmitRevisionAction = (revisionId: string) => {
-    if (!revisionActionText.trim()) return;
-    submitRevisionAction.mutate(
-      {
-        revisionId,
-        payload: { revisionAction: revisionActionText.trim() },
-      },
-      {
-        onSuccess: () => {
-          setEditingRevisionId(null);
-          setRevisionActionText('');
-        },
-      }
-    );
-  };
 
   const handleDownloadDocument = async (filePath: string, fileName?: string | null) => {
     try {
@@ -664,235 +610,18 @@ export default function StudentDefenceDetail() {
       )}
 
       {activeTab === 'revisi' && showRevisi && (
-        <div className="space-y-4">
-          {revisionsLoading ? (
-            <div className="flex h-52 items-center justify-center">
-              <Loading size="lg" text="Memuat data revisi..." />
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <ListChecks className="h-5 w-5" />
-                  Daftar Revisi
-                </h2>
-                <Button
-                  size="sm"
-                  variant={showAddForm ? 'outline' : 'default'}
-                  disabled={!detail}
-                  onClick={() => setShowAddForm((prev) => !prev)}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Revisi
-                </Button>
-              </div>
-
-              {showAddForm && (
-                <Card>
-                  <CardContent className="pt-4 space-y-4">
-                    <div className="space-y-2">
-                      <Label>Penguji</Label>
-                      <Select value={selectedExaminerId} onValueChange={setSelectedExaminerId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih penguji" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(detail?.examiners ?? []).map((examiner) => (
-                            <SelectItem key={examiner.id} value={examiner.id}>
-                              Penguji {examiner.order}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Deskripsi Revisi</Label>
-                      <Textarea
-                        value={newDescription}
-                        onChange={(e) => setNewDescription(e.target.value)}
-                        rows={3}
-                        placeholder="Tuliskan item revisi yang harus dikerjakan..."
-                      />
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setShowAddForm(false);
-                          setSelectedExaminerId('');
-                          setNewDescription('');
-                        }}
-                      >
-                        Batal
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleCreateRevision}
-                        disabled={!selectedExaminerId || !newDescription.trim() || createRevision.isPending}
-                      >
-                        {createRevision.isPending ? (
-                          <>
-                            <Spinner className="mr-2 h-4 w-4" />
-                            Menyimpan...
-                          </>
-                        ) : (
-                          'Simpan'
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {revisions.length === 0 ? (
-                <Card>
-                  <CardContent className="pt-6 text-sm text-muted-foreground">
-                    Belum ada item revisi.
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {revisions.map((revision, idx) => (
-                    <Card key={revision.id}>
-                      <CardContent className="pt-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">#{idx + 1}</span>
-                            <Badge variant="outline">Penguji {revision.examinerOrder ?? '-'}</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              ({toTitleCaseName(revision.examinerName || '-')})
-                            </span>
-                          </div>
-                          <Badge variant={revision.isFinished ? 'success' : revision.studentSubmittedAt ? 'warning' : 'secondary'}>
-                            {revision.isFinished
-                              ? 'Diverifikasi'
-                              : revision.studentSubmittedAt
-                                ? 'Menunggu Verifikasi'
-                                : 'Belum Diisi'}
-                          </Badge>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Deskripsi:</p>
-                          <p className="text-sm whitespace-pre-wrap">{revision.description}</p>
-                        </div>
-
-                        {revision.isFinished ? (
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Perbaikan:</p>
-                            <p className="text-sm whitespace-pre-wrap">{revision.revisionAction || '-'}</p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              Diverifikasi pada {formatDateTimeId(revision.supervisorApprovedAt || null)}
-                            </p>
-                          </div>
-                        ) : editingRevisionId === revision.id ? (
-                          <div className="space-y-2">
-                            <Label className="text-xs">Perbaikan Yang Dilakukan</Label>
-                            <Textarea
-                              value={revisionActionText}
-                              onChange={(e) => setRevisionActionText(e.target.value)}
-                              rows={3}
-                              placeholder="Jelaskan perbaikan yang Anda lakukan..."
-                            />
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingRevisionId(null);
-                                  setRevisionActionText('');
-                                }}
-                              >
-                                Batal
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!revisionActionText.trim() || saveRevisionAction.isPending}
-                                onClick={() =>
-                                  saveRevisionAction.mutate({
-                                    revisionId: revision.id,
-                                    payload: { revisionAction: revisionActionText.trim() },
-                                  })
-                                }
-                              >
-                                {saveRevisionAction.isPending ? (
-                                  <>
-                                    <Spinner className="mr-2 h-4 w-4" />
-                                    Menyimpan...
-                                  </>
-                                ) : (
-                                  'Simpan Draft'
-                                )}
-                              </Button>
-                              <Button
-                                size="sm"
-                                disabled={!revisionActionText.trim() || submitRevisionAction.isPending}
-                                onClick={() => handleSubmitRevisionAction(revision.id)}
-                              >
-                                {submitRevisionAction.isPending ? (
-                                  <>
-                                    <Spinner className="mr-2 h-4 w-4" />
-                                    Mengirim...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Send className="h-4 w-4 mr-1" />
-                                    Submit
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : revision.studentSubmittedAt ? (
-                          <div className="space-y-2">
-                            <p className="text-xs text-muted-foreground mb-1">Perbaikan:</p>
-                            <p className="text-sm whitespace-pre-wrap">{revision.revisionAction || '-'}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Disubmit: {formatDateTimeId(revision.studentSubmittedAt)}
-                            </p>
-                            <div className="flex justify-end">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={cancelRevisionSubmit.isPending}
-                                onClick={() => cancelRevisionSubmit.mutate(revision.id)}
-                              >
-                                {cancelRevisionSubmit.isPending ? (
-                                  <>
-                                    <Spinner className="mr-2 h-4 w-4" />
-                                    Membatalkan...
-                                  </>
-                                ) : (
-                                  'Batal Submit'
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditingRevisionId(revision.id);
-                              setRevisionActionText(revision.revisionAction || '');
-                            }}
-                          >
-                            <Send className="h-4 w-4 mr-1" />
-                            Isi Perbaikan
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        detail ? (
+          <StudentRevisiTab
+            defenceId={detail.id}
+            examiners={detail.examiners}
+            revisions={revisions}
+            isLoading={revisionsLoading}
+            isRefreshing={revisionsFetching && !revisionsLoading}
+            onRefresh={refetchRevisions}
+          />
+        ) : (
+          <div className="text-sm text-muted-foreground">Data revisi tidak tersedia untuk percobaan sidang ini.</div>
+        )
       )}
     </div>
   );

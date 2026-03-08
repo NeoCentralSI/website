@@ -8,10 +8,13 @@ import {
   getStudentDefenceDetail,
   getStudentDefenceAssessment,
   getStudentDefenceRevisions,
+  getCurrentStudentDefenceRevisions,
   createDefenceRevision,
+  createCurrentDefenceRevision,
   saveDefenceRevisionAction,
   submitDefenceRevisionAction,
   cancelDefenceRevisionSubmit,
+  deleteDefenceRevision,
 } from '@/services/studentDefence.service';
 import { toast } from 'sonner';
 import type {
@@ -26,6 +29,7 @@ const defenceKeys = {
   detail: (defenceId?: string) => [...defenceKeys.all, 'detail', defenceId] as const,
   assessment: (defenceId?: string) => [...defenceKeys.all, 'assessment', defenceId] as const,
   revisions: (defenceId?: string) => [...defenceKeys.all, 'revisions', defenceId] as const,
+  revisionsCurrent: () => [...defenceKeys.all, 'revisions', 'current'] as const,
   documentTypes: () => [...defenceKeys.all, 'document-types'] as const,
   documents: () => [...defenceKeys.all, 'documents'] as const,
 };
@@ -75,6 +79,13 @@ export function useStudentDefenceRevisions(defenceId?: string) {
   });
 }
 
+export function useCurrentStudentDefenceRevisions() {
+  return useQuery({
+    queryKey: defenceKeys.revisionsCurrent(),
+    queryFn: getCurrentStudentDefenceRevisions,
+  });
+}
+
 export function useStudentDefenceDocuments() {
   return useQuery({
     queryKey: defenceKeys.documents(),
@@ -108,7 +119,26 @@ export function useCreateDefenceRevision(defenceId?: string) {
       return createDefenceRevision(defenceId, payload);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: defenceKeys.all });
       queryClient.invalidateQueries({ queryKey: defenceKeys.revisions(defenceId) });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisionsCurrent() });
+      toast.success('Item revisi berhasil ditambahkan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal menambahkan item revisi');
+    },
+  });
+}
+
+export function useCreateCurrentDefenceRevision() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateDefenceRevisionPayload) => createCurrentDefenceRevision(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: defenceKeys.all });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisionsCurrent() });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.overview() });
       toast.success('Item revisi berhasil ditambahkan');
     },
     onError: (error: Error) => {
@@ -124,7 +154,9 @@ export function useSaveDefenceRevisionAction(defenceId?: string) {
     mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SaveDefenceRevisionActionPayload }) =>
       saveDefenceRevisionAction(revisionId, payload),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: defenceKeys.all });
       queryClient.invalidateQueries({ queryKey: defenceKeys.revisions(defenceId) });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisionsCurrent() });
       toast.success('Perbaikan berhasil disimpan');
     },
     onError: (error: Error) => {
@@ -140,7 +172,26 @@ export function useSubmitDefenceRevisionAction(defenceId?: string) {
     mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SaveDefenceRevisionActionPayload }) =>
       submitDefenceRevisionAction(revisionId, payload),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: defenceKeys.all });
       queryClient.invalidateQueries({ queryKey: defenceKeys.revisions(defenceId) });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisionsCurrent() });
+      toast.success('Perbaikan berhasil disubmit');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal submit perbaikan');
+    },
+  });
+}
+
+export function useSubmitCurrentDefenceRevisionAction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SaveDefenceRevisionActionPayload }) =>
+      submitDefenceRevisionAction(revisionId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: defenceKeys.all });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisionsCurrent() });
       toast.success('Perbaikan berhasil disubmit');
     },
     onError: (error: Error) => {
@@ -155,11 +206,30 @@ export function useCancelDefenceRevisionSubmit(defenceId?: string) {
   return useMutation({
     mutationFn: (revisionId: string) => cancelDefenceRevisionSubmit(revisionId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: defenceKeys.all });
       queryClient.invalidateQueries({ queryKey: defenceKeys.revisions(defenceId) });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisionsCurrent() });
       toast.success('Submit perbaikan dibatalkan');
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal membatalkan submit');
+    },
+  });
+}
+
+export function useDeleteDefenceRevision(defenceId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (revisionId: string) => deleteDefenceRevision(revisionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: defenceKeys.all });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisions(defenceId) });
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisionsCurrent() });
+      toast.success('Item revisi berhasil dihapus');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal menghapus item revisi');
     },
   });
 }

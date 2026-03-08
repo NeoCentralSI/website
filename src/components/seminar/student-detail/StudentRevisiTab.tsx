@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ChevronDown,
   CheckCircle2,
@@ -8,6 +8,7 @@ import {
   Plus,
   MessageSquareText,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
@@ -36,15 +37,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -52,6 +46,7 @@ import {
   useSaveRevisionAction,
   useSubmitRevision,
   useCancelRevisionSubmission,
+  useDeleteRevision,
 } from '@/hooks/seminar';
 import { toTitleCaseName } from '@/lib/text';
 import type {
@@ -61,6 +56,8 @@ import type {
 
 interface StudentRevisiTabProps {
   detail: StudentSeminarDetailResponse;
+  onRefresh: () => Promise<unknown> | unknown;
+  isRefreshing?: boolean;
 }
 
 type RevisionStatus = 'diproses' | 'diajukan' | 'disetujui';
@@ -94,33 +91,35 @@ function StatusBadge({ status }: { status: RevisionStatus }) {
   }
 }
 
-export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
+export function StudentRevisiTab({ detail, onRefresh, isRefreshing }: StudentRevisiTabProps) {
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
   const [submitConfirmId, setSubmitConfirmId] = useState<string | null>(null);
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Create form state
   const [selectedExaminerId, setSelectedExaminerId] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newRevisionAction, setNewRevisionAction] = useState('');
 
-  // Pagination
+  const [editDescription, setEditDescription] = useState('');
+  const [editRevisionAction, setEditRevisionAction] = useState('');
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
 
-  // Mutations
   const createMutation = useCreateRevision();
   const saveMutation = useSaveRevisionAction();
   const submitMutation = useSubmitRevision();
   const cancelMutation = useCancelRevisionSubmission();
+  const deleteMutation = useDeleteRevision();
 
   const revisions = detail.revisions;
   const examinerNotes = detail.examinerNotes;
   const summary = detail.revisionSummary;
 
-  // Filtered + paginated data
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
     if (!term) return revisions;
@@ -137,49 +136,77 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
     return filteredData.slice(start, start + pageSize);
   }, [filteredData, page, pageSize]);
 
-  // Handlers
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!selectedExaminerId || !newDescription.trim()) return;
-    createMutation.mutate(
-      { seminarExaminerId: selectedExaminerId, description: newDescription.trim() },
-      {
-        onSuccess: () => {
-          setCreateOpen(false);
-          setSelectedExaminerId('');
-          setNewDescription('');
+
+    const created = await createMutation.mutateAsync({
+      seminarExaminerId: selectedExaminerId,
+      description: newDescription.trim(),
+    });
+
+    if (newRevisionAction.trim()) {
+      await saveMutation.mutateAsync({
+        revisionId: created.id,
+        payload: {
+          description: newDescription.trim(),
+          revisionAction: newRevisionAction.trim(),
         },
-      }
-    );
+      });
+    }
+
+    setCreateOpen(false);
+    setSelectedExaminerId('');
+    setNewDescription('');
+    setNewRevisionAction('');
+    await onRefresh();
   };
 
-  const handleSave = (revisionId: string) => {
-    if (!editText.trim()) return;
-    saveMutation.mutate(
-      { revisionId, payload: { revisionAction: editText.trim() } },
-      {
-        onSuccess: () => {
-          setEditingId(null);
-          setEditText('');
-        },
-      }
-    );
+  const openEditModal = (row: StudentRevisionItem) => {
+    setEditingId(row.id);
+    setEditDescription(row.description || '');
+    setEditRevisionAction(row.revisionAction || '');
+    setEditOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSaveEdit = async () => {
+    if (!editingId || !editDescription.trim()) return;
+
+    await saveMutation.mutateAsync({
+      revisionId: editingId,
+      payload: {
+        description: editDescription.trim(),
+        revisionAction: editRevisionAction.trim() || undefined,
+      },
+    });
+
+    setEditOpen(false);
+    setEditingId(null);
+    setEditDescription('');
+    setEditRevisionAction('');
+    await onRefresh();
+  };
+
+  const handleSubmit = async () => {
     if (!submitConfirmId) return;
-    submitMutation.mutate(submitConfirmId, {
-      onSuccess: () => setSubmitConfirmId(null),
-    });
+    await submitMutation.mutateAsync(submitConfirmId);
+    setSubmitConfirmId(null);
+    await onRefresh();
   };
 
-  const handleCancelSubmission = () => {
+  const handleCancelSubmission = async () => {
     if (!cancelConfirmId) return;
-    cancelMutation.mutate(cancelConfirmId, {
-      onSuccess: () => setCancelConfirmId(null),
-    });
+    await cancelMutation.mutateAsync(cancelConfirmId);
+    setCancelConfirmId(null);
+    await onRefresh();
   };
 
-  // Table columns
+  const handleDelete = async () => {
+    if (!deleteConfirmId) return;
+    await deleteMutation.mutateAsync(deleteConfirmId);
+    setDeleteConfirmId(null);
+    await onRefresh();
+  };
+
   const columns = useMemo<Column<StudentRevisionItem>[]>(
     () => [
       {
@@ -203,43 +230,11 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
       {
         key: 'revisionAction',
         header: 'Perbaikan',
-        render: (row) => {
-          const isEditing = editingId === row.id;
-          if (isEditing) {
-            return (
-              <div className="flex items-center gap-1">
-                <Input
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  placeholder="Tulis perbaikan..."
-                  className="h-8 text-sm"
-                />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleSave(row.id)}
-                  disabled={saveMutation.isPending}
-                  className="h-8 px-2 shrink-0"
-                >
-                  {saveMutation.isPending ? <Spinner className="h-3 w-3" /> : 'Simpan'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => { setEditingId(null); setEditText(''); }}
-                  className="h-8 px-2 shrink-0"
-                >
-                  Batal
-                </Button>
-              </div>
-            );
-          }
-          return (
-            <p className="text-sm whitespace-pre-wrap break-words max-w-[200px] text-muted-foreground">
-              {row.revisionAction || '-'}
-            </p>
-          );
-        },
+        render: (row) => (
+          <p className="text-sm whitespace-pre-wrap break-words max-w-[200px] text-muted-foreground">
+            {row.revisionAction || '-'}
+          </p>
+        ),
       },
       {
         key: 'status',
@@ -260,7 +255,7 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
       {
         key: 'actions',
         header: 'Aksi',
-        width: 160,
+        width: 130,
         className: 'text-right',
         render: (row) => {
           const status = getRevisionStatus(row);
@@ -269,33 +264,45 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
               {status === 'diproses' && (
                 <>
                   <Button
-                    size="sm"
                     variant="ghost"
-                    onClick={() => { setEditingId(row.id); setEditText(row.revisionAction || ''); }}
-                    className="h-7 px-2 text-xs"
+                    size="icon"
+                    onClick={() => openEditModal(row)}
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    title="Edit"
                   >
-                    <Pencil className="h-3 w-3 mr-1" /> Perbaikan
+                    <Pencil className="h-4 w-4" />
                   </Button>
                   {row.revisionAction && (
                     <Button
-                      size="sm"
-                      variant="outline"
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setSubmitConfirmId(row.id)}
-                      className="h-7 px-2 text-xs"
+                      className="h-8 w-8 text-muted-foreground hover:text-emerald-600"
+                      title="Ajukan"
                     >
-                      <Send className="h-3 w-3 mr-1" /> Ajukan
+                      <Send className="h-4 w-4" />
                     </Button>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeleteConfirmId(row.id)}
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    title="Hapus"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </>
               )}
               {status === 'diajukan' && (
                 <Button
-                  size="sm"
-                  variant="outline"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setCancelConfirmId(row.id)}
-                  className="h-7 px-2 text-xs"
+                  className="h-8 w-8 text-muted-foreground hover:text-amber-600"
+                  title="Batalkan Pengajuan"
                 >
-                  <Undo2 className="h-3 w-3 mr-1" /> Batalkan
+                  <Undo2 className="h-4 w-4" />
                 </Button>
               )}
               {status === 'disetujui' && (
@@ -308,13 +315,11 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
         },
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editingId, editText, saveMutation.isPending]
+    []
   );
 
   return (
     <div className="space-y-4">
-      {/* Examiner Notes (Collapsible) */}
       {examinerNotes.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
@@ -331,10 +336,11 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
         </Card>
       )}
 
-      {/* Revision Table */}
       <CustomTable
         columns={columns}
         data={paginatedData}
+        loading={isRefreshing && revisions.length === 0}
+        isRefreshing={isRefreshing && revisions.length > 0}
         total={filteredData.length}
         page={page}
         pageSize={pageSize}
@@ -349,6 +355,7 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
             <Badge variant="outline" className="text-xs">
               {summary.finished}/{summary.total} selesai
             </Badge>
+            <RefreshButton onClick={() => void onRefresh()} isRefreshing={!!isRefreshing} />
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" /> Tambah
             </Button>
@@ -356,7 +363,6 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
         }
       />
 
-      {/* Create Revision Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
@@ -365,18 +371,18 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Dosen Penguji</Label>
-              <Select value={selectedExaminerId} onValueChange={setSelectedExaminerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih dosen penguji" />
-                </SelectTrigger>
-                <SelectContent>
-                  {detail.examiners.map((ex) => (
-                    <SelectItem key={ex.id} value={ex.id}>
-                      Penguji {ex.order} — {toTitleCaseName(ex.lecturerName)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={selectedExaminerId}
+                onChange={(event) => setSelectedExaminerId(event.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Pilih dosen penguji</option>
+                {detail.examiners.map((examiner) => (
+                  <option key={examiner.id} value={examiner.id}>
+                    Penguji {examiner.order} - {toTitleCaseName(examiner.lecturerName)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <Label>Catatan Revisi</Label>
@@ -387,16 +393,25 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
                 rows={3}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Perbaikan Yang Dilakukan</Label>
+              <Textarea
+                value={newRevisionAction}
+                onChange={(e) => setNewRevisionAction(e.target.value)}
+                placeholder="Isi perbaikan yang sudah Anda lakukan (opsional)..."
+                rows={3}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
               Batal
             </Button>
             <Button
-              onClick={handleCreate}
-              disabled={!selectedExaminerId || !newDescription.trim() || createMutation.isPending}
+              onClick={() => void handleCreate()}
+              disabled={!selectedExaminerId || !newDescription.trim() || createMutation.isPending || saveMutation.isPending}
             >
-              {createMutation.isPending ? (
+              {createMutation.isPending || saveMutation.isPending ? (
                 <>
                   <Spinner className="mr-2 h-4 w-4" /> Menyimpan...
                 </>
@@ -408,7 +423,51 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Submit Confirmation */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Revisi</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Catatan Revisi</Label>
+              <Textarea
+                value={editDescription}
+                onChange={(event) => setEditDescription(event.target.value)}
+                placeholder="Tuliskan catatan revisi..."
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Perbaikan Yang Dilakukan</Label>
+              <Textarea
+                value={editRevisionAction}
+                onChange={(event) => setEditRevisionAction(event.target.value)}
+                placeholder="Tuliskan perbaikan yang sudah Anda lakukan..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              onClick={() => void handleSaveEdit()}
+              disabled={!editDescription.trim() || saveMutation.isPending}
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" /> Menyimpan...
+                </>
+              ) : (
+                'Simpan'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!submitConfirmId} onOpenChange={(open) => !open && setSubmitConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -432,7 +491,6 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Cancel Submission Confirmation */}
       <AlertDialog open={!!cancelConfirmId} onOpenChange={(open) => !open && setCancelConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -455,13 +513,32 @@ export function StudentRevisiTab({ detail }: StudentRevisiTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Item revisi yang belum diajukan akan dihapus permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" /> Menghapus...
+                </>
+              ) : (
+                'Ya, Hapus'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
-
-// ============================================================
-// Sub-components
-// ============================================================
 
 interface ExaminerNoteProps {
   note: { examinerOrder: number; lecturerName: string; revisionNotes: string };
@@ -473,21 +550,19 @@ function ExaminerNoteCollapsible({ note }: ExaminerNoteProps) {
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
-        <button className="flex items-center justify-between w-full p-3 rounded-md border text-sm hover:bg-muted/50 transition-colors">
-          <div className="flex items-center gap-2">
-            <MessageSquareText className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">Penguji {note.examinerOrder}</span>
-            <span className="text-muted-foreground">— {toTitleCaseName(note.lecturerName)}</span>
+        <button className="w-full rounded-md border px-3 py-2 text-left hover:bg-muted/40">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">
+              Penguji {note.examinerOrder} - {toTitleCaseName(note.lecturerName)}
+            </p>
+            <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
           </div>
-          <ChevronDown
-            className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          />
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="px-3 pb-3 pt-2 border-x border-b rounded-b-md text-sm whitespace-pre-wrap">
+      <CollapsibleContent className="px-3 py-2">
+        <p className="text-sm whitespace-pre-wrap break-words text-muted-foreground">
           {note.revisionNotes}
-        </div>
+        </p>
       </CollapsibleContent>
     </Collapsible>
   );

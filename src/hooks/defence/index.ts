@@ -4,13 +4,17 @@ export {
   useStudentDefenceDetail,
   useStudentDefenceAssessment,
   useStudentDefenceRevisions,
+  useCurrentStudentDefenceRevisions,
   useDefenceDocumentTypes,
   useStudentDefenceDocuments,
   useUploadDefenceDocument,
   useCreateDefenceRevision,
+  useCreateCurrentDefenceRevision,
   useSaveDefenceRevisionAction,
   useSubmitDefenceRevisionAction,
+  useSubmitCurrentDefenceRevisionAction,
   useCancelDefenceRevisionSubmit,
+  useDeleteDefenceRevision,
 } from './useStudentDefence';
 
 export {
@@ -33,4 +37,8 @@ export {
   useSubmitDefenceAssessment,
   useDefenceFinalizationData,
   useFinalizeDefenceBySupervisor,
+  useDefenceRevisionBoard,
+  useApproveDefenceRevision,
+  useUnapproveDefenceRevision,
+  useFinalizeDefenceRevisions,
 } from './useLecturerDefence';

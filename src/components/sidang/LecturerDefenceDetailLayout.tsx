@@ -33,12 +33,16 @@ export function LecturerDefenceDetailLayout({ children }: LecturerDefenceDetailL
       canOpenByStatus &&
       (detail.viewerRole === 'examiner' || detail.viewerRole === 'supervisor');
     const canOpenMinutes = canOpenByStatus && detail.viewerRole === 'supervisor';
+    const canOpenRevision = detail.status === 'passed_with_revision' && detail.viewerRole === 'supervisor';
 
     if (canOpenAssessment) {
       items.push({ label: 'Penilaian', to: `${base}/assessment` });
     }
     if (canOpenMinutes) {
       items.push({ label: 'Berita Acara', to: `${base}/minutes` });
+    }
+    if (canOpenRevision) {
+      items.push({ label: 'Revisi', to: `${base}/revision` });
     }
 
     return items;

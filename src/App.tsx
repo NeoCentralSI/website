@@ -43,7 +43,6 @@ const SecretaryKelolaTugasAkhirPage = lazy(() => import('./pages/tugas-akhir/bim
 const SeminarHasilEntry = lazy(() => import('./pages/tugas-akhir/seminar-hasil/SeminarHasilEntry'))
 const StudentThesisSeminarPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentThesisSeminar'))
 const StudentSeminarAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarAttendance'))
-const StudentSeminarRevisionPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarRevision'))
 const StudentSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarDetail'))
 const AdminThesisSeminarManagementPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/AdminThesisSeminarManagement'))
 const AdminSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/AdminSeminarDetail'))
@@ -66,6 +65,7 @@ const LecturerSupervisedStudentDefencesPage = lazy(() => import('./pages/tugas-a
 const LecturerDefenceDetailIdentityPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceDetailIdentity'))
 const LecturerDefenceDetailAssessmentPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceDetailAssessment'))
 const LecturerDefenceDetailMinutesPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceDetailMinutes'))
+const LecturerDefenceDetailRevisionPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceDetailRevision'))
 // Kerja Praktik - Student
 const InternshipProposalPage = lazy(() => import('./pages/kerja-praktik/student/registration/Proposal'))
 const InternshipProposalDetailPage = lazy(() => import('./pages/kerja-praktik/student/registration/PendaftaranDetail'))
@@ -196,7 +196,6 @@ function App() {
                   <Route path="bimbingan/milestone" element={<StudentMilestonePage />} />
                   <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
                   <Route path="seminar/student" element={<StudentThesisSeminarPage />} />
-                  <Route path="seminar/student/revision" element={<StudentSeminarRevisionPage />} />
                   <Route path="seminar/student/attendance" element={<StudentSeminarAttendancePage />} />
                   <Route path="seminar/student/history/:seminarId" element={<StudentSeminarDetailPage />} />
                   <Route path="sidang/student" element={<StudentThesisDefencePage />} />
@@ -244,6 +243,7 @@ function App() {
                 <Route path="/tugas-akhir/sidang/lecturer/:defenceId" element={<LecturerDefenceDetailIdentityPage />} />
                 <Route path="/tugas-akhir/sidang/lecturer/:defenceId/assessment" element={<LecturerDefenceDetailAssessmentPage />} />
                 <Route path="/tugas-akhir/sidang/lecturer/:defenceId/minutes" element={<LecturerDefenceDetailMinutesPage />} />
+                <Route path="/tugas-akhir/sidang/lecturer/:defenceId/revision" element={<LecturerDefenceDetailRevisionPage />} />
                 <Route path="/jadwal-ketersediaan" element={<JadwalKetersediaan />} />
               </Route>
 

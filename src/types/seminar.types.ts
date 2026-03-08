@@ -760,5 +760,6 @@ export interface StudentAssessmentResponse {
 }
 
 export interface SaveRevisionActionPayload {
-  revisionAction: string;
+  revisionAction?: string;
+  description?: string;
 }

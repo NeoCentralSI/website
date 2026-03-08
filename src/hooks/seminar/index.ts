@@ -16,4 +16,5 @@ export {
   useSaveRevisionAction,
   useSubmitRevision,
   useCancelRevisionSubmission,
+  useDeleteRevision,
 } from './useStudentSeminar';

@@ -8,6 +8,7 @@ import type {
   StudentDefenceHistoryItem,
   StudentDefenceDetailResponse,
   StudentDefenceAssessmentResponse,
+  StudentDefenceRevisionResponse,
   StudentDefenceRevisionItem,
   CreateDefenceRevisionPayload,
   SaveDefenceRevisionActionPayload,
@@ -84,11 +85,30 @@ export async function getStudentDefenceRevisions(defenceId?: string): Promise<St
   return json.data;
 }
 
+export async function getCurrentStudentDefenceRevisions(): Promise<StudentDefenceRevisionResponse> {
+  const res = await apiRequest(getApiUrl(EP.REVISIONS));
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat data revisi sidang');
+  return json.data;
+}
+
 export async function createDefenceRevision(
   defenceId: string,
   payload: CreateDefenceRevisionPayload
 ): Promise<StudentDefenceRevisionItem> {
   const res = await apiRequest(getApiUrl(EP.CREATE_REVISION(defenceId)), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menambahkan revisi');
+  return json.data;
+}
+
+export async function createCurrentDefenceRevision(
+  payload: CreateDefenceRevisionPayload
+): Promise<StudentDefenceRevisionItem> {
+  const res = await apiRequest(getApiUrl(EP.REVISIONS), {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -129,5 +149,14 @@ export async function cancelDefenceRevisionSubmit(revisionId: string): Promise<S
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Gagal membatalkan submit revisi');
+  return json.data;
+}
+
+export async function deleteDefenceRevision(revisionId: string): Promise<{ id: string }> {
+  const res = await apiRequest(getApiUrl(EP.DELETE_REVISION(revisionId)), {
+    method: 'DELETE',
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menghapus revisi');
   return json.data;
 }

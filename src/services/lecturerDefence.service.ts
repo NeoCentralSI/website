@@ -14,6 +14,7 @@ import type {
   DefenceFinalizationDataResponse,
   FinalizeDefencePayload,
   FinalizeDefenceResponse,
+  DefenceRevisionBoardItem,
 } from '@/types/defence.types';
 
 const EP = API_CONFIG.ENDPOINTS.THESIS_DEFENCE_LECTURER;
@@ -124,6 +125,50 @@ export async function finalizeDefenceBySupervisor(
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Gagal menetapkan hasil sidang');
+  return json.data;
+}
+
+export async function getDefenceRevisionBoard(
+  defenceId: string,
+): Promise<DefenceRevisionBoardItem[]> {
+  const res = await apiRequest(getApiUrl(EP.DEFENCE_REVISIONS(defenceId)));
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat data revisi sidang');
+  return json.data;
+}
+
+export async function approveDefenceRevision(
+  defenceId: string,
+  revisionId: string,
+): Promise<{ id: string; isFinished: boolean }> {
+  const res = await apiRequest(getApiUrl(EP.APPROVE_REVISION(defenceId, revisionId)), {
+    method: 'PUT',
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menyetujui revisi sidang');
+  return json.data;
+}
+
+export async function unapproveDefenceRevision(
+  defenceId: string,
+  revisionId: string,
+): Promise<{ id: string; isFinished: boolean }> {
+  const res = await apiRequest(getApiUrl(EP.UNAPPROVE_REVISION(defenceId, revisionId)), {
+    method: 'PUT',
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal membatalkan persetujuan revisi sidang');
+  return json.data;
+}
+
+export async function finalizeDefenceRevisions(
+  defenceId: string,
+): Promise<{ defenceId: string; revisionFinalizedAt: string | null; revisionFinalizedBy: string | null }> {
+  const res = await apiRequest(getApiUrl(EP.FINALIZE_REVISIONS(defenceId)), {
+    method: 'POST',
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memfinalisasi revisi sidang');
   return json.data;
 }
 
