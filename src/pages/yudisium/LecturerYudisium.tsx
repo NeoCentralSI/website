@@ -4,6 +4,8 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { ExitSurveyManagementPanel } from "@/components/yudisium/exit-survey/ExitSurveyManagementPanel";
 import { YudisiumRequirementManagementPanel } from "@/components/yudisium/requirements/YudisiumRequirementManagementPanel";
+import { YudisiumTable } from "@/components/yudisium/event/YudisiumTable";
+import { useYudisiumEvents } from "@/hooks/master-data/useYudisiumEvents";
 import { useRole } from "@/hooks/shared";
 import { ROLES } from "@/lib/roles";
 
@@ -12,17 +14,6 @@ const TAB_ITEMS: TabItem[] = [
   { label: "Persyaratan Yudisium", to: "/yudisium/lecturer/persyaratan" },
   { label: "Exit Survey", to: "/yudisium/lecturer/exit-survey" },
 ];
-
-function YudisiumPanel() {
-  return (
-    <div className="border rounded-lg bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-semibold">Yudisium</h2>
-      <p className="text-sm text-muted-foreground mt-1">
-        Kelola acara yudisium, jadwal pendaftaran, dan peserta. Konten akan segera hadir.
-      </p>
-    </div>
-  );
-}
 
 function PersyaratanYudisiumPanel() {
   return <YudisiumRequirementManagementPanel />;
@@ -39,49 +30,75 @@ export default function LecturerYudisiumPage() {
     ROLES.KOORDINATOR_YUDISIUM,
   ]);
 
-  const visibleTabs = useMemo(
+  const visibleTabs = useMemo<TabItem[]>(
     () =>
       canManageYudisiumMaster
         ? TAB_ITEMS
-        : TAB_ITEMS.filter((tab) => tab.label === "Yudisium"),
+        : [],
     [canManageYudisiumMaster]
   );
 
   const activeTab =
-    visibleTabs.find((tab) => pathname.startsWith(tab.to)) ?? visibleTabs[0];
+    visibleTabs.find((tab) => pathname.startsWith(tab.to)) ?? visibleTabs[0] ?? TAB_ITEMS[0];
 
   const breadcrumbs = useMemo(
-    () => [
-      { label: "Yudisium", href: "/yudisium" },
-      { label: activeTab.label },
-    ],
-    [activeTab.label]
+    () =>
+      canManageYudisiumMaster
+        ? [{ label: "Yudisium", href: "/yudisium" }, { label: activeTab.label }]
+        : [{ label: "Yudisium" }],
+    [activeTab.label, canManageYudisiumMaster]
   );
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-    setTitle(activeTab.label);
-  }, [activeTab.label, breadcrumbs, setBreadcrumbs, setTitle]);
+    setTitle(canManageYudisiumMaster ? activeTab.label : "Yudisium");
+  }, [activeTab.label, breadcrumbs, canManageYudisiumMaster, setBreadcrumbs, setTitle]);
+
+  const {
+    events,
+    isLoading,
+    isFetching,
+    refetch,
+    create,
+    update,
+    remove,
+    isDeleting,
+  } = useYudisiumEvents();
 
   const renderContent = () => {
-    if (activeTab.label === "Yudisium") return <YudisiumPanel />;
     if (activeTab.label === "Persyaratan Yudisium") return <PersyaratanYudisiumPanel />;
     if (activeTab.label === "Exit Survey") return <ExitSurveyManagementPanel />;
-    return <YudisiumPanel />;
+    return (
+      <YudisiumTable
+        data={events}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        onDelete={remove}
+        onUpdate={update}
+        onCreate={create}
+        onRefresh={refetch}
+        isDeleting={isDeleting}
+        canManage={canManageYudisiumMaster}
+      />
+    );
   };
 
   return (
     <div className="p-4 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Yudisium</h1>
+          <h1 className="text-2xl font-bold">
+            {canManageYudisiumMaster ? "Kelola Data Yudisium" : "Data Yudisium"}
+          </h1>
           <p className="text-gray-500">
-            Manajemen acara yudisium, persyaratan, dan exit survey
+            {canManageYudisiumMaster
+              ? "Kelola acara yudisium, persyaratan, dan exit survey"
+              : "Data seluruh periode yudisium"}
           </p>
         </div>
       </div>
 
-      <TabsNav tabs={visibleTabs} />
+      {visibleTabs.length > 0 && <TabsNav tabs={visibleTabs} />}
       {renderContent()}
     </div>
   );

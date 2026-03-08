@@ -75,6 +75,10 @@ export const API_CONFIG = {
       MOVE_TOP: (id: string) => `/yudisium/yudisium-requirements/${id}/move-top`,
       MOVE_BOTTOM: (id: string) => `/yudisium/yudisium-requirements/${id}/move-bottom`,
     },
+    YUDISIUM_EVENT: {
+      BASE: '/yudisium/event',
+      BY_ID: (id: string) => `/yudisium/event/${id}`,
+    },
     NOTIFICATION: {
       BASE: '/notification',
       UNREAD_COUNT: '/notification/unread-count',

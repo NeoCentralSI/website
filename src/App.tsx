@@ -94,6 +94,7 @@ const MetopenOverviewPage = lazy(() => import('./pages/metopel/Metopel'))
 const YudisiumEntry = lazy(() => import('./pages/yudisium/YudisiumEntry'))
 const YudisiumOverviewPage = lazy(() => import('./pages/yudisium/student/Overview'))
 const LecturerYudisiumPage = lazy(() => import('./pages/yudisium/LecturerYudisium'))
+const LecturerYudisiumDetailPage = lazy(() => import('./pages/yudisium/LecturerYudisiumDetail'))
 const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview'))
 // Tugas Akhir - Monitoring
 const MonitoringDashboard = lazy(() => import('./pages/tugas-akhir/monitoring/MonitoringDashboard'))
@@ -239,6 +240,7 @@ function App() {
               <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
                 <Route path="/yudisium/lecturer" element={<Navigate to="/yudisium/lecturer/event" replace />} />
                 <Route path="/yudisium/lecturer/event" element={<LecturerYudisiumPage />} />
+                <Route path="/yudisium/lecturer/event/:id" element={<LecturerYudisiumDetailPage />} />
               </Route>
 
               {/* Yudisium - Restricted Lecturer Tabs */}
