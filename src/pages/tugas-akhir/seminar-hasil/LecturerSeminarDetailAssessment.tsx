@@ -32,6 +32,22 @@ const FINAL_RECOMMENDATIONS: { value: FinalizeSeminarPayload['status']; label: s
   { value: 'failed', label: 'Gagal', desc: 'Mahasiswa harus mengulang seminar hasil.' },
 ];
 
+function getMaxScoreFromDetails(
+  details: Array<{ criteria: Array<{ maxScore: number }> }> = []
+): number {
+  return details.reduce(
+    (sum, group) => sum + group.criteria.reduce((groupSum, criterion) => groupSum + Number(criterion.maxScore || 0), 0),
+    0,
+  );
+}
+
+function formatScoreFraction(score: number | null, maxScore: number): string {
+  if (score === null || score === undefined || Number.isNaN(Number(score))) return `- / ${maxScore}`;
+  const numeric = Number(score);
+  const display = Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(2);
+  return `${display} / ${maxScore}`;
+}
+
 // ──────────────────────────────────────────────────────────────
 // Examiner Assessment Section
 // ──────────────────────────────────────────────────────────────
@@ -195,29 +211,40 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
       {/* Revision Notes */}
       <div className="space-y-2">
         <Label htmlFor="revisionNotes">Catatan Penguji</Label>
-        <Textarea
-          id="revisionNotes"
-          rows={4}
-          placeholder="Tuliskan catatan atau arahan revisi untuk mahasiswa (opsional)..."
-          value={revisionNotes}
-          disabled={isSubmitted}
-          onChange={(e) => setRevisionNotes(e.target.value)}
-        />
+        {isSubmitted ? (
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-sm whitespace-pre-wrap break-words">
+                {revisionNotes.trim() || 'Tidak ada catatan.'}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Textarea
+            id="revisionNotes"
+            rows={4}
+            placeholder="Tuliskan catatan atau arahan revisi untuk mahasiswa (opsional)..."
+            value={revisionNotes}
+            onChange={(e) => setRevisionNotes(e.target.value)}
+          />
+        )}
       </div>
 
       {/* Submit */}
-      <div className="flex justify-end">
-        <Button onClick={handleSubmit} disabled={!canSubmit || submitMutation.isPending}>
-          {submitMutation.isPending ? (
-            <>
-              <Spinner className="mr-2 h-4 w-4" />
-              Mengirim...
-            </>
-          ) : (
-            'Submit Penilaian'
-          )}
-        </Button>
-      </div>
+      {!isSubmitted && (
+        <div className="flex justify-end">
+          <Button onClick={handleSubmit} disabled={!canSubmit || submitMutation.isPending}>
+            {submitMutation.isPending ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Mengirim...
+              </>
+            ) : (
+              'Submit Penilaian'
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -243,7 +270,8 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
 
   const isFinalized = !!data.seminar.resultFinalizedAt;
   const displayGrade = data.averageGrade || data.seminar.grade;
-  const averageScoreText = data.averageScore?.toFixed(2) ?? '-';
+  const totalMaxScore = getMaxScoreFromDetails(data.examiners?.[0]?.assessmentDetails || []) || 100;
+  const totalScoreText = formatScoreFraction(data.averageScore, totalMaxScore);
 
   const canFinalize = !!data.recommendationUnlocked && !!finalRecommendation && !isFinalized;
 
@@ -278,6 +306,7 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
       {data.examiners.map((examiner) => {
         const isExpanded = expandedExaminers[examiner.id] ?? false;
         const hasDetails = (examiner.assessmentDetails ?? []).length > 0;
+        const examinerMaxScore = getMaxScoreFromDetails(examiner.assessmentDetails || []);
         return (
           <Card key={examiner.id}>
             <CardContent className="pt-4 space-y-3">
@@ -294,7 +323,7 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
               {/* Total Score */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total Skor:</span>
-                <span className="font-semibold text-base">{examiner.assessmentScore ?? '-'}</span>
+                <span className="font-semibold text-base">{formatScoreFraction(examiner.assessmentScore, examinerMaxScore || 100)}</span>
               </div>
 
               {examiner.assessmentSubmittedAt && (
@@ -346,6 +375,15 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
                   </CollapsibleContent>
                 </Collapsible>
               )}
+
+              {examiner.assessmentSubmittedAt && (
+                <div className="rounded-md border bg-muted/20 px-3 py-2">
+                  <p className="text-xs font-medium text-muted-foreground">Catatan Penguji</p>
+                  <p className="mt-1 text-sm whitespace-pre-wrap break-words">
+                    {examiner.revisionNotes?.trim() || 'Tidak ada catatan.'}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
@@ -353,9 +391,9 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
 
       <Card className="bg-muted/20">
         <CardContent className="pt-4 flex items-center justify-between">
-          <span className="font-medium">Rata-rata Nilai Penguji</span>
+          <span className="font-medium">Total Skor</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">{averageScoreText}</span>
+            <span className="text-2xl font-bold">{totalScoreText}</span>
             {displayGrade && <span className="text-lg font-semibold">({displayGrade})</span>}
           </div>
         </CardContent>

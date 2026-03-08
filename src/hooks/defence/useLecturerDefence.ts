@@ -7,8 +7,16 @@ import {
   getDefenceAssignmentSeminars,
   getDefenceEligibleExaminers,
   assignDefenceExaminers,
+  getDefenceAssessmentForm,
+  submitDefenceAssessment,
+  getDefenceFinalizationData,
+  finalizeDefenceBySupervisor,
 } from '@/services/lecturerDefence.service';
-import type { RespondDefenceAssignmentPayload } from '@/types/defence.types';
+import type {
+  RespondDefenceAssignmentPayload,
+  SubmitDefenceAssessmentPayload,
+  FinalizeDefencePayload,
+} from '@/types/defence.types';
 
 // ============================================================
 // Lecturer — Examiner Requests
@@ -111,6 +119,68 @@ export function useAssignDefenceExaminers() {
       queryClient.invalidateQueries({ queryKey: ['lecturer-defence-detail'] });
       queryClient.invalidateQueries({ queryKey: ['admin-defences'] });
       queryClient.invalidateQueries({ queryKey: ['admin-defence-detail'] });
+    },
+  });
+}
+
+// ============================================================
+// Lecturer — Defence Assessment & Finalization
+// ============================================================
+
+export function useDefenceAssessmentForm(defenceId: string | undefined) {
+  return useQuery({
+    queryKey: ['defence-assessment-form', defenceId],
+    queryFn: () => getDefenceAssessmentForm(defenceId!),
+    enabled: !!defenceId,
+  });
+}
+
+export function useSubmitDefenceAssessment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      defenceId,
+      payload,
+    }: {
+      defenceId: string;
+      payload: SubmitDefenceAssessmentPayload;
+    }) => submitDefenceAssessment(defenceId, payload),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['defence-assessment-form', vars.defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['defence-finalization', vars.defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['lecturer-defence-detail', vars.defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['defence-examiner-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['supervised-student-defences'] });
+    },
+  });
+}
+
+export function useDefenceFinalizationData(defenceId: string | undefined) {
+  return useQuery({
+    queryKey: ['defence-finalization', defenceId],
+    queryFn: () => getDefenceFinalizationData(defenceId!),
+    enabled: !!defenceId,
+  });
+}
+
+export function useFinalizeDefenceBySupervisor() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      defenceId,
+      payload,
+    }: {
+      defenceId: string;
+      payload: FinalizeDefencePayload;
+    }) => finalizeDefenceBySupervisor(defenceId, payload),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['defence-finalization', vars.defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['lecturer-defence-detail', vars.defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['defence-examiner-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['supervised-student-defences'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
     },
   });
 }

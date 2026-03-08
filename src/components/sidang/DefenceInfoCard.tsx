@@ -3,37 +3,17 @@ import { Badge } from '@/components/ui/badge';
 import { toTitleCaseName, formatDateOnlyId } from '@/lib/text';
 import { Users, Calendar, MapPin, Video, Trophy } from 'lucide-react';
 import type { DefenceInfo, ThesisDefenceStatus } from '@/types/defence.types';
+import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
 
 const FINALIZED_STATUSES: ThesisDefenceStatus[] = ['passed', 'passed_with_revision', 'failed'];
-const SCHEDULED_STATUSES: ThesisDefenceStatus[] = ['scheduled', 'passed', 'passed_with_revision', 'failed'];
+const SCHEDULED_STATUSES: ThesisDefenceStatus[] = ['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed'];
 const CARD_VISIBLE_STATUSES: ThesisDefenceStatus[] = [
   'examiner_assigned',
   'scheduled',
+  'ongoing',
   'passed',
   'passed_with_revision',
 ];
-
-const STATUS_LABEL: Record<ThesisDefenceStatus, string> = {
-  registered: 'Terdaftar',
-  verified: 'Terverifikasi',
-  examiner_assigned: 'Penguji Ditetapkan',
-  scheduled: 'Dijadwalkan',
-  passed: 'Lulus',
-  passed_with_revision: 'Lulus dengan Revisi',
-  failed: 'Tidak Lulus',
-  cancelled: 'Dibatalkan',
-};
-
-const STATUS_VARIANT: Record<ThesisDefenceStatus, 'default' | 'secondary' | 'destructive' | 'outline' | 'success'> = {
-  registered: 'secondary',
-  verified: 'secondary',
-  examiner_assigned: 'outline',
-  scheduled: 'default',
-  passed: 'success',
-  passed_with_revision: 'default',
-  failed: 'destructive',
-  cancelled: 'destructive',
-};
 
 function formatTimeRange(startTime: string | null, endTime: string | null): string {
   if (!startTime || !endTime) return '-';
@@ -51,9 +31,10 @@ function formatTimeRange(startTime: string | null, endTime: string | null): stri
 
 interface DefenceInfoCardProps {
   defence: DefenceInfo;
+  onClick?: () => void;
 }
 
-export function DefenceInfoCard({ defence }: DefenceInfoCardProps) {
+export function DefenceInfoCard({ defence, onClick }: DefenceInfoCardProps) {
   if (!CARD_VISIBLE_STATUSES.includes(defence.status)) return null;
 
   const showSchedule = SCHEDULED_STATUSES.includes(defence.status);
@@ -78,13 +59,14 @@ export function DefenceInfoCard({ defence }: DefenceInfoCardProps) {
         : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
 
   return (
-    <Card>
+    <Card
+      className={onClick ? 'cursor-pointer transition-colors hover:bg-muted/50' : undefined}
+      onClick={onClick}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Informasi Sidang</CardTitle>
-          <Badge variant={STATUS_VARIANT[defence.status]}>
-            {STATUS_LABEL[defence.status]}
-          </Badge>
+          <DefenceStatusBadge status={defence.status} />
         </div>
       </CardHeader>
       <CardContent>

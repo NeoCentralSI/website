@@ -3,6 +3,7 @@ export type ThesisDefenceStatus =
   | 'verified'
   | 'examiner_assigned'
   | 'scheduled'
+  | 'ongoing'
   | 'passed'
   | 'passed_with_revision'
   | 'failed'
@@ -355,11 +356,157 @@ export interface LecturerDefenceDetailResponse {
   myExaminerId: string | null;
   myExaminerOrder: number | null;
   myExaminerAvailabilityStatus: ExaminerAvailabilityStatus | null;
+  myAssessmentSubmittedAt: string | null;
+  canOpenExaminerAssessment: boolean;
+  canOpenSupervisorAssessment: boolean;
+  canOpenSupervisorFinalization: boolean;
+  resultFinalizedAt: string | null;
+  allExaminerSubmitted: boolean;
+  supervisorAssessmentSubmitted: boolean;
   supervisors: AdminDefenceSupervisor[];
   documents: AdminDefenceDocumentDetail[];
   documentTypes: AdminDefenceDocType[];
   examiners: LecturerDefenceExaminer[];
   rejectedExaminers: RejectedDefenceExaminer[];
+}
+
+export interface DefenceAssessmentCriterionInput {
+  id: string;
+  name: string;
+  maxScore: number;
+  score: number | null;
+  rubrics: {
+    id: string;
+    minScore: number;
+    maxScore: number;
+    description: string;
+  }[];
+}
+
+export interface DefenceAssessmentGroup {
+  id: string;
+  code: string;
+  description: string;
+  criteria: DefenceAssessmentCriterionInput[];
+}
+
+export interface DefenceAssessmentFormResponse {
+  defence: {
+    id: string;
+    status: ThesisDefenceStatus;
+    studentName: string;
+    studentNim: string;
+    thesisTitle: string;
+    date: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    room: { id: string; name: string } | null;
+  };
+  assessorRole: 'examiner' | 'supervisor';
+  examiner: {
+    id: string;
+    order: number;
+    assessmentScore: number | null;
+    revisionNotes: string | null;
+    assessmentSubmittedAt: string | null;
+  } | null;
+  supervisor: {
+    roleName: string;
+    assessmentScore: number | null;
+    supervisorNotes: string | null;
+    assessmentSubmittedAt: string | null;
+  } | null;
+  criteriaGroups: DefenceAssessmentGroup[];
+}
+
+export interface SubmitDefenceAssessmentPayload {
+  scores: { assessmentCriteriaId: string; score: number }[];
+  revisionNotes?: string | null;
+  supervisorNotes?: string | null;
+}
+
+export interface SubmitDefenceAssessmentResponse {
+  assessorRole: 'examiner' | 'supervisor';
+  examinerId?: string;
+  defenceId?: string;
+  assessmentScore: number | null;
+  assessmentSubmittedAt: string | null;
+}
+
+export interface DefenceFinalizationDataResponse {
+  defence: {
+    id: string;
+    status: ThesisDefenceStatus;
+    examinerAverageScore: number | null;
+    supervisorScore: number | null;
+    finalScore: number | null;
+    computedFinalScore: number | null;
+    grade: string | null;
+    resultFinalizedAt: string | null;
+    studentName: string;
+    studentNim: string;
+    thesisTitle: string;
+  };
+  supervisor: {
+    roleName: string;
+    name: string;
+    canFinalize: boolean;
+  };
+  examiners: {
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    assessmentScore: number | null;
+    revisionNotes: string | null;
+    assessmentSubmittedAt: string | null;
+    assessmentDetails: {
+      id: string;
+      code: string;
+      description: string;
+      criteria: {
+        id: string;
+        name: string;
+        maxScore: number;
+        score: number;
+        displayOrder: number;
+      }[];
+    }[];
+  }[];
+  supervisorAssessment: {
+    assessmentScore: number | null;
+    supervisorNotes: string | null;
+    assessmentSubmittedAt: string | null;
+    assessmentDetails: {
+      id: string;
+      code: string;
+      description: string;
+      criteria: {
+        id: string;
+        name: string;
+        maxScore: number;
+        score: number;
+        displayOrder: number;
+      }[];
+    }[];
+  };
+  allExaminerSubmitted: boolean;
+  supervisorAssessmentSubmitted: boolean;
+  recommendationUnlocked: boolean;
+}
+
+export interface FinalizeDefencePayload {
+  status: 'passed' | 'passed_with_revision' | 'failed';
+}
+
+export interface FinalizeDefenceResponse {
+  defenceId: string;
+  status: ThesisDefenceStatus;
+  examinerAverageScore: number | null;
+  supervisorScore: number | null;
+  finalScore: number | null;
+  grade: string | null;
+  resultFinalizedAt: string | null;
 }
 
 export interface RespondDefenceAssignmentPayload {
@@ -370,4 +517,151 @@ export interface RespondDefenceAssignmentResponse {
   examinerId: string;
   status: string;
   defenceTransitioned: boolean;
+}
+
+export interface StudentDefenceHistoryItem {
+  id: string;
+  status: ThesisDefenceStatus;
+  registeredAt: string | null;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  meetingLink: string | null;
+  finalScore: number | null;
+  grade: string | null;
+  resultFinalizedAt: string | null;
+  cancelledReason: string | null;
+  room: { id: string; name: string } | null;
+  examiners: {
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    assessmentScore: number | null;
+    assessmentSubmittedAt: string | null;
+  }[];
+}
+
+export interface StudentDefenceDetailResponse {
+  id: string;
+  thesisId: string;
+  status: ThesisDefenceStatus;
+  registeredAt: string | null;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  meetingLink: string | null;
+  finalScore: number | null;
+  grade: string | null;
+  resultFinalizedAt: string | null;
+  cancelledReason: string | null;
+  room: { id: string; name: string } | null;
+  thesis: {
+    id: string;
+    studentId: string;
+    title: string;
+    thesisSupervisors: {
+      role: { name: string };
+      lecturer: { user: { fullName: string } };
+    }[];
+  };
+  examiners: {
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    assessmentScore: number | null;
+    assessmentSubmittedAt: string | null;
+    revisionNotes: string | null;
+  }[];
+  documents: {
+    thesisDefenceId: string;
+    documentTypeId: string;
+    documentTypeName: string;
+    documentId: string;
+    status: DocumentSubmitStatus;
+    submittedAt: string;
+    verifiedAt: string | null;
+    notes: string | null;
+    fileName: string | null;
+    filePath: string | null;
+  }[];
+}
+
+export interface StudentDefenceAssessmentResponse {
+  defence: {
+    id: string;
+    status: ThesisDefenceStatus;
+    examinerAverageScore: number | null;
+    supervisorScore: number | null;
+    finalScore: number | null;
+    grade: string | null;
+    resultFinalizedAt: string | null;
+    room: { id: string; name: string } | null;
+    date: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    meetingLink: string | null;
+  };
+  examiners: {
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    assessmentScore: number | null;
+    assessmentSubmittedAt: string | null;
+    revisionNotes?: string | null;
+    assessmentDetails: {
+      id: string;
+      code: string;
+      description: string;
+      criteria: {
+        id: string;
+        name: string;
+        maxScore: number;
+        score: number;
+        displayOrder: number;
+      }[];
+    }[];
+  }[];
+  supervisorAssessment: {
+    name: string;
+    assessmentScore: number | null;
+    supervisorNotes: string | null;
+    assessmentSubmittedAt: string | null;
+    assessmentDetails: {
+      id: string;
+      code: string;
+      description: string;
+      criteria: {
+        id: string;
+        name: string;
+        maxScore: number;
+        score: number;
+        displayOrder: number;
+      }[];
+    }[];
+  };
+}
+
+export interface StudentDefenceRevisionItem {
+  id: string;
+  defenceExaminerId: string;
+  description: string;
+  revisionAction: string | null;
+  studentSubmittedAt: string | null;
+  isFinished: boolean;
+  supervisorApprovedAt: string | null;
+  approvedBySupervisorName?: string | null;
+  examinerOrder?: number | null;
+  examinerName?: string;
+}
+
+export interface CreateDefenceRevisionPayload {
+  defenceExaminerId: string;
+  description: string;
+}
+
+export interface SaveDefenceRevisionActionPayload {
+  revisionAction: string;
 }

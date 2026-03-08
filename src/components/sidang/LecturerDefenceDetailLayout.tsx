@@ -6,6 +6,7 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
+import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import { useLecturerDefenceDetail } from '@/hooks/defence';
 import { toTitleCaseName } from '@/lib/text';
 import type { LecturerDefenceDetailResponse } from '@/types/defence.types';
@@ -20,6 +21,28 @@ export function LecturerDefenceDetailLayout({ children }: LecturerDefenceDetailL
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
   const { data: detail, isLoading } = useLecturerDefenceDetail(defenceId);
+
+  const tabs = useMemo(() => {
+    if (!defenceId || !detail) return [] as TabItem[];
+
+    const base = `/tugas-akhir/sidang/lecturer/${defenceId}`;
+    const items: TabItem[] = [{ label: 'Identitas', to: base, end: true }];
+
+    const canOpenByStatus = ['ongoing', 'passed', 'passed_with_revision', 'failed'].includes(detail.status);
+    const canOpenAssessment =
+      canOpenByStatus &&
+      (detail.viewerRole === 'examiner' || detail.viewerRole === 'supervisor');
+    const canOpenMinutes = canOpenByStatus && detail.viewerRole === 'supervisor';
+
+    if (canOpenAssessment) {
+      items.push({ label: 'Penilaian', to: `${base}/assessment` });
+    }
+    if (canOpenMinutes) {
+      items.push({ label: 'Berita Acara', to: `${base}/minutes` });
+    }
+
+    return items;
+  }, [defenceId, detail]);
 
   const breadcrumbs = useMemo(
     () => [
@@ -66,6 +89,8 @@ export function LecturerDefenceDetailLayout({ children }: LecturerDefenceDetailL
           <DefenceStatusBadge status={detail.status} />
         </div>
       </div>
+
+      {tabs.length > 1 && <TabsNav tabs={tabs} />}
 
       {/* Tab content */}
       {children(detail)}

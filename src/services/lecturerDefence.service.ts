@@ -8,6 +8,12 @@ import type {
   EligibleDefenceExaminer,
   RespondDefenceAssignmentPayload,
   RespondDefenceAssignmentResponse,
+  DefenceAssessmentFormResponse,
+  SubmitDefenceAssessmentPayload,
+  SubmitDefenceAssessmentResponse,
+  DefenceFinalizationDataResponse,
+  FinalizeDefencePayload,
+  FinalizeDefenceResponse,
 } from '@/types/defence.types';
 
 const EP = API_CONFIG.ENDPOINTS.THESIS_DEFENCE_LECTURER;
@@ -72,6 +78,52 @@ export async function respondDefenceExaminerAssignment(
   });
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Gagal mengirim respons');
+  return json.data;
+}
+
+export async function getDefenceAssessmentForm(
+  defenceId: string,
+): Promise<DefenceAssessmentFormResponse> {
+  const res = await apiRequest(getApiUrl(EP.DEFENCE_ASSESSMENT(defenceId)));
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat form penilaian sidang');
+  return json.data;
+}
+
+export async function submitDefenceAssessment(
+  defenceId: string,
+  payload: SubmitDefenceAssessmentPayload,
+): Promise<SubmitDefenceAssessmentResponse> {
+  const res = await apiRequest(getApiUrl(EP.DEFENCE_ASSESSMENT(defenceId)), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal submit penilaian sidang');
+  return json.data;
+}
+
+export async function getDefenceFinalizationData(
+  defenceId: string,
+): Promise<DefenceFinalizationDataResponse> {
+  const res = await apiRequest(getApiUrl(EP.FINALIZATION_DATA(defenceId)));
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat data berita acara sidang');
+  return json.data;
+}
+
+export async function finalizeDefenceBySupervisor(
+  defenceId: string,
+  payload: FinalizeDefencePayload,
+): Promise<FinalizeDefenceResponse> {
+  const res = await apiRequest(getApiUrl(EP.FINALIZE_DEFENCE(defenceId)), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menetapkan hasil sidang');
   return json.data;
 }
 

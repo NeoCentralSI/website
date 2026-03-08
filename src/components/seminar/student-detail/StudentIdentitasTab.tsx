@@ -44,13 +44,14 @@ export function StudentIdentitasTab({ detail }: StudentIdentitasTabProps) {
               <span className="text-muted-foreground">Judul:</span>
               <span className="text-right max-w-[60%]">{detail.thesis.title}</span>
             </div>
-            {detail.examiners.length > 0 && (
+
+            {(detail.thesis.supervisors || []).length > 0 && (
               <div className="space-y-1 pt-2 border-t">
-                <span className="text-muted-foreground text-xs">Dosen Penguji:</span>
-                {detail.examiners.map((ex) => (
-                  <div key={ex.id} className="flex justify-between">
-                    <span className="text-muted-foreground">Penguji {ex.order}</span>
-                    <span>{toTitleCaseName(ex.lecturerName)}</span>
+                <span className="text-muted-foreground text-xs">Dosen Pembimbing Tugas Akhir:</span>
+                {detail.thesis.supervisors.map((sup, idx) => (
+                  <div key={`${sup.role}-${idx}`} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">{sup.role}</span>
+                    <span className="text-right">{toTitleCaseName(sup.lecturerName)}</span>
                   </div>
                 ))}
               </div>
@@ -79,6 +80,19 @@ export function StudentIdentitasTab({ detail }: StudentIdentitasTabProps) {
               <span className="text-muted-foreground">Ruangan:</span>
               <span>{detail.room?.name || '-'}</span>
             </div>
+
+            {detail.examiners.length > 0 && (
+              <div className="space-y-1 pt-2 border-t">
+                <span className="text-muted-foreground text-xs">Dosen Penguji:</span>
+                {detail.examiners.map((ex) => (
+                  <div key={ex.id} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Penguji {ex.order}</span>
+                    <span className="text-right">{toTitleCaseName(ex.lecturerName)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {detail.meetingLink && (
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground shrink-0">Link:</span>

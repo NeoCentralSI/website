@@ -9,5 +9,5 @@ export function DefenceStatusBadge({ status }: { status: ThesisDefenceStatus }) 
 }
 
 export function getDefenceStatusFilterOptions() {
-  return getThesisWorkflowStatusFilterOptions({ includeOngoing: false });
+  return getThesisWorkflowStatusFilterOptions({ includeOngoing: true });
 }

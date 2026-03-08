@@ -1,8 +1,16 @@
 export {
   useStudentDefenceOverview,
+  useStudentDefenceHistory,
+  useStudentDefenceDetail,
+  useStudentDefenceAssessment,
+  useStudentDefenceRevisions,
   useDefenceDocumentTypes,
   useStudentDefenceDocuments,
   useUploadDefenceDocument,
+  useCreateDefenceRevision,
+  useSaveDefenceRevisionAction,
+  useSubmitDefenceRevisionAction,
+  useCancelDefenceRevisionSubmit,
 } from './useStudentDefence';
 
 export {
@@ -21,4 +29,8 @@ export {
   useDefenceAssignmentList,
   useDefenceEligibleExaminers,
   useAssignDefenceExaminers,
+  useDefenceAssessmentForm,
+  useSubmitDefenceAssessment,
+  useDefenceFinalizationData,
+  useFinalizeDefenceBySupervisor,
 } from './useLecturerDefence';

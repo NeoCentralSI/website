@@ -687,7 +687,14 @@ export interface StudentSeminarDetailResponse {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
-  thesis: { id: string; title: string };
+  thesis: {
+    id: string;
+    title: string;
+    supervisors: {
+      role: string;
+      lecturerName: string;
+    }[];
+  };
   examiners: StudentSeminarDetailExaminer[];
   documents: StudentSeminarDetailDocument[];
   examinerNotes: StudentRevisionExaminerNote[];

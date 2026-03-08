@@ -9,10 +9,26 @@ import { useStudentSeminarAssessment } from '@/hooks/seminar';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 
 const FINAL_RECOMMENDATIONS = [
-  { value: 'passed', label: 'Lulus' },
-  { value: 'passed_with_revision', label: 'Lulus dengan Revisi' },
-  { value: 'failed', label: 'Gagal' },
+  { value: 'passed', label: 'Lulus', desc: 'Mahasiswa menyelesaikan seminar hasil dan lulus tanpa revisi.' },
+  { value: 'passed_with_revision', label: 'Lulus dengan Revisi', desc: 'Mahasiswa lulus, namun wajib menyelesaikan revisi.' },
+  { value: 'failed', label: 'Gagal', desc: 'Mahasiswa harus mengulang seminar hasil.' },
 ] as const;
+
+function getMaxScoreFromDetails(
+  details: Array<{ criteria: Array<{ maxScore: number }> }> = []
+): number {
+  return details.reduce(
+    (sum, group) => sum + group.criteria.reduce((groupSum, criterion) => groupSum + Number(criterion.maxScore || 0), 0),
+    0,
+  );
+}
+
+function formatScoreFraction(score: number | null, maxScore: number): string {
+  if (score === null || score === undefined || Number.isNaN(Number(score))) return `- / ${maxScore}`;
+  const numeric = Number(score);
+  const display = Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(2);
+  return `${display} / ${maxScore}`;
+}
 
 interface StudentPenilaianTabProps {
   seminarId: string;
@@ -33,7 +49,8 @@ export function StudentPenilaianTab({ seminarId, seminarStatus }: StudentPenilai
 
   const isFinalized = !!data.seminar.resultFinalizedAt;
   const displayGrade = data.averageGrade || data.seminar.grade;
-  const averageScoreText = data.averageScore?.toFixed(2) ?? '-';
+  const totalMaxScore = getMaxScoreFromDetails(data.examiners?.[0]?.assessmentDetails || []) || 100;
+  const totalScoreText = formatScoreFraction(data.averageScore, totalMaxScore);
 
   const toggleExaminer = (id: string) => {
     setExpandedExaminers((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -41,7 +58,7 @@ export function StudentPenilaianTab({ seminarId, seminarStatus }: StudentPenilai
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Penilaian Penguji</h2>
+      <h2 className="text-lg font-semibold">Penilaian Penguji & Penetapan Hasil</h2>
 
       {isFinalized && (
         <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
@@ -53,6 +70,7 @@ export function StudentPenilaianTab({ seminarId, seminarStatus }: StudentPenilai
       {data.examiners.map((examiner) => {
         const isExpanded = expandedExaminers[examiner.id] ?? false;
         const hasDetails = (examiner.assessmentDetails ?? []).length > 0;
+        const examinerMaxScore = getMaxScoreFromDetails(examiner.assessmentDetails || []);
         return (
           <Card key={examiner.id}>
             <CardContent className="pt-4 space-y-3">
@@ -69,7 +87,7 @@ export function StudentPenilaianTab({ seminarId, seminarStatus }: StudentPenilai
               {/* Total Score */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total Skor:</span>
-                <span className="font-semibold text-base">{examiner.assessmentScore ?? '-'}</span>
+                <span className="font-semibold text-base">{formatScoreFraction(examiner.assessmentScore, examinerMaxScore || 100)}</span>
               </div>
 
               {examiner.assessmentSubmittedAt && (
@@ -121,17 +139,26 @@ export function StudentPenilaianTab({ seminarId, seminarStatus }: StudentPenilai
                   </CollapsibleContent>
                 </Collapsible>
               )}
+
+              {examiner.assessmentSubmittedAt && (
+                <div className="rounded-md border bg-muted/20 px-3 py-2">
+                  <p className="text-xs font-medium text-muted-foreground">Catatan Penguji</p>
+                  <p className="mt-1 text-sm whitespace-pre-wrap break-words">
+                    {examiner.revisionNotes?.trim() || 'Tidak ada catatan.'}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
       })}
 
-      {/* Average Score */}
+      {/* Total Score */}
       <Card className="bg-muted/20">
         <CardContent className="pt-4 flex items-center justify-between">
-          <span className="font-medium">Rata-rata Nilai Penguji</span>
+          <span className="font-medium">Total Skor</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">{averageScoreText}</span>
+            <span className="text-2xl font-bold">{totalScoreText}</span>
             {displayGrade && <span className="text-lg font-semibold">({displayGrade})</span>}
           </div>
         </CardContent>
@@ -149,7 +176,10 @@ export function StudentPenilaianTab({ seminarId, seminarStatus }: StudentPenilai
                 className={`flex items-center gap-3 rounded-lg border p-3 ${isSelected ? 'border-green-300 bg-green-50' : 'opacity-50'}`}
               >
                 {isSelected && <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />}
-                <p className={`font-medium text-sm ${isSelected ? 'text-green-700' : ''}`}>{item.label}</p>
+                <div>
+                  <p className={`font-medium text-sm ${isSelected ? 'text-green-700' : ''}`}>{item.label}</p>
+                  <p className={`text-xs ${isSelected ? 'text-green-600' : 'text-muted-foreground'}`}>{item.desc}</p>
+                </div>
               </div>
             );
           })}

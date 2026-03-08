@@ -20,6 +20,7 @@ function getActiveStepIndex(status: ThesisDefenceStatus | null, allChecklistMet:
     verified: 2,
     examiner_assigned: 3,
     scheduled: 4,
+    ongoing: 5,
     passed: 5,
     passed_with_revision: 5,
   };
