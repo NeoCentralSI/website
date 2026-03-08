@@ -2,13 +2,15 @@ import { useEffect, useMemo } from "react";
 import { useLocation, useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
-import { ExitSurveyManagementPanel } from "@/components/kelola/exit-survey/ExitSurveyManagementPanel";
+import { ExitSurveyManagementPanel } from "@/components/yudisium/exit-survey/ExitSurveyManagementPanel";
 import { YudisiumRequirementManagementPanel } from "@/components/yudisium/requirements/YudisiumRequirementManagementPanel";
+import { useRole } from "@/hooks/shared";
+import { ROLES } from "@/lib/roles";
 
 const TAB_ITEMS: TabItem[] = [
-  { label: "Yudisium", to: "/kelola/yudisium/event" },
-  { label: "Persyaratan Yudisium", to: "/kelola/yudisium/persyaratan" },
-  { label: "Exit Survey", to: "/kelola/yudisium/exit-survey" },
+  { label: "Yudisium", to: "/yudisium/lecturer/event" },
+  { label: "Persyaratan Yudisium", to: "/yudisium/lecturer/persyaratan" },
+  { label: "Exit Survey", to: "/yudisium/lecturer/exit-survey" },
 ];
 
 function YudisiumPanel() {
@@ -27,17 +29,30 @@ function PersyaratanYudisiumPanel() {
 }
 
 
-export default function KelolaYudisiumPage() {
+export default function LecturerYudisiumPage() {
   const { pathname } = useLocation();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+  const { hasAnyRole } = useRole();
+
+  const canManageYudisiumMaster = hasAnyRole([
+    ROLES.SEKRETARIS_DEPARTEMEN,
+    ROLES.KOORDINATOR_YUDISIUM,
+  ]);
+
+  const visibleTabs = useMemo(
+    () =>
+      canManageYudisiumMaster
+        ? TAB_ITEMS
+        : TAB_ITEMS.filter((tab) => tab.label === "Yudisium"),
+    [canManageYudisiumMaster]
+  );
 
   const activeTab =
-    TAB_ITEMS.find((tab) => pathname.startsWith(tab.to)) ?? TAB_ITEMS[0];
+    visibleTabs.find((tab) => pathname.startsWith(tab.to)) ?? visibleTabs[0];
 
   const breadcrumbs = useMemo(
     () => [
-      { label: "Kelola", href: "/kelola" },
-      { label: "Yudisium", href: "/kelola/yudisium" },
+      { label: "Yudisium", href: "/yudisium" },
       { label: activeTab.label },
     ],
     [activeTab.label]
@@ -59,14 +74,14 @@ export default function KelolaYudisiumPage() {
     <div className="p-4 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Kelola Yudisium</h1>
+          <h1 className="text-2xl font-bold">Yudisium</h1>
           <p className="text-gray-500">
             Manajemen acara yudisium, persyaratan, dan exit survey
           </p>
         </div>
       </div>
 
-      <TabsNav tabs={TAB_ITEMS} />
+      <TabsNav tabs={visibleTabs} />
       {renderContent()}
     </div>
   );

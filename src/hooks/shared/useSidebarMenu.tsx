@@ -172,6 +172,13 @@ export const useSidebarMenu = () => {
         ],
       });
 
+      menuItems.push({
+        title: "Yudisium",
+        url: "/yudisium",
+        icon: GraduationCap,
+        items: [],
+      });
+
       // Jadwal Ketersediaan — leaf item
       menuItems.push({
         title: "Jadwal Ketersediaan",
@@ -246,6 +253,13 @@ export const useSidebarMenu = () => {
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
+      });
+
+      menuItems.push({
+        title: "Yudisium",
+        url: "/yudisium",
+        icon: GraduationCap,
+        items: [],
       });
 
       // Jadwal Ketersediaan — leaf item
@@ -340,6 +354,13 @@ export const useSidebarMenu = () => {
         ],
       });
 
+      menuItems.push({
+        title: "Yudisium",
+        url: "/yudisium",
+        icon: GraduationCap,
+        items: [],
+      });
+
       // Jadwal Ketersediaan — leaf item
       menuItems.push({
         title: "Jadwal Ketersediaan",
@@ -356,7 +377,6 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
-          { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
@@ -408,6 +428,13 @@ export const useSidebarMenu = () => {
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
+      });
+
+      menuItems.push({
+        title: "Yudisium",
+        url: "/yudisium",
+        icon: GraduationCap,
+        items: [],
       });
 
       // Jadwal Ketersediaan — leaf item
@@ -489,6 +516,12 @@ export const useSidebarMenu = () => {
                 url: "/tugas-akhir/sidang",
               },
             ],
+          },
+          {
+            title: "Yudisium",
+            url: "/yudisium",
+            icon: GraduationCap,
+            items: [],
           },
           {
             title: "Master Data",

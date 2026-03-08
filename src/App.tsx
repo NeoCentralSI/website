@@ -91,8 +91,9 @@ const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetter
 // Overview Pages
 const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/Overview'))
 const MetopenOverviewPage = lazy(() => import('./pages/metopel/Metopel'))
+const YudisiumEntry = lazy(() => import('./pages/yudisium/YudisiumEntry'))
 const YudisiumOverviewPage = lazy(() => import('./pages/yudisium/student/Overview'))
-const KelolaYudisiumPage = lazy(() => import('./pages/yudisium/KelolaYudisium'))
+const LecturerYudisiumPage = lazy(() => import('./pages/yudisium/LecturerYudisium'))
 const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview'))
 // Tugas Akhir - Monitoring
 const MonitoringDashboard = lazy(() => import('./pages/tugas-akhir/monitoring/MonitoringDashboard'))
@@ -226,9 +227,32 @@ function App() {
               <Route path="/kerja-praktik/monitoring" element={<Placeholder title="Kerja Praktek - Monitoring" />} />
               <Route path="/kerja-praktik/seminar" element={<Placeholder title="Kerja Praktek - Seminar" />} />
 
-              {/* Yudisium - Top Level for Student */}
+              {/* Yudisium shared entry */}
+              <Route path="/yudisium" element={<YudisiumEntry />} />
+
+              {/* Yudisium - Student */}
               <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
-                <Route path="/yudisium" element={<YudisiumOverviewPage />} />
+                <Route path="/yudisium/student" element={<YudisiumOverviewPage />} />
+              </Route>
+
+              {/* Yudisium - Lecturer */}
+              <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
+                <Route path="/yudisium/lecturer" element={<Navigate to="/yudisium/lecturer/event" replace />} />
+                <Route path="/yudisium/lecturer/event" element={<LecturerYudisiumPage />} />
+              </Route>
+
+              {/* Yudisium - Restricted Lecturer Tabs */}
+              <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_YUDISIUM]} />}>
+                <Route path="/yudisium/lecturer/persyaratan" element={<LecturerYudisiumPage />} />
+                <Route path="/yudisium/lecturer/exit-survey" element={<LecturerYudisiumPage />} />
+              </Route>
+
+              {/* Yudisium - Admin */}
+              <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN]} />}>
+                <Route
+                  path="/yudisium/admin"
+                  element={<Placeholder title="Yudisium" description="Halaman Yudisium untuk Admin akan segera hadir." />}
+                />
               </Route>
 
               {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
@@ -299,10 +323,10 @@ function App() {
                 <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
-                <Route path="/kelola/yudisium" element={<Navigate to="/kelola/yudisium/event" replace />} />
-                <Route path="/kelola/yudisium/event" element={<KelolaYudisiumPage />} />
-                <Route path="/kelola/yudisium/persyaratan" element={<KelolaYudisiumPage />} />
-                <Route path="/kelola/yudisium/exit-survey" element={<KelolaYudisiumPage />} />
+                <Route path="/kelola/yudisium" element={<Navigate to="/yudisium/lecturer/event" replace />} />
+                <Route path="/kelola/yudisium/event" element={<Navigate to="/yudisium/lecturer/event" replace />} />
+                <Route path="/kelola/yudisium/persyaratan" element={<Navigate to="/yudisium/lecturer/persyaratan" replace />} />
+                <Route path="/kelola/yudisium/exit-survey" element={<Navigate to="/yudisium/lecturer/exit-survey" replace />} />
               </Route>
 
               {/* Kelola - Kadep */}
