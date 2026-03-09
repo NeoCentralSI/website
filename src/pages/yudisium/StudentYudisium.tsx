@@ -29,7 +29,8 @@ const formatDateOnly = (date: string | null | undefined) => {
 const checklistEntries = (checklist: Record<string, StudentYudisiumChecklistItem>) =>
   Object.entries(checklist).map(([key, value]) => ({ key, ...value }));
 
-type YudisiumStatus = 'draft' | 'open' | 'closed' | 'in_review' | 'finalized';
+type YudisiumStatus = 'draft' | 'open' | 'closed' | 'under_review' | 'in_review' | 'finalized';
+type ParticipantStatus = 'registered' | 'under_review' | 'approved' | 'rejected' | 'finalized' | null;
 
 const STEPS = [
   { key: 'checklist', label: 'Checklist Persyaratan' },
@@ -56,25 +57,34 @@ const STATUS_BADGE_MAP: Record<YudisiumStatus, { label: string; className: strin
     label: 'Dalam Review',
     className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50',
   },
+  under_review: {
+    label: 'Dalam Review',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50',
+  },
   finalized: {
     label: 'Final',
     className: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100',
   },
 };
 
-function getActiveStepIndex(status: YudisiumStatus, allChecklistMet: boolean, allDocumentsUploaded: boolean): number {
+function getActiveStepIndex(
+  status: YudisiumStatus,
+  participantStatus: ParticipantStatus,
+  allChecklistMet: boolean,
+  allDocumentsUploaded: boolean,
+): number {
   if (!allChecklistMet) return 0;
-  if (!allDocumentsUploaded) return 1;
 
-  const statusMap: Record<YudisiumStatus, number> = {
-    draft: 1,
-    open: 1,
-    closed: 2,
-    in_review: 3,
-    finalized: 4,
-  };
+  // Participant status is the source of truth for document validation progression.
+  const isPastDocumentValidation = ['under_review', 'approved', 'finalized'].includes(participantStatus ?? 'registered');
+  const documentsCompleted = allDocumentsUploaded || isPastDocumentValidation;
+  if (!documentsCompleted) return 1;
 
-  return statusMap[status] ?? 0;
+  if (status === 'in_review') return 3;
+  if (status === 'finalized') return 4;
+
+  // At minimum, completed documents should mark "Dokumen Yudisium Lengkap" as checked.
+  return 2;
 }
 
 function YudisiumStatusStepper({ currentStep }: { currentStep: number }) {
@@ -189,7 +199,12 @@ export default function StudentYudisium() {
   const checklistItems = data ? checklistEntries(data.checklist) : [];
   const allDocumentsUploaded = (data?.requirements ?? []).every((item) => item.isUploaded);
   const currentStep = data?.yudisium
-    ? getActiveStepIndex(data.yudisium.status as YudisiumStatus, data.allChecklistMet, allDocumentsUploaded)
+    ? getActiveStepIndex(
+      data.yudisium.status as YudisiumStatus,
+      data.participantStatus ?? null,
+      data.allChecklistMet,
+      allDocumentsUploaded,
+    )
     : 0;
 
   const statusBadge = data?.yudisium

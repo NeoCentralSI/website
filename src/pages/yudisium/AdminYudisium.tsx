@@ -116,12 +116,12 @@ export default function AdminYudisium() {
           setPageSize(size);
           setPage(1);
         }}
-        search={search}
+        searchValue={search}
         onSearchChange={(val) => {
           setSearch(val);
           setPage(1);
         }}
-        searchPlaceholder="Cari periode yudisium..."
+        emptyText="Belum ada periode yudisium"
       />
     </div>
   );

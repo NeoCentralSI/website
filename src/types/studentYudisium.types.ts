@@ -64,6 +64,7 @@ export type StudentYudisiumOverviewResponse = {
       name: string;
     } | null;
   } | null;
+  participantStatus: 'registered' | 'under_review' | 'approved' | 'rejected' | 'finalized' | null;
   thesis: {
     id: string;
     title: string;
