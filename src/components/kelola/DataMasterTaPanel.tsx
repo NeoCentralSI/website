@@ -18,6 +18,7 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { ExportExcelDialog } from "./ExportExcelDialog";
 import { ImportMasterDataDialog } from "./ImportMasterDataDialog";
 import { Upload } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface FormState {
     id?: string;
@@ -31,6 +32,7 @@ interface FormState {
     supervisors: SupervisorData[];
     pembimbing1: string;
     pembimbing2: string;
+    isProposal?: boolean;
 }
 
 const emptyForm: FormState = {
@@ -44,6 +46,7 @@ const emptyForm: FormState = {
     supervisors: [],
     pembimbing1: "none",
     pembimbing2: "none",
+    isProposal: false,
 };
 
 const ratings = ["ONGOING", "SLOW", "AT_RISK", "FAILED", "CANCELLED"];
@@ -130,8 +133,24 @@ export function DataMasterTaPanel() {
             supervisors: [],
             pembimbing1: thesis.supervisors.find((s) => s.roleName === "Pembimbing 1")?.lecturerId || "none",
             pembimbing2: thesis.supervisors.find((s) => s.roleName === "Pembimbing 2")?.lecturerId || "none",
+            isProposal: thesis.isProposal || false,
         });
         setDialogOpen(true);
+    };
+
+    const handleToggleProposal = (t: MasterDataThesis, checked: boolean) => {
+        const payload = {
+            title: t.title,
+            thesisTopicId: t.topic?.id,
+            academicYearId: t.academicYear?.id,
+            startDate: t.startDate,
+            rating: t.rating,
+            thesisStatusId: t.thesisStatusId,
+            pembimbing1: t.supervisors.find((s) => s.roleName === "Pembimbing 1")?.lecturerId,
+            pembimbing2: t.supervisors.find((s) => s.roleName === "Pembimbing 2")?.lecturerId,
+            isProposal: checked,
+        };
+        updateMutation.mutate({ id: t.id, data: payload });
     };
 
     const handleSubmit = () => {
@@ -154,6 +173,7 @@ export function DataMasterTaPanel() {
             pembimbing1: formState.pembimbing1 !== "none" ? formState.pembimbing1 : undefined,
             pembimbing2: formState.pembimbing2 !== "none" ? formState.pembimbing2 : undefined,
             thesisStatusId: formState.id ? formState.thesisStatusId : undefined,
+            isProposal: formState.isProposal,
         };
 
         if (formState.id) {
@@ -229,6 +249,19 @@ export function DataMasterTaPanel() {
                         <span key={i}>• {s.name || s.lecturerId}</span>
                     ))}
                     {t.supervisors.length === 0 && <span className="text-muted-foreground">-</span>}
+                </div>
+            )
+        },
+        {
+            key: "isProposal",
+            header: "Proposal",
+            render: (t) => (
+                <div onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                        checked={!!t.isProposal}
+                        onCheckedChange={(checked) => handleToggleProposal(t, checked)}
+                        disabled={updateMutation.isPending}
+                    />
                 </div>
             )
         },
@@ -390,6 +423,17 @@ export function DataMasterTaPanel() {
                                         </div>
                                     </>
                                 )}
+
+                                <div className="grid gap-2 col-span-2">
+                                    <div className="flex items-center space-x-2 mt-2">
+                                        <Switch
+                                            id="isProposal"
+                                            checked={!!formState.isProposal}
+                                            onCheckedChange={(v) => setFormState(prev => ({ ...prev, isProposal: v }))}
+                                        />
+                                        <Label htmlFor="isProposal">Status Proposal (Aktif = Masih Proposal)</Label>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="border-t pt-4 mt-4">

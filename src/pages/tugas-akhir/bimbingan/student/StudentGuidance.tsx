@@ -22,6 +22,7 @@ import { GuidanceRescheduleDialog } from '@/components/thesis/GuidanceReschedule
 import GuidanceExportDialog from '@/components/thesis/GuidanceExportDialog';
 import BatchExportDialog from '@/components/thesis/BatchExportDialog';
 import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
+import { RequirementsNotMet } from '@/components/shared/RequirementsNotMet';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
 import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
@@ -177,7 +178,7 @@ export default function StudentGuidancePage() {
     onExport: (guidanceId: string) => {
       setExportGuidanceId(guidanceId);
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [items, supervisorFilter, setSupervisorFilter, status, setStatus, setPage, openDocumentPreview, navigate, thesisDetail?.student?.nim, thesisDetail?.student?.name, selectedIds, exportableIds]);
 
   const handleReschedule = async (data: { requestedDate: string; studentNotes: string }) => {
@@ -232,7 +233,20 @@ export default function StudentGuidancePage() {
             />
           )}
 
-          {isThesisInactive ? (
+          {!thesisId ? (
+            <RequirementsNotMet
+              title="Syarat Mata Kuliah Belum Terpenuhi"
+              description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+              requirements={[
+                {
+                  label: "Mengambil mata kuliah Tugas Akhir",
+                  met: false,
+                  description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                },
+              ]}
+              homeUrl="/dashboard"
+            />
+          ) : isThesisInactive ? (
             <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
               <h3 className="text-lg font-semibold mb-2">Tugas Akhir Tidak Aktif</h3>
               <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{thesisDetail?.status}</strong>. Anda tidak dapat mengakses fitur bimbingan.</p>

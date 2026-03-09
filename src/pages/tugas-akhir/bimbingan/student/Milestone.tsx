@@ -19,6 +19,7 @@ import {
   SeminarReadinessStatusCard,
   TargetDateDialog,
 } from "@/components/milestone";
+import { RequirementsNotMet } from "@/components/shared/RequirementsNotMet";
 
 
 import {
@@ -328,15 +329,18 @@ export default function StudentMilestonePage() {
           <Loading size="lg" text="Memuat data milestone..." />
         </div>
       ) : !hasThesis ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <h3 className="text-lg font-semibold mb-2">Belum Terdaftar Tugas Akhir</h3>
-          <p className="text-muted-foreground max-w-sm">
-            {supervisorsError
-              ? `Terjadi kesalahan: ${(supervisorsError as Error).message}`
-              : "Anda belum terdaftar dalam tugas akhir. Hubungi admin atau pembimbing untuk mendaftarkan tugas akhir Anda."
-            }
-          </p>
-        </div>
+        <RequirementsNotMet
+          title="Syarat Mata Kuliah Belum Terpenuhi"
+          description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+          requirements={[
+            {
+              label: "Mengambil mata kuliah Tugas Akhir",
+              met: false,
+              description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+            },
+          ]}
+          homeUrl="/dashboard"
+        />
       ) : (
         <>
           {isThesisInactive ? (

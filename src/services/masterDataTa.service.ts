@@ -30,6 +30,7 @@ export interface MasterDataThesis {
         year: string;
     } | null;
     supervisors: SupervisorData[];
+    isProposal: boolean;
 }
 
 export interface ThesisStatusData {

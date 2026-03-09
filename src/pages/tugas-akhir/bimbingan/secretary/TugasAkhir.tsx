@@ -13,8 +13,7 @@ const TAB_ITEMS: TabItem[] = [
   { label: "Kelola Milestone", to: "/kelola/tugas-akhir/milestone" },
   { label: "Kelola CPMK", to: "/kelola/tugas-akhir/cpmk" },
   { label: "Kelola Rubrik Seminar", to: "/kelola/tugas-akhir/rubrik-seminar" },
-  { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" },
-  { label: "Data Master Tugas Akhir", to: "/kelola/tugas-akhir/master-data" },
+  { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" }
 ];
 
 const PLACEHOLDER_COPY: Record<string, string> = {

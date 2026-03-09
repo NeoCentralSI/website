@@ -40,6 +40,7 @@ import { PendingRequestCard } from "@/components/bimbingan/PendingRequestCard";
 import { toast } from "sonner";
 import { ThesisProposalForm } from "@/components/thesis/ThesisProposalForm";
 import { PendingApprovalCard } from "@/components/thesis/PendingApprovalCard";
+import { RequirementsNotMet } from "@/components/shared/RequirementsNotMet";
 
 const STATUS_LABELS: Record<string, string> = {
     not_started: "Belum Dimulai",
@@ -143,10 +144,18 @@ export default function TugasAkhirOverviewPage() {
 
     if (!hasThesis && (!historyData?.theses || historyData.theses.length === 0)) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-                <h3 className="text-lg font-semibold mb-2">Belum Terdaftar Tugas Akhir</h3>
-                <p className="text-muted-foreground">Silakan hubungi admin untuk pendaftaran.</p>
-            </div>
+            <RequirementsNotMet
+                title="Syarat Mata Kuliah Belum Terpenuhi"
+                description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+                requirements={[
+                    {
+                        label: "Mengambil mata kuliah Tugas Akhir",
+                        met: false,
+                        description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                    },
+                ]}
+                homeUrl="/dashboard"
+            />
         );
     }
 
