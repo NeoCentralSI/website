@@ -19,7 +19,7 @@ const statusColors: Record<string, string> = {
   "Sidang": "bg-pink-500",
   "Revisi Akhir": "bg-rose-500",
   "Selesai": "bg-green-500",
-  "Gagal": "bg-red-500",
+  "Gagal": "bg-red-500 text-white",
 };
 
 function getStatusColor(status: string): string {
@@ -62,10 +62,10 @@ export function StatusDistributionCard({ statusDistribution, isLoading }: Status
       </CardHeader>
       <CardContent className="space-y-4">
         {sortedStatuses.length === 0 ? (
-          <EmptyState 
-            size="sm" 
-            title="Tidak Ada Data" 
-            description="Belum ada data status" 
+          <EmptyState
+            size="sm"
+            title="Tidak Ada Data"
+            description="Belum ada data status"
           />
         ) : (
           sortedStatuses.map((status) => {

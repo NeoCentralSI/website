@@ -444,7 +444,7 @@ export interface MyThesisDetail {
   academicYear: {
     id: string;
     name: string;
-    year: number;
+    year: string;
     semester: number;
     isActive: boolean;
   } | null;

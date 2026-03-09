@@ -22,6 +22,7 @@ interface AcademicYearTableProps {
   onSearchChange: (search: string) => void;
   onSemesterFilterChange: (filter: string) => void;
   onEdit: (year: AcademicYear) => void;
+  actions?: React.ReactNode;
 }
 
 export function AcademicYearTable({
@@ -37,6 +38,7 @@ export function AcademicYearTable({
   onSearchChange,
   onSemesterFilterChange,
   onEdit,
+  actions,
 }: AcademicYearTableProps) {
   const formatSemester = (semester: string) => {
     return semester === 'ganjil' ? 'Ganjil' : 'Genap';
@@ -51,7 +53,7 @@ export function AcademicYearTable({
   const columns = useMemo(() => [
     {
       key: 'year',
-      header: 'Tahun',
+      header: 'Tahun Ajaran',
       accessor: 'year',
       sortable: true,
       render: (row: AcademicYear) => (
@@ -132,7 +134,8 @@ export function AcademicYearTable({
       render: (row: AcademicYear) => (
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
+          className="h-8 w-8 text-black"
           onClick={() => onEdit(row)}
           disabled={!row.isActive}
           title={!row.isActive ? 'Tahun ajaran tidak aktif tidak dapat diedit' : 'Edit tahun ajaran'}
@@ -159,6 +162,7 @@ export function AcademicYearTable({
       searchValue={searchValue}
       onSearchChange={onSearchChange}
       enableColumnFilters={true}
+      actions={actions}
     />
   );
 }

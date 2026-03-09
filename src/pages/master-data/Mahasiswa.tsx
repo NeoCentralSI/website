@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Eye, RefreshCw, Edit } from 'lucide-react';
+import { Eye, RefreshCw, Pencil } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminUpdateStudentAPI } from '@/services/admin.service';
@@ -19,6 +19,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Check, X } from 'lucide-react';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -36,7 +38,12 @@ export default function Mahasiswa() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editSks, setEditSks] = useState<number>(0);
+  const [editSemester, setEditSemester] = useState<number>(1);
   const [editStatus, setEditStatus] = useState<string>('');
+  const [editMandatory, setEditMandatory] = useState<boolean>(false);
+  const [editMkwu, setEditMkwu] = useState<boolean>(false);
+  const [editInternship, setEditInternship] = useState<boolean>(false);
+  const [editKkn, setEditKkn] = useState<boolean>(false);
 
   // Memoized breadcrumbs to avoid unnecessary re-renders
   const breadcrumbs = useMemo(() => [
@@ -64,7 +71,7 @@ export default function Mahasiswa() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { sksCompleted: number, status: string }) => adminUpdateStudentAPI(selectedStudent!.id, data),
+    mutationFn: (data: any) => adminUpdateStudentAPI(selectedStudent!.id, data),
     onSuccess: () => {
       toast.success('Data mahasiswa berhasil diperbarui');
       queryClient.invalidateQueries({ queryKey: ['students'] });
@@ -118,9 +125,65 @@ export default function Mahasiswa() {
       render: (row: Student) => row.student?.enrollmentYear || '-',
     },
     {
-      key: 'sksCompleted',
-      header: 'SKS Selesai',
-      render: (row: Student) => row.student?.sksCompleted || 0,
+      key: 'currentSemester',
+      header: 'Sem.',
+      className: 'w-[60px] text-center',
+      render: (row: Student) => row.student?.currentSemester || '-',
+    },
+    {
+      key: 'progress',
+      header: 'Prog. Wajib',
+      render: (row: Student) => (
+        <div className="flex gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground mr-1">MKW:</span>
+                  {row.student?.mandatoryCoursesCompleted ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Mata Kuliah Wajib Selesai</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 border-l pl-2">
+                  <span className="text-xs text-muted-foreground mr-1">MKWU:</span>
+                  {row.student?.mkwuCompleted ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>MKWU Selesai</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 border-l pl-2">
+                  <span className="text-xs text-muted-foreground mr-1">KP:</span>
+                  {row.student?.internshipCompleted ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Kerja Praktek Selesai</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 border-l pl-2">
+                  <span className="text-xs text-muted-foreground mr-1">KKN:</span>
+                  {row.student?.kknCompleted ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>KKN Selesai</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )
     },
     {
       key: 'status',
@@ -144,27 +207,33 @@ export default function Mahasiswa() {
       key: 'actions',
       header: 'Aksi',
       render: (row: Student) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
-            size="sm"
-            variant="outline"
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-black"
             onClick={() => navigate(`/master-data/mahasiswa/${row.id}`)}
           >
             <Eye className="w-4 h-4" />
           </Button>
           {isAdmin() && (
             <Button
-              size="sm"
-              variant="outline"
-              className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-black"
               onClick={() => {
                 setSelectedStudent(row);
                 setEditSks(row.student?.sksCompleted || 0);
+                setEditSemester(row.student?.currentSemester || 1);
                 setEditStatus(row.student?.status || 'active');
+                setEditMandatory(row.student?.mandatoryCoursesCompleted || false);
+                setEditMkwu(row.student?.mkwuCompleted || false);
+                setEditInternship(row.student?.internshipCompleted || false);
+                setEditKkn(row.student?.kknCompleted || false);
                 setIsEditOpen(true);
               }}
             >
-              <Edit className="w-4 h-4" />
+              <Pencil className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -233,22 +302,36 @@ export default function Mahasiswa() {
           <DialogHeader>
             <DialogTitle>Edit Data Mahasiswa</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <Label>SKS Selesai</Label>
-              <Input
-                type="number"
-                min="0"
-                value={editSks}
-                onChange={(e) => setEditSks(Number(e.target.value))}
-                placeholder="Masukkan jumlah SKS selesai"
-              />
+          <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto px-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>SKS Selesai</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editSks}
+                  onChange={(e) => setEditSks(Number(e.target.value))}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Semester Saat Ini</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="14"
+                  value={editSemester}
+                  onChange={(e) => setEditSemester(Number(e.target.value))}
+                  placeholder="1"
+                />
+              </div>
             </div>
+
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={editStatus} onValueChange={setEditStatus}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih status mahasiswa" />
+                  <SelectValue placeholder="Pilih status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Aktif</SelectItem>
@@ -259,7 +342,44 @@ export default function Mahasiswa() {
                 </SelectContent>
               </Select>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Mahasiswa yang diedit: {toTitleCaseName(selectedStudent?.fullName || '')}</p>
+
+            <div className="space-y-4 pt-2">
+              <Label className="text-base font-semibold">Persyaratan Akademik</Label>
+
+              <div className="flex items-center justify-between p-2 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label>Mata Kuliah Wajib Selesai</Label>
+                  <p className="text-xs text-muted-foreground">Status penyelesaian seluruh MK wajib prodi</p>
+                </div>
+                <Switch checked={editMandatory} onCheckedChange={setEditMandatory} />
+              </div>
+
+              <div className="flex items-center justify-between p-2 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label>MKWU Selesai</Label>
+                  <p className="text-xs text-muted-foreground">Mata Kuliah Wajib Umum (Agama, Pancasila, dll)</p>
+                </div>
+                <Switch checked={editMkwu} onCheckedChange={setEditMkwu} />
+              </div>
+
+              <div className="flex items-center justify-between p-2 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label>Praktek Lapangan / Magang</Label>
+                  <p className="text-xs text-muted-foreground">Penyelesaian kegiatan magang industri</p>
+                </div>
+                <Switch checked={editInternship} onCheckedChange={setEditInternship} />
+              </div>
+
+              <div className="flex items-center justify-between p-2 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label>Kuliah Kerja Nyata (KKN)</Label>
+                  <p className="text-xs text-muted-foreground">Penyelesaian program pengabdian masyarakat</p>
+                </div>
+                <Switch checked={editKkn} onCheckedChange={setEditKkn} />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-2 px-1">Mahasiswa: {toTitleCaseName(selectedStudent?.fullName || '')}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Batal</Button>
@@ -281,7 +401,15 @@ export default function Mahasiswa() {
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                updateMutation.mutate({ sksCompleted: editSks, status: editStatus }, {
+                updateMutation.mutate({
+                  sksCompleted: editSks,
+                  status: editStatus,
+                  currentSemester: editSemester,
+                  mandatoryCoursesCompleted: editMandatory,
+                  mkwuCompleted: editMkwu,
+                  internshipCompleted: editInternship,
+                  kknCompleted: editKkn
+                }, {
                   onSuccess: () => setIsConfirmOpen(false)
                 });
               }}

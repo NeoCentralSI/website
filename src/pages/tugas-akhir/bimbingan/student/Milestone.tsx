@@ -17,7 +17,7 @@ import {
   TemplateSelectorDialog,
   DeleteMilestoneDialog,
   SeminarReadinessStatusCard,
-
+  TargetDateDialog,
 } from "@/components/milestone";
 
 
@@ -89,6 +89,9 @@ export default function StudentMilestonePage() {
   const [isBulkStarting, setIsBulkStarting] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const [progressUpdatingId, setProgressUpdatingId] = useState<string | null>(null);
+  const [startDialogOpen, setStartDialogOpen] = useState(false);
+  const [milestoneToStart, setMilestoneToStart] = useState<Milestone | null>(null);
+  const [isStartingMilestone, setIsStartingMilestone] = useState(false);
 
   // Breadcrumbs
   const breadcrumb = useMemo(
@@ -236,6 +239,12 @@ export default function StudentMilestonePage() {
   };
 
   const handleStatusChange = (milestone: Milestone, status: Exclude<MilestoneStatus, "completed">) => {
+    if (status === "in_progress" && !milestone.targetDate) {
+      setMilestoneToStart(milestone);
+      setStartDialogOpen(true);
+      return;
+    }
+
     setStatusUpdatingId(milestone.id);
     updateStatusMutation.mutate(
       { milestoneId: milestone.id, data: { status } },
@@ -251,6 +260,34 @@ export default function StudentMilestonePage() {
         },
       }
     );
+  };
+
+  const handleConfirmStart = async (targetDate: Date) => {
+    if (!milestoneToStart) return;
+
+    setIsStartingMilestone(true);
+
+    try {
+      // First update the target date
+      await updateMutation.mutateAsync({
+        milestoneId: milestoneToStart.id,
+        data: { targetDate: targetDate.toISOString() }
+      });
+
+      // Then update the status
+      await updateStatusMutation.mutateAsync({
+        milestoneId: milestoneToStart.id,
+        data: { status: "in_progress" }
+      });
+
+      toast.success("Milestone berhasil dimulai");
+      setStartDialogOpen(false);
+      setMilestoneToStart(null);
+    } catch (error) {
+      toast.error((error as Error).message || "Gagal memulai milestone");
+    } finally {
+      setIsStartingMilestone(false);
+    }
   };
 
   const handleReorder = (orders: { id: string; orderIndex: number }[]) => {
@@ -356,6 +393,15 @@ export default function StudentMilestonePage() {
                 isLoading={isLoadingTemplates}
                 isSubmitting={createFromTemplatesMutation.isPending}
                 onSubmit={handleTemplateSubmit}
+              />
+
+              {/* Start Milestone Target Date Dialog */}
+              <TargetDateDialog
+                open={startDialogOpen}
+                onOpenChange={setStartDialogOpen}
+                milestoneTitle={milestoneToStart?.title || ""}
+                onSubmit={handleConfirmStart}
+                isSubmitting={isStartingMilestone}
               />
 
               {/* Delete Confirmation Dialog */}

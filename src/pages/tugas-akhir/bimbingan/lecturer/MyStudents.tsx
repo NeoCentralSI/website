@@ -55,7 +55,7 @@ const getRatingConfig = (rating?: string) => {
     case "AT_RISK":
       return { variant: "destructive" as const, label: "At Risk", className: "", needsWarning: true };
     case "FAILED":
-      return { variant: "destructive" as const, label: "Failed", className: "bg-red-500 hover:bg-red-600", needsWarning: true };
+      return { variant: "destructive" as const, label: "Failed", className: "bg-red-500 text-white hover:bg-red-600", needsWarning: true };
     case "CANCELLED":
       return { variant: "secondary" as const, label: "Cancelled", className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
     default:

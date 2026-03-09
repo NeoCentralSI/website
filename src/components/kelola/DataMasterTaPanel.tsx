@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 import { getMasterDataTheses, createMasterDataThesis, updateMasterDataThesis, getMasterDataThesisStatuses, type MasterDataThesis, type SupervisorData } from "@/services/masterDataTa.service";
 import { getStudentsAPI, getLecturersAPI, getAcademicYearsAPI } from "@/services/admin.service";
@@ -15,6 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Spinner, Loading } from "@/components/ui/spinner";
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { ExportExcelDialog } from "./ExportExcelDialog";
+import { ImportMasterDataDialog } from "./ImportMasterDataDialog";
+import { Upload } from "lucide-react";
 
 interface FormState {
     id?: string;
@@ -51,6 +54,8 @@ export function DataMasterTaPanel() {
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [formState, setFormState] = useState<FormState>(emptyForm);
 
     // Queries
@@ -196,7 +201,7 @@ export function DataMasterTaPanel() {
                     "ONGOING": "bg-blue-500",
                     "SLOW": "bg-yellow-500",
                     "AT_RISK": "bg-orange-500",
-                    "FAILED": "bg-red-500",
+                    "FAILED": "bg-red-500 text-white",
                     "CANCELLED": "bg-gray-500",
                 };
                 return <Badge className={`${colors[t.rating] || "bg-primary"}`}>{t.rating}</Badge>;
@@ -209,7 +214,7 @@ export function DataMasterTaPanel() {
                 const colors: Record<string, string> = {
                     "Aktif": "bg-green-500",
                     "Selesai": "bg-blue-600",
-                    "Dibatalkan": "bg-red-600",
+                    "Dibatalkan": "bg-red-600 text-white",
                     "Lulus": "bg-blue-600",
                 };
                 return <Badge className={`${colors[t.status] || "bg-primary"}`}>{t.status}</Badge>;
@@ -264,6 +269,12 @@ export function DataMasterTaPanel() {
                             onClick={() => refetch()}
                             isRefreshing={isFetching && !isLoading}
                         />
+                        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+                            <Upload className="mr-2 h-4 w-4" /> Import Excel
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
+                            <Download className="mr-2 h-4 w-4" /> Export Excel
+                        </Button>
                         <Button onClick={handleStartCreate} size="sm">
                             <Plus className="mr-2 h-4 w-4" /> Tambah Data TA
                         </Button>
@@ -427,6 +438,17 @@ export function DataMasterTaPanel() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ExportExcelDialog
+                open={exportDialogOpen}
+                onOpenChange={setExportDialogOpen}
+                theses={theses}
+                academicYears={academicYears}
+            />
+            <ImportMasterDataDialog
+                open={importDialogOpen}
+                onOpenChange={setImportDialogOpen}
+            />
         </div>
     );
 }
