@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/spinner';
-import { CheckCircle2, Circle, Clock, FileText, CalendarRange, BookOpenText } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, CalendarRange, BookOpenText } from 'lucide-react';
 import { useStudentYudisiumOverview } from '@/hooks/yudisium/useStudentYudisium';
-import type { StudentYudisiumChecklistItem, StudentYudisiumRequirement } from '@/types/studentYudisium.types';
+import type { StudentYudisiumChecklistItem } from '@/types/studentYudisium.types';
+import { UploadDokumenYudisium } from '@/components/yudisium/UploadDokumenYudisium';
 import emptyAnimation from '@/assets/lottie/empty.json';
 import { formatDateOnlyId } from '@/lib/text';
 
@@ -186,7 +187,7 @@ export default function StudentYudisium() {
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   const checklistItems = data ? checklistEntries(data.checklist) : [];
-  const allDocumentsUploaded = (data?.requirements ?? []).every((item: StudentYudisiumRequirement) => item.isUploaded);
+  const allDocumentsUploaded = (data?.requirements ?? []).every((item) => item.isUploaded);
   const currentStep = data?.yudisium
     ? getActiveStepIndex(data.yudisium.status as YudisiumStatus, data.allChecklistMet, allDocumentsUploaded)
     : 0;
@@ -281,43 +282,7 @@ export default function StudentYudisium() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-gray-200 bg-card p-6">
-              <h3 className="text-lg font-semibold mb-4">Upload Dokumen Persyaratan Yudisium</h3>
-              <div className="space-y-3">
-                {data.requirements.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Belum ada persyaratan aktif saat ini.</p>
-                ) : (
-                  data.requirements.map((req) => (
-                    <div key={req.id} className="flex items-center justify-between gap-4 rounded-lg border p-4">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                            req.isUploaded ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          <FileText className="h-5 w-5" />
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium">{req.name}</p>
-                          {req.description && <p className="text-xs text-muted-foreground mt-0.5">{req.description}</p>}
-                          <p className={`text-xs mt-0.5 ${req.isUploaded ? 'text-green-600' : 'text-muted-foreground'}`}>
-                            {req.isUploaded ? 'Terunggah' : 'Menunggu upload'}
-                          </p>
-                          {req.submittedAt && (
-                            <p className="text-xs text-muted-foreground mt-0.5">Terunggah: {formatDateTime(req.submittedAt)}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <Button size="sm" variant="outline" disabled>
-                        Upload
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            <UploadDokumenYudisium allChecklistMet={data.allChecklistMet} />
           </div>
         </div>
       )}

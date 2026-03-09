@@ -28,6 +28,29 @@ export type StudentYudisiumRequirement = {
   submittedAt: string | null;
 };
 
+export type YudisiumRequirementUploadStatus = {
+  id: string;
+  name: string;
+  description: string | null;
+  notes: string | null;
+  status: 'submitted' | 'approved' | 'declined' | null;
+  submittedAt: string | null;
+  verifiedAt: string | null;
+  validationNotes: string | null;
+  document: {
+    id: string;
+    fileName: string | null;
+    filePath: string | null;
+  } | null;
+};
+
+export type StudentYudisiumRequirementsResponse = {
+  yudisiumId: string;
+  participantId: string | null;
+  participantStatus: string | null;
+  requirements: YudisiumRequirementUploadStatus[];
+};
+
 export type StudentYudisiumOverviewResponse = {
   yudisium: {
     id: string;

@@ -83,6 +83,15 @@ export const API_CONFIG = {
       OVERVIEW: '/yudisium/student/overview',
       EXIT_SURVEY: '/yudisium/student/exit-survey',
       EXIT_SURVEY_SUBMIT: '/yudisium/student/exit-survey/submit',
+      REQUIREMENTS: '/yudisium/student/requirements',
+      REQUIREMENTS_UPLOAD: '/yudisium/student/requirements/upload',
+    },
+    YUDISIUM_ADMIN: {
+      EVENTS: '/yudisium/admin/events',
+      PARTICIPANTS: (yudisiumId: string) => `/yudisium/admin/${yudisiumId}/participants`,
+      PARTICIPANT_DETAIL: (participantId: string) => `/yudisium/admin/participants/${participantId}`,
+      VALIDATE_DOCUMENT: (participantId: string, requirementId: string) =>
+        `/yudisium/admin/participants/${participantId}/requirements/${requirementId}/validate`,
     },
     NOTIFICATION: {
       BASE: '/notification',

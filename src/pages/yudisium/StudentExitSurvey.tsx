@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { useStudentExitSurveyDetail, useSubmitStudentExitSurvey } from '@/hooks/yudisium/useStudentExitSurvey';
 import type { StudentExitSurveyDetailResponse } from '@/services/studentExitSurvey.service';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 type AnswerState = Record<string, { optionId?: string; optionIds?: string[]; answerText?: string }>;
@@ -49,11 +60,13 @@ const mapInitialAnswersFromResponse = (
 
 export default function StudentExitSurvey() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+  const navigate = useNavigate();
   const { data, isLoading, isError, error } = useStudentExitSurveyDetail();
   const submitMutation = useSubmitStudentExitSurvey();
 
   const initialAnswers = useMemo(() => mapInitialAnswersFromResponse(data), [data]);
   const [answers, setAnswers] = useState<AnswerState>({});
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -112,6 +125,12 @@ export default function StudentExitSurvey() {
       return;
     }
 
+    setShowConfirm(true);
+  };
+
+  const confirmSubmit = async () => {
+    if (!data) return;
+
     const payloadAnswers = data.form.questions
       .map((q) => {
         const a = answers[q.id];
@@ -135,13 +154,24 @@ export default function StudentExitSurvey() {
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
     await submitMutation.mutateAsync({ answers: payloadAnswers });
+    setShowConfirm(false);
   };
 
   return (
     <div className="p-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Exit Survey</h1>
-        <p className="text-muted-foreground">Silakan lengkapi survei ini sebagai salah satu syarat pendaftaran yudisium.</p>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/yudisium/student')}
+          className="shrink-0"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">Exit Survey</h1>
+          <p className="text-muted-foreground">Silakan lengkapi survei ini sebagai salah satu syarat pendaftaran yudisium.</p>
+        </div>
       </div>
 
       {isLoading ? (
@@ -265,6 +295,30 @@ export default function StudentExitSurvey() {
               </Button>
             </div>
           )}
+
+          <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Konfirmasi Submit Exit Survey</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Setelah dikirim, jawaban tidak dapat diubah lagi. Apakah Anda yakin ingin mengirim exit survey ini?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={submitMutation.isPending}>Batal</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    confirmSubmit().catch((e: Error) => {
+                      toast.error(e.message || 'Gagal mengirim exit survey');
+                    });
+                  }}
+                  disabled={submitMutation.isPending}
+                >
+                  {submitMutation.isPending ? 'Mengirim...' : 'Ya, Kirim'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>

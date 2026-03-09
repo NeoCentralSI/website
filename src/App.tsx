@@ -96,6 +96,9 @@ const StudentYudisiumPage = lazy(() => import('./pages/yudisium/StudentYudisium'
 const StudentExitSurveyPage = lazy(() => import('./pages/yudisium/StudentExitSurvey'))
 const LecturerYudisiumPage = lazy(() => import('./pages/yudisium/LecturerYudisium'))
 const LecturerYudisiumDetailPage = lazy(() => import('./pages/yudisium/LecturerYudisiumDetail'))
+const AdminYudisiumPage = lazy(() => import('./pages/yudisium/AdminYudisium'))
+const AdminYudisiumValidationPage = lazy(() => import('./pages/yudisium/AdminYudisiumValidation'))
+const YudisiumParticipantDetailPage = lazy(() => import('./pages/yudisium/YudisiumParticipantDetail'))
 const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview'))
 // Tugas Akhir - Monitoring
 const MonitoringDashboard = lazy(() => import('./pages/tugas-akhir/monitoring/MonitoringDashboard'))
@@ -253,10 +256,9 @@ function App() {
 
               {/* Yudisium - Admin */}
               <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN]} />}>
-                <Route
-                  path="/yudisium/admin"
-                  element={<Placeholder title="Yudisium" description="Halaman Yudisium untuk Admin akan segera hadir." />}
-                />
+                <Route path="/yudisium/admin" element={<AdminYudisiumPage />} />
+                <Route path="/yudisium/admin/:id" element={<AdminYudisiumValidationPage />} />
+                <Route path="/yudisium/admin/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
               </Route>
 
               {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
