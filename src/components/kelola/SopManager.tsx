@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Trash2, FileDigit, FileText, Edit, HelpCircle } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDigit, FileText, Edit, HelpCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
@@ -206,22 +206,41 @@ export function SopManager() {
         header: "File",
         key: "file",
         className: "text-center",
-        render: (row) => (
-          <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-2 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              onClick={() => {
-                setPreviewData({ name: row.fileName, path: row.url });
-                setPreviewOpen(true);
-              }}
-            >
-              <FileText className="h-4 w-4" />
-              <span className="text-xs">Lihat</span>
-            </Button>
-          </div>
-        )
+        render: (row) => {
+          const url = row.url;
+          const isDocx = url.toLowerCase().endsWith(".docx") || url.toLowerCase().endsWith(".doc");
+
+          return (
+            <div className="flex justify-center">
+              {isDocx ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-2 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  asChild
+                >
+                  <a href={sopService.getSopDownloadUrl(url)} target="_blank" rel="noopener noreferrer">
+                    <Download className="h-4 w-4" />
+                    <span className="text-xs">Download</span>
+                  </a>
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-2 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  onClick={() => {
+                    setPreviewData({ name: row.fileName, path: row.url });
+                    setPreviewOpen(true);
+                  }}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span className="text-xs">Lihat</span>
+                </Button>
+              )}
+            </div>
+          );
+        }
       },
       {
         header: "Aksi",

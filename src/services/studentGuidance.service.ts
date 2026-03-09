@@ -425,6 +425,7 @@ export const generateGuidanceLogPdf = async (guidanceIds?: string[]): Promise<Bl
 export interface MyThesisDetail {
   id: string;
   title: string;
+  isProposal: boolean;
   status: string;
   rating: number | null;
   startDate?: string | null;

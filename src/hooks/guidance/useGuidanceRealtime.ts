@@ -17,7 +17,11 @@ type PushEventType =
   | "thesis-guidance:cancelled"
   | "thesis-guidance:notes-updated"
   | "thesis-guidance:summary-submitted"
-  | "thesis-guidance:summary-approved";
+  | "thesis-guidance:summary-approved"
+  | "supervisor2_request"
+  | "supervisor2_approved"
+  | "supervisor2_rejected"
+  | "role_promotion";
 
 export function useGuidanceRealtime() {
   const qc = useQueryClient();
@@ -176,11 +180,21 @@ export function useGuidanceRealtime() {
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }
+              case "supervisor2_request":
+              case "supervisor2_approved":
+              case "supervisor2_rejected":
+              case "role_promotion": {
+                const title = payload?.data?.title || payload?.notification?.title || "Notifikasi Baru";
+                const body = payload?.data?.body || payload?.notification?.body || "";
+                toast(title, { description: body, duration: 5000 });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
               default: {
                 // Fallback: show generic notification toast if type doesn't match
                 console.warn("[FCM] Unknown notification type:", type);
-                const title = payload?.notification?.title || "Notifikasi Baru";
-                const body = payload?.notification?.body || "";
+                const title = payload?.data?.title || payload?.notification?.title || "Notifikasi Baru";
+                const body = payload?.data?.body || payload?.notification?.body || "";
                 if (title || body) {
                   toast(title, { description: body, duration: 5000 });
                   qc.invalidateQueries({ queryKey: ["student-guidance"] });

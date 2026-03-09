@@ -328,7 +328,7 @@ export default function StudentMilestonePage() {
         <div className="flex h-[calc(100vh-280px)] items-center justify-center">
           <Loading size="lg" text="Memuat data milestone..." />
         </div>
-      ) : !hasThesis ? (
+      ) : !hasThesis || thesisDetail?.isProposal ? (
         <RequirementsNotMet
           title="Syarat Mata Kuliah Belum Terpenuhi"
           description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."

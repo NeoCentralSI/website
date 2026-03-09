@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import StatusBadge from '@/components/thesis/StatusBadge';
-import { EyeIcon, FileTextIcon, XCircleIcon } from 'lucide-react';
+import { EyeIcon, FileTextIcon, XCircleIcon, DownloadIcon } from 'lucide-react';
 import { toTitleCaseName, formatDateId, formatThesisDocName } from '@/lib/text';
+import { getApiUrl } from '@/config/api';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
 import { useNavigate } from 'react-router-dom';
@@ -64,9 +65,40 @@ export const getLecturerRequestColumns = (
       render: (r) => {
         const filePath = (r as any)?.document?.filePath as string | undefined;
         const fileName = (r as any)?.document?.fileName as string | undefined;
-        const isPdf = filePath?.toLowerCase().endsWith('.pdf');
-        if (!isPdf) return <span className="text-muted-foreground">-</span>;
+        if (!filePath) return <span className="text-muted-foreground">-</span>;
+
+        const isPdf = filePath.toLowerCase().endsWith('.pdf');
+        const isDocx = filePath.toLowerCase().endsWith('.docx') || filePath.toLowerCase().endsWith('.doc');
         const displayName = formatThesisDocName((r as any)?.studentNim, r.studentName);
+
+        if (isDocx) {
+          const downloadUrl = (() => {
+            let url = filePath.startsWith('/') ? getApiUrl(filePath) : getApiUrl(`/${filePath}`);
+            const token = localStorage.getItem('accessToken');
+            if (token && filePath.includes('thesis/')) {
+              url += (url.includes('?') ? '&' : '?') + `token=${token}`;
+            }
+            return url;
+          })();
+
+          return (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 max-w-[220px] text-green-600 hover:text-green-700 hover:bg-green-50"
+              asChild
+              title={`Download ${displayName}`}
+            >
+              <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
+                <DownloadIcon className="size-4 shrink-0" />
+                <span className="truncate text-xs">{displayName}</span>
+              </a>
+            </Button>
+          );
+        }
+
+        if (!isPdf) return <span className="text-muted-foreground">-</span>;
+
         return (
           <Button
             variant="ghost"

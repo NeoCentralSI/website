@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { Spinner, Loading } from '@/components/ui/spinner';
 import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useDefenceSchedulingData, useSetDefenceSchedule } from '@/hooks/defence';
 import { toTitleCaseName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/defence.types';
@@ -418,13 +419,11 @@ export function DefenceSchedulingSection({ defenceId, isEditable }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="sched-date" className="text-xs">Tanggal</Label>
-                  <Input
-                    id="sched-date"
-                    type="date"
-                    value={pendingSchedule.date}
-                    onChange={(e) => {
+                  <DatePicker
+                    value={pendingSchedule.date ? new Date(pendingSchedule.date) : undefined}
+                    onChange={(date) => {
                       setFormError(null);
-                      setPendingSchedule((prev) => prev ? { ...prev, date: e.target.value } : prev);
+                      setPendingSchedule((prev) => prev ? { ...prev, date: date ? date.toISOString().split('T')[0] : '' } : prev);
                     }}
                   />
                 </div>

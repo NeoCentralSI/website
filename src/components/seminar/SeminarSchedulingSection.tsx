@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { Spinner, Loading } from '@/components/ui/spinner';
 import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useSchedulingData, useSetSchedule } from '@/hooks/seminar/useAdminSeminar';
 import { toTitleCaseName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/seminar.types';
@@ -138,25 +139,25 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
       const offset = DAY_OFFSET[slot.day];
       if (offset === undefined) return;
       const startTime = extractTime(slot.startTime);
-      const endTime   = extractTime(slot.endTime);
-      const color     = lecturerColorMap[slot.lecturerId] || '#94a3b8';
+      const endTime = extractTime(slot.endTime);
+      const color = lecturerColorMap[slot.lecturerId] || '#94a3b8';
 
       for (let week = 0; week < 8; week++) {
         const d = new Date(weekMonday);
         d.setDate(weekMonday.getDate() + offset + week * 7);
         const dateStr = toLocalDateStr(d);
 
-        if (slot.validFrom   && dateStr < slot.validFrom.slice(0, 10))   continue;
-        if (slot.validUntil  && dateStr > slot.validUntil.slice(0, 10))  continue;
+        if (slot.validFrom && dateStr < slot.validFrom.slice(0, 10)) continue;
+        if (slot.validUntil && dateStr > slot.validUntil.slice(0, 10)) continue;
 
         events.push({
           id: `avail-${slot.id}-w${week}`,
           title: toTitleCaseName(slot.lecturerName),
           start: `${dateStr}T${startTime}:00`,
-          end:   `${dateStr}T${endTime}:00`,
+          end: `${dateStr}T${endTime}:00`,
           backgroundColor: color + '22',
-          borderColor:     color,
-          textColor:       color,
+          borderColor: color,
+          textColor: color,
           display: 'block',
           classNames: ['availability-event'],
           extendedProps: { type: 'availability' },
@@ -178,10 +179,10 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
       id: 'seminar-schedule',
       title: scheduleTitle,
       start: `${dateStr}T${extractTime(cs.startTime)}:00`,
-      end:   `${dateStr}T${extractTime(cs.endTime)}:00`,
+      end: `${dateStr}T${extractTime(cs.endTime)}:00`,
       backgroundColor: '#16a34a',
-      borderColor:     '#15803d',
-      textColor:       '#ffffff',
+      borderColor: '#15803d',
+      textColor: '#ffffff',
       classNames: ['schedule-event'],
       extendedProps: { type: 'schedule' },
     }];
@@ -197,10 +198,10 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
     if (!isEditable) return;
     setFormError(null);
     setPendingSchedule({
-      date:      info.startStr.slice(0, 10),
+      date: info.startStr.slice(0, 10),
       startTime: info.startStr.slice(11, 16) || '08:00',
-      endTime:   info.endStr?.slice(11, 16)  || '10:00',
-      roomId:    schedulingData?.rooms[0]?.id || null,
+      endTime: info.endStr?.slice(11, 16) || '10:00',
+      roomId: schedulingData?.rooms[0]?.id || null,
       isOnline: false,
       meetingLink: '',
     });
@@ -284,7 +285,7 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
     ...new Set(schedulingData.lecturerAvailabilities.map((a) => a.lecturerId)),
   ].map((id) => ({
     id,
-    name:  schedulingData.lecturerAvailabilities.find((a) => a.lecturerId === id)?.lecturerName || '-',
+    name: schedulingData.lecturerAvailabilities.find((a) => a.lecturerId === id)?.lecturerName || '-',
     color: lecturerColorMap[id] || '#94a3b8',
   }));
 
@@ -442,13 +443,11 @@ export function SeminarSchedulingSection({ seminarId, isEditable }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="sched-date" className="text-xs">Tanggal</Label>
-                  <Input
-                    id="sched-date"
-                    type="date"
-                    value={pendingSchedule.date}
-                    onChange={(e) => {
+                  <DatePicker
+                    value={pendingSchedule.date ? new Date(pendingSchedule.date) : undefined}
+                    onChange={(date) => {
                       setFormError(null);
-                      setPendingSchedule((prev) => prev ? { ...prev, date: e.target.value } : prev);
+                      setPendingSchedule((prev) => prev ? { ...prev, date: date ? date.toISOString().split('T')[0] : '' } : prev);
                     }}
                   />
                 </div>

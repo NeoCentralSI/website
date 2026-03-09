@@ -9,6 +9,7 @@ import { getTopics } from "@/services/topic.service";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -187,9 +188,10 @@ export function DataMasterTaPanel() {
         {
             key: "student",
             header: "Mahasiswa",
+            width: 140,
             render: (t) => (
-                <div>
-                    <div className="font-semibold">{t.student?.name}</div>
+                <div className="min-w-[120px]">
+                    <div className="font-semibold truncate">{t.student?.name}</div>
                     <div className="text-sm text-muted-foreground">{t.student?.nim}</div>
                 </div>
             )
@@ -198,15 +200,17 @@ export function DataMasterTaPanel() {
             key: "title",
             header: "Judul / Topik",
             render: (t) => (
-                <div>
-                    <div className="line-clamp-2 max-w-sm">{t.title || "-"}</div>
-                    <Badge variant="outline" className="mt-1">{t.topic?.name || "Tanpa Topik"}</Badge>
+                <div className="min-w-[180px] max-w-[260px]">
+                    <div className="line-clamp-2 text-sm">{t.title || "-"}</div>
+                    <Badge variant="outline" className="mt-1 text-xs">{t.topic?.name || "Tanpa Topik"}</Badge>
                 </div>
             )
         },
         {
             key: "academicYear",
-            header: "Tahun Ajaran",
+            header: "Periode",
+            width: 110,
+            className: "whitespace-nowrap",
             render: (t) => (
                 <span className="text-sm">
                     {t.academicYear ? `${t.academicYear.year} - ${t.academicYear.semester}` : "-"}
@@ -216,6 +220,8 @@ export function DataMasterTaPanel() {
         {
             key: "rating",
             header: "Rating",
+            width: 90,
+            className: "text-center",
             render: (t) => {
                 const colors: Record<string, string> = {
                     "ONGOING": "bg-blue-500",
@@ -224,12 +230,14 @@ export function DataMasterTaPanel() {
                     "FAILED": "bg-red-500 text-white",
                     "CANCELLED": "bg-gray-500",
                 };
-                return <Badge className={`${colors[t.rating] || "bg-primary"}`}>{t.rating}</Badge>;
+                return <Badge className={`${colors[t.rating] || "bg-primary"} text-xs`}>{t.rating}</Badge>;
             }
         },
         {
             key: "status",
             header: "Status",
+            width: 90,
+            className: "text-center",
             render: (t) => {
                 const colors: Record<string, string> = {
                     "Aktif": "bg-green-500",
@@ -237,16 +245,17 @@ export function DataMasterTaPanel() {
                     "Dibatalkan": "bg-red-600 text-white",
                     "Lulus": "bg-blue-600",
                 };
-                return <Badge className={`${colors[t.status] || "bg-primary"}`}>{t.status}</Badge>;
+                return <Badge className={`${colors[t.status] || "bg-primary"} text-xs`}>{t.status}</Badge>;
             }
         },
         {
             key: "supervisors",
             header: "Pembimbing",
+            width: 180,
             render: (t) => (
-                <div className="flex flex-col gap-1 text-sm">
+                <div className="flex flex-col gap-0.5 text-xs min-w-[140px] max-w-[180px]">
                     {t.supervisors.map((s, i) => (
-                        <span key={i}>• {s.name || s.lecturerId}</span>
+                        <span key={i} className="truncate">• {s.name || s.lecturerId}</span>
                     ))}
                     {t.supervisors.length === 0 && <span className="text-muted-foreground">-</span>}
                 </div>
@@ -255,6 +264,8 @@ export function DataMasterTaPanel() {
         {
             key: "isProposal",
             header: "Proposal",
+            width: 70,
+            className: "text-center",
             render: (t) => (
                 <div onClick={(e) => e.stopPropagation()}>
                     <Switch
@@ -267,10 +278,10 @@ export function DataMasterTaPanel() {
         },
         {
             key: "actions",
-            header: "Aksi",
-            className: "text-right",
+            header: "",
+            width: 48,
             render: (t) => (
-                <Button variant="ghost" size="icon" onClick={() => handleStartEdit(t)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStartEdit(t)}>
                     <Pencil className="h-4 w-4" />
                 </Button>
             )
@@ -387,10 +398,10 @@ export function DataMasterTaPanel() {
                                     <>
                                         <div className="grid gap-2">
                                             <Label>Tanggal Mulai</Label>
-                                            <Input
-                                                type="date"
-                                                value={formState.startDate}
-                                                onChange={(e) => setFormState(prev => ({ ...prev, startDate: e.target.value }))}
+                                            <DatePicker
+                                                value={formState.startDate ? new Date(formState.startDate) : undefined}
+                                                onChange={(date) => setFormState(prev => ({ ...prev, startDate: date ? date.toISOString().split('T')[0] : "" }))}
+                                                showPastDates={true}
                                             />
                                         </div>
                                         <div className="grid gap-2">

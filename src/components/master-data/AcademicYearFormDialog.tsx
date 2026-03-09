@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
   DialogContent,
@@ -90,31 +91,29 @@ export function AcademicYearFormDialog({
 
             <div className="grid gap-2">
               <Label htmlFor="startDate">Tanggal Mulai</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate?.split('T')[0] || ''}
-                onChange={(e) =>
+              <DatePicker
+                value={formData.startDate ? new Date(formData.startDate) : undefined}
+                onChange={(date) =>
                   setFormData({
                     ...formData,
-                    startDate: e.target.value ? new Date(e.target.value).toISOString() : '',
+                    startDate: date ? date.toISOString() : '',
                   })
                 }
+                showPastDates={true}
               />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="endDate">Tanggal Selesai</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate?.split('T')[0] || ''}
-                onChange={(e) =>
+              <DatePicker
+                value={formData.endDate ? new Date(formData.endDate) : undefined}
+                onChange={(date) =>
                   setFormData({
                     ...formData,
-                    endDate: e.target.value ? new Date(e.target.value).toISOString() : '',
+                    endDate: date ? date.toISOString() : '',
                   })
                 }
+                showPastDates={true}
               />
             </div>
           </div>

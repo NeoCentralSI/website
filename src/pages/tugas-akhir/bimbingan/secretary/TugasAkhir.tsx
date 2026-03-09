@@ -4,7 +4,6 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
 import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
-import { DataMasterTaPanel } from "@/components/kelola/DataMasterTaPanel";
 import { CpmkManagementPanel } from "@/components/kelola/cpmk/CpmkManagementPanel";
 import { RubricSeminarManagementPanel } from '@/components/kelola/rubric-seminar/RubricSeminarManagementPanel';
 import { RubricDefenceManagementPanel } from '@/components/kelola/rubric-defence/RubricDefenceManagementPanel';
@@ -48,10 +47,6 @@ export default function KelolaTugasAkhirPage() {
 
     if (activeTab.label === "Kelola Milestone") {
       return <TemplateManagementPanel />;
-    }
-
-    if (activeTab.label === "Data Master Tugas Akhir") {
-      return <DataMasterTaPanel />;
     }
 
     if (activeTab.label === "Kelola CPMK") {

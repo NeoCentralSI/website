@@ -17,9 +17,10 @@ interface DatePickerProps {
     placeholder?: string
     className?: string
     disabled?: boolean
+    showPastDates?: boolean
 }
 
-export function DatePicker({ value, onChange, placeholder = "Pilih tanggal", className, disabled }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = "Pilih tanggal", className, disabled, showPastDates = false }: DatePickerProps) {
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -41,7 +42,7 @@ export function DatePicker({ value, onChange, placeholder = "Pilih tanggal", cla
                     mode="single"
                     selected={value}
                     onSelect={onChange}
-                    disabled={(date) => date < new Date()}
+                    disabled={(date) => !showPastDates && date < new Date(new Date().setHours(0, 0, 0, 0))}
                 />
             </PopoverContent>
         </Popover>

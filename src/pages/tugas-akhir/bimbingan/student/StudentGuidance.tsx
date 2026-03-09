@@ -233,7 +233,7 @@ export default function StudentGuidancePage() {
             />
           )}
 
-          {!thesisId ? (
+          {!thesisId || thesisDetail?.isProposal ? (
             <RequirementsNotMet
               title="Syarat Mata Kuliah Belum Terpenuhi"
               description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."

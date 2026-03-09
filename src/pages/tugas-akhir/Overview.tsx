@@ -142,7 +142,7 @@ export default function TugasAkhirOverviewPage() {
         return <Loading size="lg" text="Memuat data tugas akhir..." />;
     }
 
-    if (!hasThesis && (!historyData?.theses || historyData.theses.length === 0)) {
+    if ((!hasThesis || thesisDetail?.isProposal) && (!historyData?.theses || historyData.theses.length === 0)) {
         return (
             <RequirementsNotMet
                 title="Syarat Mata Kuliah Belum Terpenuhi"
