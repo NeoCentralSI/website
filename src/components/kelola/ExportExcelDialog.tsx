@@ -4,7 +4,9 @@ import * as xlsx from "xlsx";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { MasterDataThesis } from "@/services/masterDataTa.service";
 
 interface ExportExcelDialogProps {
@@ -14,38 +16,37 @@ interface ExportExcelDialogProps {
     academicYears: { id: string; year: string; semester: string }[];
 }
 
-export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }: ExportExcelDialogProps) {
-    const [statusFilter, setStatusFilter] = useState("all");
-    const [yearMode, setYearMode] = useState("all");
-    const [selectedYear, setSelectedYear] = useState("none");
-    const [startYear, setStartYear] = useState("none");
-    const [endYear, setEndYear] = useState("none");
+const RATINGS = [
+    { id: "ONGOING", label: "Ongoing" },
+    { id: "SLOW", label: "Lambat" },
+    { id: "AT_RISK", label: "Berisiko" },
+    { id: "FAILED", label: "Gagal" },
+    { id: "CANCELLED", label: "Dibatalkan" },
+];
 
-    const uniqueYears = useMemo(() => {
-        const years = new Set(academicYears.map(ay => ay.year));
-        return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
-    }, [academicYears]);
+export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }: ExportExcelDialogProps) {
+    const [academicYearId, setAcademicYearId] = useState<string>("all");
+    const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+    const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
+
+    const uniqueStatuses = useMemo(() => {
+        const statuses = new Set(theses.map(t => t.status).filter(Boolean));
+        return Array.from(statuses).sort();
+    }, [theses]);
 
     const handleExport = () => {
         let filtered = theses;
 
-        if (statusFilter === "active") {
-            filtered = filtered.filter(t => !["Selesai", "Dibatalkan", "Gagal"].includes(t.status));
+        if (academicYearId !== "all") {
+            filtered = filtered.filter(t => t.academicYear?.id === academicYearId);
         }
 
-        if (yearMode === "single" && selectedYear !== "none") {
-            filtered = filtered.filter(t => t.academicYear?.year === selectedYear);
-        } else if (yearMode === "range" && startYear !== "none" && endYear !== "none") {
-            const start = parseInt(startYear);
-            const end = parseInt(endYear);
-            const min = Math.min(start, end);
-            const max = Math.max(start, end);
+        if (selectedStatuses.length > 0) {
+            filtered = filtered.filter(t => selectedStatuses.includes(t.status));
+        }
 
-            filtered = filtered.filter(t => {
-                if (!t.academicYear) return false;
-                const yearNum = parseInt(t.academicYear.year);
-                return yearNum >= min && yearNum <= max;
-            });
+        if (selectedRatings.length > 0) {
+            filtered = filtered.filter(t => t.rating && selectedRatings.includes(t.rating));
         }
 
         const excelData = filtered.map((t, index) => ({
@@ -85,84 +86,131 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
         onOpenChange(false);
     };
 
+    const toggleStatus = (status: string) => {
+        setSelectedStatuses(prev =>
+            prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+        );
+    };
+
+    const toggleRating = (rating: string) => {
+        setSelectedRatings(prev =>
+            prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]
+        );
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Export Data Tugas Akhir</DialogTitle>
                     <DialogDescription>Pilih filter data yang ingin diexport ke Excel.</DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
-                    <div className="grid gap-2">
-                        <Label>Status Tugas Akhir</Label>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Status</SelectItem>
-                                <SelectItem value="active">Aktif Saja</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label>Tahun Ajaran</Label>
-                        <Select value={yearMode} onValueChange={setYearMode}>
-                            <SelectTrigger><SelectValue placeholder="Pilih mode tahun..." /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Tahun</SelectItem>
-                                <SelectItem value="single">Pilih Tahun Tertentu</SelectItem>
-                                <SelectItem value="range">Pilih Rentang Tahun</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {yearMode === "single" && (
-                        <div className="grid gap-2">
-                            <Label>Pilih Tahun</Label>
-                            <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                <SelectTrigger><SelectValue placeholder="Pilih tahun..." /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
-                                    {uniqueYears.map((year) => (
-                                        <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                <ScrollArea className="flex-1 pr-4 -mr-4">
+                    <div className="space-y-6 py-4">
+                        {/* Academic Year */}
+                        <div className="space-y-3">
+                            <Label className="text-base font-semibold">Tahun Ajaran / Semester</Label>
+                            <RadioGroup
+                                value={academicYearId}
+                                onValueChange={setAcademicYearId}
+                                className="grid grid-cols-1 gap-2"
+                            >
+                                <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-accent cursor-pointer transition-colors">
+                                    <RadioGroupItem value="all" id="ay-all" />
+                                    <Label htmlFor="ay-all" className="flex-1 cursor-pointer font-medium">Semua Semester</Label>
+                                </div>
+                                {academicYears?.map((ay) => (
+                                    <div
+                                        key={ay.id}
+                                        className="flex items-center space-x-2 border p-3 rounded-md hover:bg-accent cursor-pointer transition-colors"
+                                    >
+                                        <RadioGroupItem value={ay.id} id={`ay-${ay.id}`} />
+                                        <Label htmlFor={`ay-${ay.id}`} className="flex-1 cursor-pointer font-medium">
+                                            {ay.year} - {ay.semester}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </RadioGroup>
                         </div>
-                    )}
 
-                    {yearMode === "range" && (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Tahun Awal</Label>
-                                <Select value={startYear} onValueChange={setStartYear}>
-                                    <SelectTrigger><SelectValue placeholder="Tahun awal..." /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">-- Pilih --</SelectItem>
-                                        {uniqueYears.map((year) => (
-                                            <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                        {/* Statuses */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-base font-semibold">Status Tugas Akhir</Label>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-xs h-auto py-1"
+                                    onClick={() => setSelectedStatuses([])}
+                                >
+                                    Reset
+                                </Button>
                             </div>
-                            <div className="grid gap-2">
-                                <Label>Tahun Akhir</Label>
-                                <Select value={endYear} onValueChange={setEndYear}>
-                                    <SelectTrigger><SelectValue placeholder="Tahun akhir..." /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">-- Pilih --</SelectItem>
-                                        {uniqueYears.map((year) => (
-                                            <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid grid-cols-2 gap-3">
+                                {uniqueStatuses.map((status) => (
+                                    <div key={status} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`status-${status}`}
+                                            checked={selectedStatuses.includes(status)}
+                                            onCheckedChange={() => toggleStatus(status)}
+                                        />
+                                        <Label
+                                            htmlFor={`status-${status}`}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        >
+                                            {status}
+                                        </Label>
+                                    </div>
+                                ))}
                             </div>
+                            {selectedStatuses.length === 0 && (
+                                <p className="text-xs text-muted-foreground italic">
+                                    Kosongkan untuk menyertakan semua status.
+                                </p>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                <DialogFooter>
+                        {/* Ratings */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-base font-semibold">Rating / Kondisi</Label>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-xs h-auto py-1"
+                                    onClick={() => setSelectedRatings([])}
+                                >
+                                    Reset
+                                </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                {RATINGS.map((rating) => (
+                                    <div key={rating.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`rating-${rating.id}`}
+                                            checked={selectedRatings.includes(rating.id)}
+                                            onCheckedChange={() => toggleRating(rating.id)}
+                                        />
+                                        <Label
+                                            htmlFor={`rating-${rating.id}`}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        >
+                                            {rating.label}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                            {selectedRatings.length === 0 && (
+                                <p className="text-xs text-muted-foreground italic">
+                                    Kosongkan untuk menyertakan semua rating.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </ScrollArea>
+
+                <DialogFooter className="mt-4 border-t pt-4">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
                     <Button onClick={handleExport}>Download Excel</Button>
                 </DialogFooter>
@@ -170,3 +218,4 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
         </Dialog>
     );
 }
+
