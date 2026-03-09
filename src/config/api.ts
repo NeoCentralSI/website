@@ -79,6 +79,11 @@ export const API_CONFIG = {
       BASE: '/yudisium/event',
       BY_ID: (id: string) => `/yudisium/event/${id}`,
     },
+    YUDISIUM_STUDENT: {
+      OVERVIEW: '/yudisium/student/overview',
+      EXIT_SURVEY: '/yudisium/student/exit-survey',
+      EXIT_SURVEY_SUBMIT: '/yudisium/student/exit-survey/submit',
+    },
     NOTIFICATION: {
       BASE: '/notification',
       UNREAD_COUNT: '/notification/unread-count',

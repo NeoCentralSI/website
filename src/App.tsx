@@ -92,7 +92,8 @@ const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetter
 const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/Overview'))
 const MetopenOverviewPage = lazy(() => import('./pages/metopel/Metopel'))
 const YudisiumEntry = lazy(() => import('./pages/yudisium/YudisiumEntry'))
-const YudisiumOverviewPage = lazy(() => import('./pages/yudisium/student/Overview'))
+const StudentYudisiumPage = lazy(() => import('./pages/yudisium/StudentYudisium'))
+const StudentExitSurveyPage = lazy(() => import('./pages/yudisium/StudentExitSurvey'))
 const LecturerYudisiumPage = lazy(() => import('./pages/yudisium/LecturerYudisium'))
 const LecturerYudisiumDetailPage = lazy(() => import('./pages/yudisium/LecturerYudisiumDetail'))
 const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview'))
@@ -233,7 +234,8 @@ function App() {
 
               {/* Yudisium - Student */}
               <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
-                <Route path="/yudisium/student" element={<YudisiumOverviewPage />} />
+                <Route path="/yudisium/student" element={<StudentYudisiumPage />} />
+                <Route path="/yudisium/student/exit-survey" element={<StudentExitSurveyPage />} />
               </Route>
 
               {/* Yudisium - Lecturer */}
