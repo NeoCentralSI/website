@@ -300,8 +300,20 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
       key: "lastActivity",
       header: "Aktivitas Terakhir",
       render: (thesis) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
           {formatDateId(thesis.lastActivity)}
+        </span>
+      ),
+    },
+    {
+      key: "deadlineDate",
+      header: "Deadline",
+      render: (thesis) => (
+        <span className={cn(
+          "text-sm font-medium whitespace-nowrap",
+          thesis.rating === 'FAILED' ? "text-destructive" : "text-muted-foreground"
+        )}>
+          {thesis.deadlineDate ? formatDateId(thesis.deadlineDate) : "-"}
         </span>
       ),
     },

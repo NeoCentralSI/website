@@ -7,6 +7,7 @@ export { TemplateSelectorDialog } from "./TemplateSelectorDialog";
 export { ValidationDialog } from "./ValidationDialog";
 export { FeedbackDialog } from "./FeedbackDialog";
 export { DeleteMilestoneDialog } from "./DeleteMilestoneDialog";
+export { TargetDateDialog } from "./TargetDateDialog";
 
 // Student components
 export { SeminarReadinessStatusCard } from "./student/SeminarReadinessStatusCard";

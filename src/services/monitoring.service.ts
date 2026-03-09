@@ -32,6 +32,7 @@ export interface AtRiskStudent {
   student: {
     name: string;
     nim: string;
+    email: string;
   };
   status: string;
   lastActivity: string;
@@ -125,6 +126,7 @@ export interface ThesisListItem {
     isFullyApproved: boolean;
   };
   lastActivity: string;
+  deadlineDate: string | null;
   createdAt: string;
 }
 
@@ -274,6 +276,7 @@ const ENDPOINTS = {
   FILTERS: "/thesisGuidance/monitoring/filters",
   AT_RISK: "/thesisGuidance/monitoring/at-risk",
   READY_SEMINAR: "/thesisGuidance/monitoring/ready-seminar",
+  BATCH_WARNING: "/thesisGuidance/monitoring/batch-warning",
 };
 
 // ========== Service Functions ==========
@@ -453,6 +456,7 @@ export interface ReportThesisItem {
   milestoneCompleted: number;
   progressPercent: number;
   startDate: string | null;
+  deadlineDate: string | null;
   createdAt: string;
 }
 
@@ -475,13 +479,22 @@ export interface ProgressReportData {
   theses: ReportThesisItem[];
 }
 
+export interface ReportFilterOptions {
+  academicYearId?: string;
+  statusIds?: string[];
+  ratings?: string[];
+}
+
 /**
  * Get progress report data for PDF generation
  */
-export async function getProgressReport(academicYear?: string): Promise<ProgressReportData> {
-  const url = academicYear && academicYear !== "all"
-    ? `${getApiUrl("/thesisGuidance/monitoring/report")}?academicYear=${academicYear}`
-    : getApiUrl("/thesisGuidance/monitoring/report");
+export async function getProgressReport(options: ReportFilterOptions = {}): Promise<ProgressReportData> {
+  const params = new URLSearchParams();
+  if (options.academicYearId && options.academicYearId !== 'all') params.append('academicYear', options.academicYearId);
+  if (options.statusIds?.length) params.append('statusIds', options.statusIds.join(','));
+  if (options.ratings?.length) params.append('ratings', options.ratings.join(','));
+
+  const url = `${getApiUrl("/thesisGuidance/monitoring/report")}?${params.toString()}`;
 
   const response = await apiRequest(url);
   if (!response.ok) {
@@ -495,10 +508,13 @@ export async function getProgressReport(academicYear?: string): Promise<Progress
 /**
  * Download progress report as PDF (server-side generation via Gotenberg)
  */
-export async function downloadProgressReportPdf(academicYear?: string): Promise<Blob> {
-  const url = academicYear && academicYear !== "all"
-    ? `${getApiUrl("/thesisGuidance/monitoring/report/download")}?academicYear=${academicYear}`
-    : getApiUrl("/thesisGuidance/monitoring/report/download");
+export async function downloadProgressReportPdf(options: ReportFilterOptions = {}): Promise<Blob> {
+  const params = new URLSearchParams();
+  if (options.academicYearId && options.academicYearId !== 'all') params.append('academicYear', options.academicYearId);
+  if (options.statusIds?.length) params.append('statusIds', options.statusIds.join(','));
+  if (options.ratings?.length) params.append('ratings', options.ratings.join(','));
+
+  const url = `${getApiUrl("/thesisGuidance/monitoring/report/download")}?${params.toString()}`;
 
   const response = await apiRequest(url);
   if (!response.ok) {
@@ -512,6 +528,25 @@ export async function downloadProgressReportPdf(academicYear?: string): Promise<
     throw new Error(message);
   }
   return response.blob();
+}
+
+/**
+ * Send batch warning notifications to students (for management roles)
+ */
+export async function sendBatchWarnings(thesisIds: string[], warningType: WarningType): Promise<{ success: boolean; message: string }> {
+  const response = await apiRequest(
+    getApiUrl(ENDPOINTS.BATCH_WARNING),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ thesisIds, warningType }),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengirim peringatan batch");
+  }
+  return response.json();
 }
 
 // ==================== KADEP TRANSFER APPROVAL ====================

@@ -7,7 +7,7 @@ import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye, Edit } from 'lucide-react';
+import { Eye, Pencil } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -148,26 +148,27 @@ export default function Dosen() {
       key: 'actions',
       header: 'Aksi',
       render: (row: Lecturer) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button
-            size="sm"
-            variant="outline"
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-black"
             onClick={() => navigate(`/master-data/dosen/${row.id}`)}
           >
             <Eye className="w-4 h-4" />
           </Button>
           {isAdmin() && (
             <Button
-              size="sm"
-              variant="outline"
-              className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-black"
               onClick={() => {
                 setSelectedLecturer(row);
                 setSelectedScienceGroup(row.lecturer?.scienceGroupId || '');
                 setIsEditOpen(true);
               }}
             >
-              <Edit className="w-4 h-4" />
+              <Pencil className="w-4 h-4" />
             </Button>
           )}
         </div>

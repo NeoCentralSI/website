@@ -24,19 +24,6 @@ const RATING_LABELS: Record<string, string> = {
   CANCELLED: "Cancelled",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  "Bimbingan": "#3b82f6",
-  "Acc Seminar": "#f59e0b",
-  "Seminar Proposal": "#8b5cf6",
-  "Revisi Proposal": "#f97316",
-  "Penelitian": "#06b6d4",
-  "Seminar Hasil": "#6366f1",
-  "Sidang": "#ec4899",
-  "Revisi Akhir": "#f43f5e",
-  "Selesai": "#22c55e",
-  "Gagal": "#ef4444",
-};
-
 const PROGRESS_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"];
 
 export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
@@ -55,16 +42,25 @@ export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
     }));
   }, [students]);
 
-  // Compute status distribution
-  const statusData = useMemo(() => {
-    const counts: Record<string, number> = {};
+  // Compute guidance distribution
+  const guidanceData = useMemo(() => {
+    // Count students per guidance count bucket
+    // Buckets: 0, 1-3, 4-7, 8-11, 12-15, 16+
+    const buckets = [
+      { label: "0", min: 0, max: 0, count: 0, color: "#ef4444" },
+      { label: "1-3", min: 1, max: 3, count: 0, color: "#f97316" },
+      { label: "4-7", min: 4, max: 7, count: 0, color: "#eab308" },
+      { label: "8-11", min: 8, max: 11, count: 0, color: "#22c55e" },
+      { label: "12-15", min: 12, max: 15, count: 0, color: "#3b82f6" },
+      { label: "16+", min: 16, max: 999, count: 0, color: "#8b5cf6" },
+    ];
+
     students.forEach((s) => {
-      const status = s.thesisStatus || "Bimbingan";
-      counts[status] = (counts[status] || 0) + 1;
+      const count = s.completedGuidanceCount || 0;
+      const bucket = buckets.find((b) => count >= b.min && count <= b.max);
+      if (bucket) bucket.count++;
     });
-    return Object.entries(counts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
+    return buckets;
   }, [students]);
 
   // Compute progress distribution
@@ -88,17 +84,15 @@ export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
   if (students.length === 0) return null;
 
   const ratingTotal = ratingData.reduce((sum, r) => sum + r.count, 0);
-  const statusTotal = statusData.reduce((sum, s) => sum + s.count, 0);
 
   const ratingConfig: ChartConfig = {};
   ratingData.forEach((r) => {
     ratingConfig[r.name] = { label: r.name, color: RATING_COLORS[r.value] || "#64748b" };
   });
 
-  const statusConfig: ChartConfig = {};
-  statusData.forEach((s, i) => {
-    statusConfig[s.name] = { label: s.name, color: STATUS_COLORS[s.name] || `hsl(${i * 45}, 70%, 50%)` };
-  });
+  const guidanceConfig: ChartConfig = {
+    count: { label: "Mahasiswa", color: "#3b82f6" },
+  };
 
   const progressConfig: ChartConfig = {
     count: { label: "Mahasiswa", color: "#3b82f6" },
@@ -146,42 +140,30 @@ export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
         </CardContent>
       </Card>
 
-      {/* Status Distribution */}
+      {/* Guidance Distribution */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Distribusi Status Tugas Akhir</CardTitle>
+          <CardTitle className="text-sm font-medium">Distribusi Jumlah Bimbingan</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={statusConfig} className="h-50 w-full">
-            <PieChart>
+          <ChartContainer config={guidanceConfig} className="h-50 w-full">
+            <BarChart data={guidanceData} margin={{ left: 0, right: 8, top: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="label" fontSize={10} tickLine={false} />
+              <YAxis allowDecimals={false} fontSize={10} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
-                    formatter={(value, name) => (
-                      <span>{name}: {value} ({statusTotal > 0 ? Math.round((Number(value) / statusTotal) * 100) : 0}%)</span>
-                    )}
+                    formatter={(value) => <span>{value} mahasiswa</span>}
                   />
                 }
               />
-              <Pie
-                data={statusData}
-                dataKey="count"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={65}
-                innerRadius={35}
-                paddingAngle={2}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={false}
-                fontSize={10}
-              >
-                {statusData.map((entry, i) => (
-                  <Cell key={entry.name} fill={STATUS_COLORS[entry.name] || `hsl(${i * 45}, 70%, 50%)`} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={28}>
+                {guidanceData.map((entry, index) => (
+                  <Cell key={index} fill={entry.color} />
                 ))}
-              </Pie>
-              <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10 }} />
-            </PieChart>
+              </Bar>
+            </BarChart>
           </ChartContainer>
         </CardContent>
       </Card>

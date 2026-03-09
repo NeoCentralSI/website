@@ -56,15 +56,14 @@ export function AcademicYearFormDialog({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="year">Tahun</Label>
+                <Label htmlFor="year">Tahun Ajaran</Label>
                 <Input
                   id="year"
-                  type="number"
-                  min="2000"
-                  max="2100"
+                  type="text"
+                  placeholder="Contoh: 2025/2026"
                   value={formData.year}
                   onChange={(e) =>
-                    setFormData({ ...formData, year: parseInt(e.target.value) })
+                    setFormData({ ...formData, year: e.target.value })
                   }
                   required
                 />

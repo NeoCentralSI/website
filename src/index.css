@@ -23,6 +23,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
@@ -47,27 +48,39 @@
   --radius: 0.625rem;
   /* White-first surfaces */
   --background: #ffffff;
-  --foreground: #111827; /* gray-900 */
+  --foreground: #111827;
+  /* gray-900 */
   --card: #ffffff;
   --card-foreground: #111827;
   --popover: #ffffff;
   --popover-foreground: #111827;
   /* Primary orange matching landing page */
-  --primary: #F7931E; /* main orange from landing */
+  --primary: #F7931E;
+  /* main orange from landing */
   --primary-foreground: #ffffff;
-  --secondary: #FFF8F0; /* warm cream background */
+  --secondary: #FFF8F0;
+  /* warm cream background */
   --secondary-foreground: #111827;
   /* Neutral surfaces/text */
-  --muted: #FFF8F0; /* warm cream for muted */
-  --muted-foreground: #6b7280; /* gray-500 */
-  --accent: #FFF8F0; /* warm cream for accent */
+  --muted: #FFF8F0;
+  /* warm cream for muted */
+  --muted-foreground: #6b7280;
+  /* gray-500 */
+  --accent: #FFF8F0;
+  /* warm cream for accent */
   --accent-foreground: #111827;
-  --destructive: #ef4444; /* red-500 */
-  --success: #22c55e; /* green-500 */
+  --destructive: #ef4444;
+  /* red-500 */
+  --destructive-foreground: #ffffff;
+  --success: #22c55e;
+  /* green-500 */
   --success-foreground: #ffffff;
-  --border: #fed7aa; /* orange-200 for subtle border */
-  --input: #e5e7eb; /* gray-200 for input border */
-  --ring: #F7931E; /* main orange for focus */
+  --border: #fed7aa;
+  /* orange-200 for subtle border */
+  --input: #e5e7eb;
+  /* gray-200 for input border */
+  --ring: #F7931E;
+  /* main orange for focus */
   /* Charts (kept similar hues) */
   --chart-1: #F7931E;
   --chart-2: #f59e0b;
@@ -75,13 +88,16 @@
   --chart-4: #fdba74;
   --chart-5: #ea580c;
   /* Sidebar surfaces */
-  --sidebar: #FFF8F0; /* warm cream matching landing */
+  --sidebar: #FFF8F0;
+  /* warm cream matching landing */
   --sidebar-foreground: #111827;
   --sidebar-primary: #F7931E;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #fed7aa; /* orange-200 for visible hover */
+  --sidebar-accent: #fed7aa;
+  /* orange-200 for visible hover */
   --sidebar-accent-foreground: #111827;
-  --sidebar-border: #fdba74; /* orange-300 */
+  --sidebar-border: #fdba74;
+  /* orange-300 */
   --sidebar-ring: #F7931E;
 }
 
@@ -102,6 +118,7 @@
   --accent: #FFF8F0;
   --accent-foreground: #111827;
   --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
   --success: #22c55e;
   --success-foreground: #ffffff;
   --border: #fed7aa;
@@ -126,9 +143,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   html {
     scroll-behavior: smooth;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -136,7 +155,8 @@
 
 /* Sonner Toast Styling */
 [data-sonner-toast] [data-description] {
-  color: rgb(75 85 99) !important; /* gray-600 */
+  color: rgb(75 85 99) !important;
+  /* gray-600 */
   opacity: 1 !important;
 }
 
@@ -145,6 +165,7 @@
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }

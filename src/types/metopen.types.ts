@@ -255,7 +255,7 @@ export interface EligibleStudent {
 
 export interface AcademicYear {
   id: string;
-  year: number;
+  year: string;
   semester: 'ganjil' | 'genap';
   isActive: boolean;
 }
@@ -279,7 +279,7 @@ export interface MetopenClass {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  academicYear?: { semester: string; year: number; isActive: boolean };
+  academicYear?: { semester: string; year: string; isActive: boolean };
   lecturer?: { user?: { fullName: string; identityNumber?: string } };
   _count?: { enrollments: number; milestones: number };
   enrollments?: MetopenClassEnrollment[];

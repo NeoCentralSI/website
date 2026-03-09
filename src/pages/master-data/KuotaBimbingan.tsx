@@ -50,7 +50,7 @@ import {
 
 interface AcademicYear {
     id: string;
-    year: number;
+    year: string;
     semester: string;
     isActive: boolean;
 }

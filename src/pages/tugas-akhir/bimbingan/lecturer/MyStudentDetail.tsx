@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { getStudentDetail, validateMilestone, createMilestoneForStudent, approveThesisProposalAPI, type CreateMilestoneForStudentDto } from "@/services/lecturerGuidance.service";
+import { getStudentDetail, validateMilestone, createMilestoneForStudent,  type CreateMilestoneForStudentDto } from "@/services/lecturerGuidance.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
@@ -52,7 +52,7 @@ import { useSeminarReadinessStatus } from "@/hooks/milestone/useMilestone";
 import { ChangeRequestReviewCard } from "@/components/tugas-akhir/lecturer/ChangeRequestReviewCard";
 import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/GuidanceHistorySection";
 import { RefreshButton } from "@/components/ui/refresh-button";
-import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
+// import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
 
 const STATUS_LABELS: Record<string, string> = {
     not_started: "Belum Dimulai",
@@ -132,21 +132,21 @@ export default function LecturerMyStudentDetailPage() {
         return status === "dibatalkan" || status === "gagal" || status === "cancelled";
     }, [detailData?.status]);
 
-    const isProposed = useMemo(() => {
-        return detailData?.status === "Diajukan";
-    }, [detailData?.status]);
+    // const isProposed = useMemo(() => {
+    //     return detailData?.status === "Diajukan";
+    // }, [detailData?.status]);
 
-    const approveProposalMutation = useMutation({
-        mutationFn: () => approveThesisProposalAPI(thesisId!),
-        onSuccess: () => {
-            toast.success("Proposal berhasil disetujui. Status mahasiswa kini Aktif.");
-            queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
-            queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
-        },
-        onError: (error: Error) => {
-            toast.error(error.message);
-        }
-    });
+    // const approveProposalMutation = useMutation({
+    //     mutationFn: () => approveThesisProposalAPI(thesisId!),
+    //     onSuccess: () => {
+    //         toast.success("Proposal berhasil disetujui. Status mahasiswa kini Aktif.");
+    //         queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
+    //         queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
+    //     },
+    //     onError: (error: Error) => {
+    //         toast.error(error.message);
+    //     }
+    // });
 
     const validateMutation = useMutation({
         mutationFn: (milestoneId: string) => validateMilestone(milestoneId),
@@ -277,7 +277,7 @@ export default function LecturerMyStudentDetailPage() {
             </div>
 
             {/* Approval Proposal Banner */}
-            {isProposed && (
+            {/* {isProposed && (
                 <Alert className="border-blue-200 bg-blue-50">
                     <BookOpen className="h-5 w-5 text-blue-600" />
                     <div className="ml-2 w-full">
@@ -306,7 +306,7 @@ export default function LecturerMyStudentDetailPage() {
                         </div>
                     </div>
                 </Alert>
-            )}
+            )} */}
 
             {/* Cancelled/Failed Banner */}
             {isCancelled && (
@@ -472,7 +472,7 @@ export default function LecturerMyStudentDetailPage() {
                                 <div className="p-3 rounded-xl bg-background/50 border hover:bg-background/80 transition-colors">
                                     <div className="flex items-center justify-between mb-2">
                                         <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-600">
-                                            Draft Skripsi
+                                            Draft Laporan Tugas Akhir
                                         </Badge>
                                     </div>
                                     {detailData.document ? (
@@ -489,7 +489,7 @@ export default function LecturerMyStudentDetailPage() {
                                             </Button>
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-muted-foreground italic">Belum ada draft skripsi</p>
+                                        <p className="text-sm text-muted-foreground italic">Belum ada draft laporan tugas akhir</p>
                                     )}
                                 </div>
                             </div>
@@ -504,8 +504,9 @@ export default function LecturerMyStudentDetailPage() {
                                 <div className="max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent space-y-2">
                                     {detailData.uploadedFiles.map((file, idx) => {
                                         const fileUrl = getDocumentUrl(
-                                            file.filePath.startsWith('uploads/') || file.filePath.startsWith('/uploads/')
-                                                ? (file.filePath.startsWith('/') ? file.filePath : `/${file.filePath}`)
+                                            file.filePath.startsWith('uploads/') || file.filePath.startsWith('/uploads/') ||
+                                                file.filePath.startsWith('uploads\\') || file.filePath.startsWith('\\uploads\\')
+                                                ? (file.filePath.startsWith('/') || file.filePath.startsWith('\\') ? file.filePath : `/${file.filePath}`)
                                                 : `/uploads/${file.filePath}`
                                         );
                                         return (
@@ -537,9 +538,9 @@ export default function LecturerMyStudentDetailPage() {
                 </CardContent>
             </Card>
             {/* Supervisor Metopen Score Card */}
-            {thesisId && (
+            {/* {thesisId && (
                 <SupervisorScoreCard thesisId={thesisId} scoreData={detailData.researchMethodScore} />
-            )}
+            )} */}
 
             {/* Guidance History & Milestone side by side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
