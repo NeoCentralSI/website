@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { getStudentDetail, validateMilestone, createMilestoneForStudent,  type CreateMilestoneForStudentDto } from "@/services/lecturerGuidance.service";
+import { getStudentDetail, validateMilestone, requestMilestoneRevision, createMilestoneForStudent, type CreateMilestoneForStudentDto } from "@/services/lecturerGuidance.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
@@ -11,20 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import EmptyState from "@/components/ui/empty-state";
-import { FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
+import { FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
     Dialog,
     DialogContent,
@@ -83,6 +73,7 @@ export default function LecturerMyStudentDetailPage() {
     const [milestoneDescription, setMilestoneDescription] = useState("");
     const [milestoneTargetDate, setMilestoneTargetDate] = useState<Date | undefined>();
     const [milestoneSupervisorNotes, setMilestoneSupervisorNotes] = useState("");
+    const [reviewNotes, setReviewNotes] = useState("");
 
     // Helper to convert backend URLs to absolute URLs
     const getDocumentUrl = (path: string): string => {
@@ -149,10 +140,28 @@ export default function LecturerMyStudentDetailPage() {
     // });
 
     const validateMutation = useMutation({
-        mutationFn: (milestoneId: string) => validateMilestone(milestoneId),
+        mutationFn: ({ id, notes }: { id: string, notes?: string }) => validateMilestone(id, notes),
         onSuccess: () => {
             toast.success("Milestone berhasil divalidasi");
             queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
+            setSelectedMilestoneId(null);
+            setReviewNotes("");
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+        onSettled: () => {
+            setValidatingId(null);
+        }
+    });
+
+    const requestRevisionMutation = useMutation({
+        mutationFn: ({ id, notes }: { id: string, notes: string }) => requestMilestoneRevision(id, notes),
+        onSuccess: () => {
+            toast.success("Permintaan revisi berhasil dikirim");
+            queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
+            setSelectedMilestoneId(null);
+            setReviewNotes("");
         },
         onError: (error: Error) => {
             toast.error(error.message);
@@ -197,11 +206,19 @@ export default function LecturerMyStudentDetailPage() {
 
     const handleValidate = () => {
         if (selectedMilestoneId) {
-            const id = selectedMilestoneId;
-            setValidatingId(id);
-            setSelectedMilestoneId(null);
-            validateMutation.mutate(id);
+            setValidatingId(selectedMilestoneId);
+            validateMutation.mutate({ id: selectedMilestoneId, notes: reviewNotes.trim() || undefined });
         }
+    };
+
+    const handleRequestRevision = () => {
+        if (!selectedMilestoneId) return;
+        if (!reviewNotes.trim()) {
+            toast.error("Catatan revisi wajib diisi");
+            return;
+        }
+        setValidatingId(selectedMilestoneId);
+        requestRevisionMutation.mutate({ id: selectedMilestoneId, notes: reviewNotes.trim() });
     };
 
     // Update breadcrumb with student name when data is loaded
@@ -588,19 +605,19 @@ export default function LecturerMyStudentDetailPage() {
                                                             size="icon"
                                                             className={cn(
                                                                 "h-6 w-6 transition-opacity",
-                                                                milestone.progressPercentage < 100 ? "opacity-50 cursor-not-allowed" : "opacity-100 hover:bg-green-50 text-green-600"
+                                                                (milestone.progressPercentage < 100 && milestone.status !== 'pending_review') ? "opacity-30 cursor-not-allowed" : "opacity-100 hover:bg-primary/10 text-primary"
                                                             )}
                                                             title={
                                                                 isCancelled
-                                                                    ? "Tidak dapat memvalidasi karena tugas akhir dibatalkan"
-                                                                    : milestone.progressPercentage < 100
+                                                                    ? "Tidak dapat memproses karena tugas akhir dibatalkan"
+                                                                    : (milestone.progressPercentage < 100 && milestone.status !== 'pending_review')
                                                                         ? "Milestone belum mencapai 100%"
-                                                                        : "Validasi Milestone"
+                                                                        : "Review Milestone"
                                                             }
-                                                            disabled={milestone.progressPercentage < 100 || isCancelled}
+                                                            disabled={(milestone.progressPercentage < 100 && milestone.status !== 'pending_review') || isCancelled}
                                                             onClick={() => setSelectedMilestoneId(milestone.id)}
                                                         >
-                                                            <Check className="h-4 w-4" />
+                                                            <CheckCircle2 className="h-4 w-4" />
                                                         </Button>
                                                     )}
                                                 </div>
@@ -647,23 +664,55 @@ export default function LecturerMyStudentDetailPage() {
                 </Card>
             </div>
 
-            <AlertDialog open={!!selectedMilestoneId} onOpenChange={(open) => !open && setSelectedMilestoneId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Validasi Milestone</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Apakah Anda yakin ingin menyetujui milestone ini sebagai selesai?
-                            Tindakan ini akan mengubah status milestone menjadi <strong>Selesai</strong>.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleValidate} disabled={validateMutation.isPending}>
-                            {validateMutation.isPending ? "Memproses..." : "Ya, Validasi"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <Dialog open={!!selectedMilestoneId} onOpenChange={(open) => {
+                if (!open) {
+                    setSelectedMilestoneId(null);
+                    setReviewNotes("");
+                }
+            }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Review Milestone</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="review-notes">Catatan Feedback</Label>
+                            <Textarea
+                                id="review-notes"
+                                placeholder="Tulis catatan feedback atau instruksi revisi..."
+                                value={reviewNotes}
+                                onChange={(e) => setReviewNotes(e.target.value)}
+                                rows={4}
+                            />
+                            <p className="text-[10px] text-muted-foreground">Catatan wajib diisi jika meminta revisi.</p>
+                        </div>
+                    </div>
+                    <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                            variant="destructive"
+                            className="w-full sm:w-auto"
+                            onClick={handleRequestRevision}
+                            disabled={requestRevisionMutation.isPending || validateMutation.isPending}
+                        >
+                            {requestRevisionMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : null}
+                            Minta Revisi
+                        </Button>
+                        <Button
+                            variant="default"
+                            className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                            onClick={handleValidate}
+                            disabled={requestRevisionMutation.isPending || validateMutation.isPending}
+                        >
+                            {validateMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : null}
+                            Setujui
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Create Milestone Dialog */}
             <Dialog
