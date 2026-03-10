@@ -51,6 +51,7 @@ export default function CompletedHistoryPage() {
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
+          { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone' },
         ]}
       />
 

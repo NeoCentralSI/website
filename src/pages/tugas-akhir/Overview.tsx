@@ -505,12 +505,12 @@ export default function TugasAkhirOverviewPage() {
                                         <Button
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
-                                            onClick={() => navigate('/tugas-akhir/bimbingan/student')}
+                                            onClick={() => navigate('/tugas-akhir/bimbingan/student/milestone')}
                                         >
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
                                                 <Target className="h-4 w-4 text-primary" />
                                             </div>
-                                            <span>Bimbingan & Tugas Akhir</span>
+                                            <span>Kelola Milestone</span>
                                         </Button>
                                         <Button
                                             variant="outline"
