@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesis, getSupervisor2Requests, getIncomingTransfers } from "@/services/lecturerGuidance.service";
-import { getMilestones, getSeminarReadinessStatus, getDefenceReadinessStatus, getSupervisorPendingReview } from "@/services/milestone.service";
+import { getSeminarReadinessStatus, getDefenceReadinessStatus, getSupervisorPendingReview } from "@/services/milestone.service";
 import { getMyStudents } from "@/services/lecturerGuidance.service";
 import { getKadepQuickActionsStats } from "@/services/admin.service";
 import { UserPlus } from "lucide-react";
