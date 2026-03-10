@@ -57,6 +57,7 @@ const ENDPOINTS = {
   TEMPLATE_DETAIL: (templateId: string) => `/milestones/templates/${templateId}`,
   // Lecturer Dashboard Endpoints
   LECTURER_PENDING: "/milestones/lecturer/pending",
+  SUPERVISOR_PENDING: "/milestones/supervisor/pending-review",
   LECTURER_COMPLETION_STATUS: "/milestones/lecturer/completion-status",
   LECTURER_BULK_VALIDATE: "/milestones/lecturer/bulk-validate",
   // Seminar Readiness Endpoints
@@ -540,6 +541,20 @@ export async function getPendingMilestonesForLecturer(
     milestones: result.data,
     count: result.count,
   };
+}
+
+/**
+ * Get pending_review milestones for current supervisor
+ */
+export async function getSupervisorPendingReview(): Promise<PendingMilestoneItem[]> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.SUPERVISOR_PENDING));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil milestone pending");
+  }
+
+  const result = await response.json();
+  return result.data;
 }
 
 /**
