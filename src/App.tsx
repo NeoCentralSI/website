@@ -32,7 +32,6 @@ const Profil = lazy(() => import('./pages/profil/Profil'))
 const BimbinganEntry = lazy(() => import('./pages/tugas-akhir/bimbingan/BimbinganEntry'))
 const StudentGuidancePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/StudentGuidance'))
 const StudentGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/GuidanceSession'))
-const StudentMilestonePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/Milestone'))
 const DangerZonePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/DangerZone'))
 const LecturerRequestsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/Requests'))
 const LecturerGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'))
@@ -201,7 +200,6 @@ function App() {
                     {/* Removed bimbingan/ route to allow BimbinganEntry to handle role-based redirection */}
                     <Route path="bimbingan/student" element={<StudentGuidancePage />} />
                     <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
-                    <Route path="bimbingan/milestone" element={<StudentMilestonePage />} />
                     <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
                     <Route path="seminar/student" element={<StudentThesisSeminarPage />} />
                     <Route path="seminar/student/attendance" element={<StudentSeminarAttendancePage />} />
