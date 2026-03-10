@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { MilestoneStatus } from "@/types/milestone.types";
 import { MILESTONE_STATUS_CONFIG } from "@/types/milestone.types";
-import { Circle, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Circle, Loader2, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 
 export interface MilestoneStatusBadgeProps {
   status: MilestoneStatus;
@@ -12,6 +12,7 @@ export interface MilestoneStatusBadgeProps {
 const IconByStatus: Record<MilestoneStatus, React.ElementType> = {
   not_started: Circle,
   in_progress: Loader2,
+  pending_review: Clock,
   revision_needed: AlertTriangle,
   completed: CheckCircle2,
 };

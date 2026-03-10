@@ -2,6 +2,7 @@
 export type MilestoneStatus =
   | "not_started"
   | "in_progress"
+  | "pending_review"
   | "revision_needed"
   | "completed";
 
@@ -209,6 +210,11 @@ export const MILESTONE_STATUS_CONFIG: Record<
     label: "Sedang Dikerjakan",
     color: "text-blue-600",
     bgColor: "bg-blue-100",
+  },
+  pending_review: {
+    label: "Menunggu Review",
+    color: "text-amber-600",
+    bgColor: "bg-amber-100",
   },
   revision_needed: {
     label: "Perlu Revisi",
