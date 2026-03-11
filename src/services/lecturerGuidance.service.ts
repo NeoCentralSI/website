@@ -125,6 +125,7 @@ export interface StudentDetail {
     count: number;
     items: GuidanceItem[];
   };
+  userRole?: string | null;
 }
 
 export const validateMilestone = async (milestoneId: string, notes?: string): Promise<{ success: boolean; data: any }> => {

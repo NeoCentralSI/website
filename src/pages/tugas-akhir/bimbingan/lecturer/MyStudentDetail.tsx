@@ -123,6 +123,12 @@ export default function LecturerMyStudentDetailPage() {
         return status === "dibatalkan" || status === "gagal" || status === "cancelled";
     }, [detailData?.status]);
 
+    const isPembimbing1 = useMemo(() => {
+        if (!detailData?.userRole) return false;
+        const role = detailData.userRole.toLowerCase();
+        return role === "pembimbing 1" || role === "pembimbing1";
+    }, [detailData?.userRole]);
+
     // const isProposed = useMemo(() => {
     //     return detailData?.status === "Diajukan";
     // }, [detailData?.status]);
@@ -569,15 +575,17 @@ export default function LecturerMyStudentDetailPage() {
                 <Card className="h-full">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Riwayat Milestone</CardTitle>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setCreateMilestoneOpen(true)}
-                            disabled={isCancelled}
-                        >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Tambah
-                        </Button>
+                        {isPembimbing1 && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setCreateMilestoneOpen(true)}
+                                disabled={isCancelled}
+                            >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Tambah
+                            </Button>
+                        )}
                     </CardHeader>
                     <CardContent className="px-2 sm:px-6">
                         <div className="h-150 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
@@ -605,16 +613,18 @@ export default function LecturerMyStudentDetailPage() {
                                                             size="icon"
                                                             className={cn(
                                                                 "h-6 w-6 transition-opacity",
-                                                                (milestone.progressPercentage < 100 && milestone.status !== 'pending_review') ? "opacity-30 cursor-not-allowed" : "opacity-100 hover:bg-primary/10 text-primary"
+                                                                (!isPembimbing1 || (milestone.progressPercentage < 100 && milestone.status !== 'pending_review')) ? "opacity-30 cursor-not-allowed" : "opacity-100 hover:bg-primary/10 text-primary"
                                                             )}
                                                             title={
                                                                 isCancelled
                                                                     ? "Tidak dapat memproses karena tugas akhir dibatalkan"
-                                                                    : (milestone.progressPercentage < 100 && milestone.status !== 'pending_review')
-                                                                        ? "Milestone belum mencapai 100%"
-                                                                        : "Review Milestone"
+                                                                    : !isPembimbing1
+                                                                        ? "Hanya Pembimbing 1 yang dapat melakukan review"
+                                                                        : (milestone.progressPercentage < 100 && milestone.status !== 'pending_review')
+                                                                            ? "Milestone belum mencapai 100%"
+                                                                            : "Review Milestone"
                                                             }
-                                                            disabled={(milestone.progressPercentage < 100 && milestone.status !== 'pending_review') || isCancelled}
+                                                            disabled={!isPembimbing1 || (milestone.progressPercentage < 100 && milestone.status !== 'pending_review') || isCancelled}
                                                             onClick={() => setSelectedMilestoneId(milestone.id)}
                                                         >
                                                             <CheckCircle2 className="h-4 w-4" />
