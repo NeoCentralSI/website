@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { Loading } from '@/components/ui/spinner';
-import CustomTable from '@/components/layout/CustomTable';
+import InternshipTable from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useCompanyStats } from '@/hooks/internship/useCompanyStats';
 import { getCompanyStatsColumns } from '@/lib/internship';
@@ -15,6 +14,13 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { type CompanyStatsItem } from '@/services/internship.service';
 import { Badge } from '@/components/ui/badge';
 
@@ -32,6 +38,11 @@ export default function AdminCompanyListPage() {
         setPage,
         pageSize,
         setPageSize,
+        sortBy,
+        sortOrder,
+        setSort,
+        status: filterStatus,
+        setStatus: setFilterStatus,
         refetch,
     } = useCompanyStats();
 
@@ -67,41 +78,48 @@ export default function AdminCompanyListPage() {
                 </div>
             </div>
 
-            {isLoading ? (
-                <div className="flex h-[calc(100vh-280px)] items-center justify-center">
-                    <Loading size="lg" text="Memuat data perusahaan..." />
-                </div>
-            ) : (
-                <CustomTable
-                    columns={columns as any}
-                    data={displayItems}
-                    loading={isLoading}
-                    isRefreshing={isFetching && !isLoading}
-                    total={total}
-                    page={page}
-                    pageSize={pageSize}
-                    onPageChange={setPage}
-                    onPageSizeChange={(s) => {
-                        setPageSize(s);
-                        setPage(1);
-                    }}
-                    enableColumnFilters
-                    searchValue={q}
-                    onSearchChange={(v) => {
-                        setQ(v);
-                        setPage(1);
-                    }}
-                    emptyText={q ? 'Pencarian tidak menemukan hasil. Coba kata kunci lain.' : 'Belum ada data perusahaan.'}
-                    actions={
-                        <div className="flex items-center gap-2">
-                            <RefreshButton
-                                onClick={() => refetch()}
-                                isRefreshing={isFetching && !isLoading}
-                            />
-                        </div>
-                    }
-                />
-            )}
+            <InternshipTable
+                columns={columns as any}
+                data={displayItems}
+                loading={isLoading}
+                isRefreshing={isFetching && !isLoading}
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(s) => {
+                    setPageSize(s);
+                    setPage(1);
+                }}
+                enableColumnFilters
+                searchValue={q}
+                onSearchChange={(v) => {
+                    setQ(v);
+                    setPage(1);
+                }}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={setSort}
+                emptyText={q ? 'Pencarian tidak menemukan hasil. Coba kata kunci lain.' : 'Belum ada data perusahaan.'}
+                actions={
+                    <div className="flex items-center gap-2">
+                        <Select value={filterStatus} onValueChange={setFilterStatus}>
+                            <SelectTrigger className="w-[150px] h-9">
+                                <SelectValue placeholder="Filter Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Status</SelectItem>
+                                <SelectItem value="save">SAVE</SelectItem>
+                                <SelectItem value="blacklist">BLACKLIST</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <RefreshButton
+                            onClick={() => refetch()}
+                            isRefreshing={isFetching && !isLoading}
+                        />
+                    </div>
+                }
+            />
 
             {/* Dialog Detail */}
             <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>

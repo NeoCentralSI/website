@@ -7,6 +7,7 @@ export interface InternshipProposalItem {
     nim: string;
     koordinatorAtauMember: string;
     namaCompany: string;
+    targetCompanyId?: string;
     dokumenProposal: {
         id: string;
         fileName: string;
@@ -18,6 +19,7 @@ export interface InternshipProposalItem {
         filePath: string;
     } | null;
     status: string;
+    academicYearName?: string;
     isSigned?: boolean;
     isAssignmentSigned?: boolean;
     memberStatus?: string;
@@ -32,6 +34,9 @@ export interface InternshipProposalItem {
         fileName: string;
         filePath: string;
     } | null;
+    proposalSekdepNotes?: string | null;
+    companyResponseSekdepNotes?: string | null;
+    members?: { id: string; name: string; nim: string; role: string; status: string }[];
     [key: string]: unknown;
 }
 
@@ -57,6 +62,7 @@ export interface InternshipProposalDetail {
             identityNumber: string;
         }
     };
+    targetCompanyId: string;
     status: string;
     targetCompany: {
         companyName: string;
@@ -66,24 +72,57 @@ export interface InternshipProposalDetail {
         id: string;
         fileName: string;
         filePath: string;
-    };
-    members: InternshipProposalMember[];
-    applicationLetters: any[];
-    companyResponses: {
+    } | null;
+    internships: {
         id: string;
+        studentId: string;
         status: string;
-        sekdepNotes?: string | null;
-        document: {
-            id: string;
-            fileName: string;
-            filePath: string;
-        };
-        updatedAt: string;
+        student: {
+            user: {
+                fullName: string;
+                identityNumber: string;
+            }
+        }
     }[];
+    appLetterDoc: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    companyResponseDoc: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    assignLetterDoc: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    companyResponseSekdepNotes?: string | null;
+    companyResponseStatus?: string | null;
     isSigned?: boolean;
-    sekdepNotes?: string | null;
+    isAssignmentSigned?: boolean;
+    proposalSekdepNotes?: string | null;
+    academicYearName?: string;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface InternshipListItem {
+    id: string;
+    nim: string;
+    name: string;
+    companyName: string;
+    academicYearName: string;
+    supervisorName: string;
+    fieldSupervisorName: string;
+    logbookProgress: {
+        filled: number;
+        total: number;
+    };
+    status: string;
+    createdAt: string;
 }
 
 export interface CompanyItem {
@@ -116,14 +155,23 @@ export interface SubmitProposalBody {
     memberIds?: string[];
 }
 
-export interface SekdepInternshipProposalItem {
+export interface SekdepRegistrationItem {
     id: string;
     coordinatorName: string;
     coordinatorNim: string;
     companyName: string;
     status: string;
+    proposalSekdepNotes?: string | null;
+    companyResponseSekdepNotes?: string | null;
+    sekdepNotes?: string | null;
+    academicYearName?: string;
     memberCount: number;
+    acceptedMemberCount: number;
+    members?: { id: string; name: string; nim: string; role: string; status: string }[];
     createdAt: string;
+    updatedAt?: string;
+    isSigned?: boolean;
+    isAssignmentSigned?: boolean;
     dokumenProposal: {
         id: string;
         fileName: string;
@@ -134,28 +182,12 @@ export interface SekdepInternshipProposalItem {
         fileName: string;
         filePath: string;
     } | null;
-    sekdepNotes?: string | null;
-}
-
-export interface SekdepAssignmentItem {
-    id: string;
-    responseId: string;
-    coordinatorName: string;
-    coordinatorNim: string;
-    companyName: string;
-    status: string;
-    responseStatus: string;
-    sekdepNotes?: string | null;
-    memberCount: number;
-    members?: { id: string; name: string; nim: string; role: string; status: string }[];
-    isAssignmentSigned: boolean;
-    updatedAt: string;
-    dokumenSuratBalasan: {
+    dokumenSuratBalasan?: {
         id: string;
         fileName: string;
         filePath: string;
     } | null;
-    dokumenSuratTugas: {
+    dokumenSuratTugas?: {
         id: string;
         fileName: string;
         filePath: string;
@@ -171,8 +203,12 @@ export interface CompanyStatsItem {
     internCount: number;
 }
 
-export const getStudentProposals = async (): Promise<{ success: boolean; data: InternshipProposalItem[] }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.PROPOSALS));
+export const getStudentProposals = async (academicYearId?: string): Promise<{ success: boolean; data: InternshipProposalItem[] }> => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.PROPOSALS);
+    if (academicYearId) {
+        url += `?academicYear=${academicYearId}`;
+    }
+    const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar pengajuan" }));
         throw new Error(errorData.message || "Gagal memuat daftar pengajuan");
@@ -210,6 +246,29 @@ export const submitProposal = async (body: SubmitProposalBody): Promise<{ succes
     return res.json();
 };
 
+export const updateProposal = async (id: string, body: SubmitProposalBody): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.PROPOSALS) + `/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Gagal memperbarui proposal");
+    }
+    return res.json();
+};
+
+export const deleteProposal = async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.PROPOSALS) + `/${id}`, {
+        method: "DELETE",
+    });
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Gagal menghapus proposal");
+    }
+    return res.json();
+};
+
 export const uploadInternshipDocument = async (file: File): Promise<{ success: boolean; documentId: string }> => {
     const fd = new FormData();
     fd.append("file", file);
@@ -228,16 +287,6 @@ export const uploadInternshipDocument = async (file: File): Promise<{ success: b
         success: result.success,
         documentId: result.data.id,
     };
-};
-
-export const getProposalDetail = async (id: string): Promise<{ success: boolean; data: InternshipProposalDetail }> => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.PROPOSALS) + `/${id}`;
-    const res = await apiRequest(url);
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail proposal" }));
-        throw new Error(errorData.message || "Gagal memuat detail proposal");
-    }
-    return res.json();
 };
 
 export const respondToInvitation = async (proposalId: string, response: 'ACCEPTED' | 'REJECTED'): Promise<{ success: boolean; message: string }> => {
@@ -267,11 +316,65 @@ export const submitCompanyResponse = async (proposalId: string, documentId: stri
 };
 
 // Sekdep Methods
-export const getSekdepProposals = async (): Promise<{ success: boolean; data: SekdepInternshipProposalItem[] }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.PROPOSALS));
+export const getSekdepProposals = async (academicYearId?: string): Promise<{ success: boolean; data: SekdepRegistrationItem[] }> => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.PROPOSALS);
+    if (academicYearId && academicYearId !== 'all') {
+        url += `?academicYear=${academicYearId}`;
+    }
+    const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar pengajuan" }));
         throw new Error(errorData.message || "Gagal memuat daftar pengajuan");
+    }
+    return res.json();
+};
+
+export const getSekdepPendingProposals = async (
+    academicYearId?: string,
+    q?: string,
+    page: number = 1,
+    pageSize: number = 10,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
+): Promise<{ success: boolean; data: SekdepRegistrationItem[]; total: number }> => {
+    const params = new URLSearchParams();
+    if (academicYearId && academicYearId !== 'all') params.append('academicYear', academicYearId);
+    if (q) params.append('q', q);
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.PROPOSALS)}/pending?${params.toString()}`;
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar pengajuan" }));
+        throw new Error(errorData.message || "Gagal memuat daftar pengajuan");
+    }
+    return res.json();
+};
+
+export const getSekdepPendingResponses = async (
+    academicYearId?: string,
+    q?: string,
+    page: number = 1,
+    pageSize: number = 10,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
+): Promise<{ success: boolean; data: SekdepRegistrationItem[]; total: number }> => {
+    const params = new URLSearchParams();
+    if (academicYearId && academicYearId !== 'all') params.append('academicYear', academicYearId);
+    if (q) params.append('q', q);
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.PROPOSALS)}/responses?${params.toString()}`;
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar balasan" }));
+        throw new Error(errorData.message || "Gagal memuat daftar balasan");
     }
     return res.json();
 };
@@ -285,12 +388,31 @@ export const getSekdepProposalDetail = async (id: string): Promise<{ success: bo
     return res.json();
 };
 
-export const getCompanyStats = async (role: 'admin' | 'kadep' | 'sekdep' = 'sekdep'): Promise<{ success: boolean; data: CompanyStatsItem[] }> => {
+/**
+ * Fetch all companies with stats for admin/sekdep/kadep.
+ */
+export const getCompanyStats = async (
+    role: 'admin' | 'sekdep' | 'kadep' = 'sekdep',
+    q?: string,
+    page: number = 1,
+    pageSize: number = 10,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+    status?: string
+): Promise<{ success: boolean; data: CompanyStatsItem[]; total: number }> => {
     let endpoint = API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_STATS;
     if (role === 'admin') endpoint = API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.COMPANY_STATS;
     else if (role === 'kadep') endpoint = API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.COMPANY_STATS;
 
-    const res = await apiRequest(getApiUrl(endpoint));
+    const params = new URLSearchParams();
+    if (q) params.append('q', q);
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+    if (status && status !== 'all') params.append('status', status);
+
+    const res = await apiRequest(`${getApiUrl(endpoint)}?${params.toString()}`);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat statistik perusahaan" }));
         throw new Error(errorData.message || "Gagal memuat statistik perusahaan");
@@ -336,16 +458,9 @@ export const deleteSekdepCompany = async (id: string, role: 'sekdep' | 'kadep' =
     return res.json();
 };
 
-export const getSekdepAssignments = async (): Promise<{ success: boolean; data: SekdepAssignmentItem[] }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.COMPANY_RESPONSES));
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar surat balasan" }));
-        throw new Error(errorData.message || "Gagal memuat daftar surat balasan");
-    }
-    return res.json();
-};
 
-export const verifyCompanyResponse = async (id: string, status: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP' | 'REJECTED_BY_COMPANY', notes?: string, acceptedMemberIds?: string[]): Promise<{ success: boolean; message: string }> => {
+
+export const verifyCompanyResponse = async (id: string, status: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY', notes?: string, acceptedMemberIds?: string[]): Promise<{ success: boolean; message: string }> => {
     const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.VERIFY_COMPANY_RESPONSE(id)), {
         method: "POST",
         body: JSON.stringify({ status, notes, acceptedMemberIds }),
@@ -357,7 +472,7 @@ export const verifyCompanyResponse = async (id: string, status: 'APPROVED_BY_SEK
     return res.json();
 };
 
-export const respondToSekdepProposal = async (id: string, response: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP', notes?: string): Promise<{ success: boolean; message: string }> => {
+export const respondToSekdepProposal = async (id: string, response: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL', notes?: string): Promise<{ success: boolean; message: string }> => {
     const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.PROPOSAL_DETAIL(id)) + '/respond';
     const res = await apiRequest(url, {
         method: "POST",
@@ -419,6 +534,106 @@ export const updateAdminProposalLetter = async (id: string, body: { documentNumb
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui data surat pengantar" }));
         throw new Error(errorData.message || "Gagal memperbarui data surat pengantar");
+    }
+    return res.json();
+};
+/**
+ * Fetch list of internships for Sekdep with filters and pagination.
+ */
+export const getSekdepInternshipList = async (
+    academicYearId?: string,
+    status?: string,
+    q?: string,
+    page: number = 1,
+    pageSize: number = 10,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
+): Promise<{ success: boolean; data: InternshipListItem[]; total: number }> => {
+    const params = new URLSearchParams();
+    if (academicYearId && academicYearId !== 'all') params.append('academicYear', academicYearId);
+    if (status && status !== 'all') params.append('status', status);
+    if (q) params.append('q', q);
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.INTERNSHIPS)}?${params.toString()}`;
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar mahasiswa" }));
+        throw new Error(errorData.message || "Gagal memuat daftar mahasiswa");
+    }
+    return res.json();
+};
+
+/**
+ * Assign supervisor to multiple internships in bulk.
+ */
+export const bulkAssignSupervisor = async (
+    internshipIds: string[],
+    supervisorId: string
+): Promise<{ success: boolean; message: string }> => {
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.INTERNSHIPS)}/bulk-assign`;
+    const res = await apiRequest(url, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ internshipIds, supervisorId }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menetapkan pembimbing" }));
+        throw new Error(errorData.message || "Gagal menetapkan pembimbing");
+    }
+    return res.json();
+};
+
+export interface SekdepInternshipDetail {
+    id: string;
+    student: {
+        nim: string;
+        name: string;
+        enrollmentYear?: number;
+    };
+    company: {
+        name: string;
+        address: string;
+        unitSection: string;
+    };
+    supervisor: {
+        name: string;
+        fieldSupervisor: string;
+    };
+    logbookProgress: {
+        filled: number;
+        total: number;
+    };
+    guidanceProgress: {
+        filled: number;
+        total: number;
+    };
+    seminar: {
+        id: string;
+        status: string;
+    } | null;
+    assessment: {
+        lecturerStatus: string;
+        fieldStatus: string;
+        finalScore: number | null;
+        finalGrade: string | null;
+    };
+    status: string;
+    academicYearName: string;
+    createdAt: string;
+}
+
+export const getSekdepInternshipDetail = async (id: string): Promise<{ success: boolean; data: SekdepInternshipDetail }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.INTERNSHIPS_DETAIL(id));
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail pelaksanaan KP" }));
+        throw new Error(errorData.message || "Gagal memuat detail pelaksanaan KP");
     }
     return res.json();
 };
@@ -515,8 +730,12 @@ export interface InternshipPendingLetter {
     } | null;
 }
 
-export const getKadepPendingLetters = async (): Promise<{ success: boolean; data: { applicationLetters: InternshipPendingLetter[], assignmentLetters: InternshipPendingLetter[] } }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.PENDING_LETTERS));
+export const getKadepPendingLetters = async (academicYearId?: string): Promise<{ success: boolean; data: { applicationLetters: InternshipPendingLetter[], assignmentLetters: InternshipPendingLetter[] } }> => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.PENDING_LETTERS);
+    if (academicYearId) {
+        url += `?academicYear=${academicYearId}`;
+    }
+    const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar surat" }));
         throw new Error(errorData.message || "Gagal memuat daftar surat");
@@ -618,4 +837,60 @@ export const downloadLogbookPdf = async (): Promise<Blob> => {
         throw new Error(errorData.message || "Gagal mengunduh PDF");
     }
     return res.blob();
+};
+
+export const downloadLogbookDocx = async (): Promise<Blob> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.LOGBOOK) + "/download-docx");
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunduh DOCX" }));
+        throw new Error(errorData.message || "Gagal mengunduh DOCX");
+    }
+    return res.blob();
+};
+export interface LecturerWorkloadItem {
+    id: string;
+    name: string;
+    nip: string;
+    activeInternshipCount: number;
+}
+
+export const getSekdepLecturerWorkload = async (
+    q?: string,
+    page: number = 1,
+    pageSize: number = 10,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
+): Promise<{ success: boolean; data: LecturerWorkloadItem[]; total: number }> => {
+    const params = new URLSearchParams();
+    if (q) params.append('q', q);
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.LECTURERS_WORKLOAD)}?${params.toString()}`;
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar beban kerja dosen" }));
+        throw new Error(errorData.message || "Gagal memuat daftar beban kerja dosen");
+    }
+    return res.json();
+};
+
+export const exportLecturerWorkloadPdf = async (): Promise<void> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.LECTURERS_WORKLOAD_EXPORT);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        throw new Error("Gagal mengekspor PDF");
+    }
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', 'Daftar_Bimbingan_KP.pdf');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
 };

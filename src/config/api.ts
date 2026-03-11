@@ -276,6 +276,10 @@ export const API_CONFIG = {
       COMPANY_DETAIL: (id: string) => `/insternship/sekdep/companies/${id}`,
       COMPANY_RESPONSES: '/insternship/sekdep/company-responses',
       VERIFY_COMPANY_RESPONSE: (id: string) => `/insternship/sekdep/company-responses/${id}/verify`,
+      INTERNSHIPS: '/insternship/sekdep/internships',
+      INTERNSHIPS_DETAIL: (id: string) => `/insternship/sekdep/internships/${id}`,
+      LECTURERS_WORKLOAD: '/insternship/sekdep/lecturers/workload',
+      LECTURERS_WORKLOAD_EXPORT: '/insternship/sekdep/lecturers/workload/export',
     },
     INTERNSHIP_KADEP: {
       BASE: '/insternship/kadep',

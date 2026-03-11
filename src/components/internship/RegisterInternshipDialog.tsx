@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/hooks/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getCompanies, getEligibleStudents, uploadInternshipDocument, submitProposal } from "@/services/internship.service";
+import { getCompanies, getEligibleStudents, uploadInternshipDocument, submitProposal, updateProposal, type InternshipProposalItem } from "@/services/internship.service";
 import { getActiveAcademicYearAPI } from "@/services/admin.service";
 import { X, Search, Plus, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,9 +19,10 @@ export type RegisterInternshipDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmitted?: () => void;
+    proposalToEdit?: InternshipProposalItem | null;
 };
 
-export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitted }: RegisterInternshipDialogProps) {
+export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitted, proposalToEdit }: RegisterInternshipDialogProps) {
     const { user } = useAuth();
 
     // States
@@ -50,6 +51,23 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
         queryFn: getActiveAcademicYearAPI,
         enabled: open,
     });
+
+
+
+    // Reset form when dialog closes
+    useEffect(() => {
+        if (!open) {
+            resetForm();
+        }
+    }, [open]);
+
+    // Populate form if editing
+    useEffect(() => {
+        if (proposalToEdit) {
+            setSelectedCompanyId(proposalToEdit.targetCompanyId || "");
+            setSelectedMemberIds(proposalToEdit.members?.filter(m => m.id !== user?.id).map(m => m.id) || []);
+        }
+    }, [proposalToEdit, user?.id]);
 
     // Mapped options for ComboBox
     const companyOptions = useMemo(() => {
@@ -100,7 +118,21 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
             // 1. Upload document first
             const uploadRes = await uploadInternshipDocument(proposalFile);
 
-            // 2. Submit proposal
+            // 2. Submit or Update proposal
+            if (proposalToEdit?.id) {
+                return updateProposal(proposalToEdit.id, {
+                    coordinatorId: user?.id || "",
+                    targetCompanyId: selectedCompanyId === "NEW" ? undefined : selectedCompanyId,
+                    newCompany: selectedCompanyId === "NEW" ? {
+                        companyName: newCompanyName,
+                        address: newCompanyAddress,
+                    } : undefined,
+                    proposalDocumentId: uploadRes.documentId,
+                    academicYearId: activeAcademicYearQuery.data?.academicYear?.id || "",
+                    memberIds: selectedMemberIds,
+                });
+            }
+
             return submitProposal({
                 coordinatorId: user?.id || "",
                 targetCompanyId: selectedCompanyId === "NEW" ? undefined : selectedCompanyId,
@@ -114,13 +146,13 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
             });
         },
         onSuccess: () => {
-            toast.success("Proposal internship berhasil diajukan");
+            toast.success(proposalToEdit ? "Proposal berhasil diajukan kembali" : "Proposal internship berhasil diajukan");
             onOpenChange(false);
             resetForm();
             onSubmitted?.();
         },
         onError: (error: any) => {
-            toast.error(error.message || "Gagal mengajukan proposal");
+            toast.error(error.message || (proposalToEdit ? "Gagal memperbarui proposal" : "Gagal mengajukan proposal"));
         }
     });
 
@@ -148,7 +180,7 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 text-foreground">
                 <DialogHeader className="px-6 pt-6 shrink-0">
-                    <DialogTitle>Daftar Kerja Praktik</DialogTitle>
+                    <DialogTitle>{proposalToEdit ? "Edit & Ajukan Kembali Proposal" : "Daftar Kerja Praktik"}</DialogTitle>
                     <DialogDescription>
                         Isi detail perusahaan dan ajak anggota kelompok (opsional).
                     </DialogDescription>

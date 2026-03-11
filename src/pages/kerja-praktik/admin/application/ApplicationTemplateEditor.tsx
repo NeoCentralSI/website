@@ -136,7 +136,7 @@ const InternshipTemplateEditor = () => {
         { tag: "{alamat_perusahaan}", desc: "Alamat perusahaan tujuan" },
         { tag: "{tanggal_mulai}", desc: "Tanggal mulai KP" },
         { tag: "{tanggal_selesai}", desc: "Tanggal selesai KP" },
-        { tag: "{#m} ... {/m}", desc: "Looping untuk Tabel Mahasiswa (Gunakan tag ini untuk membungkus baris tabel)." },
+        { tag: "{#} ... {/}", desc: "Looping untuk Tabel Mahasiswa (Gunakan tag ini untuk membungkus baris tabel)." },
         { tag: "{no}", desc: "Nomor urut (Gunakan di dalam loop)" },
         { tag: "{nama}", desc: "Nama Mahasiswa (Gunakan di dalam loop)" },
         { tag: "{nim}", desc: "NIM Mahasiswa (Gunakan di dalam loop)" },

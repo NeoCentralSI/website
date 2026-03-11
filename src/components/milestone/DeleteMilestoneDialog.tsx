@@ -36,18 +36,20 @@ export function DeleteMilestoneDialog({
             <Trash2 className="h-5 w-5" />
             Hapus Milestone
           </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>
-              Apakah Anda yakin ingin menghapus milestone{" "}
-              <span className="font-semibold text-foreground">
-                "{milestone.title}"
-              </span>
-              ?
-            </p>
-            <p>
-              Tindakan ini tidak dapat dibatalkan. Semua data progress dan log
-              terkait milestone ini akan ikut terhapus.
-            </p>
+          <AlertDialogDescription asChild>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                Apakah Anda yakin ingin menghapus milestone{" "}
+                <span className="font-semibold text-foreground">
+                  "{milestone.title}"
+                </span>
+                ?
+              </p>
+              <p>
+                Tindakan ini tidak dapat dibatalkan. Semua data progress dan log
+                terkait milestone ini akan ikut terhapus.
+              </p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

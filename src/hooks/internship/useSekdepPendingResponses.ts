@@ -1,39 +1,35 @@
 import { useQuery } from '@tanstack/react-query';
-import { getCompanyStats } from '@/services/internship.service';
-import { useRole } from '../shared';
+import { getSekdepPendingResponses } from '@/services/internship.service';
 import { useSearchParams } from 'react-router-dom';
 
-export function useCompanyStats() {
-    const { isAdmin, isKadep } = useRole();
+export function useSekdepPendingResponses() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const q = searchParams.get('q') || '';
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = parseInt(searchParams.get('pageSize') || '10');
+    const academicYearId = searchParams.get('academicYearId') || '';
     const sortBy = searchParams.get('sortBy') || '';
-    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
-    const status = searchParams.get('status') || 'all';
-
-    const role = isAdmin() ? 'admin' : (isKadep() ? 'kadep' : 'sekdep');
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
 
     const updateParams = (updates: Record<string, string | number | undefined>) => {
         const newParams = new URLSearchParams(searchParams);
         Object.entries(updates).forEach(([key, value]) => {
-            if (value === undefined || value === '' || (value === 'all' && key === 'status')) {
+            if (value === undefined || value === '' || (value === 'all' && key === 'academicYearId')) {
                 newParams.delete(key);
             } else {
                 newParams.set(key, value.toString());
             }
         });
-        if (updates.q !== undefined || updates.sortBy !== undefined || updates.status !== undefined) {
+        if (updates.q !== undefined || updates.academicYearId !== undefined || updates.sortBy !== undefined) {
             newParams.set('page', '1');
         }
         setSearchParams(newParams);
     };
 
     const { data, isLoading, isFetching, refetch, error } = useQuery({
-        queryKey: ['company-stats', role, { q, page, pageSize, sortBy, sortOrder, status }],
-        queryFn: () => getCompanyStats(role, q, page, pageSize, sortBy, sortOrder, status),
+        queryKey: ['sekdep-internship-proposals-responses', { academicYearId, q, page, pageSize, sortBy, sortOrder }],
+        queryFn: () => getSekdepPendingResponses(academicYearId, q, page, pageSize, sortBy, sortOrder),
         placeholderData: (previousData) => previousData,
     });
 
@@ -51,11 +47,11 @@ export function useCompanyStats() {
         setPage: (page: number) => updateParams({ page }),
         pageSize,
         setPageSize: (pageSize: number) => updateParams({ pageSize }),
+        academicYearId,
+        setAcademicYearId: (academicYearId: string) => updateParams({ academicYearId }),
         sortBy,
         sortOrder,
         setSort: (field: string, order: 'asc' | 'desc') => updateParams({ sortBy: field, sortOrder: order }),
-        status,
-        setStatus: (status: string) => updateParams({ status }),
         refetch,
         error,
     };
