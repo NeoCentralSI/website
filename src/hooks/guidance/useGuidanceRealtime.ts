@@ -1,10 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { acquireFcmToken, getFirebaseMessaging, onMessage } from "@/config/firebase";
 import { registerFcmToken } from "@/services/notification.service";
 import { useAuth } from "@/hooks/shared";
-
 
 // Key untuk menyimpan FCM token di localStorage (shared dengan useAuth)
 const FCM_TOKEN_KEY = 'fcm_token';
@@ -17,13 +16,21 @@ type PushEventType =
   | "thesis-guidance:cancelled"
   | "thesis-guidance:notes-updated"
   | "thesis-guidance:summary-submitted"
-  | "thesis-guidance:summary-approved";
+  | "thesis-guidance:summary-approved"
+  | "internship_invitation"
+  | "internship_invitation_response"
+  | "internship_new_proposal"
+  | "internship_proposal_response"
+  | "internship_company_response"
+  | "internship_company_response_rejected_sekdep"
+  | "internship_proposal_accepted"
+  | "internship_proposal_partially_accepted"
+  | "internship_proposal_rejected_company";
 
 export function useGuidanceRealtime() {
   const qc = useQueryClient();
-  const tokenRef = useRef<string | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
 
   function playBeep() {
     try {
@@ -35,7 +42,6 @@ export function useGuidanceRealtime() {
       const ctx = audioCtxRef.current as AudioContext | null;
       if (!ctx) return;
       if (ctx.state === "suspended") {
-        // try to resume (requires user gesture in some browsers)
         ctx.resume().catch(() => { });
       }
       const osc = ctx.createOscillator();
@@ -54,35 +60,56 @@ export function useGuidanceRealtime() {
     }
   }
 
+  // Handle FCM token registration
+  const setupFcm = useCallback(async () => {
+    if (!isLoggedIn || !user) return;
+
+    try {
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "denied") return;
+
+      if (Notification.permission !== "granted") {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+      }
+
+      const token = await acquireFcmToken();
+      if (!token) return;
+
+      const registeredToken = localStorage.getItem(FCM_TOKEN_KEY);
+      if (registeredToken === token) return;
+
+      await registerFcmToken(token);
+      localStorage.setItem(FCM_TOKEN_KEY, token);
+    } catch {
+      // Sliently fail in production
+    }
+  }, [isLoggedIn, user]);
+
+  const fcmSetupCalled = useRef(false);
+
+  useEffect(() => {
+    if (isLoggedIn && !fcmSetupCalled.current) {
+      fcmSetupCalled.current = true;
+      setupFcm();
+    } else if (!isLoggedIn) {
+      fcmSetupCalled.current = false;
+    }
+  }, [isLoggedIn, setupFcm]);
+
   useEffect(() => {
     if (!isLoggedIn) return;
     let unsubscribe: (() => void) | null = null;
     let swListener: ((event: MessageEvent) => void) | null = null;
 
-    async function setup() {
+    async function setupMessageListeners() {
       try {
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          console.warn("[FCM] Notification permission not granted");
-          return;
-        }
-        const token = await acquireFcmToken();
-        if (!token) {
-          console.error("[FCM] Failed to acquire FCM token");
-          return;
-        }
-        tokenRef.current = token;
-        // Store token in localStorage so useAuth can unregister it on logout
-        localStorage.setItem(FCM_TOKEN_KEY, token);
-        await registerFcmToken(token);
         const messaging = await getFirebaseMessaging();
         if (!messaging) return;
         unsubscribe = onMessage(messaging, (payload: any) => {
           try {
-
             const type = payload?.data?.type as PushEventType;
             const role = payload?.data?.role;
-
 
             switch (type) {
               case "thesis-guidance:requested": {
@@ -90,9 +117,7 @@ export function useGuidanceRealtime() {
                   const when = payload?.data?.requestedDateFormatted || payload?.data?.requestedDate || "";
                   const msg = when ? `Permintaan bimbingan baru • ${when}` : "Permintaan bimbingan baru";
                   toast(msg, { id: "guidance-requested" });
-                  if (payload?.data?.playSound === "true") {
-                    playBeep();
-                  }
+                  if (payload?.data?.playSound === "true") playBeep();
                   qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
                 } else {
                   qc.invalidateQueries({ queryKey: ["student-guidance"] });
@@ -142,7 +167,6 @@ export function useGuidanceRealtime() {
                 break;
               }
               case "thesis-guidance:summary-submitted": {
-                // Lecturer receives notification that student submitted summary
                 if (role === "supervisor") {
                   const studentName = payload?.data?.studentName || "Mahasiswa";
                   toast.info("Catatan Bimbingan Baru", {
@@ -150,9 +174,7 @@ export function useGuidanceRealtime() {
                     id: "guidance-summary-submitted",
                     duration: 5000,
                   });
-                  if (payload?.data?.playSound === "true") {
-                    playBeep();
-                  }
+                  if (payload?.data?.playSound === "true") playBeep();
                   qc.invalidateQueries({ queryKey: ["lecturer-requests"] });
                   qc.invalidateQueries({ queryKey: ["pending-approval"] });
                 }
@@ -160,7 +182,6 @@ export function useGuidanceRealtime() {
                 break;
               }
               case "thesis-guidance:summary-approved": {
-                // Student receives notification that lecturer approved summary
                 if (role === "student") {
                   const title = payload?.data?.title || "Catatan Bimbingan Disetujui ✓";
                   const body = payload?.data?.body || "Catatan bimbingan Anda telah disetujui. Bimbingan selesai!";
@@ -176,8 +197,31 @@ export function useGuidanceRealtime() {
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }
+              case "internship_invitation":
+              case "internship_invitation_response":
+              case "internship_proposal_response":
+              case "internship_proposal_accepted":
+              case "internship_proposal_partially_accepted":
+              case "internship_proposal_rejected_company":
+              case "internship_company_response_rejected_sekdep": {
+                const title = payload?.notification?.title || payload?.data?.title || "Notifikasi Kerja Praktik";
+                const body = payload?.notification?.body || payload?.data?.body || "";
+                toast(title, { description: body, duration: 5000 });
+                qc.invalidateQueries({ queryKey: ["student-internship-proposals"] });
+                qc.invalidateQueries({ queryKey: ["internship-proposal-detail"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_new_proposal":
+              case "internship_company_response": {
+                const title = payload?.notification?.title || payload?.data?.title || "Notifikasi Kerja Praktik";
+                const body = payload?.notification?.body || payload?.data?.body || "";
+                toast(title, { description: body, duration: 5000 });
+                qc.invalidateQueries({ queryKey: ["sekdep-internship-proposals"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
               default: {
-                // Fallback: show generic notification toast if type doesn't match
                 console.warn("[FCM] Unknown notification type:", type);
                 const title = payload?.notification?.title || "Notifikasi Baru";
                 const body = payload?.notification?.body || "";
@@ -195,7 +239,6 @@ export function useGuidanceRealtime() {
           }
         });
 
-        // Also listen to messages forwarded from Service Worker
         if (navigator?.serviceWorker) {
           swListener = (event: MessageEvent) => {
             try {
@@ -211,9 +254,7 @@ export function useGuidanceRealtime() {
                     const when = msg?.data?.requestedDateFormatted || msg?.data?.requestedDate || '';
                     const t = when ? `Permintaan bimbingan baru • ${when}` : 'Permintaan bimbingan baru';
                     toast(t, { id: 'guidance-requested' });
-                    if (msg?.data?.playSound === 'true') {
-                      playBeep();
-                    }
+                    if (msg?.data?.playSound === 'true') playBeep();
                     qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
                   } else {
                     qc.invalidateQueries({ queryKey: ['student-guidance'] });
@@ -221,77 +262,53 @@ export function useGuidanceRealtime() {
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });
                   break;
                 }
-                case 'thesis-guidance:rescheduled': {
-                  const when = msg?.data?.requestedDateFormatted || msg?.data?.requestedDate || '';
-                  const t = when ? `Jadwal bimbingan diperbarui • ${when}` : 'Jadwal bimbingan diperbarui';
-                  toast(t, { id: 'guidance-rescheduled' });
-                  qc.invalidateQueries({ queryKey: ['student-guidance'] });
-                  qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
-                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
-                  break;
-                }
-                case 'thesis-guidance:cancelled': {
-                  toast('Bimbingan dibatalkan', { id: 'guidance-cancelled' });
-                  qc.invalidateQueries({ queryKey: ['student-guidance'] });
-                  qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
-                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
-                  break;
-                }
-                case 'thesis-guidance:approved': {
-                  const title = msg?.title || "Bimbingan Disetujui ✓";
-                  const body = msg?.body || "Permintaan bimbingan Anda telah disetujui";
-                  toast(title, { description: body, duration: 5000 });
-                  qc.invalidateQueries({ queryKey: ['student-guidance'] });
-                  qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
-                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
-                  break;
-                }
-                case 'thesis-guidance:rejected': {
-                  const title = msg?.title || "Bimbingan Ditolak";
-                  const body = msg?.body || "Permintaan bimbingan Anda ditolak";
-                  toast.error(title, { description: body, duration: 5000 });
-                  qc.invalidateQueries({ queryKey: ['student-guidance'] });
-                  qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
-                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
-                  break;
-                }
+                case 'thesis-guidance:rescheduled':
+                case 'thesis-guidance:cancelled':
+                case 'thesis-guidance:approved':
+                case 'thesis-guidance:rejected':
                 case 'thesis-guidance:notes-updated': {
-                  toast('Catatan bimbingan diperbarui', { id: 'guidance-notes-updated' });
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });
                   break;
                 }
-                default: {
-                  // Fallback: always invalidate notification count for any FCM message
-                  console.warn('[FCM SW] Unknown notification type:', type);
-                  const title = msg?.title || msg?.notification?.title || 'Notifikasi Baru';
-                  const body = msg?.body || msg?.notification?.body || '';
-                  if (title || body) {
-                    toast(title, { description: body, duration: 5000 });
-                  }
-                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
+                case "internship_invitation":
+                case "internship_invitation_response":
+                case "internship_proposal_response":
+                case "internship_proposal_accepted":
+                case "internship_proposal_partially_accepted":
+                case "internship_proposal_rejected_company":
+                case "internship_company_response_rejected_sekdep": {
+                  qc.invalidateQueries({ queryKey: ["student-internship-proposals"] });
+                  qc.invalidateQueries({ queryKey: ["internship-proposal-detail"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
                   break;
                 }
+                case "internship_new_proposal":
+                case "internship_company_response": {
+                  qc.invalidateQueries({ queryKey: ["sekdep-internship-proposals"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                  break;
+                }
+                default:
+                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
+                  break;
               }
             } catch { }
           };
           navigator.serviceWorker.addEventListener('message', swListener as unknown as EventListener);
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        console.error("[FCM] Listener setup error:", e);
       }
     }
 
-    setup();
+    setupMessageListeners();
 
-    // Try to unlock/resume audio context on first user interaction
     const unlock = () => {
       try {
         const ctx = audioCtxRef.current;
-        if (ctx && ctx.state === "suspended") {
-          ctx.resume().catch(() => { });
-        }
+        if (ctx && ctx.state === "suspended") ctx.resume().catch(() => { });
       } catch { }
       document.removeEventListener("click", unlock);
       document.removeEventListener("keydown", unlock);
@@ -301,19 +318,14 @@ export function useGuidanceRealtime() {
 
     return () => {
       if (unsubscribe) unsubscribe();
-      tokenRef.current = null;
-      try {
-        if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
-          audioCtxRef.current.close();
-        }
-      } catch { }
       if (navigator?.serviceWorker && swListener) {
         navigator.serviceWorker.removeEventListener('message', swListener as unknown as EventListener);
       }
       document.removeEventListener("click", unlock as any);
       document.removeEventListener("keydown", unlock as any);
-      // Note: FCM token unregistration is handled by useAuth.logout()
-      // to ensure it's called before auth token is invalidated
+      try {
+        if (audioCtxRef.current && audioCtxRef.current.state !== "closed") audioCtxRef.current.close();
+      } catch { }
     };
   }, [qc, isLoggedIn]);
 }

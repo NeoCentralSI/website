@@ -44,6 +44,7 @@ export type Column<T> = {
 	accessor?: keyof T | ((row: T, index: number) => React.ReactNode);
 	render?: (row: T, index: number) => React.ReactNode;
 	filter?: ColumnFilterElement | ColumnFilterControl;
+	sortable?: boolean;
 };
 
 export type CustomTableProps<T> = {

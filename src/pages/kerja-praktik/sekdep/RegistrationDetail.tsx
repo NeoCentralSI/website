@@ -37,7 +37,7 @@ export default function SekdepInternshipProposalDetail() {
 
     // Response Dialog State
     const [responseDialogOpen, setResponseDialogOpen] = useState(false);
-    const [responseType, setResponseType] = useState<'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP' | null>(null);
+    const [responseType, setResponseType] = useState<'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | null>(null);
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kerja Praktik', href: '/kelola/kerja-praktik/pendaftaran' },
@@ -57,7 +57,7 @@ export default function SekdepInternshipProposalDetail() {
     });
 
     const respondMutation = useMutation({
-        mutationFn: ({ response, notes }: { response: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP', notes?: string }) =>
+        mutationFn: ({ response, notes }: { response: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL', notes?: string }) =>
             respondToSekdepProposal(proposalId!, response, notes),
         onSuccess: (res) => {
             toast.success(res.message);
@@ -121,7 +121,7 @@ export default function SekdepInternshipProposalDetail() {
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Detail Pendaftaran KP</h1>
                         <p className="text-muted-foreground text-sm">
-                            ID: {data.id} • Dibuat pada {formatDateId(data.createdAt)}
+                            ID: {data.id} • {data.academicYearName} • Dibuat pada {formatDateId(data.createdAt)}
                         </p>
                     </div>
                 </div>
@@ -132,7 +132,7 @@ export default function SekdepInternshipProposalDetail() {
                                 variant="outline"
                                 className="text-destructive hover:bg-destructive/10 border-destructive/20 hover:border-destructive/30 shadow-none"
                                 onClick={() => {
-                                    setResponseType('REJECTED_BY_SEKDEP');
+                                    setResponseType('REJECTED_PROPOSAL');
                                     setResponseDialogOpen(true);
                                 }}
                                 disabled={respondMutation.isPending}
@@ -144,7 +144,7 @@ export default function SekdepInternshipProposalDetail() {
                                 variant="outline"
                                 className="text-green-600 hover:bg-green-600/10 border-green-600/20 hover:border-green-600/30 shadow-none"
                                 onClick={() => {
-                                    setResponseType('APPROVED_BY_SEKDEP');
+                                    setResponseType('APPROVED_PROPOSAL');
                                     setResponseDialogOpen(true);
                                 }}
                                 disabled={respondMutation.isPending}
@@ -154,7 +154,7 @@ export default function SekdepInternshipProposalDetail() {
                             </Button>
                         </div>
                     ) : (() => {
-                        const responseStatus = data.companyResponses?.[0]?.status;
+                        const responseStatus = data.companyResponseStatus;
                         if (responseStatus) {
                             return getInternshipStatusBadge(responseStatus);
                         }
@@ -217,22 +217,22 @@ export default function SekdepInternshipProposalDetail() {
                                 </div>
 
                                 {/* Other Members */}
-                                {data.members.map((member) => (
-                                    <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                {data.internships && data.internships.map((internship) => (
+                                    <div key={internship.id} className="flex items-center justify-between p-3 border rounded-lg">
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                                                 <User className="h-5 w-5 text-muted-foreground" />
                                             </div>
                                             <div>
-                                                <p className="font-medium text-sm">{toTitleCaseName(member.student.user.fullName)}</p>
-                                                <p className="text-xs text-muted-foreground">{member.student.user.identityNumber}</p>
+                                                <p className="font-medium text-sm">{toTitleCaseName(internship.student.user.fullName)}</p>
+                                                <p className="text-xs text-muted-foreground">{internship.student.user.identityNumber}</p>
                                             </div>
                                         </div>
-                                        {getInternshipStatusBadge(member.status)}
+                                        {getInternshipStatusBadge(['ONGOING', 'COMPLETED'].includes(internship.status) ? 'ACCEPTED_BY_COMPANY' : internship.status)}
                                     </div>
                                 ))}
 
-                                {data.members.length === 0 && (
+                                {(!data.internships || data.internships.length === 0) && (
                                     <p className="text-sm text-muted-foreground italic text-center py-2">Tidak ada anggota tambahan yang menyetujui.</p>
                                 )}
                             </div>
@@ -273,104 +273,89 @@ export default function SekdepInternshipProposalDetail() {
                                 <p className="text-sm text-muted-foreground italic">Dokumen proposal belum diunggah.</p>
                             )}
 
-                            {data.applicationLetters?.[0]?.document && (
+                            {data.appLetterDoc && (
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-semibold text-muted-foreground uppercase px-1">Surat Permohonan</span>
-                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                        <div className="flex items-center gap-2 overflow-hidden">
-                                            <FileText className="h-4 w-4 text-green-600 shrink-0" />
-                                            <span className="text-xs font-medium truncate">{data.applicationLetters[0].document.fileName}</span>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <FileText className={`h-4 w-4 shrink-0 ${data.isSigned ? 'text-green-600' : 'text-amber-600'}`} />
+                                                <span className="text-xs font-medium truncate">{data.appLetterDoc.fileName}</span>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className={`h-8 ${data.isSigned ? 'text-green-600' : 'text-amber-600'}`}
+                                                onClick={() => openDocumentPreview(data.appLetterDoc!.fileName, data.appLetterDoc!.filePath)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 text-green-600"
-                                            onClick={() => openDocumentPreview(data.applicationLetters[0].document.fileName, data.applicationLetters[0].document.filePath)}
-                                        >
-                                            <Eye className="h-4 w-4" />
-                                        </Button>
+                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${data.isSigned ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100'}`}>
+                                            {data.isSigned ? (
+                                                <Check className="h-4 w-4 text-green-600 shrink-0" />
+                                            ) : (
+                                                <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                                            )}
+                                            <span className={`text-[11px] leading-tight font-medium ${data.isSigned ? 'text-green-700' : 'text-amber-700'}`}>
+                                                {data.isSigned ? 'Surat permohonan telah ditandatangani oleh Kadep.' : 'Surat permohonan belum ditandatangani oleh Kadep.'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
-                            {data.companyResponses?.[0] && (
+                            {data.companyResponseDoc && (
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-semibold text-muted-foreground uppercase px-1">Surat Balasan</span>
                                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                                         <div className="flex items-center gap-2 overflow-hidden">
                                             <FileText className="h-4 w-4 text-primary shrink-0" />
-                                            <span className="text-xs font-medium truncate">{data.companyResponses[0].document.fileName}</span>
+                                            <span className="text-xs font-medium truncate">{data.companyResponseDoc.fileName}</span>
                                         </div>
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             className="h-8 text-primary"
-                                            onClick={() => openDocumentPreview(data.companyResponses[0].document.fileName, data.companyResponses[0].document.filePath)}
+                                            onClick={() => openDocumentPreview(data.companyResponseDoc!.fileName, data.companyResponseDoc!.filePath)}
                                         >
                                             <Eye className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
 
-                    {/* Timeline / Status History */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base">
-                                <Clock className="h-4 w-4" />
-                                Status History
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="relative pl-6 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-muted">
-                                <div className="relative">
-                                    <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
-                                    <p className="text-sm font-semibold">Terkirim</p>
-                                    <p className="text-xs text-muted-foreground">{formatDateId(data.createdAt)}</p>
+                            {data.assignLetterDoc && (
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase px-1">Surat Tugas</span>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <FileText className={`h-4 w-4 shrink-0 ${data.isAssignmentSigned ? 'text-green-600' : 'text-amber-600'}`} />
+                                                <span className="text-xs font-medium truncate">{data.assignLetterDoc.fileName}</span>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className={`h-8 ${data.isAssignmentSigned ? 'text-green-600' : 'text-amber-600'}`}
+                                                onClick={() => openDocumentPreview(data.assignLetterDoc!.fileName, data.assignLetterDoc!.filePath)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${data.isAssignmentSigned ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100'}`}>
+                                            {data.isAssignmentSigned ? (
+                                                <Check className="h-4 w-4 text-green-600 shrink-0" />
+                                            ) : (
+                                                <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                                            )}
+                                            <span className={`text-[11px] leading-tight font-medium ${data.isAssignmentSigned ? 'text-green-700' : 'text-amber-700'}`}>
+                                                {data.isAssignmentSigned ? 'Surat tugas telah ditandatangani oleh Kadep.' : 'Surat tugas belum ditandatangani oleh Kadep.'}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-
-                                {data.status !== 'PENDING' && (
-                                    <div key="history-status" className="relative">
-                                        <div className={`absolute -left-[23px] top-1 h-3 w-3 rounded-full ring-4 ring-background ${data.status.includes('REJECTED') ? 'bg-destructive' : 'bg-success'}`} />
-                                        <p className="text-sm font-semibold">Review Proposal</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {data.status === 'APPROVED_BY_SEKDEP' ? 'PROPOSAL DISETUJUI' : data.status === 'REJECTED_BY_SEKDEP' ? 'PROPOSAL DITOLAK' : data.status.replace(/_/g, ' ')}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">{formatDateId(data.updatedAt)}</p>
-                                        {data.status === 'REJECTED_BY_SEKDEP' && data.sekdepNotes && (
-                                            <div className="mt-2 p-2 bg-destructive/5 border border-destructive/10 rounded text-xs text-destructive">
-                                                <p className="font-semibold mb-1">Catatan Sekdep:</p>
-                                                <p>{data.sekdepNotes}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {data.isSigned && (
-                                    <div key="history-signed" className="relative">
-                                        <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-success ring-4 ring-background" />
-                                        <p className="text-sm font-semibold">Ditandatangani oleh Kadep</p>
-                                        <p className="text-xs text-muted-foreground">Surat permohonan telah selesai.</p>
-                                    </div>
-                                )}
-
-                                {data.companyResponses?.map((response: any) => (
-                                    <div key={response.id} className="relative">
-                                        <div className={`absolute -left-[23px] top-1 h-3 w-3 rounded-full ring-4 ring-background ${response.status === 'REJECTED_BY_SEKDEP' ? 'bg-destructive' : response.status === 'APPROVED_BY_SEKDEP' ? 'bg-success' : 'bg-primary'}`} />
-                                        <p className="text-sm font-semibold">Surat Balasan Perusahaan</p>
-                                        <p className="text-xs text-muted-foreground uppercase">{response.status.replace(/_/g, ' ')}</p>
-                                        <p className="text-xs text-muted-foreground">{formatDateId(response.updatedAt)}</p>
-                                        {response.status === 'REJECTED_BY_SEKDEP' && response.sekdepNotes && (
-                                            <div className="mt-2 p-2 bg-destructive/5 border border-destructive/10 rounded text-xs text-destructive">
-                                                <p className="font-semibold mb-1">Catatan Sekdep:</p>
-                                                <p>{response.sekdepNotes}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

@@ -30,23 +30,22 @@ import LecturerMyStudentsPage from './pages/tugas-akhir/bimbingan/lecturer/MyStu
 import LecturerMyStudentDetailPage from './pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'
 import SecretaryKelolaTugasAkhirPage from './pages/tugas-akhir/bimbingan/secretary/TugasAkhir'
 // Kerja Praktik
-import InternshipProposalPage from './pages/kerja-praktik/student/registration/Proposal'
-import InternshipProposalDetailPage from './pages/kerja-praktik/student/registration/PendaftaranDetail'
-import InternshipAssignmentPage from './pages/kerja-praktik/student/registration/Assignment'
+import InternshipProposalPage from './pages/kerja-praktik/student/Registration'
+
 import InternshipLogbookPage from './pages/kerja-praktik/student/activity/Logbook'
 import InternshipGuidancePage from './pages/kerja-praktik/student/activity/Guidance'
 // Sekdep Internship
-import SekdepInternshipProposalPage from './pages/kerja-praktik/sekdep/registration/Proposal'
-import SekdepInternshipProposalDetailPage from './pages/kerja-praktik/sekdep/registration/PendaftaranDetail'
-import SekdepInternshipAssignmentPage from './pages/kerja-praktik/sekdep/registration/Assignment'
-import SekdepCompanyListPage from './pages/kerja-praktik/sekdep/companies/CompanyList'
+import SekdepInternshipProposalPage from './pages/kerja-praktik/sekdep/Manage'
+import SekdepInternshipProposalDetailPage from './pages/kerja-praktik/sekdep/RegistrationDetail'
+import SekdepCompanyListPage from './pages/kerja-praktik/sekdep/CompanyList'
+import InternshipLifecycleDetail from './pages/kerja-praktik/sekdep/InternshipLifecycleDetail'
 // Overview Pages
 import KerjaPraktekOverviewPage from './pages/kerja-praktik/Overview'
 import MetopenOverviewPage from './pages/metopel/Overview'
 import YudisiumOverviewPage from './pages/yudisium/student/Overview'
 import KelolaYudisiumPage from './pages/yudisium/KelolaYudisium'
 import TugasAkhirOverviewPage from './pages/tugas-akhir/Overview'
-import AdminCompanyListPage from './pages/kerja-praktik/admin/companies/CompanyList'
+import AdminCompanyListPage from './pages/kerja-praktik/admin/CompanyList'
 import AdminApplicationPage from './pages/kerja-praktik/admin/application/Application'
 import ManageApplicationLetter from './pages/kerja-praktik/admin/application/ManageApplicationLetter'
 import AdminAssignmentPage from './pages/kerja-praktik/admin/assignment/Assignment'
@@ -134,8 +133,7 @@ function App() {
                 <Route path="/kerja-praktik" element={<KerjaPraktekGuard />}>
                   <Route index element={<KerjaPraktekOverviewPage />} />
                   <Route path="pendaftaran" element={<InternshipProposalPage />} />
-                  <Route path="pendaftaran/:id" element={<InternshipProposalDetailPage />} />
-                  <Route path="penugasan" element={<InternshipAssignmentPage />} />
+
                   <Route path="logbook" element={<InternshipLogbookPage />} />
                   <Route path="bimbingan" element={<InternshipGuidancePage />} />
                   <Route path="seminar" element={<Placeholder title="KP - Seminar" />} />
@@ -209,13 +207,18 @@ function App() {
                 <Route path="/kelola" element={<Placeholder title="main menu Kelola" />} />
                 <Route path="/kelola/kerja-praktik" element={<Navigate to="/kelola/kerja-praktik/pendaftaran" replace />} />
                 <Route path="/kelola/kerja-praktik/pendaftaran" element={<SekdepInternshipProposalPage />} />
+                <Route path="/kelola/kerja-praktik/pendaftaran/proposal" element={<SekdepInternshipProposalPage />} />
+                <Route path="/kelola/kerja-praktik/pendaftaran/balasan" element={<SekdepInternshipProposalPage />} />
+                <Route path="/kelola/kerja-praktik/pendaftaran/mahasiswa" element={<SekdepInternshipProposalPage />} />
+                <Route path="/kelola/kerja-praktik/pendaftaran/dosen" element={<SekdepInternshipProposalPage />} />
+                <Route path="/kelola/kerja-praktik/mahasiswa/:internshipId" element={<InternshipLifecycleDetail />} />
                 <Route path="/kelola/kerja-praktik/pendaftaran/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
-                <Route path="/kelola/kerja-praktik/penugasan" element={<SekdepInternshipAssignmentPage />} />
                 <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                 <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/monitor" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/milestone" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
+
                 <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />

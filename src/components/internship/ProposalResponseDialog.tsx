@@ -17,10 +17,12 @@ interface ProposalResponseDialogProps {
     onOpenChange: (open: boolean) => void;
     onConfirm: (notes?: string, acceptedMemberIds?: string[]) => void;
     isLoading?: boolean;
-    type: 'APPROVED_BY_SEKDEP' | 'REJECTED_BY_SEKDEP' | 'REJECTED_BY_COMPANY' | null;
+    type: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY' | null;
     companyName?: string;
     members?: { id: string; name: string; nim: string; role: string; status?: string }[];
 }
+
+const EMPTY_ARRAY: any[] = [];
 
 const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
     open,
@@ -29,7 +31,7 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
     isLoading,
     type,
     companyName,
-    members = []
+    members = EMPTY_ARRAY
 }) => {
     const [notes, setNotes] = useState('');
     const [acceptedMemberIds, setAcceptedMemberIds] = useState<string[]>([]);
@@ -42,28 +44,45 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
 
             if (hasCompanyDecision) {
                 // If there's a decision recorded (from student upload), select only those accepted
-                // Always select Coordinator by default as they are not part of the selection list in student view
-                setAcceptedMemberIds(members.filter(m =>
-                    m.status === 'ACCEPTED_BY_COMPANY' || m.role === 'Koordinator'
-                ).map(m => m.id));
+                const filteredIds = members
+                    .filter(m => m.status === 'ACCEPTED_BY_COMPANY' || m.role === 'Koordinator')
+                    .map(m => m.id);
+                setAcceptedMemberIds(filteredIds);
             } else {
                 // Default select all members if no decision yet
                 setAcceptedMemberIds(members.map(m => m.id));
             }
         }
-    }, [open, members]);
+    }, [open]); // Only run when dialog opens
 
-    const isRejectSekdep = type === 'REJECTED_BY_SEKDEP';
+    const isRejectSekdep = type === 'REJECTED_PROPOSAL';
     const isRejectCompany = type === 'REJECTED_BY_COMPANY';
-    const isApprove = type === 'APPROVED_BY_SEKDEP';
+    const isApprove = type === 'APPROVED_PROPOSAL';
 
-    let label = 'Proses';
-    if (isRejectSekdep) label = 'Tolak (Dokumen Invalid)';
-    if (isRejectCompany) label = 'Tolak (Ditolak Perusahaan)';
-    if (isApprove) label = 'Verifikasi Diterima';
+    // Detect stage: Proposal (initial submission) vs Assignment (company response verification)
+    const isAssignmentStage = members.length > 0;
+
+    let dialogTitle = 'Proses Proposal KP';
+    let dialogDescription = 'Berikan respon terhadap pengajuan kerja praktik ini.';
+
+    if (isRejectSekdep) {
+        dialogTitle = 'Tolak Dokumen Proposal';
+        dialogDescription = 'Tolak karena dokumen tidak valid (buram/salah). Mahasiswa harus mengunggah ulang.';
+    } else if (isRejectCompany) {
+        dialogTitle = 'Konfirmasi Penolakan Perusahaan';
+        dialogDescription = `Verifikasi bahwa perusahaan ${companyName || ''} MENOLAK lamaran ini.`;
+    } else if (isApprove) {
+        if (isAssignmentStage) {
+            dialogTitle = 'Verifikasi Surat Balasan';
+            dialogDescription = `Konfirmasi penerimaan dari ${companyName || ''}. Centang mahasiswa yang diterima.`;
+        } else {
+            dialogTitle = 'Setujui Proposal KP';
+            dialogDescription = `Setujui pengajuan proposal ke ${companyName || ''} untuk masuk ke tahap permohonan surat ke prodi/fakultas.`;
+        }
+    }
 
     const handleConfirm = () => {
-        onConfirm(notes, isApprove ? acceptedMemberIds : undefined);
+        onConfirm(notes, isAssignmentStage && isApprove ? acceptedMemberIds : undefined);
     };
 
     const toggleMember = (id: string) => {
@@ -76,16 +95,14 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>{label} Proposal KP</DialogTitle>
+                    <DialogTitle>{dialogTitle}</DialogTitle>
                     <DialogDescription>
-                        {isRejectSekdep && "Tolak karena dokumen tidak valid/buram/salah. Mahasiswa harus upload ulang."}
-                        {isRejectCompany && `Verifikasi bahwa perusahaan ${companyName || ''} MENOLAK lamaran ini.`}
-                        {isApprove && `Verifikasi bahwa perusahaan ${companyName || ''} MENERIMA lamaran ini. Centang mahasiswa yang diterima.`}
+                        {dialogDescription}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4">
-                    {isApprove && members.length > 0 && (
+                    {isAssignmentStage && isApprove && (
                         <div className="grid gap-2">
                             <Label>Daftar Mahasiswa Diterima</Label>
                             <div className="border rounded-md p-3 space-y-2 max-h-[200px] overflow-y-auto">
@@ -113,14 +130,22 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
 
                     {(isRejectSekdep || isRejectCompany) && (
                         <div className="grid gap-2">
-                            <Label htmlFor="notes">Catatan {isRejectCompany ? '(Opsional)' : '(Wajib jika ada)'}</Label>
+                            <Label htmlFor="notes">Catatan (Opsional)</Label>
                             <Textarea
                                 id="notes"
-                                placeholder={isRejectSekdep ? "Alasan dokumen ditolak..." : "Catatan tambahan..."}
+                                placeholder={isRejectSekdep ? "Alasan dokumen ditolak..." : "Catatan tambahan untuk mahasiswa..."}
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 className="min-h-[100px]"
                             />
+                        </div>
+                    )}
+
+                    {!isAssignmentStage && isApprove && (
+                        <div className="p-3 bg-green-50 border border-green-100 rounded-md">
+                            <p className="text-xs text-green-700">
+                                Dengan menyetujui, proposal akan ditandai valid dan siap untuk proses pembuatan surat tugas/permohonan.
+                            </p>
                         </div>
                     )}
                 </div>
@@ -139,7 +164,7 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
                         variant={isRejectSekdep || isRejectCompany ? "destructive" : "default"}
                         className={isApprove ? "bg-green-600 hover:bg-green-700 text-white" : ""}
                         onClick={handleConfirm}
-                        disabled={isLoading || (isApprove && acceptedMemberIds.length === 0)}
+                        disabled={isLoading || (isAssignmentStage && isApprove && acceptedMemberIds.length === 0)}
                     >
                         {isLoading ? (
                             <span className="flex items-center gap-2">
@@ -147,7 +172,7 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
                                 Memproses...
                             </span>
                         ) : (
-                            isApprove && acceptedMemberIds.length < members.length && acceptedMemberIds.length > 0 ? "Konfirmasi Diterima Sebagian" : "Konfirmasi"
+                            isAssignmentStage && isApprove && acceptedMemberIds.length < members.length && acceptedMemberIds.length > 0 ? "Konfirmasi Diterima Sebagian" : "Konfirmasi"
                         )}
                     </Button>
                 </DialogFooter>

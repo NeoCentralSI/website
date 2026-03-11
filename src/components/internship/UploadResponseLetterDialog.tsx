@@ -3,9 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { uploadInternshipDocument, submitCompanyResponse, getProposalDetail, type InternshipProposalItem } from "@/services/internship.service";
+import { uploadInternshipDocument, submitCompanyResponse, type InternshipProposalItem } from "@/services/internship.service";
 import { FileText, Upload, AlertCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,21 +21,14 @@ export default function UploadResponseLetterDialog({ open, onOpenChange, proposa
     const [file, setFile] = useState<File | null>(null);
     const [acceptedMemberIds, setAcceptedMemberIds] = useState<string[]>([]);
 
-    // Fetch proposal detail to get members
-    const { data: proposalDetail, isLoading: isLoadingDetail } = useQuery({
-        queryKey: ['internship-proposal-detail', proposal?.id],
-        queryFn: () => getProposalDetail(proposal!.id),
-        enabled: !!proposal && open,
-    });
-
     // Initialize acceptedMemberIds when members are loaded
     useEffect(() => {
-        if (proposalDetail?.data?.members) {
+        if (proposal?.members) {
             // Default to all members accepted
-            const allMemberIds = proposalDetail.data.members.map(m => m.studentId);
+            const allMemberIds = proposal.members.map(m => m.id);
             setAcceptedMemberIds(allMemberIds);
         }
-    }, [proposalDetail]);
+    }, [proposal]);
 
     const handleMemberToggle = (studentId: string) => {
         setAcceptedMemberIds(prev =>
@@ -67,7 +60,7 @@ export default function UploadResponseLetterDialog({ open, onOpenChange, proposa
         }
     });
 
-    const members = proposalDetail?.data?.members || [];
+    const members = proposal?.members || [];
     const isPartial = members.length > 0 && acceptedMemberIds.length < members.length && acceptedMemberIds.length > 0;
     const isRejected = members.length > 0 && acceptedMemberIds.length === 0;
 
@@ -109,21 +102,17 @@ export default function UploadResponseLetterDialog({ open, onOpenChange, proposa
                     {/* Member Selection Section */}
                     <div className="space-y-3">
                         <Label>Anggota yang Diterima ({acceptedMemberIds.length}/{members.length})</Label>
-                        {isLoadingDetail ? (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Spinner className="h-4 w-4" /> Memuat anggota...
-                            </div>
-                        ) : members.length > 0 ? (
+                        {members.length > 0 ? (
                             <div className="border rounded-md divide-y">
                                 {members.map((member) => (
                                     <div key={member.id} className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
                                         <div className="flex flex-col gap-0.5">
-                                            <span className="text-sm font-medium">{member.student.user.fullName}</span>
-                                            <span className="text-xs text-muted-foreground">{member.student.user.identityNumber}</span>
+                                            <span className="text-sm font-medium">{member.name}</span>
+                                            <span className="text-xs text-muted-foreground">{member.nim}</span>
                                         </div>
                                         <Checkbox
-                                            checked={acceptedMemberIds.includes(member.studentId)}
-                                            onCheckedChange={() => handleMemberToggle(member.studentId)}
+                                            checked={acceptedMemberIds.includes(member.id)}
+                                            onCheckedChange={() => handleMemberToggle(member.id)}
                                         />
                                     </div>
                                 ))}
@@ -159,7 +148,7 @@ export default function UploadResponseLetterDialog({ open, onOpenChange, proposa
                         Batal
                     </Button>
                     <Button
-                        disabled={!file || uploadMutation.isPending || isLoadingDetail}
+                        disabled={!file || uploadMutation.isPending}
                         onClick={() => uploadMutation.mutate()}
                         className="gap-2"
                         variant={isRejected ? "destructive" : "default"}

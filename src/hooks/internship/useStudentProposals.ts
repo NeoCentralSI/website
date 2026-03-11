@@ -7,10 +7,11 @@ export function useStudentProposals() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [status, setStatus] = useState<string>('all');
+    const [academicYearId, setAcademicYearId] = useState<string | 'all'>('all');
 
     const { data, isLoading, isFetching, refetch, error } = useQuery({
-        queryKey: ['student-internship-proposals'],
-        queryFn: getStudentProposals,
+        queryKey: ['student-internship-proposals', { academicYearId }],
+        queryFn: () => getStudentProposals(academicYearId),
     });
 
     const items = data?.data || [];
@@ -65,6 +66,8 @@ export function useStudentProposals() {
         setPage,
         pageSize,
         setPageSize,
+        academicYearId,
+        setAcademicYearId,
         refetch,
         error,
     };

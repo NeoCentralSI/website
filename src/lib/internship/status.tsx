@@ -8,40 +8,40 @@ export const getInternshipStatusBadge = (status: string) => {
     let label = status ? status.replace(/_/g, ' ') : 'PENDING';
 
     switch (status) {
-        case 'APPROVED_BY_SEKDEP':
+        case 'APPROVED_PROPOSAL':
             variant = 'info';
-            label = 'APPROVED (SEKDEP)';
+            label = 'APPROVED (PROPOSAL)';
             break;
-        case 'REJECTED_BY_SEKDEP':
+        case 'REJECTED_PROPOSAL':
             variant = 'destructive';
-            label = 'REJECTED (SEKDEP)';
+            label = 'REJECTED (PROPOSAL)';
             break;
         case 'ACCEPTED_BY_COMPANY':
             variant = 'success';
             label = 'ACCEPTED (COMPANY)';
+            break;
+        case 'WAITING_FOR_VERIFICATION':
+            variant = 'warning';
+            label = 'MENUNGGU VERIFIKASI';
             break;
         case 'PARTIALLY_ACCEPTED':
             variant = 'warning';
             label = 'PARTIALLY ACCEPTED';
             break;
         case 'REJECTED_BY_COMPANY':
-            variant = 'destructive'; // Or warning-destructive hybrid? Red is good for rejection.
+            variant = 'destructive';
             label = 'REJECTED (COMPANY)';
-            break;
-        case 'CANCELLED':
-            variant = 'secondary';
-            label = 'CANCELLED';
             break;
         case 'ACCEPTED': // Member Status
             variant = 'success';
-            label = 'ACCEPTED';
+            label = 'ACCEPTED (MEMBER)';
             break;
         case 'REJECTED': // Member Status
             variant = 'destructive';
-            label = 'REJECTED';
+            label = 'REJECTED (MEMBER)';
             break;
         case 'PENDING':
-            variant = 'secondary';
+            variant = 'warning';
             label = 'PENDING';
             break;
         default:
