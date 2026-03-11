@@ -236,23 +236,17 @@ export const MILESTONE_STATUS_CONFIG: Record<
 export interface PendingMilestoneItem {
   id: string;
   title: string;
+  description?: string;
   status: MilestoneStatus;
   progressPercentage: number;
   studentNotes?: string | null;
-  createdAt: string;
+  targetDate?: string;
   updatedAt: string;
-  thesis: {
-    id: string;
-    title: string;
-  };
-  student: {
-    id: string;
-    userId: string;
-    name: string;
-    nim: string;
-    email: string;
-  };
-  activityCount: number;
+  thesisId: string;
+  thesisTitle: string;
+  studentName: string;
+  studentNim: string;
+  activityCount?: number;
 }
 
 // Student supervisor info

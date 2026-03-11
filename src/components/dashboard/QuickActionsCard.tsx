@@ -219,7 +219,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   // Get first pending approval's guidanceId for direct link to session page
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
   // Get first pending milestone's thesisId for direct link to student detail
-  const firstPendingMilestoneThesisId = pendingMilestonesData?.[0]?.thesis?.id;
+  const firstPendingMilestoneThesisId = pendingMilestonesData?.[0]?.thesisId;
   // Get first pending seminar's thesisId for direct link
   const firstPendingSeminarThesisId = pendingSeminarData?.[0]?.thesisId;
   // Get first pending defence's thesisId for direct link
