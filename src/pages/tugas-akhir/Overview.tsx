@@ -24,11 +24,13 @@ import {
     AlertCircle,
     Archive,
     ShieldAlert,
+    Download,
 } from "lucide-react";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
 import { useMilestones } from "@/hooks/milestone";
 import { Loading } from "@/components/ui/spinner";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
+import { getApiUrl } from "@/config/api";
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,7 @@ import { PendingRequestCard } from "@/components/bimbingan/PendingRequestCard";
 import { toast } from "sonner";
 import { ThesisProposalForm } from "@/components/thesis/ThesisProposalForm";
 import { PendingApprovalCard } from "@/components/thesis/PendingApprovalCard";
+import { RequirementsNotMet } from "@/components/shared/RequirementsNotMet";
 
 const STATUS_LABELS: Record<string, string> = {
     not_started: "Belum Dimulai",
@@ -139,12 +142,20 @@ export default function TugasAkhirOverviewPage() {
         return <Loading size="lg" text="Memuat data tugas akhir..." />;
     }
 
-    if (!hasThesis && (!historyData?.theses || historyData.theses.length === 0)) {
+    if ((!hasThesis || thesisDetail?.isProposal) && (!historyData?.theses || historyData.theses.length === 0)) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-                <h3 className="text-lg font-semibold mb-2">Belum Terdaftar Tugas Akhir</h3>
-                <p className="text-muted-foreground">Silakan hubungi admin untuk pendaftaran.</p>
-            </div>
+            <RequirementsNotMet
+                title="Syarat Mata Kuliah Belum Terpenuhi"
+                description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+                requirements={[
+                    {
+                        label: "Mengambil mata kuliah Tugas Akhir",
+                        met: false,
+                        description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                    },
+                ]}
+                homeUrl="/dashboard"
+            />
         );
     }
 
@@ -347,7 +358,7 @@ export default function TugasAkhirOverviewPage() {
 
                                                 {/* Request Pembimbing 2 Logic */}
                                                 {(!hasPembimbing2 && !pendingRequest && (thesisDetail?.supervisors?.length || 0) > 0) && (
-                                                    <div className="flex items-center justify-center p-3 rounded-xl border border-dashed hover:bg-background/50 transition-colors min-h-[100px]">
+                                                    <div className="flex items-center justify-center p-3 rounded-xl border border-dashed hover:bg-background/50 transition-colors min-h-25">
                                                         <div className="text-center space-y-2 w-full">
                                                             <p className="text-xs text-muted-foreground">Belum ada Pembimbing 2?</p>
                                                             <div className="flex justify-center">
@@ -364,6 +375,115 @@ export default function TugasAkhirOverviewPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* DOKUMEN TUGAS AKHIR */}
+                            {(thesisDetail?.document || thesisDetail?.proposalDocument || (thesisDetail?.uploadedFiles && thesisDetail.uploadedFiles.length > 0)) && (
+                                <Card className="w-full">
+                                    <CardHeader className="pb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                                                <FileText className="h-5 w-5 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-lg">Dokumen Tugas Akhir</CardTitle>
+                                                <CardDescription>File yang telah Anda upload</CardDescription>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {/* Proposal */}
+                                            {thesisDetail.proposalDocument && (
+                                                <div className="flex items-center gap-3 p-3 rounded-lg border bg-blue-50/50">
+                                                    <FileText className="h-8 w-8 text-blue-500 shrink-0" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium truncate">{thesisDetail.proposalDocument.fileName}</p>
+                                                        <p className="text-xs text-muted-foreground">Proposal</p>
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" className="shrink-0" asChild>
+                                                        <a
+                                                            href={(() => {
+                                                                const path = thesisDetail.proposalDocument!.filePath;
+                                                                let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
+                                                                const token = localStorage.getItem('accessToken');
+                                                                if (token && path.includes('thesis/')) url += `?token=${token}`;
+                                                                return url;
+                                                            })()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {/* Latest Draft */}
+                                            {thesisDetail.document && (
+                                                <div className="flex items-center gap-3 p-3 rounded-lg border bg-green-50/50">
+                                                    <FileText className="h-8 w-8 text-green-500 shrink-0" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium truncate">{thesisDetail.document.fileName}</p>
+                                                        <p className="text-xs text-muted-foreground">Draft Terbaru</p>
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" className="shrink-0" asChild>
+                                                        <a
+                                                            href={(() => {
+                                                                const path = thesisDetail.document!.filePath;
+                                                                let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
+                                                                const token = localStorage.getItem('accessToken');
+                                                                if (token && path.includes('thesis/')) url += `?token=${token}`;
+                                                                return url;
+                                                            })()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* File Versions */}
+                                        {thesisDetail.uploadedFiles && thesisDetail.uploadedFiles.length > 1 && (
+                                            <div className="space-y-2">
+                                                <Separator />
+                                                <p className="text-sm font-medium text-muted-foreground">Riwayat File Upload ({thesisDetail.uploadedFiles.length} versi)</p>
+                                                <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                                                    {thesisDetail.uploadedFiles.map((file, idx) => (
+                                                        <div key={file.id} className="flex items-center gap-3 p-2 rounded-md border text-sm">
+                                                            <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate font-medium">{file.fileName}</p>
+                                                                <p className="text-xs text-muted-foreground">{formatDateId(file.uploadedAt)}</p>
+                                                            </div>
+                                                            {idx === 0 && (
+                                                                <Badge variant="outline" className="text-[10px] shrink-0">Terbaru</Badge>
+                                                            )}
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
+                                                                <a
+                                                                    href={(() => {
+                                                                        const path = file.filePath;
+                                                                        let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
+                                                                        const token = localStorage.getItem('accessToken');
+                                                                        if (token && path.includes('thesis/')) url += `?token=${token}`;
+                                                                        return url;
+                                                                    })()}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    <Download className="h-3.5 w-3.5" />
+                                                                </a>
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             {/* 2. QUICK ACCESS & STATS */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -385,7 +505,7 @@ export default function TugasAkhirOverviewPage() {
                                         <Button
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
-                                            onClick={() => navigate('/tugas-akhir/bimbingan/milestone')}
+                                            onClick={() => navigate('/tugas-akhir/bimbingan/student/milestone')}
                                         >
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
                                                 <Target className="h-4 w-4 text-primary" />
@@ -395,7 +515,7 @@ export default function TugasAkhirOverviewPage() {
                                         <Button
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
-                                            onClick={() => navigate('/tugas-akhir/bimbingan/completed-history')}
+                                            onClick={() => navigate('/tugas-akhir/bimbingan/student?status=completed')}
                                         >
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
                                                 <FileText className="h-4 w-4 text-primary" />
@@ -434,7 +554,7 @@ export default function TugasAkhirOverviewPage() {
                                             </p>
                                         </div>
 
-                                        <div className="h-[400px] overflow-y-auto pr-4 pl-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                                        <div className="h-100 overflow-y-auto pr-4 pl-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                                             <div className="relative border-l ml-2 space-y-8 my-2 pt-2">
                                                 {milestones
                                                     .sort((a: any, b: any) => {
@@ -462,7 +582,7 @@ export default function TugasAkhirOverviewPage() {
                                                         return (
                                                             <div key={milestone.id} className="ml-6 relative group pb-2">
                                                                 <span className={cn(
-                                                                    "absolute -left-[41px] top-0 p-1 rounded-full border bg-background z-10",
+                                                                    "absolute -left-10.25 top-0 p-1 rounded-full border bg-background z-10",
                                                                     milestone.status === 'completed' ? "border-green-500" :
                                                                         milestone.status === 'in_progress' ? "border-blue-500" : "border-border"
                                                                 )}>

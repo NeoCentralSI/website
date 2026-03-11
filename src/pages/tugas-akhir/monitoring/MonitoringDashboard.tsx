@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import {
   MonitoringSummaryCards,
-  StatusDistributionCard,
-  RatingDistributionCard,
+  StatusDistributionChart,
+  RatingDistributionChart,
+  TopicDistributionChart,
+  BatchDistributionChart,
+  ProgressDistributionChart,
   SlowStudentsCard,
   ReadyForSeminarCard,
   ThesesTable,
+  GuidanceTrendChart,
 } from "@/components/monitoring";
 import { useMonitoringDashboard, useFilterOptions } from "@/hooks/monitoring";
 import {
@@ -21,10 +25,8 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, Calendar, FileDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
-import { Loading, Spinner } from "@/components/ui/spinner";
-import { getProgressReport } from "@/services/monitoring.service";
-import { generateProgressReportPDF } from "@/lib/generateProgressReport";
-import { toast } from "sonner";
+import { Loading } from "@/components/ui/spinner";
+import { DownloadReportDialog } from "@/components/monitoring/DownloadReportDialog";
 
 export default function MonitoringDashboard() {
   const [searchParams] = useSearchParams();
@@ -32,7 +34,7 @@ export default function MonitoringDashboard() {
 
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Pass academicYear filter to hooks
@@ -41,20 +43,6 @@ export default function MonitoringDashboard() {
   const { data: filterOptions } = useFilterOptions();
   const { setBreadcrumbs } = useOutletContext<LayoutContext>();
 
-  const hasInitialized = React.useRef(false);
-
-  // Default to active academic year once loaded if not set yet
-  useEffect(() => {
-    if (filterOptions?.academicYears && !hasInitialized.current) {
-      if (selectedAcademicYear === "all") {
-        const active = filterOptions.academicYears.find(ay => ay.isActive);
-        if (active) {
-          setSelectedAcademicYear(active.value);
-        }
-      }
-      hasInitialized.current = true;
-    }
-  }, [filterOptions, selectedAcademicYear]);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -78,20 +66,6 @@ export default function MonitoringDashboard() {
       console.error('[Monitoring] Refresh failed:', error);
     } finally {
       setIsSyncing(false);
-    }
-  };
-
-  const handleDownloadReport = async () => {
-    setIsGeneratingReport(true);
-    try {
-      const reportData = await getProgressReport(academicYearFilter);
-      await generateProgressReportPDF(reportData);
-      toast.success("Laporan berhasil diunduh!");
-    } catch (error) {
-      console.error('[Monitoring] Generate report failed:', error);
-      toast.error("Gagal mengunduh laporan. Silakan coba lagi.");
-    } finally {
-      setIsGeneratingReport(false);
     }
   };
 
@@ -138,40 +112,58 @@ export default function MonitoringDashboard() {
             Refresh
           </Button>
           <Button
-            variant="default"
-            size="sm"
-            onClick={handleDownloadReport}
-            disabled={isGeneratingReport || isLoading}
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => setIsDownloadDialogOpen(true)}
           >
-            {isGeneratingReport ? (
-              <>
-                <Spinner className="h-4 w-4 mr-2" />
-                Mengunduh...
-              </>
-            ) : (
-              <>
-                <FileDown className="h-4 w-4 mr-2" />
-                Download Laporan
-              </>
-            )}
+            <FileDown className="h-4 w-4" />
+            Download Laporan
           </Button>
         </div>
       </div>
+
+      <DownloadReportDialog
+        open={isDownloadDialogOpen}
+        onOpenChange={setIsDownloadDialogOpen}
+        defaultAcademicYear={selectedAcademicYear}
+      />
+
       {/* Summary Cards */}
       <MonitoringSummaryCards summary={data?.summary} isLoading={isLoadingAny} />
 
-      {/* Status Distribution + Rating Distribution + Quick Lists */}
-      <div className="grid gap-6 lg:grid-cols-4">
-        <StatusDistributionCard
+      {/* Distribution Charts */}
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <StatusDistributionChart
           statusDistribution={data?.statusDistribution}
           isLoading={isLoadingAny}
         />
-        <RatingDistributionCard
+        <RatingDistributionChart
           ratingDistribution={data?.ratingDistribution}
           isLoading={isLoadingAny}
         />
+        <ProgressDistributionChart
+          progressDistribution={data?.progressDistribution}
+          isLoading={isLoadingAny}
+        />
+        <TopicDistributionChart
+          topicDistribution={data?.topicDistribution}
+          isLoading={isLoadingAny}
+        />
+        <BatchDistributionChart
+          batchDistribution={data?.batchDistribution}
+          isLoading={isLoadingAny}
+        />
+        <GuidanceTrendChart
+          guidanceTrend={data?.guidanceTrend}
+          isLoading={isLoadingAny}
+        />
+      </div>
+
+      {/* Quick Lists */}
+      <div className="grid gap-6 md:grid-cols-2">
         <SlowStudentsCard
-          students={data?.slowStudents}
+          slowStudents={data?.slowStudents}
+          atRiskStudents={data?.atRiskStudents}
           isLoading={isLoadingAny}
         />
         <ReadyForSeminarCard

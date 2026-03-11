@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { FileText, Calendar, ArrowLeft, Save, Building2, Info, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { getAdminAssignmentLetterDetail, updateAdminAssignmentLetter, type AdminAssignmentProposalItem } from "@/services/internship.service";
 import { toTitleCaseName } from "@/lib/text";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Users, MapPin, User, Settings2 } from "lucide-react";
 import { API_CONFIG } from "@/config/api";
 
@@ -28,7 +29,7 @@ const ManageAssignmentLetter: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [proposal, setProposal] = useState<AdminAssignmentProposalItem | null>(null);
 
-    const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<LetterFormValues>();
+    const { register, handleSubmit, reset, watch, control, formState: { errors } } = useForm<LetterFormValues>();
     const watchDates = watch(["startDateActual", "endDateActual"]);
 
     const calculateBusinessDays = (startStr: string, endStr: string) => {
@@ -251,11 +252,17 @@ const ManageAssignmentLetter: React.FC = () => {
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
                                             Tanggal Mulai Pelaksanaan
                                         </Label>
-                                        <Input
-                                            id="startDateActual"
-                                            type="date"
-                                            disabled={proposal.isSigned}
-                                            {...register("startDateActual", { required: "Tanggal mulai wajib diisi" })}
+                                        <Controller
+                                            name="startDateActual"
+                                            control={control}
+                                            rules={{ required: "Tanggal mulai wajib diisi" }}
+                                            render={({ field }) => (
+                                                <DatePicker
+                                                    value={field.value ? new Date(field.value) : undefined}
+                                                    onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    disabled={proposal.isSigned}
+                                                />
+                                            )}
                                         />
                                         {errors.startDateActual && (
                                             <p className="text-xs text-destructive">{errors.startDateActual.message}</p>
@@ -266,11 +273,17 @@ const ManageAssignmentLetter: React.FC = () => {
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
                                             Tanggal Selesai Pelaksanaan
                                         </Label>
-                                        <Input
-                                            id="endDateActual"
-                                            type="date"
-                                            disabled={proposal.isSigned}
-                                            {...register("endDateActual", { required: "Tanggal selesai wajib diisi" })}
+                                        <Controller
+                                            name="endDateActual"
+                                            control={control}
+                                            rules={{ required: "Tanggal selesai wajib diisi" }}
+                                            render={({ field }) => (
+                                                <DatePicker
+                                                    value={field.value ? new Date(field.value) : undefined}
+                                                    onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    disabled={proposal.isSigned}
+                                                />
+                                            )}
                                         />
                                         {errors.endDateActual && (
                                             <p className="text-xs text-destructive">{errors.endDateActual.message}</p>

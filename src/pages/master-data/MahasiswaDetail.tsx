@@ -43,6 +43,12 @@ const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   pending_review: <Clock className="h-4 w-4 text-yellow-500" />,
 };
 
+const CPL_STATUS_LABELS: Record<string, string> = {
+  calculated: 'Dihitung',
+  verified: 'Diverifikasi',
+  finalized: 'Final',
+};
+
 export default function MahasiswaDetail() {
   const navigate = useNavigate();
   const { isAdmin } = useRole();
@@ -235,6 +241,86 @@ export default function MahasiswaDetail() {
                 <p className="text-sm font-medium">{formatDateId(data.createdAt)}</p>
               </div>
             </div>
+
+            {/* Data Akademik SIA */}
+            <div className="border-t pt-4 mt-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Data Akademik SIA</p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Semester</span>
+                  <Badge variant="outline">{data.student.currentSemester ?? '-'}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">MK Wajib</span>
+                  <Badge variant={data.student.mandatoryCoursesCompleted ? 'default' : 'secondary'} className={data.student.mandatoryCoursesCompleted ? 'bg-green-600' : ''}>
+                    {data.student.mandatoryCoursesCompleted ? 'Lulus' : 'Belum'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">MKWU</span>
+                  <Badge variant={data.student.mkwuCompleted ? 'default' : 'secondary'} className={data.student.mkwuCompleted ? 'bg-green-600' : ''}>
+                    {data.student.mkwuCompleted ? 'Lulus' : 'Belum'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Kerja Praktik</span>
+                  <Badge variant={data.student.internshipCompleted ? 'default' : 'secondary'} className={data.student.internshipCompleted ? 'bg-green-600' : ''}>
+                    {data.student.internshipCompleted ? 'Lulus' : 'Belum'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">KKN</span>
+                  <Badge variant={data.student.kknCompleted ? 'default' : 'secondary'} className={data.student.kknCompleted ? 'bg-green-600' : ''}>
+                    {data.student.kknCompleted ? 'Lulus' : 'Belum'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Nilai CPL */}
+            {data.cplScores && data.cplScores.length > 0 && (
+              <div className="border-t pt-4 mt-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                  Nilai CPL
+                  <Badge variant="outline" className="ml-2 text-xs">{data.cplScores.length}</Badge>
+                </p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {data.cplScores.map((cpl) => {
+                    const passed = cpl.minimalScore != null ? cpl.score >= cpl.minimalScore : true;
+                    const statusColor =
+                      cpl.status === 'finalized' ? 'bg-purple-100 text-purple-700' :
+                      cpl.status === 'verified' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-blue-100 text-blue-700';
+                    return (
+                      <div key={cpl.cplId} className="p-2 bg-muted/50 rounded-md space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold">{cpl.cplCode || '-'}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-lg font-bold">{cpl.score}</span>
+                            {cpl.minimalScore != null && (
+                              <Badge variant="outline" className="text-[10px] px-1">
+                                min {cpl.minimalScore}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        {cpl.cplDescription && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{cpl.cplDescription}</p>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <Badge className={`text-[10px] px-1.5 ${statusColor}`}>
+                            {CPL_STATUS_LABELS[cpl.status] || cpl.status}
+                          </Badge>
+                          <Badge variant={passed ? 'default' : 'destructive'} className={`text-[10px] px-1.5 ${passed ? 'bg-green-600' : ''}`}>
+                            {passed ? 'Lulus' : 'Belum Lulus'}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

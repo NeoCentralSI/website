@@ -1,4 +1,4 @@
-import { getApiUrl } from "@/config/api";
+import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
 // ========== Types ==========
@@ -32,6 +32,7 @@ export interface AtRiskStudent {
   student: {
     name: string;
     nim: string;
+    email: string;
   };
   status: string;
   lastActivity: string;
@@ -58,10 +59,36 @@ export interface RatingDistribution {
   count: number;
 }
 
+export interface TopicDistribution {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface BatchDistribution {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface ProgressBucket {
+  label: string;
+  count: number;
+}
+
+export interface GuidanceTrend {
+  month: string;
+  count: number;
+}
+
 export interface MonitoringDashboard {
   summary: ProgressStats;
   statusDistribution: StatusDistribution[];
   ratingDistribution: RatingDistribution[];
+  topicDistribution: TopicDistribution[];
+  batchDistribution: BatchDistribution[];
+  progressDistribution: ProgressBucket[];
+  guidanceTrend: GuidanceTrend[];
   atRiskStudents: AtRiskStudent[];
   slowStudents: AtRiskStudent[];
   readyForSeminar: ReadyForSeminarStudent[];
@@ -99,6 +126,7 @@ export interface ThesisListItem {
     isFullyApproved: boolean;
   };
   lastActivity: string;
+  deadlineDate: string | null;
   createdAt: string;
 }
 
@@ -183,6 +211,11 @@ export interface ThesisDetail {
   };
   supervisors: ThesisDetailParticipant[];
   examiners: ThesisDetailParticipant[];
+  latestDocument: {
+    id: string;
+    fileName: string;
+    filePath: string;
+  } | null;
   progress: {
     completed: number;
     total: number;
@@ -243,6 +276,7 @@ const ENDPOINTS = {
   FILTERS: "/thesisGuidance/monitoring/filters",
   AT_RISK: "/thesisGuidance/monitoring/at-risk",
   READY_SEMINAR: "/thesisGuidance/monitoring/ready-seminar",
+  BATCH_WARNING: "/thesisGuidance/monitoring/batch-warning",
 };
 
 // ========== Service Functions ==========
@@ -422,6 +456,7 @@ export interface ReportThesisItem {
   milestoneCompleted: number;
   progressPercent: number;
   startDate: string | null;
+  deadlineDate: string | null;
   createdAt: string;
 }
 
@@ -444,13 +479,22 @@ export interface ProgressReportData {
   theses: ReportThesisItem[];
 }
 
+export interface ReportFilterOptions {
+  academicYearId?: string;
+  statusIds?: string[];
+  ratings?: string[];
+}
+
 /**
  * Get progress report data for PDF generation
  */
-export async function getProgressReport(academicYear?: string): Promise<ProgressReportData> {
-  const url = academicYear && academicYear !== "all"
-    ? `${getApiUrl("/thesisGuidance/monitoring/report")}?academicYear=${academicYear}`
-    : getApiUrl("/thesisGuidance/monitoring/report");
+export async function getProgressReport(options: ReportFilterOptions = {}): Promise<ProgressReportData> {
+  const params = new URLSearchParams();
+  if (options.academicYearId && options.academicYearId !== 'all') params.append('academicYear', options.academicYearId);
+  if (options.statusIds?.length) params.append('statusIds', options.statusIds.join(','));
+  if (options.ratings?.length) params.append('ratings', options.ratings.join(','));
+
+  const url = `${getApiUrl("/thesisGuidance/monitoring/report")}?${params.toString()}`;
 
   const response = await apiRequest(url);
   if (!response.ok) {
@@ -459,4 +503,117 @@ export async function getProgressReport(academicYear?: string): Promise<Progress
   }
   const result = await response.json();
   return result.data;
+}
+
+/**
+ * Download progress report as PDF (server-side generation via Gotenberg)
+ */
+export async function downloadProgressReportPdf(options: ReportFilterOptions = {}): Promise<Blob> {
+  const params = new URLSearchParams();
+  if (options.academicYearId && options.academicYearId !== 'all') params.append('academicYear', options.academicYearId);
+  if (options.statusIds?.length) params.append('statusIds', options.statusIds.join(','));
+  if (options.ratings?.length) params.append('ratings', options.ratings.join(','));
+
+  const url = `${getApiUrl("/thesisGuidance/monitoring/report/download")}?${params.toString()}`;
+
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    let message = "Gagal mengunduh laporan";
+    try {
+      const json = await response.json();
+      if (json.message) message = json.message;
+    } catch {
+      // response is not JSON
+    }
+    throw new Error(message);
+  }
+  return response.blob();
+}
+
+/**
+ * Send batch warning notifications to students (for management roles)
+ */
+export async function sendBatchWarnings(thesisIds: string[], warningType: WarningType): Promise<{ success: boolean; message: string }> {
+  const response = await apiRequest(
+    getApiUrl(ENDPOINTS.BATCH_WARNING),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ thesisIds, warningType }),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengirim peringatan batch");
+  }
+  return response.json();
+}
+
+// ==================== KADEP TRANSFER APPROVAL ====================
+
+export interface KadepTransferStudent {
+  thesisId: string;
+  thesisSupervisorId: string;
+  studentName: string;
+  studentNim: string;
+  thesisTitle: string;
+  role: string;
+}
+
+export interface KadepTransfer {
+  notificationId: string;
+  sourceLecturerId: string;
+  sourceLecturerName: string;
+  targetLecturerId: string;
+  targetLecturerName: string;
+  students: KadepTransferStudent[];
+  reason: string;
+  targetApproved: boolean;
+  status: 'pending' | 'approved' | 'rejected' | 'target_rejected';
+  createdAt: string;
+}
+
+export async function getKadepPendingTransfers(): Promise<{ success: boolean; count: number; transfers: KadepTransfer[] }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_PENDING));
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan transfer");
+  return res.json();
+}
+
+export async function getKadepAllTransfers(params: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+} = {}): Promise<{
+  success: boolean;
+  data: KadepTransfer[];
+  pagination: { total: number; page: number; pageSize: number; totalPages: number };
+}> {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
+  if (params.search) searchParams.set("search", params.search);
+  if (params.status) searchParams.set("status", params.status);
+  const url = `${getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_ALL)}?${searchParams.toString()}`;
+  const res = await apiRequest(url);
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat data transfer");
+  return res.json();
+}
+
+export async function kadepApproveTransfer(notificationId: string): Promise<{ success: boolean; message: string }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFER_APPROVE(notificationId)), {
+    method: "PATCH",
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui transfer");
+  return res.json();
+}
+
+export async function kadepRejectTransfer(notificationId: string, reason?: string): Promise<{ success: boolean; message: string }> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFER_REJECT(notificationId)), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak transfer");
+  return res.json();
 }

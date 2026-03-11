@@ -61,7 +61,7 @@ export function MonitoringSummaryCards({ summary, isLoading }: MonitoringSummary
     {
       title: "Mahasiswa Berisiko",
       value: summary?.totalAtRisk ?? 0,
-      description: "Tidak ada aktivitas > 2 bulan",
+      description: "Tidak ada aktivitas > 4 bulan",
       icon: AlertTriangle,
       color: "text-red-600",
       bgColor: "bg-red-50",

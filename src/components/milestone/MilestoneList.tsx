@@ -14,8 +14,47 @@ import {
 } from "@/components/ui/select";
 import type { Milestone, MilestoneProgress, MilestoneStatus } from "@/types/milestone.types";
 import { MILESTONE_STATUS_CONFIG } from "@/types/milestone.types";
-import { Plus, Search, Filter, LayoutGrid, List, Loader2, Edit3 } from "lucide-react";
+import { Plus, Search, Filter, LayoutGrid, List, Loader2, Edit3, CheckCircle2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Helper to get timeline dot color for a milestone status
+function getTimelineDotClasses(status: MilestoneStatus) {
+  switch (status) {
+    case "completed":
+      return "bg-green-500 ring-green-200";
+    case "in_progress":
+      return "bg-blue-500 ring-blue-200 animate-pulse";
+    case "revision_needed":
+      return "bg-orange-400 ring-orange-200";
+    default:
+      return "bg-gray-300 ring-gray-100";
+  }
+}
+
+function TimelineDot({ status }: { status: MilestoneStatus }) {
+  const isCompleted = status === "completed";
+  const isRevision = status === "revision_needed";
+
+  return (
+    <div
+      className={cn(
+        "relative z-10 flex items-center justify-center h-7 w-7 rounded-full ring-4 bg-background",
+        getTimelineDotClasses(status)
+      )}
+    >
+      {isCompleted ? (
+        <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+      ) : isRevision ? (
+        <AlertTriangle className="h-3 w-3 text-white" />
+      ) : (
+        <div className={cn(
+          "h-2 w-2 rounded-full",
+          status === "in_progress" ? "bg-white" : "bg-white/80"
+        )} />
+      )}
+    </div>
+  );
+}
 
 export interface MilestoneListProps {
   milestones: Milestone[];
@@ -348,60 +387,81 @@ export function MilestoneList({
           <div
             className={
               viewMode === "grid"
-                ? "grid grid-cols-1 md:grid-cols-2 gap-4"
-                : "space-y-4"
+                ? "grid grid-cols-1 md:grid-cols-2 gap-3"
+                : "relative"
             }
           >
-            {filteredMilestones.map((milestone) => (
-              <div key={milestone.id} className="relative">
-                {showCheckboxes && (
-                  <div className="absolute z-10 ml-3 mt-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds?.includes(milestone.id)}
-                      onChange={() => {
-                        if (!startableIds.has(milestone.id)) return;
-                        onToggleSelect(milestone.id);
-                      }}
-                      disabled={!startableIds.has(milestone.id)}
-                      className="h-4 w-4 accent-primary disabled:opacity-40 disabled:cursor-not-allowed"
-                    />
+            {/* Timeline vertical line (only in list view) */}
+            {viewMode === "list" && filteredMilestones.length > 1 && (
+              <div className="absolute left-3.25 top-4 bottom-4 w-0.5 bg-border" />
+            )}
+
+            {filteredMilestones.map((milestone, index) => (
+              <div key={milestone.id} className={cn(
+                "relative",
+                viewMode === "list" && "flex gap-3"
+              )}>
+                {/* Timeline dot (list view only) */}
+                {viewMode === "list" && (
+                  <div className="flex flex-col items-center shrink-0 pt-3">
+                    <TimelineDot status={milestone.status} />
+                    {index < filteredMilestones.length - 1 && (
+                      <div className="flex-1" />
+                    )}
                   </div>
                 )}
-                <div
-                  draggable={enableReorder}
-                  onDragStart={() => handleDragStart(milestone.id)}
-                  onDragOver={(event) => handleDragOver(event, milestone.id)}
-                  onDragEnd={handleDragEnd}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    handleDragEnd();
-                  }}
-                  className={cn(
-                    enableReorder && "cursor-grab",
-                    draggingId === milestone.id && "opacity-75",
-                    selectedIds?.includes(milestone.id) && "ring-2 ring-primary/60"
+
+                {/* Card content */}
+                <div className={cn("flex-1 min-w-0", viewMode === "list" && "pb-3")}>
+                  {showCheckboxes && (
+                    <div className="absolute z-10 right-2 top-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds?.includes(milestone.id)}
+                        onChange={() => {
+                          if (!startableIds.has(milestone.id)) return;
+                          onToggleSelect(milestone.id);
+                        }}
+                        disabled={!startableIds.has(milestone.id)}
+                        className="h-4 w-4 accent-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                    </div>
                   )}
-                >
-                  <MilestoneCard
-                    milestone={milestone}
-                    isOwner={isOwner}
-                    isSupervisor={isSupervisor}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onStatusChange={onStatusChange}
-                    onProgressChange={onProgressChange}
-                    onValidate={onValidate}
-                    onRequestRevision={onRequestRevision}
-                    onAddFeedback={onAddFeedback}
-                    isProgressUpdating={
-                      progressUpdatingId
-                        ? progressUpdatingId === milestone.id
-                        : isProgressUpdating
-                    }
-                    isStatusUpdating={statusUpdatingId === milestone.id}
+                  <div
                     draggable={enableReorder}
-                  />
+                    onDragStart={() => handleDragStart(milestone.id)}
+                    onDragOver={(event) => handleDragOver(event, milestone.id)}
+                    onDragEnd={handleDragEnd}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleDragEnd();
+                    }}
+                    className={cn(
+                      enableReorder && "cursor-grab",
+                      draggingId === milestone.id && "opacity-75",
+                      selectedIds?.includes(milestone.id) && "ring-2 ring-primary/60 rounded-lg"
+                    )}
+                  >
+                    <MilestoneCard
+                      milestone={milestone}
+                      isOwner={isOwner}
+                      isSupervisor={isSupervisor}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onStatusChange={onStatusChange}
+                      onProgressChange={onProgressChange}
+                      onValidate={onValidate}
+                      onRequestRevision={onRequestRevision}
+                      onAddFeedback={onAddFeedback}
+                      isProgressUpdating={
+                        progressUpdatingId
+                          ? progressUpdatingId === milestone.id
+                          : isProgressUpdating
+                      }
+                      isStatusUpdating={statusUpdatingId === milestone.id}
+                      draggable={enableReorder}
+                    />
+                  </div>
                 </div>
               </div>
             ))}

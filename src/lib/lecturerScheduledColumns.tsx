@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { EyeIcon, Clock, FileText, Target } from 'lucide-react';
-import { toTitleCaseName, formatDateId } from '@/lib/text';
+import StatusBadge from '@/components/thesis/StatusBadge';
+import { EyeIcon, FileTextIcon, XCircleIcon, DownloadIcon } from 'lucide-react';
+import { toTitleCaseName, formatDateId, formatThesisDocName } from '@/lib/text';
+import { getApiUrl } from '@/config/api';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
 import { useNavigate } from 'react-router-dom';
@@ -14,34 +15,15 @@ interface GetLecturerScheduledColumnsOptions {
   setStatusFilter: (value: string) => void;
   setPage: (value: number) => void;
   navigate: ReturnType<typeof useNavigate>;
+  onViewDocument?: (fileName?: string | null, filePath?: string | null) => void;
+  onCancel?: (guidanceId: string) => void;
 }
 
 export const getLecturerScheduledColumns = (
   options: GetLecturerScheduledColumnsOptions
 ): Column<GuidanceItem>[] => {
-  const { allGuidances, studentFilter, setStudentFilter, statusFilter, setStatusFilter, setPage, navigate } =
+  const { allGuidances, studentFilter, setStudentFilter, statusFilter, setStatusFilter, setPage, navigate, onViewDocument, onCancel } =
     options;
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return (
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 border font-normal gap-1">
-            <Clock className="h-3 w-3" />
-            Menunggu Sesi
-          </Badge>
-        );
-      case 'summary_pending':
-        return (
-          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 border font-normal gap-1">
-            <FileText className="h-3 w-3" />
-            Menunggu Catatan
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline" className="font-normal">{status}</Badge>;
-    }
-  };
 
   return [
     {
@@ -72,16 +54,56 @@ export const getLecturerScheduledColumns = (
       },
     },
     {
-      key: 'milestone',
-      header: 'Milestone',
-      accessor: (r) => {
-        const milestoneName = r.milestoneName || (r as any)?.milestone?.title;
-        if (!milestoneName) return '-';
+      key: 'doc',
+      header: 'Dokumen',
+      render: (r) => {
+        const filePath = (r as any)?.document?.filePath as string | undefined;
+        const fileName = (r as any)?.document?.fileName as string | undefined;
+        if (!filePath) return <span className="text-muted-foreground">-</span>;
+
+        const isPdf = filePath.toLowerCase().endsWith('.pdf');
+        const isDocx = filePath.toLowerCase().endsWith('.docx') || filePath.toLowerCase().endsWith('.doc');
+        const displayName = formatThesisDocName((r as any)?.studentNim, r.studentName);
+
+        if (isDocx) {
+          const downloadUrl = (() => {
+            let url = filePath.startsWith('/') ? getApiUrl(filePath) : getApiUrl(`/${filePath}`);
+            const token = localStorage.getItem('accessToken');
+            if (token && filePath.includes('thesis/')) {
+              url += (url.includes('?') ? '&' : '?') + `token=${token}`;
+            }
+            return url;
+          })();
+
+          return (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 max-w-[220px] text-green-600 hover:text-green-700 hover:bg-green-50"
+              asChild
+              title={`Download ${displayName}`}
+            >
+              <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
+                <DownloadIcon className="size-4 shrink-0" />
+                <span className="truncate text-xs">{displayName}</span>
+              </a>
+            </Button>
+          );
+        }
+
+        if (!isPdf) return <span className="text-muted-foreground">-</span>;
+
         return (
-          <div className="flex items-center gap-1.5">
-            <Target className="h-3.5 w-3.5 text-purple-600" />
-            <span className="truncate max-w-50">{milestoneName}</span>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 max-w-[220px]"
+            onClick={() => onViewDocument?.(fileName, filePath)}
+            title={`Lihat ${displayName}`}
+          >
+            <FileTextIcon className="size-4 shrink-0" />
+            <span className="truncate text-xs">{displayName}</span>
+          </Button>
         );
       },
     },
@@ -97,7 +119,7 @@ export const getLecturerScheduledColumns = (
     {
       key: 'status',
       header: 'Status',
-      accessor: (r) => getStatusBadge(r.status),
+      accessor: (r) => <StatusBadge status={r.status as any} />,
       filter: {
         type: 'select',
         value: statusFilter,
@@ -107,27 +129,44 @@ export const getLecturerScheduledColumns = (
         },
         options: [
           { label: 'Semua', value: '' },
-          { label: 'Menunggu Sesi', value: 'accepted' },
+          { label: 'Diterima', value: 'accepted' },
           { label: 'Menunggu Catatan', value: 'summary_pending' },
+          { label: 'Selesai', value: 'completed' },
+          { label: 'Dibatalkan', value: 'cancelled' },
+          { label: 'Ditolak', value: 'rejected' },
         ],
       },
     },
     {
       key: 'action',
       header: 'Aksi',
-      render: (r) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            title="Detail"
-            onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/session/${r.id}`)}
-          >
-            <EyeIcon className="size-4" />
-          </Button>
-        </div>
-      ),
+      render: (r) => {
+        const isCancellable = r.status === 'accepted';
+        return (
+          <div className="flex items-center gap-1">
+            {isCancellable && onCancel && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => onCancel(r.id)}
+                title="Batalkan bimbingan"
+              >
+                <XCircleIcon className="size-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Detail"
+              onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/session/${r.id}`)}
+            >
+              <EyeIcon className="size-4" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 };

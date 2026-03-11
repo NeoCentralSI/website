@@ -5,3 +5,4 @@ export { useNotifications, NotificationProvider } from './useNotifications';
 export { useFirstVisitDelay } from './useFirstVisitDelay';
 export { useActiveAcademicYear } from './useActiveAcademicYear';
 export { useStudentEligibility } from './useStudentEligibility';
+export { useAdvisorAccessState } from './useAdvisorAccessState';

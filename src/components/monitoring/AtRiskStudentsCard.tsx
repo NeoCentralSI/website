@@ -26,7 +26,7 @@ export function AtRiskStudentsCard({ students, isLoading, showViewAll = true }: 
             <AlertTriangle className="h-5 w-5 text-red-500" />
             Mahasiswa Berisiko
           </CardTitle>
-          <CardDescription>Tidak ada aktivitas lebih dari 2 bulan</CardDescription>
+          <CardDescription>Tidak ada aktivitas lebih dari 4 bulan</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {[...Array(3)].map((_, i) => (
@@ -54,7 +54,7 @@ export function AtRiskStudentsCard({ students, isLoading, showViewAll = true }: 
               <AlertTriangle className="h-5 w-5 text-red-500" />
               Mahasiswa Berisiko
             </CardTitle>
-            <CardDescription>Tidak ada aktivitas lebih dari 2 bulan</CardDescription>
+            <CardDescription>Tidak ada aktivitas lebih dari 4 bulan</CardDescription>
           </div>
           {showViewAll && students && students.length > 5 && (
             <Button 

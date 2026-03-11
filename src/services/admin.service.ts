@@ -19,7 +19,7 @@ export interface User {
 export interface AcademicYear {
   id: string;
   semester: 'ganjil' | 'genap';
-  year: number;
+  year: string;
   startDate?: string;
   endDate?: string;
   isActive: boolean;
@@ -46,14 +46,14 @@ export interface UpdateUserRequest {
 
 export interface CreateAcademicYearRequest {
   semester: 'ganjil' | 'genap';
-  year?: number;
+  year?: string;
   startDate?: string;
   endDate?: string;
 }
 
 export interface UpdateAcademicYearRequest {
   semester?: 'ganjil' | 'genap';
-  year?: number;
+  year?: string;
   startDate?: string;
   endDate?: string;
   isActive?: boolean;
@@ -217,6 +217,7 @@ export const getUsersAPI = async (params?: {
   identityType?: string;
   role?: string;
   isVerified?: boolean;
+  enrollmentYear?: string | number;
 }): Promise<{
   users: User[];
   meta: {
@@ -228,11 +229,12 @@ export const getUsersAPI = async (params?: {
 }> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  if (params?.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
   if (params?.identityType) queryParams.append('identityType', params.identityType);
   if (params?.role) queryParams.append('role', params.role);
   if (params?.isVerified !== undefined) queryParams.append('isVerified', params.isVerified.toString());
+  if (params?.enrollmentYear) queryParams.append('enrollmentYear', params.enrollmentYear.toString());
 
   const response = await fetch(getApiUrl(`/adminfeatures/users?${queryParams}`), {
     method: 'GET',
@@ -257,10 +259,15 @@ export interface Student {
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
   phone?: string;
-  student: {
-    enrollmentYear: number;
+  student?: {
+    enrollmentYear: number | null;
     sksCompleted: number;
-    status: string;
+    currentSemester: number | null;
+    status: string | null;
+    mandatoryCoursesCompleted: boolean;
+    mkwuCompleted: boolean;
+    internshipCompleted: boolean;
+    kknCompleted: boolean;
     activeTheses: Array<{
       title: string;
       supervisors: Array<{
@@ -389,7 +396,20 @@ export interface StudentDetail {
     enrollmentYear: number;
     sksCompleted: number;
     status: string | null;
+    currentSemester?: number | null;
+    mandatoryCoursesCompleted?: boolean | null;
+    mkwuCompleted?: boolean | null;
+    internshipCompleted?: boolean | null;
+    kknCompleted?: boolean | null;
   };
+  cplScores?: Array<{
+    cplId: string;
+    cplCode: string;
+    cplDescription?: string;
+    score: number;
+    minimalScore?: number | null;
+    status: string;
+  }>;
   roles: Array<{
     id: string;
     name: string;
@@ -629,7 +649,16 @@ export const updateLecturerByAdminAPI = async (id: string, data: { scienceGroupI
   return response.json();
 };
 
-export const adminUpdateStudentAPI = async (id: string, data: { status: string; sksCompleted: number }): Promise<{ data: any }> => {
+export const adminUpdateStudentAPI = async (id: string, data: {
+  status: string;
+  sksCompleted: number;
+  enrollmentYear?: number;
+  currentSemester?: number;
+  mandatoryCoursesCompleted?: boolean;
+  mkwuCompleted?: boolean;
+  internshipCompleted?: boolean;
+  kknCompleted?: boolean;
+}): Promise<{ data: any }> => {
   const response = await fetch(getApiUrl(`/adminfeatures/students/${id}`), {
     method: 'PATCH',
     headers: {
@@ -638,7 +667,13 @@ export const adminUpdateStudentAPI = async (id: string, data: { status: string; 
     },
     body: JSON.stringify({
       status: data.status,
-      skscompleted: data.sksCompleted
+      skscompleted: data.sksCompleted,
+      enrollmentYear: data.enrollmentYear,
+      currentSemester: data.currentSemester,
+      mandatoryCoursesCompleted: data.mandatoryCoursesCompleted,
+      mkwuCompleted: data.mkwuCompleted,
+      internshipCompleted: data.internshipCompleted,
+      kknCompleted: data.kknCompleted
     }),
   });
   if (!response.ok) {
@@ -708,6 +743,71 @@ export const deleteScienceGroupAPI = async (id: string): Promise<{ message: stri
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Gagal menghapus Kelompok Keilmuan');
+  }
+  return response.json();
+};
+
+// Excel Import APIs (Bulk JSON upload)
+export const importStudentsExcelAPI = async (data: any[]): Promise<any> => {
+  const response = await fetch(getApiUrl('/adminfeatures/students/import-excel'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal import mahasiswa');
+  }
+  return response.json();
+};
+
+export const importLecturersExcelAPI = async (data: any[]): Promise<any> => {
+  const response = await fetch(getApiUrl('/adminfeatures/lecturers/import-excel'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal import dosen');
+  }
+  return response.json();
+};
+
+export const importUsersExcelAPI = async (data: any[]): Promise<any> => {
+  const response = await fetch(getApiUrl('/adminfeatures/users/import-excel'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal import user');
+  }
+  return response.json();
+};
+
+export const importAcademicYearsExcelAPI = async (data: any[]): Promise<any> => {
+  const response = await fetch(getApiUrl('/adminfeatures/academic-years/import-excel'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal import tahun ajaran');
   }
   return response.json();
 };

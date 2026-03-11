@@ -241,7 +241,7 @@ export async function generateGuidanceLogReportPDF(data: GuidanceLogReportData):
   if (finalY + 50 > pageHeight - 20) {
     doc.addPage();
     // Re-add KOP on new page
-    let sigY = 25;
+    const sigY = 25;
     doc.setFontSize(9);
     doc.setTextColor(COLORS.secondary);
     doc.text(`Padang, ${formatDateLong()}`, signatureX, sigY);

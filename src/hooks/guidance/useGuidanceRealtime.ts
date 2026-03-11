@@ -17,6 +17,10 @@ type PushEventType =
   | "thesis-guidance:notes-updated"
   | "thesis-guidance:summary-submitted"
   | "thesis-guidance:summary-approved"
+  | "supervisor2_request"
+  | "supervisor2_approved"
+  | "supervisor2_rejected"
+  | "role_promotion"
   | "internship_invitation"
   | "internship_invitation_response"
   | "internship_new_proposal"
@@ -197,6 +201,16 @@ export function useGuidanceRealtime() {
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }
+              case "supervisor2_request":
+              case "supervisor2_approved":
+              case "supervisor2_rejected":
+              case "role_promotion": {
+                const title = payload?.data?.title || payload?.notification?.title || "Notifikasi Baru";
+                const body = payload?.data?.body || payload?.notification?.body || "";
+                toast(title, { description: body, duration: 5000 });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
               case "internship_invitation":
               case "internship_invitation_response":
               case "internship_proposal_response":
@@ -223,8 +237,8 @@ export function useGuidanceRealtime() {
               }
               default: {
                 console.warn("[FCM] Unknown notification type:", type);
-                const title = payload?.notification?.title || "Notifikasi Baru";
-                const body = payload?.notification?.body || "";
+                const title = payload?.data?.title || payload?.notification?.title || "Notifikasi Baru";
+                const body = payload?.data?.body || payload?.notification?.body || "";
                 if (title || body) {
                   toast(title, { description: body, duration: 5000 });
                   qc.invalidateQueries({ queryKey: ["student-guidance"] });
@@ -270,6 +284,13 @@ export function useGuidanceRealtime() {
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });
+                  break;
+                }
+                case "supervisor2_request":
+                case "supervisor2_approved":
+                case "supervisor2_rejected":
+                case "role_promotion": {
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
                   break;
                 }
                 case "internship_invitation":

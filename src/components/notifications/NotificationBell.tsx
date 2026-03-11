@@ -21,13 +21,13 @@ export default function NotificationBell({
 }: Props) {
   const [open, setOpen] = useState(false);
   const { unreadCount, fetchNotifications } = useNotifications();
-  
+
   // Use unreadCount from context - polling is handled by NotificationProvider
   const count = unreadCount ?? 0;
   const showBadge = showZero ? true : count > 0;
 
   useEffect(() => {
-    if (open) fetchNotifications().catch(() => {});
+    if (open) fetchNotifications().catch(() => { });
   }, [open, fetchNotifications]);
 
   return (
@@ -46,7 +46,7 @@ export default function NotificationBell({
             <span
               className={cn(
                 "absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-[10px] leading-4 text-white",
-                count > 0 ? "bg-red-500" : "bg-muted-foreground/40"
+                count > 0 ? "bg-red-500 text-white" : "bg-muted-foreground/40"
               )}
             >
               {count}

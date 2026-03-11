@@ -16,8 +16,8 @@ const ratingColors: Record<string, string> = {
   "Slow": "bg-yellow-500",
   "AT_RISK": "bg-orange-500",
   "At Risk": "bg-orange-500",
-  "FAILED": "bg-red-500",
-  "Gagal": "bg-red-500",
+  "FAILED": "bg-red-500 text-white",
+  "Gagal": "bg-red-500 text-white",
   "CANCELLED": "bg-slate-500",
   "Cancelled": "bg-slate-500",
 };

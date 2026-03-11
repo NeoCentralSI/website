@@ -5,9 +5,9 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  AcademicYearFormDialog, 
-  AcademicYearTable 
+import {
+  AcademicYearFormDialog,
+  AcademicYearTable
 } from '@/components/master-data';
 
 import { useAcademicYears, useAcademicYearForm } from '@/hooks/master-data';
@@ -17,7 +17,7 @@ import type { CreateAcademicYearRequest, UpdateAcademicYearRequest } from '@/ser
 
 export default function AcademicYearPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  
+
   // Pagination & filter state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -25,14 +25,14 @@ export default function AcademicYearPage() {
   const [semesterFilter, setSemesterFilter] = useState('');
 
   // Custom hooks
-  const { 
-    academicYears, 
-    total, 
-    isLoading, 
+  const {
+    academicYears,
+    total,
+    isLoading,
     isSubmitting,
     error,
-    createAcademicYear, 
-    updateAcademicYear 
+    createAcademicYear,
+    updateAcademicYear
   } = useAcademicYears({ page, pageSize, search: searchValue });
 
   const {
@@ -72,14 +72,14 @@ export default function AcademicYearPage() {
   // Handlers
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     let success = false;
     if (editingYear) {
       success = await updateAcademicYear(editingYear.id, formData as UpdateAcademicYearRequest);
     } else {
       success = await createAcademicYear(formData as CreateAcademicYearRequest);
     }
-    
+
     if (success) {
       closeDialog();
     }
@@ -92,10 +92,6 @@ export default function AcademicYearPage() {
           <h2 className="text-2xl font-bold">Tahun Ajaran</h2>
           <p className="text-muted-foreground">Manajemen tahun ajaran dan semester</p>
         </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah Tahun Ajaran
-        </Button>
       </div>
 
       <Alert>
@@ -119,6 +115,11 @@ export default function AcademicYearPage() {
         onSearchChange={setSearchValue}
         onSemesterFilterChange={setSemesterFilter}
         onEdit={openEditDialog}
+        actions={
+          <Button variant="outline" size="sm" onClick={openCreateDialog}>
+            <Plus className="w-4 h-4 mr-2" /> Tambah
+          </Button>
+        }
       />
 
       <AcademicYearFormDialog

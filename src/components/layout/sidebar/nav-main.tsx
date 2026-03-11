@@ -1,10 +1,10 @@
-import { ChevronRight, type LucideIcon } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
+import { ChevronDown, type LucideIcon } from "lucide-react"
+import React from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
   SidebarGroup,
@@ -36,63 +36,98 @@ export function NavMain({
   items: NavItem[]
 }) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
 
+  const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({})
 
+  // Keep menus with active children or matching parent URL open when route changes
+  React.useEffect(() => {
+    setOpenMenus((prev) => {
+      const next = { ...prev }
+      items.forEach((item) => {
+        const parentMatch =
+          item.url && item.url !== "#" && (pathname === item.url || pathname.startsWith(item.url + "/"))
+        const childMatch = item.items?.some(
+          (s) => pathname === s.url || pathname.startsWith(s.url + "/")
+        )
+        if (parentMatch || childMatch) {
+          next[item.title] = true
+        }
+      })
+      return next
+    })
+  }, [pathname, items])
 
   return (
     <SidebarGroup>
       <SidebarMenu>
         {items.map((item) => {
-          const hasChildren = !!item.items?.length
+          const hasChildren = !!(item.items && item.items.length > 0)
+
+          // Check if any child route is active
           const isAnyChildActive = hasChildren
             ? item.items!.some((s) => pathname === s.url || pathname.startsWith(s.url + "/"))
             : false
-          const isItemActive = pathname === item.url || pathname.startsWith(item.url + "/") || isAnyChildActive
 
-          return (
-            <Collapsible key={item.title} asChild defaultOpen={isItemActive} className="group/collapsible">
-              <SidebarMenuItem>
-                {/* Main Button: Link if URL is valid, otherwise Trigger or Static */}
-                {item.url && item.url !== "#" ? (
-                  <SidebarMenuButton asChild tooltip={item.title} isActive={isItemActive}>
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                ) : hasChildren ? (
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton tooltip={item.title} isActive={isItemActive} className="cursor-pointer">
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                ) : (
-                  <SidebarMenuButton tooltip={item.title} isActive={isItemActive} className="cursor-default">
+          // Leaf items (no children): active when current route matches
+          const isLeafActive = !hasChildren && (pathname === item.url || pathname.startsWith(item.url + "/"))
+
+          if (hasChildren) {
+            const isOpen = openMenus[item.title] ?? false
+            const isParentActive =
+              item.url !== "#" && (pathname === item.url || pathname.startsWith(item.url + "/"))
+
+            return (
+              <Collapsible
+                key={item.title}
+                asChild
+                open={isOpen}
+                onOpenChange={(open) =>
+                  setOpenMenus((prev) => ({ ...prev, [item.title]: open }))
+                }
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    isActive={isAnyChildActive || isParentActive}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      // Open submenu + navigate to parent's own url
+                      setOpenMenus((prev) => ({ ...prev, [item.title]: true }))
+                      if (item.url && item.url !== "#") {
+                        navigate(item.url)
+                      }
+                    }}
+                  >
                     <item.icon />
                     <span>{item.title}</span>
+                    <ChevronDown
+                      className={`ml-auto shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setOpenMenus((prev) => ({
+                          ...prev,
+                          [item.title]: !prev[item.title],
+                        }))
+                      }}
+                    />
                   </SidebarMenuButton>
-                )}
 
-                {/* Submenu Trigger: Only if has children */}
-                {hasChildren && (
-                  <CollapsibleTrigger asChild>
-                    {/* Using a custom styled trigger positioned similarly to SidebarMenuAction */}
-                    <div
-                      role="button"
-                      className="absolute right-1 top-1.5 flex h-6 w-6 items-center justify-center rounded-md p-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:outline-hidden transition-all [&>svg]:size-4 [&>svg]:shrink-0 cursor-pointer"
-                    >
-                      <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                      <span className="sr-only">Toggle {item.title}</span>
-                    </div>
-                  </CollapsibleTrigger>
-                )}
-
-                {hasChildren && (
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {item.items?.map((subItem) => {
-                        const isSubActive = pathname === subItem.url || pathname.startsWith(subItem.url + "/")
+                      {item.items!.map((subItem) => {
+                        // Only the most specific matching sub-item should be active.
+                        // E.g. /metopel/tugas must not highlight Overview (/metopel).
+                        const matches =
+                          pathname === subItem.url || pathname.startsWith(subItem.url + "/")
+                        const moreSpecificMatch = item.items!.some(
+                          (other) =>
+                            other !== subItem &&
+                            (pathname === other.url || pathname.startsWith(other.url + "/")) &&
+                            other.url.length > subItem.url.length
+                        )
+                        const isSubActive = matches && !moreSpecificMatch
                         return (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild isActive={isSubActive}>
@@ -105,9 +140,21 @@ export function NavMain({
                       })}
                     </SidebarMenuSub>
                   </CollapsibleContent>
-                )}
-              </SidebarMenuItem>
-            </Collapsible>
+                </SidebarMenuItem>
+              </Collapsible>
+            )
+          }
+
+          // Leaf item: direct navigation link
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild tooltip={item.title} isActive={isLeafActive}>
+                <Link to={item.url}>
+                  <item.icon />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           )
         })}
       </SidebarMenu>

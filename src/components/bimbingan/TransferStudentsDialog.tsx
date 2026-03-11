@@ -98,8 +98,10 @@ export function TransferStudentsDialog({
                         Transfer Mahasiswa Bimbingan
                     </DialogTitle>
                     <DialogDescription>
-                        Transfer mahasiswa ke dosen pembimbing lain. Dosen tujuan harus
-                        menyetujui terlebih dahulu.
+                        Transfer mahasiswa ke dosen pembimbing lain. Permintaan akan
+                        dikirim ke dosen tujuan dan Ketua Departemen. Dosen tujuan harus
+                        menyetujui terlebih dahulu, lalu Ketua Departemen memberikan
+                        persetujuan akhir.
                     </DialogDescription>
                 </DialogHeader>
 

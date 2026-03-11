@@ -53,12 +53,88 @@ export function formatDateId(date?: string | Date | null): string {
   }
 }
 
+/**
+ * Format a date to "Senin, 2 Maret 2026" (date only, no time, long month name).
+ * Safe for both full ISO timestamps and @db.Date fields (UTC midnight).
+ */
+export function formatDateOnlyId(date?: string | Date | null): string {
+  if (!date) return "-";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "-";
+  try {
+    return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(d);
+  } catch {
+    return d.toLocaleDateString();
+  }
+}
+
+/**
+ * Format a timestamp to "Senin, 2 Maret 2026, 21.35" (long month, with time).
+ */
+export function formatDateTimeId(date?: string | Date | null): string {
+  if (!date) return "-";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "-";
+  try {
+    return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d);
+  } catch {
+    return d.toLocaleString();
+  }
+}
+
+/**
+ * Format a date to "2 Maret 2026" (day + long month + year, no weekday).
+ */
+export function formatDateShortId(date?: string | Date | null): string {
+  if (!date) return "-";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "-";
+  try {
+    return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(d);
+  } catch {
+    return d.toLocaleDateString();
+  }
+}
+
 export function getInitials(name?: string | null): string {
   if (!name) return "??";
   const parts = name.trim().split(/\s+/);
   if (parts.length === 0) return "??";
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/**
+ * Format thesis document display name: NIM_Nama_LaporanTA
+ * e.g. "2011521001_John Doe_LaporanTA"
+ */
+export function formatThesisDocName(nim?: string | null, fullName?: string | null): string {
+  if (!nim && !fullName) return "Dokumen TA";
+  const nimPart = nim || "unknown";
+  const namePart = fullName
+    ? toTitleCaseName(fullName).replace(/\s+/g, '_')
+    : "unknown";
+  return `${nimPart}_${namePart}_LaporanTA`;
 }
 
 

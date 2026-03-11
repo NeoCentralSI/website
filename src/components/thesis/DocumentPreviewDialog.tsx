@@ -25,6 +25,15 @@ export default function DocumentPreviewDialog({ open, onOpenChange, fileName, fi
     } else {
       url = getApiUrl(`/uploads/${normalizedPath}`);
     }
+
+    // Add token for protected thesis files so backend can authenticate via query param
+    const isThesisFile = normalizedPath.includes("thesis/");
+    if (url && isThesisFile) {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        url += (url.includes("?") ? "&" : "?") + `token=${token}`;
+      }
+    }
   }
 
   // Basic preview via iframe; we rely on browser PDF viewer

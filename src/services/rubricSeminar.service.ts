@@ -71,7 +71,6 @@ export interface QuickAddRubricPayload {
     maxScore: number;
     criteriaName?: string;
 }
-
 export interface WeightSummaryDetail {
     cpmkId: string;
     cpmkCode: string;

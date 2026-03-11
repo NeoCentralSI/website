@@ -131,7 +131,7 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
             </div>
 
             <Button variant="default" className="w-full" asChild>
-              <Link to="/tugas-akhir/bimbingan/milestone">
+              <Link to="/tugas-akhir/bimbingan/student/milestone">
                 Lihat Detail <ArrowRight className="h-3 w-3 ml-1" />
               </Link>
             </Button>
@@ -174,7 +174,7 @@ export function MilestoneProgressCard({ className }: MilestoneProgressCardProps)
             </div>
 
             <Button variant="ghost" className="w-full text-xs" asChild>
-              <Link to="/tugas-akhir/bimbingan/milestone">
+              <Link to="/tugas-akhir/bimbingan/student/milestone">
                 Lihat Detail <ArrowRight className="h-3 w-3 ml-1" />
               </Link>
             </Button>

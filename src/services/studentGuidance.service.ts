@@ -10,6 +10,7 @@ export interface GuidanceItem {
   supervisorName?: string;
   studentId?: string;
   studentName?: string;
+  studentNim?: string;
   status: GuidanceStatus;
   // New schema: requestedDate and approvedDate instead of schedule
   requestedDate?: string; // ISO datetime - tanggal diminta mahasiswa
@@ -392,11 +393,39 @@ export const getGuidanceForExport = async (guidanceId: string): Promise<{ succes
   return res.json();
 };
 
+/**
+ * Generate guidance log PDF from TA-06 template via Gotenberg (server-side).
+ * @param guidanceIds specific completed guidance IDs; omit for all completed
+ * @returns Blob of the generated PDF
+ */
+export const generateGuidanceLogPdf = async (guidanceIds?: string[]): Promise<Blob> => {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GENERATE_LOG),
+    {
+      method: "POST",
+      body: JSON.stringify(guidanceIds ? { guidanceIds } : {}),
+    }
+  );
+  if (!res.ok) {
+    // Try to parse JSON error, fallback to generic message
+    let message = "Gagal generate log bimbingan";
+    try {
+      const json = await res.json();
+      if (json.message) message = json.message;
+    } catch {
+      // response is not JSON
+    }
+    throw new Error(message);
+  }
+  return res.blob();
+};
+
 // ========== MY THESIS ==========
 
 export interface MyThesisDetail {
   id: string;
   title: string;
+  isProposal: boolean;
   status: string;
   rating: number | null;
   startDate?: string | null;
@@ -416,7 +445,7 @@ export interface MyThesisDetail {
   academicYear: {
     id: string;
     name: string;
-    year: number;
+    year: string;
     semester: number;
     isActive: boolean;
   } | null;
@@ -425,6 +454,18 @@ export interface MyThesisDetail {
     fileName: string;
     filePath: string;
   } | null;
+  proposalDocument: {
+    id: string;
+    fileName: string;
+    filePath: string;
+  } | null;
+  uploadedFiles: Array<{
+    id: string;
+    fileName: string;
+    filePath: string;
+    uploadedAt: string;
+    guidanceDate: string;
+  }>;
   supervisors: Array<{
     id: string;
     name: string | null;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { getStudentDetail, validateMilestone, createMilestoneForStudent, approveThesisProposalAPI, type CreateMilestoneForStudentDto } from "@/services/lecturerGuidance.service";
+import { getStudentDetail, validateMilestone, requestMilestoneRevision, createMilestoneForStudent, type CreateMilestoneForStudentDto } from "@/services/lecturerGuidance.service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
@@ -11,20 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import EmptyState from "@/components/ui/empty-state";
-import { FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, Check, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
+import { FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
     Dialog,
     DialogContent,
@@ -52,6 +42,7 @@ import { useSeminarReadinessStatus } from "@/hooks/milestone/useMilestone";
 import { ChangeRequestReviewCard } from "@/components/tugas-akhir/lecturer/ChangeRequestReviewCard";
 import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/GuidanceHistorySection";
 import { RefreshButton } from "@/components/ui/refresh-button";
+// import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
 
 const STATUS_LABELS: Record<string, string> = {
     not_started: "Belum Dimulai",
@@ -82,6 +73,7 @@ export default function LecturerMyStudentDetailPage() {
     const [milestoneDescription, setMilestoneDescription] = useState("");
     const [milestoneTargetDate, setMilestoneTargetDate] = useState<Date | undefined>();
     const [milestoneSupervisorNotes, setMilestoneSupervisorNotes] = useState("");
+    const [reviewNotes, setReviewNotes] = useState("");
 
     // Helper to convert backend URLs to absolute URLs
     const getDocumentUrl = (path: string): string => {
@@ -90,7 +82,12 @@ export default function LecturerMyStudentDetailPage() {
         }
         // Backend returns paths WITH /uploads/ prefix, so we need to use it as-is
         // getApiUrl() just prepends base URL: http://localhost:3000 + /uploads/thesis/file.pdf
-        return getApiUrl(path);
+        let url = getApiUrl(path);
+        const token = localStorage.getItem("accessToken");
+        if (token && path.includes("thesis/")) {
+            url += (url.includes("?") ? "&" : "?") + `token=${token}`;
+        }
+        return url;
     };
 
     // Initial breadcrumb, will be updated when data is loaded
@@ -126,27 +123,51 @@ export default function LecturerMyStudentDetailPage() {
         return status === "dibatalkan" || status === "gagal" || status === "cancelled";
     }, [detailData?.status]);
 
-    const isProposed = useMemo(() => {
-        return detailData?.status === "Diajukan";
-    }, [detailData?.status]);
+    const isPembimbing1 = useMemo(() => {
+        if (!detailData?.userRole) return false;
+        const role = detailData.userRole.toLowerCase();
+        return role === "pembimbing 1" || role === "pembimbing1";
+    }, [detailData?.userRole]);
 
-    const approveProposalMutation = useMutation({
-        mutationFn: () => approveThesisProposalAPI(thesisId!),
-        onSuccess: () => {
-            toast.success("Proposal berhasil disetujui. Status mahasiswa kini Aktif.");
-            queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
-            queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
-        },
-        onError: (error: Error) => {
-            toast.error(error.message);
-        }
-    });
+    // const isProposed = useMemo(() => {
+    //     return detailData?.status === "Diajukan";
+    // }, [detailData?.status]);
+
+    // const approveProposalMutation = useMutation({
+    //     mutationFn: () => approveThesisProposalAPI(thesisId!),
+    //     onSuccess: () => {
+    //         toast.success("Proposal berhasil disetujui. Status mahasiswa kini Aktif.");
+    //         queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
+    //         queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
+    //     },
+    //     onError: (error: Error) => {
+    //         toast.error(error.message);
+    //     }
+    // });
 
     const validateMutation = useMutation({
-        mutationFn: (milestoneId: string) => validateMilestone(milestoneId),
+        mutationFn: ({ id, notes }: { id: string, notes?: string }) => validateMilestone(id, notes),
         onSuccess: () => {
             toast.success("Milestone berhasil divalidasi");
             queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
+            setSelectedMilestoneId(null);
+            setReviewNotes("");
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+        onSettled: () => {
+            setValidatingId(null);
+        }
+    });
+
+    const requestRevisionMutation = useMutation({
+        mutationFn: ({ id, notes }: { id: string, notes: string }) => requestMilestoneRevision(id, notes),
+        onSuccess: () => {
+            toast.success("Permintaan revisi berhasil dikirim");
+            queryClient.invalidateQueries({ queryKey: ['student-detail', thesisId] });
+            setSelectedMilestoneId(null);
+            setReviewNotes("");
         },
         onError: (error: Error) => {
             toast.error(error.message);
@@ -191,11 +212,19 @@ export default function LecturerMyStudentDetailPage() {
 
     const handleValidate = () => {
         if (selectedMilestoneId) {
-            const id = selectedMilestoneId;
-            setValidatingId(id);
-            setSelectedMilestoneId(null);
-            validateMutation.mutate(id);
+            setValidatingId(selectedMilestoneId);
+            validateMutation.mutate({ id: selectedMilestoneId, notes: reviewNotes.trim() || undefined });
         }
+    };
+
+    const handleRequestRevision = () => {
+        if (!selectedMilestoneId) return;
+        if (!reviewNotes.trim()) {
+            toast.error("Catatan revisi wajib diisi");
+            return;
+        }
+        setValidatingId(selectedMilestoneId);
+        requestRevisionMutation.mutate({ id: selectedMilestoneId, notes: reviewNotes.trim() });
     };
 
     // Update breadcrumb with student name when data is loaded
@@ -271,7 +300,7 @@ export default function LecturerMyStudentDetailPage() {
             </div>
 
             {/* Approval Proposal Banner */}
-            {isProposed && (
+            {/* {isProposed && (
                 <Alert className="border-blue-200 bg-blue-50">
                     <BookOpen className="h-5 w-5 text-blue-600" />
                     <div className="ml-2 w-full">
@@ -300,7 +329,7 @@ export default function LecturerMyStudentDetailPage() {
                         </div>
                     </div>
                 </Alert>
-            )}
+            )} */}
 
             {/* Cancelled/Failed Banner */}
             {isCancelled && (
@@ -345,7 +374,7 @@ export default function LecturerMyStudentDetailPage() {
             )}
 
             {/* Seminar Readiness Card - tampilkan bagi mahasiswa aktif untuk monitoring */}
-            {detailData.status === "Aktif" && thesisId && (
+            {(detailData.status === "Bimbingan" || detailData.status === "Acc Seminar") && thesisId && (
                 <SeminarReadinessCard
                     thesisId={thesisId}
                     studentName={detailData.student.fullName}
@@ -377,7 +406,7 @@ export default function LecturerMyStudentDetailPage() {
                         </div>
                         {detailData.status && (
                             <Badge
-                                variant={detailData.status === "Aktif" ? "default" : "secondary"}
+                                variant={detailData.status === "Bimbingan" ? "default" : "secondary"}
                             >
                                 {detailData.status.toUpperCase()}
                             </Badge>
@@ -428,7 +457,7 @@ export default function LecturerMyStudentDetailPage() {
                             </div>
                         </div>
 
-                
+
                         <Separator />
 
                         {/* Documents Section */}
@@ -466,7 +495,7 @@ export default function LecturerMyStudentDetailPage() {
                                 <div className="p-3 rounded-xl bg-background/50 border hover:bg-background/80 transition-colors">
                                     <div className="flex items-center justify-between mb-2">
                                         <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-600">
-                                            Draft Skripsi
+                                            Draft Laporan Tugas Akhir
                                         </Badge>
                                     </div>
                                     {detailData.document ? (
@@ -483,14 +512,58 @@ export default function LecturerMyStudentDetailPage() {
                                             </Button>
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-muted-foreground italic">Belum ada draft skripsi</p>
+                                        <p className="text-sm text-muted-foreground italic">Belum ada draft laporan tugas akhir</p>
                                     )}
                                 </div>
                             </div>
                         </div>
+
+                        {/* File Version History */}
+                        {detailData.uploadedFiles && detailData.uploadedFiles.length > 0 && (
+                            <div className="pt-2">
+                                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-3">
+                                    <Clock className="h-4 w-4" /> Riwayat File Upload ({detailData.uploadedFiles.length})
+                                </span>
+                                <div className="max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent space-y-2">
+                                    {detailData.uploadedFiles.map((file, idx) => {
+                                        const fileUrl = getDocumentUrl(
+                                            file.filePath.startsWith('uploads/') || file.filePath.startsWith('/uploads/') ||
+                                                file.filePath.startsWith('uploads\\') || file.filePath.startsWith('\\uploads\\')
+                                                ? (file.filePath.startsWith('/') || file.filePath.startsWith('\\') ? file.filePath : `/${file.filePath}`)
+                                                : `/uploads/${file.filePath}`
+                                        );
+                                        return (
+                                            <div key={file.id} className="flex items-center gap-3 p-2 rounded-lg border bg-background/50 hover:bg-background/80 transition-colors">
+                                                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-medium truncate">{file.fileName}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {file.guidanceDate ? formatDateId(file.guidanceDate) : formatDateId(file.uploadedAt)}
+                                                    </p>
+                                                </div>
+                                                {idx === 0 && (
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal bg-green-50 border-green-200 text-green-600 shrink-0">
+                                                        Terbaru
+                                                    </Badge>
+                                                )}
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
+                                                    <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                                                        <Download className="h-3.5 w-3.5" />
+                                                    </a>
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
+            {/* Supervisor Metopen Score Card */}
+            {/* {thesisId && (
+                <SupervisorScoreCard thesisId={thesisId} scoreData={detailData.researchMethodScore} />
+            )} */}
 
             {/* Guidance History & Milestone side by side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -502,18 +575,20 @@ export default function LecturerMyStudentDetailPage() {
                 <Card className="h-full">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Riwayat Milestone</CardTitle>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setCreateMilestoneOpen(true)}
-                            disabled={isCancelled}
-                        >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Tambah
-                        </Button>
+                        {isPembimbing1 && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setCreateMilestoneOpen(true)}
+                                disabled={isCancelled}
+                            >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Tambah
+                            </Button>
+                        )}
                     </CardHeader>
                     <CardContent className="px-2 sm:px-6">
-                        <div className="h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                        <div className="h-150 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                             <div className="relative border-l ml-3 space-y-8 my-2 pt-2">
                                 {detailData.milestones && detailData.milestones.length > 0 ? (
                                     detailData.milestones.map((milestone) => (
@@ -538,19 +613,21 @@ export default function LecturerMyStudentDetailPage() {
                                                             size="icon"
                                                             className={cn(
                                                                 "h-6 w-6 transition-opacity",
-                                                                milestone.progressPercentage < 100 ? "opacity-50 cursor-not-allowed" : "opacity-100 hover:bg-green-50 text-green-600"
+                                                                (!isPembimbing1 || (milestone.progressPercentage < 100 && milestone.status !== 'pending_review')) ? "opacity-30 cursor-not-allowed" : "opacity-100 hover:bg-primary/10 text-primary"
                                                             )}
                                                             title={
                                                                 isCancelled
-                                                                    ? "Tidak dapat memvalidasi karena tugas akhir dibatalkan"
-                                                                    : milestone.progressPercentage < 100
-                                                                        ? "Milestone belum mencapai 100%"
-                                                                        : "Validasi Milestone"
+                                                                    ? "Tidak dapat memproses karena tugas akhir dibatalkan"
+                                                                    : !isPembimbing1
+                                                                        ? "Hanya Pembimbing 1 yang dapat melakukan review"
+                                                                        : (milestone.progressPercentage < 100 && milestone.status !== 'pending_review')
+                                                                            ? "Milestone belum mencapai 100%"
+                                                                            : "Review Milestone"
                                                             }
-                                                            disabled={milestone.progressPercentage < 100 || isCancelled}
+                                                            disabled={!isPembimbing1 || (milestone.progressPercentage < 100 && milestone.status !== 'pending_review') || isCancelled}
                                                             onClick={() => setSelectedMilestoneId(milestone.id)}
                                                         >
-                                                            <Check className="h-4 w-4" />
+                                                            <CheckCircle2 className="h-4 w-4" />
                                                         </Button>
                                                     )}
                                                 </div>
@@ -597,23 +674,55 @@ export default function LecturerMyStudentDetailPage() {
                 </Card>
             </div>
 
-            <AlertDialog open={!!selectedMilestoneId} onOpenChange={(open) => !open && setSelectedMilestoneId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Validasi Milestone</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Apakah Anda yakin ingin menyetujui milestone ini sebagai selesai?
-                            Tindakan ini akan mengubah status milestone menjadi <strong>Selesai</strong>.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleValidate} disabled={validateMutation.isPending}>
-                            {validateMutation.isPending ? "Memproses..." : "Ya, Validasi"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <Dialog open={!!selectedMilestoneId} onOpenChange={(open) => {
+                if (!open) {
+                    setSelectedMilestoneId(null);
+                    setReviewNotes("");
+                }
+            }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Review Milestone</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="review-notes">Catatan Feedback</Label>
+                            <Textarea
+                                id="review-notes"
+                                placeholder="Tulis catatan feedback atau instruksi revisi..."
+                                value={reviewNotes}
+                                onChange={(e) => setReviewNotes(e.target.value)}
+                                rows={4}
+                            />
+                            <p className="text-[10px] text-muted-foreground">Catatan wajib diisi jika meminta revisi.</p>
+                        </div>
+                    </div>
+                    <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                            variant="destructive"
+                            className="w-full sm:w-auto"
+                            onClick={handleRequestRevision}
+                            disabled={requestRevisionMutation.isPending || validateMutation.isPending}
+                        >
+                            {requestRevisionMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : null}
+                            Minta Revisi
+                        </Button>
+                        <Button
+                            variant="default"
+                            className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                            onClick={handleValidate}
+                            disabled={requestRevisionMutation.isPending || validateMutation.isPending}
+                        >
+                            {validateMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : null}
+                            Setujui
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Create Milestone Dialog */}
             <Dialog
