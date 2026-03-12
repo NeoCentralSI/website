@@ -116,29 +116,33 @@ export function SeminarReadinessStatusCard({
           </div>
         )}
 
-        {/* Combined status message if full or if only one is not complete */}
-        {displayMode === "full" && (
-          <div className="flex flex-col gap-1.5 pt-1">
-            {!isGuidanceComplete && !isMilestoneComplete && (
-              <p className="text-xs text-yellow-600 font-medium flex items-center gap-1.5 bg-yellow-50 p-2 rounded-lg border border-yellow-100">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                Lengkapi bimbingan dan milestone Anda.
-              </p>
-            )}
-            {isGuidanceComplete && !isMilestoneComplete && (
-              <p className="text-xs text-blue-600 font-medium flex items-center gap-1.5 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                Bimbingan cukup. Selesaikan milestone Anda.
-              </p>
-            )}
-            {!isGuidanceComplete && isMilestoneComplete && (
-              <p className="text-xs text-blue-600 font-medium flex items-center gap-1.5 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                Milestone selesai. Lengkapi sesi bimbingan.
-              </p>
-            )}
-          </div>
-        )}
+        {/* Combined status message */}
+        <div className="flex flex-col gap-1.5 pt-1">
+          {!isGuidanceComplete && !isMilestoneComplete && displayMode === "full" && (
+            <p className="text-xs text-yellow-600 font-medium flex items-center gap-1.5 bg-yellow-50 p-2 rounded-lg border border-yellow-100">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              Lengkapi bimbingan dan milestone Anda.
+            </p>
+          )}
+          {isGuidanceComplete && !isMilestoneComplete && (
+            <p className="text-xs text-blue-600 font-medium flex items-center gap-1.5 bg-blue-50 p-2 rounded-lg border border-blue-100">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Bimbingan cukup. Selesaikan milestone Anda.
+            </p>
+          )}
+          {!isGuidanceComplete && isMilestoneComplete && (
+            <p className="text-xs text-blue-600 font-medium flex items-center gap-1.5 bg-blue-50 p-2 rounded-lg border border-blue-100">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Milestone selesai. Lengkapi sesi bimbingan.
+            </p>
+          )}
+          {isGuidanceComplete && isMilestoneComplete && !isFullyApproved && (
+            <p className="text-xs text-green-600 font-medium flex items-center gap-1.5 bg-green-50 p-2 rounded-lg border border-green-100">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Syarat seminar terpenuhi. Menunggu persetujuan pembimbing.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -174,7 +178,7 @@ export function SeminarReadinessStatusCard({
           <CardDescription>
             {isFullyApproved
               ? "Semua pembimbing telah menyetujui. Anda dapat mendaftar seminar."
-              : "Milestone 100% selesai. Menunggu persetujuan pembimbing."}
+              : "Menunggu persetujuan pembimbing."}
           </CardDescription>
         </CardHeader>
       )}
@@ -210,7 +214,7 @@ export function SeminarReadinessStatusCard({
       )}
 
       {/* Fully Approved Alert */}
-      {isFullyApproved && (
+      {isFullyApproved ? (
         <Alert className="border-green-300 bg-green-100/50 py-2">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertTitle className="text-green-800 text-sm">Siap Daftar Seminar!</AlertTitle>
@@ -218,6 +222,16 @@ export function SeminarReadinessStatusCard({
             Kedua pembimbing telah menyetujui kesiapan seminar Anda.
           </AlertDescription>
         </Alert>
+      ) : (
+        isMilestoneComplete && isGuidanceComplete && (
+          <Alert className="border-green-200 bg-green-50 py-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800 text-sm">Syarat Seminar Terpenuhi!</AlertTitle>
+            <AlertDescription className="text-green-700 text-xs">
+              Menunggu persetujuan dari dosen pembimbing.
+            </AlertDescription>
+          </Alert>
+        )
       )}
 
       {/* Supervisor Approval Status */}

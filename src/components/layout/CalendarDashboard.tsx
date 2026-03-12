@@ -124,10 +124,14 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
     setIsSyncing(true);
     try {
       // Always re-check status first, then refetch if access is available
-      await queryClient.invalidateQueries({ queryKey: ['outlook-calendar-status'] });
+      const freshStatus = await queryClient.fetchQuery({
+        queryKey: ['outlook-calendar-status'],
+        queryFn: checkOutlookCalendarAccess,
+      });
+
       await refetchInternal();
-      // Re-check if we now have access after status refresh
-      const freshStatus = queryClient.getQueryData<{ hasCalendarAccess: boolean }>(['outlook-calendar-status']);
+
+      // Check if we have access from the fresh status
       if (freshStatus?.hasCalendarAccess) {
         await refetchOutlook();
       }
