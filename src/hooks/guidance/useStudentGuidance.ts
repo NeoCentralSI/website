@@ -31,6 +31,7 @@ export function useStudentGuidance() {
         throw error;
       }
     },
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   const items: GuidanceItem[] = useMemo(() => (Array.isArray(data) ? data : []), [data]);

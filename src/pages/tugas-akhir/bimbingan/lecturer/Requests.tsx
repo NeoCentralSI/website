@@ -34,11 +34,15 @@ export default function LecturerBimbinganPage() {
   const requestsQuery = useQuery({
     queryKey: ['lecturer-requests'],
     queryFn: () => getPendingRequests({ pageSize: 100 }),
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 0,
   });
 
   const scheduledQuery = useQuery({
     queryKey: ['lecturer-scheduled'],
     queryFn: () => getScheduledGuidances({ pageSize: 100 }),
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 0,
   });
 
   const isLoading = requestsQuery.isLoading || scheduledQuery.isLoading;

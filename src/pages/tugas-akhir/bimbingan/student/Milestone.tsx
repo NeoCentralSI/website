@@ -456,6 +456,7 @@ export default function StudentMilestonePage() {
                 <SeminarReadinessStatusCard
                   thesisId={thesisId}
                   className="mb-4"
+                  displayMode="milestone"
                 />
               )}
 

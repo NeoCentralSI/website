@@ -71,6 +71,7 @@ const ENDPOINTS = {
   DEFENCE_READINESS_APPROVE: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness/approve`,
   DEFENCE_READINESS_REVOKE: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness/revoke`,
   REQUEST_DEFENCE: (thesisId: string) => `/milestones/thesis/${thesisId}/request-defence`,
+  SEMINAR_REMIND: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness/remind`,
 };
 
 // ============================================
@@ -772,4 +773,20 @@ export async function requestDefence(
 
   const result = await response.json();
   return result.data;
+}
+
+/**
+ * Send reminder to supervisors for seminar readiness approval
+ */
+export async function remindSeminarApproval(thesisId: string): Promise<{ success: boolean; message: string }> {
+  const response = await apiRequest(getApiUrl(ENDPOINTS.SEMINAR_REMIND(thesisId)), {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengirim pengingat");
+  }
+
+  return response.json();
 }

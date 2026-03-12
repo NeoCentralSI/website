@@ -27,7 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -298,7 +298,26 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
     },
     {
       key: "lastActivity",
-      header: "Aktivitas Terakhir",
+      header: (
+        <div className="flex items-center justify-center gap-1">
+          <span>Aktivitas Terakhir</span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help mb-0.5" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p className="font-semibold mb-1">Indikator Aktivitas Terakhir:</p>
+                <ul className="list-disc list-inside text-xs space-y-0.5">
+                  <li>Approval Catatan Bimbingan</li>
+                  <li>Approval Milestone</li>
+                  <li>Approval Seminar</li>
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      ),
       render: (thesis) => (
         <span className="text-sm text-muted-foreground whitespace-nowrap">
           {formatDateId(thesis.lastActivity)}
