@@ -337,9 +337,9 @@ function App() {
                   <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/yudisium" element={<Navigate to="/kelola/yudisium/event" replace />} />
-                  <Route path="/kelola/yudisium/event" element={<KelolaYudisiumPage />} />
-                  <Route path="/kelola/yudisium/persyaratan" element={<KelolaYudisiumPage />} />
-                  <Route path="/kelola/yudisium/exit-survey" element={<KelolaYudisiumPage />} />
+                  <Route path="/kelola/yudisium/event" element={<LecturerYudisiumPage />} />
+                  <Route path="/kelola/yudisium/persyaratan" element={<LecturerYudisiumPage />} />
+                  <Route path="/kelola/yudisium/exit-survey" element={<LecturerYudisiumPage />} />
                 </Route>
 
                 {/* Kelola - Kadep */}
