@@ -79,6 +79,7 @@ export default function LecturerYudisiumPage() {
         onRefresh={refetch}
         isDeleting={isDeleting}
         canManage={canManageYudisiumMaster}
+        canViewDetail
       />
     );
   };

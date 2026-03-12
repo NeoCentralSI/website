@@ -6,12 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/spinner';
-import { CheckCircle2, Circle, Clock, CalendarRange, BookOpenText } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, CalendarRange, BookOpenText, Download, PartyPopper } from 'lucide-react';
 import { useStudentYudisiumOverview } from '@/hooks/yudisium/useStudentYudisium';
 import type { StudentYudisiumChecklistItem } from '@/types/studentYudisium.types';
 import { UploadDokumenYudisium } from '@/components/yudisium/UploadDokumenYudisium';
 import emptyAnimation from '@/assets/lottie/empty.json';
 import { formatDateOnlyId } from '@/lib/text';
+import { openProtectedFile } from '@/lib/protected-file';
+import { toast } from 'sonner';
 
 const formatDateTime = (date: string | null | undefined) => {
   if (!date) return '-';
@@ -72,36 +74,63 @@ function getActiveStepIndex(
   participantStatus: ParticipantStatus,
   allChecklistMet: boolean,
   allDocumentsUploaded: boolean,
+  allCplVerified: boolean,
+  hasDecree: boolean,
+  eventDate: string | null,
 ): number {
+  // Finalized = everything complete (all steps green)
+  if (status === 'finalized' || participantStatus === 'finalized') return 5;
+
   if (!allChecklistMet) return 0;
 
-  // Participant status is the source of truth for document validation progression.
   const isPastDocumentValidation = ['under_review', 'approved', 'finalized'].includes(participantStatus ?? 'registered');
   const documentsCompleted = allDocumentsUploaded || isPastDocumentValidation;
   if (!documentsCompleted) return 1;
 
-  if (status === 'in_review') return 3;
-  if (status === 'finalized') return 4;
+  // CPL step
+  if (!allCplVerified) return 2;
 
-  // At minimum, completed documents should mark "Dokumen Yudisium Lengkap" as checked.
-  return 2;
+  // Decree/schedule step
+  if (!hasDecree) return 3;
+
+  // Check if event date has passed or is today
+  if (eventDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const event = new Date(eventDate);
+    event.setHours(0, 0, 0, 0);
+    if (today >= event) return 4; // On or past event date
+  }
+
+  // Decree exists but event not yet
+  return 4;
 }
 
-function YudisiumStatusStepper({ currentStep }: { currentStep: number }) {
+function YudisiumStatusStepper({ currentStep, isFinalized }: { currentStep: number; isFinalized: boolean }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-card p-6">
-      <h3 className="text-lg font-semibold mb-6">Status Yudisium</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold">Status Yudisium</h3>
+        {isFinalized && (
+          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+            <PartyPopper className="mr-1 h-3 w-3" />
+            Selesai
+          </Badge>
+        )}
+      </div>
       <div className="flex items-center">
         {STEPS.map((step, index) => {
           const isCompleted = index < currentStep;
           const isCurrent = index === currentStep;
+          const completedColor = isFinalized ? 'bg-emerald-500 border-emerald-500' : 'border-primary bg-primary';
+          const completedLineColor = isFinalized ? 'bg-emerald-500' : 'bg-primary';
 
           return (
             <div key={step.key} className="flex flex-1 flex-col items-center">
               <div className="flex w-full items-center">
                 <div
                   className={`h-0.5 flex-1 ${
-                    index === 0 ? 'bg-transparent' : isCompleted ? 'bg-primary' : 'bg-muted'
+                    index === 0 ? 'bg-transparent' : isCompleted ? completedLineColor : 'bg-muted'
                   }`}
                 />
                 <div
@@ -109,7 +138,7 @@ function YudisiumStatusStepper({ currentStep }: { currentStep: number }) {
                     isCurrent
                       ? 'border-primary bg-primary/10 text-primary'
                       : isCompleted
-                        ? 'border-primary bg-primary text-primary-foreground'
+                        ? `${completedColor} text-primary-foreground`
                         : 'border-muted bg-muted/30 text-muted-foreground'
                   }`}
                 >
@@ -117,13 +146,15 @@ function YudisiumStatusStepper({ currentStep }: { currentStep: number }) {
                 </div>
                 <div
                   className={`h-0.5 flex-1 ${
-                    index === STEPS.length - 1 ? 'bg-transparent' : isCompleted ? 'bg-primary' : 'bg-muted'
+                    index === STEPS.length - 1 ? 'bg-transparent' : isCompleted ? completedLineColor : 'bg-muted'
                   }`}
                 />
               </div>
               <span
                 className={`mt-2 max-w-[100px] text-center text-xs ${
-                  isCompleted || isCurrent ? 'text-primary font-medium' : 'text-muted-foreground'
+                  isCompleted || isCurrent
+                    ? isFinalized ? 'text-emerald-600 font-medium' : 'text-primary font-medium'
+                    : 'text-muted-foreground'
                 }`}
               >
                 {step.label}
@@ -198,14 +229,19 @@ export default function StudentYudisium() {
 
   const checklistItems = data ? checklistEntries(data.checklist) : [];
   const allDocumentsUploaded = (data?.requirements ?? []).every((item) => item.isUploaded);
+  const hasDecree = !!(data?.yudisium?.decreeDocument);
   const currentStep = data?.yudisium
     ? getActiveStepIndex(
       data.yudisium.status as YudisiumStatus,
       data.participantStatus ?? null,
       data.allChecklistMet,
       allDocumentsUploaded,
+      data.allCplVerified,
+      hasDecree,
+      data.yudisium.eventDate,
     )
     : 0;
+  const isFinalized = currentStep >= 5;
 
   const statusBadge = data?.yudisium
     ? STATUS_BADGE_MAP[data.yudisium.status as YudisiumStatus] || STATUS_BADGE_MAP.draft
@@ -251,7 +287,7 @@ export default function StudentYudisium() {
         </Card>
       ) : (
         <div className="space-y-6">
-          <YudisiumStatusStepper currentStep={currentStep} />
+          <YudisiumStatusStepper currentStep={currentStep} isFinalized={isFinalized} />
 
           <Card>
             <CardHeader className="pb-3">
@@ -299,6 +335,112 @@ export default function StudentYudisium() {
 
             <UploadDokumenYudisium allChecklistMet={data.allChecklistMet} />
           </div>
+
+          {/* CPL Scores Section */}
+          {data.cplScores.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold">Validasi Capaian Pembelajaran Lulusan</CardTitle>
+                  {data.allCplVerified && (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                      <CheckCircle2 className="mr-1 h-3 w-3" />
+                      Semua CPL Tervalidasi
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {data.allCplVerified && (
+                  <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                    <p className="text-sm font-medium text-emerald-700">
+                      Selamat! Anda telah menjadi <strong>Calon Peserta Yudisium</strong>.
+                    </p>
+                  </div>
+                )}
+                <div className="overflow-x-auto rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40">
+                      <tr className="border-b">
+                        <th className="px-3 py-2 text-left">Kode CPL</th>
+                        <th className="px-3 py-2 text-left">Deskripsi</th>
+                        <th className="px-3 py-2 text-left">Nilai</th>
+                        <th className="px-3 py-2 text-left">Skor Minimal</th>
+                        <th className="px-3 py-2 text-left">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.cplScores.map((cpl, idx) => (
+                        <tr key={idx} className="border-b">
+                          <td className="px-3 py-2">{cpl.code ?? '-'}</td>
+                          <td className="px-3 py-2">{cpl.description}</td>
+                          <td className="px-3 py-2">{cpl.score ?? '-'}</td>
+                          <td className="px-3 py-2">{cpl.minimalScore}</td>
+                          <td className="px-3 py-2">
+                            <Badge variant="outline" className={
+                              cpl.status === 'verified'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : cpl.passed
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-red-50 text-red-700 border-red-200'
+                            }>
+                              {cpl.status === 'verified' ? 'Tervalidasi' : cpl.passed ? 'Lulus' : 'Tidak Lulus'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Decree / SK Section */}
+          {hasDecree && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold">Surat Keputusan Yudisium</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Nomor SK</p>
+                    <p className="font-medium">{data.yudisium.decreeNumber ?? '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Tanggal Ditetapkan</p>
+                    <p className="font-medium">{formatDateOnly(data.yudisium.decreeIssuedAt)}</p>
+                  </div>
+                  {data.yudisium.eventDate && (
+                    <div>
+                      <p className="text-muted-foreground">Tanggal Yudisium</p>
+                      <p className="font-medium">{formatDateOnly(data.yudisium.eventDate)}</p>
+                    </div>
+                  )}
+                </div>
+                {data.yudisium.decreeDocument?.filePath && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await openProtectedFile(
+                          data.yudisium!.decreeDocument!.filePath!,
+                          data.yudisium!.decreeDocument!.fileName ?? 'SK-Yudisium.pdf'
+                        );
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : 'Gagal mengunduh SK');
+                      }
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Unduh SK Yudisium
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>

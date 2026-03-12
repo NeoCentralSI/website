@@ -59,6 +59,13 @@ export type StudentYudisiumOverviewResponse = {
     registrationOpenDate: string | null;
     registrationCloseDate: string | null;
     eventDate: string | null;
+    decreeNumber?: string | null;
+    decreeIssuedAt?: string | null;
+    decreeDocument?: {
+      id: string;
+      fileName: string | null;
+      filePath: string | null;
+    } | null;
     exitSurveyForm: {
       id: string;
       name: string;
@@ -71,5 +78,14 @@ export type StudentYudisiumOverviewResponse = {
   } | null;
   checklist: StudentYudisiumChecklist;
   allChecklistMet: boolean;
+  allCplVerified: boolean;
+  cplScores: {
+    code: string | null;
+    description: string;
+    score: number | null;
+    minimalScore: number;
+    status: string;
+    passed: boolean;
+  }[];
   requirements: StudentYudisiumRequirement[];
 };

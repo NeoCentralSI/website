@@ -93,6 +93,20 @@ export const API_CONFIG = {
       VALIDATE_DOCUMENT: (participantId: string, requirementId: string) =>
         `/yudisium/admin/participants/${participantId}/requirements/${requirementId}/validate`,
     },
+    YUDISIUM_LECTURER: {
+      EVENTS: '/yudisium/lecturer/events',
+      PARTICIPANTS: (yudisiumId: string) => `/yudisium/lecturer/${yudisiumId}/participants`,
+      PARTICIPANT_DETAIL: (participantId: string) => `/yudisium/lecturer/participants/${participantId}`,
+      CPL_SCORES: (participantId: string) => `/yudisium/lecturer/participants/${participantId}/cpl-scores`,
+      VERIFY_CPL: (participantId: string, cplId: string) =>
+        `/yudisium/lecturer/participants/${participantId}/cpl/${cplId}/verify`,
+      CREATE_CPL_RECOMMENDATION: (participantId: string) =>
+        `/yudisium/lecturer/participants/${participantId}/cpl-recommendation`,
+      UPDATE_CPL_RECOMMENDATION_STATUS: (recommendationId: string) =>
+        `/yudisium/lecturer/cpl-recommendation/${recommendationId}/status`,
+      DRAFT_SK: (yudisiumId: string) => `/yudisium/lecturer/${yudisiumId}/draft-sk`,
+      UPLOAD_SK: (yudisiumId: string) => `/yudisium/lecturer/${yudisiumId}/upload-sk`,
+    },
     NOTIFICATION: {
       BASE: '/notification',
       UNREAD_COUNT: '/notification/unread-count',
@@ -268,9 +282,9 @@ export const API_CONFIG = {
         `/thesisDefence/lecturer/assignment/${defenceId}`,
     },
     LECTURER_AVAILABILITY: {
-      BASE: '/lecturerAvailability',
-      BY_ID: (id: string) => `/lecturerAvailability/${id}`,
-      TOGGLE: (id: string) => `/lecturerAvailability/${id}/toggle`,
+      BASE: '/lecturer-availability',
+      BY_ID: (id: string) => `/lecturer-availability/${id}`,
+      TOGGLE: (id: string) => `/lecturer-availability/${id}/toggle`,
     },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',

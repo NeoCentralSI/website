@@ -5,15 +5,18 @@ import {
   Database,
   FileText,
   SquareTerminal,
-  GraduationCap
+  GraduationCap,
+  Megaphone
 } from "lucide-react";
 import { useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useAdvisorAccessState } from "./useAdvisorAccessState";
 
 export const useSidebarMenu = () => {
+  const { pathname } = useLocation();
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1, isDosenPengampuMetopel } = useRole();
   const { user: authUser } = useAuth();
 
@@ -93,6 +96,23 @@ export const useSidebarMenu = () => {
             { title: "Sidang", url: "/tugas-akhir/sidang" },
           ],
         },
+                  {
+          title: "Pengumuman",
+          url: "/pengumuman",
+          icon: Megaphone,
+          items: [
+            {
+              title: "Seminar Hasil",
+              url: "/pengumuman/seminar-hasil",
+              isActive: pathname.startsWith("/pengumuman/seminar-hasil"),
+            },
+            {
+              title: "Yudisium",
+              url: "/pengumuman/yudisium",
+              isActive: pathname.startsWith("/pengumuman/yudisium"),
+            },
+          ],
+          },
         // Yudisium — leaf item (no children)
         {
           title: "Yudisium",
@@ -100,6 +120,7 @@ export const useSidebarMenu = () => {
           icon: GraduationCap,
           items: [],
         },
+        
       ];
 
       return {

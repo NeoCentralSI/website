@@ -38,6 +38,7 @@ interface YudisiumTableProps {
     onRefresh: () => void;
     isDeleting: boolean;
     canManage: boolean;
+    canViewDetail?: boolean;
 }
 
 export function YudisiumTable({
@@ -50,6 +51,7 @@ export function YudisiumTable({
     onRefresh,
     isDeleting,
     canManage,
+    canViewDetail = true,
 }: YudisiumTableProps) {
     const navigate = useNavigate();
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -130,7 +132,7 @@ export function YudisiumTable({
             },
         ];
 
-        if (canManage) {
+        if (canManage || canViewDetail) {
             cols.push({
                 key: 'actions',
                 header: 'Aksi',
@@ -138,45 +140,51 @@ export function YudisiumTable({
                 className: 'text-right',
                 render: (item) => (
                     <div className="flex items-center justify-end gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            title="Detail"
-                            onClick={() => navigate(`/yudisium/lecturer/event/${item.id}`)}
-                        >
-                            <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            onClick={() => setEditItem(item)}
-                            title="Edit"
-                        >
-                            <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => setDeleteId(item.id)}
-                            disabled={isDeleting || !item.canDelete}
-                            title={
-                                item.canDelete
-                                    ? 'Hapus'
-                                    : 'Tidak dapat menghapus data yang sudah memiliki relasi'
-                            }
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {canViewDetail && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                title="Detail"
+                                onClick={() => navigate(`/yudisium/lecturer/event/${item.id}`)}
+                            >
+                                <Eye className="h-4 w-4" />
+                            </Button>
+                        )}
+                        {canManage && (
+                            <>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                    onClick={() => setEditItem(item)}
+                                    title="Edit"
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    onClick={() => setDeleteId(item.id)}
+                                    disabled={isDeleting || !item.canDelete}
+                                    title={
+                                        item.canDelete
+                                            ? 'Hapus'
+                                            : 'Tidak dapat menghapus data yang sudah memiliki relasi'
+                                    }
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </>
+                        )}
                     </div>
                 ),
             });
         }
 
         return cols;
-    }, [canManage, isDeleting, navigate]);
+    }, [canManage, canViewDetail, isDeleting, navigate]);
 
     return (
         <>

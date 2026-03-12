@@ -96,6 +96,7 @@ const StudentYudisiumPage = lazy(() => import('./pages/yudisium/StudentYudisium'
 const StudentExitSurveyPage = lazy(() => import('./pages/yudisium/StudentExitSurvey'))
 const LecturerYudisiumPage = lazy(() => import('./pages/yudisium/LecturerYudisium'))
 const LecturerYudisiumDetailPage = lazy(() => import('./pages/yudisium/LecturerYudisiumDetail'))
+const YudisiumParticipantCPLValidationPage = lazy(() => import('./pages/yudisium/YudisiumParticipantCPLValidation'))
 const AdminYudisiumPage = lazy(() => import('./pages/yudisium/AdminYudisium'))
 const AdminYudisiumValidationPage = lazy(() => import('./pages/yudisium/AdminYudisiumValidation'))
 const YudisiumParticipantDetailPage = lazy(() => import('./pages/yudisium/YudisiumParticipantDetail'))
@@ -219,7 +220,7 @@ function App() {
                 {/* Pengumuman routes */}
                 <Route path="/pengumuman" element={<PengumumanOverviewPage />} />
                 <Route path="/pengumuman/seminar-hasil" element={<SeminarHasilAnnouncementPage />} />
-                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
+              <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
               </Route>
 
               {/* Shared Routes (Student & Lecturer & Others) */}
@@ -246,6 +247,11 @@ function App() {
                 <Route path="/yudisium/lecturer" element={<Navigate to="/yudisium/lecturer/event" replace />} />
                 <Route path="/yudisium/lecturer/event" element={<LecturerYudisiumPage />} />
                 <Route path="/yudisium/lecturer/event/:id" element={<LecturerYudisiumDetailPage />} />
+                <Route path="/yudisium/lecturer/event/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
+              </Route>
+
+              <Route element={<RoleGuard allowedRoles={[ROLES.GKM, ROLES.TIM_PENGELOLA_CPL]} />}>
+                <Route path="/yudisium/lecturer/event/:id/participant/:participantId/cpl-validation" element={<YudisiumParticipantCPLValidationPage />} />
               </Route>
 
               {/* Yudisium - Restricted Lecturer Tabs */}

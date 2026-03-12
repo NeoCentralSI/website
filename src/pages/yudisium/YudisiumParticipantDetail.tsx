@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/spinner';
 import { ArrowLeft, FileText, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { useAdminYudisiumParticipantDetail } from '@/hooks/yudisium/useAdminYudisium';
+import { useLecturerYudisiumParticipantDetail } from '@/hooks/yudisium/useLecturerYudisium';
 import { openProtectedFile } from '@/lib/protected-file';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
 import { toast } from 'sonner';
@@ -23,16 +23,24 @@ export default function YudisiumParticipantDetail() {
   const { id: yudisiumId, participantId } = useParams<{ id: string; participantId: string }>();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const { data, isLoading } = useAdminYudisiumParticipantDetail(participantId!);
+  const { pathname } = useLocation();
+  const { data, isLoading } = useLecturerYudisiumParticipantDetail(participantId!);
+
+  const isLecturerPath = pathname.startsWith('/yudisium/lecturer');
+  const baseListPath = isLecturerPath ? '/yudisium/lecturer/event' : '/yudisium/admin';
+  const baseDetailPath = isLecturerPath
+    ? `/yudisium/lecturer/event/${yudisiumId}`
+    : `/yudisium/admin/${yudisiumId}`;
+  const rootLabel = isLecturerPath ? 'Yudisium' : 'Yudisium Admin';
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: 'Yudisium Admin', href: '/yudisium/admin' },
-      { label: data?.yudisium?.name ?? 'Detail', href: `/yudisium/admin/${yudisiumId}` },
+      { label: rootLabel, href: baseListPath },
+      { label: data?.yudisium?.name ?? 'Detail', href: baseDetailPath },
       { label: data?.studentName ?? 'Detail Peserta' },
     ]);
     setTitle(data?.studentName ?? 'Detail Peserta');
-  }, [setBreadcrumbs, setTitle, data, yudisiumId]);
+  }, [setBreadcrumbs, setTitle, data, yudisiumId, rootLabel, baseListPath, baseDetailPath]);
 
   if (isLoading) {
     return (
@@ -62,7 +70,7 @@ export default function YudisiumParticipantDetail() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(`/yudisium/admin/${yudisiumId}`)}
+          onClick={() => navigate(baseDetailPath)}
           className="shrink-0"
         >
           <ArrowLeft className="h-5 w-5" />
