@@ -90,8 +90,15 @@ const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetter
 // Overview Pages
 const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/Overview'))
 const MetopenOverviewPage = lazy(() => import('./pages/metopel/Metopel'))
-const YudisiumOverviewPage = lazy(() => import('./pages/yudisium/student/Overview'))
-const KelolaYudisiumPage = lazy(() => import('./pages/yudisium/KelolaYudisium'))
+const YudisiumEntry = lazy(() => import('./pages/yudisium/YudisiumEntry'))
+const StudentYudisiumPage = lazy(() => import('./pages/yudisium/StudentYudisium'))
+const StudentExitSurveyPage = lazy(() => import('./pages/yudisium/StudentExitSurvey'))
+const LecturerYudisiumPage = lazy(() => import('./pages/yudisium/LecturerYudisium'))
+const LecturerYudisiumDetailPage = lazy(() => import('./pages/yudisium/LecturerYudisiumDetail'))
+const YudisiumParticipantCPLValidationPage = lazy(() => import('./pages/yudisium/YudisiumParticipantCPLValidation'))
+const AdminYudisiumPage = lazy(() => import('./pages/yudisium/AdminYudisium'))
+const AdminYudisiumValidationPage = lazy(() => import('./pages/yudisium/AdminYudisiumValidation'))
+const YudisiumParticipantDetailPage = lazy(() => import('./pages/yudisium/YudisiumParticipantDetail'))
 const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview'))
 // Tugas Akhir - Monitoring
 const MonitoringDashboard = lazy(() => import('./pages/tugas-akhir/monitoring/MonitoringDashboard'))
@@ -223,10 +230,39 @@ function App() {
                 <Route path="/kerja-praktik/monitoring" element={<Placeholder title="Kerja Praktek - Monitoring" />} />
                 <Route path="/kerja-praktik/seminar" element={<Placeholder title="Kerja Praktek - Seminar" />} />
 
-                {/* Yudisium - Top Level for Student */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
-                  <Route path="/yudisium" element={<YudisiumOverviewPage />} />
-                </Route>
+              {/* Yudisium shared entry */}
+              <Route path="/yudisium" element={<YudisiumEntry />} />
+
+              {/* Yudisium - Student */}
+              <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
+                <Route path="/yudisium/student" element={<StudentYudisiumPage />} />
+                <Route path="/yudisium/student/exit-survey" element={<StudentExitSurveyPage />} />
+              </Route>
+
+              {/* Yudisium - Lecturer */}
+              <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
+                <Route path="/yudisium/lecturer" element={<Navigate to="/yudisium/lecturer/event" replace />} />
+                <Route path="/yudisium/lecturer/event" element={<LecturerYudisiumPage />} />
+                <Route path="/yudisium/lecturer/event/:id" element={<LecturerYudisiumDetailPage />} />
+                <Route path="/yudisium/lecturer/event/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
+              </Route>
+
+              <Route element={<RoleGuard allowedRoles={[ROLES.GKM, ROLES.TIM_PENGELOLA_CPL]} />}>
+                <Route path="/yudisium/lecturer/event/:id/participant/:participantId/cpl-validation" element={<YudisiumParticipantCPLValidationPage />} />
+              </Route>
+
+              {/* Yudisium - Restricted Lecturer Tabs */}
+              <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_YUDISIUM]} />}>
+                <Route path="/yudisium/lecturer/persyaratan" element={<LecturerYudisiumPage />} />
+                <Route path="/yudisium/lecturer/exit-survey" element={<LecturerYudisiumPage />} />
+              </Route>
+
+              {/* Yudisium - Admin */}
+              <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN]} />}>
+                <Route path="/yudisium/admin" element={<AdminYudisiumPage />} />
+                <Route path="/yudisium/admin/:id" element={<AdminYudisiumValidationPage />} />
+                <Route path="/yudisium/admin/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
+              </Route>
 
                 {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
                 <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>

@@ -61,19 +61,51 @@ export const API_CONFIG = {
       WEIGHT_SUMMARY: (role: string) => `/rubric-defence/weight-summary?role=${role}`,
     },
     EXIT_SURVEY: {
-      BASE: '/exitSurvey',
-      BY_ID: (id: string) => `/exitSurvey/${id}`,
-      TOGGLE: (id: string) => `/exitSurvey/${id}/toggle`,
-      DUPLICATE: (id: string) => `/exitSurvey/${id}/duplicate`,
-      QUESTIONS: (formId: string) => `/exitSurvey/${formId}/questions`,
-      QUESTION_BY_ID: (formId: string, questionId: string) => `/exitSurvey/${formId}/questions/${questionId}`,
+      BASE: '/yudisium/exit-survey',
+      BY_ID: (id: string) => `/yudisium/exit-survey/${id}`,
+      TOGGLE: (id: string) => `/yudisium/exit-survey/${id}/toggle`,
+      DUPLICATE: (id: string) => `/yudisium/exit-survey/${id}/duplicate`,
+      QUESTIONS: (formId: string) => `/yudisium/exit-survey/${formId}/questions`,
+      QUESTION_BY_ID: (formId: string, questionId: string) => `/yudisium/exit-survey/${formId}/questions/${questionId}`,
     },
     YUDISIUM_REQUIREMENTS: {
-      BASE: '/yudisiumRequirements',
-      BY_ID: (id: string) => `/yudisiumRequirements/${id}`,
-      TOGGLE: (id: string) => `/yudisiumRequirements/${id}/toggle`,
-      MOVE_TOP: (id: string) => `/yudisiumRequirements/${id}/move-top`,
-      MOVE_BOTTOM: (id: string) => `/yudisiumRequirements/${id}/move-bottom`,
+      BASE: '/yudisium/yudisium-requirements',
+      BY_ID: (id: string) => `/yudisium/yudisium-requirements/${id}`,
+      TOGGLE: (id: string) => `/yudisium/yudisium-requirements/${id}/toggle`,
+      MOVE_TOP: (id: string) => `/yudisium/yudisium-requirements/${id}/move-top`,
+      MOVE_BOTTOM: (id: string) => `/yudisium/yudisium-requirements/${id}/move-bottom`,
+    },
+    YUDISIUM_EVENT: {
+      BASE: '/yudisium/event',
+      BY_ID: (id: string) => `/yudisium/event/${id}`,
+    },
+    YUDISIUM_STUDENT: {
+      OVERVIEW: '/yudisium/student/overview',
+      EXIT_SURVEY: '/yudisium/student/exit-survey',
+      EXIT_SURVEY_SUBMIT: '/yudisium/student/exit-survey/submit',
+      REQUIREMENTS: '/yudisium/student/requirements',
+      REQUIREMENTS_UPLOAD: '/yudisium/student/requirements/upload',
+    },
+    YUDISIUM_ADMIN: {
+      EVENTS: '/yudisium/admin/events',
+      PARTICIPANTS: (yudisiumId: string) => `/yudisium/admin/${yudisiumId}/participants`,
+      PARTICIPANT_DETAIL: (participantId: string) => `/yudisium/admin/participants/${participantId}`,
+      VALIDATE_DOCUMENT: (participantId: string, requirementId: string) =>
+        `/yudisium/admin/participants/${participantId}/requirements/${requirementId}/validate`,
+    },
+    YUDISIUM_LECTURER: {
+      EVENTS: '/yudisium/lecturer/events',
+      PARTICIPANTS: (yudisiumId: string) => `/yudisium/lecturer/${yudisiumId}/participants`,
+      PARTICIPANT_DETAIL: (participantId: string) => `/yudisium/lecturer/participants/${participantId}`,
+      CPL_SCORES: (participantId: string) => `/yudisium/lecturer/participants/${participantId}/cpl-scores`,
+      VERIFY_CPL: (participantId: string, cplId: string) =>
+        `/yudisium/lecturer/participants/${participantId}/cpl/${cplId}/verify`,
+      CREATE_CPL_RECOMMENDATION: (participantId: string) =>
+        `/yudisium/lecturer/participants/${participantId}/cpl-recommendation`,
+      UPDATE_CPL_RECOMMENDATION_STATUS: (recommendationId: string) =>
+        `/yudisium/lecturer/cpl-recommendation/${recommendationId}/status`,
+      DRAFT_SK: (yudisiumId: string) => `/yudisium/lecturer/${yudisiumId}/draft-sk`,
+      UPLOAD_SK: (yudisiumId: string) => `/yudisium/lecturer/${yudisiumId}/upload-sk`,
     },
     NOTIFICATION: {
       BASE: '/notification',
@@ -250,9 +282,9 @@ export const API_CONFIG = {
         `/thesisDefence/lecturer/assignment/${defenceId}`,
     },
     LECTURER_AVAILABILITY: {
-      BASE: '/lecturerAvailability',
-      BY_ID: (id: string) => `/lecturerAvailability/${id}`,
-      TOGGLE: (id: string) => `/lecturerAvailability/${id}/toggle`,
+      BASE: '/lecturer-availability',
+      BY_ID: (id: string) => `/lecturer-availability/${id}`,
+      TOGGLE: (id: string) => `/lecturer-availability/${id}/toggle`,
     },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',
