@@ -27,9 +27,10 @@ export interface MasterDataThesis {
     academicYear: {
         id: string;
         semester: string;
-        year: number;
+        year: string;
     } | null;
     supervisors: SupervisorData[];
+    isProposal: boolean;
 }
 
 export interface ThesisStatusData {
@@ -91,6 +92,19 @@ export const syncSiaData = async (): Promise<any> => {
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Gagal melakukan sinkronisasi dengan SIA");
+    }
+    const result = await response.json();
+    return result.data;
+};
+
+export const importMasterDataTheses = async (rows: any[]): Promise<any> => {
+    const response = await apiRequest(getApiUrl('/master-data-ta/import'), {
+        method: 'POST',
+        body: JSON.stringify({ rows }),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Gagal mengimport data tugas akhir");
     }
     const result = await response.json();
     return result.data;

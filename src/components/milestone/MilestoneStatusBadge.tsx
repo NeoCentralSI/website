@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { MilestoneStatus } from "@/types/milestone.types";
 import { MILESTONE_STATUS_CONFIG } from "@/types/milestone.types";
-import { Circle, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Circle, Loader2, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 
 export interface MilestoneStatusBadgeProps {
   status: MilestoneStatus;
@@ -12,6 +12,7 @@ export interface MilestoneStatusBadgeProps {
 const IconByStatus: Record<MilestoneStatus, React.ElementType> = {
   not_started: Circle,
   in_progress: Loader2,
+  pending_review: Clock,
   revision_needed: AlertTriangle,
   completed: CheckCircle2,
 };
@@ -22,7 +23,7 @@ export function MilestoneStatusBadge({
   showIcon = true,
 }: MilestoneStatusBadgeProps) {
   const config = MILESTONE_STATUS_CONFIG[status] || MILESTONE_STATUS_CONFIG.not_started;
-  const Icon = IconByStatus[status];
+  const Icon = (status && IconByStatus[status]) ? IconByStatus[status] : IconByStatus.not_started;
 
   return (
     <span
@@ -33,7 +34,7 @@ export function MilestoneStatusBadge({
         className
       )}
     >
-      {showIcon && <Icon className={cn("h-3 w-3", status === "in_progress" && "animate-spin")} />}
+      {showIcon && Icon && <Icon className={cn("h-3 w-3", status === "in_progress" && "animate-spin")} />}
       {config.label}
     </span>
   );

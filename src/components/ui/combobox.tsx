@@ -45,6 +45,10 @@ export function ComboBox({
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<string>(defaultValue)
 
+  React.useEffect(() => {
+    setValue(defaultValue)
+  }, [defaultValue])
+
   const selectedItem = items.find((item: ComboBoxItem) => item.value === value)
 
   const handleSelect = (currentValue: string) => {

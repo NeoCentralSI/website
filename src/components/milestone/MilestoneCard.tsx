@@ -63,10 +63,11 @@ export function MilestoneCard({
   const isCompleted = milestone.status === "completed";
   const isRevisionNeeded = milestone.status === "revision_needed";
   const isInProgress = milestone.status === "in_progress";
+  const isPendingReview = milestone.status === "pending_review";
   const canStartWorking =
-    isOwner && (milestone.status === "not_started" || milestone.status === "revision_needed");
-  const canValidate = false;
-  const canRequestRevision = isSupervisor && milestone.status === "in_progress";
+    isOwner && (milestone.status === "not_started" || milestone.status === "revision_needed" || milestone.status === "pending_review");
+  const canValidate = isSupervisor && (milestone.status === "pending_review" || (milestone.status === "in_progress" && milestone.progressPercentage === 100));
+  const canRequestRevision = isSupervisor && (milestone.status === "in_progress" || milestone.status === "pending_review");
 
   const progressChanged = localProgress !== milestone.progressPercentage;
 
@@ -104,6 +105,7 @@ export function MilestoneCard({
         "relative rounded-lg border bg-card transition-all hover:shadow-sm",
         isCompleted && "border-green-200/70 bg-green-50/30",
         isRevisionNeeded && "border-orange-200/70 bg-orange-50/30",
+        isPendingReview && "border-amber-200/70 bg-amber-50/30",
         isInProgress && "border-blue-200/70",
         !isCompleted && !isRevisionNeeded && !isInProgress && "border-border/60",
         isProgressUpdating && "opacity-60"

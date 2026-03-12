@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesis, getSupervisor2Requests, getIncomingTransfers } from "@/services/lecturerGuidance.service";
-import { getMilestones, getSeminarReadinessStatus, getDefenceReadinessStatus } from "@/services/milestone.service";
+import { getSeminarReadinessStatus, getDefenceReadinessStatus, getSupervisorPendingReview } from "@/services/milestone.service";
 import { getMyStudents } from "@/services/lecturerGuidance.service";
 import { getKadepQuickActionsStats } from "@/services/admin.service";
 import { UserPlus } from "lucide-react";
@@ -84,41 +84,10 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     queryFn: () => getMyStudents(),
   });
 
-  // Fetch milestones for each student to check for 100% progress
+  // Fetch pending milestone validations using dedicated endpoint
   const { data: pendingMilestonesData, isLoading: loadingMilestones } = useQuery({
     queryKey: ["pending-milestone-validations"],
-    queryFn: async () => {
-      if (!studentsData?.students) return [];
-
-      // Get all students' thesis IDs
-      const studentsWithThesis = studentsData.students
-        .filter((s: any) => !!s.thesisId)
-        .map((s: any) => ({ studentId: s.studentId, thesisId: s.thesisId, fullName: s.fullName }));
-
-      // Fetch milestones for each thesis
-      const allMilestones = await Promise.all(
-        studentsWithThesis.map(async (student: any) => {
-          try {
-            const result = await getMilestones(student.thesisId);
-            return result.milestones.map((m: any) => ({
-              ...m,
-              thesisId: student.thesisId,
-              studentId: student.studentId,
-              studentName: student.fullName || '',
-            }));
-          } catch {
-            return [];
-          }
-        })
-      );
-
-      // Flatten and filter for milestones that are 100% and waiting for validation
-      const flatMilestones = allMilestones.flat();
-      return flatMilestones.filter(
-        (m: any) => m.progressPercentage === 100 && m.status === "in_progress"
-      );
-    },
-    enabled: !!studentsData?.students,
+    queryFn: () => getSupervisorPendingReview(),
   });
 
   // Fetch pending seminar readiness approvals

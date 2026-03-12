@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 import { getMasterDataTheses, createMasterDataThesis, updateMasterDataThesis, getMasterDataThesisStatuses, type MasterDataThesis, type SupervisorData } from "@/services/masterDataTa.service";
 import { getStudentsAPI, getLecturersAPI, getAcademicYearsAPI } from "@/services/admin.service";
@@ -9,12 +9,17 @@ import { getTopics } from "@/services/topic.service";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Spinner, Loading } from "@/components/ui/spinner";
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { ExportExcelDialog } from "./ExportExcelDialog";
+import { ImportMasterDataDialog } from "./ImportMasterDataDialog";
+import { Upload } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface FormState {
     id?: string;
@@ -28,6 +33,7 @@ interface FormState {
     supervisors: SupervisorData[];
     pembimbing1: string;
     pembimbing2: string;
+    isProposal?: boolean;
 }
 
 const emptyForm: FormState = {
@@ -41,6 +47,7 @@ const emptyForm: FormState = {
     supervisors: [],
     pembimbing1: "none",
     pembimbing2: "none",
+    isProposal: false,
 };
 
 const ratings = ["ONGOING", "SLOW", "AT_RISK", "FAILED", "CANCELLED"];
@@ -51,6 +58,8 @@ export function DataMasterTaPanel() {
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [formState, setFormState] = useState<FormState>(emptyForm);
 
     // Queries
@@ -125,8 +134,24 @@ export function DataMasterTaPanel() {
             supervisors: [],
             pembimbing1: thesis.supervisors.find((s) => s.roleName === "Pembimbing 1")?.lecturerId || "none",
             pembimbing2: thesis.supervisors.find((s) => s.roleName === "Pembimbing 2")?.lecturerId || "none",
+            isProposal: thesis.isProposal || false,
         });
         setDialogOpen(true);
+    };
+
+    const handleToggleProposal = (t: MasterDataThesis, checked: boolean) => {
+        const payload = {
+            title: t.title,
+            thesisTopicId: t.topic?.id,
+            academicYearId: t.academicYear?.id,
+            startDate: t.startDate,
+            rating: t.rating,
+            thesisStatusId: t.thesisStatusId,
+            pembimbing1: t.supervisors.find((s) => s.roleName === "Pembimbing 1")?.lecturerId,
+            pembimbing2: t.supervisors.find((s) => s.roleName === "Pembimbing 2")?.lecturerId,
+            isProposal: checked,
+        };
+        updateMutation.mutate({ id: t.id, data: payload });
     };
 
     const handleSubmit = () => {
@@ -149,6 +174,7 @@ export function DataMasterTaPanel() {
             pembimbing1: formState.pembimbing1 !== "none" ? formState.pembimbing1 : undefined,
             pembimbing2: formState.pembimbing2 !== "none" ? formState.pembimbing2 : undefined,
             thesisStatusId: formState.id ? formState.thesisStatusId : undefined,
+            isProposal: formState.isProposal,
         };
 
         if (formState.id) {
@@ -162,9 +188,10 @@ export function DataMasterTaPanel() {
         {
             key: "student",
             header: "Mahasiswa",
+            width: 140,
             render: (t) => (
-                <div>
-                    <div className="font-semibold">{t.student?.name}</div>
+                <div className="min-w-[120px]">
+                    <div className="font-semibold truncate">{t.student?.name}</div>
                     <div className="text-sm text-muted-foreground">{t.student?.nim}</div>
                 </div>
             )
@@ -173,15 +200,17 @@ export function DataMasterTaPanel() {
             key: "title",
             header: "Judul / Topik",
             render: (t) => (
-                <div>
-                    <div className="line-clamp-2 max-w-sm">{t.title || "-"}</div>
-                    <Badge variant="outline" className="mt-1">{t.topic?.name || "Tanpa Topik"}</Badge>
+                <div className="min-w-[180px] max-w-[260px]">
+                    <div className="line-clamp-2 text-sm">{t.title || "-"}</div>
+                    <Badge variant="outline" className="mt-1 text-xs">{t.topic?.name || "Tanpa Topik"}</Badge>
                 </div>
             )
         },
         {
             key: "academicYear",
-            header: "Tahun Ajaran",
+            header: "Periode",
+            width: 110,
+            className: "whitespace-nowrap",
             render: (t) => (
                 <span className="text-sm">
                     {t.academicYear ? `${t.academicYear.year} - ${t.academicYear.semester}` : "-"}
@@ -191,48 +220,68 @@ export function DataMasterTaPanel() {
         {
             key: "rating",
             header: "Rating",
+            width: 90,
+            className: "text-center",
             render: (t) => {
                 const colors: Record<string, string> = {
                     "ONGOING": "bg-blue-500",
                     "SLOW": "bg-yellow-500",
                     "AT_RISK": "bg-orange-500",
-                    "FAILED": "bg-red-500",
+                    "FAILED": "bg-red-500 text-white",
                     "CANCELLED": "bg-gray-500",
                 };
-                return <Badge className={`${colors[t.rating] || "bg-primary"}`}>{t.rating}</Badge>;
+                return <Badge className={`${colors[t.rating] || "bg-primary"} text-xs`}>{t.rating}</Badge>;
             }
         },
         {
             key: "status",
             header: "Status",
+            width: 90,
+            className: "text-center",
             render: (t) => {
                 const colors: Record<string, string> = {
                     "Aktif": "bg-green-500",
                     "Selesai": "bg-blue-600",
-                    "Dibatalkan": "bg-red-600",
+                    "Dibatalkan": "bg-red-600 text-white",
                     "Lulus": "bg-blue-600",
                 };
-                return <Badge className={`${colors[t.status] || "bg-primary"}`}>{t.status}</Badge>;
+                return <Badge className={`${colors[t.status] || "bg-primary"} text-xs`}>{t.status}</Badge>;
             }
         },
         {
             key: "supervisors",
             header: "Pembimbing",
+            width: 180,
             render: (t) => (
-                <div className="flex flex-col gap-1 text-sm">
+                <div className="flex flex-col gap-0.5 text-xs min-w-[140px] max-w-[180px]">
                     {t.supervisors.map((s, i) => (
-                        <span key={i}>• {s.name || s.lecturerId}</span>
+                        <span key={i} className="truncate">• {s.name || s.lecturerId}</span>
                     ))}
                     {t.supervisors.length === 0 && <span className="text-muted-foreground">-</span>}
                 </div>
             )
         },
         {
-            key: "actions",
-            header: "Aksi",
-            className: "text-right",
+            key: "isProposal",
+            header: "Proposal",
+            width: 70,
+            className: "text-center",
             render: (t) => (
-                <Button variant="ghost" size="icon" onClick={() => handleStartEdit(t)}>
+                <div onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                        checked={!!t.isProposal}
+                        onCheckedChange={(checked) => handleToggleProposal(t, checked)}
+                        disabled={updateMutation.isPending}
+                    />
+                </div>
+            )
+        },
+        {
+            key: "actions",
+            header: "",
+            width: 48,
+            render: (t) => (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStartEdit(t)}>
                     <Pencil className="h-4 w-4" />
                 </Button>
             )
@@ -264,6 +313,12 @@ export function DataMasterTaPanel() {
                             onClick={() => refetch()}
                             isRefreshing={isFetching && !isLoading}
                         />
+                        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+                            <Upload className="mr-2 h-4 w-4" /> Import Excel
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
+                            <Download className="mr-2 h-4 w-4" /> Export Excel
+                        </Button>
                         <Button onClick={handleStartCreate} size="sm">
                             <Plus className="mr-2 h-4 w-4" /> Tambah Data TA
                         </Button>
@@ -343,10 +398,10 @@ export function DataMasterTaPanel() {
                                     <>
                                         <div className="grid gap-2">
                                             <Label>Tanggal Mulai</Label>
-                                            <Input
-                                                type="date"
-                                                value={formState.startDate}
-                                                onChange={(e) => setFormState(prev => ({ ...prev, startDate: e.target.value }))}
+                                            <DatePicker
+                                                value={formState.startDate ? new Date(formState.startDate) : undefined}
+                                                onChange={(date) => setFormState(prev => ({ ...prev, startDate: date ? date.toISOString().split('T')[0] : "" }))}
+                                                showPastDates={true}
                                             />
                                         </div>
                                         <div className="grid gap-2">
@@ -379,6 +434,17 @@ export function DataMasterTaPanel() {
                                         </div>
                                     </>
                                 )}
+
+                                <div className="grid gap-2 col-span-2">
+                                    <div className="flex items-center space-x-2 mt-2">
+                                        <Switch
+                                            id="isProposal"
+                                            checked={!!formState.isProposal}
+                                            onCheckedChange={(v) => setFormState(prev => ({ ...prev, isProposal: v }))}
+                                        />
+                                        <Label htmlFor="isProposal">Status Proposal (Aktif = Masih Proposal)</Label>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="border-t pt-4 mt-4">
@@ -427,6 +493,17 @@ export function DataMasterTaPanel() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ExportExcelDialog
+                open={exportDialogOpen}
+                onOpenChange={setExportDialogOpen}
+                theses={theses}
+                academicYears={academicYears}
+            />
+            <ImportMasterDataDialog
+                open={importDialogOpen}
+                onOpenChange={setImportDialogOpen}
+            />
         </div>
     );
 }

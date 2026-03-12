@@ -1,64 +1,61 @@
-import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCompanyStats } from '@/services/internship.service';
-import { useRole } from '../shared/useRole';
+import { useRole } from '../shared';
+import { useSearchParams } from 'react-router-dom';
 
 export function useCompanyStats() {
     const { isAdmin, isKadep } = useRole();
-    const [q, setQ] = useState('');
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const q = searchParams.get('q') || '';
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '10');
+    const sortBy = searchParams.get('sortBy') || '';
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
+    const status = searchParams.get('status') || 'all';
 
     const role = isAdmin() ? 'admin' : (isKadep() ? 'kadep' : 'sekdep');
 
+    const updateParams = (updates: Record<string, string | number | undefined>) => {
+        const newParams = new URLSearchParams(searchParams);
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '' || (value === 'all' && key === 'status')) {
+                newParams.delete(key);
+            } else {
+                newParams.set(key, value.toString());
+            }
+        });
+        if (updates.q !== undefined || updates.sortBy !== undefined || updates.status !== undefined) {
+            newParams.set('page', '1');
+        }
+        setSearchParams(newParams);
+    };
+
     const { data, isLoading, isFetching, refetch, error } = useQuery({
-        queryKey: ['company-stats', role],
-        queryFn: () => getCompanyStats(role),
+        queryKey: ['company-stats', role, { q, page, pageSize, sortBy, sortOrder, status }],
+        queryFn: () => getCompanyStats(role, q, page, pageSize, sortBy, sortOrder, status),
+        placeholderData: (previousData) => previousData,
     });
 
-    const items = data?.data || [];
-
-    const displayItems = useMemo(() => {
-        let filtered = [...items];
-
-        if (q) {
-            const lowQ = q.toLowerCase();
-            filtered = filtered.filter(
-                (item) =>
-                    item.companyName.toLowerCase().includes(lowQ) ||
-                    item.address.toLowerCase().includes(lowQ)
-            );
-        }
-
-        const start = (page - 1) * pageSize;
-        return filtered.slice(start, start + pageSize);
-    }, [items, q, page, pageSize]);
-
-    const total = useMemo(() => {
-        let filtered = [...items];
-        if (q) {
-            const lowQ = q.toLowerCase();
-            filtered = filtered.filter(
-                (item) =>
-                    item.companyName.toLowerCase().includes(lowQ) ||
-                    item.address.toLowerCase().includes(lowQ)
-            );
-        }
-        return filtered.length;
-    }, [items, q]);
+    const displayItems = data?.data || [];
+    const total = data?.total || 0;
 
     return {
-        items,
         displayItems,
         total,
         isLoading,
         isFetching,
         q,
-        setQ,
+        setQ: (q: string) => updateParams({ q }),
         page,
-        setPage,
+        setPage: (page: number) => updateParams({ page }),
         pageSize,
-        setPageSize,
+        setPageSize: (pageSize: number) => updateParams({ pageSize }),
+        sortBy,
+        sortOrder,
+        setSort: (field: string, order: 'asc' | 'desc') => updateParams({ sortBy: field, sortOrder: order }),
+        status,
+        setStatus: (status: string) => updateParams({ status }),
         refetch,
         error,
     };

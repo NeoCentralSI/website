@@ -7,7 +7,7 @@ import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye, Edit } from 'lucide-react';
+import { Eye, Pencil } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -87,27 +87,34 @@ export default function Dosen() {
     {
       key: 'identityNumber',
       header: 'NIP',
-      render: (row: Lecturer) => row.identityNumber || '-',
+      width: 130,
+      className: 'whitespace-nowrap',
+      render: (row: Lecturer) => <span className="text-sm">{row.identityNumber || '-'}</span>,
     },
     {
       key: 'fullName',
       header: 'Nama',
-      render: (row: Lecturer) => toTitleCaseName(row.fullName),
+      width: 180,
+      render: (row: Lecturer) => <span className="truncate block max-w-45 text-sm font-medium">{toTitleCaseName(row.fullName)}</span>,
     },
     {
       key: 'email',
       header: 'Email',
-      render: (row: Lecturer) => row.email,
+      width: 180,
+      render: (row: Lecturer) => <span className="truncate block max-w-45 text-sm">{row.email}</span>,
     },
     {
       key: 'phone',
       header: 'Telepon',
-      render: (row: Lecturer) => row.phone || '-',
+      width: 110,
+      className: 'whitespace-nowrap',
+      render: (row: Lecturer) => <span className="text-sm">{row.phone || '-'}</span>,
     },
     {
       key: 'scienceGroup',
-      header: 'Kelompok Keilmuan',
-      render: (row: Lecturer) => row.lecturer?.scienceGroup || <span className="text-gray-400 italic">-</span>,
+      header: 'Kel. Keilmuan',
+      width: 140,
+      render: (row: Lecturer) => <span className="truncate block max-w-35 text-sm">{row.lecturer?.scienceGroup || <span className="text-gray-400 italic">-</span>}</span>,
       filter: {
         kind: 'control',
         type: 'select',
@@ -119,7 +126,9 @@ export default function Dosen() {
     },
     {
       key: 'activeGuidances',
-      header: 'Bimbingan Aktif',
+      header: 'Bimbingan',
+      width: 80,
+      className: 'text-center',
       render: (row: Lecturer) => (
         <Badge variant="default">
           {row.lecturer?.activeGuidances || 0}
@@ -128,7 +137,9 @@ export default function Dosen() {
     },
     {
       key: 'seminarJuries',
-      header: 'Penguji Seminar',
+      header: 'Seminar',
+      width: 70,
+      className: 'text-center',
       render: (row: Lecturer) => (
         <Badge variant="secondary">
           {row.lecturer?.seminarJuries || 0}
@@ -137,7 +148,9 @@ export default function Dosen() {
     },
     {
       key: 'defenceJuries',
-      header: 'Penguji Sidang',
+      header: 'Sidang',
+      width: 70,
+      className: 'text-center',
       render: (row: Lecturer) => (
         <Badge variant="secondary">
           {row.lecturer?.defenceJuries || 0}
@@ -146,28 +159,30 @@ export default function Dosen() {
     },
     {
       key: 'actions',
-      header: 'Aksi',
+      header: '',
+      width: 72,
       render: (row: Lecturer) => (
-        <div className="flex gap-2">
+        <div className="flex gap-0.5">
           <Button
-            size="sm"
-            variant="outline"
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-black"
             onClick={() => navigate(`/master-data/dosen/${row.id}`)}
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="w-3.5 h-3.5" />
           </Button>
           {isAdmin() && (
             <Button
-              size="sm"
-              variant="outline"
-              className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-black"
               onClick={() => {
                 setSelectedLecturer(row);
                 setSelectedScienceGroup(row.lecturer?.scienceGroupId || '');
                 setIsEditOpen(true);
               }}
             >
-              <Edit className="w-4 h-4" />
+              <Pencil className="w-3.5 h-3.5" />
             </Button>
           )}
         </div>

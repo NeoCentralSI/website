@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
-import { getStudentLogbooks, type InternshipLogbookItem, updateInternshipDetails, downloadLogbookPdf } from '@/services/internship.service';
+import { getStudentLogbooks, type InternshipLogbookItem, updateInternshipDetails, downloadLogbookPdf, downloadLogbookDocx } from '@/services/internship.service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
@@ -11,7 +11,7 @@ import EmptyState from '@/components/ui/empty-state';
 import { Loading } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import EditLogbookDialog from '@/components/internship/EditLogbookDialog';
-import { Edit, Loader2, Printer, User } from 'lucide-react';
+import { Edit, FileText, Loader2, Printer, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -78,9 +78,29 @@ export default function LogbookPage() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            toast.success("Logbook berhasil diunduh");
+            toast.success("Logbook PDF berhasil diunduh");
         } catch (error: any) {
-            toast.error(error.message || "Gagal mengunduh logbook");
+            toast.error(error.message || "Gagal mengunduh logbook PDF");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+    const handleDownloadDocx = async () => {
+        try {
+            setIsDownloading(true);
+            const blob = await downloadLogbookDocx();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Logbook_${data?.data?.internship?.student?.user?.fullName || 'Mahasiswa'}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            toast.success("Logbook DOCX berhasil diunduh");
+        } catch (error: any) {
+            toast.error(error.message || "Gagal mengunduh logbook DOCX");
         } finally {
             setIsDownloading(false);
         }
@@ -173,6 +193,15 @@ export default function LogbookPage() {
                         onPageChange={() => { }}
                         actions={
                             <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleDownloadDocx}
+                                    disabled={isDownloading || logbooks.length === 0}
+                                >
+                                    {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                                    Cetak DOCX
+                                </Button>
                                 <Button
                                     size="sm"
                                     onClick={handleDownloadPdf}

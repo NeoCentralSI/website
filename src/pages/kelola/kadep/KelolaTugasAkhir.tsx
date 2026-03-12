@@ -3,15 +3,13 @@ import { useLocation, useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { ChangeRequestManagementPanel } from "@/components/kelola/ChangeRequestManagementPanel";
-import { DataMasterTaPanel } from "@/components/kelola/DataMasterTaPanel";
 import { TransferManagementPanel } from "@/components/kelola/TransferManagementPanel";
 
 const TAB_ITEMS: TabItem[] = [
   { label: "Permintaan Pergantian", to: "/kelola/tugas-akhir/kadep/pergantian" },
   { label: "Kelola Penguji", to: "/kelola/tugas-akhir/kadep/penguji" },
   { label: "Kelola Pembimbing", to: "/kelola/tugas-akhir/kadep/pembimbing" },
-  { label: "ACC Rubrik", to: "/kelola/tugas-akhir/kadep/acc-rubrik" },
-  { label: "Data Master Tugas Akhir", to: "/kelola/tugas-akhir/kadep/master-data" },
+  { label: "ACC Rubrik", to: "/kelola/tugas-akhir/kadep/acc-rubrik" }
 ];
 
 const PLACEHOLDER_COPY: Record<string, string> = {
@@ -49,9 +47,6 @@ export default function KelolaTugasAkhirKadep() {
     }
     if (activeTab.label === "Kelola Pembimbing") {
       return <TransferManagementPanel />;
-    }
-    if (activeTab.label === "Data Master Tugas Akhir") {
-      return <DataMasterTaPanel />;
     }
 
     const copy = PLACEHOLDER_COPY[activeTab.label] || "";

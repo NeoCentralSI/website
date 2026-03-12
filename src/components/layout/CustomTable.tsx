@@ -44,6 +44,7 @@ export type Column<T> = {
 	accessor?: keyof T | ((row: T, index: number) => React.ReactNode);
 	render?: (row: T, index: number) => React.ReactNode;
 	filter?: ColumnFilterElement | ColumnFilterControl;
+	sortable?: boolean;
 };
 
 export type CustomTableProps<T> = {
@@ -136,7 +137,7 @@ export function CustomTable<T extends Record<string, any>>({
 					)}
 				</div>
 
-				<div className="rounded-md border border-black/10 relative">
+				<div className="rounded-md border border-black/10 relative overflow-x-auto">
 					{isRefreshing && !loading && (
 						<div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-md">
 							<Spinner className="h-8 w-8" />

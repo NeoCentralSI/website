@@ -40,6 +40,8 @@ import { PendingRequestCard } from "@/components/bimbingan/PendingRequestCard";
 import { toast } from "sonner";
 import { ThesisProposalForm } from "@/components/thesis/ThesisProposalForm";
 import { PendingApprovalCard } from "@/components/thesis/PendingApprovalCard";
+import { RequirementsNotMet } from "@/components/shared/RequirementsNotMet";
+import { SeminarReadinessStatusCard } from "@/components/milestone/student/SeminarReadinessStatusCard";
 
 const STATUS_LABELS: Record<string, string> = {
     not_started: "Belum Dimulai",
@@ -109,6 +111,8 @@ export default function TugasAkhirOverviewPage() {
     // Show dashboard only if active and NOT proposed (proposed has its own view)
     const isThesisActive = thesisDetail?.status !== "Dibatalkan" && thesisDetail?.status !== "Gagal" && thesisDetail?.status !== "Diajukan";
 
+
+
     const copyEmail = async (id: string, email: string) => {
         try {
             await navigator.clipboard.writeText(email);
@@ -141,12 +145,20 @@ export default function TugasAkhirOverviewPage() {
         return <Loading size="lg" text="Memuat data tugas akhir..." />;
     }
 
-    if (!hasThesis && (!historyData?.theses || historyData.theses.length === 0)) {
+    if ((!hasThesis || thesisDetail?.isProposal) && (!historyData?.theses || historyData.theses.length === 0)) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-                <h3 className="text-lg font-semibold mb-2">Belum Terdaftar Tugas Akhir</h3>
-                <p className="text-muted-foreground">Silakan hubungi admin untuk pendaftaran.</p>
-            </div>
+            <RequirementsNotMet
+                title="Syarat Mata Kuliah Belum Terpenuhi"
+                description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+                requirements={[
+                    {
+                        label: "Mengambil mata kuliah Tugas Akhir",
+                        met: false,
+                        description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                    },
+                ]}
+                homeUrl="/dashboard"
+            />
         );
     }
 
@@ -363,6 +375,15 @@ export default function TugasAkhirOverviewPage() {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Seminar Readiness Integrated */}
+                                        {thesisId && (
+                                            <SeminarReadinessStatusCard
+                                                thesisId={thesisId}
+                                                variant="embedded"
+                                                className="mt-0"
+                                            />
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -496,7 +517,7 @@ export default function TugasAkhirOverviewPage() {
                                         <Button
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
-                                            onClick={() => navigate('/tugas-akhir/bimbingan/milestone')}
+                                            onClick={() => navigate('/tugas-akhir/bimbingan/student/milestone')}
                                         >
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
                                                 <Target className="h-4 w-4 text-primary" />

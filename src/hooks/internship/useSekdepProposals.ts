@@ -7,10 +7,11 @@ export function useSekdepProposals() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [status, setStatus] = useState<string>('all');
+    const [academicYearId, setAcademicYearId] = useState<string | 'all'>('');
 
     const { data, isLoading, isFetching, refetch, error } = useQuery({
-        queryKey: ['sekdep-internship-proposals'],
-        queryFn: getSekdepProposals,
+        queryKey: ['sekdep-internship-proposals', { academicYearId }],
+        queryFn: () => getSekdepProposals(academicYearId),
     });
 
     const items = data?.data || [];
@@ -67,6 +68,8 @@ export function useSekdepProposals() {
         setPage,
         pageSize,
         setPageSize,
+        academicYearId,
+        setAcademicYearId,
         refetch,
         error,
     };

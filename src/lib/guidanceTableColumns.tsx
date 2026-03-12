@@ -2,12 +2,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import StatusBadge from '@/components/thesis/StatusBadge';
-import { EyeIcon, FileTextIcon, CalendarClock, XCircle, AlertCircle, CheckCircle2, Download } from 'lucide-react';
+import { EyeIcon, FileTextIcon, CalendarClock, XCircle, AlertCircle, CheckCircle2, Download, DownloadIcon } from 'lucide-react';
 import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatThesisDocName } from '@/lib/text';
+import { getApiUrl } from '@/config/api';
 
 interface GetGuidanceTableColumnsOptions {
   items: GuidanceItem[];
@@ -129,9 +130,39 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       key: 'doc',
       header: 'Dokumen',
       render: (r) => {
-        const f = r.document?.filePath || '';
-        const isPdf = f.toLowerCase().endsWith('.pdf');
+        const filePath = r.document?.filePath;
+        if (!filePath) return <span className="text-muted-foreground">-</span>;
+
+        const isPdf = filePath.toLowerCase().endsWith('.pdf');
+        const isDocx = filePath.toLowerCase().endsWith('.docx') || filePath.toLowerCase().endsWith('.doc');
         const displayName = formatThesisDocName(studentNim, studentName);
+
+        if (isDocx) {
+          const downloadUrl = (() => {
+            let url = filePath.startsWith('/') ? getApiUrl(filePath) : getApiUrl(`/${filePath}`);
+            const token = localStorage.getItem('accessToken');
+            if (token && filePath.includes('thesis/')) {
+              url += (url.includes('?') ? '&' : '?') + `token=${token}`;
+            }
+            return url;
+          })();
+
+          return (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 max-w-[200px] text-green-600 hover:text-green-700 hover:bg-green-50"
+              asChild
+              title={`Download ${displayName}`}
+            >
+              <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
+                <DownloadIcon className="size-4 shrink-0" />
+                <span className="truncate text-xs">{displayName}</span>
+              </a>
+            </Button>
+          );
+        }
+
         return (
           <Button
             variant="ghost"

@@ -2,6 +2,7 @@
 export type MilestoneStatus =
   | "not_started"
   | "in_progress"
+  | "pending_review"
   | "revision_needed"
   | "completed";
 
@@ -210,6 +211,11 @@ export const MILESTONE_STATUS_CONFIG: Record<
     color: "text-blue-600",
     bgColor: "bg-blue-100",
   },
+  pending_review: {
+    label: "Menunggu Review",
+    color: "text-amber-600",
+    bgColor: "bg-amber-100",
+  },
   revision_needed: {
     label: "Perlu Revisi",
     color: "text-orange-600",
@@ -230,23 +236,17 @@ export const MILESTONE_STATUS_CONFIG: Record<
 export interface PendingMilestoneItem {
   id: string;
   title: string;
+  description?: string;
   status: MilestoneStatus;
   progressPercentage: number;
   studentNotes?: string | null;
-  createdAt: string;
+  targetDate?: string;
   updatedAt: string;
-  thesis: {
-    id: string;
-    title: string;
-  };
-  student: {
-    id: string;
-    userId: string;
-    name: string;
-    nim: string;
-    email: string;
-  };
-  activityCount: number;
+  thesisId: string;
+  thesisTitle: string;
+  studentName: string;
+  studentNim: string;
+  activityCount?: number;
 }
 
 // Student supervisor info

@@ -162,13 +162,13 @@ export default function GuidanceRequestDetailDialog({
                 )}
 
               {/* Dokumen - Compact */}
-              {fileName && (
+              {fileName && fileName !== "null" && fileName !== "" && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">File Thesis</Label>
                   <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
                     <FileTextIcon className="size-4 text-muted-foreground shrink-0" />
                     <span className="flex-1 text-sm truncate">{fileName}</span>
-                    {isPdf && filePath && (
+                    {isPdf && filePath && filePath !== "null" && filePath !== "" && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -183,7 +183,9 @@ export default function GuidanceRequestDetailDialog({
               )}
 
               {/* Links - Compact */}
-              {(guidance as any)?.documentUrl && (
+              {(guidance as any)?.documentUrl && 
+               (guidance as any).documentUrl !== "null" && 
+               (guidance as any).documentUrl !== "" && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Link</Label>
                   <div className="space-y-2">

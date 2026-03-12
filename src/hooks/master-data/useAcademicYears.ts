@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { 
-  getAcademicYearsAPI, 
-  createAcademicYearAPI, 
-  updateAcademicYearAPI 
+import {
+  getAcademicYearsAPI,
+  createAcademicYearAPI,
+  updateAcademicYearAPI
 } from '@/services/admin.service';
-import type { 
-  AcademicYear, 
-  CreateAcademicYearRequest, 
-  UpdateAcademicYearRequest 
+import type {
+  AcademicYear,
+  CreateAcademicYearRequest,
+  UpdateAcademicYearRequest
 } from '@/services/admin.service';
 
 interface UseAcademicYearsOptions {
@@ -86,7 +86,7 @@ export function useAcademicYearForm() {
   const [editingYear, setEditingYear] = useState<AcademicYear | null>(null);
   const [formData, setFormData] = useState<CreateAcademicYearRequest | UpdateAcademicYearRequest>({
     semester: 'ganjil',
-    year: new Date().getFullYear(),
+    year: new Date().getFullYear().toString(),
     startDate: '',
     endDate: '',
   });
@@ -95,7 +95,7 @@ export function useAcademicYearForm() {
     setEditingYear(null);
     setFormData({
       semester: 'ganjil',
-      year: new Date().getFullYear(),
+      year: new Date().getFullYear().toString(),
       startDate: '',
       endDate: '',
     });

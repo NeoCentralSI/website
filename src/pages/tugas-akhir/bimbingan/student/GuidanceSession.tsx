@@ -52,6 +52,11 @@ export default function GuidanceSessionPage() {
     queryKey: ["guidance-session", guidanceId],
     queryFn: () => getStudentGuidanceDetail(guidanceId!),
     enabled: !!guidanceId,
+    staleTime: 0,
+    refetchInterval: (query) => {
+      // Poll every 20s if waiting for approval
+      return query.state.data?.guidance?.status === "summary_pending" ? 20000 : false;
+    },
   });
 
   const guidance = data?.guidance;

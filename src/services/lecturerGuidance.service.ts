@@ -125,6 +125,7 @@ export interface StudentDetail {
     count: number;
     items: GuidanceItem[];
   };
+  userRole?: string | null;
 }
 
 export const validateMilestone = async (milestoneId: string, notes?: string): Promise<{ success: boolean; data: any }> => {
@@ -135,6 +136,18 @@ export const validateMilestone = async (milestoneId: string, notes?: string): Pr
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ message: "Gagal memvalidasi milestone" }));
     throw new Error(errorData.message || "Gagal memvalidasi milestone");
+  }
+  return res.json();
+};
+
+export const requestMilestoneRevision = async (milestoneId: string, notes: string): Promise<{ success: boolean; data: any }> => {
+  const res = await apiRequest(getApiUrl(`/milestones/${milestoneId}/request-revision`), {
+    method: "POST",
+    body: JSON.stringify({ revisionNotes: notes }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal mengirim permintaan revisi" }));
+    throw new Error(errorData.message || "Gagal mengirim permintaan revisi");
   }
   return res.json();
 };

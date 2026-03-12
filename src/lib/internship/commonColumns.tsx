@@ -32,6 +32,7 @@ export const getCompanyStatsColumns = ({
             render: (item) => (
                 <span className="font-medium text-sm leading-tight text-wrap">{item.companyName}</span>
             ),
+            sortable: true,
         },
         {
             key: 'address',
@@ -68,6 +69,7 @@ export const getCompanyStatsColumns = ({
                 );
             },
             className: 'text-center',
+            sortable: true,
         },
         {
             key: 'actions',

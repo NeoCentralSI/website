@@ -29,7 +29,7 @@ interface SubmitFormData {
 const trafficLightConfig = {
     green: { label: 'Tersedia', color: 'bg-emerald-500', badgeVariant: 'default' as const, badgeClass: 'bg-emerald-500/15 text-emerald-700 border-emerald-200' },
     yellow: { label: 'Hampir Penuh', color: 'bg-amber-500', badgeVariant: 'default' as const, badgeClass: 'bg-amber-500/15 text-amber-700 border-amber-200' },
-    red: { label: 'Penuh', color: 'bg-red-500', badgeVariant: 'default' as const, badgeClass: 'bg-red-500/15 text-red-700 border-red-200' },
+    red: { label: 'Penuh', color: 'bg-red-500 text-white', badgeVariant: 'default' as const, badgeClass: 'bg-red-500/15 text-red-700 border-red-200' },
 };
 
 export default function CariPembimbing() {

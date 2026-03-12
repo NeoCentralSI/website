@@ -28,12 +28,19 @@ export async function getFirebaseMessaging(): Promise<Messaging | null> {
 
 export async function acquireFcmToken(): Promise<string | null> {
   const messaging = await getFirebaseMessaging();
-  if (!messaging) return null;
+  if (!messaging) {
+    console.error("[FCM] getFirebaseMessaging returned null (not supported by browser)");
+    return null;
+  }
   const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
+  if (!vapidKey) {
+    console.error("[FCM] VITE_FIREBASE_VAPID_KEY is not set in environment");
+  }
   try {
     const token = await getToken(messaging, { vapidKey });
     return token || null;
-  } catch {
+  } catch (err) {
+    console.error("[FCM] getToken failed with error:", err);
     return null;
   }
 }

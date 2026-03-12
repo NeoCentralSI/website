@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { Loading } from "@/components/ui/spinner";
@@ -91,7 +91,13 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
           </div>
         </header>
         <div className="flex flex-1 flex-col mx-4 mb-4">
-          {children}
+          <Suspense fallback={
+            <div className="flex flex-1 items-center justify-center p-8">
+              <Loading size="lg" text="Memuat halaman..." />
+            </div>
+          }>
+            {children}
+          </Suspense>
         </div>
       </SidebarInset>
     </SidebarProvider>

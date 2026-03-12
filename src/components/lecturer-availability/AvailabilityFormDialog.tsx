@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -59,7 +60,6 @@ export function AvailabilityFormDialog({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
-    const today = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
         if (editData) {
@@ -148,24 +148,18 @@ export function AvailabilityFormDialog({
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="validFrom">Berlaku Dari</Label>
-                            <Input
-                                id="validFrom"
-                                type="date"
-                                value={validFrom}
-                                onChange={(e) => setValidFrom(e.target.value)}
-                                min={!isEdit ? today : undefined}
-                                required
+                            <DatePicker
+                                value={validFrom ? new Date(validFrom) : undefined}
+                                onChange={(date) => setValidFrom(date ? date.toISOString().split('T')[0] : '')}
+                                showPastDates={isEdit}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="validUntil">Berlaku Hingga</Label>
-                            <Input
-                                id="validUntil"
-                                type="date"
-                                value={validUntil}
-                                onChange={(e) => setValidUntil(e.target.value)}
-                                min={validFrom || undefined}
-                                required
+                            <DatePicker
+                                value={validUntil ? new Date(validUntil) : undefined}
+                                onChange={(date) => setValidUntil(date ? date.toISOString().split('T')[0] : '')}
+                                showPastDates={true}
                             />
                         </div>
                     </div>

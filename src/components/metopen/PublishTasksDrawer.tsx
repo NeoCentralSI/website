@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { usePublishMetopenTasks, useGetEligibleStudents } from '@/hooks/metopen/useMetopen';
@@ -187,11 +188,10 @@ export function PublishTasksDrawer({ open, onOpenChange, template }: PublishTask
                             </label>
                             <div className="flex items-center gap-3">
                                 <Calendar className="w-5 h-5 text-primary shrink-0" />
-                                <input
-                                    type="date"
-                                    value={deadline}
-                                    onChange={(e) => setDeadline(e.target.value)}
-                                    className="w-full h-10 px-3 rounded-md bg-white border border-border text-foreground text-[14px] font-body focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium"
+                                <DatePicker
+                                    value={deadline ? new Date(deadline) : undefined}
+                                    onChange={(date) => setDeadline(date ? date.toISOString().split('T')[0] : '')}
+                                    className="w-full"
                                 />
                             </div>
                             {deadline && (
