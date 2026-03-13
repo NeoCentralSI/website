@@ -29,7 +29,10 @@ type PushEventType =
   | "internship_company_response_rejected_sekdep"
   | "internship_proposal_accepted"
   | "internship_proposal_partially_accepted"
-  | "internship_proposal_rejected_company";
+  | "internship_proposal_rejected_company"
+  | "internship_supervisor_assigned"
+  | "internship_guidance:submitted"
+  | "internship_guidance:approved";
 
 export function useGuidanceRealtime() {
   const qc = useQueryClient();
@@ -235,6 +238,32 @@ export function useGuidanceRealtime() {
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }
+              case "internship_supervisor_assigned": {
+                const title = payload?.notification?.title || payload?.data?.title || "Pembimbing KP Ditetapkan";
+                const body = payload?.notification?.body || payload?.data?.body || "";
+                toast.success(title, { description: body, duration: 5000 });
+                qc.invalidateQueries({ queryKey: ["student-internship-details"] });
+                qc.invalidateQueries({ queryKey: ["sekdep-lecturer-workload"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_guidance:submitted": {
+                const title = payload?.notification?.title || "Bimbingan Baru";
+                const body = payload?.notification?.body || "Mahasiswa telah mengunggah bimbingan";
+                toast.info(title, { description: body, duration: 5000 });
+                playBeep();
+                qc.invalidateQueries({ queryKey: ["lecturer-student-guidance-timeline"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_guidance:approved": {
+                const title = payload?.notification?.title || "Bimbingan Dievaluasi";
+                const body = payload?.notification?.body || "Bimbingan Anda telah dievaluasi oleh pembimbing";
+                toast.success(title, { description: body, duration: 5000 });
+                qc.invalidateQueries({ queryKey: ["student-guidance"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
               default: {
                 console.warn("[FCM] Unknown notification type:", type);
                 const title = payload?.data?.title || payload?.notification?.title || "Notifikasi Baru";
@@ -283,6 +312,16 @@ export function useGuidanceRealtime() {
                 case 'thesis-guidance:notes-updated': {
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
+                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
+                  break;
+                }
+                case 'internship_guidance:submitted': {
+                  qc.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline'] });
+                  qc.invalidateQueries({ queryKey: ['notification-unread'] });
+                  break;
+                }
+                case 'internship_guidance:approved': {
+                  qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });
                   break;
                 }

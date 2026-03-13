@@ -177,4 +177,11 @@
   }
 }
 
+.no-border-quill .ql-toolbar.ql-snow {
+  border: none;
+}
+
+.no-border-quill .ql-container.ql-snow {
+  border: none;
+}
 /* (animations handled via Tailwind transitions on elements) */

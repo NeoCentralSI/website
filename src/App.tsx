@@ -54,6 +54,10 @@ const LecturerSeminarDetailIdentityPage = lazy(() => import('./pages/tugas-akhir
 const LecturerSeminarDetailAssessmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'))
 const LecturerSeminarDetailRevisionPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'))
 const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'))
+// Kerja Praktik - Dosen
+const InternshipGuidanceOverviewPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceOverview'))
+const StudentGuidanceTimelinePage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/StudentGuidanceTimeline'))
+const GuidanceEvaluatePage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceEvaluate'))
 // Tugas Akhir - Sidang
 const SidangEntry = lazy(() => import('./pages/tugas-akhir/sidang/SidangEntry'))
 const StudentThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/StudentThesisDefence'))
@@ -71,11 +75,13 @@ const LecturerDefenceDetailRevisionPage = lazy(() => import('./pages/tugas-akhir
 const InternshipProposalPage = lazy(() => import('./pages/kerja-praktik/student/Registration'))
 const InternshipLogbookPage = lazy(() => import('./pages/kerja-praktik/student/activity/Logbook'))
 const InternshipGuidancePage = lazy(() => import('./pages/kerja-praktik/student/activity/Guidance'))
+const InternshipGuidanceDetailPage = lazy(() => import('./pages/kerja-praktik/student/activity/GuidanceDetail'))
 // Kerja Praktik - Sekdep
 const SekdepInternshipProposalPage = lazy(() => import('./pages/kerja-praktik/sekdep/Manage'))
 const SekdepInternshipProposalDetailPage = lazy(() => import('./pages/kerja-praktik/sekdep/RegistrationDetail'))
 const SekdepCompanyListPage = lazy(() => import('./pages/kerja-praktik/sekdep/CompanyList'))
 const InternshipLifecycleDetail = lazy(() => import('./pages/kerja-praktik/sekdep/InternshipLifecycleDetail'))
+const BulkRubricManage = lazy(() => import('./pages/kerja-praktik/sekdep/BulkRubricManage'))
 // Kerja Praktik - Admin
 const AdminCompanyListPage = lazy(() => import('./pages/kerja-praktik/admin/CompanyList'))
 const AdminApplicationPage = lazy(() => import('./pages/kerja-praktik/admin/application/Application'))
@@ -177,8 +183,12 @@ function App() {
                   <Route path="/kerja-praktik" element={<KerjaPraktekGuard />}>
                     <Route index element={<KerjaPraktekOverviewPage />} />
                     <Route path="pendaftaran" element={<InternshipProposalPage />} />
-                    <Route path="logbook" element={<InternshipLogbookPage />} />
-                    <Route path="bimbingan" element={<InternshipGuidancePage />} />
+                    <Route path="kegiatan">
+                      <Route index element={<Navigate to="logbook" replace />} />
+                      <Route path="logbook" element={<InternshipLogbookPage />} />
+                      <Route path="bimbingan" element={<InternshipGuidancePage />} />
+                      <Route path="bimbingan/:weekNumber" element={<InternshipGuidanceDetailPage />} />
+                    </Route>
                     <Route path="seminar" element={<Placeholder title="KP - Seminar" />} />
                   </Route>
                 </Route>
@@ -230,6 +240,16 @@ function App() {
 
                 {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
                 <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
+                  {/* Kerja Praktik - Lecturer Routes */}
+                  <Route path="/kerja-praktik/dosen/bimbingan">
+                    <Route index element={<InternshipGuidanceOverviewPage />} />
+                    <Route path=":internshipId">
+                      <Route index element={<StudentGuidanceTimelinePage />} />
+                      <Route path="minggu/:weekNumber" element={<GuidanceEvaluatePage />} />
+                    </Route>
+                  </Route>
+
+                  {/* Settings */}
                   <Route path="/tugas-akhir/bimbingan/lecturer/requests" element={<LecturerRequestsPage />} />
                   <Route path="/tugas-akhir/bimbingan/lecturer/session/:guidanceId" element={<LecturerGuidanceSessionPage />} />
                   <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
@@ -290,6 +310,9 @@ function App() {
                   <Route path="/kelola/kerja-praktik/pendaftaran/balasan" element={<SekdepInternshipProposalPage />} />
                   <Route path="/kelola/kerja-praktik/pendaftaran/mahasiswa" element={<SekdepInternshipProposalPage />} />
                   <Route path="/kelola/kerja-praktik/pendaftaran/dosen" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/pendaftaran/bimbingan" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/pendaftaran/cpmk" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/pendaftaran/cpmk/:cpmkId/rubrik" element={<BulkRubricManage />} />
                   <Route path="/kelola/kerja-praktik/mahasiswa/:internshipId" element={<InternshipLifecycleDetail />} />
                   <Route path="/kelola/kerja-praktik/pendaftaran/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
                   <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />

@@ -108,7 +108,7 @@ export default function LogbookPage() {
 
     const breadcrumb = useMemo(() => [
         { label: 'Kerja Praktik', to: '/kerja-praktik' },
-        { label: 'Pelaksanaan' }
+        { label: 'Pelaksanaan', to: '/kerja-praktik/kegiatan' }
     ], []);
 
     useEffect(() => {
@@ -124,8 +124,8 @@ export default function LogbookPage() {
     const columns = useMemo(() => getLogbookColumns({ onEdit: handleEdit }), []);
 
     const tabs = [
-        { label: 'Logbook', to: '/kerja-praktik/logbook', end: true },
-        { label: 'Bimbingan', to: '/kerja-praktik/bimbingan' },
+        { label: 'Logbook', to: '/kerja-praktik/kegiatan/logbook', end: true },
+        { label: 'Bimbingan', to: '/kerja-praktik/kegiatan/bimbingan' },
     ];
 
     const logbooks = data?.data?.logbooks || [];

@@ -280,6 +280,10 @@ export const API_CONFIG = {
       INTERNSHIPS_DETAIL: (id: string) => `/insternship/sekdep/internships/${id}`,
       LECTURERS_WORKLOAD: '/insternship/sekdep/lecturers/workload',
       LECTURERS_WORKLOAD_EXPORT: '/insternship/sekdep/lecturers/workload/export',
+      GUIDANCE_QUESTIONS: '/insternship/sekdep/guidance/questions',
+      GUIDANCE_QUESTION_DETAIL: (id: string) => `/insternship/sekdep/guidance/questions/${id}`,
+      GUIDANCE_CRITERIA: '/insternship/sekdep/guidance/criteria',
+      GUIDANCE_CRITERIA_DETAIL: (id: string) => `/insternship/sekdep/guidance/criteria/${id}`,
     },
     INTERNSHIP_KADEP: {
       BASE: '/insternship/kadep',

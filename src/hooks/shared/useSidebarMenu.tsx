@@ -71,11 +71,11 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Pendaftaran", url: "/kerja-praktik/pendaftaran" },
-            { title: "Kegiatan", url: "/kerja-praktik/logbook" },
+            { title: "Kegiatan", url: "/kerja-praktik/kegiatan" },
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
-        // Metode Penelitian — Overview ditambah sebagai sub-item pertama
+        // Metode Penelitian â€” Overview ditambah sebagai sub-item pertama
         {
           title: "Metode Penelitian",
           url: "/metopel",
@@ -93,7 +93,7 @@ export const useSidebarMenu = () => {
             { title: "Sidang", url: "/tugas-akhir/sidang" },
           ],
         },
-        // Yudisium — leaf item (no children)
+        // Yudisium â€” leaf item (no children)
         {
           title: "Yudisium",
           url: "/yudisium",
@@ -129,13 +129,13 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/bimbingan" },
+            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
       ];
 
-      // Dosen Pengampu Metopel — full management menu
+      // Dosen Pengampu Metopel â€” full management menu
       if (role.dosenPengampuMetopel) {
         menuItems.push({
           title: "Metode Penelitian",
@@ -151,7 +151,7 @@ export const useSidebarMenu = () => {
           ],
         });
       } else if (role.pembimbing1) {
-        // Pembimbing biasa — hanya inbox (tidak punya akses kelola kelas/template)
+        // Pembimbing biasa â€” hanya inbox (tidak punya akses kelola kelas/template)
         menuItems.push({
           title: "Inbox Pembimbing",
           url: "/dosen/inbox-pembimbing",
@@ -172,7 +172,7 @@ export const useSidebarMenu = () => {
         ],
       });
 
-      // Jadwal Ketersediaan — leaf item
+      // Jadwal Ketersediaan â€” leaf item
       menuItems.push({
         title: "Jadwal Ketersediaan",
         url: "/jadwal-ketersediaan",
@@ -207,7 +207,7 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/bimbingan" },
+            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
@@ -248,7 +248,7 @@ export const useSidebarMenu = () => {
         ],
       });
 
-      // Jadwal Ketersediaan — leaf item
+      // Jadwal Ketersediaan â€” leaf item
       menuItems.push({
         title: "Jadwal Ketersediaan",
         url: "/jadwal-ketersediaan",
@@ -300,7 +300,7 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/bimbingan" },
+            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
@@ -340,7 +340,7 @@ export const useSidebarMenu = () => {
         ],
       });
 
-      // Jadwal Ketersediaan — leaf item
+      // Jadwal Ketersediaan â€” leaf item
       menuItems.push({
         title: "Jadwal Ketersediaan",
         url: "/jadwal-ketersediaan",
@@ -392,7 +392,7 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/bimbingan" },
+            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
@@ -410,7 +410,7 @@ export const useSidebarMenu = () => {
         ],
       });
 
-      // Jadwal Ketersediaan — leaf item
+      // Jadwal Ketersediaan â€” leaf item
       menuItems.push({
         title: "Jadwal Ketersediaan",
         url: "/jadwal-ketersediaan",
@@ -557,3 +557,4 @@ export const useSidebarMenu = () => {
 
   return menuData;
 };
+
