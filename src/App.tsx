@@ -112,6 +112,7 @@ const DosenPage = lazy(() => import('./pages/master-data/Dosen'))
 const DosenDetailPage = lazy(() => import('./pages/master-data/DosenDetail'))
 const MasterDataTugasAkhirPage = lazy(() => import('./pages/master-data/TugasAkhir'))
 const ScienceGroupPage = lazy(() => import('./pages/master-data/ScienceGroup'))
+const RoomPage = lazy(() => import('./pages/master-data/Room'))
 // Kelola
 const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
 const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
@@ -378,6 +379,7 @@ function App() {
                   <Route path="/master-data/tugas-akhir" element={<MasterDataTugasAkhirPage />} />
                   <Route path="/master-data/user" element={<UserManagementPage />} />
                   <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
+                  <Route path="/master-data/ruangan" element={<RoomPage />} />
                   <Route path="/master-data/kuota-bimbingan" element={<KuotaBimbinganPage />} />
                 </Route>
               </Route>

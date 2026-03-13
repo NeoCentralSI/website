@@ -570,6 +570,10 @@ export const useSidebarMenu = () => {
                 url: "/master-data/tahun-ajaran",
               },
               {
+                title: "Kelola Ruangan",
+                url: "/master-data/ruangan",
+              },
+              {
                 title: "Kuota Bimbingan",
                 url: "/master-data/kuota-bimbingan",
               },

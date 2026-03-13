@@ -27,6 +27,16 @@ export interface AcademicYear {
   updatedAt: string;
 }
 
+export interface Room {
+  id: string;
+  name: string;
+  location: string | null;
+  capacity: number | null;
+  canDelete: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateUserRequest {
   fullName: string;
   email: string;
@@ -57,6 +67,18 @@ export interface UpdateAcademicYearRequest {
   startDate?: string;
   endDate?: string;
   isActive?: boolean;
+}
+
+export interface CreateRoomRequest {
+  name: string;
+  location?: string | null;
+  capacity?: number | null;
+}
+
+export interface UpdateRoomRequest {
+  name?: string;
+  location?: string | null;
+  capacity?: number | null;
 }
 
 // Import students from CSV
@@ -204,6 +226,92 @@ export const getActiveAcademicYearAPI = async (): Promise<{
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Gagal memuat tahun ajaran aktif');
+  }
+
+  return response.json();
+};
+
+// Get all rooms
+export const getRoomsAPI = async (params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<{
+  rooms: Room[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  if (params?.search) queryParams.append('search', params.search);
+
+  const response = await fetch(getApiUrl(`/adminfeatures/rooms?${queryParams}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat data ruangan');
+  }
+
+  return response.json();
+};
+
+export const createRoomAPI = async (data: CreateRoomRequest): Promise<{ room: Room }> => {
+  const response = await fetch(getApiUrl('/adminfeatures/rooms'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal menambahkan ruangan');
+  }
+
+  return response.json();
+};
+
+export const updateRoomAPI = async (id: string, data: UpdateRoomRequest): Promise<{ room: Room }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/rooms/${id}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal mengubah data ruangan');
+  }
+
+  return response.json();
+};
+
+export const deleteRoomAPI = async (id: string): Promise<{ success: boolean; message: string }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/rooms/${id}`), {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal menghapus ruangan');
   }
 
   return response.json();
