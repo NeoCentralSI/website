@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Pencil, Power, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     AlertDialog,
@@ -22,26 +21,24 @@ interface CpmkTableProps {
     data: Cpmk[];
     isLoading: boolean;
     isFetching: boolean;
-    onToggle: (id: string) => void;
     onDelete: (id: string) => void;
     onUpdate: (id: string, data: UpdateCpmkPayload) => Promise<unknown>;
     onCreate: () => void;
     onRefresh: () => void;
-    isToggling: boolean;
     isDeleting: boolean;
+    extraActions?: React.ReactNode;
 }
 
 export function CpmkTable({
     data,
     isLoading,
     isFetching,
-    onToggle,
     onDelete,
     onUpdate,
     onCreate,
     onRefresh,
-    isToggling,
     isDeleting,
+    extraActions,
 }: CpmkTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<Cpmk | null>(null);
@@ -97,26 +94,9 @@ export function CpmkTable({
             ),
         },
         {
-            key: 'status',
-            header: 'Status',
-            width: 90,
-            render: (item) => (
-                <Badge
-                    variant={item.isActive ? 'default' : 'secondary'}
-                    className={
-                        item.isActive
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-                    }
-                >
-                    {item.isActive ? 'Aktif' : 'Tidak Aktif'}
-                </Badge>
-            ),
-        },
-        {
             key: 'actions',
             header: 'Aksi',
-            width: 120,
+            width: 90,
             className: 'text-right',
             render: (item) => (
                 <div className="flex items-center justify-end gap-1">
@@ -132,19 +112,6 @@ export function CpmkTable({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-8 w-8 ${item.isActive
-                            ? 'text-muted-foreground hover:text-amber-600'
-                            : 'text-muted-foreground hover:text-emerald-600'
-                            }`}
-                        onClick={() => onToggle(item.id)}
-                        disabled={isToggling}
-                        title={item.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                    >
-                        <Power className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         onClick={() => setDeleteId(item.id)}
                         disabled={isDeleting}
@@ -155,7 +122,7 @@ export function CpmkTable({
                 </div>
             ),
         },
-    ], [isToggling, isDeleting, onToggle, page, pageSize]);
+    ], [isDeleting, page, pageSize]);
 
     return (
         <>
@@ -174,6 +141,7 @@ export function CpmkTable({
                 emptyText="Belum ada data CPMK"
                 actions={
                     <div className="flex items-center gap-2">
+                        {extraActions}
                         <RefreshButton
                             onClick={onRefresh}
                             isRefreshing={isFetching && !isLoading}

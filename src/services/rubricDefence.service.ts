@@ -25,7 +25,6 @@ export interface AssessmentCriteria {
     maxScore: number | null;
     appliesTo: 'defence';
     role: DefenceRole;
-    isActive: boolean;
     displayOrder: number;
     assessmentRubrics: AssessmentRubric[];
 }
@@ -34,7 +33,6 @@ export interface CpmkWithRubrics {
     id: string;
     code: string;
     description: string;
-    isActive: boolean;
     displayOrder: number;
     assessmentCriterias: AssessmentCriteria[];
 }
@@ -205,29 +203,6 @@ export const deleteRubric = async (rubricId: string): Promise<void> => {
         const error = await response.json();
         throw new Error(error.message || 'Gagal menghapus komponen rubrik sidang');
     }
-};
-
-// ────────────────────────────────────────────
-// Toggle Criteria Active API
-// ────────────────────────────────────────────
-
-export const toggleCriteriaActive = async (
-    criteriaId: string,
-    isActive: boolean
-): Promise<AssessmentCriteria> => {
-    const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_DEFENCE.CRITERIA_TOGGLE(criteriaId)),
-        {
-            method: 'PATCH',
-            body: JSON.stringify({ isActive }),
-        }
-    );
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Gagal mengubah status kriteria sidang');
-    }
-    const result = await response.json();
-    return result.data;
 };
 
 // ────────────────────────────────────────────

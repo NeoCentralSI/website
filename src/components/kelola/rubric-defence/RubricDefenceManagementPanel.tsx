@@ -50,10 +50,8 @@ export function RubricDefenceManagementPanel() {
         isDeletingCriteria,
         isRemovingCpmkConfig,
         isDeletingRubric,
-        toggleCriteriaActive,
         reorderCriteria,
         reorderRubrics,
-        isTogglingCriteria,
     } = useRubricDefence(selectedRole);
 
     const { cpmks: allCpmks } = useCpmk();
@@ -75,7 +73,7 @@ export function RubricDefenceManagementPanel() {
     const remainingScore = 100 - globalTotalScore;
 
     const activeThesisCpmks = useMemo(
-        () => allCpmks.filter((cpmk) => cpmk.isActive && cpmk.type === 'thesis'),
+        () => allCpmks.filter((cpmk) => cpmk.type === 'thesis'),
         [allCpmks],
     );
 
@@ -89,7 +87,6 @@ export function RubricDefenceManagementPanel() {
                 id: cpmk.id,
                 code: cpmk.code,
                 description: cpmk.description,
-                isActive: cpmk.isActive,
                 displayOrder: 0,
                 assessmentCriterias: [] as AssessmentCriteria[],
             }));
@@ -235,13 +232,11 @@ export function RubricDefenceManagementPanel() {
                 onCreateRubric={createRubric}
                 onUpdateRubric={updateRubric}
                 onDeleteRubric={deleteRubric}
-                onToggleCriteriaActive={toggleCriteriaActive}
                 onReorderCriteria={reorderCriteria}
                 onReorderRubrics={reorderRubrics}
                 isDeletingCriteria={isDeletingCriteria}
                 isRemovingCpmk={isRemovingCpmkConfig}
                 isDeletingRubric={isDeletingRubric}
-                isTogglingCriteria={isTogglingCriteria}
             />
 
             {/* Criteria form dialog */}
@@ -253,7 +248,7 @@ export function RubricDefenceManagementPanel() {
                 role={selectedRole}
                 editData={editCriteria}
                 remainingScore={
-                    editCriteria && editCriteria.isActive
+                    editCriteria
                         ? remainingScore + (editCriteria.maxScore || 0)
                         : remainingScore
                 }
