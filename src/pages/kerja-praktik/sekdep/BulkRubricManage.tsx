@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -72,6 +72,37 @@ export default function BulkRubricManage() {
         }, { replace: true });
     };
 
+    const getRangeError = (row: RubricFormItem) => {
+        const min = parseFloat(row.minScore);
+        const max = parseFloat(row.maxScore);
+
+        if (row.minScore !== '' && row.maxScore !== '' && !isNaN(min) && !isNaN(max)) {
+            if (min >= max) return 'Min harus < Max';
+        }
+
+        // Overlap check
+        if (!isNaN(min) || !isNaN(max)) {
+            const others = rubrics.filter(r => r.id !== row.id);
+            for (const other of others) {
+                const oMin = parseFloat(other.minScore);
+                const oMax = parseFloat(other.maxScore);
+                if (isNaN(oMin) || isNaN(oMax)) continue;
+
+                const currentMin = isNaN(min) ? -Infinity : min;
+                const currentMax = isNaN(max) ? Infinity : max;
+
+                if (currentMin <= oMax && currentMax >= oMin) {
+                    return `Bentrok dengan level "${other.levelName || 'Lain'}" (${oMin}-${oMax})`;
+                }
+            }
+        }
+        return null;
+    };
+
+    const hasErrors = useMemo(() => {
+        return rubrics.some(r => getRangeError(r) !== null);
+    }, [rubrics, getRangeError]);
+
     const rubricColumns: Column<RubricFormItem>[] = [
         {
             key: 'no',
@@ -123,27 +154,38 @@ export default function BulkRubricManage() {
             header: 'Range Skor',
             width: 180,
             className: 'text-center',
-            render: (row) => isEditing ? (
-                <div className="flex items-center gap-2 justify-center">
-                    <Input 
-                        type="number"
-                        className="w-20 text-center"
-                        value={row.minScore}
-                        onChange={(e) => handleUpdateField(row.id, 'minScore', e.target.value)}
-                    />
-                    <span>-</span>
-                    <Input 
-                        type="number"
-                        className="w-20 text-center"
-                        value={row.maxScore}
-                        onChange={(e) => handleUpdateField(row.id, 'maxScore', e.target.value)}
-                    />
-                </div>
-            ) : (
-                <Badge variant="secondary" className="font-mono px-2 py-1">
-                    {row.minScore} - {row.maxScore}
-                </Badge>
-            )
+            render: (row) => {
+                const error = isEditing ? getRangeError(row) : null;
+                
+                return isEditing ? (
+                    <div className="flex flex-col gap-1.5 items-center justify-center py-2">
+                        <div className="flex items-center gap-2 justify-center">
+                            <Input 
+                                type="number"
+                                className={cn("w-20 text-center h-8", error && "border-destructive focus-visible:ring-destructive")}
+                                value={row.minScore}
+                                onChange={(e) => handleUpdateField(row.id, 'minScore', e.target.value)}
+                            />
+                            <span className="text-muted-foreground">-</span>
+                            <Input 
+                                type="number"
+                                className={cn("w-20 text-center h-8", error && "border-destructive focus-visible:ring-destructive")}
+                                value={row.maxScore}
+                                onChange={(e) => handleUpdateField(row.id, 'maxScore', e.target.value)}
+                            />
+                        </div>
+                        {error && (
+                            <span className="text-[10px] font-medium text-destructive leading-tight text-center max-w-[150px]">
+                                {error}
+                            </span>
+                        )}
+                    </div>
+                ) : (
+                    <Badge variant="secondary" className="font-mono px-2 py-1">
+                        {row.minScore} - {row.maxScore}
+                    </Badge>
+                );
+            }
         },
         ...(isEditing ? [{
             key: 'actions',
@@ -197,9 +239,10 @@ export default function BulkRubricManage() {
         mutationFn: (data: Partial<InternshipAssessmentRubric>[]) => 
             bulkUpdateInternshipRubrics(cpmkId!, data),
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['internship-cpmk', cpmkId] });
             queryClient.invalidateQueries({ queryKey: ['internship-cpmks'] });
             toast.success('Berhasil menyimpan rubrik penilaian');
-            navigate(-1);
+            setIsEditing(false);
         },
         onError: (error: any) => {
             toast.error(error.message || 'Gagal menyimpan rubrik');
@@ -229,17 +272,41 @@ export default function BulkRubricManage() {
     };
 
     const handleSave = () => {
-        // Validation
-        const isValid = rubrics.every(r => 
+        // 1. Basic completion validation
+        const isComplete = rubrics.every(r => 
             r.levelName.trim() !== '' && 
             r.rubricLevelDescription.trim() !== '' && 
             r.minScore !== '' && 
             r.maxScore !== ''
         );
 
-        if (!isValid) {
+        if (!isComplete) {
             toast.error('Mohon lengkapi semua field rubrik');
             return;
+        }
+
+        // 2. Score range validation (No overlaps, min < max)
+        const sortedRubrics = [...rubrics].sort((a, b) => parseFloat(a.minScore) - parseFloat(b.minScore));
+        
+        for (let i = 0; i < sortedRubrics.length; i++) {
+            const current = sortedRubrics[i];
+            const min = parseFloat(current.minScore);
+            const max = parseFloat(current.maxScore);
+
+            if (min >= max) {
+                toast.error(`Skor minimum harus lebih kecil dari maksimum pada level "${current.levelName}"`);
+                return;
+            }
+
+            if (i < sortedRubrics.length - 1) {
+                const next = sortedRubrics[i + 1];
+                const nextMin = parseFloat(next.minScore);
+                
+                if (max > nextMin) {
+                    toast.error(`Range skor tumpang tindih antara level "${current.levelName}" (${min}-${max}) dan "${next.levelName}" (mulai dari ${nextMin})`);
+                    return;
+                }
+            }
         }
 
         const dataToSave = rubrics.map(r => ({
@@ -309,57 +376,49 @@ export default function BulkRubricManage() {
 
             {/* Rubrics Content */}
             <div className="space-y-4">
-                {rubrics.length === 0 && !isEditing ? (
-                    <div className="text-center py-12 border-2 border-dashed rounded-xl border-muted bg-muted/20">
-                        <p className="text-muted-foreground">Belum ada rubrik untuk CPMK ini.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        <InternshipTable 
-                            columns={rubricColumns}
-                            data={rubrics}
-                            total={rubrics.length}
-                            page={1}
-                            pageSize={isEditing ? 100 : 100} // Keep it large for now if needed, but disable pagination
-                            onPageChange={() => {}}
-                            rowKey={(row) => row.id}
-                            emptyText="Belum ada rubrik untuk CPMK ini"
-                            hidePagination={isEditing}
-                            actions={
+                <InternshipTable 
+                    columns={rubricColumns}
+                    data={rubrics}
+                    total={rubrics.length}
+                    page={1}
+                    pageSize={isEditing ? 100 : 100} // Keep it large for now if needed, but disable pagination
+                    onPageChange={() => {}}
+                    rowKey={(row) => row.id}
+                    emptyText="Belum ada rubrik untuk CPMK ini"
+                    hidePagination={isEditing}
+                    actions={
+                        <div className="flex items-center gap-2">
+                            {!isEditing ? (
+                                <Button 
+                                    onClick={() => setIsEditing(true)}
+                                    className="gap-2"
+                                >
+                                    <Edit3 className="h-4 w-4" />
+                                    Edit Rubrik
+                                </Button>
+                            ) : (
                                 <div className="flex items-center gap-2">
-                                    {!isEditing ? (
-                                        <Button 
-                                            onClick={() => setIsEditing(true)}
-                                            className="gap-2"
-                                        >
-                                            <Edit3 className="h-4 w-4" />
-                                            Edit Rubrik
-                                        </Button>
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 py-1 px-3">
-                                                <Edit3 className="h-3 w-3 mr-1.5" />
-                                                Mode Edit Aktif
-                                            </Badge>
-                                        </div>
-                                    )}
-                                </div>
-                            }
-                            appendRow={isEditing && (
-                                <div className="p-2 transition-all animate-in fade-in slide-in-from-top-1 bg-muted/5 flex justify-center">
-                                    <Button 
-                                        variant="ghost" 
-                                        className=" text-primary hover:bg-primary/10 h-10 px-4 gap-2"
-                                        onClick={handleAddRow}
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        Tambah Level Penilaian
-                                    </Button>
+                                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 py-1 px-3">
+                                        <Edit3 className="h-3 w-3 mr-1.5" />
+                                        Mode Edit Aktif
+                                    </Badge>
                                 </div>
                             )}
-                        />
-                    </div>
-                )}
+                        </div>
+                    }
+                    appendRow={isEditing && (
+                        <div className="p-2 transition-all animate-in fade-in slide-in-from-top-1 bg-muted/5 flex justify-center">
+                            <Button 
+                                variant="ghost" 
+                                className=" text-primary hover:bg-primary/10 h-10 px-4 gap-2"
+                                onClick={handleAddRow}
+                            >
+                                <Plus className="h-4 w-4" />
+                                Tambah Level Penilaian
+                            </Button>
+                        </div>
+                    )}
+                />
             </div>
 
             {isEditing && (
@@ -374,7 +433,7 @@ export default function BulkRubricManage() {
                         </Button>
                         <Button 
                             onClick={handleSave}
-                            disabled={bulkUpdateMutation.isPending}
+                            disabled={bulkUpdateMutation.isPending || hasErrors}
                             className="gap-2 px-6"
                         >
                             {bulkUpdateMutation.isPending ? (

@@ -194,7 +194,7 @@ export default function GuidanceDetailPage() {
                     ))}
                 </CardContent>
                 {isEditing && (
-                    <CardFooter className="bg-muted/20 border-t p-6 flex justify-end gap-3 rounded-b-xl">
+                    <CardFooter className="bg-muted/20 border-t px-6 flex justify-end gap-3 rounded-b-xl">
                         <Button variant="outline" onClick={handleCancelEdit}>Batal</Button>
                         {!isLocked && (
                             <Button

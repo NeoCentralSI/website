@@ -27,7 +27,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, BookOpen, GraduationCap, Loader2, MoveVertical, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen, GraduationCap, Loader2, MoveVertical, GripVertical, Copy } from 'lucide-react';
 import {
     getGuidanceQuestions,
     createGuidanceQuestion,
@@ -37,12 +37,14 @@ import {
     createGuidanceCriteria,
     updateGuidanceCriteria,
     deleteGuidanceCriteria,
+    copyInternshipGuidance,
     type GuidanceQuestion,
     type GuidanceCriteria,
 } from '@/services/internship.service';
 import { getAcademicYearsAPI } from '@/services/admin.service';
 import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { DuplicateDataDialog } from './DuplicateDataDialog';
 import { cn } from '@/lib/utils';
 
 // ==================== Student Questions Section ====================
@@ -51,9 +53,10 @@ interface SectionProps {
     academicYearId: string;
     setAcademicYearId: (id: string) => void;
     academicYears: any[];
+    onOpenDuplicate: () => void;
 }
 
-function StudentQuestionsSection({ academicYearId, setAcademicYearId, academicYears }: SectionProps) {
+function StudentQuestionsSection({ academicYearId, setAcademicYearId, academicYears, onOpenDuplicate }: SectionProps) {
     const qc = useQueryClient();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -332,6 +335,16 @@ function StudentQuestionsSection({ academicYearId, setAcademicYearId, academicYe
                                     Atur Urutan
                                 </Button>
                                 <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="h-9 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+                                    onClick={onOpenDuplicate}
+                                    disabled={academicYearId === 'all'}
+                                >
+                                    <Copy className="size-4 text-primary" />
+                                    <span>Duplikat</span>
+                                </Button>
                                 <Button size="sm" onClick={openCreate} className="gap-1">
                                     <Plus className="size-4" />
                                     Tambah Pertanyaan
@@ -411,7 +424,7 @@ function StudentQuestionsSection({ academicYearId, setAcademicYearId, academicYe
 
 // ==================== Lecturer Criteria Section ====================
 
-function LecturerCriteriaSection({ academicYearId, setAcademicYearId, academicYears }: SectionProps) {
+function LecturerCriteriaSection({ academicYearId, setAcademicYearId, academicYears, onOpenDuplicate }: SectionProps) {
     const qc = useQueryClient();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -731,6 +744,16 @@ function LecturerCriteriaSection({ academicYearId, setAcademicYearId, academicYe
                                     Atur Urutan
                                 </Button>
                                 <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="h-9 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+                                    onClick={onOpenDuplicate}
+                                    disabled={academicYearId === 'all'}
+                                >
+                                    <Copy className="size-4 text-primary" />
+                                    <span>Duplikat</span>
+                                </Button>
                                 <Button size="sm" onClick={openCreate} className="gap-1">
                                     <Plus className="size-4" />
                                     Tambah Kriteria
@@ -928,14 +951,18 @@ export function GuidanceMasterPanel() {
         }
     }, [academicYears, academicYearId]);
 
+    const qc = useQueryClient();
+    const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+
     const handleTabChange = (val: string) => {
         updateParams({ tab: val });
     };
 
     return (
         <div className="space-y-6">
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <TabsList>
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <TabsList className="w-full sm:w-auto">
                     <TabsTrigger
                         value="questions"
                         className="px-6 relative"
@@ -955,24 +982,42 @@ export function GuidanceMasterPanel() {
                         </div>
                     </TabsTrigger>
                 </TabsList>
+            </div>
 
                 <div className="mt-6">
-                    <TabsContent value="questions">
+                    <TabsContent value="questions" className="mt-0">
                         <StudentQuestionsSection
                             academicYearId={academicYearId}
                             setAcademicYearId={setAcademicYearId}
                             academicYears={academicYears}
+                            onOpenDuplicate={() => setDuplicateDialogOpen(true)}
                         />
                     </TabsContent>
-                    <TabsContent value="criteria">
+                    <TabsContent value="criteria" className="mt-0">
                         <LecturerCriteriaSection
                             academicYearId={academicYearId}
                             setAcademicYearId={setAcademicYearId}
                             academicYears={academicYears}
+                            onOpenDuplicate={() => setDuplicateDialogOpen(true)}
                         />
                     </TabsContent>
                 </div>
             </Tabs>
+
+            <DuplicateDataDialog
+                open={duplicateDialogOpen}
+                onOpenChange={setDuplicateDialogOpen}
+                onDuplicate={async (fromId) => {
+                    await copyInternshipGuidance(fromId, academicYearId);
+                    qc.invalidateQueries({ queryKey: ['guidance-questions', academicYearId] });
+                    qc.invalidateQueries({ queryKey: ['guidance-criteria', academicYearId] });
+                }}
+                academicYears={academicYears}
+                currentYearId={academicYearId}
+                title="Duplikat Data Bimbingan"
+                description="Salin semua pertanyaan mahasiswa dan kriteria penilaian dosen dari tahun ajaran lain ke tahun ajaran terpilih saat ini."
+                targetName="bimbingan"
+            />
         </div>
     );
 }

@@ -721,6 +721,7 @@ export interface InternshipPendingLetter {
     coordinatorStatus: string;
     companyName: string;
     members: { studentId: string; name: string; nim: string; status: string }[];
+    acceptedMemberCount: number;
     createdAt: string;
     signedById: string | null;
     document: {
@@ -1275,4 +1276,38 @@ export const bulkUpdateInternshipRubrics = async (cpmkId: string, rubrics: Parti
         throw new Error(errorData.message || "Gagal menyimpan rubrik secara massal");
     }
     return res.json();
+};
+
+/**
+ * Duplicates all CPMKs and their rubrics from one academic year to another.
+ */
+export const copyInternshipCpmks = async (fromYearId: string, toYearId: string): Promise<{ success: boolean; data: any }> => {
+  const url = getApiUrl('/insternship/sekdep/cpmk/copy');
+  const res = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromYearId, toYearId })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal menduplikasi CPMK" }));
+    throw new Error(errorData.message || "Gagal menduplikasi CPMK");
+  }
+  return res.json();
+};
+
+/**
+ * Duplicates all guidance questions and lecturer criteria from one academic year to another.
+ */
+export const copyInternshipGuidance = async (fromYearId: string, toYearId: string): Promise<{ success: boolean; data: any }> => {
+  const url = getApiUrl('/insternship/sekdep/guidance/copy');
+  const res = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromYearId, toYearId })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal menduplikasi data bimbingan" }));
+    throw new Error(errorData.message || "Gagal menduplikasi data bimbingan");
+  }
+  return res.json();
 };

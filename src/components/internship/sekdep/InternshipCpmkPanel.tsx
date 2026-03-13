@@ -49,13 +49,16 @@ import {
     updateInternshipCpmk,
     deleteInternshipCpmk,
     deleteInternshipRubric,
+    copyInternshipCpmks,
     type InternshipCpmk,
 } from '@/services/internship.service';
 import { getAcademicYearsAPI } from '@/services/admin.service';
 import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { DuplicateDataDialog } from './DuplicateDataDialog';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
+import { Copy } from 'lucide-react';
 
 export function InternshipCpmkPanel() {
     const navigate = useNavigate();
@@ -67,6 +70,7 @@ export function InternshipCpmkPanel() {
     // UI states
     const [expandedCpmkId, setExpandedCpmkId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
 
     // CPMK Form
     const [cpmkForm, setCpmkForm] = useState({
@@ -407,13 +411,40 @@ export function InternshipCpmkPanel() {
 
                         <div className="flex items-center gap-2">
                             <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />
+                            
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-9 gap-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+                                onClick={() => setDuplicateDialogOpen(true)}
+                                disabled={academicYearId === 'all'}
+                            >
+                                <Copy className="size-4 text-primary" />
+                                <span className="hidden sm:inline">Duplikat</span>
+                            </Button>
+
                             <Button size="sm" onClick={openCreateCpmk} className="gap-1">
                                 <Plus className="size-4" />
-                                Tambah CPMK
+                                <span className="hidden sm:inline">Tambah CPMK</span>
+                                <span className="sm:hidden">Tambah</span>
                             </Button>
                         </div>
                     </div>
                 }
+            />
+
+            <DuplicateDataDialog
+                open={duplicateDialogOpen}
+                onOpenChange={setDuplicateDialogOpen}
+                onDuplicate={async (fromId) => {
+                    await copyInternshipCpmks(fromId, academicYearId);
+                    qc.invalidateQueries({ queryKey: ['internship-cpmks', academicYearId] });
+                }}
+                academicYears={academicYears}
+                currentYearId={academicYearId}
+                title="Duplikat Data CPMK"
+                description="Salin semua CPMK dan rubrik penilaian terkait dari tahun ajaran lain ke tahun ajaran terpilih saat ini."
+                targetName="CPMK"
             />
 
             {/* CPMK Dialog */}

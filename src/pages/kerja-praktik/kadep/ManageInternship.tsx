@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Loading } from '@/components/ui/spinner';
 import CustomTable from '@/components/layout/CustomTable';
@@ -19,15 +19,30 @@ export default function KadepInternshipManagementPage() {
 
     const [docOpen, setDocOpen] = useState(false);
     const [docInfo, setDocInfo] = useState<{ fileName: string; filePath: string } | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [academicYearId, setAcademicYearId] = useState<string>('');
+
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get('tab') || 'application';
+    const academicYearId = searchParams.get('academicYearId') || '';
+    const searchQuery = searchParams.get('q') || '';
 
     const { academicYears } = useAcademicYears({ pageSize: 50 });
+
+    const updateParams = (updates: Record<string, string | undefined>) => {
+        const newParams = new URLSearchParams(searchParams);
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === '' || (value === 'all' && key === 'academicYearId')) {
+                newParams.delete(key);
+            } else {
+                newParams.set(key, value);
+            }
+        });
+        setSearchParams(newParams);
+    };
 
     useEffect(() => {
         if (!academicYearId && academicYears.length > 0) {
             const active = academicYears.find(ay => ay.isActive);
-            if (active) setAcademicYearId(active.id);
+            if (active) updateParams({ academicYearId: active.id });
         }
     }, [academicYears, academicYearId]);
 
@@ -113,7 +128,7 @@ export default function KadepInternshipManagementPage() {
                 )}
             </div>
 
-            <Tabs defaultValue="application" className="w-full">
+            <Tabs value={activeTab} onValueChange={(v) => updateParams({ tab: v })} className="w-full">
                 <TabsList className="mb-4">
                     <TabsTrigger value="application" className="px-6 relative">
                         Permohonan ({filteredApplicationLetters.length})
@@ -150,11 +165,11 @@ export default function KadepInternshipManagementPage() {
                             pageSize={10}
                             enableColumnFilters
                             searchValue={searchQuery}
-                            onSearchChange={setSearchQuery}
+                            onSearchChange={(v) => updateParams({ q: v })}
                             emptyText={searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat permohonan."}
                             actions={
                                 <div className="flex items-center gap-2">
-                                    <Select value={academicYearId} onValueChange={setAcademicYearId}>
+                                    <Select value={academicYearId} onValueChange={(v) => updateParams({ academicYearId: v })}>
                                         <SelectTrigger className="w-[200px] h-9">
                                             <SelectValue placeholder="Pilih Tahun Ajaran" />
                                         </SelectTrigger>
@@ -194,11 +209,11 @@ export default function KadepInternshipManagementPage() {
                             pageSize={10}
                             enableColumnFilters
                             searchValue={searchQuery}
-                            onSearchChange={setSearchQuery}
+                            onSearchChange={(v) => updateParams({ q: v })}
                             emptyText={searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat tugas."}
                             actions={
                                 <div className="flex items-center gap-2">
-                                    <Select value={academicYearId} onValueChange={setAcademicYearId}>
+                                    <Select value={academicYearId} onValueChange={(v) => updateParams({ academicYearId: v })}>
                                         <SelectTrigger className="w-[200px] h-9">
                                             <SelectValue placeholder="Pilih Tahun Ajaran" />
                                         </SelectTrigger>

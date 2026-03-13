@@ -143,9 +143,9 @@ export default function StudentGuidanceTimelinePage() {
                                         week.status === 'APPROVED' && "border-green-200 text-green-700 bg-green-50/50 hover:bg-green-100 hover:text-green-800 hover:border-green-400"
                                     )}
                                 >
-                                    {week.status === 'SUBMITTED' ? 'Evaluasi Jurnal' : 
+                                    {week.status === 'SUBMITTED' ? 'Evaluasi Bimbingan' : 
                                      week.status === 'APPROVED' ? 'Lihat Evaluasi' : 
-                                     isAvailable ? 'Lihat Jurnal' : 'Terkunci'}
+                                     isAvailable ? 'Lihat Bimbingan' : 'Terkunci'}
                                 </Button>
                             </div>
                         </div>
