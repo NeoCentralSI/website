@@ -44,6 +44,7 @@ export function ComboBox({
 }: ComboBoxProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<string>(defaultValue)
+  const popoverWidth = width === "w-full" ? "w-[var(--radix-popover-trigger-width)]" : width
 
   React.useEffect(() => {
     setValue(defaultValue)
@@ -76,10 +77,10 @@ export function ComboBox({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className={`${width} p-0`}>
+      <PopoverContent className={`${popoverWidth} p-0`} align="start">
         <Command>
           <CommandInput placeholder="Search..." />
-          <CommandList>
+          <CommandList className="max-h-[min(320px,var(--radix-popover-content-available-height))]">
             <CommandEmpty>No item found.</CommandEmpty>
             <CommandGroup>
               {items.map((item) => (

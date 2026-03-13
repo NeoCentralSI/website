@@ -562,6 +562,10 @@ export const useSidebarMenu = () => {
                 url: "/master-data/tugas-akhir",
               },
               {
+                title: "Data Seminar Hasil",
+                url: "/master-data/seminar-hasil",
+              },
+              {
                 title: "Kelola User",
                 url: "/master-data/user",
               },
