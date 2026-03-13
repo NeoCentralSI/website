@@ -55,11 +55,8 @@ export const getKadepInternshipLetterColumns = ({
                     const members = item.members || [];
                     totalMahasiswa = members.length + 1;
                 } else {
-                    // For Assignment, we only count those accepted by the company
-                    const coordCount = item.coordinatorStatus === 'REJECTED_BY_COMPANY' ? 0 : 1;
-                    const members = item.members || [];
-                    const membersCount = members.filter(m => m.status === 'ACCEPTED_BY_COMPANY').length;
-                    totalMahasiswa = coordCount + membersCount;
+                    // For Assignment, we use the pre-calculated acceptedMemberCount from backend
+                    totalMahasiswa = item.acceptedMemberCount;
                 }
 
                 return (
