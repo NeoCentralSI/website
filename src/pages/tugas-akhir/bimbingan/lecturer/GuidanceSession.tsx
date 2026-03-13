@@ -52,6 +52,12 @@ export default function LecturerGuidanceSessionPage() {
     queryKey: ["lecturer-guidance-session", guidanceId],
     queryFn: () => getLecturerGuidanceDetail(guidanceId!),
     enabled: !!guidanceId,
+    refetchInterval: (query) => {
+      // Poll every 10s if waiting for student summary or already pending approval
+      const status = query.state.data?.guidance?.status;
+      return (status === "accepted" || status === "summary_pending") ? 10000 : false;
+    },
+    staleTime: 0,
   });
 
   const guidance = data?.guidance;

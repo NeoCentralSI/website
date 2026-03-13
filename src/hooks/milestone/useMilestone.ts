@@ -840,3 +840,18 @@ export function useDefenceReadinessManagement(thesisId?: string) {
     isRevoking: revokeMutation.isPending,
   };
 }
+
+/**
+ * Hook to send reminder for seminar readiness approval
+ */
+export function useRemindSeminarApproval() {
+  return useMutation({
+    mutationFn: (thesisId: string) => milestoneService.remindSeminarApproval(thesisId),
+    onSuccess: (data: { success: boolean; message: string }) => {
+      toast.success(data.message || "Pengingat berhasil dikirim ke pembimbing");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Gagal mengirim pengingat");
+    },
+  });
+}

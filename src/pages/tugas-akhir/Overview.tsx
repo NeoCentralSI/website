@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { ThesisProposalForm } from "@/components/thesis/ThesisProposalForm";
 import { PendingApprovalCard } from "@/components/thesis/PendingApprovalCard";
 import { RequirementsNotMet } from "@/components/shared/RequirementsNotMet";
+import { SeminarReadinessStatusCard } from "@/components/milestone/student/SeminarReadinessStatusCard";
 
 const STATUS_LABELS: Record<string, string> = {
     not_started: "Belum Dimulai",
@@ -109,6 +110,8 @@ export default function TugasAkhirOverviewPage() {
     const isProposed = thesisDetail?.status === "Diajukan";
     // Show dashboard only if active and NOT proposed (proposed has its own view)
     const isThesisActive = thesisDetail?.status !== "Dibatalkan" && thesisDetail?.status !== "Gagal" && thesisDetail?.status !== "Diajukan";
+
+
 
     const copyEmail = async (id: string, email: string) => {
         try {
@@ -372,6 +375,15 @@ export default function TugasAkhirOverviewPage() {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Seminar Readiness Integrated */}
+                                        {thesisId && (
+                                            <SeminarReadinessStatusCard
+                                                thesisId={thesisId}
+                                                variant="embedded"
+                                                className="mt-0"
+                                            />
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
