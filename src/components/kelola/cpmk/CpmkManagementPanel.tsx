@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { CpmkTable } from '@/components/kelola/cpmk/CpmkTable';
 import { CpmkFormDialog } from '@/components/kelola/cpmk/CpmkFormDialog';
+import type { CreateCpmkPayload } from '@/services/cpmk.service';
 import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.service';
 import {
     Select,
@@ -85,7 +86,7 @@ export function CpmkManagementPanel() {
             <CpmkFormDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                onSubmit={(payload) => create({ ...payload, academicYearId: effectiveAcademicYearId })}
+                onSubmit={(payload: CreateCpmkPayload) => create({ ...payload, academicYearId: effectiveAcademicYearId })}
             />
         </div>
     );
