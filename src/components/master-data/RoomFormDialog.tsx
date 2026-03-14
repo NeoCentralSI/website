@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,14 +12,14 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import type { Room, CreateRoomRequest, UpdateRoomRequest } from '@/services/admin.service';
+import type { Room, CreateRoomRequest } from '@/services/admin.service';
 
 interface RoomFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingRoom: Room | null;
-  formData: CreateRoomRequest | UpdateRoomRequest;
-  setFormData: (data: CreateRoomRequest | UpdateRoomRequest) => void;
+  formData: CreateRoomRequest;
+  setFormData: Dispatch<SetStateAction<CreateRoomRequest>>;
   onSubmit: (e: FormEvent) => void;
   isSubmitting?: boolean;
 }
