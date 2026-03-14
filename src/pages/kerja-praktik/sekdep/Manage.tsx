@@ -7,12 +7,16 @@ import { ProposalVerificationPanel } from '@/components/internship/sekdep/Propos
 import { ResponseVerificationPanel } from '@/components/internship/sekdep/ResponseVerificationPanel';
 import { InternshipListPanel } from '@/components/internship/sekdep/InternshipListPanel';
 import { LecturerWorkloadPanel } from '@/components/internship/sekdep/LecturerWorkloadPanel';
+import { GuidanceMasterPanel } from '@/components/internship/sekdep/GuidanceMasterPanel';
+import { InternshipCpmkPanel } from '@/components/internship/sekdep/InternshipCpmkPanel';
 
 const TAB_ITEMS: TabItem[] = [
     { label: "Verifikasi Proposal", to: "/kelola/kerja-praktik/pendaftaran/proposal" },
     { label: "Verifikasi Surat Balasan", to: "/kelola/kerja-praktik/pendaftaran/balasan" },
     { label: "Daftar Mahasiswa", to: "/kelola/kerja-praktik/pendaftaran/mahasiswa" },
     { label: "Daftar Dosen", to: "/kelola/kerja-praktik/pendaftaran/dosen" },
+    { label: "Bimbingan", to: "/kelola/kerja-praktik/pendaftaran/bimbingan" },
+    { label: "CPMK", to: "/kelola/kerja-praktik/pendaftaran/cpmk" },
 ];
 
 export default function SekdepInternshipProposalPage() {
@@ -49,6 +53,14 @@ export default function SekdepInternshipProposalPage() {
 
         if (activeTab.label === "Daftar Dosen") {
             return <LecturerWorkloadPanel />;
+        }
+
+        if (activeTab.label === "Bimbingan") {
+            return <GuidanceMasterPanel />;
+        }
+
+        if (activeTab.label === "CPMK") {
+            return <InternshipCpmkPanel />;
         }
 
         return null;

@@ -64,6 +64,7 @@ export type InternshipTableProps<T> = {
     actions?: React.ReactNode;
     emptyText?: string;
     rowKey?: (row: T, index: number) => string;
+    rowProps?: (row: T, index: number) => React.HTMLAttributes<HTMLTableRowElement>;
     className?: string;
     // Selection
     selectedIds?: string[];
@@ -72,6 +73,12 @@ export type InternshipTableProps<T> = {
     sortBy?: string;
     sortOrder?: "asc" | "desc";
     onSortChange?: (field: string, order: "asc" | "desc") => void;
+    // Expansion
+    expandedRowRender?: (row: T, index: number) => React.ReactNode;
+    isRowExpanded?: (row: T, index: number) => boolean;
+    onRowClick?: (row: T, index: number) => void;
+    hidePagination?: boolean;
+    appendRow?: React.ReactNode;
 };
 
 function buildPages(current: number, total: number): (number | "ellipsis")[] {
@@ -107,12 +114,18 @@ export function InternshipTable<T extends Record<string, any>>({
     actions,
     emptyText = "Tidak ada data",
     rowKey,
+    rowProps,
     className,
     selectedIds = [],
     onSelectionChange,
     sortBy,
     sortOrder,
     onSortChange,
+    expandedRowRender,
+    isRowExpanded,
+    onRowClick,
+    hidePagination = false,
+    appendRow,
 }: InternshipTableProps<T>) {
     const [localSearch, setLocalSearch] = useState(searchValue || "");
 
@@ -363,89 +376,118 @@ export function InternshipTable<T extends Record<string, any>>({
                                 data.map((row, idx) => {
                                     const key = rowKey?.(row, idx) ?? (row.id as string) ?? String(idx);
                                     const isSelected = selectedIds.includes(row.id);
+                                    const customProps = rowProps?.(row, idx) || {};
+                                    const expanded = isRowExpanded?.(row, idx);
+                                    
                                     return (
-                                        <TableRow key={key} className={cn(isSelected && "bg-accent/50")}>
-                                            {onSelectionChange && (
-                                                <TableCell className="px-4">
-                                                    <Checkbox
-                                                        checked={isSelected}
-                                                        onCheckedChange={(checked) => handleSelectRow(row.id, !!checked)}
-                                                        aria-label={`Select row ${idx + 1}`}
-                                                    />
-                                                </TableCell>
+                                        <React.Fragment key={key}>
+                                            <TableRow
+                                                {...customProps}
+                                                className={cn(
+                                                    isSelected && "bg-accent/50", 
+                                                    onRowClick && "cursor-pointer hover:bg-muted/50 transition-colors",
+                                                    customProps.className
+                                                )}
+                                                onClick={() => onRowClick?.(row, idx)}
+                                            >
+                                                {onSelectionChange && (
+                                                    <TableCell className="px-4">
+                                                        <Checkbox
+                                                            checked={isSelected}
+                                                            onCheckedChange={(checked) => handleSelectRow(row.id, !!checked)}
+                                                            aria-label={`Select row ${idx + 1}`}
+                                                        />
+                                                    </TableCell>
+                                                )}
+                                                {columns.map((col) => {
+                                                    const content = col.render
+                                                        ? col.render(row, idx)
+                                                        : typeof col.accessor === "function"
+                                                            ? col.accessor(row, idx)
+                                                            : col.accessor
+                                                                ? (row[col.accessor as keyof T] as any)
+                                                                : null;
+                                                    return <TableCell key={col.key} className={col.className}>{content}</TableCell>;
+                                                })}
+                                            </TableRow>
+                                            {expanded && expandedRowRender && (
+                                                <TableRow className="bg-muted/30 hover:bg-muted/30 border-t-0">
+                                                    <TableCell colSpan={columns.length + (onSelectionChange ? 1 : 0)} className="p-0">
+                                                        {expandedRowRender(row, idx)}
+                                                    </TableCell>
+                                                </TableRow>
                                             )}
-                                            {columns.map((col) => {
-                                                const content = col.render
-                                                    ? col.render(row, idx)
-                                                    : typeof col.accessor === "function"
-                                                        ? col.accessor(row, idx)
-                                                        : col.accessor
-                                                            ? (row[col.accessor as keyof T] as any)
-                                                            : null;
-                                                return <TableCell key={col.key} className={col.className}>{content}</TableCell>;
-                                            })}
-                                        </TableRow>
+                                        </React.Fragment>
                                     );
                                 })
+                            )}
+                            {appendRow && (
+                                <TableRow className="border-t-0 hover:bg-transparent">
+                                    <TableCell colSpan={columns.length + (onSelectionChange ? 1 : 0)} className="p-0">
+                                        {appendRow}
+                                    </TableCell>
+                                </TableRow>
                             )}
                         </TableBody>
                     </Table>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    {!loading ? (
-                        <>
-                            <div className="text-xs text-muted-foreground">
-                                Menampilkan {from}-{to} dari {total}
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {onPageSizeChange && (
-                                    <div className="flex items-center gap-2 text-xs">
-                                        <span className="text-muted-foreground">Baris:</span>
-                                        <select
-                                            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                            value={pageSize}
-                                            onChange={(e) => {
-                                                const newSize = Number(e.target.value);
-                                                onPageSizeChange(newSize);
-                                                if (page > Math.ceil(total / newSize)) {
-                                                    onPageChange(1);
-                                                }
-                                            }}
-                                        >
-                                            {[10, 20, 50].map((s) => (
-                                                <option key={s} value={s}>{s}</option>
+                {!hidePagination && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                        {!loading ? (
+                            <>
+                                <div className="text-xs text-muted-foreground">
+                                    Menampilkan {from}-{to} dari {total}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {onPageSizeChange && (
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="text-muted-foreground">Baris:</span>
+                                            <select
+                                                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                value={pageSize}
+                                                onChange={(e) => {
+                                                    const newSize = Number(e.target.value);
+                                                    onPageSizeChange(newSize);
+                                                    if (page > Math.ceil(total / newSize)) {
+                                                        onPageChange(1);
+                                                    }
+                                                }}
+                                            >
+                                                {[10, 20, 50].map((s) => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <Pagination>
+                                        <PaginationContent>
+                                            <PaginationItem>
+                                                <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); onPageChange(Math.max(1, page - 1)); }} />
+                                            </PaginationItem>
+                                            {pages.map((p, i) => (
+                                                p === "ellipsis" ? (
+                                                    <PaginationEllipsis key={`e-${i}`} />
+                                                ) : (
+                                                    <PaginationItem key={p}>
+                                                        <PaginationLink href="#" isActive={p === page} onClick={(e) => { e.preventDefault(); onPageChange(p); }}>
+                                                            {p}
+                                                        </PaginationLink>
+                                                    </PaginationItem>
+                                                )
                                             ))}
-                                        </select>
-                                    </div>
-                                )}
-                                <Pagination>
-                                    <PaginationContent>
-                                        <PaginationItem>
-                                            <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); onPageChange(Math.max(1, page - 1)); }} />
-                                        </PaginationItem>
-                                        {pages.map((p, i) => (
-                                            p === "ellipsis" ? (
-                                                <PaginationEllipsis key={`e-${i}`} />
-                                            ) : (
-                                                <PaginationItem key={p}>
-                                                    <PaginationLink href="#" isActive={p === page} onClick={(e) => { e.preventDefault(); onPageChange(p); }}>
-                                                        {p}
-                                                    </PaginationLink>
-                                                </PaginationItem>
-                                            )
-                                        ))}
-                                        <PaginationItem>
-                                            <PaginationNext href="#" onClick={(e) => { e.preventDefault(); onPageChange(Math.min(totalPages, page + 1)); }} />
-                                        </PaginationItem>
-                                    </PaginationContent>
-                                </Pagination>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="h-10 invisible" /> // Placeholder to prevent jump
-                    )}
-                </div>
+                                            <PaginationItem>
+                                                <PaginationNext href="#" onClick={(e) => { e.preventDefault(); onPageChange(Math.min(totalPages, page + 1)); }} />
+                                            </PaginationItem>
+                                        </PaginationContent>
+                                    </Pagination>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="h-10 invisible" /> // Placeholder to prevent jump
+                        )}
+                    </div>
+                )}
             </div>
         </Card>
     );

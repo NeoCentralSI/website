@@ -721,6 +721,7 @@ export interface InternshipPendingLetter {
     coordinatorStatus: string;
     companyName: string;
     members: { studentId: string; name: string; nim: string; status: string }[];
+    acceptedMemberCount: number;
     createdAt: string;
     signedById: string | null;
     document: {
@@ -893,4 +894,420 @@ export const exportLecturerWorkloadPdf = async (): Promise<void> => {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(downloadUrl);
+};
+
+// ==================== Guidance Master Data ====================
+
+export interface GuidanceQuestion {
+    id: string;
+    weekNumber: number;
+    questionText: string;
+    orderIndex: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface GuidanceCriteria {
+    id: string;
+    criteriaName: string;
+    weekNumber: number;
+    inputType: 'EVALUATION' | 'TEXT';
+    orderIndex: number;
+    options: { id: string; optionText: string; orderIndex: number }[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export const getGuidanceQuestions = async (academicYearId?: string): Promise<GuidanceQuestion[]> => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GUIDANCE_QUESTIONS);
+    if (academicYearId && academicYearId !== 'all') {
+        url += `?academicYearId=${academicYearId}`;
+    }
+    const res = await apiRequest(url);
+    const json = await res.json();
+    return json.data;
+};
+
+export const createGuidanceQuestion = async (data: { weekNumber: number; questionText: string; orderIndex?: number; academicYearId?: string }) => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GUIDANCE_QUESTIONS);
+    const res = await apiRequest(url, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } });
+    return res.json();
+};
+
+export const updateGuidanceQuestion = async (id: string, data: Partial<{ weekNumber: number; questionText: string; orderIndex: number }>) => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GUIDANCE_QUESTION_DETAIL(id));
+    const res = await apiRequest(url, { method: 'PUT', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } });
+    return res.json();
+};
+
+export const deleteGuidanceQuestion = async (id: string) => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GUIDANCE_QUESTION_DETAIL(id));
+    const res = await apiRequest(url, { method: 'DELETE' });
+    return res.json();
+};
+
+export const getGuidanceCriteria = async (academicYearId?: string): Promise<GuidanceCriteria[]> => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GUIDANCE_CRITERIA);
+    if (academicYearId && academicYearId !== 'all') {
+        url += `?academicYearId=${academicYearId}`;
+    }
+    const res = await apiRequest(url);
+    const json = await res.json();
+    return json.data;
+};
+
+export const createGuidanceCriteria = async (data: { criteriaName: string; weekNumber: number; inputType: 'EVALUATION' | 'TEXT'; orderIndex?: number; options?: string[]; academicYearId?: string }) => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GUIDANCE_CRITERIA);
+    const res = await apiRequest(url, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } });
+    return res.json();
+};
+
+export const updateGuidanceCriteria = async (id: string, data: Partial<{ criteriaName: string; weekNumber: number; inputType: 'EVALUATION' | 'TEXT'; orderIndex: number; options?: string[] }>) => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GUIDANCE_CRITERIA_DETAIL(id));
+    const res = await apiRequest(url, { method: 'PUT', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } });
+    return res.json();
+};
+
+export const deleteGuidanceCriteria = async (id: string) => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GUIDANCE_CRITERIA_DETAIL(id));
+    const res = await apiRequest(url, { method: 'DELETE' });
+    return res.json();
+};
+
+// ==================== Student Guidance ====================
+
+export interface StudentGuidanceQuestion {
+    id: string;
+    questionText: string;
+    answer: string;
+}
+
+export interface StudentGuidanceTimeline {
+    weekNumber: number;
+    startDate: string;
+    endDate: string;
+    status: 'NOT_AVAILABLE' | 'OPEN' | 'LATE' | 'SUBMITTED' | 'APPROVED';
+    questions: StudentGuidanceQuestion[];
+    lecturerEvaluation: {
+        criteriaId: string;
+        criteriaName: string;
+        evaluationValue: string | null;
+        answerText: string;
+        inputType: 'EVALUATION' | 'TEXT';
+    }[];
+}
+
+export interface StudentGuidance {
+    internshipId: string;
+    supervisorName: string | null;
+    currentWeek: number;
+    timeline: StudentGuidanceTimeline[];
+}
+
+export const getStudentGuidance = async (): Promise<StudentGuidance> => {
+    const url = getApiUrl('/insternship/activity/guidance');
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat bimbingan" }));
+        throw new Error(errorData.message || "Gagal memuat bimbingan");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const submitGuidanceResponse = async (data: { weekNumber: number; answers: Record<string, string> }) => {
+    const url = getApiUrl('/insternship/activity/guidance/submit');
+    const res = await apiRequest(url, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengirim bimbingan" }));
+        throw new Error(errorData.message || "Gagal mengirim bimbingan");
+    }
+    return res.json();
+};
+
+// ==================== Lecturer Guidance API ====================
+
+export interface LecturerSupervisedStudent {
+    internshipId: string;
+    studentName: string;
+    studentNim: string;
+    companyName: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+    progress: {
+        totalWeeks: number;
+        submittedCount: number;
+        approvedCount: number;
+    }
+}
+
+export const getLecturerSupervisedStudents = async (): Promise<LecturerSupervisedStudent[]> => {
+    const url = getApiUrl('/insternship/activity/guidance/lecturer/students');
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar mahasiswa bimbingan" }));
+        throw new Error(errorData.message || "Gagal memuat daftar mahasiswa bimbingan");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export interface LecturerGuidanceTimeline {
+    internshipId: string;
+    studentName: string;
+    studentNim: string;
+    currentWeek: number;
+    timeline: {
+        weekNumber: number;
+        startDate: string;
+        endDate: string;
+        status: 'NOT_AVAILABLE' | 'OPEN' | 'LATE' | 'SUBMITTED' | 'APPROVED';
+        submissionDate: string | null;
+    }[];
+}
+
+export const getLecturerGuidanceTimeline = async (internshipId: string): Promise<LecturerGuidanceTimeline> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/students/${internshipId}`);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat timeline bimbingan" }));
+        throw new Error(errorData.message || "Gagal memuat timeline bimbingan");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export interface GuidanceWeekDetail {
+    internshipId: string;
+    studentName: string;
+    studentNim: string;
+    weekNumber: number;
+    sessionStatus: 'NOT_AVAILABLE' | 'SUBMITTED' | 'LATE' | 'APPROVED';
+    submissionDate: string | null;
+    studentAnswers: {
+        questionText: string;
+        answerText: string;
+    }[];
+    lecturerEvaluation: {
+        criteriaId: string;
+        criteriaName: string;
+        inputType: 'EVALUATION' | 'TEXT';
+        options: { id: string; optionText: string; orderIndex: number }[];
+        evaluationValue: string | null;
+        answerText: string;
+    }[];
+}
+
+export const getLecturerGuidanceWeekDetail = async (internshipId: string, weekNumber: string): Promise<GuidanceWeekDetail> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/students/${internshipId}/week/${weekNumber}`);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail bimbingan" }));
+        throw new Error(errorData.message || "Gagal memuat detail bimbingan");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export interface SubmitEvaluationBody {
+    status: 'APPROVED';
+    evaluations: Record<string, {
+        evaluationValue?: string | null;
+        answerText?: string;
+    }>;
+}
+
+export const submitLecturerEvaluation = async (internshipId: string, weekNumber: string, body: SubmitEvaluationBody): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/students/${internshipId}/week/${weekNumber}/evaluate`);
+    const res = await apiRequest(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengirim evaluasi" }));
+        throw new Error(errorData.message || "Gagal mengirim evaluasi");
+    }
+    return res.json();
+};
+// ==================== CPMK & Rubric Management API ====================
+
+export interface InternshipAssessmentRubric {
+    id: string;
+    cpmkId: string;
+    levelName?: string;
+    rubricLevelDescription: string;
+    minScore: number;
+    maxScore: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface InternshipCpmk {
+    id: string;
+    code: string;
+    name: string;
+    weight: number;
+    assessorType: 'LECTURER' | 'FIELD';
+    createdAt: string;
+    updatedAt: string;
+    rubrics?: InternshipAssessmentRubric[];
+}
+
+export const getInternshipCpmks = async (academicYearId?: string): Promise<InternshipCpmk[]> => {
+    let url = getApiUrl('/insternship/sekdep/cpmk');
+    if (academicYearId && academicYearId !== 'all') {
+        url += `?academicYearId=${academicYearId}`;
+    }
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat data CPMK" }));
+        throw new Error(errorData.message || "Gagal memuat data CPMK");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const getInternshipCpmkById = async (id: string): Promise<InternshipCpmk> => {
+    const url = getApiUrl(`/insternship/sekdep/cpmk/${id}`);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail CPMK" }));
+        throw new Error(errorData.message || "Gagal memuat detail CPMK");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const createInternshipCpmk = async (data: Partial<InternshipCpmk> & { academicYearId?: string }): Promise<InternshipCpmk> => {
+    const url = getApiUrl('/insternship/sekdep/cpmk');
+    const res = await apiRequest(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menambah CPMK" }));
+        throw new Error(errorData.message || "Gagal menambah CPMK");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const updateInternshipCpmk = async (id: string, data: Partial<InternshipCpmk>): Promise<InternshipCpmk> => {
+    const url = getApiUrl(`/insternship/sekdep/cpmk/${id}`);
+    const res = await apiRequest(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui CPMK" }));
+        throw new Error(errorData.message || "Gagal memperbarui CPMK");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const deleteInternshipCpmk = async (id: string): Promise<void> => {
+    const url = getApiUrl(`/insternship/sekdep/cpmk/${id}`);
+    const res = await apiRequest(url, { method: 'DELETE' });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menghapus CPMK" }));
+        throw new Error(errorData.message || "Gagal menghapus CPMK");
+    }
+};
+
+export const createInternshipRubric = async (data: Partial<InternshipAssessmentRubric>): Promise<InternshipAssessmentRubric> => {
+    const url = getApiUrl('/insternship/sekdep/rubrics');
+    const res = await apiRequest(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menambah rubrik" }));
+        throw new Error(errorData.message || "Gagal menambah rubrik");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const updateInternshipRubric = async (id: string, data: Partial<InternshipAssessmentRubric>): Promise<InternshipAssessmentRubric> => {
+    const url = getApiUrl(`/insternship/sekdep/rubrics/${id}`);
+    const res = await apiRequest(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui rubrik" }));
+        throw new Error(errorData.message || "Gagal memperbarui rubrik");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const deleteInternshipRubric = async (id: string): Promise<void> => {
+    const url = getApiUrl(`/insternship/sekdep/rubrics/${id}`);
+    const res = await apiRequest(url, { method: 'DELETE' });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menghapus rubrik" }));
+        throw new Error(errorData.message || "Gagal menghapus rubrik");
+    }
+};
+
+export const bulkUpdateInternshipRubrics = async (cpmkId: string, rubrics: Partial<InternshipAssessmentRubric>[]): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/sekdep/cpmk/${cpmkId}/rubrics/bulk`);
+    const res = await apiRequest(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rubrics })
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyimpan rubrik secara massal" }));
+        throw new Error(errorData.message || "Gagal menyimpan rubrik secara massal");
+    }
+    return res.json();
+};
+
+/**
+ * Duplicates all CPMKs and their rubrics from one academic year to another.
+ */
+export const copyInternshipCpmks = async (fromYearId: string, toYearId: string): Promise<{ success: boolean; data: any }> => {
+  const url = getApiUrl('/insternship/sekdep/cpmk/copy');
+  const res = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromYearId, toYearId })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal menduplikasi CPMK" }));
+    throw new Error(errorData.message || "Gagal menduplikasi CPMK");
+  }
+  return res.json();
+};
+
+/**
+ * Duplicates all guidance questions and lecturer criteria from one academic year to another.
+ */
+export const copyInternshipGuidance = async (fromYearId: string, toYearId: string): Promise<{ success: boolean; data: any }> => {
+  const url = getApiUrl('/insternship/sekdep/guidance/copy');
+  const res = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromYearId, toYearId })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ message: "Gagal menduplikasi data bimbingan" }));
+    throw new Error(errorData.message || "Gagal menduplikasi data bimbingan");
+  }
+  return res.json();
 };
