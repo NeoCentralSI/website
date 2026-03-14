@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useStudentProposals } from '@/hooks/internship/useStudentProposals';
-import RegisterInternshipDialog from '@/components/internship/RegisterInternshipDialog';
-import UploadResponseLetterDialog from '@/components/internship/UploadResponseLetterDialog';
-import DeleteProposalDialog from '@/components/internship/DeleteProposalDialog';
-import { StudentProposalCard } from '@/components/internship/StudentProposalCard';
+import RegisterInternshipDialog from '@/components/internship/student/RegisterInternshipDialog';
+import UploadResponseLetterDialog from '@/components/internship/student/UploadResponseLetterDialog';
+import DeleteProposalDialog from '@/components/internship/student/DeleteProposalDialog';
+import { StudentProposalCard } from '@/components/internship/student/StudentProposalCard';
 import { respondToInvitation, type InternshipProposalItem } from '@/services/internship.service';
 import { getSopDownloadUrl, getSopFilesPublic } from '@/services/sop.service';
 
@@ -85,8 +85,8 @@ export default function InternshipProposalPage() {
             await respondToInvitation(item.id, response);
             toast.success(`Berhasil ${action} undangan.`);
             refetch();
-        } catch (error: any) {
-            toast.error(error.message || "Gagal merespon undangan");
+        } catch (error: unknown) {
+            toast.error((error as Error).message || "Gagal merespon undangan");
         }
     };
 
@@ -105,7 +105,7 @@ export default function InternshipProposalPage() {
     });
 
     const proposalTemplate = useMemo(() => {
-        return publicSops.find((s: any) => s.type === 'TEMPLATE_KP');
+        return publicSops.find((s: { type: string }) => s.type === 'TEMPLATE_KP');
     }, [publicSops]);
 
     const handleDownloadTemplate = () => {

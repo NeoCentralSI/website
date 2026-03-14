@@ -151,7 +151,6 @@ export const useSidebarMenu = () => {
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
             { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
-            { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
       ];
@@ -236,7 +235,6 @@ export const useSidebarMenu = () => {
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
             { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
-            { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
       ];
@@ -336,7 +334,6 @@ export const useSidebarMenu = () => {
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
             { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
-            { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
       ];
@@ -434,7 +431,6 @@ export const useSidebarMenu = () => {
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
             { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
-            { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
       ];

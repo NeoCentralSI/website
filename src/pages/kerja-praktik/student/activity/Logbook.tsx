@@ -10,7 +10,7 @@ import { getLogbookColumns } from '@/lib/internship/activityColumns';
 import EmptyState from '@/components/ui/empty-state';
 import { Loading } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import EditLogbookDialog from '@/components/internship/EditLogbookDialog';
+import EditLogbookDialog from '@/components/internship/student/EditLogbookDialog';
 import { Edit, FileText, Loader2, Printer, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

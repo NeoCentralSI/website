@@ -1,11 +1,9 @@
-import { useEffect } from 'react';
-import { useOutletContext, useParams, useNavigate } from 'react-router-dom';
-import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getLecturerGuidanceTimeline } from '@/services/internship.service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Calendar, User, Clock, CheckCircle2, FileText, AlertCircle } from 'lucide-react';
+import { Loader2, Calendar, Clock, CheckCircle2, FileText, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -13,7 +11,6 @@ import { cn } from '@/lib/utils';
 export default function StudentGuidanceTimelinePage() {
     const { internshipId } = useParams<{ internshipId: string }>();
     const navigate = useNavigate();
-    const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
     // Load data
     const { data: studentGuidance, isLoading, error } = useQuery({
@@ -21,15 +18,6 @@ export default function StudentGuidanceTimelinePage() {
         queryFn: () => getLecturerGuidanceTimeline(internshipId!),
         enabled: !!internshipId,
     });
-
-    useEffect(() => {
-        setBreadcrumbs([
-            { label: 'Kerja Praktik', href: '/kerja-praktik' },
-            { label: 'Bimbingan Mahasiswa', href: '/kerja-praktik/dosen/bimbingan' },
-            { label: studentGuidance?.studentName || 'Detail Timeline' }
-        ]);
-        setTitle(`Timeline Bimbingan: ${studentGuidance?.studentName || ''}`);
-    }, [setBreadcrumbs, setTitle, studentGuidance]);
 
     const getStatusConfig = (status: string) => {
         switch (status) {
@@ -59,31 +47,12 @@ export default function StudentGuidanceTimelinePage() {
             <div className="flex h-[400px] flex-col items-center justify-center space-y-4">
                 <AlertCircle className="h-12 w-12 text-destructive" />
                 <p className="text-lg font-medium text-destructive">Gagal memuat timeline bimbingan</p>
-                <Button onClick={() => navigate('/kerja-praktik/dosen/bimbingan')} variant="outline">
-                    Kembali
-                </Button>
             </div>
         );
     }
 
     return (
-        <div className="p-6 space-y-6">
-            {/* Header / Info Section */}
-            <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" onClick={() => navigate('/kerja-praktik/dosen/bimbingan')}>
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <User className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight mb-0.5">{studentGuidance.studentName}</h1>
-                        <p className="text-sm font-medium text-muted-foreground leading-none">{studentGuidance.studentNim}</p>
-                    </div>
-                </div>
-            </div>
-
+        <div className="space-y-6">
             {/* Timeline Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
                 {studentGuidance.timeline.map((week) => {
@@ -99,7 +68,7 @@ export default function StudentGuidanceTimelinePage() {
                             )}
                             onClick={() => {
                                 if (isAvailable) {
-                                    const targetUrl = `/kerja-praktik/dosen/bimbingan/${internshipId}/minggu/${week.weekNumber}`;
+                                    const targetUrl = `/kerja-praktik/dosen/bimbingan/${internshipId}/bimbingan/minggu/${week.weekNumber}`;
                                     navigate(targetUrl);
                                 }
                             }}

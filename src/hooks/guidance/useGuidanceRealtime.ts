@@ -32,7 +32,11 @@ type PushEventType =
   | "internship_proposal_rejected_company"
   | "internship_supervisor_assigned"
   | "internship_guidance:submitted"
-  | "internship_guidance:approved";
+  | "internship_guidance:approved"
+  | "internship_reporting_document_uploaded"
+  | "internship_document_verification"
+  | "internship_final_report_uploaded"
+  | "internship_final_report_verification";
 
 export function useGuidanceRealtime() {
   const qc = useQueryClient();
@@ -264,6 +268,56 @@ export function useGuidanceRealtime() {
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }
+              case "internship_reporting_document_uploaded": {
+                const title = payload?.notification?.title || payload?.data?.title || "Dokumen Pelaporan Baru";
+                const body = payload?.notification?.body || payload?.data?.body || "";
+                toast.info(title, { description: body, duration: 5000 });
+                playBeep();
+                qc.invalidateQueries({ queryKey: ["sekdep-internships"] });
+                qc.invalidateQueries({ queryKey: ["internship-detail"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_document_verification": {
+                const title = payload?.notification?.title || payload?.data?.title || "Verifikasi Dokumen KP";
+                const body = payload?.notification?.body || payload?.data?.body || "";
+                const isApproved = payload?.data?.status === "APPROVED";
+                if (isApproved) {
+                  toast.success(title, { description: body, duration: 5000 });
+                } else {
+                  toast.error(title, { description: body, duration: 8000 });
+                }
+                qc.invalidateQueries({ queryKey: ["student-internship-details"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_final_report_uploaded": {
+                if (role === "lecturer" || role === "supervisor") {
+                  const title = payload?.notification?.title || payload?.data?.title || "Laporan Akhir Baru";
+                  const body = payload?.notification?.body || payload?.data?.body || "Mahasiswa telah mengunggah laporan akhir";
+                  toast.info(title, { description: body, duration: 5000 });
+                  playBeep();
+                  qc.invalidateQueries({ queryKey: ["lecturer-student-guidance-timeline"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                }
+                break;
+              }
+              case "internship_final_report_verification": {
+                if (role === "student") {
+                  const title = payload?.notification?.title || payload?.data?.title || "Verifikasi Laporan Akhir";
+                  const body = payload?.notification?.body || payload?.data?.body || "";
+                  const isApproved = payload?.data?.status === "APPROVED";
+                  if (isApproved) {
+                    toast.success(title, { description: body, duration: 5000 });
+                  } else {
+                    toast.error(title, { description: body, duration: 8000 });
+                  }
+                  qc.invalidateQueries({ queryKey: ["student-logbooks"] });
+                  qc.invalidateQueries({ queryKey: ["student-guidance"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                }
+                break;
+              }
               default: {
                 console.warn("[FCM] Unknown notification type:", type);
                 const title = payload?.data?.title || payload?.notification?.title || "Notifikasi Baru";
@@ -323,6 +377,28 @@ export function useGuidanceRealtime() {
                 case 'internship_guidance:approved': {
                   qc.invalidateQueries({ queryKey: ['student-guidance'] });
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });
+                  break;
+                }
+                case "internship_reporting_document_uploaded": {
+                  qc.invalidateQueries({ queryKey: ["sekdep-internships"] });
+                  qc.invalidateQueries({ queryKey: ["internship-detail"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                  break;
+                }
+                case "internship_document_verification": {
+                  qc.invalidateQueries({ queryKey: ["student-internship-details"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                  break;
+                }
+                case "internship_final_report_uploaded": {
+                  qc.invalidateQueries({ queryKey: ["lecturer-student-guidance-timeline"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                  break;
+                }
+                case "internship_final_report_verification": {
+                  qc.invalidateQueries({ queryKey: ["student-logbooks"] });
+                  qc.invalidateQueries({ queryKey: ["student-guidance"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
                   break;
                 }
                 case "supervisor2_request":
