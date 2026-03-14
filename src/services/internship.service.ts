@@ -623,9 +623,26 @@ export interface SekdepInternshipDetail {
         finalScore: number | null;
         finalGrade: string | null;
     };
+    reportingDocuments: {
+        report: DocumentVerificationDetail;
+        completionCertificate: DocumentVerificationDetail;
+        companyReceipt: DocumentVerificationDetail;
+        logbookDocument: DocumentVerificationDetail;
+    };
     status: string;
     academicYearName: string;
     createdAt: string;
+}
+
+export interface DocumentVerificationDetail {
+    document: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    } | null;
+    status: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
+    notes?: string | null;
+    uploadedAt?: string | null;
 }
 
 export const getSekdepInternshipDetail = async (id: string): Promise<{ success: boolean; data: SekdepInternshipDetail }> => {
@@ -634,6 +651,48 @@ export const getSekdepInternshipDetail = async (id: string): Promise<{ success: 
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail pelaksanaan KP" }));
         throw new Error(errorData.message || "Gagal memuat detail pelaksanaan KP");
+    }
+    return res.json();
+};
+
+export const verifyInternshipDocument = async (
+    id: string,
+    documentType: 'report' | 'completionCertificate' | 'companyReceipt' | 'logbookDocument',
+    status: 'APPROVED' | 'REVISION_NEEDED',
+    notes?: string
+): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.VERIFY_DOCUMENT(id));
+    const res = await apiRequest(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ documentType, status, notes }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memverifikasi dokumen" }));
+        throw new Error(errorData.message || "Gagal memverifikasi dokumen");
+    }
+    return res.json();
+};
+
+export const bulkVerifyInternshipDocuments = async (
+    id: string,
+    documents: Array<{ documentType: 'report' | 'completionCertificate' | 'companyReceipt' | 'logbookDocument', status?: 'APPROVED' | 'REVISION_NEEDED', notes?: string }>,
+    status?: 'APPROVED' | 'REVISION_NEEDED',
+    notes?: string
+): Promise<{ success: boolean; message: string; results: Array<{ documentType: string; status: string; success: boolean }> }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.VERIFY_DOCUMENTS_BULK(id));
+    const res = await apiRequest(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ documents, status, notes }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memverifikasi dokumen" }));
+        throw new Error(errorData.message || "Gagal memverifikasi dokumen");
     }
     return res.json();
 };
@@ -783,6 +842,8 @@ export interface StudentLogbookData {
         id: string;
         fieldSupervisorName: string | null;
         unitSection: string | null;
+        actualStartDate: string | null;
+        actualEndDate: string | null;
         student?: {
             user: {
                 fullName: string;
@@ -793,7 +854,38 @@ export interface StudentLogbookData {
             targetCompany: {
                 companyName: string;
             }
-        }
+        },
+        supervisor?: {
+            user: {
+                fullName: string;
+            }
+        } | null;
+        seminars?: {
+            id: string;
+            status: string;
+            date: string | null;
+            time: string | null;
+            room?: {
+                name: string;
+            } | null;
+            link: string | null;
+            moderatorStudent?: {
+                user: {
+                    fullName: string;
+                }
+            } | null;
+        }[];
+        reportDocumentId?: string | null;
+        logbookDocumentId?: string | null;
+        reportStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
+        reportNotes?: string | null;
+        reportUploadedAt?: string | null;
+        completionCertificateDocId?: string | null;
+        companyReceiptDocId?: string | null;
+        finalNumericScore?: number | null;
+        finalGrade?: string | null;
+        lecturerAssessmentStatus?: string | null;
+        fieldAssessmentStatus?: string | null;
     } | null;
     logbooks: InternshipLogbookItem[];
 }
@@ -827,6 +919,70 @@ export const updateInternshipDetails = async (body: { fieldSupervisorName: strin
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui informasi KP" }));
         throw new Error(errorData.message || "Gagal memperbarui informasi KP");
+    }
+    return res.json();
+};
+
+export const submitCompletionCertificate = async (documentId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/certificate";
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: JSON.stringify({ documentId }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah sertifikat" }));
+        throw new Error(errorData.message || "Gagal mengunggah sertifikat");
+    }
+    return res.json();
+};
+
+export const submitCompanyReceipt = async (documentId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/receipt";
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: JSON.stringify({ documentId }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah tanda terima" }));
+        throw new Error(errorData.message || "Gagal mengunggah tanda terima");
+    }
+    return res.json();
+};
+
+export const submitLogbookDocument = async (documentId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/logbook-doc";
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: JSON.stringify({ documentId }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah logbook" }));
+        throw new Error(errorData.message || "Gagal mengunggah logbook");
+    }
+    return res.json();
+};
+
+export const submitInternshipReport = async (title: string, documentId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/report";
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: JSON.stringify({ title, documentId }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah laporan" }));
+        throw new Error(errorData.message || "Gagal mengunggah laporan");
+    }
+    return res.json();
+};
+
+export const registerSeminar = async (): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/register-seminar";
+    const res = await apiRequest(url, {
+        method: "POST",
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mendaftar seminar" }));
+        throw new Error(errorData.message || "Gagal mendaftar seminar");
     }
     return res.json();
 };
@@ -1036,6 +1192,7 @@ export interface LecturerSupervisedStudent {
     studentName: string;
     studentNim: string;
     companyName: string;
+    academicYearName: string;
     startDate: string;
     endDate: string;
     status: string;
@@ -1043,7 +1200,20 @@ export interface LecturerSupervisedStudent {
         totalWeeks: number;
         submittedCount: number;
         approvedCount: number;
-    }
+    };
+    report?: {
+        status: string | null;
+        title: string | null;
+        notes: string | null;
+        uploadedAt: string | null;
+        document: {
+            id: string;
+            fileName: string;
+            filePath: string;
+        } | null;
+    };
+    finalScore?: number | null;
+    finalGrade?: string | null;
 }
 
 export const getLecturerSupervisedStudents = async (): Promise<LecturerSupervisedStudent[]> => {
@@ -1062,6 +1232,24 @@ export interface LecturerGuidanceTimeline {
     studentName: string;
     studentNim: string;
     currentWeek: number;
+    report?: {
+        status: string | null;
+        title: string | null;
+        notes: string | null;
+        uploadedAt: string | null;
+        document: {
+            id: string;
+            fileName: string;
+            filePath: string;
+        } | null;
+        feedbackDocument: {
+            id: string;
+            fileName: string;
+            filePath: string;
+        } | null;
+    };
+    finalScore?: number | null;
+    finalGrade?: string | null;
     timeline: {
         weekNumber: number;
         startDate: string;
@@ -1134,6 +1322,48 @@ export const submitLecturerEvaluation = async (internshipId: string, weekNumber:
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal mengirim evaluasi" }));
         throw new Error(errorData.message || "Gagal mengirim evaluasi");
+    }
+    return res.json();
+};
+
+export const verifyFinalReportByLecturer = async (
+    internshipId: string,
+    status: 'APPROVED' | 'REVISION_NEEDED',
+    notes?: string,
+    file?: File
+): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.VERIFY_FINAL_REPORT(internshipId));
+    
+    let body: FormData | string;
+    let headers: HeadersInit;
+    
+    if (file) {
+        // Use FormData for file upload
+        const formData = new FormData();
+        formData.append('status', status);
+        if (notes) {
+            formData.append('notes', notes);
+        }
+        formData.append('file', file);
+        body = formData;
+        // Don't set Content-Type header, browser will set it with boundary
+        headers = {};
+    } else {
+        // Use JSON for non-file requests
+        body = JSON.stringify({ status, notes });
+        headers = {
+            'Content-Type': 'application/json',
+        };
+    }
+    
+    const res = await apiRequest(url, {
+        method: 'PUT',
+        headers,
+        body,
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memverifikasi laporan akhir" }));
+        throw new Error(errorData.message || "Gagal memverifikasi laporan akhir");
     }
     return res.json();
 };

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Clock } from 'lucide-react';
 import InternshipTable from '@/components/internship/InternshipTable';
 import { getLecturerSupervisedStudentsColumns } from '@/lib/internship/lecturerColumns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
 
 export default function GuidanceOverviewPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -17,6 +19,9 @@ export default function GuidanceOverviewPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [academicYearFilter, setAcademicYearFilter] = useState<string | null>(null);
+
+    const { academicYears } = useAcademicYears({ pageSize: 50 });
 
     useEffect(() => {
         setBreadcrumbs([
@@ -26,6 +31,17 @@ export default function GuidanceOverviewPage() {
         setTitle('Bimbingan Kerja Praktik');
     }, [setBreadcrumbs, setTitle]);
 
+    useEffect(() => {
+        if (academicYearFilter === null && academicYears.length > 0) {
+            const active = academicYears.find(ay => ay.isActive);
+            if (active) {
+                setAcademicYearFilter(active.id);
+            } else {
+                setAcademicYearFilter('all');
+            }
+        }
+    }, [academicYears, academicYearFilter]);
+
     const { data: students, isLoading, error, isFetching } = useQuery({
         queryKey: ['lecturerSupervisedStudents'],
         queryFn: getLecturerSupervisedStudents,
@@ -34,7 +50,6 @@ export default function GuidanceOverviewPage() {
     const columns = useMemo(() => getLecturerSupervisedStudentsColumns({
         onViewDetail: (student) => {
             const targetUrl = `/kerja-praktik/dosen/bimbingan/${student.internshipId}`;
-            console.log('Navigating to student timeline:', targetUrl);
             navigate(targetUrl);
         }
     }), [navigate]);
@@ -51,8 +66,16 @@ export default function GuidanceOverviewPage() {
                 s.companyName.toLowerCase().includes(lowSearch)
             );
         }
+        if (academicYearFilter && academicYearFilter !== 'all') {
+            result = result.filter(s => {
+                const studentYearId = academicYears.find(ay => 
+                    `${ay.year} ${ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}` === s.academicYearName
+                )?.id;
+                return studentYearId === academicYearFilter;
+            });
+        }
         return result;
-    }, [students, searchTerm]);
+    }, [students, searchTerm, academicYearFilter, academicYears]);
 
     const paginatedData = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
@@ -110,6 +133,26 @@ export default function GuidanceOverviewPage() {
                     setCurrentPage(1);
                 }}
                 emptyText={searchTerm ? 'Pencarian tidak menemukan hasil.' : 'Belum ada mahasiswa bimbingan.'}
+                actions={
+                    <Select value={academicYearFilter || 'all'} onValueChange={(v) => {
+                        setAcademicYearFilter(v);
+                        setCurrentPage(1);
+                    }}>
+                        <SelectTrigger className="w-[180px] h-9">
+                            <SelectValue placeholder="Pilih Tahun Ajaran" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
+                            {academicYears.map((ay) => (
+                                <SelectItem key={ay.id} value={ay.id}>
+                                    <span className={ay.isActive ? "text-blue-600 font-semibold" : ""}>
+                                        {ay.year} {ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}
+                                    </span>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                }
             />
         </div>
     );

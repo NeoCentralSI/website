@@ -6,7 +6,7 @@ import { getSekdepResponseColumns } from '@/lib/internship';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { verifyCompanyResponse, type SekdepRegistrationItem } from '@/services/internship.service';
 import { toast } from 'sonner';
-import VerifyCompanyResponseDialog from '@/components/internship/VerifyCompanyResponseDialog';
+import VerifyCompanyResponseDialog from '@/components/internship/sekdep/VerifyCompanyResponseDialog';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';

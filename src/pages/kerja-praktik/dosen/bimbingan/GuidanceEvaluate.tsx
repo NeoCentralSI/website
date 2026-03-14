@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useOutletContext, useParams, useNavigate } from 'react-router-dom';
-import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getLecturerGuidanceWeekDetail, submitLecturerEvaluation, type SubmitEvaluationBody } from '@/services/internship.service';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,6 @@ export default function GuidanceEvaluatePage() {
     const { internshipId, weekNumber } = useParams<{ internshipId: string; weekNumber: string }>();
     
     const navigate = useNavigate();
-    const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
     const queryClient = useQueryClient();
 
     const [evaluations, setEvaluations] = useState<Record<string, { evaluationValue?: string | null; answerText?: string }>>({});
@@ -42,15 +40,7 @@ export default function GuidanceEvaluatePage() {
         }
     }, [detailData]);
 
-    useEffect(() => {
-        setBreadcrumbs([
-            { label: 'Kerja Praktik', href: '/kerja-praktik' },
-            { label: 'Bimbingan Mahasiswa', href: '/kerja-praktik/dosen/bimbingan' },
-            { label: detailData?.studentName || 'Detail Timeline', href: `/kerja-praktik/dosen/bimbingan/${internshipId}` },
-            { label: `Minggu ${weekNumber}` }
-        ]);
-        setTitle(undefined);
-    }, [setBreadcrumbs, setTitle, detailData, internshipId, weekNumber]);
+    // Breadcrumbs are handled by parent StudentDetailPage
 
     const submitMutation = useMutation({
         mutationFn: async () => {
@@ -63,10 +53,10 @@ export default function GuidanceEvaluatePage() {
         onSuccess: () => {
             toast.success('Evaluasi berhasil disimpan');
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
-            navigate(`/kerja-praktik/dosen/bimbingan/${internshipId}`);
+            navigate(`/kerja-praktik/dosen/bimbingan/${internshipId}/bimbingan`);
         },
-        onError: (err: any) => {
-            toast.error(err.message || 'Gagal menyimpan evaluasi');
+        onError: (err: unknown) => {
+            toast.error(err instanceof Error ? err.message : 'Gagal menyimpan evaluasi');
         }
     });
 
@@ -93,7 +83,7 @@ export default function GuidanceEvaluatePage() {
             <div className="flex flex-col justify-center items-center h-[400px] space-y-4">
                 <AlertCircle className="h-12 w-12 text-destructive" />
                 <p className="text-destructive font-medium text-lg">Gagal memuat data bimbingan minggu ini</p>
-                <Button variant="outline" onClick={() => navigate(`/kerja-praktik/dosen/bimbingan/${internshipId}`)}>
+                <Button variant="outline" onClick={() => navigate(`/kerja-praktik/dosen/bimbingan/${internshipId}/bimbingan`)}>
                     Kembali ke Timeline
                 </Button>
             </div>
@@ -106,7 +96,7 @@ export default function GuidanceEvaluatePage() {
         <div className="flex flex-col gap-6 p-6 mx-auto w-full">
             {/* Page Header */}
             <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" onClick={() => navigate(`/kerja-praktik/dosen/bimbingan/${internshipId}`)}>
+                <Button variant="outline" size="icon" onClick={() => navigate(`/kerja-praktik/dosen/bimbingan/${internshipId}/bimbingan`)}>
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div>
@@ -139,17 +129,17 @@ export default function GuidanceEvaluatePage() {
                                         <Clock className="h-3 w-3" />
                                         Disubmit: {detailData.submissionDate ? format(new Date(detailData.submissionDate), 'dd MMM yyyy', { locale: idLocale }) : '-'}
                                     </span>
+                                    {detailData.lecturerEvaluation.some(e => e.evaluationValue || e.answerText) && (
+                                        <Badge variant="success" className="flex items-center gap-1 bg-green-200 hover:bg-green-600">
+                                            <CheckCircle2 className="h-3.5 w-3.5" /> Sudah Dievaluasi
+                                        </Badge>
+                                    )}
                                 </div>
-                                {detailData.lecturerEvaluation.some(e => e.evaluationValue || e.answerText) && (
-                                    <Badge variant="success" className="flex items-center gap-1 bg-green-600 hover:bg-green-600">
-                                        <CheckCircle2 className="h-3.5 w-3.5" /> Sudah Dievaluasi
-                                    </Badge>
-                                )}
                             </div>
                         </div>
                     </CardHeader>
 
-                    <CardContent className="p-6">
+                    <CardContent className="px-6">
                         {!isSubmitted ? (
                             <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                                 <FileText className="h-12 w-12 mb-4 opacity-20" />

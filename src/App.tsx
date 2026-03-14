@@ -56,8 +56,11 @@ const LecturerSeminarDetailRevisionPage = lazy(() => import('./pages/tugas-akhir
 const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'))
 // Kerja Praktik - Dosen
 const InternshipGuidanceOverviewPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceOverview'))
+const StudentDetailPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/StudentDetail'))
 const StudentGuidanceTimelinePage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/StudentGuidanceTimeline'))
 const GuidanceEvaluatePage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceEvaluate'))
+const LecturerFinalReportTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerFinalReportTab'))
+const LecturerSeminarNilaiTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerSeminarNilaiTab'))
 // Tugas Akhir - Sidang
 const SidangEntry = lazy(() => import('./pages/tugas-akhir/sidang/SidangEntry'))
 const StudentThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/StudentThesisDefence'))
@@ -76,6 +79,7 @@ const InternshipProposalPage = lazy(() => import('./pages/kerja-praktik/student/
 const InternshipLogbookPage = lazy(() => import('./pages/kerja-praktik/student/activity/Logbook'))
 const InternshipGuidancePage = lazy(() => import('./pages/kerja-praktik/student/activity/Guidance'))
 const InternshipGuidanceDetailPage = lazy(() => import('./pages/kerja-praktik/student/activity/GuidanceDetail'))
+const InternshipSeminarPage = lazy(() => import('./pages/kerja-praktik/student/Seminar'))
 // Kerja Praktik - Sekdep
 const SekdepInternshipProposalPage = lazy(() => import('./pages/kerja-praktik/sekdep/Manage'))
 const SekdepInternshipProposalDetailPage = lazy(() => import('./pages/kerja-praktik/sekdep/RegistrationDetail'))
@@ -198,7 +202,14 @@ function App() {
                       <Route path="bimbingan" element={<InternshipGuidancePage />} />
                       <Route path="bimbingan/:weekNumber" element={<InternshipGuidanceDetailPage />} />
                     </Route>
-                    <Route path="seminar" element={<Placeholder title="KP - Seminar" />} />
+                    <Route path="pelaporan" element={<InternshipSeminarPage />} />
+                    <Route path="laporan-akhir" element={<InternshipSeminarPage />} />
+                    <Route path="seminar" element={<InternshipSeminarPage />} />
+                    <Route path="nilai" element={<InternshipSeminarPage />} />
+                    {/* Redirect old paths for backward compatibility */}
+                    <Route path="seminar/laporan-akhir" element={<Navigate to="/kerja-praktik/laporan-akhir" replace />} />
+                    <Route path="seminar/detail" element={<Navigate to="/kerja-praktik/seminar" replace />} />
+                    <Route path="seminar/nilai" element={<Navigate to="/kerja-praktik/nilai" replace />} />
                   </Route>
                 </Route>
 
@@ -240,7 +251,6 @@ function App() {
 
                 {/* Kerja Praktik Shared */}
                 <Route path="/kerja-praktik/monitoring" element={<Placeholder title="Kerja Praktek - Monitoring" />} />
-                <Route path="/kerja-praktik/seminar" element={<Placeholder title="Kerja Praktek - Seminar" />} />
 
               {/* Yudisium shared entry */}
               <Route path="/yudisium" element={<YudisiumEntry />} />
@@ -281,9 +291,12 @@ function App() {
                   {/* Kerja Praktik - Lecturer Routes */}
                   <Route path="/kerja-praktik/dosen/bimbingan">
                     <Route index element={<InternshipGuidanceOverviewPage />} />
-                    <Route path=":internshipId">
-                      <Route index element={<StudentGuidanceTimelinePage />} />
-                      <Route path="minggu/:weekNumber" element={<GuidanceEvaluatePage />} />
+                    <Route path=":internshipId" element={<StudentDetailPage />}>
+                      <Route path="bimbingan" element={<StudentGuidanceTimelinePage />} />
+                      <Route path="bimbingan/minggu/:weekNumber" element={<GuidanceEvaluatePage />} />
+                      <Route path="laporan-akhir" element={<LecturerFinalReportTab />} />
+                      <Route path="seminar-nilai" element={<LecturerSeminarNilaiTab />} />
+                      <Route index element={<Navigate to="bimbingan" replace />} />
                     </Route>
                   </Route>
 

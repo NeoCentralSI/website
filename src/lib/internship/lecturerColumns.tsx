@@ -2,7 +2,7 @@ import type { LecturerSupervisedStudent } from "@/services/internship.service";
 import type { Column } from "@/components/internship/InternshipTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, Eye } from "lucide-react";
+import { CheckCircle2, Clock, Eye, FileText, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -29,6 +29,13 @@ export const getLecturerSupervisedStudentsColumns = ({
         header: "Perusahaan",
         accessor: "companyName",
         sortable: true,
+    },
+    {
+        key: "academicYearName",
+        header: "Tahun Ajaran",
+        accessor: "academicYearName",
+        sortable: true,
+        className: "text-center",
     },
     {
         key: "period",
@@ -62,6 +69,81 @@ export const getLecturerSupervisedStudentsColumns = ({
                 </div>
             );
         },
+    },
+    {
+        key: "report",
+        header: "Laporan Akhir",
+        render: (item) => {
+            if (!item.report) {
+                return (
+                    <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-xs">Belum ada</span>
+                    </div>
+                );
+            }
+
+            const status = item.report.status;
+            let statusConfig: { label: string; color: string; icon: React.ReactNode } = {
+                label: 'Belum Diunggah',
+                color: 'text-muted-foreground',
+                icon: <AlertCircle className="w-4 h-4" />
+            };
+
+            if (status === 'SUBMITTED') {
+                statusConfig = {
+                    label: 'Menunggu Verifikasi',
+                    color: 'text-blue-600',
+                    icon: <Clock className="w-4 h-4" />
+                };
+            } else if (status === 'APPROVED') {
+                statusConfig = {
+                    label: 'Disetujui',
+                    color: 'text-green-600',
+                    icon: <CheckCircle2 className="w-4 h-4" />
+                };
+            } else if (status === 'REVISION_NEEDED') {
+                statusConfig = {
+                    label: 'Perlu Revisi',
+                    color: 'text-amber-600',
+                    icon: <XCircle className="w-4 h-4" />
+                };
+            }
+
+            return (
+                <div className="flex items-center justify-center gap-1.5">
+                    {statusConfig.icon}
+                    <span className={`text-xs font-medium ${statusConfig.color}`}>
+                        {statusConfig.label}
+                    </span>
+                </div>
+            );
+        },
+        className: "text-center",
+        sortable: true,
+    },
+    {
+        key: "finalScore",
+        header: "Nilai",
+        render: (item) => {
+            if (item.finalScore !== null && item.finalScore !== undefined) {
+                return (
+                    <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-sm font-bold">{item.finalScore.toFixed(2)}</span>
+                        {item.finalGrade && (
+                            <Badge variant="outline" className="text-xs h-5 bg-primary/5 text-primary border-primary/20">
+                                {item.finalGrade}
+                            </Badge>
+                        )}
+                    </div>
+                );
+            }
+            return (
+                <span className="text-xs text-muted-foreground">-</span>
+            );
+        },
+        className: "text-center",
+        sortable: true,
     },
     {
         key: "status",

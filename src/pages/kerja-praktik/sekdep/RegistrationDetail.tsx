@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { toast } from 'sonner';
-import ProposalResponseDialog from '@/components/internship/ProposalResponseDialog';
+import ProposalResponseDialog from '@/components/internship/sekdep/ProposalResponseDialog';
 
 export default function SekdepInternshipProposalDetail() {
     const navigate = useNavigate();
@@ -65,7 +65,7 @@ export default function SekdepInternshipProposalDetail() {
             queryClient.invalidateQueries({ queryKey: ['sekdep-internship-proposal-detail', proposalId] });
             queryClient.invalidateQueries({ queryKey: ['sekdep-internship-proposals'] });
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
             toast.error(error.message || 'Gagal merespon proposal');
         }
     });
