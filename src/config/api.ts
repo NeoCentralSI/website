@@ -34,7 +34,6 @@ export const API_CONFIG = {
     CPMK: {
       BASE: '/cpmk',
       BY_ID: (id: string) => `/cpmk/${id}`,
-      TOGGLE: (id: string) => `/cpmk/${id}/toggle`,
     },
     RUBRIC_SEMINAR: {
       CPMKS: '/rubric-seminar/cpmks',
@@ -43,7 +42,6 @@ export const API_CONFIG = {
       CPMK_CONFIG: (cpmkId: string) => `/rubric-seminar/cpmk/${cpmkId}`,
       CRITERIA_RUBRICS: (criteriaId: string) => `/rubric-seminar/criteria/${criteriaId}/rubrics`,
       RUBRIC_BY_ID: (rubricId: string) => `/rubric-seminar/rubrics/${rubricId}`,
-      CRITERIA_TOGGLE: (criteriaId: string) => `/rubric-seminar/criteria/${criteriaId}/toggle`,
       CRITERIA_REORDER: '/rubric-seminar/criteria/reorder',
       RUBRICS_REORDER: '/rubric-seminar/rubrics/reorder',
       WEIGHT_SUMMARY: '/rubric-seminar/weight-summary',
@@ -55,7 +53,6 @@ export const API_CONFIG = {
       CPMK_CONFIG: (cpmkId: string, role: string) => `/rubric-defence/cpmk/${cpmkId}?role=${role}`,
       CRITERIA_RUBRICS: (criteriaId: string) => `/rubric-defence/criteria/${criteriaId}/rubrics`,
       RUBRIC_BY_ID: (rubricId: string) => `/rubric-defence/rubrics/${rubricId}`,
-      CRITERIA_TOGGLE: (criteriaId: string) => `/rubric-defence/criteria/${criteriaId}/toggle`,
       CRITERIA_REORDER: '/rubric-defence/criteria/reorder',
       RUBRICS_REORDER: '/rubric-defence/rubrics/reorder',
       WEIGHT_SUMMARY: (role: string) => `/rubric-defence/weight-summary?role=${role}`,

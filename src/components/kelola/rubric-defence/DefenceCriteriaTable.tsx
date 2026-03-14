@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, Pencil, Plus, Trash2, ArrowUp, ArrowDown, Power } from 'lucide-react';
+import { ChevronDown, Pencil, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,13 +50,11 @@ interface DefenceCriteriaTableProps {
     onCreateRubric: (criteriaId: string, data: CreateRubricPayload) => Promise<unknown>;
     onUpdateRubric: (rubricId: string, data: UpdateRubricPayload) => Promise<unknown>;
     onDeleteRubric: (id: string) => void;
-    onToggleCriteriaActive: (criteriaId: string, isActive: boolean) => Promise<unknown>;
     onReorderCriteria: (cpmkId: string, orderedIds: string[]) => Promise<unknown>;
     onReorderRubrics: (criteriaId: string, orderedIds: string[]) => Promise<unknown>;
     isDeletingCriteria: boolean;
     isRemovingCpmk: boolean;
     isDeletingRubric: boolean;
-    isTogglingCriteria: boolean;
 }
 
 export function DefenceCriteriaTable({
@@ -71,13 +69,11 @@ export function DefenceCriteriaTable({
     onCreateRubric,
     onUpdateRubric,
     onDeleteRubric,
-    onToggleCriteriaActive,
     onReorderCriteria,
     onReorderRubrics,
     isDeletingCriteria,
     isRemovingCpmk,
     isDeletingRubric,
-    isTogglingCriteria,
 }: DefenceCriteriaTableProps) {
     const [deleteCpmkId, setDeleteCpmkId] = useState<string | null>(null);
     const [deleteCriteriaId, setDeleteCriteriaId] = useState<string | null>(null);
@@ -89,9 +85,7 @@ export function DefenceCriteriaTable({
     const [editRubric, setEditRubric] = useState<AssessmentRubric | null>(null);
 
     const totalSkorKriteria = (cpmk: CpmkWithRubrics): number =>
-        cpmk.assessmentCriterias
-            .filter((c) => c.isActive)
-            .reduce((s, c) => s + (c.maxScore || 0), 0);
+        cpmk.assessmentCriterias.reduce((s, c) => s + (c.maxScore || 0), 0);
 
     const totalRubrik = (cpmk: CpmkWithRubrics): number =>
         cpmk.assessmentCriterias.reduce((s, c) => s + c.assessmentRubrics.length, 0);
@@ -187,7 +181,7 @@ export function DefenceCriteriaTable({
 
             {data.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                    Belum ada CPMK bertipe thesis yang aktif.
+                    Belum ada CPMK bertipe thesis.
                     Tambahkan CPMK terlebih dahulu di menu &quot;Kelola CPMK&quot;.
                 </div>
             ) : (
@@ -279,9 +273,7 @@ export function DefenceCriteriaTable({
                                                 </div>
                                             ) : (
                                                 cpmk.assessmentCriterias.map((criteria, criteriaIdx) => (
-                                                    <div key={criteria.id} className={`rounded-md border p-3 space-y-3 ${
-                                                        !criteria.isActive ? 'opacity-60 bg-muted/30' : ''
-                                                    }`}>
+                                                    <div key={criteria.id} className="rounded-md border p-3 space-y-3">
                                                         {/* Header kriteria */}
                                                         <div className="flex items-center justify-between flex-wrap gap-2">
                                                             <div className="flex items-center gap-2 flex-wrap">
@@ -291,12 +283,7 @@ export function DefenceCriteriaTable({
                                                                 <Badge variant="outline" className="text-xs">
                                                                     Maks: {criteria.maxScore ?? '-'}
                                                                 </Badge>
-                                                                {!criteria.isActive && (
-                                                                    <Badge variant="secondary" className="text-xs text-muted-foreground">
-                                                                        Nonaktif
-                                                                    </Badge>
-                                                                )}
-                                                                {criteria.isActive && criteria.assessmentRubrics.length === 0 && (
+                                                                {criteria.assessmentRubrics.length === 0 && (
                                                                     <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
                                                                         Belum ada rubrik
                                                                     </Badge>
@@ -322,20 +309,6 @@ export function DefenceCriteriaTable({
                                                                     onClick={() => handleMoveCriteria(cpmk, criteria.id, 'down')}
                                                                 >
                                                                     <ArrowDown className="h-3 w-3" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className={`h-7 w-7 ${
-                                                                        criteria.isActive
-                                                                            ? 'text-muted-foreground hover:text-amber-600'
-                                                                            : 'text-muted-foreground hover:text-emerald-600'
-                                                                    }`}
-                                                                    title={criteria.isActive ? 'Nonaktifkan kriteria' : 'Aktifkan kriteria'}
-                                                                    disabled={isTogglingCriteria}
-                                                                    onClick={() => onToggleCriteriaActive(criteria.id, !criteria.isActive)}
-                                                                >
-                                                                    <Power className="h-3.5 w-3.5" />
                                                                 </Button>
                                                                 <Button
                                                                     variant="ghost"

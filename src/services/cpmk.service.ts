@@ -3,16 +3,23 @@ import { apiRequest } from './auth.service';
 
 export interface Cpmk {
     id: string;
+    academicYearId: string | null;
+    academicYear?: {
+        id: string;
+        semester: 'ganjil' | 'genap';
+        year: string | null;
+        isActive: boolean;
+    } | null;
     code: string;
     description: string;
     type: 'research_method' | 'thesis';
     maxScore: number | null;
-    isActive: boolean;
     createdAt: string;
     updatedAt: string;
 }
 
 export interface CreateCpmkPayload {
+    academicYearId?: string;
     code: string;
     description: string;
     type: 'research_method' | 'thesis';
@@ -20,8 +27,17 @@ export interface CreateCpmkPayload {
 
 export type UpdateCpmkPayload = Partial<CreateCpmkPayload>;
 
-export const getCpmks = async (): Promise<Cpmk[]> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.CPMK.BASE));
+export const getCpmks = async (params?: { academicYearId?: string }): Promise<Cpmk[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.academicYearId) {
+        queryParams.append('academicYearId', params.academicYearId);
+    }
+
+    const endpoint = queryParams.toString()
+        ? `${API_CONFIG.ENDPOINTS.CPMK.BASE}?${queryParams.toString()}`
+        : API_CONFIG.ENDPOINTS.CPMK.BASE;
+
+    const response = await apiRequest(getApiUrl(endpoint));
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Gagal mengambil data CPMK');
@@ -61,18 +77,6 @@ export const updateCpmk = async (id: string, payload: UpdateCpmkPayload): Promis
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Gagal mengubah data CPMK');
-    }
-    const result = await response.json();
-    return result.data;
-};
-
-export const toggleCpmk = async (id: string): Promise<Cpmk> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.CPMK.TOGGLE(id)), {
-        method: 'PATCH',
-    });
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Gagal mengubah status CPMK');
     }
     const result = await response.json();
     return result.data;

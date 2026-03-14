@@ -10,7 +10,6 @@ import {
     updateRubric,
     deleteRubric,
     getWeightSummary,
-    toggleCriteriaActive,
     reorderCriteria,
     reorderRubrics,
     type DefenceRole,
@@ -151,24 +150,6 @@ export function useRubricDefence(role: DefenceRole) {
         },
     });
 
-    // ── Toggle criteria active mutation ──────
-    const toggleCriteriaActiveMutation = useMutation({
-        mutationFn: ({
-            criteriaId,
-            isActive,
-        }: {
-            criteriaId: string;
-            isActive: boolean;
-        }) => toggleCriteriaActive(criteriaId, isActive),
-        onSuccess: () => {
-            invalidateAll();
-            toast.success('Status kriteria sidang berhasil diubah');
-        },
-        onError: (error: Error) => {
-            toast.error(error.message);
-        },
-    });
-
     // ── Reorder criteria mutation ────────────
     const reorderCriteriaMutation = useMutation({
         mutationFn: ({
@@ -234,13 +215,10 @@ export function useRubricDefence(role: DefenceRole) {
         isUpdatingRubric: updateRubricMutation.isPending,
         isDeletingRubric: deleteRubricMutation.isPending,
 
-        // Toggle + reorder actions
-        toggleCriteriaActive: (criteriaId: string, isActive: boolean) =>
-            toggleCriteriaActiveMutation.mutateAsync({ criteriaId, isActive }),
+        // Reorder actions
         reorderCriteria: (cpmkId: string, orderedIds: string[]) =>
             reorderCriteriaMutation.mutateAsync({ cpmkId, orderedIds }),
         reorderRubrics: (criteriaId: string, orderedIds: string[]) =>
             reorderRubricsMutation.mutateAsync({ criteriaId, orderedIds }),
-        isTogglingCriteria: toggleCriteriaActiveMutation.isPending,
     };
 }

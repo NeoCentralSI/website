@@ -4,7 +4,6 @@ import {
     getCpmks,
     createCpmk,
     updateCpmk,
-    toggleCpmk,
     deleteCpmk,
     type CreateCpmkPayload,
     type UpdateCpmkPayload,
@@ -12,12 +11,13 @@ import {
 
 const QUERY_KEY = ['cpmks'];
 
-export function useCpmk() {
+export function useCpmk(academicYearId?: string) {
     const queryClient = useQueryClient();
+    const queryKey = [...QUERY_KEY, academicYearId || 'active'];
 
     const { data: cpmks, isLoading, isFetching, refetch } = useQuery({
-        queryKey: QUERY_KEY,
-        queryFn: getCpmks,
+        queryKey,
+        queryFn: () => getCpmks({ academicYearId }),
     });
 
     const createMutation = useMutation({
@@ -43,17 +43,6 @@ export function useCpmk() {
         },
     });
 
-    const toggleMutation = useMutation({
-        mutationFn: toggleCpmk,
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-            toast.success(data.isActive ? 'CPMK berhasil diaktifkan' : 'CPMK berhasil dinonaktifkan');
-        },
-        onError: (error: Error) => {
-            toast.error(error.message);
-        },
-    });
-
     const deleteMutation = useMutation({
         mutationFn: deleteCpmk,
         onSuccess: () => {
@@ -72,11 +61,9 @@ export function useCpmk() {
         refetch,
         create: (data: CreateCpmkPayload) => createMutation.mutateAsync(data),
         update: (id: string, data: UpdateCpmkPayload) => updateMutation.mutateAsync({ id, data }),
-        toggle: toggleMutation.mutate,
         remove: deleteMutation.mutate,
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
-        isToggling: toggleMutation.isPending,
         isDeleting: deleteMutation.isPending,
     };
 }

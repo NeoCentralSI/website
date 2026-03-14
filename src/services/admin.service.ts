@@ -27,6 +27,16 @@ export interface AcademicYear {
   updatedAt: string;
 }
 
+export interface Room {
+  id: string;
+  name: string;
+  location: string | null;
+  capacity: number | null;
+  canDelete: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateUserRequest {
   fullName: string;
   email: string;
@@ -58,6 +68,96 @@ export interface UpdateAcademicYearRequest {
   endDate?: string;
   isActive?: boolean;
 }
+
+export interface CreateRoomRequest {
+  name: string;
+  location?: string | null;
+  capacity?: number | null;
+}
+
+export interface UpdateRoomRequest {
+  name?: string;
+  location?: string | null;
+  capacity?: number | null;
+}
+
+export type SeminarResultStatus = 'passed' | 'passed_with_revision' | 'failed';
+
+export interface SeminarResult {
+  id: string;
+  thesisId: string;
+  thesisTitle: string;
+  student: {
+    id: string | null;
+    fullName: string;
+    nim: string;
+  };
+  date: string | null;
+  room: {
+    id: string;
+    name: string;
+    location: string | null;
+  } | null;
+  status: SeminarResultStatus;
+  audienceCount: number;
+  examiners: Array<{
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SeminarResultThesisOption {
+  id: string;
+  title: string;
+  studentName: string;
+  studentNim: string;
+  hasSeminarResult: boolean;
+  seminarResultId: string | null;
+}
+
+export interface SeminarResultLecturerOption {
+  id: string;
+  fullName: string;
+  nip: string;
+}
+
+export interface SeminarResultStudentOption {
+  id: string;
+  fullName: string;
+  nim: string;
+}
+
+export interface SeminarResultAudienceLink {
+  seminarId: string;
+  studentId: string;
+  createdAt: string;
+  student: {
+    id: string;
+    fullName: string;
+    nim: string;
+  };
+  seminar: {
+    id: string;
+    date: string | null;
+    thesisTitle: string;
+    ownerName: string;
+    ownerNim: string;
+  };
+}
+
+export interface CreateSeminarResultRequest {
+  thesisId: string;
+  date: string;
+  roomId: string;
+  status: SeminarResultStatus;
+  examinerLecturerIds: string[];
+}
+
+export type UpdateSeminarResultRequest = CreateSeminarResultRequest;
 
 // Import students from CSV
 export const importStudentsCsvAPI = async (file: File): Promise<{ summary: any }> => {
@@ -204,6 +304,301 @@ export const getActiveAcademicYearAPI = async (): Promise<{
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Gagal memuat tahun ajaran aktif');
+  }
+
+  return response.json();
+};
+
+// Get all rooms
+export const getRoomsAPI = async (params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<{
+  rooms: Room[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  if (params?.search) queryParams.append('search', params.search);
+
+  const response = await fetch(getApiUrl(`/adminfeatures/rooms?${queryParams}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat data ruangan');
+  }
+
+  return response.json();
+};
+
+export const createRoomAPI = async (data: CreateRoomRequest): Promise<{ room: Room }> => {
+  const response = await fetch(getApiUrl('/adminfeatures/rooms'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal menambahkan ruangan');
+  }
+
+  return response.json();
+};
+
+export const updateRoomAPI = async (id: string, data: UpdateRoomRequest): Promise<{ room: Room }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/rooms/${id}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal mengubah data ruangan');
+  }
+
+  return response.json();
+};
+
+export const deleteRoomAPI = async (id: string): Promise<{ success: boolean; message: string }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/rooms/${id}`), {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal menghapus ruangan');
+  }
+
+  return response.json();
+};
+
+export const getSeminarResultThesisOptionsAPI = async (): Promise<{ data: SeminarResultThesisOption[] }> => {
+  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/theses'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat opsi thesis');
+  }
+
+  return response.json();
+};
+
+export const getSeminarResultLecturerOptionsAPI = async (): Promise<{ data: SeminarResultLecturerOption[] }> => {
+  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/lecturers'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat opsi dosen');
+  }
+
+  return response.json();
+};
+
+export const getSeminarResultStudentOptionsAPI = async (): Promise<{ data: SeminarResultStudentOption[] }> => {
+  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/students'), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat opsi mahasiswa');
+  }
+
+  return response.json();
+};
+
+export const getSeminarResultsAPI = async (params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<{
+  seminars: SeminarResult[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  if (params?.search) queryParams.append('search', params.search);
+
+  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results?${queryParams}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat data seminar hasil');
+  }
+
+  return response.json();
+};
+
+export const createSeminarResultAPI = async (data: CreateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
+  const response = await fetch(getApiUrl('/adminfeatures/seminar-results'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal menambahkan seminar hasil');
+  }
+
+  return response.json();
+};
+
+export const updateSeminarResultAPI = async (id: string, data: UpdateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/${id}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memperbarui seminar hasil');
+  }
+
+  return response.json();
+};
+
+export const deleteSeminarResultAPI = async (id: string): Promise<{ success: boolean; message: string }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/${id}`), {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal menghapus seminar hasil');
+  }
+
+  return response.json();
+};
+
+export const getSeminarResultAudienceLinksAPI = async (params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<{
+  links: SeminarResultAudienceLink[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  if (params?.search) queryParams.append('search', params.search);
+
+  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/audiences?${queryParams}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat relasi audience seminar');
+  }
+
+  return response.json();
+};
+
+export const assignSeminarResultAudiencesAPI = async (payload: {
+  studentId: string;
+  seminarIds: string[];
+}): Promise<{
+  data: {
+    created: number;
+    skippedOwnSeminarIds: string[];
+    skippedDuplicate: number;
+  };
+}> => {
+  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/audiences/assign'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal mengaitkan audience seminar');
+  }
+
+  return response.json();
+};
+
+export const removeSeminarResultAudienceLinkAPI = async (seminarId: string, studentId: string): Promise<{ success: boolean; message: string }> => {
+  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/audiences/${seminarId}/${studentId}`), {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal menghapus relasi audience seminar');
   }
 
   return response.json();

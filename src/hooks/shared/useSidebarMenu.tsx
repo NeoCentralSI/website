@@ -562,12 +562,20 @@ export const useSidebarMenu = () => {
                 url: "/master-data/tugas-akhir",
               },
               {
+                title: "Data Seminar Hasil",
+                url: "/master-data/seminar-hasil",
+              },
+              {
                 title: "Kelola User",
                 url: "/master-data/user",
               },
               {
                 title: "Kelola Tahun Ajaran",
                 url: "/master-data/tahun-ajaran",
+              },
+              {
+                title: "Kelola Ruangan",
+                url: "/master-data/ruangan",
               },
               {
                 title: "Kuota Bimbingan",
