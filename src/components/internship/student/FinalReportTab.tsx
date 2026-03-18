@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileText, Upload, Clock, MessageSquare, Info, CheckCircle2, XCircle, AlertCircle, X, Save, Edit, Eye } from 'lucide-react';
+import { FileText, Upload, Clock, MessageSquare, CheckCircle2, XCircle, AlertCircle, X, Save, Edit, Eye } from 'lucide-react';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
@@ -18,7 +18,6 @@ interface FinalReportTabProps {
 export const FinalReportTab: React.FC<FinalReportTabProps> = ({
     internship,
     isUploading,
-    onFileChange,
     onFinalReportSubmit
 }) => {
     const [reportTitle, setReportTitle] = useState<string>(internship?.reportTitle || '');
