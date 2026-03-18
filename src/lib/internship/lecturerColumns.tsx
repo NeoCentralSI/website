@@ -2,7 +2,7 @@ import type { LecturerSupervisedStudent } from "@/services/internship.service";
 import type { Column } from "@/components/internship/InternshipTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, Eye, FileText, XCircle, AlertCircle } from "lucide-react";
+import { CheckCircle2, Clock, Eye, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
