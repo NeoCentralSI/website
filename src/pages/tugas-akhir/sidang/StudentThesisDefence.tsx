@@ -4,7 +4,6 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/spinner';
-import { TabsNav } from '@/components/ui/tabs-nav';
 import { useStudentDefenceOverview, useStudentDefenceHistory } from '@/hooks/defence';
 import { DefenceStatusStepper } from '@/components/sidang/DefenceStatusStepper';
 import { DefenceInfoCard } from '@/components/sidang/DefenceInfoCard';
@@ -17,9 +16,6 @@ import { ChevronRight, Calendar, Users, Trophy, MapPin, Video } from 'lucide-rea
 
 const PASSED_STATUSES: ThesisDefenceStatus[] = ['passed', 'passed_with_revision'];
 const HISTORY_STATUSES: ThesisDefenceStatus[] = ['failed', 'cancelled'];
-const TABS = [
-  { label: 'Sidang Tugas Akhir', to: '/tugas-akhir/sidang/student', end: true },
-];
 const INFO_CARD_STATUSES: ThesisDefenceStatus[] = [
   'examiner_assigned',
   'scheduled',
@@ -174,8 +170,6 @@ export default function StudentThesisDefence() {
         <h1 className="text-2xl font-bold">Sidang Tugas Akhir</h1>
         <p className="text-gray-500">Status dan progres sidang tugas akhir</p>
       </div>
-
-      <TabsNav tabs={TABS} />
 
       {isLoading ? (
         <div className="flex h-[calc(100vh-280px)] items-center justify-center">
