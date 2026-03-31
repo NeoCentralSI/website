@@ -34,12 +34,14 @@ import {
   XCircle,
   ArrowRight,
   UserRound,
+  Download,
 } from 'lucide-react';
 import {
   getKadepPendingTransfers,
   getKadepAllTransfers,
   kadepApproveTransfer,
   kadepRejectTransfer,
+  downloadTransferReportPdf,
   type KadepTransfer,
 } from '@/services/monitoring.service';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
@@ -74,6 +76,7 @@ export function TransferManagementPanel() {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
 
   // Pending transfers query
   const {
@@ -99,6 +102,25 @@ export function TransferManagementPanel() {
     queryFn: () => getKadepAllTransfers({ page, pageSize, search, status: statusFilter }),
     enabled: viewMode === 'all',
   });
+
+  const handleDownloadReport = async () => {
+    setIsDownloadingReport(true);
+    try {
+      const blob = await downloadTransferReportPdf();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Laporan_Transfer_Dospem_${new Date().toISOString().slice(0, 10)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Laporan transfer berhasil diunduh');
+    } catch (error: any) {
+      toast.error(error.message || 'Gagal mengunduh laporan');
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  };
 
   const approveMutation = useMutation({
     mutationFn: (notificationId: string) => kadepApproveTransfer(notificationId),
@@ -132,7 +154,7 @@ export function TransferManagementPanel() {
 
   // Transform pending data to match table format
   const pendingTransfers = pendingData?.transfers ?? [];
-  const allTransfers = allData?.data ?? [];
+  const allTransfers = (allData?.data ?? []).filter((t: any) => t.status !== 'pending');
 
   const data = viewMode === 'pending' ? pendingTransfers : allTransfers;
   const isLoading = viewMode === 'pending' ? isLoadingPending : isLoadingAll;
@@ -347,6 +369,21 @@ export function TransferManagementPanel() {
         onClick={() => refetch()}
         isRefreshing={isFetching && !isLoading}
       />
+      {viewMode === 'all' && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadReport}
+          disabled={isDownloadingReport}
+        >
+          {isDownloadingReport ? (
+            <Spinner className="size-4 mr-2" />
+          ) : (
+            <Download className="size-4 mr-2" />
+          )}
+          Download Report
+        </Button>
+      )}
       <Button
         variant={viewMode === 'pending' ? 'default' : 'outline'}
         size="sm"

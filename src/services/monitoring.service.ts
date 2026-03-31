@@ -617,3 +617,22 @@ export async function kadepRejectTransfer(notificationId: string, reason?: strin
   if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak transfer");
   return res.json();
 }
+
+/**
+ * Download supervisor transfer history report as PDF
+ */
+export async function downloadTransferReportPdf(): Promise<Blob> {
+  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_REPORT_DOWNLOAD);
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    let message = "Gagal mengunduh laporan transfer";
+    try {
+      const json = await response.json();
+      if (json.message) message = json.message;
+    } catch {
+      // response is not JSON
+    }
+    throw new Error(message);
+  }
+  return response.blob();
+}

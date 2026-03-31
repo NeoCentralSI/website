@@ -182,10 +182,11 @@ export const API_CONFIG = {
     },
     THESIS_MONITORING: {
       DASHBOARD: '/thesisGuidance/monitoring/dashboard',
-      TRANSFERS_PENDING: '/thesisGuidance/monitoring/transfers/pending',
-      TRANSFERS_ALL: '/thesisGuidance/monitoring/transfers/all',
-      TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/monitoring/transfers/${notificationId}/approve`,
-      TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/monitoring/transfers/${notificationId}/reject`,
+      TRANSFERS_PENDING: '/kadep-transfers/pending',
+      TRANSFERS_ALL: '/kadep-transfers/all',
+      TRANSFERS_REPORT_DOWNLOAD: '/kadep-transfers/report/download',
+      TRANSFER_APPROVE: (notifId: string) => `/kadep-transfers/${notifId}/approve`,
+      TRANSFER_REJECT: (notifId: string) => `/kadep-transfers/${notifId}/reject`,
     },
     THESIS_SEMINAR_STUDENT: {
       OVERVIEW: '/thesisSeminar/student/overview',

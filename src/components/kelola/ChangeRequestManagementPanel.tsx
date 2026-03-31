@@ -26,12 +26,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Check, X, Eye, Clock, CheckCircle, XCircle, AlertTriangle, Users } from 'lucide-react';
+import { Check, X, Eye, Clock, CheckCircle, XCircle, AlertTriangle, Users, Download } from 'lucide-react';
 import {
   getPendingChangeRequests,
   getAllChangeRequests,
   approveChangeRequest,
   rejectChangeRequest,
+  downloadChangeRequestReportPdf,
   type ThesisChangeRequest,
 } from '@/services/thesisChangeRequest.service';
 import { toTitleCaseName, formatDateId, formatRoleName } from '@/lib/text';
@@ -77,6 +78,8 @@ export function ChangeRequestManagementPanel() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [approveNotes, setApproveNotes] = useState('');
   const [rejectNotes, setRejectNotes] = useState('');
+
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const { data: pendingData, isLoading: isLoadingPending, isFetching: isFetchingPending, refetch: refetchPending } = useQuery({
     queryKey: ['change-requests-pending', page, pageSize, search],
@@ -124,7 +127,10 @@ export function ChangeRequestManagementPanel() {
   const isLoading = viewMode === 'pending' ? isLoadingPending : isLoadingAll;
   const isFetching = viewMode === 'pending' ? isFetchingPending : isFetchingAll;
   const refetch = viewMode === 'pending' ? refetchPending : refetchAll;
-  const requests = data?.data || [];
+  const allRequests = data?.data || [];
+  const requests = viewMode === 'all' 
+    ? allRequests.filter(r => r.status !== 'pending')
+    : allRequests;
   const pagination = data?.pagination;
 
   const handleViewDetail = (request: ThesisChangeRequest) => {
@@ -155,6 +161,30 @@ export function ChangeRequestManagementPanel() {
     }
     if (selectedRequest) {
       rejectMutation.mutate(selectedRequest.id);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      setIsDownloading(true);
+      const blob = await downloadChangeRequestReportPdf({
+        search,
+        status: statusFilter,
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Laporan_Pergantian_TA_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Laporan berhasil diunduh');
+    } catch (error: any) {
+      toast.error(error.message || 'Gagal mengunduh laporan');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -376,6 +406,22 @@ export function ChangeRequestManagementPanel() {
       >
         Semua Riwayat
       </Button>
+      {viewMode === 'all' && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadReport}
+          disabled={isDownloading}
+          className="ml-2"
+        >
+          {isDownloading ? (
+            <Spinner className="mr-2" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
+          Download Report
+        </Button>
+      )}
     </div>
   );
 

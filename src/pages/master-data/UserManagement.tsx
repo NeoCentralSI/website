@@ -3,18 +3,19 @@ import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Plus, Upload, Download, CheckCircle2, XCircle } from 'lucide-react';
+import { Pencil, Plus, Upload, Download, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
 import { GenericImportExcelDialog } from '@/components/shared/GenericImportExcelDialog';
-import { UserExportExcelDialog } from '@/components/master-data/UserExportExcelDialog';
 import { importUsersExcelAPI, getUsersAPI, createUserAPI, updateUserAPI } from '@/services/admin.service';
 import { toTitleCaseName } from '@/lib/text';
 import { formatRoleName, ROLES } from '@/lib/roles';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserFormDialog } from '@/components/master-data/UserFormDialog';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import * as xlsx from 'xlsx';
+import { format } from 'date-fns';
 
 export default function UserManagementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -23,7 +24,7 @@ export default function UserManagementPage() {
   // UI state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -110,6 +111,60 @@ export default function UserManagementPage() {
       updateMutation.mutate(formData as UpdateUserRequest);
     } else {
       createMutation.mutate(formData as CreateUserRequest);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const response = await getUsersAPI({
+        pageSize: 0, // all
+        search: searchValue,
+        identityType: identityTypeFilter || undefined,
+        role: roleFilter || undefined,
+        isVerified: isVerifiedFilter
+      });
+
+      const allUsers = response.users || [];
+
+      if (allUsers.length === 0) {
+        toast.error('Tidak ada data untuk di-export.');
+        return;
+      }
+
+      const excelData = allUsers.map((user, index) => ({
+        "No": index + 1,
+        "Nama Lengkap": toTitleCaseName(user.fullName) || "-",
+        "Email": user.email || "-",
+        "NIM/NIP": user.identityNumber || "-",
+        "Tipe Identitas": user.identityType || "-",
+        "Role": user.roles.map((r: any) => formatRoleName(r.name)).join(", "),
+        "Status Verifikasi": user.isVerified ? "Terverifikasi" : "Belum Verifikasi",
+        "Dibuat": user.createdAt ? format(new Date(user.createdAt), "dd MMM yyyy") : "-"
+      }));
+
+      const worksheet = xlsx.utils.json_to_sheet(excelData);
+      const workbook = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(workbook, worksheet, "Data User");
+
+      const colWidths = [
+          { wch: 5 },
+          { wch: 30 },
+          { wch: 30 },
+          { wch: 20 },
+          { wch: 15 },
+          { wch: 40 },
+          { wch: 20 },
+          { wch: 15 },
+      ];
+      worksheet["!cols"] = colWidths;
+
+      xlsx.writeFile(workbook, `Data_User_${format(new Date(), "yyyyMMdd_HHmmss")}.xlsx`);
+      toast.success(`Berhasil mengeksport ${allUsers.length} data user.`);
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengeksport data user.');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -231,7 +286,7 @@ export default function UserManagementPage() {
               identityNumber: row.identityNumber,
               identityType: row.identityType,
               isVerified: row.isVerified
-            });
+            } as any);
             setIsFormOpen(true);
           }}
         >
@@ -276,8 +331,9 @@ export default function UserManagementPage() {
             <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
               <Upload className="w-4 h-4 mr-2" /> Import Excel
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setIsExportOpen(true)}>
-              <Download className="w-4 h-4 mr-2" /> Export Excel
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExporting}>
+              {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+              Export Excel
             </Button>
             <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />
           </div>
@@ -311,11 +367,6 @@ export default function UserManagementPage() {
         }]}
         importFn={importUsersExcelAPI}
         queryKeys={[['users']]}
-      />
-
-      <UserExportExcelDialog
-        open={isExportOpen}
-        onOpenChange={setIsExportOpen}
       />
     </div>
   );

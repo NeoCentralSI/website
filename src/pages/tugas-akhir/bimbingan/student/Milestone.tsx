@@ -14,9 +14,7 @@ import {
   MilestoneFormDialog,
   TemplateSelectorDialog,
   DeleteMilestoneDialog,
-  SeminarReadinessStatusCard,
   TargetDateDialog,
-  DefenceRequestCard,
 } from "@/components/milestone";
 import { RequirementsNotMet } from "@/components/shared/RequirementsNotMet";
 import {
@@ -451,23 +449,7 @@ export default function StudentMilestonePage() {
             </div>
           ) : (
             <>
-              {/* Seminar Readiness Status for Student */}
-
-              {thesisId && (
-                <SeminarReadinessStatusCard
-                  thesisId={thesisId}
-                  className="mb-4"
-                  displayMode="milestone"
-                />
-              )}
-
-              {/* Defence Readiness Status for Student */}
-              {thesisId && (
-                <DefenceRequestCard 
-                  thesisId={thesisId} 
-                  className="mb-4" 
-                />
-              )}
+              {/* Readiness cards removed, now only shown in Overview */}
 
               <MilestoneList
                 milestones={milestones}

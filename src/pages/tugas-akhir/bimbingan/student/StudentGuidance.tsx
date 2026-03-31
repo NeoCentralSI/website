@@ -31,7 +31,6 @@ import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Download, FileDown } from 'lucide-react';
-import { SeminarReadinessStatusCard } from '@/components/milestone/student/SeminarReadinessStatusCard';
 
 export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -218,14 +217,6 @@ export default function StudentGuidancePage() {
           { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone' },
         ]}
       />
-
-      {thesisId && !isLoading && !isThesisInactive && (
-        <SeminarReadinessStatusCard
-          thesisId={thesisId}
-          displayMode="guidance"
-          className="bg-background/50 border shadow-xs"
-        />
-      )}
 
       {/* Loading state - tabs tetap render, loading di content */}
       {isLoading ? (

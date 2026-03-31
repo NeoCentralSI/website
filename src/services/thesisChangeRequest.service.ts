@@ -197,6 +197,32 @@ export const getAllChangeRequests = async (params?: {
   return response.json();
 };
 
+export const downloadChangeRequestReportPdf = async (params?: {
+  search?: string;
+  status?: string;
+}): Promise<Blob> => {
+  const queryParams = new URLSearchParams();
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.status) queryParams.append('status', params.status);
+
+  const url = queryParams.toString()
+    ? `/thesis-change-requests/report/download?${queryParams}`
+    : '/thesis-change-requests/report/download';
+
+  const response = await fetch(getApiUrl(url), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Gagal mengunduh laporan pergantian topik');
+  }
+
+  return response.blob();
+};
+
 export const getPendingChangeRequestCount = async (): Promise<number> => {
   const response = await fetch(getApiUrl('/thesis-change-requests/pending-count'), {
     method: 'GET',

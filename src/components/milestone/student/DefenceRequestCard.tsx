@@ -71,6 +71,7 @@ export function DefenceRequestCard({
   });
 
   if (isLoading) {
+    console.log("[DefenceRequestCard] Loading defence readiness...");
     return (
       <Card className={className}>
         <CardContent className="flex items-center justify-center py-8">
@@ -80,7 +81,10 @@ export function DefenceRequestCard({
     );
   }
 
+  console.log("[DefenceRequestCard] readinessStatus:", readinessStatus);
+
   if (!readinessStatus) {
+    console.log("[DefenceRequestCard] No readinessStatus data -> returning null");
     return null;
   }
 
@@ -96,12 +100,18 @@ export function DefenceRequestCard({
   const hasRequestedDefence = defenceReadiness?.hasRequestedDefence;
   const isFullyApproved = defenceReadiness?.isFullyApproved;
 
+  console.log("[DefenceRequestCard] thesisStatus:", thesisStatus);
+  console.log("[DefenceRequestCard] isEligibleStatus:", isEligibleStatus);
+  console.log("[DefenceRequestCard] hasFinalDocument:", hasFinalDocument);
+  console.log("[DefenceRequestCard] hasRequestedDefence:", hasRequestedDefence);
+
   // Find supervisors
   const supervisor1 = supervisors?.find(s => s.role === ROLES.PEMBIMBING_1);
   const supervisor2 = supervisors?.find(s => s.role === ROLES.PEMBIMBING_2);
 
   // Don't show the card if status is not eligible for defence
   if (!isEligibleStatus) {
+    console.log("[DefenceRequestCard] NOT ELIGIBLE -> returning null. thesisStatus:", JSON.stringify(thesisStatus));
     return null;
   }
 
@@ -195,7 +205,7 @@ export function DefenceRequestCard({
             <AlertTitle className="text-green-800">Siap Daftar Sidang!</AlertTitle>
             <AlertDescription className="text-green-700">
               Selamat! Kedua pembimbing telah menyetujui kesiapan sidang Anda. 
-              Silakan hubungi admin atau akses menu pendaftaran sidang.
+              Silakan akses menu sidang untuk melakukan pendaftaran sidang TA.
             </AlertDescription>
           </Alert>
         )}
@@ -217,11 +227,19 @@ export function DefenceRequestCard({
                     variant="outline"
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => {
-                      const url = finalDocument.filePath.startsWith("http") 
-                        ? finalDocument.filePath 
-                        : getApiUrl(`/${finalDocument.filePath}`);
-                      window.open(url, "_blank");
+                    onClick={async () => {
+                      try {
+                        const url = finalDocument.filePath.startsWith("http") 
+                          ? finalDocument.filePath 
+                          : getApiUrl(`/${finalDocument.filePath}`);
+                        const response = await apiRequest(url);
+                        if (!response.ok) throw new Error("Gagal mengambil file");
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        window.open(blobUrl, "_blank");
+                      } catch {
+                        toast.error("Gagal membuka dokumen");
+                      }
                     }}
                   >
                     <ExternalLink className="h-3 w-3 mr-1" />
@@ -231,14 +249,23 @@ export function DefenceRequestCard({
                     variant="outline"
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => {
-                      const url = finalDocument.filePath.startsWith("http") 
-                        ? finalDocument.filePath 
-                        : getApiUrl(`/${finalDocument.filePath}`);
-                      const link = document.createElement("a");
-                      link.href = url;
-                      link.download = finalDocument.fileName;
-                      link.click();
+                    onClick={async () => {
+                      try {
+                        const url = finalDocument.filePath.startsWith("http") 
+                          ? finalDocument.filePath 
+                          : getApiUrl(`/${finalDocument.filePath}`);
+                        const response = await apiRequest(url);
+                        if (!response.ok) throw new Error("Gagal mengambil file");
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = blobUrl;
+                        link.download = finalDocument.fileName;
+                        link.click();
+                        URL.revokeObjectURL(blobUrl);
+                      } catch {
+                        toast.error("Gagal mendownload dokumen");
+                      }
                     }}
                   >
                     <Download className="h-3 w-3 mr-1" />

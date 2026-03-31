@@ -176,9 +176,11 @@ export function DefenceReadinessCard({
                 size="sm"
                 className="h-7 text-xs"
                 onClick={() => {
-                  const url = finalDocument.filePath.startsWith("http") 
+                  const baseUrl = finalDocument.filePath.startsWith("http") 
                     ? finalDocument.filePath 
                     : getApiUrl(`/${finalDocument.filePath}`);
+                  const token = localStorage.getItem("accessToken");
+                  const url = token ? `${baseUrl}?token=${token}` : baseUrl;
                   window.open(url, "_blank");
                 }}
               >
@@ -190,9 +192,11 @@ export function DefenceReadinessCard({
                 size="sm"
                 className="h-7 text-xs"
                 onClick={() => {
-                  const url = finalDocument.filePath.startsWith("http") 
+                  const baseUrl = finalDocument.filePath.startsWith("http") 
                     ? finalDocument.filePath 
                     : getApiUrl(`/${finalDocument.filePath}`);
+                  const token = localStorage.getItem("accessToken");
+                  const url = token ? `${baseUrl}?token=${token}` : baseUrl;
                   const link = document.createElement("a");
                   link.href = url;
                   link.download = finalDocument.fileName;

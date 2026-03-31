@@ -27,7 +27,8 @@ import {
     Download,
 } from "lucide-react";
 import { toTitleCaseName, formatRoleName, formatDateId } from "@/lib/text";
-import { useMilestones } from "@/hooks/milestone";
+import { useMilestones, useDefenceReadinessStatus } from "@/hooks/milestone";
+import { DefenceRequestCard } from "@/components/milestone";
 import { Loading } from "@/components/ui/spinner";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { getApiUrl } from "@/config/api";
@@ -98,6 +99,9 @@ export default function TugasAkhirOverviewPage() {
 
     const { data: milestonesData, isLoading: isLoadingMilestones } = useMilestones(thesisId);
     const milestones = milestonesData?.milestones ?? [];
+
+    const { data: defenceStatus } = useDefenceReadinessStatus(thesisId);
+    const isSeminarCompleted = defenceStatus?.thesisStatus?.isEligible === true;
 
     const hasPembimbing2 = thesisDetail?.supervisors?.some((s: any) =>
         (s.role || "").toLowerCase().includes("pembimbing 2") ||
@@ -376,13 +380,22 @@ export default function TugasAkhirOverviewPage() {
                                             </div>
                                         </div>
 
-                                        {/* Seminar Readiness Integrated */}
-                                        {thesisId && (
+                                        {/* Readiness Cards Integrated */}
+                                        {!isSeminarCompleted && thesisId && (
                                             <SeminarReadinessStatusCard
                                                 thesisId={thesisId}
                                                 variant="embedded"
                                                 className="mt-0"
                                             />
+                                        )}
+
+                                        {isSeminarCompleted && thesisId && (
+                                            <div className="mt-4">
+                                                <DefenceRequestCard 
+                                                    thesisId={thesisId} 
+                                                    className="mt-0 border-primary/20 bg-primary/5" 
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                 </CardContent>

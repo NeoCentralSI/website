@@ -38,7 +38,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarReadinessCard";
 import { DefenceReadinessCard } from "@/components/milestone/lecturer/DefenceReadinessCard";
-import { useSeminarReadinessStatus } from "@/hooks/milestone/useMilestone";
+import { useSeminarReadinessStatus, useDefenceReadinessStatus } from "@/hooks/milestone/useMilestone";
 import { ChangeRequestReviewCard } from "@/components/tugas-akhir/lecturer/ChangeRequestReviewCard";
 import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/GuidanceHistorySection";
 import { RefreshButton } from "@/components/ui/refresh-button";
@@ -110,6 +110,8 @@ export default function LecturerMyStudentDetailPage() {
     });
 
     const { data: readinessStatus } = useSeminarReadinessStatus(thesisId);
+    const { data: defenceStatus } = useDefenceReadinessStatus(thesisId);
+    const isSeminarCompleted = defenceStatus?.thesisStatus?.isEligible === true;
 
     const progressPercentage = useMemo(() => {
         if (!detailData?.milestones?.length) return 0;
@@ -344,7 +346,7 @@ export default function LecturerMyStudentDetailPage() {
             )}
 
             {/* Alert Banner ketika milestone 100% */}
-            {progressPercentage === 100 && (
+            {!isSeminarCompleted && progressPercentage === 100 && (
                 <Alert className={cn(
                     "border-green-200 bg-green-50",
                     readinessStatus?.guidanceProgress?.isComplete ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"
@@ -373,8 +375,8 @@ export default function LecturerMyStudentDetailPage() {
                 />
             )}
 
-            {/* Seminar Readiness Card - tampilkan bagi mahasiswa aktif untuk monitoring */}
-            {(detailData.status === "Bimbingan" || detailData.status === "Acc Seminar") && thesisId && (
+            {/* Seminar Readiness Card - sembunyikan jika mahasiswa sudah lulus seminar */}
+            {!isSeminarCompleted && (detailData.status === "Bimbingan" || detailData.status === "Acc Seminar") && thesisId && (
                 <SeminarReadinessCard
                     thesisId={thesisId}
                     studentName={detailData.student.fullName}
