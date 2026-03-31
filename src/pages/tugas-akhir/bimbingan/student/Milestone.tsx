@@ -16,6 +16,7 @@ import {
   DeleteMilestoneDialog,
   SeminarReadinessStatusCard,
   TargetDateDialog,
+  DefenceRequestCard,
 } from "@/components/milestone";
 import { RequirementsNotMet } from "@/components/shared/RequirementsNotMet";
 import {
@@ -457,6 +458,14 @@ export default function StudentMilestonePage() {
                   thesisId={thesisId}
                   className="mb-4"
                   displayMode="milestone"
+                />
+              )}
+
+              {/* Defence Readiness Status for Student */}
+              {thesisId && (
+                <DefenceRequestCard 
+                  thesisId={thesisId} 
+                  className="mb-4" 
                 />
               )}
 
