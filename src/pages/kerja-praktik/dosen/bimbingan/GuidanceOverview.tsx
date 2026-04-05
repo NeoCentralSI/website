@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery } from '@tanstack/react-query';
-import { getLecturerSupervisedStudents } from '@/services/internship.service';
+import { getLecturerSupervisedStudents, bulkApproveSeminars } from '@/services/internship.service';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertCircle, Clock } from 'lucide-react';
+import { Loader2, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
 import InternshipTable from '@/components/internship/InternshipTable';
 import { getLecturerSupervisedStudentsColumns } from '@/lib/internship/lecturerColumns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
+import { toast } from 'sonner';
 
 export default function GuidanceOverviewPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -20,6 +21,8 @@ export default function GuidanceOverviewPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [academicYearFilter, setAcademicYearFilter] = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isProcessingApproval, setIsProcessingApproval] = useState(false);
 
     const { academicYears } = useAcademicYears({ pageSize: 50 });
 
@@ -42,17 +45,59 @@ export default function GuidanceOverviewPage() {
         }
     }, [academicYears, academicYearFilter]);
 
-    const { data: students, isLoading, error, isFetching } = useQuery({
+    const { data: students, isLoading, error, isFetching, refetch } = useQuery({
         queryKey: ['lecturerSupervisedStudents'],
         queryFn: getLecturerSupervisedStudents,
     });
+
+    const handleApproveSeminar = async (student: any) => {
+        if (!student.seminar?.id) return;
+        
+        setIsProcessingApproval(true);
+        try {
+            await bulkApproveSeminars([student.seminar.id]);
+            toast.success(`Seminar ${student.studentName} berhasil disetujui.`);
+            refetch();
+        } catch (err: any) {
+            toast.error(err.message || 'Gagal menyetujui seminar');
+        } finally {
+            setIsProcessingApproval(false);
+        }
+    };
+
+    const handleBulkApprove = async () => {
+        if (selectedIds.length === 0 || !students) return;
+
+        // Filter only students that have a REQUESTED seminar
+        const seminarsToApprove = students
+            .filter(s => selectedIds.includes(s.internshipId) && s.seminar?.status === 'REQUESTED')
+            .map(s => s.seminar!.id);
+
+        if (seminarsToApprove.length === 0) {
+            toast.info('Tidak ada seminar yang perlu disetujui dari pilihan Anda.');
+            return;
+        }
+
+        setIsProcessingApproval(true);
+        try {
+            await bulkApproveSeminars(seminarsToApprove);
+            toast.success(`${seminarsToApprove.length} seminar berhasil disetujui secara massal.`);
+            setSelectedIds([]);
+            refetch();
+        } catch (err: any) {
+            toast.error(err.message || 'Gagal menyetujui seminar secara massal');
+        } finally {
+            setIsProcessingApproval(false);
+        }
+    };
 
     const columns = useMemo(() => getLecturerSupervisedStudentsColumns({
         onViewDetail: (student) => {
             const targetUrl = `/kerja-praktik/dosen/bimbingan/${student.internshipId}`;
             navigate(targetUrl);
-        }
-    }), [navigate]);
+        },
+        onApproveSeminar: handleApproveSeminar
+    }), [navigate, handleApproveSeminar]);
 
     // Client-side filtering & pagination
     const filteredData = useMemo(() => {
@@ -132,12 +177,29 @@ export default function GuidanceOverviewPage() {
                     setSearchTerm(v);
                     setCurrentPage(1);
                 }}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                rowKey={(row) => row.internshipId}
+                isRowSelectable={(row) => row.seminar?.status === 'REQUESTED'}
                 emptyText={searchTerm ? 'Pencarian tidak menemukan hasil.' : 'Belum ada mahasiswa bimbingan.'}
                 actions={
-                    <Select value={academicYearFilter || 'all'} onValueChange={(v) => {
-                        setAcademicYearFilter(v);
-                        setCurrentPage(1);
-                    }}>
+                    <div className="flex items-center gap-3">
+                        {selectedIds.length > 0 && (
+                             <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="h-9 gap-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800"
+                                onClick={handleBulkApprove}
+                                disabled={isProcessingApproval}
+                             >
+                                {isProcessingApproval ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                Setujui Seminar ({selectedIds.length})
+                             </Button>
+                        )}
+                        <Select value={academicYearFilter || 'all'} onValueChange={(v) => {
+                            setAcademicYearFilter(v);
+                            setCurrentPage(1);
+                        }}>
                         <SelectTrigger className="w-[180px] h-9">
                             <SelectValue placeholder="Pilih Tahun Ajaran" />
                         </SelectTrigger>
@@ -151,7 +213,8 @@ export default function GuidanceOverviewPage() {
                                 </SelectItem>
                             ))}
                         </SelectContent>
-                    </Select>
+                        </Select>
+                    </div>
                 }
             />
         </div>

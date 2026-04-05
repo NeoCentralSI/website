@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -24,12 +24,11 @@ interface SeminarAudienceTableProps {
   onApprove?: (row: SeminarAudienceTableRow) => void;
   onUnapprove?: (row: SeminarAudienceTableRow) => void;
   loading?: boolean;
-}
-
-function getRegisteredAtValue(registeredAt: string | null): number {
-  if (!registeredAt) return Number.MAX_SAFE_INTEGER;
-  const parsed = new Date(registeredAt).getTime();
-  return Number.isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed;
+  // Selection
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
+  isRowSelectable?: (row: SeminarAudienceTableRow, index: number) => boolean;
+  actions?: React.ReactNode;
 }
 
 export function SeminarAudienceTable({
@@ -41,36 +40,27 @@ export function SeminarAudienceTable({
   onApprove,
   onUnapprove,
   loading = false,
+  selectedIds = [],
+  onSelectionChange,
+  isRowSelectable,
+  actions,
 }: SeminarAudienceTableProps) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const sortedRows = useMemo(() => {
-    return [...rows].sort((left, right) => {
-      const leftValue = getRegisteredAtValue(left.registeredAt);
-      const rightValue = getRegisteredAtValue(right.registeredAt);
-      if (leftValue !== rightValue) return leftValue - rightValue;
-
-      const nameCompare = left.studentName.localeCompare(right.studentName);
-      if (nameCompare !== 0) return nameCompare;
-
-      return left.nim.localeCompare(right.nim);
-    });
-  }, [rows]);
-
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return sortedRows;
+    if (!query) return rows;
 
-    return sortedRows.filter((row) => {
+    return rows.filter((row) => {
       return (
         row.studentName.toLowerCase().includes(query) ||
         row.nim.toLowerCase().includes(query) ||
         (row.approvedByName || '').toLowerCase().includes(query)
       );
     });
-  }, [search, sortedRows]);
+  }, [search, rows]);
 
   const paginatedRows = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -82,7 +72,7 @@ export function SeminarAudienceTable({
       {
         key: 'no',
         header: 'No',
-        width: 60,
+        width: '5%',
         className: 'text-center',
         render: (_row, index) => (
           <span className="text-sm text-muted-foreground">{(page - 1) * pageSize + index + 1}</span>
@@ -91,18 +81,20 @@ export function SeminarAudienceTable({
       {
         key: 'name',
         header: 'Nama',
+        width: '40%',
         render: (row) => <span className="font-medium">{toTitleCaseName(row.studentName)}</span>,
       },
       {
         key: 'nim',
         header: 'NIM',
-        width: 160,
+        width: '20%',
         render: (row) => row.nim,
       },
       {
         key: 'status',
         header: 'Status',
-        width: 140,
+        width: '20%',
+        className: 'text-center',
         render: (row) => {
           const isApproved = !!row.approvedAt;
           return (
@@ -111,16 +103,6 @@ export function SeminarAudienceTable({
             </Badge>
           );
         },
-      },
-      {
-        key: 'approvedBy',
-        header: 'Disetujui Oleh',
-        render: (row) =>
-          row.approvedByName ? (
-            <span className="text-sm">{toTitleCaseName(row.approvedByName)}</span>
-          ) : (
-            <span className="text-sm text-muted-foreground">-</span>
-          ),
       },
     ];
 
@@ -176,7 +158,7 @@ export function SeminarAudienceTable({
   }, [showAction, page, pageSize, approvingStudentId, unapprovingStudentId, onApprove, onUnapprove]);
 
   return (
-    <CustomTable
+    <InternshipTable
       columns={columns}
       data={paginatedRows}
       loading={loading}
@@ -193,6 +175,10 @@ export function SeminarAudienceTable({
       emptyText={emptyLabel}
       rowKey={(row, index) => row.studentId || `${row.nim}-${index}`}
       className="p-0 border-0 shadow-none"
+      selectedIds={selectedIds}
+      onSelectionChange={onSelectionChange}
+      isRowSelectable={isRowSelectable}
+      actions={actions}
     />
   );
 }
