@@ -8,8 +8,6 @@ interface ReportingTabProps {
     internship: any;
     isUploading: string | null;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT') => void;
-    handleRegisterSeminar: () => Promise<void>;
-    latestSeminar: any;
     endDate: Date | null;
     reportingDeadline: Date | null;
     isReportingOverdue: boolean;

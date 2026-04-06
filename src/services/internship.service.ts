@@ -975,10 +975,111 @@ export const submitInternshipReport = async (title: string, documentId: string):
     return res.json();
 };
 
-export const registerSeminar = async (): Promise<{ success: boolean; message: string }> => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/register-seminar";
+export interface SeminarScheduleData {
+    seminarDate: string;
+    startTime: string;
+    endTime: string;
+    roomId: string;
+    linkMeeting?: string;
+    moderatorStudentId: string;
+    memberInternshipIds?: string[];
+}
+
+export interface UpcomingSeminarItem {
+    id: string;
+    seminarDate: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    linkMeeting?: string;
+    supervisorNotes?: string;
+    room: { id: string; name: string; location?: string };
+    moderatorStudentId: string;
+    moderatorStudent: { user: { fullName: string } };
+    internship: {
+        id: string;
+        student: { user: { fullName: string; identityNumber: string } };
+        supervisor?: { user: { fullName: string } };
+        proposal?: { targetCompany?: { companyName: string } };
+    };
+}
+
+export const registerSeminar = async (data: SeminarScheduleData): Promise<{ success: boolean; message: string; data: any }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.REGISTER_SEMINAR);
     const res = await apiRequest(url, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengajukan seminar" }));
+        throw new Error(errorData.message || "Gagal mengajukan seminar");
+    }
+    return res.json();
+};
+
+export const getUpcomingSeminars = async (): Promise<UpcomingSeminarItem[]> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.UPCOMING_SEMINARS);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat jadwal seminar" }));
+        throw new Error(errorData.message || "Gagal memuat jadwal seminar");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const updateSeminarProposal = async (seminarId: string, data: SeminarScheduleData): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.UPDATE_SEMINAR(seminarId));
+    const res = await apiRequest(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui jadwal seminar" }));
+        throw new Error(errorData.message || "Gagal memperbarui jadwal seminar");
+    }
+    return res.json();
+};
+
+export const approveSeminar = async (seminarId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.APPROVE_SEMINAR(seminarId));
+    const res = await apiRequest(url, { method: "POST" });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyetujui seminar" }));
+        throw new Error(errorData.message || "Gagal menyetujui seminar");
+    }
+    return res.json();
+};
+
+export const rejectSeminar = async (seminarId: string, notes?: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.REJECT_SEMINAR(seminarId));
+    const res = await apiRequest(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menolak seminar" }));
+        throw new Error(errorData.message || "Gagal menolak seminar");
+    }
+    return res.json();
+};
+
+// Seminar Audience & Detail
+export const getSeminarDetail = async (seminarId: string): Promise<{ success: boolean; data: any }> => {
+    const res = await apiRequest(getApiUrl(`/insternship/activity/seminars/${seminarId}`));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail seminar" }));
+        throw new Error(errorData.message || "Gagal memuat detail seminar");
+    }
+    return res.json();
+};
+
+export const registerSeminarAudience = async (seminarId: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(`/insternship/activity/seminars/${seminarId}/audience`), {
+        method: "POST"
     });
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal mendaftar seminar" }));
@@ -986,6 +1087,51 @@ export const registerSeminar = async (): Promise<{ success: boolean; message: st
     }
     return res.json();
 };
+
+export const unregisterSeminarAudience = async (seminarId: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(`/insternship/activity/seminars/${seminarId}/audience`), {
+        method: "DELETE"
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal membatalkan pendaftaran" }));
+        throw new Error(errorData.message || "Gagal membatalkan pendaftaran");
+    }
+    return res.json();
+};
+
+export const validateSeminarAudience = async (seminarId: string, studentId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${seminarId}/audience/${studentId}/validate`);
+    const res = await apiRequest(url, { method: "POST" });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memvalidasi kehadiran" }));
+        throw new Error(errorData.message || "Gagal memvalidasi kehadiran");
+    }
+    return res.json();
+};
+
+export const unvalidateSeminarAudience = async (seminarId: string, studentId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${seminarId}/audience/${studentId}/unvalidate`);
+    const res = await apiRequest(url, { method: "POST" });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal membatalkan validasi" }));
+        throw new Error(errorData.message || "Gagal membatalkan validasi");
+    }
+    return res.json();
+};
+
+export const bulkValidateSeminarAudience = async (seminarId: string, studentIds: string[]): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${seminarId}/audience/bulk-validate`);
+    const res = await apiRequest(url, { 
+        method: "POST",
+        body: JSON.stringify({ studentIds })
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memvalidasi kehadiran secara massal" }));
+        throw new Error(errorData.message || "Gagal memvalidasi kehadiran secara massal");
+    }
+    return res.json();
+};
+
 
 export const downloadLogbookPdf = async (): Promise<Blob> => {
     const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.LOGBOOK) + "/download");
@@ -1212,6 +1358,14 @@ export interface LecturerSupervisedStudent {
             filePath: string;
         } | null;
     };
+    seminar?: {
+        id: string;
+        status: string;
+        seminarDate: string;
+        startTime: string;
+        endTime: string;
+        room?: { name: string; location: string };
+    } | null;
     finalScore?: number | null;
     finalGrade?: string | null;
 }
@@ -1231,6 +1385,7 @@ export interface LecturerGuidanceTimeline {
     internshipId: string;
     studentName: string;
     studentNim: string;
+    supervisorName?: string | null;
     currentWeek: number;
     report?: {
         status: string | null;
@@ -1248,6 +1403,27 @@ export interface LecturerGuidanceTimeline {
             filePath: string;
         } | null;
     };
+    seminars?: {
+        id: string;
+        roomId: string;
+        seminarDate: string;
+        startTime: string;
+        endTime: string;
+        status: string;
+        room?: { name: string; capacity: number; location: string; };
+        moderatorStudent?: { user: { fullName: string; } };
+        audiences?: {
+            studentId: string;
+            validatedAt: string | null;
+            createdAt: string;
+            student: {
+                user: {
+                    fullName: string;
+                    identityNumber: string;
+                }
+            }
+        }[];
+    }[];
     finalScore?: number | null;
     finalGrade?: string | null;
     timeline: {
@@ -1540,4 +1716,20 @@ export const copyInternshipGuidance = async (fromYearId: string, toYearId: strin
     throw new Error(errorData.message || "Gagal menduplikasi data bimbingan");
   }
   return res.json();
+};
+
+export const bulkApproveSeminars = async (ids: string[]): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl('/insternship/activity/guidance/lecturer/seminar/bulk-approve');
+    const res = await apiRequest(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyetujui seminar secara massal" }));
+        throw new Error(errorData.message || "Gagal menyetujui seminar secara massal");
+    }
+    return res.json();
 };

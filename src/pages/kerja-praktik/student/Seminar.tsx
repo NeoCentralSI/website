@@ -3,7 +3,7 @@ import { useOutletContext, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, registerSeminar, submitLogbookDocument } from '@/services/internship.service';
+import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument } from '@/services/internship.service';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 
@@ -34,10 +34,10 @@ export default function InternshipSeminarPage() {
     });
 
     const tabs = [
-        { label: 'Pelaporan', to: '/kerja-praktik/pelaporan', end: true },
-        { label: 'Laporan Akhir', to: '/kerja-praktik/laporan-akhir' },
-        { label: 'Seminar', to: '/kerja-praktik/seminar' },
-        { label: 'Nilai', to: '/kerja-praktik/nilai' },
+        { label: 'Pelaporan', to: '/kerja-praktik/seminar/pelaporan', end: true },
+        { label: 'Laporan Akhir', to: '/kerja-praktik/seminar/laporan-akhir' },
+        { label: 'Seminar', to: '/kerja-praktik/seminar/jadwal' },
+        { label: 'Nilai', to: '/kerja-praktik/seminar/nilai' },
     ];
 
     const internship = logbookData?.data?.internship;
@@ -102,10 +102,10 @@ export default function InternshipSeminarPage() {
         }
     };
 
-    const isPelaporan = location.pathname === '/kerja-praktik/pelaporan';
-    const isLaporanAkhir = location.pathname === '/kerja-praktik/laporan-akhir';
-    const isSeminar = location.pathname === '/kerja-praktik/seminar';
-    const isNilai = location.pathname === '/kerja-praktik/nilai';
+    const isPelaporan = location.pathname === '/kerja-praktik/seminar/pelaporan';
+    const isLaporanAkhir = location.pathname === '/kerja-praktik/seminar/laporan-akhir';
+    const isSeminar = location.pathname === '/kerja-praktik/seminar/jadwal';
+    const isNilai = location.pathname === '/kerja-praktik/seminar/nilai';
 
     // Deadline calculations
     const endDate = internship?.actualEndDate ? new Date(internship.actualEndDate) : null;
@@ -123,18 +123,7 @@ export default function InternshipSeminarPage() {
     const isSeminarOverdue = seminarDeadline ? now > seminarDeadline : false;
     const isSeminarApproaching = seminarDeadline ? (seminarDeadline.getTime() - now.getTime()) < 14 * 24 * 60 * 60 * 1000 : false;
 
-    const handleRegisterSeminar = async () => {
-        try {
-            setIsUploading('REGISTERING');
-            await registerSeminar();
-            toast.success("Berhasil mendaftar seminar");
-            queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
-        } catch (error: unknown) {
-            toast.error((error as Error).message || "Gagal mendaftar seminar");
-        } finally {
-            setIsUploading(null);
-        }
-    };
+
 
     if (isLoading) {
         return (
@@ -164,8 +153,6 @@ export default function InternshipSeminarPage() {
                         internship={internship}
                         isUploading={isUploading}
                         onFileChange={onFileChange}
-                        handleRegisterSeminar={handleRegisterSeminar}
-                        latestSeminar={latestSeminar}
                         endDate={endDate}
                         reportingDeadline={reportingDeadline}
                         isReportingOverdue={isReportingOverdue}

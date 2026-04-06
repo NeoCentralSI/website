@@ -80,6 +80,7 @@ const InternshipLogbookPage = lazy(() => import('./pages/kerja-praktik/student/a
 const InternshipGuidancePage = lazy(() => import('./pages/kerja-praktik/student/activity/Guidance'))
 const InternshipGuidanceDetailPage = lazy(() => import('./pages/kerja-praktik/student/activity/GuidanceDetail'))
 const InternshipSeminarPage = lazy(() => import('./pages/kerja-praktik/student/Seminar'))
+const InternshipSeminarDetailPage = lazy(() => import('./pages/kerja-praktik/student/SeminarDetail'))
 // Kerja Praktik - Sekdep
 const SekdepInternshipProposalPage = lazy(() => import('./pages/kerja-praktik/sekdep/Manage'))
 const SekdepInternshipProposalDetailPage = lazy(() => import('./pages/kerja-praktik/sekdep/RegistrationDetail'))
@@ -202,14 +203,19 @@ function App() {
                       <Route path="bimbingan" element={<InternshipGuidancePage />} />
                       <Route path="bimbingan/:weekNumber" element={<InternshipGuidanceDetailPage />} />
                     </Route>
-                    <Route path="pelaporan" element={<InternshipSeminarPage />} />
-                    <Route path="laporan-akhir" element={<InternshipSeminarPage />} />
-                    <Route path="seminar" element={<InternshipSeminarPage />} />
-                    <Route path="nilai" element={<InternshipSeminarPage />} />
+                    <Route path="seminar">
+                      <Route index element={<Navigate to="pelaporan" replace />} />
+                      <Route path="pelaporan" element={<InternshipSeminarPage />} />
+                      <Route path="laporan-akhir" element={<InternshipSeminarPage />} />
+                      <Route path="jadwal" element={<InternshipSeminarPage />} />
+                      <Route path="jadwal/:seminarId" element={<InternshipSeminarDetailPage />} />
+                      <Route path="nilai" element={<InternshipSeminarPage />} />
+                    </Route>
+
                     {/* Redirect old paths for backward compatibility */}
-                    <Route path="seminar/laporan-akhir" element={<Navigate to="/kerja-praktik/laporan-akhir" replace />} />
-                    <Route path="seminar/detail" element={<Navigate to="/kerja-praktik/seminar" replace />} />
-                    <Route path="seminar/nilai" element={<Navigate to="/kerja-praktik/nilai" replace />} />
+                    <Route path="pelaporan" element={<Navigate to="seminar/pelaporan" replace />} />
+                    <Route path="laporan-akhir" element={<Navigate to="seminar/laporan-akhir" replace />} />
+                    <Route path="nilai" element={<Navigate to="seminar/nilai" replace />} />
                   </Route>
                 </Route>
 
