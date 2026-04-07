@@ -325,6 +325,7 @@ export const getSekdepResponseColumns = ({
 
 interface SekdepInternshipListColumnProps {
     onViewDetail: (item: InternshipListItem) => void;
+    onViewAssignmentDoc?: (item: InternshipListItem) => void;
 }
 
 /**
@@ -332,6 +333,7 @@ interface SekdepInternshipListColumnProps {
  */
 export const getSekdepInternshipListColumns = ({
     onViewDetail,
+    onViewAssignmentDoc,
 }: SekdepInternshipListColumnProps): Column<InternshipListItem>[] => [
         {
             key: 'nim',
@@ -395,6 +397,28 @@ export const getSekdepInternshipListColumns = ({
             className: 'text-center w-28',
         },
         {
+            key: 'supervisorLetter',
+            header: 'Surat Tugas Dosen',
+            render: (item) => (
+                <div className="flex justify-center">
+                    {item.supervisorLetter ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            onClick={() => onViewAssignmentDoc?.(item)}
+                        >
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs font-medium">Lihat</span>
+                        </Button>
+                    ) : (
+                        <span className="text-xs text-muted-foreground italic">-</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
             key: 'status',
             header: 'Status',
             render: (item) => (
@@ -455,6 +479,18 @@ export const getSekdepLecturerWorkloadColumns = ({
                 <div className="flex items-center justify-center gap-2">
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                         {item.activeInternshipCount} Mahasiswa
+                    </Badge>
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
+            key: 'supervisorLetter',
+            header: 'Surat Tugas Dosen',
+            render: (item) => (
+                <div className="flex items-center justify-center">
+                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+                        {item.supervisorLetterStatus} Terbit
                     </Badge>
                 </div>
             ),

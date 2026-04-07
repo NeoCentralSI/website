@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import CustomTable from '@/components/layout/CustomTable';
 import { Loading } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { getAdminAssignmentProposals, type AdminAssignmentProposalItem } from '@/services/internship.service';
+import { getAdminAssignmentProposals, verifyCompanyResponse, type AdminAssignmentProposalItem } from '@/services/internship.service';
 import { getAdminAssignmentProposalColumns } from '@/lib/internship';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Button } from '@/components/ui/button';
 import { Settings2, ClipboardList } from 'lucide-react';
+import VerifyCompanyResponseDialog from '@/components/internship/sekdep/VerifyCompanyResponseDialog';
+import { toast } from 'sonner';
 
 export default function AdminAssignmentPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -46,6 +48,41 @@ export default function AdminAssignmentPage() {
         setDocOpen(true);
     };
 
+    // Verification Dialog State
+    const [verifyOpen, setVerifyOpen] = useState(false);
+    const [selectedProposal, setSelectedProposal] = useState<AdminAssignmentProposalItem | null>(null);
+    const [verifyType, setVerifyType] = useState<'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY' | null>(null);
+
+    const handleVerifyOpen = (item: AdminAssignmentProposalItem, type: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY') => {
+        setSelectedProposal(item);
+        setVerifyType(type);
+        setVerifyOpen(true);
+    };
+
+    const verifyMutation = useMutation({
+        mutationFn: ({ id, status, notes, memberIds }: { id: string, status: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY', notes?: string, memberIds?: string[] }) =>
+            verifyCompanyResponse(id, status, notes, memberIds),
+        onSuccess: (data) => {
+            toast.success(data.message);
+            setVerifyOpen(false);
+            refetch();
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Gagal memverifikasi surat balasan');
+        }
+    });
+
+    const handleConfirmVerify = (notes?: string, memberIds?: string[]) => {
+        if (selectedProposal && verifyType) {
+            verifyMutation.mutate({
+                id: selectedProposal.id,
+                status: verifyType,
+                notes,
+                memberIds
+            });
+        }
+    };
+
     const handleManageLetter = (item: AdminAssignmentProposalItem) => {
         navigate(`/admin/kerja-praktik/surat-tugas/${item.id}`);
     };
@@ -56,8 +93,14 @@ export default function AdminAssignmentPage() {
                 openDocumentPreview(item.letterFile.fileName, item.letterFile.filePath);
             }
         },
+        onViewResponseDoc: (item: AdminAssignmentProposalItem) => {
+            if (item.companyResponseFile) {
+                openDocumentPreview(item.companyResponseFile.fileName, item.companyResponseFile.filePath);
+            }
+        },
+        onVerifyResponse: (item: AdminAssignmentProposalItem, type: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY') => handleVerifyOpen(item, type),
         onAction: (item: AdminAssignmentProposalItem) => handleManageLetter(item)
-    }), []);
+    }), [data]);
 
     const filteredData = useMemo(() => {
         if (!data) return [];
@@ -134,6 +177,18 @@ export default function AdminAssignmentPage() {
                 fileName={docInfo?.fileName ?? undefined}
                 filePath={docInfo?.filePath ?? undefined}
             />
+
+            {selectedProposal && (
+                <VerifyCompanyResponseDialog
+                    open={verifyOpen}
+                    onOpenChange={setVerifyOpen}
+                    type={verifyType}
+                    companyName={selectedProposal.companyName}
+                    members={selectedProposal.members}
+                    onConfirm={handleConfirmVerify}
+                    isLoading={verifyMutation.isPending}
+                />
+            )}
         </div>
     );
 }

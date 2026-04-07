@@ -36,7 +36,10 @@ type PushEventType =
   | "internship_reporting_document_uploaded"
   | "internship_document_verification"
   | "internship_final_report_uploaded"
-  | "internship_final_report_verification";
+  | "internship_final_report_verification"
+  | "internship_seminar_scheduled"
+  | "internship_seminar_reminder"
+  | "internship_grading_completed";
 
 export function useGuidanceRealtime() {
   const qc = useQueryClient();
@@ -227,7 +230,11 @@ export function useGuidanceRealtime() {
               case "internship_company_response_rejected_sekdep": {
                 const title = payload?.notification?.title || payload?.data?.title || "Notifikasi Kerja Praktik";
                 const body = payload?.notification?.body || payload?.data?.body || "";
-                toast(title, { description: body, duration: 5000 });
+                if (type === 'internship_company_response_rejected_sekdep') {
+                  toast.error(title, { description: body, duration: 8000 });
+                } else {
+                  toast(title, { description: body, duration: 5000 });
+                }
                 qc.invalidateQueries({ queryKey: ["student-internship-proposals"] });
                 qc.invalidateQueries({ queryKey: ["internship-proposal-detail"] });
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
@@ -239,6 +246,36 @@ export function useGuidanceRealtime() {
                 const body = payload?.notification?.body || payload?.data?.body || "";
                 toast(title, { description: body, duration: 5000 });
                 qc.invalidateQueries({ queryKey: ["sekdep-internship-proposals"] });
+                qc.invalidateQueries({ queryKey: ["admin-internship-proposals"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_seminar_scheduled": {
+                if (role === "lecturer" || role === "supervisor") {
+                  const title = payload?.notification?.title || "Seminar KP Baru";
+                  const body = payload?.notification?.body || "Mahasiswa telah menjadwalkan seminar KP";
+                  toast.info(title, { description: body, duration: 8000 });
+                  playBeep();
+                  qc.invalidateQueries({ queryKey: ["lecturer-seminar-requests"] });
+                }
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_seminar_reminder": {
+                const title = payload?.notification?.title || "Pengingat Seminar KP";
+                const body = payload?.notification?.body || "Seminar KP akan dimulai dalam 10 menit";
+                toast.warning(title, { description: body, duration: 10000 });
+                playBeep();
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_grading_completed": {
+                if (role === "student") {
+                  const title = payload?.notification?.title || "Penilaian Selesai";
+                  const body = payload?.notification?.body || "Dosen pembimbing telah selesai melakukan penilaian KP";
+                  toast.success(title, { description: body, duration: 8000 });
+                  qc.invalidateQueries({ queryKey: ["student-internship-details"] });
+                }
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }
@@ -423,6 +460,21 @@ export function useGuidanceRealtime() {
                 case "internship_new_proposal":
                 case "internship_company_response": {
                   qc.invalidateQueries({ queryKey: ["sekdep-internship-proposals"] });
+                  qc.invalidateQueries({ queryKey: ["admin-internship-proposals"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                  break;
+                }
+                case "internship_seminar_scheduled": {
+                  qc.invalidateQueries({ queryKey: ["lecturer-seminar-requests"] });
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                  break;
+                }
+                case "internship_seminar_reminder": {
+                  qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                  break;
+                }
+                case "internship_grading_completed": {
+                  qc.invalidateQueries({ queryKey: ["student-internship-details"] });
                   qc.invalidateQueries({ queryKey: ["notification-unread"] });
                   break;
                 }

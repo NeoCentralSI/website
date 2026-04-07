@@ -4,7 +4,6 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import { FileText } from 'lucide-react';
 import { ProposalVerificationPanel } from '@/components/internship/sekdep/ProposalVerificationPanel';
-import { ResponseVerificationPanel } from '@/components/internship/sekdep/ResponseVerificationPanel';
 import { InternshipListPanel } from '@/components/internship/sekdep/InternshipListPanel';
 import { LecturerWorkloadPanel } from '@/components/internship/sekdep/LecturerWorkloadPanel';
 import { GuidanceMasterPanel } from '@/components/internship/sekdep/GuidanceMasterPanel';
@@ -12,7 +11,7 @@ import { InternshipCpmkPanel } from '@/components/internship/sekdep/InternshipCp
 
 const TAB_ITEMS: TabItem[] = [
     { label: "Verifikasi Proposal", to: "/kelola/kerja-praktik/pendaftaran/proposal" },
-    { label: "Verifikasi Surat Balasan", to: "/kelola/kerja-praktik/pendaftaran/balasan" },
+
     { label: "Daftar Mahasiswa", to: "/kelola/kerja-praktik/pendaftaran/mahasiswa" },
     { label: "Daftar Dosen", to: "/kelola/kerja-praktik/pendaftaran/dosen" },
     { label: "Bimbingan", to: "/kelola/kerja-praktik/pendaftaran/bimbingan" },
@@ -43,9 +42,7 @@ export default function SekdepInternshipProposalPage() {
             return <ProposalVerificationPanel />;
         }
 
-        if (activeTab.label === "Verifikasi Surat Balasan") {
-            return <ResponseVerificationPanel />;
-        }
+
 
         if (activeTab.label === "Daftar Mahasiswa") {
             return <InternshipListPanel />;

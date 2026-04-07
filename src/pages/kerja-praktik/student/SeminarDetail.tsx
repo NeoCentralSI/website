@@ -12,7 +12,8 @@ import {
     Link as LinkIcon, 
     Building,
     CheckCircle2,
-    UserPlus
+    UserPlus,
+    FileText
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -337,6 +338,24 @@ export default function SeminarDetail() {
                         </CardContent>
                     </Card>
                 </div>
+
+                {seminar.supervisorNotes && (
+                    <div className="lg:col-span-12">
+                        <Card className="border-primary/20 bg-primary/5">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-primary" />
+                                    Catatan Dosen / Berita Acara Seminar
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="prose prose-sm max-w-none text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                    {seminar.supervisorNotes}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
             </div>
         </div>
     );

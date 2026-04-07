@@ -122,6 +122,11 @@ export interface InternshipListItem {
         total: number;
     };
     status: string;
+    supervisorLetter?: {
+        id: string;
+        fileName: string;
+        filePath: string;
+    };
     createdAt: string;
 }
 
@@ -461,7 +466,7 @@ export const deleteSekdepCompany = async (id: string, role: 'sekdep' | 'kadep' =
 
 
 export const verifyCompanyResponse = async (id: string, status: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY', notes?: string, acceptedMemberIds?: string[]): Promise<{ success: boolean; message: string }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.VERIFY_COMPANY_RESPONSE(id)), {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.VERIFY_COMPANY_RESPONSE(id)), {
         method: "POST",
         body: JSON.stringify({ status, notes, acceptedMemberIds }),
     });
@@ -547,12 +552,14 @@ export const getSekdepInternshipList = async (
     page: number = 1,
     pageSize: number = 10,
     sortBy?: string,
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: 'asc' | 'desc',
+    supervisorId?: string
 ): Promise<{ success: boolean; data: InternshipListItem[]; total: number }> => {
     const params = new URLSearchParams();
     if (academicYearId && academicYearId !== 'all') params.append('academicYear', academicYearId);
     if (status && status !== 'all') params.append('status', status);
     if (q) params.append('q', q);
+    if (supervisorId) params.append('supervisorId', supervisorId);
     params.append('page', page.toString());
     params.append('pageSize', pageSize.toString());
     if (sortBy) params.append('sortBy', sortBy);
@@ -698,7 +705,16 @@ export const bulkVerifyInternshipDocuments = async (
 };
 
 export interface AdminAssignmentProposalItem extends AdminApprovedProposalItem {
-    responseId?: string;
+    status: string;
+    companyResponseFile: { id: string; fileName: string; filePath: string } | null;
+    members: {
+        id: string;
+        name: string;
+        nim: string;
+        status: string;
+        role: string;
+        isCoordinator: boolean;
+    }[];
 }
 
 export const getAdminAssignmentProposals = async (): Promise<{ success: boolean; data: AdminAssignmentProposalItem[] }> => {
@@ -1155,6 +1171,7 @@ export interface LecturerWorkloadItem {
     name: string;
     nip: string;
     activeInternshipCount: number;
+    supervisorLetterStatus: string;
 }
 
 export const getSekdepLecturerWorkload = async (
@@ -1180,22 +1197,106 @@ export const getSekdepLecturerWorkload = async (
     return res.json();
 };
 
+export interface SekdepSupervisorLetterDetail {
+    id: string;
+    lecturerName: string;
+    lecturerNip: string;
+    assignedStudents: {
+        internshipId: string;
+        nim: string;
+        name: string;
+        companyName: string;
+        documents: {
+            appLetterDocNumber: string | null;
+            assignLetterDocNumber: string | null;
+            supLetterDocNumber: string | null;
+            supLetterDocDateIssued: string | null;
+            supLetterStartDate: string | null;
+            supLetterEndDate: string | null;
+            supLetterDocId: string | null;
+            supLetterFile: {
+                id: string;
+                fileName: string;
+                filePath: string;
+            } | null;
+        }
+    }[];
+}
+
+export const getSekdepSupervisorLetterDetail = async (supervisorId: string): Promise<{ success: boolean; data: SekdepSupervisorLetterDetail }> => {
+    const url = getApiUrl(`/insternship/sekdep/lecturers/${supervisorId}/supervisor-letter`);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail surat tugas dosen" }));
+        throw new Error(errorData.message || "Gagal memuat detail surat tugas dosen");
+    }
+    return res.json();
+};
+
+export const updateSekdepSupervisorLetter = async (
+    supervisorId: string, 
+    data: { documentNumber: string; startDate: string; endDate: string; internshipIds: string[] }
+): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/sekdep/lecturers/${supervisorId}/supervisor-letter`);
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyimpan surat tugas dosen" }));
+        throw new Error(errorData.message || "Gagal menyimpan surat tugas dosen");
+    }
+    return res.json();
+};
+
 export const exportLecturerWorkloadPdf = async (): Promise<void> => {
     const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.LECTURERS_WORKLOAD_EXPORT);
     const res = await apiRequest(url);
     if (!res.ok) {
         throw new Error("Gagal mengekspor PDF");
     }
-
     const blob = await res.blob();
     const downloadUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = downloadUrl;
-    link.setAttribute('download', 'Daftar_Bimbingan_KP.pdf');
+    link.download = 'Daftar_Bimbingan_KP.pdf';
     document.body.appendChild(link);
     link.click();
-    link.remove();
+    document.body.removeChild(link);
     window.URL.revokeObjectURL(downloadUrl);
+};
+
+export const getSekdepInternshipTemplate = async (
+    name: string
+): Promise<{ success: boolean; data: InternshipTemplate }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.TEMPLATES_GET(name));
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat template" }));
+        throw new Error(errorData.message || "Gagal memuat template");
+    }
+    return res.json();
+};
+
+export const saveSekdepInternshipTemplate = async (
+    name: string,
+    file?: File | null
+): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.TEMPLATES_SAVE);
+    const formData = new FormData();
+    formData.append("name", name);
+    if (file) formData.append("file", file);
+
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: formData,
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyimpan template" }));
+        throw new Error(errorData.message || "Gagal menyimpan template");
+    }
+    return res.json();
 };
 
 // ==================== Guidance Master Data ====================
@@ -1733,3 +1834,45 @@ export const bulkApproveSeminars = async (ids: string[]): Promise<{ success: boo
     }
     return res.json();
 };
+
+export const updateSeminarNotes = async (id: string, notes: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${id}/notes`);
+    const res = await apiRequest(url, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notes }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyimpan catatan seminar" }));
+        throw new Error(errorData.message || "Gagal menyimpan catatan seminar");
+    }
+    return res.json();
+};
+
+export const getInternshipAssessment = async (internshipId: string): Promise<{ success: boolean; data: any }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/assessment/${internshipId}`);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        throw new Error("Gagal mengambil data penilaian");
+    }
+    return res.json();
+};
+
+export const submitLecturerAssessment = async (internshipId: string, scores: { chosenRubricId: string; score: number }[]): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/assessment/${internshipId}`);
+    const res = await apiRequest(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ scores }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyimpan penilaian" }));
+        throw new Error(errorData.message || "Gagal menyimpan penilaian");
+    }
+    return res.json();
+};
+

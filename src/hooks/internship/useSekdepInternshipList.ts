@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getSekdepInternshipList } from '@/services/internship.service';
 import { useSearchParams } from 'react-router-dom';
 
-export function useSekdepInternshipList() {
+export function useSekdepInternshipList(initialSupervisorId?: string) {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const q = searchParams.get('q') || '';
@@ -12,6 +12,7 @@ export function useSekdepInternshipList() {
     const status = searchParams.get('status') || 'all';
     const sortBy = searchParams.get('sortBy') || '';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+    const supervisorId = initialSupervisorId || searchParams.get('supervisorId') || '';
 
     const updateParams = (updates: Record<string, string | number | undefined>) => {
         const newParams = new URLSearchParams(searchParams);
@@ -23,15 +24,15 @@ export function useSekdepInternshipList() {
             }
         });
         // Reset to page 1 if search, filters, or sorting change
-        if (updates.q !== undefined || updates.academicYearId !== undefined || updates.status !== undefined || updates.sortBy !== undefined) {
+        if (updates.q !== undefined || updates.academicYearId !== undefined || updates.status !== undefined || updates.sortBy !== undefined || updates.supervisorId !== undefined) {
             newParams.set('page', '1');
         }
         setSearchParams(newParams);
     };
 
     const { data, isLoading, isFetching, refetch, error } = useQuery({
-        queryKey: ['sekdep-internship-list', { academicYearId, status, q, page, pageSize, sortBy, sortOrder }],
-        queryFn: () => getSekdepInternshipList(academicYearId, status, q, page, pageSize, sortBy, sortOrder),
+        queryKey: ['sekdep-internship-list', { academicYearId, status, q, page, pageSize, sortBy, sortOrder, supervisorId }],
+        queryFn: () => getSekdepInternshipList(academicYearId, status, q, page, pageSize, sortBy, sortOrder, supervisorId),
         placeholderData: (previousData) => previousData,
     });
 
