@@ -60,7 +60,8 @@ const StudentDetailPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbing
 const StudentGuidanceTimelinePage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/StudentGuidanceTimeline'))
 const GuidanceEvaluatePage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceEvaluate'))
 const LecturerFinalReportTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerFinalReportTab'))
-const LecturerSeminarNilaiTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerSeminarNilaiTab'))
+const LecturerSeminarTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerSeminarTab'))
+const LecturerNilaiTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerNilaiTab'))
 // Tugas Akhir - Sidang
 const SidangEntry = lazy(() => import('./pages/tugas-akhir/sidang/SidangEntry'))
 const StudentThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/StudentThesisDefence'))
@@ -87,6 +88,9 @@ const SekdepInternshipProposalDetailPage = lazy(() => import('./pages/kerja-prak
 const SekdepCompanyListPage = lazy(() => import('./pages/kerja-praktik/sekdep/CompanyList'))
 const InternshipLifecycleDetail = lazy(() => import('./pages/kerja-praktik/sekdep/InternshipLifecycleDetail'))
 const BulkRubricManage = lazy(() => import('./pages/kerja-praktik/sekdep/BulkRubricManage'))
+const LecturerWorkloadDetail = lazy(() => import('./pages/kerja-praktik/sekdep/LecturerWorkloadDetail'))
+const LecturerWorkloadManageLetter = lazy(() => import('./pages/kerja-praktik/sekdep/LecturerWorkloadManageLetter'))
+const SupervisorTemplateEditor = lazy(() => import('./pages/kerja-praktik/sekdep/SupervisorTemplateEditor'))
 // Kerja Praktik - Admin
 const AdminCompanyListPage = lazy(() => import('./pages/kerja-praktik/admin/CompanyList'))
 const AdminApplicationPage = lazy(() => import('./pages/kerja-praktik/admin/application/Application'))
@@ -301,7 +305,8 @@ function App() {
                       <Route path="bimbingan" element={<StudentGuidanceTimelinePage />} />
                       <Route path="bimbingan/minggu/:weekNumber" element={<GuidanceEvaluatePage />} />
                       <Route path="laporan-akhir" element={<LecturerFinalReportTab />} />
-                      <Route path="seminar-nilai" element={<LecturerSeminarNilaiTab />} />
+                      <Route path="seminar" element={<LecturerSeminarTab />} />
+                      <Route path="nilai" element={<LecturerNilaiTab />} />
                       <Route index element={<Navigate to="bimbingan" replace />} />
                     </Route>
                   </Route>
@@ -370,6 +375,9 @@ function App() {
                   <Route path="/kelola/kerja-praktik/pendaftaran/bimbingan" element={<SekdepInternshipProposalPage />} />
                   <Route path="/kelola/kerja-praktik/pendaftaran/cpmk" element={<SekdepInternshipProposalPage />} />
                   <Route path="/kelola/kerja-praktik/pendaftaran/cpmk/:cpmkId/rubrik" element={<BulkRubricManage />} />
+                  <Route path="/kelola/kerja-praktik/dosen/:supervisorId" element={<LecturerWorkloadDetail />} />
+                  <Route path="/kelola/kerja-praktik/dosen/:supervisorId/surat-tugas" element={<LecturerWorkloadManageLetter />} />
+                  <Route path="/kelola/kerja-praktik/dosen/template/surat-tugas" element={<SupervisorTemplateEditor />} />
                   <Route path="/kelola/kerja-praktik/mahasiswa/:internshipId" element={<InternshipLifecycleDetail />} />
                   <Route path="/kelola/kerja-praktik/pendaftaran/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
                   <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
@@ -409,7 +417,6 @@ function App() {
                   <Route path="/admin/kerja-praktik/surat-tugas" element={<AdminAssignmentPage />} />
                   <Route path="/admin/kerja-praktik/surat-tugas/:id" element={<ManageAssignmentLetter />} />
                   <Route path="/admin/kerja-praktik/surat-tugas/template" element={<AssignmentTemplateEditor />} />
-                  <Route path="/admin/kerja-praktik/seminar" element={<Placeholder title="Kerja Praktik - Seminar & Nilai" />} />
                   <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
                   <Route path="/tugas-akhir/seminar/admin" element={<AdminThesisSeminarManagementPage />} />
                   <Route path="/tugas-akhir/seminar/admin/:seminarId" element={<AdminSeminarDetailPage />} />

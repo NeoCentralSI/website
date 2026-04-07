@@ -1,15 +1,17 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { InternshipTable } from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSekdepLecturerWorkload } from '@/hooks/internship/useSekdepLecturerWorkload';
 import { getSekdepLecturerWorkloadColumns } from '@/lib/internship/sekdepColumns';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText, Loader2, Settings2 } from 'lucide-react';
 import { exportLecturerWorkloadPdf } from '@/services/internship.service';
 import { useState } from 'react';
 
 export function LecturerWorkloadPanel() {
+    const navigate = useNavigate();
     const {
         displayItems,
         total,
@@ -43,10 +45,9 @@ export function LecturerWorkloadPanel() {
 
     const columns = useMemo(() => getSekdepLecturerWorkloadColumns({
         onViewDetail: (item) => {
-            // Placeholder: Navigate to lecturer detail or show workload detail
-            toast.info(`Detail bimbingan untuk ${item.name} akan segera hadir.`);
+            navigate(`/kelola/kerja-praktik/dosen/${item.id}`);
         }
-    }), []);
+    }), [navigate]);
 
     return (
         <div className="space-y-4">
@@ -77,6 +78,15 @@ export function LecturerWorkloadPanel() {
                             onClick={() => refetch()}
                             isRefreshing={isFetching && !isLoading}
                         />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate('/kelola/kerja-praktik/dosen/template/surat-tugas')}
+                            className="gap-2"
+                        >
+                            <Settings2 className="h-4 w-4" />
+                            Kelola Template
+                        </Button>
                         <Button
                             variant="outline"
                             size="sm"

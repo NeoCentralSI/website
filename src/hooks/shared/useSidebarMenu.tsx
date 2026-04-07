@@ -509,10 +509,6 @@ export const useSidebarMenu = () => {
                 title: "Surat Tugas",
                 url: "/admin/kerja-praktik/surat-tugas",
               },
-              {
-                title: "Seminar & Nilai",
-                url: "/admin/kerja-praktik/seminar",
-              },
             ],
           },
           {

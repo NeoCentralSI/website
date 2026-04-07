@@ -23,7 +23,8 @@ export default function StudentDetailPage() {
     const tabs = useMemo(() => [
         { label: 'Bimbingan', to: `/kerja-praktik/dosen/bimbingan/${internshipId}/bimbingan`, end: true },
         { label: 'Laporan Akhir', to: `/kerja-praktik/dosen/bimbingan/${internshipId}/laporan-akhir` },
-        { label: 'Seminar & Nilai', to: `/kerja-praktik/dosen/bimbingan/${internshipId}/seminar-nilai` },
+        { label: 'Seminar', to: `/kerja-praktik/dosen/bimbingan/${internshipId}/seminar` },
+        { label: 'Nilai', to: `/kerja-praktik/dosen/bimbingan/${internshipId}/nilai` },
     ], [internshipId]);
 
     useEffect(() => {

@@ -63,8 +63,8 @@ export default function StudentGuidanceTimelinePage() {
                         <div 
                             key={week.weekNumber}
                             className={cn(
-                                "flex flex-col justify-between rounded-xl border bg-card p-5 transition-all shadow-none",
-                                isAvailable ? "hover:shadow-sm cursor-pointer border-border hover:border-primary/50" : "opacity-60 grayscale bg-muted/50"
+                                "flex flex-col justify-between rounded-xl border bg-card p-5 transition-all shadow-none border-gray-200",
+                                isAvailable ? "hover:shadow-sm cursor-pointer hover:border-primary/50 border-gray-200" : "opacity-60 grayscale bg-muted/50"
                             )}
                             onClick={() => {
                                 if (isAvailable) {

@@ -323,6 +323,9 @@ export const API_CONFIG = {
       GUIDANCE_QUESTION_DETAIL: (id: string) => `/insternship/sekdep/guidance/questions/${id}`,
       GUIDANCE_CRITERIA: '/insternship/sekdep/guidance/criteria',
       GUIDANCE_CRITERIA_DETAIL: (id: string) => `/insternship/sekdep/guidance/criteria/${id}`,
+      TEMPLATES_GET: (name: string) => `/insternship/sekdep/templates/${name}`,
+      TEMPLATES_PREVIEW: (name: string) => `/insternship/sekdep/templates/${name}/preview`,
+      TEMPLATES_SAVE: '/insternship/sekdep/templates',
     },
     INTERNSHIP_KADEP: {
       BASE: '/insternship/kadep',
@@ -338,9 +341,10 @@ export const API_CONFIG = {
       APPROVED_PROPOSALS: '/insternship/admin/proposals/approved',
       APPROVED_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/proposals/${id}`,
       UPDATE_LETTER: (id: string) => `/insternship/admin/proposals/${id}/letter`,
-      ASSIGNMENT_PROPOSALS: '/insternship/admin/assignment/proposals',
-      ASSIGNMENT_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/assignment/proposals/${id}`,
-      UPDATE_ASSIGNMENT_LETTER: (id: string) => `/insternship/admin/assignment/proposals/${id}/letter`,
+      ASSIGNMENT_PROPOSALS: '/insternship/admin/proposals/assignments',
+      ASSIGNMENT_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/proposals/${id}/assignment`,
+      UPDATE_ASSIGNMENT_LETTER: (id: string) => `/insternship/admin/proposals/${id}/assignment-letter`,
+      VERIFY_COMPANY_RESPONSE: (id: string) => `/insternship/admin/company-responses/${id}/verify`,
     },
     INTERNSHIP_TEMPLATES: {
       GET: (name: string) => `/insternship/templates/${name}`,
