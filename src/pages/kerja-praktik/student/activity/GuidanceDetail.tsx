@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useParams, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getStudentGuidance, submitGuidanceResponse } from '@/services/internship.service';
+import { getStudentGuidance, submitGuidanceResponse } from '@/services/internship';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';

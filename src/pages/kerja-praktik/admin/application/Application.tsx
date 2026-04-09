@@ -5,7 +5,7 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import CustomTable from '@/components/layout/CustomTable';
 import { Loading } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { getAdminApprovedProposals, type AdminApprovedProposalItem } from '@/services/internship.service';
+import { getAdminApprovedProposals, type AdminApprovedProposalItem } from '@/services/internship';
 import { getAdminApprovedProposalColumns } from '@/lib/internship';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Button } from '@/components/ui/button';

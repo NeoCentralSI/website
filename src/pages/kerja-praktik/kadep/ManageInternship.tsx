@@ -7,7 +7,7 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { Signature } from 'lucide-react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { useQuery } from '@tanstack/react-query';
-import { getKadepPendingLetters } from '@/services/internship.service';
+import { getKadepPendingLetters } from '@/services/internship';
 import { getKadepInternshipLetterColumns } from '@/lib/internship';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

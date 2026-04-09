@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext, useParams, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSekdepProposalDetail, respondToSekdepProposal } from '@/services/internship.service';
+import { getSekdepProposalDetail, respondToSekdepProposal } from '@/services/internship';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
 import { getInternshipStatusBadge } from '@/lib/internship/status';
 import { Badge } from '@/components/ui/badge';

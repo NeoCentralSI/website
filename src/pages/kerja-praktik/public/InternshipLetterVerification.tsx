@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { verifyInternshipLetter } from '@/services/internship.service';
+import { verifyInternshipLetter } from '@/services/internship';
 import { Loading } from '@/components/ui/spinner';
 import { Building2, Calendar, FileText, ShieldCheck, User, XCircle } from 'lucide-react';
 import logo from '@/assets/images/neocentral-logo.png';

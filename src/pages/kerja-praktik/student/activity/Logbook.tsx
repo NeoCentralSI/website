@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
-import { getStudentLogbooks, type InternshipLogbookItem, updateInternshipDetails, downloadLogbookPdf, downloadLogbookDocx } from '@/services/internship.service';
+import { getStudentLogbooks, type InternshipLogbookItem, updateInternshipDetails, downloadLogbookPdf, downloadLogbookDocx } from '@/services/internship';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
@@ -37,10 +37,11 @@ export default function LogbookPage() {
 
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [fieldSupervisor, setFieldSupervisor] = useState("");
+    const [fieldSupervisorEmail, setFieldSupervisorEmail] = useState("");
     const [unitSection, setUnitSection] = useState("");
 
     const updateDetailsMutation = useMutation({
-        mutationFn: (body: { fieldSupervisorName: string; unitSection: string }) => updateInternshipDetails(body),
+        mutationFn: (body: { fieldSupervisorName: string; fieldSupervisorEmail: string; unitSection: string }) => updateInternshipDetails(body),
         onSuccess: () => {
             toast.success("Informasi KP berhasil diperbarui");
             qc.invalidateQueries({ queryKey: ['student-logbooks'] });
@@ -53,6 +54,7 @@ export default function LogbookPage() {
 
     const handleEditDetails = () => {
         setFieldSupervisor(data?.data?.internship?.fieldSupervisorName || "");
+        setFieldSupervisorEmail(data?.data?.internship?.fieldSupervisorEmail || "");
         setUnitSection(data?.data?.internship?.unitSection || "");
         setDetailsOpen(true);
     };
@@ -61,6 +63,7 @@ export default function LogbookPage() {
         e.preventDefault();
         updateDetailsMutation.mutate({
             fieldSupervisorName: fieldSupervisor,
+            fieldSupervisorEmail: fieldSupervisorEmail,
             unitSection: unitSection
         });
     };
@@ -157,7 +160,8 @@ export default function LogbookPage() {
                                 <User className="h-3 w-3" />
                                 Pembimbing Lapangan
                             </span>
-                            <span className="font-medium">{fieldSupervisor || data.data.internship.fieldSupervisorName || <span className="text-muted-foreground italic">Belum ditentukan</span>}</span>
+                            <span className="font-medium">{fieldSupervisor || data.data.internship.fieldSupervisorName || <span className="text-muted-foreground italic">Nama belum ditentukan</span>}</span>
+                            <span className="text-sm text-muted-foreground">{fieldSupervisorEmail || data.data.internship.fieldSupervisorEmail || <span className="italic">Email belum ditentukan</span>}</span>
                         </div>
                         <div className="flex flex-col gap-1 p-4 rounded-xl border bg-card text-card-foreground">
                             <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
@@ -244,6 +248,17 @@ export default function LogbookPage() {
                                     placeholder="Nama Lengkap Pembimbing"
                                     value={fieldSupervisor}
                                     onChange={(e) => setFieldSupervisor(e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="supervisorEmail" className="text-xs font-bold uppercase text-muted-foreground">Email Pembimbing Lapangan</Label>
+                                <Input
+                                    id="supervisorEmail"
+                                    type="email"
+                                    placeholder="email@perusahaan.com"
+                                    value={fieldSupervisorEmail}
+                                    onChange={(e) => setFieldSupervisorEmail(e.target.value)}
                                     className="h-9"
                                 />
                             </div>

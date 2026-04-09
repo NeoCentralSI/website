@@ -12,7 +12,7 @@ import RegisterInternshipDialog from '@/components/internship/student/RegisterIn
 import UploadResponseLetterDialog from '@/components/internship/student/UploadResponseLetterDialog';
 import DeleteProposalDialog from '@/components/internship/student/DeleteProposalDialog';
 import { StudentProposalCard } from '@/components/internship/student/StudentProposalCard';
-import { respondToInvitation, type InternshipProposalItem } from '@/services/internship.service';
+import { respondToInvitation, type InternshipProposalItem } from '@/services/internship';
 import { getSopDownloadUrl, getSopFilesPublic } from '@/services/sop.service';
 
 import { toast } from 'sonner';

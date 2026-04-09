@@ -1,15 +1,16 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import InternshipTable from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSekdepInternshipList } from '@/hooks/internship/useSekdepInternshipList';
 import { getSekdepInternshipListColumns } from '@/lib/internship/sekdepColumns';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
-import { useState } from 'react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
-import type { InternshipListItem } from '@/services/internship.service';
+import type { InternshipListItem } from '@/services/internship';
 import { Settings2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
 
 export default function LecturerWorkloadDetail() {
     const { supervisorId } = useParams<{ supervisorId: string }>();
@@ -29,8 +30,23 @@ export default function LecturerWorkloadDetail() {
         sortBy,
         sortOrder,
         setSort,
+        academicYearId,
+        setAcademicYearId,
         refetch,
     } = useSekdepInternshipList(supervisorId);
+
+    const { academicYears } = useAcademicYears({ pageSize: 50 });
+
+    useEffect(() => {
+        if (!academicYearId && academicYears.length > 0) {
+            const active = academicYears.find(ay => ay.isActive);
+            if (active) {
+                setAcademicYearId(active.id);
+            } else {
+                setAcademicYearId('all');
+            }
+        }
+    }, [academicYears, academicYearId, setAcademicYearId]);
 
     const [previewOpen, setPreviewOpen] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<{ fileName: string; filePath: string } | null>(null);
@@ -98,6 +114,21 @@ export default function LecturerWorkloadDetail() {
                         emptyText={q ? 'Pencarian tidak menemukan hasil.' : 'Tidak ada data mahasiswa bimbingan.'}
                         actions={
                             <div className="flex items-center gap-2">
+                                <Select value={academicYearId} onValueChange={setAcademicYearId}>
+                                    <SelectTrigger className="w-[180px] h-9">
+                                        <SelectValue placeholder="Pilih Tahun Ajaran" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
+                                        {academicYears.map((ay) => (
+                                            <SelectItem key={ay.id} value={ay.id}>
+                                                <span className={ay.isActive ? "text-blue-600 font-semibold" : ""}>
+                                                    {ay.year} {ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}
+                                                </span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <Button
                                     variant="outline"
                                     size="sm"

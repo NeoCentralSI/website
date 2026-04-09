@@ -18,6 +18,7 @@ import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import NotFoundPage from './pages/NotFound'
 import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification'
+import FieldAssessmentPage from './pages/kerja-praktik/public/FieldAssessmentPage'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
@@ -191,6 +192,7 @@ function App() {
               <Route path="/auth/activate/email-sent" element={<ActivationEmailSent />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/internship-letter/:id" element={<InternshipLetterVerification />} />
+              <Route path="/field-assessment/:token" element={<FieldAssessmentPage />} />
 
               <Route element={<ProtectedLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -378,7 +380,12 @@ function App() {
                   <Route path="/kelola/kerja-praktik/dosen/:supervisorId" element={<LecturerWorkloadDetail />} />
                   <Route path="/kelola/kerja-praktik/dosen/:supervisorId/surat-tugas" element={<LecturerWorkloadManageLetter />} />
                   <Route path="/kelola/kerja-praktik/dosen/template/surat-tugas" element={<SupervisorTemplateEditor />} />
-                  <Route path="/kelola/kerja-praktik/mahasiswa/:internshipId" element={<InternshipLifecycleDetail />} />
+                  <Route path="/kelola/kerja-praktik/mahasiswa/:internshipId" element={<InternshipLifecycleDetail />}>
+                    <Route path="logbook" element={<div />} />
+                    <Route path="bimbingan" element={<div />} />
+                    <Route path="seminar" element={<div />} />
+                    <Route path="nilai" element={<div />} />
+                  </Route>
                   <Route path="/kelola/kerja-praktik/pendaftaran/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
                   <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                   <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />

@@ -3,7 +3,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStudentGuidance } from '@/services/internship.service';
+import { getStudentGuidance } from '@/services/internship';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

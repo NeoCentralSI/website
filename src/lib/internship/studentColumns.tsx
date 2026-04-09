@@ -1,4 +1,4 @@
-import type { InternshipProposalItem } from '@/services/internship.service';
+import type { InternshipProposalItem } from '@/services/internship';
 import type { Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

@@ -11,7 +11,6 @@ import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 interface FinalReportTabProps {
     internship: any;
     isUploading: string | null;
-    onFileChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT') => void;
     onFinalReportSubmit?: (title: string, file: File) => void;
 }
 
@@ -25,6 +24,8 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [previewOpen, setPreviewOpen] = useState<boolean>(false);
     const [feedbackPreviewOpen, setFeedbackPreviewOpen] = useState<boolean>(false);
+    
+
 
     useEffect(() => {
         if (internship?.reportTitle) {
@@ -373,6 +374,8 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                 </CardContent>
             </Card>
 
+
+
             {hasDocument && internship?.reportDocument && (
                 <DocumentPreviewDialog
                     open={previewOpen}
@@ -390,6 +393,8 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                     filePath={internship.reportFeedbackDocument.filePath || undefined}
                 />
             )}
+
+
         </div>
     );
 };

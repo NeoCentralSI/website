@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Upload, Edit, Trash2, Check, X, ChevronDown, ChevronRight, CheckCircle2, Clock, XCircle, AlertCircle, Users, User } from 'lucide-react';
-import type { InternshipProposalItem } from '@/services/internship.service';
+import type { InternshipProposalItem } from '@/services/internship';
 import { cn } from '@/lib/utils';
 import { getInternshipStatusBadge } from '@/lib/internship/status';
 

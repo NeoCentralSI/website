@@ -18,10 +18,16 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { getSekdepInternshipDetail, verifyInternshipDocument, bulkVerifyInternshipDocuments } from '@/services/internship.service';
-import type { DocumentVerificationDetail } from '@/services/internship.service';
+import { getSekdepInternshipDetail, verifyInternshipDocument, bulkVerifyInternshipDocuments } from '@/services/internship';
+import { TabsNav } from '@/components/ui/tabs-nav';
+import { SekdepLogbookTab } from './detail/SekdepLogbookTab';
+import { SekdepGuidanceTab } from './detail/SekdepGuidanceTab';
+import { SekdepSeminarTab } from './detail/SekdepSeminarTab';
+import { SekdepGradesTab } from './detail/SekdepGradesTab';
+import type { DocumentVerificationDetail } from '@/services/internship';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +39,7 @@ import { Progress } from '@/components/ui/progress';
 import DocumentVerificationDialog from '@/components/internship/sekdep/DocumentVerificationDialog';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 export default function InternshipLifecycleDetail() {
     const { internshipId } = useParams<{ internshipId: string }>();
@@ -57,6 +64,16 @@ export default function InternshipLifecycleDetail() {
     });
 
     const detail = response?.data;
+    const location = useLocation();
+    const isDashboard = location.pathname.endsWith(internshipId!);
+
+    const tabs = useMemo(() => [
+        { label: 'Overview', to: `/kelola/kerja-praktik/mahasiswa/${internshipId}`, end: true },
+        { label: 'Logbook', to: `/kelola/kerja-praktik/mahasiswa/${internshipId}/logbook` },
+        { label: 'Bimbingan', to: `/kelola/kerja-praktik/mahasiswa/${internshipId}/bimbingan` },
+        { label: 'Seminar', to: `/kelola/kerja-praktik/mahasiswa/${internshipId}/seminar` },
+        { label: 'Nilai Akhir', to: `/kelola/kerja-praktik/mahasiswa/${internshipId}/nilai` },
+    ], [internshipId]);
 
     // Get available documents for bulk selection
     // Note: Laporan Akhir tidak termasuk karena diverifikasi oleh dosen pembimbing, bukan sekdep
@@ -187,6 +204,13 @@ export default function InternshipLifecycleDetail() {
                 </div>
             </div>
 
+            {/* Tabs Navigation */}
+            <TabsNav tabs={tabs} />
+
+            {/* Content Area */}
+            {isDashboard ? (
+                <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Left Column: Core Info */}
                 <div className="lg:col-span-6 space-y-6">
@@ -247,7 +271,10 @@ export default function InternshipLifecycleDetail() {
                 {/* Right Column: Progress & Status */}
                 <div className="lg:col-span-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Logbook Progress */}
-                    <Card className="border h-full flex flex-col">
+                    <Card 
+                        className="border h-full flex flex-col cursor-pointer transition-all hover:border-blue-300 hover:shadow-md active:scale-[0.98]"
+                        onClick={() => navigate(`/kelola/kerja-praktik/mahasiswa/${internshipId}/logbook`)}
+                    >
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-semibold flex items-center justify-between">
                                 <span className="flex items-center gap-2">
@@ -268,15 +295,17 @@ export default function InternshipLifecycleDetail() {
                         </CardContent>
                     </Card>
 
-                    {/* Guidance (Placeholder) */}
-                    <Card className="border h-full flex flex-col">
+                    {/* Guidance */}
+                    <Card 
+                        className="border h-full flex flex-col cursor-pointer transition-all hover:border-purple-300 hover:shadow-md active:scale-[0.98]"
+                        onClick={() => navigate(`/kelola/kerja-praktik/mahasiswa/${internshipId}/bimbingan`)}
+                    >
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-semibold flex items-center justify-between">
                                 <span className="flex items-center gap-2">
                                     <Users className="h-4 w-4 text-purple-600" />
-                                    Sesi Bimbingan
+                                    Sesi bimbingan
                                 </span>
-                                <Badge variant="outline" className="text-[10px] h-5 bg-purple-50">Draft</Badge>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -288,7 +317,11 @@ export default function InternshipLifecycleDetail() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border h-full flex flex-col justify-center">
+                    {/* Seminar Card */}
+                    <Card 
+                        className="border h-full flex flex-col justify-center cursor-pointer transition-all hover:border-emerald-300 hover:shadow-md active:scale-[0.98]"
+                        onClick={() => navigate(`/kelola/kerja-praktik/mahasiswa/${internshipId}/seminar`)}
+                    >
                         <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -296,14 +329,41 @@ export default function InternshipLifecycleDetail() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-emerald-700 uppercase tracking-tight">Seminar KP</p>
-                                    <p className="text-sm font-medium text-slate-500">Belum Ada Jadwal</p>
+                                    {detail.seminars?.[0] ? (
+                                        <div className="space-y-0.5">
+                                            <p className="text-sm font-bold text-slate-900">
+                                                {detail.seminars[0].seminarDate ? formatDateId(detail.seminars[0].seminarDate) : "Jadwal Belum Fixed"}
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 font-medium">
+                                                {detail.seminars[0].time || ""}
+                                                {detail.seminars[0].room?.name ? ` • R. ${detail.seminars[0].room.name}` : ""}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm font-medium text-slate-500 italic">Belum Ada Jadwal</p>
+                                    )}
                                 </div>
                             </div>
+                            {detail.seminars?.[0]?.status && (
+                                <Badge variant="outline" className={cn(
+                                    "text-[9px] h-5",
+                                    detail.seminars[0].status === 'COMPLETED' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                    detail.seminars[0].status === 'SCHEDULED' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                    "bg-slate-50 text-slate-600 border-slate-200"
+                                )}>
+                                    {detail.seminars[0].status === 'COMPLETED' ? 'SELESAI' : 
+                                     detail.seminars[0].status === 'SCHEDULED' ? 'TERJADWAL' : detail.seminars[0].status}
+                                </Badge>
+                            )}
                             <ArrowLeft className="h-4 w-4 text-slate-300 rotate-180" />
                         </CardContent>
                     </Card>
 
-                    <Card className="border h-full flex flex-col justify-center">
+                    {/* Grades Card */}
+                    <Card 
+                        className="border h-full flex flex-col justify-center cursor-pointer transition-all hover:border-orange-300 hover:shadow-md active:scale-[0.98]"
+                        onClick={() => navigate(`/kelola/kerja-praktik/mahasiswa/${internshipId}/nilai`)}
+                    >
                         <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center">
@@ -311,110 +371,140 @@ export default function InternshipLifecycleDetail() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-orange-700 uppercase tracking-tight">Nilai Akhir</p>
-                                    <p className="text-lg font-bold text-slate-400">- / 100</p>
+                                    <p className={cn(
+                                        "text-lg font-bold",
+                                        detail.assessment.finalScore ? "text-slate-900" : "text-slate-400"
+                                    )}>
+                                        {detail.assessment.finalScore ?? "-"} / 100
+                                    </p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Grade</p>
-                                <p className="text-xl font-black text-slate-300">-</p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest leading-none mb-1">Grade</p>
+                                <p className={cn(
+                                    "text-2xl font-black leading-none",
+                                    detail.assessment.finalGrade ? "text-orange-600" : "text-slate-300"
+                                )}>
+                                    {detail.assessment.finalGrade ?? "-"}
+                                </p>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
             </div>
 
-            {/* Reporting Documents Section */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-primary" />
-                        <h2 className="text-lg font-bold text-slate-800">Dokumen Pelaporan</h2>
-                    </div>
-                    {availableDocs.length > 0 && (
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleSelectAll}
-                                className="h-8 text-xs"
-                            >
-                                {selectedDocs.size === availableDocs.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
-                            </Button>
-                            {selectedDocs.size > 0 && (
-                                <>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setBulkDialogMode('APPROVE');
-                                            setBulkDialogOpen(true);
-                                        }}
-                                        className="h-8 text-xs border-primary/20 text-primary hover:bg-primary/5"
-                                        disabled={bulkVerificationMutation.isPending}
-                                    >
-                                        <CheckSquare className="h-3 w-3 mr-1" />
-                                        Setujui ({selectedDocs.size})
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setBulkDialogMode('REJECT');
-                                            setBulkDialogOpen(true);
-                                        }}
-                                        className="h-8 text-xs border-destructive/20 text-destructive hover:bg-destructive/5"
-                                        disabled={bulkVerificationMutation.isPending}
-                                    >
-                                        Tolak ({selectedDocs.size})
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    )}
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <DocumentVerificationCard 
-                        title="Sertifikat Selesai KP" 
-                        docType="completionCertificate"
-                        detail={detail.reportingDocuments.completionCertificate}
-                        internshipId={detail.id}
-                        isSelected={selectedDocs.has('completionCertificate')}
-                        onToggleSelect={() => handleToggleDoc('completionCertificate')}
-                        canSelect={!!(detail.reportingDocuments.completionCertificate?.document && detail.reportingDocuments.completionCertificate.status !== 'APPROVED')}
-                    />
-                    <DocumentVerificationCard 
-                        title="Tanda Terima (KP-004)" 
-                        docType="companyReceipt"
-                        detail={detail.reportingDocuments.companyReceipt}
-                        internshipId={detail.id}
-                        isSelected={selectedDocs.has('companyReceipt')}
-                        onToggleSelect={() => handleToggleDoc('companyReceipt')}
-                        canSelect={!!(detail.reportingDocuments.companyReceipt?.document && detail.reportingDocuments.companyReceipt.status !== 'APPROVED')}
-                    />
-                    <DocumentVerificationCard 
-                        title="Laporan Kegiatan (KP-002)" 
-                        docType="logbookDocument"
-                        detail={detail.reportingDocuments.logbookDocument}
-                        internshipId={detail.id}
-                        isSelected={selectedDocs.has('logbookDocument')}
-                        onToggleSelect={() => handleToggleDoc('logbookDocument')}
-                        canSelect={!!(detail.reportingDocuments.logbookDocument?.document && detail.reportingDocuments.logbookDocument.status !== 'APPROVED')}
-                    />
-                    {detail.reportingDocuments.report && (
-                        <DocumentVerificationCard 
-                            title="Laporan Akhir" 
-                            docType="report"
-                            detail={detail.reportingDocuments.report}
-                            internshipId={detail.id}
-                            isSelected={selectedDocs.has('report')}
-                            onToggleSelect={() => handleToggleDoc('report')}
-                            canSelect={false}
-                            canVerify={false}
+            ) : (
+                <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {location.pathname.includes('logbook') && <SekdepLogbookTab logbooks={detail.logbooks} />}
+                    {location.pathname.includes('bimbingan') && <SekdepGuidanceTab sessions={detail.guidanceSessions} />}
+                    {location.pathname.includes('seminar') && <SekdepSeminarTab seminars={detail.seminars} />}
+                    {location.pathname.includes('nilai') && (
+                        <SekdepGradesTab 
+                            assessment={detail.assessment} 
+                            lecturerScores={detail.lecturerScores}
+                            fieldScores={detail.fieldScores}
                         />
                     )}
                 </div>
-            </div>
+            )}
+
+            {/* Always visible at the bottom of the dashboard or separate? User usually wants it visible globally or just dashboard.
+                I'll keep it on the dashboard only to keep detail views focused. */}
+            
+            {isDashboard && (
+                <div className="space-y-4 border-t pt-8">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" />
+                            <h2 className="text-lg font-bold text-slate-800">Dokumen Pelaporan</h2>
+                        </div>
+                        {availableDocs.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleSelectAll}
+                                    className="h-8 text-xs"
+                                >
+                                    {selectedDocs.size === availableDocs.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                                </Button>
+                                {selectedDocs.size > 0 && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setBulkDialogMode('APPROVE');
+                                                setBulkDialogOpen(true);
+                                            }}
+                                            className="h-8 text-xs border-primary/20 text-primary hover:bg-primary/5"
+                                            disabled={bulkVerificationMutation.isPending}
+                                        >
+                                            <CheckSquare className="h-3 w-3 mr-1" />
+                                            Setujui ({selectedDocs.size})
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setBulkDialogMode('REJECT');
+                                                setBulkDialogOpen(true);
+                                            }}
+                                            className="h-8 text-xs border-destructive/20 text-destructive hover:bg-destructive/5"
+                                            disabled={bulkVerificationMutation.isPending}
+                                        >
+                                            Tolak ({selectedDocs.size})
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <DocumentVerificationCard 
+                            title="Sertifikat Selesai KP" 
+                            docType="completionCertificate"
+                            detail={detail.reportingDocuments.completionCertificate}
+                            internshipId={detail.id}
+                            isSelected={selectedDocs.has('completionCertificate')}
+                            onToggleSelect={() => handleToggleDoc('completionCertificate')}
+                            canSelect={!!(detail.reportingDocuments.completionCertificate?.document && detail.reportingDocuments.completionCertificate.status !== 'APPROVED')}
+                        />
+                        <DocumentVerificationCard 
+                            title="Tanda Terima (KP-004)" 
+                            docType="companyReceipt"
+                            detail={detail.reportingDocuments.companyReceipt}
+                            internshipId={detail.id}
+                            isSelected={selectedDocs.has('companyReceipt')}
+                            onToggleSelect={() => handleToggleDoc('companyReceipt')}
+                            canSelect={!!(detail.reportingDocuments.companyReceipt?.document && detail.reportingDocuments.companyReceipt.status !== 'APPROVED')}
+                        />
+                        <DocumentVerificationCard 
+                            title="Laporan Kegiatan (KP-002)" 
+                            docType="logbookDocument"
+                            detail={detail.reportingDocuments.logbookDocument}
+                            internshipId={detail.id}
+                            isSelected={selectedDocs.has('logbookDocument')}
+                            onToggleSelect={() => handleToggleDoc('logbookDocument')}
+                            canSelect={!!(detail.reportingDocuments.logbookDocument?.document && detail.reportingDocuments.logbookDocument.status !== 'APPROVED')}
+                        />
+                        {detail.reportingDocuments.report && (
+                            <DocumentVerificationCard 
+                                title="Laporan Akhir" 
+                                docType="report"
+                                detail={detail.reportingDocuments.report}
+                                internshipId={detail.id}
+                                isSelected={selectedDocs.has('report')}
+                                onToggleSelect={() => handleToggleDoc('report')}
+                                canSelect={false}
+                                canVerify={false}
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Bulk Verification Dialog */}
             <DocumentVerificationDialog
