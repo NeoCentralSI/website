@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery } from '@tanstack/react-query';
-import { getLecturerSupervisedStudents, bulkApproveSeminars } from '@/services/internship.service';
+import { getLecturerSupervisedStudents, bulkApproveSeminars } from '@/services/internship';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';

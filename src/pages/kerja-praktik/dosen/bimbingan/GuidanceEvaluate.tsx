@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getLecturerGuidanceWeekDetail, submitLecturerEvaluation, type SubmitEvaluationBody } from '@/services/internship.service';
+import { getLecturerGuidanceWeekDetail, submitLecturerEvaluation, type SubmitEvaluationBody } from '@/services/internship';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';

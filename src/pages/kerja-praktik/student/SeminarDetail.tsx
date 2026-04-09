@@ -27,7 +27,7 @@ import {
     unregisterSeminarAudience,
     validateSeminarAudience,
     unvalidateSeminarAudience
-} from '@/services/internship.service';
+} from '@/services/internship';
 import { useAuth } from '@/hooks/shared';
 import { LECTURER_ROLES } from '@/lib/roles';
 

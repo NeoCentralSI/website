@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getLecturerGuidanceTimeline } from '@/services/internship.service';
+import { getLecturerGuidanceTimeline } from '@/services/internship';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Calendar, Clock, CheckCircle2, FileText, AlertCircle } from 'lucide-react';

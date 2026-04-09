@@ -1,4 +1,4 @@
-import type { AdminApprovedProposalItem, AdminAssignmentProposalItem } from '@/services/internship.service';
+import type { AdminApprovedProposalItem, AdminAssignmentProposalItem } from '@/services/internship';
 import type { Column } from '@/components/layout/CustomTable';
 import { Button } from '@/components/ui/button';
 import { FileText, Edit, FileCheck } from 'lucide-react';

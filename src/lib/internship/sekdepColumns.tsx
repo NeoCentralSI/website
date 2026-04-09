@@ -1,4 +1,4 @@
-import type { SekdepRegistrationItem, InternshipListItem } from '@/services/internship.service';
+import type { SekdepRegistrationItem, InternshipListItem } from '@/services/internship';
 import type { Column } from '@/components/layout/CustomTable';
 import { Button } from '@/components/ui/button';
 import { FileText, Eye, Check, X } from 'lucide-react';
@@ -377,24 +377,23 @@ export const getSekdepInternshipListColumns = ({
             className: 'text-sm',
         },
         {
-            key: 'logbookProgress',
-            header: 'Progress Logbook',
+            key: 'finalNilai',
+            header: 'Nilai Akhir',
             render: (item) => (
-                <div className="flex flex-col items-center gap-1">
-                    <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden">
-                        <div
-                            className="bg-primary h-full transition-all duration-300"
-                            style={{
-                                width: `${item.logbookProgress.total > 0 ? (item.logbookProgress.filled / item.logbookProgress.total) * 100 : 0}%`
-                            }}
-                        />
-                    </div>
-                    <span className="text-[10px] text-muted-foreground font-medium">
-                        {item.logbookProgress.filled}/{item.logbookProgress.total} Hari
-                    </span>
+                <div className="flex flex-col items-center justify-center">
+                    {item.finalScore !== null && item.finalScore !== undefined ? (
+                        <>
+                            <span className="text-sm font-bold text-slate-900">{item.finalScore}</span>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-orange-50 text-orange-700 border-orange-200">
+                                {item.finalGrade || '-'}
+                            </Badge>
+                        </>
+                    ) : (
+                        <span className="text-xs text-muted-foreground italic">Belum Dinilai</span>
+                    )}
                 </div>
             ),
-            className: 'text-center w-28',
+            className: 'text-center w-24',
         },
         {
             key: 'supervisorLetter',

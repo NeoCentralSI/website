@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Upload, CheckCircle2, Clock, Info, AlertCircle, XCircle } from 'lucide-react';
+import { FileText, Upload, CheckCircle2, Clock, Info, AlertCircle, XCircle, Eye } from 'lucide-react';
 import { Loading } from '@/components/ui/spinner';
 
 interface ReportingTabProps {
     internship: any;
     isUploading: string | null;
-    onFileChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT') => void;
+    onFileChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT') => void;
     endDate: Date | null;
     reportingDeadline: Date | null;
     isReportingOverdue: boolean;
     isReportingApproaching: boolean;
+    generatedAssessmentUrl?: string | null;
 }
 
 export const ReportingTab: React.FC<ReportingTabProps> = ({
@@ -21,8 +23,26 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
     endDate,
     reportingDeadline,
     isReportingOverdue,
-    isReportingApproaching
+    isReportingApproaching,
+    generatedAssessmentUrl
 }) => {
+    const [previewConfig, setPreviewConfig] = useState<{
+        open: boolean;
+        fileName: string;
+        filePath: string;
+    }>({
+        open: false,
+        fileName: '',
+        filePath: ''
+    });
+
+    const handlePreview = (fileName: string, filePath: string) => {
+        setPreviewConfig({
+            open: true,
+            fileName,
+            filePath
+        });
+    };
     const getStatusIcon = (status: string | null | undefined, hasDoc: boolean) => {
         if (!hasDoc) {
             return <Clock className="h-5 w-5 text-orange-500" />;
@@ -107,7 +127,14 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     <span className="text-sm font-medium truncate">
                                         {internship?.completionCertificateDocId ? "Sudah Diunggah" : "Belum Diunggah"}
                                     </span>
-                                    <span className="text-[10px] text-muted-foreground">Format: PDF (Max 2MB)</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-muted-foreground">Format: PDF (Max 2MB)</span>
+                                        {internship?.completionCertificateDoc?.fileName && (
+                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handlePreview(internship.completionCertificateDoc.fileName, internship.completionCertificateDoc.filePath)}>
+                                                <Eye className="h-3 w-3 text-primary" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {internship?.completionCertificateStatus !== 'APPROVED' && (
@@ -124,7 +151,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                         variant="outline" 
                                         className="w-full gap-2"
                                         onClick={() => document.getElementById('upload-cert')?.click()}
-                                        disabled={isUploading === 'CERTIFICATE'}
+                                        disabled={!!isUploading}
                                     >
                                         {isUploading === 'CERTIFICATE' ? <Loading size="sm" /> : <Upload className="h-4 w-4" />}
                                         {internship?.completionCertificateDocId ? "Ganti File" : "Unggah File"}
@@ -147,7 +174,14 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     <span className="text-sm font-medium truncate">
                                         {internship?.companyReceiptDocId ? "Sudah Diunggah" : "Belum Diunggah"}
                                     </span>
-                                    <span className="text-[10px] text-muted-foreground">Tanda terima dari perusahaan</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-muted-foreground">Tanda terima dari perusahaan</span>
+                                        {internship?.companyReceiptDoc?.fileName && (
+                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handlePreview(internship.companyReceiptDoc.fileName, internship.companyReceiptDoc.filePath)}>
+                                                <Eye className="h-3 w-3 text-primary" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {internship?.companyReceiptStatus !== 'APPROVED' && (
@@ -164,7 +198,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                         variant="outline" 
                                         className="w-full gap-2"
                                         onClick={() => document.getElementById('upload-receipt')?.click()}
-                                        disabled={isUploading === 'RECEIPT'}
+                                        disabled={!!isUploading}
                                     >
                                         {isUploading === 'RECEIPT' ? <Loading size="sm" /> : <Upload className="h-4 w-4" />}
                                         {internship?.companyReceiptDocId ? "Ganti File" : "Unggah File"}
@@ -187,7 +221,14 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     <span className="text-sm font-medium truncate">
                                         {internship?.logbookDocumentId ? "Sudah Diunggah" : "Belum Diunggah"}
                                     </span>
-                                    <span className="text-[10px] text-muted-foreground">Logbook yang telah disahkan</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-muted-foreground">Logbook yang telah disahkan</span>
+                                        {internship?.logbookDocument?.fileName && (
+                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handlePreview(internship.logbookDocument.fileName, internship.logbookDocument.filePath)}>
+                                                <Eye className="h-3 w-3 text-primary" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {internship?.logbookDocumentStatus !== 'APPROVED' && (
@@ -204,7 +245,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                         variant="outline" 
                                         className="w-full gap-2"
                                         onClick={() => document.getElementById('upload-report-internal')?.click()}
-                                        disabled={isUploading === 'REPORT'}
+                                        disabled={!!isUploading}
                                     >
                                         {isUploading === 'REPORT' ? <Loading size="sm" /> : <Upload className="h-4 w-4" />}
                                         {internship?.logbookDocumentId ? "Ganti File" : "Unggah File"}
@@ -212,9 +253,91 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                 </div>
                             )}
                         </div>
+                        {/* Laporan Akhir Instansi */}
+                        <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Instansi</span>
+                                {getStatusIcon(internship?.companyReportStatus, !!internship?.companyReportDocId)}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-background rounded-lg border">
+                                    <FileText className="h-6 w-6 text-primary" />
+                                </div>
+                                <div className="flex flex-col min-w-0 flex-1">
+                                    <span className="text-sm font-medium truncate">
+                                        {internship?.companyReportDocId ? "Sudah Diunggah" : "Belum Diunggah"}
+                                    </span>
+                                    {internship?.companyReportDocId && internship.companyReportDoc?.fileName && (
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-[10px] text-muted-foreground truncate">{internship.companyReportDoc.fileName}</span>
+                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => handlePreview(internship.companyReportDoc.fileName, internship.companyReportDoc.filePath)}>
+                                                <Eye className="h-3 w-3 text-primary" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                    {!internship?.companyReportDocId && (
+                                        <span className="text-[10px] text-muted-foreground">Salinan laporan untuk instansi</span>
+                                    )}
+                                    {generatedAssessmentUrl && (
+                                        <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider">
+                                                <CheckCircle2 className="h-3 w-3" />
+                                                Link Penilaian Dihasilkan
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 bg-background border px-2 py-1 rounded text-[10px] truncate font-mono text-muted-foreground">
+                                                    {generatedAssessmentUrl}
+                                                </div>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="secondary"
+                                                    className="h-6 gap-1 text-[10px] px-2"
+                                                    onClick={() => window.open(generatedAssessmentUrl, '_blank')}
+                                                >
+                                                    <Eye className="h-3 w-3" />
+                                                    Buka
+                                                </Button>
+                                            </div>
+                                            <p className="text-[9px] text-muted-foreground leading-tight italic">
+                                                *Link ini telah dikirim ke email pembimbing ({internship?.fieldSupervisorEmail || 'email tidak ditemukan'}).
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            {(!internship?.companyReportDocId || internship?.companyReportStatus === 'SUBMITTED' || internship?.companyReportStatus === 'REVISION_NEEDED') && (
+                                <div className="mt-auto pt-2">
+                                    <input 
+                                        type="file" 
+                                        id="upload-company-report" 
+                                        className="hidden" 
+                                        accept=".pdf"
+                                        onChange={(e) => onFileChange(e, 'COMPANY_REPORT')}
+                                    />
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        className="w-full gap-2"
+                                        onClick={() => document.getElementById('upload-company-report')?.click()}
+                                        disabled={!!isUploading}
+                                    >
+                                        {isUploading === 'COMPANY_REPORT' ? <Loading size="sm" /> : <Upload className="h-4 w-4" />}
+                                        {internship?.companyReportDocId ? "Ganti File" : "Unggah File"}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
                     </div>
                 </CardContent>
             </Card>
+
+            <DocumentPreviewDialog
+                open={previewConfig.open}
+                onOpenChange={(open) => setPreviewConfig(prev => ({ ...prev, open }))}
+                fileName={previewConfig.fileName}
+                filePath={previewConfig.filePath}
+            />
         </div>
     );
 };

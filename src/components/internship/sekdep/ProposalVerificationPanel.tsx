@@ -4,7 +4,7 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSekdepPendingProposals } from '@/hooks/internship/useSekdepPendingProposals';
 import { getSekdepProposalColumns } from '@/lib/internship';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { respondToSekdepProposal, type SekdepRegistrationItem } from '@/services/internship.service';
+import { respondToSekdepProposal, type SekdepRegistrationItem } from '@/services/internship';
 import { toast } from 'sonner';
 import ProposalResponseDialog from '@/components/internship/sekdep/ProposalResponseDialog';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';

@@ -51,7 +51,7 @@ import {
     deleteInternshipRubric,
     copyInternshipCpmks,
     type InternshipCpmk,
-} from '@/services/internship.service';
+} from '@/services/internship';
 import { getAcademicYearsAPI } from '@/services/admin.service';
 import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';

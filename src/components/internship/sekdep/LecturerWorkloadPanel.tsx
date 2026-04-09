@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { InternshipTable } from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -7,8 +7,9 @@ import { getSekdepLecturerWorkloadColumns } from '@/lib/internship/sekdepColumns
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { FileText, Loader2, Settings2 } from 'lucide-react';
-import { exportLecturerWorkloadPdf } from '@/services/internship.service';
-import { useState } from 'react';
+import { exportLecturerWorkloadPdf } from '@/services/internship';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
 
 export function LecturerWorkloadPanel() {
     const navigate = useNavigate();
@@ -26,10 +27,25 @@ export function LecturerWorkloadPanel() {
         sortBy,
         sortOrder,
         setSort,
+        academicYearId,
+        setAcademicYearId,
         refetch,
     } = useSekdepLecturerWorkload();
 
     const [isExporting, setIsExporting] = useState(false);
+
+    const { academicYears } = useAcademicYears({ pageSize: 50 });
+
+    useEffect(() => {
+        if (!academicYearId && academicYears.length > 0) {
+            const active = academicYears.find(ay => ay.isActive);
+            if (active) {
+                setAcademicYearId(active.id);
+            } else {
+                setAcademicYearId('all');
+            }
+        }
+    }, [academicYears, academicYearId, setAcademicYearId]);
 
     const handleExportPdf = async () => {
         setIsExporting(true);
@@ -45,9 +61,9 @@ export function LecturerWorkloadPanel() {
 
     const columns = useMemo(() => getSekdepLecturerWorkloadColumns({
         onViewDetail: (item) => {
-            navigate(`/kelola/kerja-praktik/dosen/${item.id}`);
+            navigate(`/kelola/kerja-praktik/dosen/${item.id}?academicYearId=${academicYearId}`);
         }
-    }), [navigate]);
+    }), [navigate, academicYearId]);
 
     return (
         <div className="space-y-4">
@@ -74,6 +90,21 @@ export function LecturerWorkloadPanel() {
                 emptyText={q ? 'Pencarian tidak menemukan hasil.' : 'Tidak ada data dosen.'}
                 actions={
                     <div className="flex items-center gap-2">
+                        <Select value={academicYearId} onValueChange={setAcademicYearId}>
+                            <SelectTrigger className="w-[180px] h-9">
+                                <SelectValue placeholder="Pilih Tahun Ajaran" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
+                                {academicYears.map((ay) => (
+                                    <SelectItem key={ay.id} value={ay.id}>
+                                        <span className={ay.isActive ? "text-blue-600 font-semibold" : ""}>
+                                            {ay.year} {ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}
+                                        </span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <RefreshButton
                             onClick={() => refetch()}
                             isRefreshing={isFetching && !isLoading}

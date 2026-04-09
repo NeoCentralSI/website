@@ -35,7 +35,7 @@ export default function LecturerWorkloadManageLetter() {
             internshipIds: []
         }
     });
-    
+
     const watchDates = watch(["startDate", "endDate"]);
     const watchInternshipIds = watch("internshipIds") || [];
 
@@ -83,10 +83,10 @@ export default function LecturerWorkloadManageLetter() {
                 endDate: "",
                 internshipIds: res.data.assignedStudents.map((s: any) => s.internshipId)
             });
-            
+
             // Try to prefill dates if available on any student
             const studentWithDates = res.data.assignedStudents.find(s => s.documents.supLetterStartDate);
-            if(studentWithDates) {
+            if (studentWithDates) {
                 setValue('startDate', formatDate(studentWithDates.documents.supLetterStartDate));
                 setValue('endDate', formatDate(studentWithDates.documents.supLetterEndDate));
             }
@@ -191,8 +191,8 @@ export default function LecturerWorkloadManageLetter() {
                                     Pilih Mahasiswa Bimbingan
                                 </CardTitle>
                                 <div className="flex items-center gap-2">
-                                    <Checkbox 
-                                        id="selectAll" 
+                                    <Checkbox
+                                        id="selectAll"
                                         checked={watchInternshipIds.length === detail.assignedStudents.length && detail.assignedStudents.length > 0}
                                         onCheckedChange={handleSelectAll}
                                     />
@@ -207,11 +207,10 @@ export default function LecturerWorkloadManageLetter() {
                                     return (
                                         <div
                                             key={idx}
-                                            className={`flex items-start gap-3 p-3 border rounded-lg transition-colors cursor-pointer hover:bg-slate-50 ${
-                                                isSelected ? "bg-primary/5 border-primary/20" : ""
-                                            }`}
+                                            className={`flex items-start gap-3 p-3 border rounded-lg transition-colors cursor-pointer hover:bg-slate-50 ${isSelected ? "bg-primary/5 border-primary/20" : ""
+                                                }`}
                                             onClick={() => {
-                                                const newIds = isSelected 
+                                                const newIds = isSelected
                                                     ? watchInternshipIds.filter(id => id !== s.internshipId)
                                                     : [...watchInternshipIds, s.internshipId];
                                                 setValue("internshipIds", newIds, { shouldValidate: true });
@@ -228,7 +227,7 @@ export default function LecturerWorkloadManageLetter() {
                                                     <span className="truncate">{s.companyName}</span>
                                                 </div>
                                                 {s.documents.supLetterDocNumber && (
-                                                     <div className="mt-1.5 flex flex-wrap gap-1">
+                                                    <div className="mt-1.5 flex flex-wrap gap-1">
                                                         <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">
                                                             ST Pembimbing: {s.documents.supLetterDocNumber}
                                                         </Badge>
@@ -242,7 +241,7 @@ export default function LecturerWorkloadManageLetter() {
                                     <p className="text-sm text-muted-foreground text-center py-4">Tidak ada mahasiswa bimbingan aktif.</p>
                                 )}
                             </div>
-                             {errors.internshipIds && (
+                            {errors.internshipIds && (
                                 <p className="text-xs text-destructive mt-3 text-center">Silakan pilih minimal satu mahasiswa</p>
                             )}
                         </CardContent>

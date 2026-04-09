@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getSekdepProposals } from '@/services/internship.service';
+import { getSekdepProposals } from '@/services/internship';
 
 export function useSekdepProposals() {
     const [q, setQ] = useState('');

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getCompanyStats } from '@/services/internship.service';
+import { getCompanyStats } from '@/services/internship';
 import { useRole } from '../shared';
 import { useSearchParams } from 'react-router-dom';
 

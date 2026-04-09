@@ -5,7 +5,7 @@ import { TabsNav } from '@/components/ui/tabs-nav';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getLecturerGuidanceTimeline } from '@/services/internship.service';
+import { getLecturerGuidanceTimeline } from '@/services/internship';
 import { Loader2 } from 'lucide-react';
 
 export default function StudentDetailPage() {

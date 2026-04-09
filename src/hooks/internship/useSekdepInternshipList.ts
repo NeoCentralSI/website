@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSekdepInternshipList } from '@/services/internship.service';
+import { getSekdepInternshipList } from '@/services/internship';
 import { useSearchParams } from 'react-router-dom';
 
 export function useSekdepInternshipList(initialSupervisorId?: string) {

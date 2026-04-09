@@ -5,7 +5,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Check, MousePointer2, FileText, Info, Building2, User, ChevronUp } from 'lucide-react';
-import { getKadepPendingLetters, approveKadepLetter } from '@/services/internship.service';
+import { getKadepPendingLetters, approveKadepLetter } from '@/services/internship';
 import { API_CONFIG } from '@/config/api';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';

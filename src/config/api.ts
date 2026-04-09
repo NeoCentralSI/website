@@ -294,7 +294,7 @@ export const API_CONFIG = {
       SUBMIT_COMPANY_RESPONSE: (proposalId: string) => `/insternship/registration/proposals/${proposalId}/company-response`,
       LOGBOOK: '/insternship/activity/logbook',
       UPDATE_LOGBOOK: (id: string) => `/insternship/activity/logbook/${id}`,
-      UPDATE_DETAILS: '/insternship/activity/update-details',
+      UPDATE_DETAILS: '/insternship/activity/details',
       ACTIVITY: '/insternship/activity',
       REGISTER_SEMINAR: '/insternship/activity/register-seminar',
       UPCOMING_SEMINARS: '/insternship/activity/seminars',
@@ -303,6 +303,11 @@ export const API_CONFIG = {
       REJECT_SEMINAR: (id: string) => `/insternship/activity/guidance/lecturer/seminar/${id}/reject`,
       UPLOAD: '/documents/upload',
       VERIFY_FINAL_REPORT: (internshipId: string) => `/insternship/activity/guidance/lecturer/students/${internshipId}/verify-report`,
+    },
+    INTERNSHIP_OVERVIEW: {
+      COMPANIES: '/insternship/overview/companies',
+      REPORTS: '/insternship/overview/reports',
+      STATS: '/insternship/overview/stats',
     },
     INTERNSHIP_SEKDEP: {
       BASE: '/insternship/sekdep',
@@ -317,6 +322,7 @@ export const API_CONFIG = {
       INTERNSHIPS_DETAIL: (id: string) => `/insternship/sekdep/internships/${id}`,
       VERIFY_DOCUMENT: (id: string) => `/insternship/sekdep/internships/${id}/verify-document`,
       VERIFY_DOCUMENTS_BULK: (id: string) => `/insternship/sekdep/internships/${id}/verify-documents-bulk`,
+      SEND_FIELD_ASSESSMENT: (id: string) => `/insternship/sekdep/internships/${id}/send-field-assessment`,
       LECTURERS_WORKLOAD: '/insternship/sekdep/lecturers/workload',
       LECTURERS_WORKLOAD_EXPORT: '/insternship/sekdep/lecturers/workload/export',
       GUIDANCE_QUESTIONS: '/insternship/sekdep/guidance/questions',

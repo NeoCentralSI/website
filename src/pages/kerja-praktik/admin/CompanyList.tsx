@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { type CompanyStatsItem } from '@/services/internship.service';
+import { type CompanyStatsItem } from '@/services/internship';
 import { Badge } from '@/components/ui/badge';
 
 export default function AdminCompanyListPage() {

@@ -3,7 +3,7 @@ import { useOutletContext, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument } from '@/services/internship.service';
+import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument, submitCompanyReport } from '@/services/internship';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 
@@ -45,8 +45,15 @@ export default function InternshipSeminarPage() {
     const latestSeminar = seminars[0];
 
     const [isUploading, setIsUploading] = useState<string | null>(null);
+    const [generatedAssessmentUrl, setGeneratedAssessmentUrl] = useState<string | null>(null);
 
-    const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT', file: File, title?: string) => {
+    useEffect(() => {
+        if (internship?.activeAssessmentUrl) {
+            setGeneratedAssessmentUrl(internship.activeAssessmentUrl);
+        }
+    }, [internship]);
+
+    const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT', file: File, title?: string) => {
         try {
             setIsUploading(type);
             const { documentId } = await uploadInternshipDocument(file);
@@ -66,6 +73,12 @@ export default function InternshipSeminarPage() {
                 }
                 await submitInternshipReport(title.trim(), documentId);
                 toast.success("Laporan akhir berhasil diajukan untuk verifikasi");
+            } else if (type === 'COMPANY_REPORT') {
+                const response = await submitCompanyReport(documentId);
+                toast.success(response.message || "Laporan akhir instansi berhasil diunggah");
+                if (response.data?.assessmentInfo?.assessmentUrl) {
+                    setGeneratedAssessmentUrl(response.data.assessmentInfo.assessmentUrl);
+                }
             }
             
             queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
@@ -76,7 +89,7 @@ export default function InternshipSeminarPage() {
         }
     };
 
-    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT') => {
+    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT') => {
         const file = e.target.files?.[0];
         if (file) {
             handleUpload(type, file);
@@ -157,13 +170,13 @@ export default function InternshipSeminarPage() {
                         reportingDeadline={reportingDeadline}
                         isReportingOverdue={isReportingOverdue}
                         isReportingApproaching={isReportingApproaching}
+                        generatedAssessmentUrl={generatedAssessmentUrl}
                     />
                 )}
                 {isLaporanAkhir && (
                     <FinalReportTab 
                         internship={internship}
                         isUploading={isUploading}
-                        onFileChange={onFileChange}
                         onFinalReportSubmit={handleFinalReportSubmit}
                     />
                 )}

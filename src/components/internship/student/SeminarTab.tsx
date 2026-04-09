@@ -10,8 +10,8 @@ import { Calendar, Clock, MapPin, User, Info, Edit2, AlertCircle, CheckCircle2, 
 import { Loading } from '@/components/ui/spinner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { registerSeminar, getUpcomingSeminars, updateSeminarProposal, getEligibleStudents } from '@/services/internship.service';
-import type { SeminarScheduleData, UpcomingSeminarItem } from '@/services/internship.service';
+import { registerSeminar, getUpcomingSeminars, updateSeminarProposal, getEligibleStudents } from '@/services/internship';
+import type { SeminarScheduleData, UpcomingSeminarItem } from '@/services/internship';
 import { getRoomsAPI } from '@/services/admin.service';
 import type { Room } from '@/services/admin.service';
 import FullCalendar from '@fullcalendar/react';
