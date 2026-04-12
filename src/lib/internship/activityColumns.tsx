@@ -1,4 +1,4 @@
-import type { InternshipLogbookItem } from "@/services/internship.service";
+import type { InternshipLogbookItem } from "@/services/internship";
 import type { Column } from "@/components/layout/CustomTable";
 import { Button } from "@/components/ui/button";
 import { Edit2 } from "lucide-react";

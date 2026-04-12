@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getInternshipTemplate, saveInternshipTemplate } from "@/services/internship.service";
+import { getInternshipTemplate, saveInternshipTemplate } from "@/services/internship";
 import { toast } from "sonner";
 import { Loader2, Info, ArrowLeft, Save, FileText, FileUp } from "lucide-react";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
@@ -19,7 +19,7 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 
-import type { InternshipTemplate } from "@/services/internship.service";
+import type { InternshipTemplate } from "@/services/internship";
 
 const InternshipTemplateEditor = () => {
     const { name } = useParams<{ name: string }>();
@@ -66,7 +66,7 @@ const InternshipTemplateEditor = () => {
     const fetchTemplate = async () => {
         try {
             setLoading(true);
-            const res = await getInternshipTemplate(name!).catch(err => {
+            const res = await getInternshipTemplate(name!).catch((err) => {
                 if (err.message?.includes("404") || err.message?.includes("not found")) {
                     return { data: null };
                 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getSekdepInternshipTemplate, saveSekdepInternshipTemplate } from "@/services/internship.service";
+import { getSekdepInternshipTemplate, saveSekdepInternshipTemplate } from "@/services/internship/sekdep.service";
 import { toast } from "sonner";
 import { Loader2, Info, ArrowLeft, Save, FileText, FileUp } from "lucide-react";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
@@ -19,7 +19,7 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 
-import type { InternshipTemplate } from "@/services/internship.service";
+import type { InternshipTemplate } from "@/services/internship/sekdep.service";
 
 const SupervisorTemplateEditor = () => {
     const templateName = "INTERNSHIP_SUPERVISOR_LETTER";

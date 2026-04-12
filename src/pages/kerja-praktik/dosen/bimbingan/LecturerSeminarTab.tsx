@@ -5,6 +5,7 @@ import {
     getLecturerGuidanceTimeline,
     approveSeminar,
     rejectSeminar,
+    completeSeminar,
     validateSeminarAudience,
     unvalidateSeminarAudience,
     bulkValidateSeminarAudience,
@@ -51,6 +52,7 @@ export default function LecturerSeminarTab() {
     const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
     const [isSavingNotes, setIsSavingNotes] = useState<string | null>(null);
     const [isEditingNotesMap, setIsEditingNotesMap] = useState<Record<string, boolean>>({});
+    const [isCompleting, setIsCompleting] = useState<string | null>(null);
 
     const handleStartEdit = (id: string, notes: string) => {
         setEditingNotes(prev => ({ ...prev, [id]: notes || "" }));
@@ -92,6 +94,20 @@ export default function LecturerSeminarTab() {
             toast.error(error.message || 'Gagal menolak seminar');
         } finally {
             setIsRejecting(null);
+        }
+    };
+
+    const handleCompleteSeminar = async (seminarId: string) => {
+        setIsCompleting(seminarId);
+        try {
+            await completeSeminar(seminarId);
+            toast.success('Seminar berhasil diselesaikan');
+            queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
+            queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
+        } catch (error: any) {
+            toast.error(error.message || 'Gagal menyelesaikan seminar');
+        } finally {
+            setIsCompleting(null);
         }
     };
 
@@ -298,6 +314,20 @@ export default function LecturerSeminarTab() {
                                         >
                                             {isApproving === seminar.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
                                             Setujui Jadwal
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {seminar.status === 'APPROVED' && (
+                                    <div className="flex justify-end gap-3 pt-6 mt-6 border-t">
+                                        <Button 
+                                            variant="default"
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6"
+                                            onClick={() => handleCompleteSeminar(seminar.id)}
+                                            disabled={!!isCompleting}
+                                        >
+                                            {isCompleting === seminar.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                                            Selesaikan Seminar
                                         </Button>
                                     </div>
                                 )}

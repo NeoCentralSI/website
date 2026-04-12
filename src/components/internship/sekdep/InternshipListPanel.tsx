@@ -123,6 +123,7 @@ export function InternshipListPanel() {
                                 <SelectItem value="ACCEPTED_BY_COMPANY">Menunggu Verifikasi</SelectItem>
                                 <SelectItem value="ONGOING">Ongoing</SelectItem>
                                 <SelectItem value="COMPLETED">Completed</SelectItem>
+                                <SelectItem value="FAILED">Failed</SelectItem>
                             </SelectContent>
                         </Select>
 

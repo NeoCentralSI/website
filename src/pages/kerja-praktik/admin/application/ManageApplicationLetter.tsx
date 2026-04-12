@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { getAdminProposalLetterDetail, updateAdminProposalLetter, type AdminApprovedProposalItem } from "@/services/internship.service";
+import { getAdminProposalLetterDetail, updateAdminProposalLetter, type AdminApprovedProposalItem } from "@/services/internship";
 import { toTitleCaseName } from "@/lib/text";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Users, MapPin, User, Settings2 } from "lucide-react";
@@ -178,7 +178,7 @@ const ManageApplicationLetter: React.FC = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {proposal.members.map((m, idx) => {
+                                {proposal.members.map((m: { name: string; nim: string; isCoordinator: boolean }, idx: number) => {
                                     const isCoordinator = m.nim === proposal.coordinatorNim;
                                     return (
                                         <div

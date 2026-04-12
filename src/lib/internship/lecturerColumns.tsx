@@ -1,4 +1,4 @@
-import type { LecturerSupervisedStudent } from "@/services/internship.service";
+import type { LecturerSupervisedStudent } from "@/services/internship";
 import type { Column } from "@/components/internship/InternshipTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

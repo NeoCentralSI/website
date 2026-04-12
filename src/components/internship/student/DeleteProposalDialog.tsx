@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { deleteProposal } from "@/services/internship.service";
+import { deleteProposal } from "@/services/internship";
 import { toast } from "sonner";
 
 interface DeleteProposalDialogProps {

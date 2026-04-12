@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getSekdepSupervisorLetterDetail, updateSekdepSupervisorLetter, type SekdepSupervisorLetterDetail } from "@/services/internship.service";
+import { getSekdepSupervisorLetterDetail, updateSekdepSupervisorLetter, type SekdepSupervisorLetterDetail } from "@/services/internship";
 import { toTitleCaseName } from "@/lib/text";
 import { DatePicker } from "@/components/ui/date-picker";
 import { API_CONFIG } from "@/config/api";
@@ -85,7 +85,7 @@ export default function LecturerWorkloadManageLetter() {
             });
 
             // Try to prefill dates if available on any student
-            const studentWithDates = res.data.assignedStudents.find(s => s.documents.supLetterStartDate);
+            const studentWithDates = res.data.assignedStudents.find((s) => s.documents.supLetterStartDate);
             if (studentWithDates) {
                 setValue('startDate', formatDate(studentWithDates.documents.supLetterStartDate));
                 setValue('endDate', formatDate(studentWithDates.documents.supLetterEndDate));
@@ -121,7 +121,7 @@ export default function LecturerWorkloadManageLetter() {
     const handleSelectAll = (checked: boolean) => {
         if (!detail) return;
         if (checked) {
-            setValue("internshipIds", detail.assignedStudents.map(s => s.internshipId));
+            setValue("internshipIds", detail.assignedStudents.map((s) => s.internshipId));
         } else {
             setValue("internshipIds", []);
         }

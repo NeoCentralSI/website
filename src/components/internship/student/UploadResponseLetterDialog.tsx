@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { uploadInternshipDocument, submitCompanyResponse, type InternshipProposalItem } from "@/services/internship.service";
+import { uploadInternshipDocument, submitCompanyResponse, type InternshipProposalItem } from "@/services/internship";
 import { FileText, Upload, AlertCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,7 +25,7 @@ export default function UploadResponseLetterDialog({ open, onOpenChange, proposa
     useEffect(() => {
         if (proposal?.members) {
             // Default to all members accepted
-            const allMemberIds = proposal.members.map(m => m.id);
+            const allMemberIds = proposal.members.map((m) => m.id);
             setAcceptedMemberIds(allMemberIds);
         }
     }, [proposal]);

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getInternshipTemplate, saveInternshipTemplate } from "@/services/internship.service";
+import { getInternshipTemplate, saveInternshipTemplate } from "@/services/internship";
 import { toast } from "sonner";
 import { Loader2, Info, ArrowLeft, Save, FileText, FileUp } from "lucide-react";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
@@ -19,7 +19,7 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 
-import type { InternshipTemplate } from "@/services/internship.service";
+import type { InternshipTemplate } from "@/services/internship";
 
 const AssignmentTemplateEditor = () => {
     const templateName = "INTERNSHIP_ASSIGNMENT_LETTER";
@@ -64,7 +64,7 @@ const AssignmentTemplateEditor = () => {
     const fetchTemplate = async () => {
         try {
             setLoading(true);
-            const res = await getInternshipTemplate(templateName).catch(err => {
+            const res = await getInternshipTemplate(templateName).catch((err) => {
                 // If 404, it means no template has been uploaded yet
                 if (err.message?.includes("404") || err.message?.includes("not found")) {
                     return { data: null };

@@ -9,8 +9,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/hooks/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getCompanies, getEligibleStudents, uploadInternshipDocument, submitProposal, updateProposal, type InternshipProposalItem } from "@/services/internship.service";
-import { getActiveAcademicYearAPI } from "@/services/admin.service";
+import { getCompanies, getEligibleStudents, uploadInternshipDocument, submitProposal, updateProposal, type InternshipProposalItem, type CompanyItem, type StudentItem } from "@/services/internship";
+import { getActiveAcademicYearAPI, type AcademicYear } from "@/services/admin.service";
 import { X, Search, Plus, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -34,19 +34,19 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
     const [memberSearch, setMemberSearch] = useState("");
 
     // Queries
-    const companiesQuery = useQuery({
+    const companiesQuery = useQuery<{ success: boolean; data: CompanyItem[] }>({
         queryKey: ['internship-companies'],
         queryFn: getCompanies,
         enabled: open,
     });
 
-    const studentsQuery = useQuery({
+    const studentsQuery = useQuery<{ success: boolean; data: StudentItem[] }>({
         queryKey: ['eligible-students'],
         queryFn: getEligibleStudents,
         enabled: open,
     });
 
-    const activeAcademicYearQuery = useQuery({
+    const activeAcademicYearQuery = useQuery<{ academicYear: AcademicYear | null }>({
         queryKey: ['active-academic-year'],
         queryFn: getActiveAcademicYearAPI,
         enabled: open,
@@ -65,13 +65,13 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
     useEffect(() => {
         if (proposalToEdit) {
             setSelectedCompanyId(proposalToEdit.targetCompanyId || "");
-            setSelectedMemberIds(proposalToEdit.members?.filter(m => m.id !== user?.id).map(m => m.id) || []);
+            setSelectedMemberIds(proposalToEdit.members?.filter((m) => m.id !== user?.id).map((m) => m.id) || []);
         }
     }, [proposalToEdit, user?.id]);
 
     // Mapped options for ComboBox
     const companyOptions = useMemo(() => {
-        const options = (companiesQuery.data?.data || []).map(c => {
+        const options = (companiesQuery.data?.data || []).map((c) => {
             const isBlacklisted = (c.status || '').toLowerCase() === 'blacklist';
             return {
                 label: c.companyName,
@@ -93,7 +93,7 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
     // Member search logic
     const availableStudents = useMemo(() => {
         if (!studentsQuery.data?.data) return [];
-        return studentsQuery.data.data.filter(s =>
+        return studentsQuery.data.data.filter((s) =>
             s.id !== user?.id && // Don't show current user
             !selectedMemberIds.includes(s.id) && // Don't show already selected
             (s.fullName.toLowerCase().includes(memberSearch.toLowerCase()) ||
@@ -103,7 +103,7 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
 
     const selectedMembers = useMemo(() => {
         if (!studentsQuery.data?.data) return [];
-        return studentsQuery.data.data.filter(s => selectedMemberIds.includes(s.id));
+        return studentsQuery.data.data.filter((s) => selectedMemberIds.includes(s.id));
     }, [studentsQuery.data, selectedMemberIds]);
 
     // Mutations
@@ -270,7 +270,7 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
                                     <div className="absolute top-full left-0 right-0 mt-1 z-20 border rounded-md shadow-lg bg-background overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                                         {availableStudents.length > 0 ? (
                                             <div className="divide-y max-h-60 overflow-y-auto">
-                                                {availableStudents.slice(0, 3).map(student => (
+                                                {availableStudents.slice(0, 3).map((student) => (
                                                     <div key={student.id}
                                                         className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer transition-colors"
                                                         onClick={() => {
@@ -306,7 +306,7 @@ export default function RegisterInternshipDialog({ open, onOpenChange, onSubmitt
 
                                 {selectedMembers.length > 0 ? (
                                     <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
-                                        {selectedMembers.map(member => (
+                                        {selectedMembers.map((member) => (
                                             <div key={member.id} className="flex items-center justify-between bg-primary/5 border border-primary/10 rounded-lg p-2 pl-3 group hover:border-primary/30 transition-colors">
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-semibold">{member.fullName}</span>

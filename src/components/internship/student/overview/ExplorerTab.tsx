@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getOverviewStats, getOverviewCompanies, getOverviewReports } from "@/services/internship.service";
+import { getOverviewStats, getOverviewCompanies, getOverviewReports } from "@/services/internship/public.service";
 import { Loading } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Building2, Users, FileText, Clock } from "lucide-react";

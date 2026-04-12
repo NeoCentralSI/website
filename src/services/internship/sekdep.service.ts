@@ -15,6 +15,21 @@ import type {
     InternshipAssessmentRubric
 } from "./types";
 
+export type { 
+    SekdepRegistrationItem, 
+    InternshipProposalDetail, 
+    CompanyStatsItem, 
+    InternshipListItem,
+    SekdepInternshipDetail,
+    LecturerWorkloadItem,
+    SekdepSupervisorLetterDetail,
+    InternshipTemplate,
+    GuidanceQuestion,
+    GuidanceCriteria,
+    InternshipCpmk,
+    InternshipAssessmentRubric
+};
+
 export const getSekdepProposals = async (academicYearId?: string): Promise<{ success: boolean; data: SekdepRegistrationItem[] }> => {
     let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.PROPOSALS);
     if (academicYearId && academicYearId !== 'all') {

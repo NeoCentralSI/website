@@ -144,6 +144,16 @@ export const bulkApproveSeminars = async (ids: string[]): Promise<{ success: boo
     return res.json();
 };
 
+export const completeSeminar = async (seminarId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${seminarId}/complete`);
+    const res = await apiRequest(url, { method: 'POST' });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyelesaikan seminar" }));
+        throw new Error(errorData.message || "Gagal menyelesaikan seminar");
+    }
+    return res.json();
+};
+
 export const updateSeminarNotes = async (id: string, notes: string): Promise<{ success: boolean; message: string }> => {
     const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${id}/notes`);
     const res = await apiRequest(url, {

@@ -2,7 +2,7 @@ import { useOutletContext } from "react-router-dom";
 import { useEffect } from "react";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { useQuery } from "@tanstack/react-query";
-import { getStudentLogbooks } from "@/services/internship.service";
+import { getStudentLogbooks } from "@/services/internship/student.service";
 import { Loading } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusTab } from "@/components/internship/student/overview/StatusTab";
