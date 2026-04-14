@@ -1,19 +1,22 @@
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Spinner } from '@/components/ui/spinner';
-import { MicrosoftLoginButton } from '@/components/auth/MicrosoftLoginButton';
-import { useLoginForm } from '@/hooks/auth';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Spinner } from "@/components/ui/spinner";
+import { MicrosoftLoginButton } from "@/components/auth/MicrosoftLoginButton";
+import { useLoginForm } from "@/hooks/auth";
 
 interface LoginFormProps {
   onForgotPassword: () => void;
   onActivateAccount: () => void;
 }
 
-export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProps) {
+export function LoginForm({
+  onForgotPassword,
+  onActivateAccount,
+}: LoginFormProps) {
   const {
     email,
     setEmail,
@@ -33,9 +36,7 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
     <div className="mx-auto grid w-[380px] gap-8">
       <div className="grid gap-3 text-center">
         <h1 className="text-4xl font-bold text-gray-900">Selamat Datang</h1>
-        <p className="text-gray-600">
-          Masuk ke akun Neo Central Anda
-        </p>
+        <p className="text-gray-600">Masuk ke akun NeoCentral Anda</p>
       </div>
 
       <form onSubmit={handleSubmit} className="grid gap-5">
@@ -53,7 +54,10 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
               Silakan pilih salah satu opsi:
             </p>
             <ul className="list-disc list-inside space-y-1 text-blue-700">
-              <li>Gunakan tombol <strong>"Masuk dengan Microsoft"</strong> di bawah</li>
+              <li>
+                Gunakan tombol <strong>"Masuk dengan Microsoft"</strong> di
+                bawah
+              </li>
               <li>
                 <button
                   type="button"
@@ -61,7 +65,7 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
                   className="underline font-medium hover:text-blue-900"
                 >
                   Atur password baru
-                </button>{' '}
+                </button>{" "}
                 melalui email untuk bisa login dengan form
               </li>
             </ul>
@@ -69,7 +73,9 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
         )}
 
         <div className="grid gap-2">
-          <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
+          <Label htmlFor="email" className="text-gray-700 font-medium">
+            Email
+          </Label>
           <Input
             id="email"
             type="email"
@@ -83,7 +89,9 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
 
         <div className="grid gap-2">
           <div className="flex items-center">
-            <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
+            <Label htmlFor="password" className="text-gray-700 font-medium">
+              Password
+            </Label>
             <button
               type="button"
               onClick={onForgotPassword}
@@ -95,7 +103,7 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
           <div className="relative">
             <Input
               id="password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-12 rounded-xl border-gray-200 focus:border-[#F7931E] focus:ring-[#F7931E] pr-12"
@@ -106,7 +114,11 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
             </button>
           </div>
         </div>
@@ -118,7 +130,10 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
             onCheckedChange={(checked) => setRememberMe(checked === true)}
             className="border-gray-300 data-[state=checked]:bg-[#F7931E] data-[state=checked]:border-[#F7931E]"
           />
-          <Label htmlFor="remember" className="text-sm font-normal text-gray-600">
+          <Label
+            htmlFor="remember"
+            className="text-sm font-normal text-gray-600"
+          >
             Ingat saya
           </Label>
         </div>
@@ -134,7 +149,7 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
               Memproses...
             </>
           ) : (
-            'Masuk'
+            "Masuk"
           )}
         </Button>
 
@@ -143,9 +158,7 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
             <span className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-4 text-gray-500">
-              Atau
-            </span>
+            <span className="bg-white px-4 text-gray-500">Atau</span>
           </div>
         </div>
 
@@ -153,7 +166,7 @@ export function LoginForm({ onForgotPassword, onActivateAccount }: LoginFormProp
       </form>
 
       <div className="text-center text-sm text-gray-600">
-        Belum aktivasi akun?{' '}
+        Belum aktivasi akun?{" "}
         <button
           type="button"
           onClick={onActivateAccount}

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
-import { Download, FileText } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Download, Eye, FileText } from 'lucide-react';
 import * as sopService from '@/services/sop.service';
 import type { SopFile, SopType } from '@/types/sop.types';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { FadeIn, StaggerContainer, StaggerItem } from './FadeIn';
 
 type SopMeta = {
   key: SopType;
@@ -40,11 +40,10 @@ function formatSize(size?: number) {
 }
 
 export function SOPSection() {
-  const containerRef = useRef(null);
   const [data, setData] = useState<SopFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [previews, setPreviews] = useState<Partial<Record<SopType, { thumb?: string; pages?: number }>>>({});
+  const [pageInfo, setPageInfo] = useState<Partial<Record<SopType, number>>>({});
 
   useEffect(() => {
     GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -93,159 +92,115 @@ export function SOPSection() {
     document.body.removeChild(link);
   }, []);
 
-  const generatePreview = useCallback(async (file: SopFile) => {
+  const generatePageInfo = useCallback(async (file: SopFile) => {
     try {
       const loadingTask = getDocument(file.url);
       const pdf = await loadingTask.promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 1 });
-      // target width ~600px for landing visual
-      const scale = 600 / viewport.width;
-      const scaledViewport = page.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      canvas.width = scaledViewport.width;
-      canvas.height = scaledViewport.height;
-      await page.render({ canvas, canvasContext: ctx, viewport: scaledViewport }).promise;
-      const thumb = canvas.toDataURL('image/png');
-      setPreviews((prev) => ({
+      setPageInfo((prev) => ({
         ...prev,
-        [file.type]: { thumb, pages: pdf.numPages },
+        [file.type]: pdf.numPages,
       }));
     } catch (err) {
-      console.error('Failed generating SOP preview', err);
+      console.error('Failed generating SOP page metadata', err);
     }
   }, []);
 
   useEffect(() => {
     data.forEach((file) => {
-      const existing = previews[file.type];
-      if (!existing?.thumb) {
-        generatePreview(file);
+      const existingPages = pageInfo[file.type];
+      if (!existingPages) {
+        generatePageInfo(file);
       }
     });
-  }, [data, generatePreview, previews]);
+  }, [data, generatePageInfo, pageInfo]);
 
   return (
-    <section id="sop" ref={containerRef} className="py-32 bg-white relative overflow-hidden">
-      <div className="container mx-auto px-6 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mb-24"
-        >
-          <h2 className="text-6xl md:text-7xl lg:text-8xl font-black text-black mb-4 leading-none">
-            PANDUAN
+    <section id="sop" className="bg-white py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <FadeIn className="mb-12 sm:mb-16">
+          <h2 className="font-display text-3xl font-bold text-gray-900 sm:text-4xl">
+            Panduan <span className="text-[#F7931E]">SOP</span>
           </h2>
-          <div className="space-y-2">
-            <p className="text-2xl text-gray-600 max-w-2xl font-semibold">
+          <div className="mt-3 space-y-1">
+            <p className="max-w-2xl font-body text-base leading-relaxed text-gray-600">
               Unduh dokumen panduan untuk Kerja Praktek dan Tugas Akhir.
             </p>
-            <p className="text-base text-gray-500 max-w-2xl">
+            <p className="max-w-2xl font-body text-sm text-gray-500">
               Catatan: Standar operasional yang lebih lengkap tersedia di Teams Departemen.
             </p>
           </div>
-        </motion.div>
+        </FadeIn>
 
-        <div className="grid md:grid-cols-2 gap-12">
-          {sopDocuments.map((doc, index) => {
-            const sopFile = sopMap.get(doc.key);
-            const preview = previews[doc.key];
-            return (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                className="relative group"
-              >
-                {/* PDF Preview */}
-                <div
-                  className="bg-gray-100 aspect-3/4 mb-6 flex items-center justify-center relative overflow-hidden rounded-2xl cursor-pointer"
-                  onClick={() => openPdf(sopFile?.url)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      openPdf(sopFile?.url);
-                    }
-                  }}
-                >
-                  {preview?.thumb ? (
-                    <img
-                      src={preview.thumb}
-                      alt={doc.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <>
-                      <div className="absolute inset-0 bg-linear-to-br from-gray-200 to-gray-100"></div>
-                      <FileText className="w-32 h-32 text-gray-400 relative z-10" strokeWidth={1.5} />
-                    </>
-                  )}
-                  <div className="absolute inset-0 bg-[#F7931E] opacity-0 group-hover:opacity-90 transition-opacity flex items-center justify-center rounded-2xl">
-                    <div className="text-white text-center">
-                      <FileText className="w-20 h-20 mx-auto mb-4" strokeWidth={2} />
-                      <p className="text-xl font-bold">PREVIEW PDF</p>
+        {loading ? (
+          <div className="grid gap-6 md:grid-cols-2">
+            {[1, 2].map((item) => (
+              <div key={item} className="animate-pulse rounded-xl border border-gray-200 bg-white p-6">
+                <div className="mb-4 h-12 w-12 rounded-lg bg-gray-200" />
+                <div className="mb-3 h-5 w-2/3 rounded bg-gray-200" />
+                <div className="mb-2 h-4 w-full rounded bg-gray-200" />
+                <div className="mb-5 h-4 w-5/6 rounded bg-gray-200" />
+                <div className="h-10 w-full rounded-lg bg-gray-200" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <StaggerContainer className="grid gap-6 md:grid-cols-2">
+            {sopDocuments.map((doc) => {
+              const sopFile = sopMap.get(doc.key);
+              const pages = pageInfo[doc.key];
+              return (
+                <StaggerItem key={doc.key}>
+                  <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 transition-shadow duration-300 hover:shadow-md">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[#FFF1E2] text-[#F7931E]">
+                          <FileText className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <h3 className="font-display text-lg font-semibold text-gray-900">{doc.title}</h3>
+                          <p className="mt-1 font-body text-sm text-gray-600">{doc.description}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1 font-body text-xs font-medium text-gray-600">
+                        PDF
+                      </span>
                     </div>
+
+                    <div className="flex flex-wrap items-center gap-2 font-body text-xs text-gray-500">
+                      <span className="rounded-md bg-gray-50 px-2 py-1">{sopFile ? formatSize(sopFile.size) : '—'}</span>
+                      <span className="rounded-md bg-gray-50 px-2 py-1">
+                        {pages ? `${pages} halaman` : 'Halaman tidak tersedia'}
+                      </span>
+                      <span className="rounded-md bg-gray-50 px-2 py-1">{sopFile?.fileName ?? 'File belum tersedia'}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openPdf(sopFile?.url)}
+                      disabled={!sopFile}
+                      className="inline-flex items-center gap-2 font-body text-sm font-medium text-[#F7931E] transition-colors duration-200 hover:text-[#E08319] disabled:cursor-not-allowed disabled:text-gray-400"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Lihat Preview
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={!sopFile}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#F7931E] px-4 py-2.5 font-body text-sm font-medium text-white transition-colors duration-200 hover:bg-[#E08319] disabled:cursor-not-allowed disabled:bg-[#F2C189]"
+                      onClick={() => downloadPdf(sopFile?.url, sopFile?.fileName)}
+                    >
+                      <Download className="h-4 w-4" />
+                      Unduh Panduan
+                    </button>
                   </div>
-                </div>
+                </StaggerItem>
+              );
+            })}
+          </StaggerContainer>
+        )}
 
-                {/* Document Info */}
-                <div className="space-y-4">
-                  <h3 className="text-3xl font-black text-black">
-                    {doc.title}
-                  </h3>
-
-                  <p className="text-lg text-gray-600 leading-relaxed">
-                    {doc.description}
-                  </p>
-
-                  <div className="flex items-center gap-6 text-sm font-bold text-gray-500">
-                    <span>{sopFile ? formatSize(sopFile.size) : '—'}</span>
-                    <span>-</span>
-                    <span>{preview?.pages ? `${preview.pages} halaman` : '—'}</span>
-                    <span>-</span>
-                    <span>PDF</span>
-                  </div>
-
-                  <button
-                    disabled={!sopFile || loading}
-                    className="bg-[#F7931E] text-white px-8 py-4 rounded-2xl hover:bg-[#E08319] transition-all flex items-center gap-3 group font-bold text-lg w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => downloadPdf(sopFile?.url, sopFile?.fileName)}
-                  >
-                    {loading && <span className="text-sm">Memuat...</span>}
-                    <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
-                    UNDUH PANDUAN
-                  </button>
-                  {error && (
-                    <p className="text-sm text-red-600">{error}</p>
-                  )}
-                </div>
-
-                {/* Decorative Line */}
-                <motion.div
-                  className="absolute -bottom-6 left-0 h-1 bg-[#F7931E] rounded-full"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: '40%' }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: index * 0.2 + 0.3 }}
-                />
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Large Text Background */}
-      <div className="absolute bottom-20 right-0 text-[15rem] font-black text-gray-50 leading-none pointer-events-none whitespace-nowrap">
-        SOP
+        {error && <p className="mt-4 font-body text-sm text-red-600">{error}</p>}
       </div>
     </section>
   );

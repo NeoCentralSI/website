@@ -1,4 +1,5 @@
 import {
+  LandingNavbar,
   HeroSection,
   MarqueeSection,
   AboutSection,
@@ -10,6 +11,7 @@ import {
 export default function LandingPage() {
   return (
     <div className="bg-white">
+      <LandingNavbar />
       <HeroSection />
       <MarqueeSection />
       <AboutSection />

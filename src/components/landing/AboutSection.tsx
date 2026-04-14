@@ -1,71 +1,81 @@
-import { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { useInView } from 'motion/react';
+import { FadeIn, StaggerContainer, StaggerItem } from './FadeIn';
 
-export function AboutSection() {
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"]
-  });
+interface CountUpStatProps {
+  value: number;
+  suffix?: string;
+  label: string;
+}
 
-  const imageY = useTransform(scrollYProgress, [0, 1], ["10%", "-10%"]);
+function CountUpStat({ value, suffix = '', label }: CountUpStatProps) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const inView = useInView(ref, { once: true, margin: '-50px' });
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+
+    let frameId = 0;
+    const duration = 900;
+    const startTime = performance.now();
+
+    const update = (time: number) => {
+      const progress = Math.min((time - startTime) / duration, 1);
+      setCount(Math.round(value * progress));
+      if (progress < 1) {
+        frameId = requestAnimationFrame(update);
+      }
+    };
+
+    frameId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(frameId);
+  }, [inView, value]);
 
   return (
-    <section id="about" ref={containerRef} className="py-32 bg-white overflow-hidden">
-      <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-2 gap-20 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="space-y-10"
-          >
-            <div>
-              <h2 className="text-6xl md:text-7xl lg:text-8xl font-black text-black mb-8 leading-none">
-                TENTANG<br/>
-                <span className="text-[#F7931E]">KAMI</span>
+    <div ref={ref}>
+      <p className="font-display text-3xl font-bold text-[#F7931E]">
+        {count}
+        {suffix}
+      </p>
+      <p className="mt-1 font-body text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
+    </div>
+  );
+}
+
+export function AboutSection() {
+  return (
+    <section id="about" className="bg-white py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+          <FadeIn>
+            <div className="space-y-6">
+              <h2 className="font-display text-3xl font-bold text-gray-900 sm:text-4xl">
+                Tentang <span className="text-[#F7931E]">Kami</span>
               </h2>
-              <div className="w-32 h-2 bg-[#F7931E] rounded-full mb-8"></div>
+              <p className="max-w-lg font-body text-base leading-relaxed text-gray-600">
+                NeoCentral membantu civitas akademika memonitor proses Kerja Praktek dan Tugas Akhir secara
+                terstruktur, transparan, dan mudah ditindaklanjuti oleh mahasiswa, dosen, serta pengelola.
+              </p>
+              <StaggerContainer className="flex flex-wrap gap-8 pt-2">
+                <StaggerItem>
+                  <CountUpStat value={500} suffix="+" label="Mahasiswa aktif" />
+                </StaggerItem>
+                <StaggerItem>
+                  <CountUpStat value={98} suffix="%" label="Tingkat kepuasan" />
+                </StaggerItem>
+              </StaggerContainer>
             </div>
-            
-            <p className="text-2xl text-black leading-relaxed font-bold">
-              Platform SuperApp untuk Departemen Sistem Informasi Universitas Andalas
-            </p>
-            
-            <p className="text-xl text-gray-600 leading-relaxed">
-              Mengintegrasikan semua kebutuhan administratif akademik dalam satu ekosistem digital yang modern dan efisien.
-            </p>
+          </FadeIn>
 
-            <div className="grid grid-cols-2 gap-12 pt-8">
-              <div>
-                <div className="text-6xl font-black text-[#F7931E] mb-2">500+</div>
-                <div className="text-lg font-bold text-black uppercase">Mahasiswa</div>
-              </div>
-              <div>
-                <div className="text-6xl font-black text-[#F7931E] mb-2">98%</div>
-                <div className="text-lg font-bold text-black uppercase">Kepuasan</div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            style={{ y: imageY }}
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="relative"
-          >
-            <img 
-              src="https://images.unsplash.com/photo-1751551525897-d34215e47785?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9ncmFtbWluZyUyMHdvcmtzcGFjZSUyMGNvbXB1dGVyfGVufDF8fHx8MTc2NjMyMDk2N3ww&ixlib=rb-4.1.0&q=80&w=1080"
-              alt="Programming Workspace"
-              className="w-full h-auto rounded-3xl"
+          <FadeIn>
+            <img
+              src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80"
+              alt="Mahasiswa belajar bersama di lingkungan kampus"
+              className="aspect-[4/3] w-full rounded-xl object-cover shadow-lg"
+              loading="lazy"
             />
-            
-            {/* Decorative Orange Block */}
-            <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-[#F7931E] rounded-3xl -z-10"></div>
-          </motion.div>
+          </FadeIn>
         </div>
       </div>
     </section>
