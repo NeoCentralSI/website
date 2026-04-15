@@ -10,17 +10,81 @@
     <meta name="keywords" content="tugas akhir, kerja praktek, sistem informasi, universitas andalas, monitoring akademik" />
     <meta name="author" content="Departemen Sistem Informasi, Universitas Andalas" />
     <meta name="theme-color" content="#F5A623" />
-    <link rel="canonical" href="https://neocentral.unand.ac.id/" />
+    <link rel="canonical" href="https://neocentral.dev/" />
 
     <!-- Open Graph (fallback) -->
     <meta property="og:title" content="NeoCentral — Platform Digital Kerja Praktek & Tugas Akhir" />
     <meta property="og:description" content="Platform Digital untuk Kerja Praktek & Tugas Akhir Departemen Sistem Informasi Universitas Andalas." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://neocentral.dev/" />
     <meta property="og:locale" content="id_ID" />
     <meta property="og:site_name" content="NeoCentral" />
+    <meta property="og:image" content="https://neocentral.dev/og-image.svg" />
+
+    <!-- Twitter Card (fallback) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NeoCentral — Platform Digital Kerja Praktek & Tugas Akhir" />
+    <meta name="twitter:description" content="Platform Digital untuk Kerja Praktek & Tugas Akhir Departemen Sistem Informasi Universitas Andalas." />
+    <meta name="twitter:image" content="https://neocentral.dev/og-image.svg" />
 
     <!-- Sitemap link for crawlers -->
     <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "NeoCentral",
+      "url": "https://neocentral.dev",
+      "logo": "https://neocentral.dev/logo.svg",
+      "description": "Platform Digital untuk Kerja Praktek & Tugas Akhir Departemen Sistem Informasi Universitas Andalas",
+      "foundingDate": "2026",
+      "parentOrganization": {
+        "@type": "CollegeOrUniversity",
+        "name": "Universitas Andalas",
+        "url": "https://www.unand.ac.id"
+      },
+      "department": {
+        "@type": "CollegeOrUniversity",
+        "name": "Departemen Sistem Informasi",
+        "url": "https://sisteminformasi.unand.ac.id"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "NeoCentral",
+      "url": "https://neocentral.dev",
+      "description": "Platform Digital untuk Kerja Praktek & Tugas Akhir",
+      "inLanguage": "id",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://neocentral.dev/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "NeoCentral",
+      "url": "https://neocentral.dev",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web",
+      "description": "Platform digital untuk mengelola kerja praktek, tugas akhir, bimbingan, seminar, dan sidang secara terstruktur dan transparan",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "IDR"
+      }
+    }
+    </script>
 
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/index.global.min.css" rel="stylesheet" />

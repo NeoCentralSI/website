@@ -1,5 +1,5 @@
 # NeoCentral - robots.txt
-# https://neocentral.unand.ac.id
+# https://neocentral.dev
 
 User-agent: *
 Allow: /
@@ -36,4 +36,4 @@ Disallow: /pengaturan
 Disallow: /auth/microsoft/callback
 
 # Sitemap
-Sitemap: https://neocentral.unand.ac.id/sitemap.xml
+Sitemap: https://neocentral.dev/sitemap.xml

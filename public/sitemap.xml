@@ -14,7 +14,7 @@
 
   <!-- Landing / Beranda (primary page) -->
   <url>
-    <loc>https://neocentral.unand.ac.id/</loc>
+    <loc>https://neocentral.dev/</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -22,7 +22,7 @@
 
   <!-- Login page -->
   <url>
-    <loc>https://neocentral.unand.ac.id/login</loc>
+    <loc>https://neocentral.dev/login</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -30,7 +30,7 @@
 
   <!-- Reset Password -->
   <url>
-    <loc>https://neocentral.unand.ac.id/reset-password</loc>
+    <loc>https://neocentral.dev/reset-password</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
@@ -38,21 +38,21 @@
 
   <!-- Auth pages -->
   <url>
-    <loc>https://neocentral.unand.ac.id/auth/activate/email-sent</loc>
+    <loc>https://neocentral.dev/auth/activate/email-sent</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
 
   <url>
-    <loc>https://neocentral.unand.ac.id/auth/activate/success</loc>
+    <loc>https://neocentral.dev/auth/activate/success</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
 
   <url>
-    <loc>https://neocentral.unand.ac.id/auth/inactive</loc>
+    <loc>https://neocentral.dev/auth/inactive</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
@@ -60,14 +60,14 @@
 
   <!-- Public verification pages -->
   <url>
-    <loc>https://neocentral.unand.ac.id/verify/internship-letter</loc>
+    <loc>https://neocentral.dev/verify/internship-letter</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
 
   <url>
-    <loc>https://neocentral.unand.ac.id/field-assessment</loc>
+    <loc>https://neocentral.dev/field-assessment</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
@@ -75,7 +75,7 @@
 
   <!-- 404 page (low priority, but useful if linked) -->
   <url>
-    <loc>https://neocentral.unand.ac.id/not-found</loc>
+    <loc>https://neocentral.dev/not-found</loc>
     <lastmod>2026-04-15</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.1</priority>

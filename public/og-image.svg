@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  
+  <!-- Decorative elements -->
+  <circle cx="1050" cy="100" r="200" fill="#F7931E" opacity="0.1"/>
+  <circle cx="150" cy="550" r="150" fill="#F7931E" opacity="0.08"/>
+  
+  <!-- Main content area -->
+  <g transform="translate(600, 315)">
+    <!-- Logo placeholder (simplified) -->
+    <circle cx="0" cy="-80" r="50" fill="#F7931E" opacity="0.9"/>
+    <text x="0" y="-65" font-family="Arial, sans-serif" font-size="36" fill="white" text-anchor="middle" font-weight="bold">NC</text>
+    
+    <!-- Title -->
+    <text x="0" y="20" font-family="Arial, sans-serif" font-size="56" fill="white" text-anchor="middle" font-weight="bold">NeoCentral</text>
+    
+    <!-- Subtitle -->
+    <text x="0" y="80" font-family="Arial, sans-serif" font-size="28" fill="#e0e0e0" text-anchor="middle">Platform Digital untuk Kerja Praktek &amp; Tugas Akhir</text>
+    
+    <!-- Department -->
+    <text x="0" y="125" font-family="Arial, sans-serif" font-size="22" fill="#F7931E" text-anchor="middle">Departemen Sistem Informasi — Universitas Andalas</text>
+  </g>
+  
+  <!-- Bottom accent line -->
+  <rect x="0" y="620" width="1200" height="10" fill="#F7931E"/>
+</svg>

@@ -11,11 +11,11 @@ export type SeoProps = {
   noindex?: boolean;
 };
 
-const SITE_URL = 'https://neocentral.unand.ac.id';
+const SITE_URL = 'https://neocentral.dev';
 const DEFAULT_TITLE = 'NeoCentral — Platform Digital Kerja Praktek & Tugas Akhir';
 const DEFAULT_DESCRIPTION =
   'Platform Digital untuk Kerja Praktek & Tugas Akhir Departemen Sistem Informasi Universitas Andalas. Kelola bimbingan, seminar, sidang, dan monitoring progress secara terstruktur dan transparan.';
-const DEFAULT_OG_IMAGE = '/og-image.png'; // add this to public/ when available
+const DEFAULT_OG_IMAGE = '/og-image.svg'; // TODO: Replace with /og-image.png when available
 const DEFAULT_TWITTER_CARD = 'summary_large_image' as const;
 
 export function Seo({

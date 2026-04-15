@@ -89,7 +89,7 @@ export default function SitemapPage() {
       <Seo
         title="Peta Situs"
         description="Peta situs lengkap NeoCentral — Platform Digital untuk Kerja Praktek & Tugas Akhir Departemen Sistem Informasi Universitas Andalas."
-        canonicalUrl="https://neocentral.unand.ac.id/sitemap"
+        canonicalUrl="https://neocentral.dev/sitemap"
         noindex
       />
       <LandingNavbar />
