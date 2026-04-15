@@ -17,7 +17,7 @@ export function LandingNavbar() {
 
   useEffect(() => {
     const onScroll = () => {
-      setIsScrolled(window.scrollY > 24);
+      setIsScrolled(window.scrollY > 80);
     };
 
     onScroll();
@@ -44,7 +44,7 @@ export function LandingNavbar() {
             <a
               key={link.href}
               href={link.href}
-              className={`font-body text-sm font-medium transition-colors hover:text-[#F7931E] ${navTextClass}`}
+              className={`font-body text-sm font-medium transition-colors hover:text-[#F5A623] ${navTextClass}`}
             >
               {link.label}
             </a>
@@ -54,7 +54,7 @@ export function LandingNavbar() {
         <div className="hidden items-center lg:flex">
           <Link
             to="/login"
-            className="rounded-lg bg-[#F7931E] px-5 py-2.5 font-body text-sm font-medium text-white transition-colors hover:bg-[#E08319]"
+            className="rounded-lg bg-[#F5A623] px-5 py-2.5 font-body text-sm font-medium text-white transition-colors hover:bg-[#e0951a]"
           >
             MASUK
           </Link>
@@ -85,7 +85,7 @@ export function LandingNavbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
-                  className="rounded-md px-3 py-2 font-body text-sm font-medium text-gray-700 transition-colors hover:bg-[#FFF8F0] hover:text-[#F7931E]"
+                  className="rounded-md px-3 py-2 font-body text-sm font-medium text-gray-700 transition-colors hover:bg-[#FFF8F0] hover:text-[#F5A623]"
                 >
                   {link.label}
                 </a>
@@ -93,7 +93,7 @@ export function LandingNavbar() {
               <Link
                 to="/login"
                 onClick={() => setIsOpen(false)}
-                className="mt-2 rounded-lg bg-[#F7931E] px-4 py-2.5 text-center font-body text-sm font-medium text-white transition-colors hover:bg-[#E08319]"
+                className="mt-2 rounded-lg bg-[#F5A623] px-4 py-2.5 text-center font-body text-sm font-medium text-white transition-colors hover:bg-[#e0951a]"
               >
                 MASUK
               </Link>

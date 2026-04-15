@@ -3,65 +3,74 @@ import { motion } from 'motion/react';
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-white pt-28 sm:pt-32">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-black/55 to-transparent" />
-      <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8 lg:pb-24">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
-          <div className="space-y-6 lg:space-y-7">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="font-display font-extrabold leading-[1.05] tracking-tight text-gray-900"
-              style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)' }}
-            >
-              NEO
-              <br />
-              <span className="text-[#F7931E]">CENTRAL</span>
-            </motion.h1>
+    <section className="relative flex min-h-screen items-end overflow-hidden">
+      {/* Full-bleed background image */}
+      <div className="absolute inset-0">
+        <img
+          src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1920&q=80"
+          alt=""
+          className="h-full w-full object-cover"
+          aria-hidden="true"
+        />
+        {/* Global dark overlay — subtle */}
+        <div className="absolute inset-0 bg-black/30" />
+      </div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
-              className="max-w-md font-body text-base leading-relaxed text-gray-600 sm:text-lg"
-            >
-              Platform Digital untuk Kerja Praktek &amp; Tugas Akhir Departemen Sistem Informasi Universitas Andalas.
-            </motion.p>
+      {/* Gradient overlay only where text sits (lower-left quadrant) */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 35%, transparent 60%)',
+        }}
+      />
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
-              className="flex flex-col gap-3 sm:flex-row"
-            >
-              <Link
-                to="/login"
-                className="inline-flex items-center justify-center rounded-lg bg-[#F7931E] px-5 py-3 font-body text-sm font-medium text-white transition-colors duration-200 hover:bg-[#E08319]"
-              >
-                Mulai Sekarang
-              </Link>
-              <a
-                href="#about"
-                className="inline-flex items-center justify-center rounded-lg border border-[#F7931E] px-5 py-3 font-body text-sm font-medium text-[#F7931E] transition-colors duration-200 hover:bg-[#FFF8F0]"
-              >
-                Pelajari Lebih Lanjut
-              </a>
-            </motion.div>
-          </div>
+      {/* Content */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-28 lg:px-8 lg:pb-36">
+        <div className="max-w-3xl">
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            className="font-display font-extrabold leading-[0.95] tracking-tight text-white"
+            style={{
+              fontSize: 'clamp(3.5rem, 9vw, 7.5rem)',
+              textShadow: '0 2px 24px rgba(0,0,0,0.35)',
+            }}
+          >
+            NEO
+            <br />
+            <span className="text-[#F5A623]">CENTRAL</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut', delay: 0.12 }}
+            className="mt-5 max-w-xl font-body text-base leading-relaxed text-white/90 sm:text-lg sm:leading-relaxed"
+            style={{ textShadow: '0 1px 8px rgba(0,0,0,0.3)' }}
+          >
+            Platform Digital untuk Kerja Praktek &amp; Tugas Akhir Departemen Sistem Informasi Universitas Andalas.
+          </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="relative"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut', delay: 0.24 }}
+            className="mt-8 flex flex-col gap-3 sm:flex-row"
           >
-            <img
-              src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80"
-              alt="Mahasiswa berdiskusi menggunakan laptop di kampus"
-              className="aspect-[4/3] w-full rounded-2xl object-cover shadow-xl"
-              loading="lazy"
-            />
+            <Link
+              to="/login"
+              className="inline-flex items-center justify-center rounded-lg bg-[#F5A623] px-6 py-3.5 font-body text-sm font-semibold text-white shadow-lg shadow-black/20 transition-all duration-200 hover:bg-[#e0951a] hover:shadow-black/30"
+            >
+              Mulai Sekarang
+            </Link>
+            <a
+              href="#about"
+              className="inline-flex items-center justify-center rounded-lg border border-white/30 bg-white/10 px-6 py-3.5 font-body text-sm font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20"
+            >
+              Pelajari Lebih Lanjut
+            </a>
           </motion.div>
         </div>
       </div>

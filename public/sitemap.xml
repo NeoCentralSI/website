@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!--
+    NeoCentral Sitemap
+    Platform Digital untuk Kerja Praktek &amp; Tugas Akhir
+    Departemen Sistem Informasi — Universitas Andalas
+    Last generated: 2026-04-15
+  -->
+
+  <!-- Landing / Beranda (primary page) -->
+  <url>
+    <loc>https://neocentral.unand.ac.id/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Login page -->
+  <url>
+    <loc>https://neocentral.unand.ac.id/login</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Reset Password -->
+  <url>
+    <loc>https://neocentral.unand.ac.id/reset-password</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- Auth pages -->
+  <url>
+    <loc>https://neocentral.unand.ac.id/auth/activate/email-sent</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+
+  <url>
+    <loc>https://neocentral.unand.ac.id/auth/activate/success</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+
+  <url>
+    <loc>https://neocentral.unand.ac.id/auth/inactive</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+
+  <!-- Public verification pages -->
+  <url>
+    <loc>https://neocentral.unand.ac.id/verify/internship-letter</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <url>
+    <loc>https://neocentral.unand.ac.id/field-assessment</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- 404 page (low priority, but useful if linked) -->
+  <url>
+    <loc>https://neocentral.unand.ac.id/not-found</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.1</priority>
+  </url>
+
+</urlset>

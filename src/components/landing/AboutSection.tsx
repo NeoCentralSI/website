@@ -33,31 +33,32 @@ function CountUpStat({ value, suffix = '', label }: CountUpStatProps) {
   }, [inView, value]);
 
   return (
-    <div ref={ref}>
-      <p className="font-display text-3xl font-bold text-[#F7931E]">
+    <div ref={ref} className="space-y-1">
+      <p className="font-display font-extrabold leading-none tracking-tight text-gray-900" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)' }}>
         {count}
         {suffix}
       </p>
-      <p className="mt-1 font-body text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
+      <p className="font-body text-sm font-medium uppercase tracking-widest text-gray-400">{label}</p>
     </div>
   );
 }
 
 export function AboutSection() {
   return (
-    <section id="about" className="bg-white py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+    <section id="about" className="relative bg-white">
+      <div className="grid min-h-[80vh] items-stretch lg:grid-cols-[0.4fr_0.6fr]">
+        {/* Text content — 40% */}
+        <div className="flex items-center px-6 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-24 xl:px-20">
           <FadeIn>
-            <div className="space-y-6">
-              <h2 className="font-display text-3xl font-bold text-gray-900 sm:text-4xl">
-                Tentang <span className="text-[#F7931E]">Kami</span>
+            <div className="space-y-8">
+              <h2 className="font-display text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl">
+                Tentang <span className="text-[#F5A623]">Kami</span>
               </h2>
-              <p className="max-w-lg font-body text-base leading-relaxed text-gray-600">
+              <p className="max-w-lg font-body text-base leading-relaxed text-gray-600 sm:text-lg sm:leading-relaxed">
                 NeoCentral membantu civitas akademika memonitor proses Kerja Praktek dan Tugas Akhir secara
                 terstruktur, transparan, dan mudah ditindaklanjuti oleh mahasiswa, dosen, serta pengelola.
               </p>
-              <StaggerContainer className="flex flex-wrap gap-8 pt-2">
+              <StaggerContainer className="flex flex-wrap gap-10 pt-4">
                 <StaggerItem>
                   <CountUpStat value={500} suffix="+" label="Mahasiswa aktif" />
                 </StaggerItem>
@@ -67,15 +68,16 @@ export function AboutSection() {
               </StaggerContainer>
             </div>
           </FadeIn>
+        </div>
 
-          <FadeIn>
-            <img
-              src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80"
-              alt="Mahasiswa belajar bersama di lingkungan kampus"
-              className="aspect-[4/3] w-full rounded-xl object-cover shadow-lg"
-              loading="lazy"
-            />
-          </FadeIn>
+        {/* Full-bleed image — 60%, no border-radius, no padding */}
+        <div className="relative overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1400&q=80"
+            alt="Mahasiswa belajar bersama di lingkungan kampus"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
         </div>
       </div>
     </section>

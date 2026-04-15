@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { resetPasswordAPI } from '@/services/auth.service';
 import { toast } from 'sonner';
+import { ResetPasswordSeo } from '@/components/seo';
 
 const ResetPassword = () => {
   const [token, setToken] = useState('');
@@ -82,6 +83,7 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <ResetPasswordSeo />
       <Card className="w-full max-w-md lg:max-w-6xl shadow-2xl border-0 overflow-hidden rounded-4xl">
         <CardContent className="p-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[500px] lg:min-h-[600px]">

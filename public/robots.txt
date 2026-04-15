@@ -1,0 +1,39 @@
+# NeoCentral - robots.txt
+# https://neocentral.unand.ac.id
+
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /reset-password
+Allow: /auth/
+Allow: /verify/
+Allow: /field-assessment/
+
+# Block authenticated app routes (crawlers cannot access these anyway,
+# but we explicitly disallow to avoid wasting crawl budget)
+Disallow: /dashboard
+Disallow: /profil
+Disallow: /mahasiswa
+Disallow: /dosen
+Disallow: /kerja-praktik
+Disallow: /tugas-akhir
+Disallow: /seminar
+Disallow: /sidang
+Disallow: /bimbingan
+Disallow: /logbook
+Disallow: /jadwal
+Disallow: /ruangan
+Disallow: /metopel
+Disallow: /yudisium
+Disallow: /monitoring
+Disallow: /inbox
+Disallow: /kelola
+Disallow: /admin
+Disallow: /sekretaris-departemen
+Disallow: /kabag-departemen
+Disallow: /dss
+Disallow: /pengaturan
+Disallow: /auth/microsoft/callback
+
+# Sitemap
+Sitemap: https://neocentral.unand.ac.id/sitemap.xml

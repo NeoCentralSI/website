@@ -9,6 +9,7 @@ import { Toaster } from './components/ui/sonner'
 // Static imports: core pages, layout, guards
 import Login from './pages/Login'
 import Landing from './pages/Landing'
+import SitemapPage from './pages/Sitemap'
 import MicrosoftCallback from './pages/auth/MicrosoftCallback'
 import ActivationSuccess from './pages/auth/ActivationSuccess'
 import AccountInactive from './pages/auth/AccountInactive'
@@ -185,6 +186,7 @@ function App() {
           }>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/sitemap" element={<SitemapPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth/microsoft/callback" element={<MicrosoftCallback />} />
               <Route path="/auth/activate/success" element={<ActivationSuccess />} />

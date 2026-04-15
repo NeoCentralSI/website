@@ -3,19 +3,21 @@ import {
   HeroSection,
   MarqueeSection,
   AboutSection,
-  GalleryCarousel,
+  TopicsSection,
   SOPSection,
   Footer,
 } from '@/components/landing';
+import { LandingSeo } from '@/components/seo';
 
 export default function LandingPage() {
   return (
     <div className="bg-white">
+      <LandingSeo />
       <LandingNavbar />
       <HeroSection />
       <MarqueeSection />
       <AboutSection />
-      <GalleryCarousel />
+      <TopicsSection />
       <SOPSection />
       <Footer />
     </div>
