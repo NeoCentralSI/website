@@ -46,7 +46,7 @@ interface AvailabilityFormDialogProps {
     onSubmit: ((data: CreateAvailabilityPayload) => Promise<unknown>) | ((id: string, data: UpdateAvailabilityPayload) => Promise<unknown>);
 }
 
-export function AvailabilityFormDialog({
+export function LecturerAvailabilityFormDialog({
     open,
     onOpenChange,
     editData,
@@ -152,6 +152,7 @@ export function AvailabilityFormDialog({
                                 value={validFrom ? new Date(validFrom) : undefined}
                                 onChange={(date) => setValidFrom(date ? date.toISOString().split('T')[0] : '')}
                                 showPastDates={isEdit}
+                                minDate={isEdit ? undefined : new Date()}
                             />
                         </div>
                         <div className="space-y-2">

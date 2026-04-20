@@ -16,12 +16,12 @@ import {
     type UpdateCriteriaPayload,
     type CreateRubricPayload,
     type UpdateRubricPayload,
-} from '@/services/rubricSeminar.service';
+} from '@/services/seminarRubric.service';
 
-const CPMKS_KEY = ['rubric-seminar-cpmks'];
-const WEIGHT_KEY = ['rubric-seminar-weight'];
+const CPMKS_KEY = ['seminar-rubric-cpmks'];
+const WEIGHT_KEY = ['seminar-rubric-weight'];
 
-export function useRubricSeminar() {
+export function useSeminarRubric() {
     const queryClient = useQueryClient();
 
     const invalidateAll = () => {
@@ -37,7 +37,7 @@ export function useRubricSeminar() {
         refetch,
     } = useQuery({
         queryKey: CPMKS_KEY,
-        queryFn: getCpmksWithRubrics,
+        queryFn: () => getCpmksWithRubrics(),
     });
 
     // ── Weight summary query ─────────────────
@@ -46,7 +46,7 @@ export function useRubricSeminar() {
         isLoading: isWeightLoading,
     } = useQuery({
         queryKey: WEIGHT_KEY,
-        queryFn: getWeightSummary,
+        queryFn: () => getWeightSummary(),
     });
 
     // ── Criteria mutations ───────────────────

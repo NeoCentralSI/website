@@ -663,6 +663,7 @@ export interface Student {
     mkwuCompleted: boolean;
     internshipCompleted: boolean;
     kknCompleted: boolean;
+    researchMethodCompleted?: boolean;
     activeTheses: Array<{
       title: string;
       supervisors: Array<{
@@ -725,7 +726,16 @@ export const getStudentsAPI = async (params?: {
 };
 
 // Trigger SIA sync (fetch from SIA service and cache)
-export const triggerSiaSyncAPI = async (): Promise<{ success: boolean; message?: string }> => {
+export const triggerSiaSyncAPI = async (): Promise<{
+  success: boolean;
+  message?: string;
+  summary?: {
+    cplCreated?: number;
+    cplUpdated?: number;
+    cplSkippedProtected?: number;
+    cplUnmatchedCodes?: number;
+  };
+}> => {
   const response = await fetch(getApiUrl('/sia/sync'), {
     method: 'POST',
     headers: {
@@ -796,6 +806,7 @@ export interface StudentDetail {
     mkwuCompleted?: boolean | null;
     internshipCompleted?: boolean | null;
     kknCompleted?: boolean | null;
+    researchMethodCompleted?: boolean | null;
   };
   cplScores?: Array<{
     cplId: string;
@@ -1053,6 +1064,7 @@ export const adminUpdateStudentAPI = async (id: string, data: {
   mkwuCompleted?: boolean;
   internshipCompleted?: boolean;
   kknCompleted?: boolean;
+  researchMethodCompleted?: boolean;
 }): Promise<{ data: any }> => {
   const response = await fetch(getApiUrl(`/adminfeatures/students/${id}`), {
     method: 'PATCH',
@@ -1068,7 +1080,8 @@ export const adminUpdateStudentAPI = async (id: string, data: {
       mandatoryCoursesCompleted: data.mandatoryCoursesCompleted,
       mkwuCompleted: data.mkwuCompleted,
       internshipCompleted: data.internshipCompleted,
-      kknCompleted: data.kknCompleted
+      kknCompleted: data.kknCompleted,
+      researchMethodCompleted: data.researchMethodCompleted
     }),
   });
   if (!response.ok) {

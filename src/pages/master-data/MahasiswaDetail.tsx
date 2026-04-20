@@ -274,6 +274,12 @@ export default function MahasiswaDetail() {
                     {data.student.kknCompleted ? 'Lulus' : 'Belum'}
                   </Badge>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Metode Penelitian</span>
+                  <Badge variant={data.student.researchMethodCompleted ? 'default' : 'secondary'} className={data.student.researchMethodCompleted ? 'bg-green-600' : ''}>
+                    {data.student.researchMethodCompleted ? 'Lulus' : 'Belum'}
+                  </Badge>
+                </div>
               </div>
             </div>
 

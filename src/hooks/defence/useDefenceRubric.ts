@@ -17,12 +17,12 @@ import {
     type UpdateCriteriaPayload,
     type CreateRubricPayload,
     type UpdateRubricPayload,
-} from '@/services/rubricDefence.service';
+} from '@/services/defenceRubric.service';
 
-const CPMKS_KEY = 'rubric-defence-cpmks';
-const WEIGHT_KEY = 'rubric-defence-weight';
+const CPMKS_KEY = 'defence-rubric-cpmks';
+const WEIGHT_KEY = 'defence-rubric-weight';
 
-export function useRubricDefence(role: DefenceRole) {
+export function useDefenceRubric(role: DefenceRole) {
     const queryClient = useQueryClient();
 
     const invalidateAll = () => {

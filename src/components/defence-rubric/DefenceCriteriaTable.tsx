@@ -34,11 +34,11 @@ import type {
     AssessmentRubric,
     CreateRubricPayload,
     UpdateRubricPayload,
-} from '@/services/rubricSeminar.service';
-import { RubricItemFormDialog } from './RubricItemFormDialog';
+} from '@/services/defenceRubric.service';
+import { DefenceRubricItemFormDialog } from './DefenceRubricItemFormDialog';
 
 // ── Types ─────────────────────────────────────
-interface CriteriaTableProps {
+interface DefenceCriteriaTableProps {
     data: CpmkWithRubrics[];
     isLoading: boolean;
     isFetching: boolean;
@@ -46,18 +46,16 @@ interface CriteriaTableProps {
     onAddCriteria: (cpmkId: string) => void;
     onEditCriteria: (criteria: AssessmentCriteria, cpmk: CpmkWithRubrics) => void;
     onDeleteCriteria: (criteriaId: string) => void;
-    onDeleteCpmk: (cpmkId: string) => Promise<unknown>;
     onCreateRubric: (criteriaId: string, data: CreateRubricPayload) => Promise<unknown>;
     onUpdateRubric: (rubricId: string, data: UpdateRubricPayload) => Promise<unknown>;
     onDeleteRubric: (id: string) => void;
     onReorderCriteria: (cpmkId: string, orderedIds: string[]) => Promise<unknown>;
     onReorderRubrics: (criteriaId: string, orderedIds: string[]) => Promise<unknown>;
     isDeletingCriteria: boolean;
-    isRemovingCpmk: boolean;
     isDeletingRubric: boolean;
 }
 
-export function CriteriaTable({
+export function DefenceCriteriaTable({
     data,
     isLoading,
     isFetching,
@@ -65,17 +63,14 @@ export function CriteriaTable({
     onAddCriteria,
     onEditCriteria,
     onDeleteCriteria,
-    onDeleteCpmk,
     onCreateRubric,
     onUpdateRubric,
     onDeleteRubric,
     onReorderCriteria,
     onReorderRubrics,
     isDeletingCriteria,
-    isRemovingCpmk,
     isDeletingRubric,
-}: CriteriaTableProps) {
-    const [deleteCpmkId, setDeleteCpmkId] = useState<string | null>(null);
+}: DefenceCriteriaTableProps) {
     const [deleteCriteriaId, setDeleteCriteriaId] = useState<string | null>(null);
     const [deleteRubricId, setDeleteRubricId] = useState<string | null>(null);
     const [openCpmks, setOpenCpmks] = useState<string[]>([]);
@@ -131,13 +126,6 @@ export function CriteriaTable({
         }
     };
 
-    const handleConfirmDeleteCpmk = async () => {
-        if (deleteCpmkId) {
-            await onDeleteCpmk(deleteCpmkId);
-            setDeleteCpmkId(null);
-        }
-    };
-
     const handleMoveCriteria = (cpmk: CpmkWithRubrics, criteriaId: string, direction: 'up' | 'down') => {
         const ids = cpmk.assessmentCriterias.map((c) => c.id);
         const idx = ids.indexOf(criteriaId);
@@ -161,7 +149,7 @@ export function CriteriaTable({
     if (isLoading) {
         return (
             <div className="flex h-64 items-center justify-center">
-                <Loading size="lg" text="Memuat data rubrik..." />
+                <Loading size="lg" text="Memuat data rubrik sidang..." />
             </div>
         );
     }
@@ -210,13 +198,9 @@ export function CriteriaTable({
                                                 <div className="min-w-0">
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <span className="font-semibold text-sm">
-                                                            {cpmk.code}
+                                                            [{cpmk.code}] - Total Skor: {skor}
                                                         </span>
-                                                        {cpmk.assessmentCriterias.length > 0 ? (
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                Skor: {skor}
-                                                            </Badge>
-                                                        ) : (
+                                                        {cpmk.assessmentCriterias.length === 0 && (
                                                             <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
                                                                 Belum dikonfigurasi
                                                             </Badge>
@@ -237,7 +221,6 @@ export function CriteriaTable({
                                     {/* ── CPMK Content ── */}
                                     <CollapsibleContent>
                                         <div className="border-t px-4 pb-4 pt-3 space-y-3">
-                                            {/* Tombol aksi CPMK */}
                                             <div className="flex items-center justify-between flex-wrap gap-2">
                                                 <p className="text-xs text-muted-foreground">
                                                     Total skor kriteria: <strong>{skor}</strong>
@@ -254,15 +237,6 @@ export function CriteriaTable({
                                                     >
                                                         <Plus className="mr-1 h-3 w-3" /> Kriteria
                                                     </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-7 text-xs text-destructive hover:text-destructive"
-                                                        onClick={() => setDeleteCpmkId(cpmk.id)}
-                                                        disabled={cpmk.assessmentCriterias.length === 0}
-                                                    >
-                                                        <Trash2 className="mr-1 h-3 w-3" /> Hapus CPMK
-                                                    </Button>
                                                 </div>
                                             </div>
 
@@ -275,15 +249,34 @@ export function CriteriaTable({
                                             ) : (
                                                 cpmk.assessmentCriterias.map((criteria, criteriaIdx) => (
                                                     <div key={criteria.id} className="rounded-md border p-3 space-y-3">
+                                                        {(() => {
+                                                            const isOptionB =
+                                                                cpmk.assessmentCriterias.length === 1
+                                                                && !String(criteria.name ?? '').trim();
+                                                            const isLocked = Boolean(criteria.hasAssessmentDetails);
+                                                            return (
+                                                                <>
                                                         {/* Header kriteria */}
                                                         <div className="flex items-center justify-between flex-wrap gap-2">
                                                             <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="text-sm font-medium">
-                                                                    {criteria.name || 'Tanpa Nama'}
-                                                                </span>
+                                                                {!isOptionB && (
+                                                                    <span className="text-sm font-medium">
+                                                                        {criteria.name || 'Tanpa Nama'}
+                                                                    </span>
+                                                                )}
+                                                                {isOptionB && (
+                                                                    <span className="text-sm text-muted-foreground">
+                                                                        Rubrik langsung pada CPMK ini
+                                                                    </span>
+                                                                )}
                                                                 <Badge variant="outline" className="text-xs">
                                                                     Maks: {criteria.maxScore ?? '-'}
                                                                 </Badge>
+                                                                {isLocked && (
+                                                                    <Badge variant="outline" className="text-xs text-amber-700 border-amber-300">
+                                                                        Skor terkunci
+                                                                    </Badge>
+                                                                )}
                                                                 {criteria.assessmentRubrics.length === 0 && (
                                                                     <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
                                                                         Belum ada rubrik
@@ -296,7 +289,7 @@ export function CriteriaTable({
                                                                     size="icon"
                                                                     className="h-7 w-7"
                                                                     title="Pindah ke atas"
-                                                                    disabled={criteriaIdx === 0}
+                                                                    disabled={criteriaIdx === 0 || isLocked}
                                                                     onClick={() => handleMoveCriteria(cpmk, criteria.id, 'up')}
                                                                 >
                                                                     <ArrowUp className="h-3 w-3" />
@@ -306,7 +299,7 @@ export function CriteriaTable({
                                                                     size="icon"
                                                                     className="h-7 w-7"
                                                                     title="Pindah ke bawah"
-                                                                    disabled={criteriaIdx === cpmk.assessmentCriterias.length - 1}
+                                                                    disabled={criteriaIdx === cpmk.assessmentCriterias.length - 1 || isLocked}
                                                                     onClick={() => handleMoveCriteria(cpmk, criteria.id, 'down')}
                                                                 >
                                                                     <ArrowDown className="h-3 w-3" />
@@ -326,6 +319,7 @@ export function CriteriaTable({
                                                                     className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                                                     title="Hapus kriteria"
                                                                     onClick={() => setDeleteCriteriaId(criteria.id)}
+                                                                    disabled={isLocked}
                                                                 >
                                                                     <Trash2 className="h-3.5 w-3.5" />
                                                                 </Button>
@@ -334,6 +328,7 @@ export function CriteriaTable({
                                                                     size="sm"
                                                                     className="h-7 text-xs"
                                                                     onClick={() => handleAddRubric(criteria)}
+                                                                    disabled={isLocked}
                                                                 >
                                                                     <Plus className="mr-1 h-3 w-3" /> Rubrik
                                                                 </Button>
@@ -367,7 +362,7 @@ export function CriteriaTable({
                                                                                             size="icon"
                                                                                             className="h-7 w-7"
                                                                                             title="Pindah ke atas"
-                                                                                            disabled={rubricIdx === 0}
+                                                                                            disabled={rubricIdx === 0 || isLocked}
                                                                                             onClick={() => handleMoveRubric(criteria, rubric.id, 'up')}
                                                                                         >
                                                                                             <ArrowUp className="h-3 w-3" />
@@ -377,7 +372,7 @@ export function CriteriaTable({
                                                                                             size="icon"
                                                                                             className="h-7 w-7"
                                                                                             title="Pindah ke bawah"
-                                                                                            disabled={rubricIdx === criteria.assessmentRubrics.length - 1}
+                                                                                            disabled={rubricIdx === criteria.assessmentRubrics.length - 1 || isLocked}
                                                                                             onClick={() => handleMoveRubric(criteria, rubric.id, 'down')}
                                                                                         >
                                                                                             <ArrowDown className="h-3 w-3" />
@@ -388,6 +383,7 @@ export function CriteriaTable({
                                                                                             className="h-7 w-7"
                                                                                             title="Ubah rubrik"
                                                                                             onClick={() => handleEditRubric(rubric, criteria.maxScore)}
+                                                                                            disabled={isLocked}
                                                                                         >
                                                                                             <Pencil className="h-3.5 w-3.5" />
                                                                                         </Button>
@@ -397,6 +393,7 @@ export function CriteriaTable({
                                                                                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                                                                             title="Hapus rubrik"
                                                                                             onClick={() => setDeleteRubricId(rubric.id)}
+                                                                                            disabled={isLocked}
                                                                                         >
                                                                                             <Trash2 className="h-3.5 w-3.5" />
                                                                                         </Button>
@@ -412,6 +409,9 @@ export function CriteriaTable({
                                                                 Belum ada rubrik untuk kriteria ini.
                                                             </div>
                                                         )}
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 ))
                                             )}
@@ -425,7 +425,7 @@ export function CriteriaTable({
             )}
 
             {/* Dialog form rubrik */}
-            <RubricItemFormDialog
+            <DefenceRubricItemFormDialog
                 open={rubricFormOpen}
                 onOpenChange={setRubricFormOpen}
                 criteriaMaxScore={rubricFormCriteriaMaxScore}
@@ -444,7 +444,7 @@ export function CriteriaTable({
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus Kriteria</AlertDialogTitle>
+                        <AlertDialogTitle>Hapus Kriteria Sidang</AlertDialogTitle>
                         <AlertDialogDescription>
                             Kriteria beserta seluruh rubrik di dalamnya akan dihapus secara permanen.
                             Tindakan ini tidak dapat dibatalkan.
@@ -470,39 +470,6 @@ export function CriteriaTable({
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Konfirmasi hapus CPMK */}
-            <AlertDialog
-                open={!!deleteCpmkId}
-                onOpenChange={(open: boolean) => !open && setDeleteCpmkId(null)}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus Konfigurasi CPMK</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Semua kriteria seminar dan rubrik pada CPMK ini akan dihapus.
-                            Data master CPMK tetap tersimpan.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirmDeleteCpmk}
-                            disabled={isRemovingCpmk}
-                            className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            {isRemovingCpmk ? (
-                                <>
-                                    <Spinner className="mr-2 h-4 w-4" />
-                                    Menghapus...
-                                </>
-                            ) : (
-                                'Hapus'
-                            )}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             {/* Konfirmasi hapus rubrik */}
             <AlertDialog
                 open={!!deleteRubricId}
@@ -510,7 +477,7 @@ export function CriteriaTable({
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus Rubrik</AlertDialogTitle>
+                        <AlertDialogTitle>Hapus Rubrik Sidang</AlertDialogTitle>
                         <AlertDialogDescription>
                             Apakah Anda yakin ingin menghapus level rubrik ini?
                             Tindakan ini tidak dapat dibatalkan.

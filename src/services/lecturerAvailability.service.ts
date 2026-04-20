@@ -59,18 +59,6 @@ export const updateAvailability = async (id: string, payload: UpdateAvailability
     return result.data;
 };
 
-export const toggleAvailability = async (id: string): Promise<LecturerAvailability> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.LECTURER_AVAILABILITY.TOGGLE(id)), {
-        method: 'PATCH',
-    });
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Gagal mengubah status jadwal');
-    }
-    const result = await response.json();
-    return result.data;
-};
-
 export const deleteAvailability = async (id: string): Promise<void> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.LECTURER_AVAILABILITY.BY_ID(id)), {
         method: 'DELETE',

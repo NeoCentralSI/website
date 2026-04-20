@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Pencil, Power, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import type { LecturerAvailability, UpdateAvailabilityPayload } from '@/services/lecturerAvailability.service';
-import { AvailabilityFormDialog } from '@/components/lecturer-availability/AvailabilityFormDialog';
+import { LecturerAvailabilityFormDialog } from '@/components/lecturer-availability/LecturerAvailabilityFormDialog';
 
 const DAY_LABELS: Record<string, string> = {
     monday: 'Senin',
@@ -44,31 +44,27 @@ function formatDateId(dateStr: string): string {
     });
 }
 
-interface AvailabilityTableProps {
+interface LecturerAvailabilityTableProps {
     data: LecturerAvailability[];
     isLoading: boolean;
     isFetching: boolean;
-    onToggle: (id: string) => void;
     onDelete: (id: string) => void;
     onUpdate: (id: string, data: UpdateAvailabilityPayload) => Promise<unknown>;
     onCreate: () => void;
     onRefresh: () => void;
-    isToggling: boolean;
     isDeleting: boolean;
 }
 
-export function AvailabilityTable({
+export function LecturerAvailabilityTable({
     data,
     isLoading,
     isFetching,
-    onToggle,
     onDelete,
     onUpdate,
     onCreate,
     onRefresh,
-    isToggling,
     isDeleting,
-}: AvailabilityTableProps) {
+}: LecturerAvailabilityTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<LecturerAvailability | null>(null);
     const [search, setSearch] = useState('');
@@ -158,19 +154,6 @@ export function AvailabilityTable({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-8 w-8 ${item.isActive
-                            ? 'text-muted-foreground hover:text-amber-600'
-                            : 'text-muted-foreground hover:text-emerald-600'
-                            }`}
-                        onClick={() => onToggle(item.id)}
-                        disabled={isToggling}
-                        title={item.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                    >
-                        <Power className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         onClick={() => setDeleteId(item.id)}
                         disabled={isDeleting}
@@ -181,7 +164,7 @@ export function AvailabilityTable({
                 </div>
             ),
         },
-    ], [isToggling, isDeleting, onToggle]);
+    ], [isDeleting]);
 
     return (
         <>
@@ -200,13 +183,13 @@ export function AvailabilityTable({
                 emptyText="Belum ada jadwal ketersediaan"
                 actions={
                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={onCreate}>
+                            <Plus className="mr-2 h-4 w-4" /> Tambah Jadwal
+                        </Button>
                         <RefreshButton
                             onClick={onRefresh}
                             isRefreshing={isFetching && !isLoading}
                         />
-                        <Button onClick={onCreate} size="sm">
-                            <Plus className="mr-2 h-4 w-4" /> Tambah Jadwal
-                        </Button>
                     </div>
                 }
             />
@@ -242,7 +225,7 @@ export function AvailabilityTable({
 
             {/* Edit Dialog */}
             {editItem && (
-                <AvailabilityFormDialog
+                <LecturerAvailabilityFormDialog
                     open={!!editItem}
                     onOpenChange={(open) => !open && setEditItem(null)}
                     editData={editItem}

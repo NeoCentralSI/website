@@ -37,7 +37,7 @@ export default function Cpl() {
         <div className="p-6 space-y-6">
             <div>
                 <h1 className="text-2xl font-bold">Kelola CPL</h1>
-                <p className="text-muted-foreground">Atur Capaian Pembelajaran Lulusan (CPL) dan skor minimal untuk mendukung proses evaluasi dan validasi akademik.</p>
+                <p className="text-muted-foreground">Atur Capaian Pembelajaran Lulusan (CPL) dan skor minimal untuk mendukung proses evaluasi dan validasi akademik</p>
             </div>
 
             <CplTable

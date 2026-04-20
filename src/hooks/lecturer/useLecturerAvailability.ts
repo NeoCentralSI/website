@@ -4,7 +4,6 @@ import {
     getMyAvailabilities,
     createAvailability,
     updateAvailability,
-    toggleAvailability,
     deleteAvailability,
     type CreateAvailabilityPayload,
     type UpdateAvailabilityPayload,
@@ -43,17 +42,6 @@ export function useLecturerAvailability() {
         },
     });
 
-    const toggleMutation = useMutation({
-        mutationFn: toggleAvailability,
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-            toast.success(data.isActive ? 'Jadwal berhasil diaktifkan' : 'Jadwal berhasil dinonaktifkan');
-        },
-        onError: (error: Error) => {
-            toast.error(error.message);
-        },
-    });
-
     const deleteMutation = useMutation({
         mutationFn: deleteAvailability,
         onSuccess: () => {
@@ -72,11 +60,9 @@ export function useLecturerAvailability() {
         refetch,
         create: (data: CreateAvailabilityPayload) => createMutation.mutateAsync(data),
         update: (id: string, data: UpdateAvailabilityPayload) => updateMutation.mutateAsync({ id, data }),
-        toggle: toggleMutation.mutate,
         remove: deleteMutation.mutate,
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
-        isToggling: toggleMutation.isPending,
         isDeleting: deleteMutation.isPending,
     };
 }
