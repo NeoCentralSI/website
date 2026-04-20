@@ -8,7 +8,7 @@ import {
     deleteCpl,
     type CreateCplPayload,
     type UpdateCplPayload,
-} from '@/services/cpl.service';
+} from '@/services/master-data/cpl.service';
 
 const QUERY_KEY = ['cpls'];
 
