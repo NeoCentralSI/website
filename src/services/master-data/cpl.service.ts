@@ -7,6 +7,7 @@ export interface Cpl {
     description: string;
     minimalScore: number;
     isActive: boolean;
+    hasRelatedScores: boolean;
     createdAt: string;
     updatedAt: string;
 }

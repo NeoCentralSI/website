@@ -32,6 +32,7 @@ export function CplFormDialog({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
+    const isLockedByRelatedScores = Boolean(isEdit && editData?.hasRelatedScores);
 
     useEffect(() => {
         if (editData) {
@@ -51,14 +52,21 @@ export function CplFormDialog({
 
         setIsSubmitting(true);
         try {
-            const payload = {
-                code,
-                description,
-                minimalScore: Number(minimalScore),
-            };
             if (isEdit && editData) {
+                const payload: UpdateCplPayload = isLockedByRelatedScores
+                    ? { description }
+                    : {
+                          code,
+                          description,
+                          minimalScore: Number(minimalScore),
+                      };
                 await (onSubmit as (id: string, data: UpdateCplPayload) => Promise<unknown>)(editData.id, payload);
             } else {
+                const payload: CreateCplPayload = {
+                    code,
+                    description,
+                    minimalScore: Number(minimalScore),
+                };
                 await (onSubmit as (data: CreateCplPayload) => Promise<unknown>)(payload);
             }
             onOpenChange(false);
@@ -69,7 +77,9 @@ export function CplFormDialog({
         }
     };
 
-    const isValid = code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0;
+    const isValid = isLockedByRelatedScores
+        ? Boolean(description.trim())
+        : Boolean(code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -88,6 +98,7 @@ export function CplFormDialog({
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             required
+                            disabled={isLockedByRelatedScores}
                         />
                     </div>
 
@@ -117,8 +128,15 @@ export function CplFormDialog({
                                 setMinimalScore(val === '' ? '' : Number(val));
                             }}
                             required
+                            disabled={isLockedByRelatedScores}
                         />
                     </div>
+
+                    {isLockedByRelatedScores && (
+                        <p className="text-xs text-muted-foreground">
+                            Kode CPL dan Skor Minimal dikunci karena CPL ini sudah memiliki nilai mahasiswa.
+                        </p>
+                    )}
 
                     <DialogFooter>
                         <Button

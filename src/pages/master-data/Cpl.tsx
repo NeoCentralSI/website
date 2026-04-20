@@ -34,10 +34,10 @@ export default function Cpl() {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
     return (
-        <div className="p-4 space-y-6">
+        <div className="p-6 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">CPL</h1>
-                <p className="text-gray-500">Tetapkan hasil pembelajaran program dan standar kelulusan minimum</p>
+                <h1 className="text-2xl font-bold">Kelola CPL</h1>
+                <p className="text-muted-foreground">Atur Capaian Pembelajaran Lulusan (CPL) dan skor minimal untuk mendukung proses evaluasi dan validasi akademik.</p>
             </div>
 
             <CplTable

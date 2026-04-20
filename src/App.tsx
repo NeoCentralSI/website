@@ -352,8 +352,11 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
                   <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                   <Route path="/kelola/sop" element={<KelolaSopPage />} />
-                  <Route path="/kelola/cpl" element={<Cpl />} />
                   <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
+                </Route>
+
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
+                  <Route path="/kelola/cpl" element={<Cpl />} />
                 </Route>
 
                 {/* Kelola Metopen - Dosen Pengampu, Sekdep, Kadep */}

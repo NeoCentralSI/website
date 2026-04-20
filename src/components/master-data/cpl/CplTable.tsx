@@ -46,6 +46,7 @@ export function CplTable({
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<Cpl | null>(null);
     const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
@@ -58,13 +59,21 @@ export function CplTable({
 
     const filteredData = useMemo(() => {
         const term = search.toLowerCase();
-        if (!term) return data;
-        return data.filter((item) =>
-            (item.code || '').toLowerCase().includes(term) ||
-            item.description.toLowerCase().includes(term) ||
-            String(item.minimalScore).includes(term)
-        );
-    }, [data, search]);
+        return data.filter((item) => {
+            const matchesStatus =
+                statusFilter === 'all' ||
+                (statusFilter === 'active' ? item.isActive : !item.isActive);
+            if (!matchesStatus) return false;
+
+            if (!term) return true;
+
+            return (
+                (item.code || '').toLowerCase().includes(term) ||
+                item.description.toLowerCase().includes(term) ||
+                String(item.minimalScore).includes(term)
+            );
+        });
+    }, [data, search, statusFilter]);
 
     const paginatedData = useMemo(() => {
         const start = (page - 1) * pageSize;
@@ -109,6 +118,19 @@ export function CplTable({
             key: 'status',
             header: 'Status',
             width: 90,
+            filter: {
+                type: 'select',
+                value: statusFilter,
+                onChange: (value: string) => {
+                    setStatusFilter(value as 'active' | 'inactive' | 'all');
+                    setPage(1);
+                },
+                options: [
+                    { label: 'Aktif', value: 'active' },
+                    { label: 'Tidak Aktif', value: 'inactive' },
+                    { label: 'Semua', value: 'all' },
+                ],
+            },
             render: (item) => (
                 <Badge
                     variant={item.isActive ? 'default' : 'secondary'}
@@ -151,20 +173,22 @@ export function CplTable({
                     >
                         <Power className="h-4 w-4" />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeleteId(item.id)}
-                        disabled={isDeleting}
-                        title="Hapus"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!item.hasRelatedScores && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeleteId(item.id)}
+                            disabled={isDeleting}
+                            title="Hapus"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
                 </div>
             ),
         },
-    ], [isToggling, isDeleting, onToggle, page, pageSize]);
+    ], [isToggling, isDeleting, onToggle, page, pageSize, statusFilter]);
 
     return (
         <>
@@ -180,16 +204,17 @@ export function CplTable({
                 onPageSizeChange={setPageSize}
                 searchValue={search}
                 onSearchChange={setSearch}
+                enableColumnFilters
                 emptyText="Belum ada data CPL"
                 actions={
                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={onCreate}>
+                            <Plus className="mr-2 h-4 w-4" /> Tambah CPL
+                        </Button>
                         <RefreshButton
                             onClick={onRefresh}
                             isRefreshing={isFetching && !isLoading}
                         />
-                        <Button onClick={onCreate} size="sm">
-                            <Plus className="mr-2 h-4 w-4" /> Add CPL
-                        </Button>
                     </div>
                 }
             />
@@ -200,7 +225,7 @@ export function CplTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Data CPL</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Apakah Anda yakin ingin menghapus data CPL ini? Data yang sudah memiliki relasi (nilai mahasiswa atau rekomendasi yudisium) tidak dapat dihapus.
+                            Apakah Anda yakin ingin menghapus data CPL ini? Data yang sudah memiliki nilai CPL mahasiswa tidak dapat dihapus.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
