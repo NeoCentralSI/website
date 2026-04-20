@@ -138,7 +138,7 @@ const PenilaianAkhirMetopen = lazy(() => import('./pages/dosen/metopen/Penilaian
 const InboxPembimbing = lazy(() => import('./pages/dosen/InboxPembimbing'))
 const DSSKadep = lazy(() => import('./pages/kelola/kadep/DSSKadep'))
 const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
-const KelolaCpl = lazy(() => import('./pages/kelola/KelolaCpl'))
+const Cpl = lazy(() => import('./pages/master-data/Cpl'))
 const KuotaBimbinganPage = lazy(() => import('./pages/master-data/KuotaBimbingan'))
 // Lecturer Availability
 const JadwalKetersediaan = lazy(() => import('./pages/lecturer/JadwalKetersediaan'))
@@ -352,7 +352,7 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
                   <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                   <Route path="/kelola/sop" element={<KelolaSopPage />} />
-                  <Route path="/kelola/data-cpl" element={<KelolaCpl />} />
+                  <Route path="/kelola/cpl" element={<Cpl />} />
                   <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
                 </Route>
 

@@ -300,7 +300,7 @@ export const useSidebarMenu = () => {
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "DSS Pembimbing", url: "/kelola/metopen/dss" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
-          { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
+          { title: "Kelola CPL", url: "/kelola/cpl" },
         ],
       });
 
@@ -397,7 +397,7 @@ export const useSidebarMenu = () => {
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
-          { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
+          { title: "Kelola CPL", url: "/kelola/cpl" },
         ],
       });
 
