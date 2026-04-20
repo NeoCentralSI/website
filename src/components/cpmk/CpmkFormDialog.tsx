@@ -31,6 +31,7 @@ export function CpmkFormDialog({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
+    const isCodeLocked = Boolean(isEdit && editData?.hasAssessmentDetails);
 
     useEffect(() => {
         if (editData) {
@@ -47,14 +48,21 @@ export function CpmkFormDialog({
 
         setIsSubmitting(true);
         try {
-            const payload = {
-                code,
-                description,
-                type: 'thesis' as const,
-            };
             if (isEdit && editData) {
+                const payload: UpdateCpmkPayload = isCodeLocked
+                    ? { description }
+                    : {
+                        code,
+                        description,
+                        type: 'thesis' as const,
+                    };
                 await (onSubmit as (id: string, data: UpdateCpmkPayload) => Promise<unknown>)(editData.id, payload);
             } else {
+                const payload: CreateCpmkPayload = {
+                    code,
+                    description,
+                    type: 'thesis' as const,
+                };
                 await (onSubmit as (data: CreateCpmkPayload) => Promise<unknown>)(payload);
             }
             onOpenChange(false);
@@ -65,7 +73,7 @@ export function CpmkFormDialog({
         }
     };
 
-    const isValid = code.trim() && description.trim();
+    const isValid = isCodeLocked ? Boolean(description.trim()) : Boolean(code.trim() && description.trim());
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,8 +92,14 @@ export function CpmkFormDialog({
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             required
+                            disabled={isCodeLocked}
                         />
                     </div>
+                    {isCodeLocked && (
+                        <p className="text-xs text-muted-foreground">
+                            Kode CPMK dikunci karena sudah memiliki detail penilaian.
+                        </p>
+                    )}
 
                     <div className="space-y-2">
                         <Label htmlFor="description">Deskripsi</Label>

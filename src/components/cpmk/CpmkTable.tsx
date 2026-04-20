@@ -15,7 +15,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import type { Cpmk, UpdateCpmkPayload } from '@/services/cpmk.service';
-import { CpmkFormDialog } from '@/components/kelola/cpmk/CpmkFormDialog';
+import { CpmkFormDialog } from '@/components/cpmk/CpmkFormDialog';
 
 interface CpmkTableProps {
     data: Cpmk[];
@@ -27,6 +27,8 @@ interface CpmkTableProps {
     onRefresh: () => void;
     isDeleting: boolean;
     extraActions?: React.ReactNode;
+    onCopyTemplate?: () => void;
+    isCopyingTemplate?: boolean;
 }
 
 export function CpmkTable({
@@ -39,6 +41,8 @@ export function CpmkTable({
     onRefresh,
     isDeleting,
     extraActions,
+    onCopyTemplate,
+    isCopyingTemplate = false,
 }: CpmkTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<Cpmk | null>(null);
@@ -109,16 +113,18 @@ export function CpmkTable({
                     >
                         <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeleteId(item.id)}
-                        disabled={isDeleting}
-                        title="Hapus"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!item.hasAssessmentDetails && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setDeleteId(item.id)}
+                            disabled={isDeleting}
+                            title="Hapus"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
                 </div>
             ),
         },
@@ -142,6 +148,23 @@ export function CpmkTable({
                 actions={
                     <div className="flex items-center gap-2">
                         {extraActions}
+                        {onCopyTemplate && data.length === 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onCopyTemplate}
+                                disabled={isCopyingTemplate}
+                            >
+                                {isCopyingTemplate ? (
+                                    <>
+                                        <Spinner className="mr-2 h-4 w-4" />
+                                        Menyalin...
+                                    </>
+                                ) : (
+                                    'Copy Template'
+                                )}
+                            </Button>
+                        )}
                         <RefreshButton
                             onClick={onRefresh}
                             isRefreshing={isFetching && !isLoading}
@@ -159,7 +182,7 @@ export function CpmkTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Data CPMK</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Apakah Anda yakin ingin menghapus data CPMK ini? Data yang sudah memiliki relasi (kriteria penilaian) tidak dapat dihapus.
+                            Menghapus CPMK ini akan menghapus semua kriteria dan rubrik terkait. Lanjutkan?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

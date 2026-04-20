@@ -5,6 +5,8 @@ import { apiRequest } from './auth.service';
 // Types
 // ────────────────────────────────────────────
 
+export type DefenceRole = 'examiner' | 'supervisor';
+
 export interface AssessmentRubric {
     id: string;
     assessmentCriteriaId: string;
@@ -21,9 +23,11 @@ export interface AssessmentCriteria {
     cpmkId: string;
     name: string | null;
     maxScore: number | null;
-    appliesTo: 'seminar' | 'defence' | 'proposal';
-    role: 'default' | 'examiner' | 'supervisor';
+    appliesTo: 'defence';
+    role: DefenceRole;
     displayOrder: number;
+    hasAssessmentDetails?: boolean;
+    hasSubmittedScores?: boolean;
     assessmentRubrics: AssessmentRubric[];
 }
 
@@ -32,19 +36,13 @@ export interface CpmkWithRubrics {
     code: string;
     description: string;
     displayOrder: number;
+    hasAssessmentDetails?: boolean;
     assessmentCriterias: AssessmentCriteria[];
-}
-
-export interface QuickAddRubricPayload {
-    criteriaMaxScore: number;
-    description: string;
-    minScore: number;
-    maxScore: number;
-    criteriaName?: string;
 }
 
 export interface CreateCriteriaPayload {
     cpmkId: string;
+    role: DefenceRole;
     name?: string;
     maxScore: number;
 }
@@ -62,13 +60,6 @@ export interface CreateRubricPayload {
 
 export type UpdateRubricPayload = Partial<CreateRubricPayload>;
 
-export interface QuickAddRubricPayload {
-    criteriaMaxScore: number;
-    description: string;
-    minScore: number;
-    maxScore: number;
-    criteriaName?: string;
-}
 export interface WeightSummaryDetail {
     cpmkId: string;
     cpmkCode: string;
@@ -81,20 +72,26 @@ export interface WeightSummaryDetail {
 export interface WeightSummary {
     totalScore: number;
     isComplete: boolean;
+    examinerTotal: number;
+    supervisorTotal: number;
+    combinedTotal: number;
     details: WeightSummaryDetail[];
 }
 
 // ────────────────────────────────────────────
-// CPMK Listing API
+// CPMK Listing API (per role)
 // ────────────────────────────────────────────
 
-export const getCpmksWithRubrics = async (): Promise<CpmkWithRubrics[]> => {
+export const getCpmksWithRubrics = async (
+    role: DefenceRole,
+    params?: { academicYearId?: string }
+): Promise<CpmkWithRubrics[]> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.CPMKS)
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CPMKS(role) + (params?.academicYearId ? `&academicYearId=${params.academicYearId}` : ''))
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengambil data CPMK rubrik');
+        throw new Error(error.message || 'Gagal mengambil data CPMK rubrik sidang');
     }
     const result = await response.json();
     return result.data;
@@ -108,7 +105,7 @@ export const createCriteria = async (
     payload: CreateCriteriaPayload
 ): Promise<AssessmentCriteria> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.CRITERIA),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA),
         {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -116,7 +113,7 @@ export const createCriteria = async (
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal menambah kriteria seminar');
+        throw new Error(error.message || 'Gagal menambah kriteria sidang');
     }
     const result = await response.json();
     return result.data;
@@ -127,7 +124,7 @@ export const updateCriteria = async (
     payload: UpdateCriteriaPayload
 ): Promise<AssessmentCriteria> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.CRITERIA_BY_ID(criteriaId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_BY_ID(criteriaId)),
         {
             method: 'PATCH',
             body: JSON.stringify(payload),
@@ -135,7 +132,7 @@ export const updateCriteria = async (
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengubah kriteria seminar');
+        throw new Error(error.message || 'Gagal mengubah kriteria sidang');
     }
     const result = await response.json();
     return result.data;
@@ -143,23 +140,23 @@ export const updateCriteria = async (
 
 export const deleteCriteria = async (criteriaId: string): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.CRITERIA_BY_ID(criteriaId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_BY_ID(criteriaId)),
         { method: 'DELETE' }
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal menghapus kriteria seminar');
+        throw new Error(error.message || 'Gagal menghapus kriteria sidang');
     }
 };
 
-export const removeCpmkSeminarConfig = async (cpmkId: string): Promise<void> => {
+export const removeCpmkDefenceConfig = async (cpmkId: string, role: DefenceRole): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.CPMK_CONFIG(cpmkId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CPMK_CONFIG(cpmkId, role)),
         { method: 'DELETE' }
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal menghapus konfigurasi CPMK seminar');
+        throw new Error(error.message || 'Gagal menghapus konfigurasi CPMK sidang');
     }
 };
 
@@ -172,7 +169,7 @@ export const createRubric = async (
     payload: CreateRubricPayload
 ): Promise<AssessmentRubric> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.CRITERIA_RUBRICS(criteriaId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_RUBRICS(criteriaId)),
         {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -180,7 +177,7 @@ export const createRubric = async (
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal menambah level rubrik');
+        throw new Error(error.message || 'Gagal menambah level rubrik sidang');
     }
     const result = await response.json();
     return result.data;
@@ -191,7 +188,7 @@ export const updateRubric = async (
     payload: UpdateRubricPayload
 ): Promise<AssessmentRubric> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.RUBRIC_BY_ID(rubricId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRIC_BY_ID(rubricId)),
         {
             method: 'PATCH',
             body: JSON.stringify(payload),
@@ -199,7 +196,7 @@ export const updateRubric = async (
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengubah komponen rubrik');
+        throw new Error(error.message || 'Gagal mengubah komponen rubrik sidang');
     }
     const result = await response.json();
     return result.data;
@@ -207,12 +204,12 @@ export const updateRubric = async (
 
 export const deleteRubric = async (rubricId: string): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.RUBRIC_BY_ID(rubricId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRIC_BY_ID(rubricId)),
         { method: 'DELETE' }
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal menghapus komponen rubrik');
+        throw new Error(error.message || 'Gagal menghapus komponen rubrik sidang');
     }
 };
 
@@ -225,7 +222,7 @@ export const reorderCriteria = async (
     orderedIds: string[]
 ): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.CRITERIA_REORDER),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_REORDER),
         {
             method: 'PATCH',
             body: JSON.stringify({ cpmkId, orderedIds }),
@@ -233,7 +230,7 @@ export const reorderCriteria = async (
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengubah urutan kriteria');
+        throw new Error(error.message || 'Gagal mengubah urutan kriteria sidang');
     }
 };
 
@@ -242,7 +239,7 @@ export const reorderRubrics = async (
     orderedIds: string[]
 ): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.RUBRICS_REORDER),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRICS_REORDER),
         {
             method: 'PATCH',
             body: JSON.stringify({ criteriaId, orderedIds }),
@@ -250,21 +247,21 @@ export const reorderRubrics = async (
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengubah urutan rubrik');
+        throw new Error(error.message || 'Gagal mengubah urutan rubrik sidang');
     }
 };
 
 // ────────────────────────────────────────────
-// Weight Summary API
+// Weight Summary API (per role)
 // ────────────────────────────────────────────
 
-export const getWeightSummary = async (): Promise<WeightSummary> => {
+export const getWeightSummary = async (role: DefenceRole): Promise<WeightSummary> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_SEMINAR.WEIGHT_SUMMARY)
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.WEIGHT_SUMMARY(role))
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengambil ringkasan bobot');
+        throw new Error(error.message || 'Gagal mengambil ringkasan bobot sidang');
     }
     const result = await response.json();
     return result.data;

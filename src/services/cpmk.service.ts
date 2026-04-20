@@ -14,6 +14,9 @@ export interface Cpmk {
     description: string;
     type: 'research_method' | 'thesis';
     maxScore: number | null;
+    hasCriteria: boolean;
+    hasAssessmentDetails: boolean;
+    canEditCode: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -26,6 +29,11 @@ export interface CreateCpmkPayload {
 }
 
 export type UpdateCpmkPayload = Partial<CreateCpmkPayload>;
+
+export interface CopyCpmkTemplatePayload {
+    sourceAcademicYearId: string;
+    targetAcademicYearId: string;
+}
 
 export const getCpmks = async (params?: { academicYearId?: string }): Promise<Cpmk[]> => {
     const queryParams = new URLSearchParams();
@@ -90,4 +98,19 @@ export const deleteCpmk = async (id: string): Promise<void> => {
         const error = await response.json();
         throw new Error(error.message || 'Gagal menghapus data CPMK');
     }
+};
+
+export const copyCpmkTemplate = async (
+    payload: CopyCpmkTemplatePayload
+): Promise<{ cpmk: number; criteria: number; rubrics: number }> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.CPMK.COPY_TEMPLATE), {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal menyalin template CPMK');
+    }
+    const result = await response.json();
+    return result.data;
 };

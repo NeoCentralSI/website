@@ -349,9 +349,12 @@ function App() {
                 <Route path="/tugas-akhir/kelola" element={<Placeholder title="Tugas Akhir - Kelola (Deprecated)" />} />
 
                 {/* Shared Kelola - Sekdep & Kadep */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                   <Route path="/kelola/sop" element={<KelolaSopPage />} />
+                  <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
                 </Route>
 

@@ -14,15 +14,13 @@ import type {
     AssessmentCriteria,
     CreateCriteriaPayload,
     UpdateCriteriaPayload,
-    DefenceRole,
-} from '@/services/rubricDefence.service';
+} from '@/services/seminarRubric.service';
 
-interface DefenceCriteriaFormDialogProps {
+interface CriteriaFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     cpmkId: string;
     cpmkCode: string;
-    role: DefenceRole;
     editData?: AssessmentCriteria | null;
     remainingScore?: number;
     onSubmit:
@@ -30,25 +28,20 @@ interface DefenceCriteriaFormDialogProps {
         | ((data: UpdateCriteriaPayload) => Promise<unknown>);
 }
 
-const ROLE_LABEL: Record<DefenceRole, string> = {
-    examiner: 'Penguji',
-    supervisor: 'Pembimbing',
-};
-
-export function DefenceCriteriaFormDialog({
+export function CriteriaFormDialog({
     open,
     onOpenChange,
     cpmkId,
     cpmkCode,
-    role,
     editData,
     remainingScore,
     onSubmit,
-}: DefenceCriteriaFormDialogProps) {
+}: CriteriaFormDialogProps) {
     const [name, setName] = useState('');
     const [maxScore, setMaxScore] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isEdit = !!editData;
+    const isMaxScoreLocked = Boolean(isEdit && editData?.hasAssessmentDetails);
 
     useEffect(() => {
         if (editData) {
@@ -64,18 +57,20 @@ export function DefenceCriteriaFormDialog({
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const payload = {
-                ...(name.trim() ? { name: name.trim() } : {}),
-                maxScore: parseInt(maxScore, 10),
-            };
-
             if (isEdit) {
+                const payload: UpdateCriteriaPayload = {
+                    ...(name.trim() ? { name: name.trim() } : {}),
+                    ...(isMaxScoreLocked ? {} : { maxScore: parseInt(maxScore, 10) }),
+                };
                 await (onSubmit as (data: UpdateCriteriaPayload) => Promise<unknown>)(payload);
             } else {
+                const payload = {
+                    ...(name.trim() ? { name: name.trim() } : {}),
+                    maxScore: parseInt(maxScore, 10),
+                };
                 await (onSubmit as (data: CreateCriteriaPayload) => Promise<unknown>)({
                     ...payload,
                     cpmkId,
-                    role,
                 });
             }
             onOpenChange(false);
@@ -89,18 +84,18 @@ export function DefenceCriteriaFormDialog({
     const parsed = parseInt(maxScore, 10);
     const effectiveMax = remainingScore != null ? remainingScore : 100;
     const isValid =
-        maxScore.trim() &&
-        !isNaN(parsed) &&
-        parsed >= 1 &&
-        parsed <= effectiveMax;
+        isMaxScoreLocked
+            ? true
+            : (maxScore.trim() &&
+                !isNaN(parsed) &&
+                parsed >= 1);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-sm">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEdit ? 'Edit Kriteria Sidang' : 'Tambah Kriteria Sidang'}
-                        {' '}({ROLE_LABEL[role]})
+                        {isEdit ? 'Edit Kriteria Seminar' : 'Tambah Kriteria Seminar'}
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -130,21 +125,26 @@ export function DefenceCriteriaFormDialog({
                             type="number"
                             placeholder="Contoh: 10"
                             min={1}
-                            max={effectiveMax}
                             value={maxScore}
                             onChange={(e) => setMaxScore(e.target.value)}
                             required
                             autoFocus
+                            disabled={isMaxScoreLocked}
                         />
                         <p className="text-xs text-muted-foreground">
                             {remainingScore != null
-                                ? `Sisa skor tersedia: ${remainingScore} dari 100 (gabungan penguji & pembimbing)`
+                                ? `Sisa skor tersedia: ${remainingScore} dari 100`
                                 : 'Skor maksimal untuk rentang rubrik di kriteria ini.'
                             }
                         </p>
+                        {isMaxScoreLocked && (
+                            <p className="text-xs text-amber-700">
+                                Skor maksimal terkunci karena kriteria ini sudah memiliki detail penilaian.
+                            </p>
+                        )}
                         {maxScore.trim() && !isNaN(parsed) && parsed > effectiveMax && (
-                            <p className="text-xs text-destructive">
-                                Skor ({parsed}) melebihi sisa yang tersedia ({effectiveMax}).
+                            <p className="text-xs text-amber-700">
+                                Skor ({parsed}) melebihi sisa indikator ({effectiveMax}). Ini hanya peringatan.
                             </p>
                         )}
                     </div>

@@ -4,9 +4,9 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
 import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
-import { CpmkManagementPanel } from "@/components/kelola/cpmk/CpmkManagementPanel";
-import { RubricSeminarManagementPanel } from '@/components/kelola/rubric-seminar/RubricSeminarManagementPanel';
-import { RubricDefenceManagementPanel } from '@/components/kelola/rubric-defence/RubricDefenceManagementPanel';
+import { CpmkManagementPanel } from "@/components/cpmk/CpmkManagementPanel";
+import { SeminarRubricManagementPanel } from '@/components/seminar-rubric/SeminarRubricManagementPanel';
+import { DefenceRubricManagementPanel } from '@/components/defence-rubric/DefenceRubricManagementPanel';
 const TAB_ITEMS: TabItem[] = [
   { label: "Kelola Topik", to: "/kelola/tugas-akhir/topik" },
   { label: "Kelola Milestone", to: "/kelola/tugas-akhir/milestone" },
@@ -54,11 +54,11 @@ export default function KelolaTugasAkhirPage() {
     }
 
     if (activeTab.label === "Kelola Rubrik Seminar") {
-      return <RubricSeminarManagementPanel />;
+      return <SeminarRubricManagementPanel />;
     }
 
     if (activeTab.label === "Kelola Rubrik Sidang") {
-      return <RubricDefenceManagementPanel />;
+      return <DefenceRubricManagementPanel />;
     }
 
     return (
