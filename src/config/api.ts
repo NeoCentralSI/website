@@ -284,7 +284,6 @@ export const API_CONFIG = {
     LECTURER_AVAILABILITY: {
       BASE: '/lecturer-availability',
       BY_ID: (id: string) => `/lecturer-availability/${id}`,
-      TOGGLE: (id: string) => `/lecturer-availability/${id}/toggle`,
     },
     INTERNSHIP_STUDENT: {
       BASE: '/insternship/registration',
