@@ -32,6 +32,7 @@ export interface Room {
   name: string;
   location: string | null;
   capacity: number | null;
+  relationCount: number;
   canDelete: boolean;
   createdAt: string;
   updatedAt: string;

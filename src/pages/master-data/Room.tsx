@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Plus, Info } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   RoomFormDialog,
   RoomTable,
@@ -119,13 +118,6 @@ export default function RoomPage() {
           <p className="text-muted-foreground">Manajemen data master ruangan untuk penjadwalan kegiatan akademik</p>
         </div>
       </div>
-
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          Ruangan yang sudah memiliki relasi data (seminar, sidang, yudisium, atau seminar kerja praktik) tidak dapat dihapus.
-        </AlertDescription>
-      </Alert>
 
       <RoomTable
         data={rooms}

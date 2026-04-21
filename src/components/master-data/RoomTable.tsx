@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 import { Pencil, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -59,21 +57,12 @@ export function RoomTable({
       render: (row: Room) => row.capacity ?? '-',
     },
     {
-      key: 'status',
-      header: 'Status Hapus',
+      key: 'usage',
+      header: 'Terpakai',
       render: (row: Room) => (
-        <Badge variant={row.canDelete ? 'default' : 'secondary'}>
-          {row.canDelete ? 'Bisa Dihapus' : 'Terpakai'}
-        </Badge>
-      ),
-    },
-    {
-      key: 'updatedAt',
-      header: 'Diperbarui',
-      render: (row: Room) => (
-        <span className="text-sm text-muted-foreground">
-          {format(new Date(row.updatedAt), 'd MMM yyyy', { locale: idLocale })}
-        </span>
+        row.relationCount > 0
+          ? <Badge variant="secondary">{row.relationCount} Data</Badge>
+          : <span className="text-muted-foreground">-</span>
       ),
     },
     {
@@ -95,8 +84,8 @@ export function RoomTable({
             size="icon"
             className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
             onClick={() => onDelete(row)}
-            disabled={!row.canDelete}
-            title={row.canDelete ? 'Hapus ruangan' : 'Ruangan tidak dapat dihapus karena sudah memiliki relasi'}
+            disabled={!row.canDelete || row.relationCount > 0}
+            title={row.canDelete && row.relationCount === 0 ? 'Hapus ruangan' : 'Ruangan tidak dapat dihapus karena sudah memiliki relasi'}
           >
             <Trash2 className="w-4 h-4" />
           </Button>
