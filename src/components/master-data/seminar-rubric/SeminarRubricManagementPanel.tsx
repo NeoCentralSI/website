@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSeminarRubric } from '@/hooks/seminar/useSeminarRubric';
+import { useSeminarRubric } from '@/hooks/master-data/useSeminarRubric';
 import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { getActiveAcademicYearAPI } from '@/services/admin.service';
 import { CriteriaTable } from '@/components/master-data/seminar-rubric/CriteriaTable';
@@ -110,17 +110,17 @@ export function SeminarRubricManagementPanel() {
 
             {weightSummary && (
                 <div className={`sticky top-2 z-10 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${weightSummary.totalScore === 100
-                        ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                        : weightSummary.totalScore > 100
-                            ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
-                            : 'bg-muted/30'
+                    ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                    : weightSummary.totalScore > 100
+                        ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+                        : 'bg-muted/30'
                     }`}>
                     <span className="text-muted-foreground">Total Skor Kriteria Aktif:</span>
                     <span className={`text-lg font-bold ${weightSummary.totalScore === 100
-                            ? 'text-green-600 dark:text-green-400'
-                            : weightSummary.totalScore > 100
-                                ? 'text-red-600 dark:text-red-400'
-                                : ''
+                        ? 'text-green-600 dark:text-green-400'
+                        : weightSummary.totalScore > 100
+                            ? 'text-red-600 dark:text-red-400'
+                            : ''
                         }`}>
                         {weightSummary.totalScore} / 100
                     </span>

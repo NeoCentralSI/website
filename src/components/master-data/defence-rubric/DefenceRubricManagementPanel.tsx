@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useDefenceRubric } from '@/hooks/defence/useDefenceRubric';
+import { useDefenceRubric } from '@/hooks/master-data/useDefenceRubric';
 import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { getActiveAcademicYearAPI } from '@/services/admin.service';
 import { DefenceCriteriaTable } from '@/components/master-data/defence-rubric/DefenceCriteriaTable';
@@ -127,8 +127,8 @@ export function DefenceRubricManagementPanel() {
                         key={opt.value}
                         onClick={() => setSelectedRole(opt.value)}
                         className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedRole === opt.value
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         {opt.label}
@@ -139,17 +139,17 @@ export function DefenceRubricManagementPanel() {
             {weightSummary && (
                 <div className="space-y-2 sticky top-2 z-10">
                     <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${combinedTotal === 100
-                            ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                            : combinedTotal > 100
-                                ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
-                                : 'bg-muted/30'
+                        ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                        : combinedTotal > 100
+                            ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+                            : 'bg-muted/30'
                         }`}>
                         <span className="text-muted-foreground">Total Skor Gabungan (Penguji + Pembimbing):</span>
                         <span className={`text-lg font-bold ${combinedTotal === 100
-                                ? 'text-green-600 dark:text-green-400'
-                                : combinedTotal > 100
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : ''
+                            ? 'text-green-600 dark:text-green-400'
+                            : combinedTotal > 100
+                                ? 'text-red-600 dark:text-red-400'
+                                : ''
                             }`}>
                             {combinedTotal} / 100
                         </span>
