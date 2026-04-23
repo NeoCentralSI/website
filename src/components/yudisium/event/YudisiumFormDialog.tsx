@@ -17,13 +17,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { getExitSurveyForms } from '@/services/exitSurvey.service';
+import { getExitSurveyForms } from '@/services/yudisium/exit-survey.service';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import type {
 	CreateYudisiumPayload,
 	UpdateYudisiumPayload,
 	YudisiumEvent,
-} from '@/services/yudisium.service';
+} from '@/services/yudisium/yudisium.service';
 
 interface YudisiumFormDialogProps {
 	open: boolean;

@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { SeminarResult, SeminarResultStudentOption } from '@/services/admin.service';
+import type { SeminarResult, SeminarResultStudentOption } from '@/services/thesis-seminar/admin-seminar.service';
 
 interface ThesisSeminarAudienceAssignDialogProps {
   open: boolean;

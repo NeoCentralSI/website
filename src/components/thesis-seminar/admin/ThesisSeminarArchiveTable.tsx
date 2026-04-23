@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
-import type { SeminarResult } from '@/services/admin.service';
+import type { SeminarResult } from '@/services/thesis-seminar/admin-seminar.service';
 
 interface ThesisSeminarArchiveTableProps {
   data: SeminarResult[];

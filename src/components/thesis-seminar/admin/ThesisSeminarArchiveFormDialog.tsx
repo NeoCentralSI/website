@@ -21,12 +21,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type {
-  Room,
   SeminarResult,
   SeminarResultStatus,
   SeminarResultLecturerOption,
   SeminarResultThesisOption,
-} from '@/services/admin.service';
+} from '@/services/thesis-seminar/admin-seminar.service';
+import type { Room } from '@/services/admin.service';
 
 interface ThesisSeminarArchiveFormDialogProps {
   open: boolean;

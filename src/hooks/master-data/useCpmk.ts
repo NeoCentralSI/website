@@ -9,7 +9,7 @@ import {
     type CreateCpmkPayload,
     type UpdateCpmkPayload,
     type CopyCpmkTemplatePayload,
-} from '@/services/cpmk.service';
+} from '@/services/master-data/cpmk.service';
 
 const QUERY_KEY = ['cpmks'];
 

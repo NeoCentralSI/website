@@ -9,7 +9,7 @@ import {
   updateCplRecommendationStatus,
   downloadDraftSk,
   uploadSkResmi,
-} from '@/services/lecturerYudisium.service';
+} from '@/services/yudisium/lecturer-yudisium.service';
 import { toast } from 'sonner';
 
 const lecturerYudisiumKeys = {

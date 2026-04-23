@@ -24,15 +24,15 @@ import {
   deleteSeminarResultAPI,
   getSeminarResultThesisOptionsAPI,
   getSeminarResultLecturerOptionsAPI,
-  getRoomsAPI,
-} from '@/services/admin.service';
+} from '@/services/thesis-seminar/admin-seminar.service';
+import { getRoomsAPI } from '@/services/admin.service';
 import type {
-  Room,
   SeminarResult,
   SeminarResultStatus,
   SeminarResultLecturerOption,
   SeminarResultThesisOption,
-} from '@/services/admin.service';
+} from '@/services/thesis-seminar/admin-seminar.service';
+import type { Room } from '@/services/admin.service';
 
 import { ThesisSeminarArchiveTable } from '@/components/thesis-seminar/admin/ThesisSeminarArchiveTable';
 import { ThesisSeminarArchiveFormDialog } from '@/components/thesis-seminar/admin/ThesisSeminarArchiveFormDialog';

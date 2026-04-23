@@ -7,7 +7,7 @@ import {
     deleteAvailability,
     type CreateAvailabilityPayload,
     type UpdateAvailabilityPayload,
-} from '@/services/lecturerAvailability.service';
+} from '@/services/master-data/lecturer-availability.service';
 
 const QUERY_KEY = ['lecturer-availability'];
 

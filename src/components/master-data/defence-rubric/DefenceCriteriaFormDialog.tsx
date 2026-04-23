@@ -15,7 +15,7 @@ import type {
     CreateCriteriaPayload,
     UpdateCriteriaPayload,
     DefenceRole,
-} from '@/services/defenceRubric.service';
+} from '@/services/master-data/defence-rubric.service';
 
 interface DefenceCriteriaFormDialogProps {
     open: boolean;

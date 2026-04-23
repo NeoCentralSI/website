@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type {
     UpdateYudisiumRequirementPayload,
     YudisiumRequirement,
-} from '@/services/yudisiumRequirement.service';
+} from '@/services/yudisium/yudisium-requirement.service';
 import { YudisiumRequirementFormDialog } from './YudisiumRequirementFormDialog';
 
 interface YudisiumRequirementTableProps {

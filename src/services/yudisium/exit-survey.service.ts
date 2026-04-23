@@ -1,5 +1,5 @@
 import { API_CONFIG, getApiUrl } from '@/config/api';
-import { apiRequest } from './auth.service';
+import { apiRequest } from '../auth.service';
 import type {
   ExitSurveyForm,
   ExitSurveyQuestion,

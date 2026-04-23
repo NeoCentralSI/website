@@ -15,7 +15,7 @@ import {
   createExitSurveyQuestion,
   updateExitSurveyQuestion,
   deleteExitSurveyQuestion,
-} from '@/services/exitSurvey.service';
+} from '@/services/yudisium/exit-survey.service';
 import type { ExitSurveyForm, ExitSurveyQuestion } from '@/types/exit-survey.types';
 import type {
   CreateExitSurveyFormPayload,

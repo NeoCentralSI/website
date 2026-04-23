@@ -14,7 +14,7 @@ import type {
     AssessmentCriteria,
     CreateCriteriaPayload,
     UpdateCriteriaPayload,
-} from '@/services/seminarRubric.service';
+} from '@/services/master-data/seminar-rubric.service';
 
 interface CriteriaFormDialogProps {
     open: boolean;

@@ -10,7 +10,7 @@ import type {
     AssessmentCriteria,
     CpmkWithRubrics,
     UpdateCriteriaPayload,
-} from '@/services/seminarRubric.service';
+} from '@/services/master-data/seminar-rubric.service';
 
 function academicYearLabel(semester?: string, year?: string | null) {
     const semesterLabel = semester === 'ganjil' ? 'Ganjil' : 'Genap';

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import type { LecturerAvailability, UpdateAvailabilityPayload } from '@/services/lecturerAvailability.service';
+import type { LecturerAvailability, UpdateAvailabilityPayload } from '@/services/master-data/lecturer-availability.service';
 import { LecturerAvailabilityFormDialog } from '@/components/master-data/lecturer-availability/LecturerAvailabilityFormDialog';
 
 const DAY_LABELS: Record<string, string> = {

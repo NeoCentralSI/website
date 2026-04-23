@@ -11,7 +11,7 @@ import type {
     CpmkWithRubrics,
     UpdateCriteriaPayload,
     DefenceRole,
-} from '@/services/defenceRubric.service';
+} from '@/services/master-data/defence-rubric.service';
 
 const ROLE_OPTIONS: { value: DefenceRole; label: string }[] = [
     { value: 'examiner', label: 'Penguji' },

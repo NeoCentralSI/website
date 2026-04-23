@@ -15,7 +15,7 @@ import {
   approveDefenceRevision,
   unapproveDefenceRevision,
   finalizeDefenceRevisions,
-} from '@/services/lecturerDefence.service';
+} from '@/services/thesis-defence/lecturer-defence.service';
 import type {
   RespondDefenceAssignmentPayload,
   SubmitDefenceAssessmentPayload,

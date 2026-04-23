@@ -17,7 +17,7 @@ import {
     type UpdateCriteriaPayload,
     type CreateRubricPayload,
     type UpdateRubricPayload,
-} from '@/services/defenceRubric.service';
+} from '@/services/master-data/defence-rubric.service';
 
 const CPMKS_KEY = 'defence-rubric-cpmks';
 const WEIGHT_KEY = 'defence-rubric-weight';

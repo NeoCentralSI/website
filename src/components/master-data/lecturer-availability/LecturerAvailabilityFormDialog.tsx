@@ -18,7 +18,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import type { LecturerAvailability, CreateAvailabilityPayload, UpdateAvailabilityPayload } from '@/services/lecturerAvailability.service';
+import type { LecturerAvailability, CreateAvailabilityPayload, UpdateAvailabilityPayload } from '@/services/master-data/lecturer-availability.service';
 
 const DAY_OPTIONS = [
     { value: 'monday', label: 'Senin' },

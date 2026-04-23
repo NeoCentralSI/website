@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import CustomTable from '@/components/layout/CustomTable';
-import type { SeminarResultAudienceLink } from '@/services/admin.service';
+import type { SeminarResultAudienceLink } from '@/services/thesis-seminar/admin-seminar.service';
 
 interface ThesisSeminarAudienceTableProps {
   data: SeminarResultAudienceLink[];

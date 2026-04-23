@@ -5,7 +5,7 @@ import {
   validateDefenceDocument,
   getDefenceSchedulingData,
   setDefenceSchedule,
-} from '@/services/adminDefence.service';
+} from '@/services/thesis-defence/admin-defence.service';
 import type { ValidateDefenceDocumentPayload, SetDefenceSchedulePayload } from '@/types/defence.types';
 
 export function useAdminDefenceList(params?: { search?: string; status?: string }) {

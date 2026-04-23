@@ -34,7 +34,7 @@ import type {
     AssessmentRubric,
     CreateRubricPayload,
     UpdateRubricPayload,
-} from '@/services/seminarRubric.service';
+} from '@/services/master-data/seminar-rubric.service';
 import { RubricItemFormDialog } from './RubricItemFormDialog';
 
 // ── Types ─────────────────────────────────────

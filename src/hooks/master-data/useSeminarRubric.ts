@@ -16,7 +16,7 @@ import {
     type UpdateCriteriaPayload,
     type CreateRubricPayload,
     type UpdateRubricPayload,
-} from '@/services/seminarRubric.service';
+} from '@/services/master-data/seminar-rubric.service';
 
 const CPMKS_KEY = ['seminar-rubric-cpmks'];
 const WEIGHT_KEY = ['seminar-rubric-weight'];

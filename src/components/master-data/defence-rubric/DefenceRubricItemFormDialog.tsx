@@ -15,7 +15,7 @@ import type {
     AssessmentRubric,
     CreateRubricPayload,
     UpdateRubricPayload,
-} from '@/services/defenceRubric.service';
+} from '@/services/master-data/defence-rubric.service';
 
 interface DefenceRubricItemFormDialogProps {
     open: boolean;

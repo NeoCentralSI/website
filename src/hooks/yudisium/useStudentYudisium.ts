@@ -3,7 +3,7 @@ import {
   getStudentYudisiumOverview,
   getStudentYudisiumRequirements,
   uploadYudisiumDocument,
-} from '@/services/studentYudisium.service';
+} from '@/services/yudisium/student-yudisium.service';
 import { toast } from 'sonner';
 
 const studentYudisiumKeys = {

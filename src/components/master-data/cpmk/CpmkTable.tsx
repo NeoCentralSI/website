@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import type { Cpmk, UpdateCpmkPayload } from '@/services/cpmk.service';
+import type { Cpmk, UpdateCpmkPayload } from '@/services/master-data/cpmk.service';
 import { CpmkFormDialog } from '@/components/master-data/cpmk/CpmkFormDialog';
 
 interface CpmkTableProps {
