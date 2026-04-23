@@ -18,7 +18,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { getExitSurveyForms } from '@/services/exitSurvey.service';
-import type { ExitSurveyForm } from '@/types/exitSurvey.types';
+import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import type {
 	CreateYudisiumPayload,
 	UpdateYudisiumPayload,

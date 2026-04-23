@@ -1,6 +1,6 @@
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from './auth.service';
-import type { StudentYudisiumOverviewResponse, StudentYudisiumRequirementsResponse } from '@/types/studentYudisium.types';
+import type { StudentYudisiumOverviewResponse, StudentYudisiumRequirementsResponse } from '@/types/student-yudisium.types';
 
 const EP = API_CONFIG.ENDPOINTS.YUDISIUM_STUDENT;
 

@@ -397,7 +397,7 @@ export const deleteRoomAPI = async (id: string): Promise<{ success: boolean; mes
 };
 
 export const getSeminarResultThesisOptionsAPI = async (): Promise<{ data: SeminarResultThesisOption[] }> => {
-  const response = await fetch(getApiUrl('/thesisSeminar/admin/seminar-results/options/theses'), {
+  const response = await fetch(getApiUrl('/thesis-seminars/admin/seminar-results/options/theses'), {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -413,7 +413,7 @@ export const getSeminarResultThesisOptionsAPI = async (): Promise<{ data: Semina
 };
 
 export const getSeminarResultLecturerOptionsAPI = async (): Promise<{ data: SeminarResultLecturerOption[] }> => {
-  const response = await fetch(getApiUrl('/thesisSeminar/admin/seminar-results/options/lecturers'), {
+  const response = await fetch(getApiUrl('/thesis-seminars/admin/seminar-results/options/lecturers'), {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -429,7 +429,7 @@ export const getSeminarResultLecturerOptionsAPI = async (): Promise<{ data: Semi
 };
 
 export const getSeminarResultStudentOptionsAPI = async (): Promise<{ data: SeminarResultStudentOption[] }> => {
-  const response = await fetch(getApiUrl('/thesisSeminar/admin/seminar-results/options/students'), {
+  const response = await fetch(getApiUrl('/thesis-seminars/admin/seminar-results/options/students'), {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -462,7 +462,7 @@ export const getSeminarResultsAPI = async (params?: {
   if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
 
-  const response = await fetch(getApiUrl(`/thesisSeminar/admin/seminar-results?${queryParams}`), {
+  const response = await fetch(getApiUrl(`/thesis-seminars/admin/seminar-results?${queryParams}`), {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -478,7 +478,7 @@ export const getSeminarResultsAPI = async (params?: {
 };
 
 export const getSeminarResultDetailAPI = async (id: string): Promise<{ data: SeminarResult }> => {
-  const response = await fetch(getApiUrl(`/thesisSeminar/admin/seminar-results/${id}`), {
+  const response = await fetch(getApiUrl(`/thesis-seminars/admin/seminar-results/${id}`), {
     headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
   });
   if (!response.ok) {
@@ -489,7 +489,7 @@ export const getSeminarResultDetailAPI = async (id: string): Promise<{ data: Sem
 };
 
 export const createSeminarResultAPI = async (data: CreateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
-  const response = await fetch(getApiUrl('/thesisSeminar/admin/seminar-results'), {
+  const response = await fetch(getApiUrl('/thesis-seminars/admin/seminar-results'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -507,7 +507,7 @@ export const createSeminarResultAPI = async (data: CreateSeminarResultRequest): 
 };
 
 export const updateSeminarResultAPI = async (id: string, data: UpdateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
-  const response = await fetch(getApiUrl(`/thesisSeminar/admin/seminar-results/${id}`), {
+  const response = await fetch(getApiUrl(`/thesis-seminars/admin/seminar-results/${id}`), {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -525,7 +525,7 @@ export const updateSeminarResultAPI = async (id: string, data: UpdateSeminarResu
 };
 
 export const deleteSeminarResultAPI = async (id: string): Promise<{ success: boolean; message: string }> => {
-  const response = await fetch(getApiUrl(`/thesisSeminar/admin/seminar-results/${id}`), {
+  const response = await fetch(getApiUrl(`/thesis-seminars/admin/seminar-results/${id}`), {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -558,7 +558,7 @@ export const getSeminarResultAudienceLinksAPI = async (params?: {
   if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
 
-  const response = await fetch(getApiUrl(`/thesisSeminar/admin/seminar-results/audiences?${queryParams}`), {
+  const response = await fetch(getApiUrl(`/thesis-seminars/admin/seminar-results/audiences?${queryParams}`), {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -583,7 +583,7 @@ export const assignSeminarResultAudiencesAPI = async (payload: {
     skippedDuplicate: number;
   };
 }> => {
-  const response = await fetch(getApiUrl('/thesisSeminar/admin/seminar-results/audiences/assign'), {
+  const response = await fetch(getApiUrl('/thesis-seminars/admin/seminar-results/audiences/assign'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -601,7 +601,7 @@ export const assignSeminarResultAudiencesAPI = async (payload: {
 };
 
 export const removeSeminarResultAudienceLinkAPI = async (seminarId: string, studentId: string): Promise<{ success: boolean; message: string }> => {
-  const response = await fetch(getApiUrl(`/thesisSeminar/admin/seminar-results/audiences/${seminarId}/${studentId}`), {
+  const response = await fetch(getApiUrl(`/thesis-seminars/admin/seminar-results/audiences/${seminarId}/${studentId}`), {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,

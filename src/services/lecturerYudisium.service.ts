@@ -5,7 +5,7 @@ import type {
   AdminYudisiumParticipantDetailResponse,
   AdminYudisiumParticipantsResponse,
   ParticipantCplResponse,
-} from '@/types/adminYudisium.types';
+} from '@/types/admin-yudisium.types';
 
 const EP = API_CONFIG.ENDPOINTS.YUDISIUM_LECTURER;
 

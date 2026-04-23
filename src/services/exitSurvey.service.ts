@@ -7,7 +7,7 @@ import type {
   UpdateExitSurveyFormPayload,
   CreateExitSurveyQuestionPayload,
   UpdateExitSurveyQuestionPayload,
-} from '@/types/exitSurvey.types';
+} from '@/types/exit-survey.types';
 
 const E = API_CONFIG.ENDPOINTS.EXIT_SURVEY;
 

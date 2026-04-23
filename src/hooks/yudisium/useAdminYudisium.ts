@@ -5,7 +5,7 @@ import {
   getAdminYudisiumParticipantDetail,
   validateYudisiumDocument,
 } from '@/services/adminYudisium.service';
-import type { ValidateDocumentPayload } from '@/types/adminYudisium.types';
+import type { ValidateDocumentPayload } from '@/types/admin-yudisium.types';
 import { toast } from 'sonner';
 
 const adminYudisiumKeys = {

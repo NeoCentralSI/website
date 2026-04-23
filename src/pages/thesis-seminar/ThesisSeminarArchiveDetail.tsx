@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, useParams, Link } from 'react-router-dom';
-import { Plus, ArrowLeft, User, BookOpen, Calendar, MapPin, Users } from 'lucide-react';
+import { Plus, ArrowLeft, User, Calendar, MapPin, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -53,7 +53,7 @@ export default function ThesisSeminarDetailPage() {
   const [deleteLink, setDeleteLink] = useState<{ seminarId: string; studentId: string } | null>(null);
 
   // Queries
-  const { data: seminarDetail, isLoading: isLoadingDetail, refetch: refetchDetail } = useQuery({
+  const { data: seminarDetail, refetch: refetchDetail } = useQuery({
     queryKey: ['seminar-result-detail', id],
     queryFn: () => getSeminarResultDetailAPI(id!).then(res => res.data),
     enabled: !!id,

@@ -9,7 +9,7 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { ArrowLeft, Eye, ShieldCheck } from 'lucide-react';
 import { useAdminYudisiumParticipants } from '@/hooks/yudisium/useAdminYudisium';
 import { YudisiumValidationModal } from '@/components/yudisium/YudisiumValidationModal';
-import type { AdminYudisiumParticipant } from '@/types/adminYudisium.types';
+import type { AdminYudisiumParticipant } from '@/types/admin-yudisium.types';
 import { formatDateOnlyId } from '@/lib/text';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {

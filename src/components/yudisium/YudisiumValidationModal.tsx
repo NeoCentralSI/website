@@ -15,7 +15,7 @@ import { apiRequest } from '@/services/auth.service';
 import { ENV } from '@/config/env';
 import { CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
-import type { AdminYudisiumParticipant, AdminYudisiumParticipantDocument } from '@/types/adminYudisium.types';
+import type { AdminYudisiumParticipant, AdminYudisiumParticipantDocument } from '@/types/admin-yudisium.types';
 
 interface YudisiumValidationModalProps {
   participant: AdminYudisiumParticipant | null;
