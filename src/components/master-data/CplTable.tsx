@@ -16,7 +16,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import type { Cpl, UpdateCplPayload } from '@/services/master-data/cpl.service';
-import { CplFormDialog } from '@/components/master-data/cpl/CplFormDialog';
+import { CplFormDialog } from '@/components/master-data/CplFormDialog';
 
 interface CplTableProps {
     data: Cpl[];

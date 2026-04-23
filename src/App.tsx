@@ -47,8 +47,8 @@ const SeminarHasilEntry = lazy(() => import('./pages/tugas-akhir/seminar-hasil/S
 const StudentThesisSeminarPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentThesisSeminar'))
 const StudentSeminarAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarAttendance'))
 const StudentSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarDetail'))
-const AdminThesisSeminarManagementPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/AdminThesisSeminarManagement'))
-const AdminSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/AdminSeminarDetail'))
+const AdminThesisSeminarPage = lazy(() => import('./pages/thesis-seminar/AdminThesisSeminar'))
+const AdminSeminarDetailPage = lazy(() => import('./pages/thesis-seminar/AdminSeminarDetail'))
 const LecturerThesisSeminarPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerThesisSeminar'))
 const LecturerExaminerAssignmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerExaminerAssignment'))
 const LecturerSupervisedStudentsPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSupervisedStudents'))
@@ -56,6 +56,7 @@ const LecturerSeminarDetailIdentityPage = lazy(() => import('./pages/tugas-akhir
 const LecturerSeminarDetailAssessmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'))
 const LecturerSeminarDetailRevisionPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'))
 const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'))
+const ThesisSeminarArchiveDetailPage = lazy(() => import('./pages/thesis-seminar/ThesisSeminarArchiveDetail'))
 // Kerja Praktik - Dosen
 const InternshipGuidanceOverviewPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceOverview'))
 const StudentDetailPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/StudentDetail'))
@@ -123,6 +124,7 @@ const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/
 // Master Data
 const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
 const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
+const Cpl = lazy(() => import('./pages/master-data/Cpl'))
 const MahasiswaPage = lazy(() => import('./pages/master-data/Mahasiswa'))
 const MahasiswaDetailPage = lazy(() => import('./pages/master-data/MahasiswaDetail'))
 const DosenPage = lazy(() => import('./pages/master-data/Dosen'))
@@ -130,7 +132,7 @@ const DosenDetailPage = lazy(() => import('./pages/master-data/DosenDetail'))
 const MasterDataTugasAkhirPage = lazy(() => import('./pages/master-data/TugasAkhir'))
 const ScienceGroupPage = lazy(() => import('./pages/master-data/ScienceGroup'))
 const RoomPage = lazy(() => import('./pages/master-data/Room'))
-const SeminarHasilMasterPage = lazy(() => import('./pages/master-data/SeminarHasilMaster'))
+const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvailability'))
 // Kelola
 const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
 const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
@@ -138,11 +140,7 @@ const PenilaianAkhirMetopen = lazy(() => import('./pages/dosen/metopen/Penilaian
 const InboxPembimbing = lazy(() => import('./pages/dosen/InboxPembimbing'))
 const DSSKadep = lazy(() => import('./pages/kelola/kadep/DSSKadep'))
 const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
-const Cpl = lazy(() => import('./pages/master-data/Cpl'))
 const KuotaBimbinganPage = lazy(() => import('./pages/master-data/KuotaBimbingan'))
-
-// Jadwal Ketersediaan Dosen
-const LecturerAvailability = lazy(() => import('./pages/lecturer/LecturerAvailability'))
 
 // Pengumuman
 const SeminarHasilAnnouncementPage = lazy(() => import('./pages/pengumuman/SeminarHasilAnnouncement'))
@@ -354,14 +352,11 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                   <Route path="/kelola/sop" element={<KelolaSopPage />} />
+                  <Route path="/kelola/cpl" element={<Cpl />} />
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
-                </Route>
-
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
-                  <Route path="/kelola/cpl" element={<Cpl />} />
                 </Route>
 
                 {/* Kelola Metopen - Dosen Pengampu, Sekdep, Kadep */}
@@ -435,16 +430,17 @@ function App() {
                   <Route path="/admin/kerja-praktik/surat-tugas/:id" element={<ManageAssignmentLetter />} />
                   <Route path="/admin/kerja-praktik/surat-tugas/template" element={<AssignmentTemplateEditor />} />
                   <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
-                  <Route path="/tugas-akhir/seminar/admin" element={<AdminThesisSeminarManagementPage />} />
-                  <Route path="/tugas-akhir/seminar/admin/:seminarId" element={<AdminSeminarDetailPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil" element={<AdminThesisSeminarPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/validasi" element={<AdminThesisSeminarPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/arsip" element={<AdminThesisSeminarPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/admin/:seminarId" element={<AdminSeminarDetailPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/arsip/:id" element={<ThesisSeminarArchiveDetailPage />} />
                   <Route path="/tugas-akhir/sidang/admin" element={<AdminThesisDefenceManagementPage />} />
-                  <Route path="/tugas-akhir/sidang/admin/:defenceId" element={<AdminDefenceDetailPage />} />
                   <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
                   <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />
                   <Route path="/master-data/dosen" element={<DosenPage />} />
                   <Route path="/master-data/dosen/:id" element={<DosenDetailPage />} />
                   <Route path="/master-data/tugas-akhir" element={<MasterDataTugasAkhirPage />} />
-                  <Route path="/master-data/seminar-hasil" element={<SeminarHasilMasterPage />} />
                   <Route path="/master-data/user" element={<UserManagementPage />} />
                   <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
                   <Route path="/master-data/ruangan" element={<RoomPage />} />

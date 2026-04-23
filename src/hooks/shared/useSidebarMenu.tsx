@@ -112,7 +112,7 @@ export const useSidebarMenu = () => {
               isActive: pathname.startsWith("/pengumuman/yudisium"),
             },
           ],
-         },
+        },
         // Yudisium — leaf item (no children)
         {
           title: "Yudisium",
@@ -120,7 +120,7 @@ export const useSidebarMenu = () => {
           icon: GraduationCap,
           items: [],
         },
-        
+
       ];
 
       return {
@@ -522,7 +522,7 @@ export const useSidebarMenu = () => {
               },
               {
                 title: "Seminar Hasil",
-                url: "/tugas-akhir/seminar",
+                url: "/tugas-akhir/seminar-hasil",
               },
               {
                 title: "Sidang",
@@ -552,10 +552,6 @@ export const useSidebarMenu = () => {
               {
                 title: "Data TA",
                 url: "/master-data/tugas-akhir",
-              },
-              {
-                title: "Data Seminar Hasil",
-                url: "/master-data/seminar-hasil",
               },
               {
                 title: "Kelola User",

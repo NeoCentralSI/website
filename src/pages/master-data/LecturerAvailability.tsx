@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useLecturerAvailability } from '@/hooks/lecturer/useLecturerAvailability';
-import { LecturerAvailabilityTable } from '@/components/lecturer-availability/LecturerAvailabilityTable';
-import { LecturerAvailabilityFormDialog } from '@/components/lecturer-availability/LecturerAvailabilityFormDialog';
+import { LecturerAvailabilityTable } from '@/components/master-data/lecturer-availability/LecturerAvailabilityTable';
+import { LecturerAvailabilityFormDialog } from '@/components/master-data/lecturer-availability/LecturerAvailabilityFormDialog';
 
 export default function LecturerAvailability() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();

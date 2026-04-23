@@ -1,33 +1,25 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useDefenceRubric } from '@/hooks/defence/useDefenceRubric';
+import { useSeminarRubric } from '@/hooks/seminar/useSeminarRubric';
 import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { getActiveAcademicYearAPI } from '@/services/admin.service';
-import { DefenceCriteriaTable } from '@/components/defence-rubric/DefenceCriteriaTable';
-import { DefenceCriteriaFormDialog } from '@/components/defence-rubric/DefenceCriteriaFormDialog';
+import { CriteriaTable } from '@/components/master-data/seminar-rubric/CriteriaTable';
+import { CriteriaFormDialog } from '@/components/master-data/seminar-rubric/CriteriaFormDialog';
 import { Badge } from '@/components/ui/badge';
 import type {
     AssessmentCriteria,
     CpmkWithRubrics,
     UpdateCriteriaPayload,
-    DefenceRole,
-} from '@/services/defenceRubric.service';
-
-const ROLE_OPTIONS: { value: DefenceRole; label: string }[] = [
-    { value: 'examiner', label: 'Penguji' },
-    { value: 'supervisor', label: 'Pembimbing' },
-];
+} from '@/services/seminarRubric.service';
 
 function academicYearLabel(semester?: string, year?: string | null) {
     const semesterLabel = semester === 'ganjil' ? 'Ganjil' : 'Genap';
     return `${semesterLabel} ${year || '-'}`.trim();
 }
 
-export function DefenceRubricManagementPanel() {
-    const [selectedRole, setSelectedRole] = useState<DefenceRole>('examiner');
-
+export function SeminarRubricManagementPanel() {
     const { data: activeAcademicYearData } = useQuery({
-        queryKey: ['defence-rubric-active-academic-year'],
+        queryKey: ['seminar-rubric-active-academic-year'],
         queryFn: getActiveAcademicYearAPI,
     });
 
@@ -53,7 +45,7 @@ export function DefenceRubricManagementPanel() {
         isDeletingRubric,
         reorderCriteria,
         reorderRubrics,
-    } = useDefenceRubric(selectedRole);
+    } = useSeminarRubric();
 
     const { cpmks: allCpmks } = useCpmk(activeAcademicYearId);
 
@@ -61,11 +53,8 @@ export function DefenceRubricManagementPanel() {
     const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<CpmkWithRubrics | null>(null);
     const [editCriteria, setEditCriteria] = useState<AssessmentCriteria | null>(null);
 
-    const examinerTotal = weightSummary?.examinerTotal ?? 0;
-    const supervisorTotal = weightSummary?.supervisorTotal ?? 0;
-    const combinedTotal = weightSummary?.combinedTotal ?? 0;
-    const roleTotalScore = selectedRole === 'examiner' ? examinerTotal : supervisorTotal;
-    const remainingScore = 100 - combinedTotal;
+    const currentTotalScore = weightSummary?.totalScore ?? 0;
+    const remainingScore = 100 - currentTotalScore;
 
     const activeThesisCpmks = useMemo(
         () => allCpmks.filter((cpmk) => cpmk.type === 'thesis'),
@@ -105,15 +94,13 @@ export function DefenceRubricManagementPanel() {
         setCriteriaDialogOpen(true);
     };
 
-    const roleLabel = ROLE_OPTIONS.find((r) => r.value === selectedRole)?.label ?? selectedRole;
-
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div>
-                    <h2 className="text-xl font-semibold">Rubrik Sidang</h2>
+                    <h2 className="text-xl font-semibold">Rubrik Seminar</h2>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                        Kelola kriteria dan rubrik penilaian sidang berdasarkan CPMK dan role
+                        Kelola kriteria dan rubrik penilaian seminar berdasarkan CPMK
                     </p>
                 </div>
                 <Badge variant="secondary" className="text-xs">
@@ -121,61 +108,31 @@ export function DefenceRubricManagementPanel() {
                 </Badge>
             </div>
 
-            <div className="flex gap-1 rounded-lg border bg-muted/30 p-1 w-fit">
-                {ROLE_OPTIONS.map((opt) => (
-                    <button
-                        key={opt.value}
-                        onClick={() => setSelectedRole(opt.value)}
-                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                            selectedRole === opt.value
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                    >
-                        {opt.label}
-                    </button>
-                ))}
-            </div>
-
             {weightSummary && (
-                <div className="space-y-2 sticky top-2 z-10">
-                    <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${
-                        combinedTotal === 100
-                            ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                            : combinedTotal > 100
-                                ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
-                                : 'bg-muted/30'
+                <div className={`sticky top-2 z-10 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${weightSummary.totalScore === 100
+                        ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                        : weightSummary.totalScore > 100
+                            ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+                            : 'bg-muted/30'
                     }`}>
-                        <span className="text-muted-foreground">Total Skor Gabungan (Penguji + Pembimbing):</span>
-                        <span className={`text-lg font-bold ${
-                            combinedTotal === 100
-                                ? 'text-green-600 dark:text-green-400'
-                                : combinedTotal > 100
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : ''
+                    <span className="text-muted-foreground">Total Skor Kriteria Aktif:</span>
+                    <span className={`text-lg font-bold ${weightSummary.totalScore === 100
+                            ? 'text-green-600 dark:text-green-400'
+                            : weightSummary.totalScore > 100
+                                ? 'text-red-600 dark:text-red-400'
+                                : ''
                         }`}>
-                            {combinedTotal} / 100
-                        </span>
-                        {combinedTotal < 100 && (
-                            <span className="text-xs text-muted-foreground">
-                                (sisa: {100 - combinedTotal})
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-3 rounded-lg border px-4 py-2 text-sm bg-muted/20">
-                        <span className="text-muted-foreground">Skor {roleLabel}:</span>
-                        <span className="font-semibold">{roleTotalScore}</span>
+                        {weightSummary.totalScore} / 100
+                    </span>
+                    {weightSummary.totalScore < 100 && (
                         <span className="text-xs text-muted-foreground">
-                            (Penguji: {examinerTotal}, Pembimbing: {supervisorTotal})
+                            (sisa: {100 - weightSummary.totalScore})
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                            ({weightSummary.details.length} CPMK, {weightSummary.details.reduce((s, d) => s + d.criteriaCount, 0)} kriteria)
-                        </span>
-                    </div>
+                    )}
                 </div>
             )}
 
-            <DefenceCriteriaTable
+            <CriteriaTable
                 data={mergedCpmks}
                 isLoading={isLoading}
                 isFetching={isFetching}
@@ -192,12 +149,11 @@ export function DefenceRubricManagementPanel() {
                 isDeletingRubric={isDeletingRubric}
             />
 
-            <DefenceCriteriaFormDialog
+            <CriteriaFormDialog
                 open={criteriaDialogOpen}
                 onOpenChange={setCriteriaDialogOpen}
                 cpmkId={criteriaTargetCpmk?.id ?? ''}
                 cpmkCode={criteriaTargetCpmk?.code ?? '-'}
-                role={selectedRole}
                 editData={editCriteria}
                 remainingScore={
                     editCriteria

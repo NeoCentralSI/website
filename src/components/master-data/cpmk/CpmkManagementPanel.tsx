@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCpmk } from '@/hooks/master-data/useCpmk';
-import { CpmkTable } from '@/components/cpmk/CpmkTable';
-import { CpmkFormDialog } from '@/components/cpmk/CpmkFormDialog';
+import { CpmkTable } from '@/components/master-data/cpmk/CpmkTable';
+import { CpmkFormDialog } from '@/components/master-data/cpmk/CpmkFormDialog';
 import type { CreateCpmkPayload } from '@/services/cpmk.service';
 import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.service';
 import {

@@ -122,6 +122,7 @@ export default function Mahasiswa() {
       header: 'Nama',
       render: (row: Student) => toTitleCaseName(row.fullName),
     },
+    /*
     {
       key: 'email',
       header: 'Email',
@@ -132,6 +133,7 @@ export default function Mahasiswa() {
       header: 'Tahun Masuk',
       render: (row: Student) => row.student?.enrollmentYear || '-',
     },
+    */
     {
       key: 'currentSemester',
       header: 'Sem.',

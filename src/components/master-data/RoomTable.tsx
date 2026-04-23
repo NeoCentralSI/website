@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, CalendarDays } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +61,12 @@ export function RoomTable({
       header: 'Terpakai',
       render: (row: Room) => (
         row.relationCount > 0
-          ? <Badge variant="secondary">{row.relationCount} Data</Badge>
+          ? (
+            <Badge variant="outline" className="gap-1">
+              <CalendarDays className="h-3 w-3" />
+              {row.relationCount}
+            </Badge>
+          )
           : <span className="text-muted-foreground">-</span>
       ),
     },

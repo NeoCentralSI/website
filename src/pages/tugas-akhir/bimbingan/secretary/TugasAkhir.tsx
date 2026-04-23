@@ -4,9 +4,9 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
 import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
-import { CpmkManagementPanel } from "@/components/cpmk/CpmkManagementPanel";
-import { SeminarRubricManagementPanel } from '@/components/seminar-rubric/SeminarRubricManagementPanel';
-import { DefenceRubricManagementPanel } from '@/components/defence-rubric/DefenceRubricManagementPanel';
+import { CpmkManagementPanel } from "@/components/master-data/cpmk/CpmkManagementPanel";
+import { SeminarRubricManagementPanel } from '@/components/master-data/seminar-rubric/SeminarRubricManagementPanel';
+import { DefenceRubricManagementPanel } from '@/components/master-data/defence-rubric/DefenceRubricManagementPanel';
 const TAB_ITEMS: TabItem[] = [
   { label: "Kelola Topik", to: "/kelola/tugas-akhir/topik" },
   { label: "Kelola Milestone", to: "/kelola/tugas-akhir/milestone" },

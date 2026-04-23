@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useCpl } from '@/hooks/master-data/useCpl';
-import { CplTable } from '@/components/master-data/cpl/CplTable';
-import { CplFormDialog } from '@/components/master-data/cpl/CplFormDialog';
+import { CplTable } from '@/components/master-data/CplTable';
+import { CplFormDialog } from '@/components/master-data/CplFormDialog';
 
 export default function Cpl() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
