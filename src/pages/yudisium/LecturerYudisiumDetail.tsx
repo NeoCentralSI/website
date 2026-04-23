@@ -9,12 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/spinner';
 import { ArrowLeft, Eye, ShieldCheck, FileDown, Upload } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -77,7 +77,7 @@ export default function LecturerYudisiumDetailPage() {
         ROLES.KOORDINATOR_YUDISIUM,
     ]);
 
-    const canValidateCpl = hasAnyRole([ROLES.GKM, ROLES.TIM_PENGELOLA_CPL]);
+    const canValidateCpl = hasAnyRole([ROLES.GKM]);
 
     const yudisium = useMemo(() => events.find((item: { id: string }) => item.id === id), [events, id]);
 

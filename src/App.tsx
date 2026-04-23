@@ -282,7 +282,7 @@ function App() {
                   <Route path="/yudisium/lecturer/event/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
                 </Route>
 
-                <Route element={<RoleGuard allowedRoles={[ROLES.GKM, ROLES.TIM_PENGELOLA_CPL]} />}>
+                <Route element={<RoleGuard allowedRoles={[ROLES.GKM, ROLES.GKM]} />}>
                   <Route path="/yudisium/lecturer/event/:id/participant/:participantId/cpl-validation" element={<YudisiumParticipantCPLValidationPage />} />
                 </Route>
 
