@@ -17,6 +17,7 @@ interface CplFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editData?: Cpl | null;
+    isManagement?: boolean;
     onSubmit: ((data: CreateCplPayload) => Promise<unknown>) | ((id: string, data: UpdateCplPayload) => Promise<unknown>);
 }
 
@@ -24,6 +25,7 @@ export function CplFormDialog({
     open,
     onOpenChange,
     editData,
+    isManagement = true,
     onSubmit,
 }: CplFormDialogProps) {
     const [code, setCode] = useState('');
@@ -33,6 +35,8 @@ export function CplFormDialog({
 
     const isEdit = !!editData;
     const isLockedByRelatedScores = Boolean(isEdit && editData?.hasRelatedScores);
+    const isLockedByRole = !isManagement;
+    const isFieldLocked = isLockedByRelatedScores || isLockedByRole;
 
     useEffect(() => {
         if (editData) {
@@ -53,7 +57,7 @@ export function CplFormDialog({
         setIsSubmitting(true);
         try {
             if (isEdit && editData) {
-                const payload: UpdateCplPayload = isLockedByRelatedScores
+                const payload: UpdateCplPayload = isFieldLocked
                     ? { description }
                     : {
                           code,
@@ -77,7 +81,7 @@ export function CplFormDialog({
         }
     };
 
-    const isValid = isLockedByRelatedScores
+    const isValid = isFieldLocked
         ? Boolean(description.trim())
         : Boolean(code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0);
 
@@ -98,7 +102,7 @@ export function CplFormDialog({
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             required
-                            disabled={isLockedByRelatedScores}
+                            disabled={isFieldLocked}
                         />
                     </div>
 
@@ -128,13 +132,15 @@ export function CplFormDialog({
                                 setMinimalScore(val === '' ? '' : Number(val));
                             }}
                             required
-                            disabled={isLockedByRelatedScores}
+                            disabled={isFieldLocked}
                         />
                     </div>
 
-                    {isLockedByRelatedScores && (
+                    {isFieldLocked && (
                         <p className="text-xs text-muted-foreground">
-                            Kode CPL dan Skor Minimal dikunci karena CPL ini sudah memiliki nilai mahasiswa.
+                            {isLockedByRole 
+                                ? "Kode CPL dan Skor Minimal hanya dapat diubah oleh pimpinan departemen."
+                                : "Kode CPL dan Skor Minimal dikunci karena CPL ini sudah memiliki nilai mahasiswa."}
                         </p>
                     )}
 

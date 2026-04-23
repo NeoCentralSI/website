@@ -4,7 +4,7 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useCpl } from '@/hooks/master-data/useCpl';
 import { CplTable } from '@/components/master-data/CplTable';
 import { CplFormDialog } from '@/components/master-data/CplFormDialog';
-import { useAuth } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared';
 import { ROLES } from '@/lib/roles';
 
 export default function Cpl() {
@@ -22,9 +22,12 @@ export default function Cpl() {
 
     const {
         cpls,
+        total,
         isLoading,
         isFetching,
         refetch,
+        params,
+        setParams,
         create,
         update,
         toggle,
@@ -33,8 +36,9 @@ export default function Cpl() {
         isDeleting,
     } = useCpl();
 
-    const { user } = useAuth();
-    const isManagement = user?.role === ROLES.SEKRETARIS_DEPARTEMEN || user?.role === ROLES.KETUA_DEPARTEMEN;
+    const { isKadep, isSekdep, isGkm } = useRole();
+    const isManagement = isKadep() || isSekdep();
+    const isGkmRole = isGkm();
 
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
@@ -47,6 +51,7 @@ export default function Cpl() {
 
             <CplTable
                 data={cpls}
+                total={total}
                 isLoading={isLoading}
                 isFetching={isFetching}
                 onToggle={toggle}
@@ -57,12 +62,15 @@ export default function Cpl() {
                 isToggling={isToggling}
                 isDeleting={isDeleting}
                 isManagement={isManagement}
+                params={params}
+                onParamsChange={setParams}
             />
 
             <CplFormDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
                 onSubmit={create}
+                isManagement={isManagement}
             />
         </div>
     );

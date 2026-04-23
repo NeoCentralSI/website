@@ -20,6 +20,7 @@ import { CplFormDialog } from '@/components/master-data/CplFormDialog';
 
 interface CplTableProps {
     data: Cpl[];
+    total: number;
     isLoading: boolean;
     isFetching: boolean;
     onToggle: (id: string) => void;
@@ -30,10 +31,13 @@ interface CplTableProps {
     isToggling: boolean;
     isDeleting: boolean;
     isManagement?: boolean;
+    params: any;
+    onParamsChange: (params: any) => void;
 }
 
 export function CplTable({
     data,
+    total,
     isLoading,
     isFetching,
     onToggle,
@@ -44,13 +48,11 @@ export function CplTable({
     isToggling,
     isDeleting,
     isManagement = false,
+    params,
+    onParamsChange,
 }: CplTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<Cpl | null>(null);
-    const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
 
     const handleConfirmDelete = () => {
         if (deleteId) {
@@ -59,29 +61,6 @@ export function CplTable({
         }
     };
 
-    const filteredData = useMemo(() => {
-        const term = search.toLowerCase();
-        return data.filter((item) => {
-            const matchesStatus =
-                statusFilter === 'all' ||
-                (statusFilter === 'active' ? item.isActive : !item.isActive);
-            if (!matchesStatus) return false;
-
-            if (!term) return true;
-
-            return (
-                (item.code || '').toLowerCase().includes(term) ||
-                item.description.toLowerCase().includes(term) ||
-                String(item.minimalScore).includes(term)
-            );
-        });
-    }, [data, search, statusFilter]);
-
-    const paginatedData = useMemo(() => {
-        const start = (page - 1) * pageSize;
-        return filteredData.slice(start, start + pageSize);
-    }, [filteredData, page, pageSize]);
-
     const columns = useMemo<Column<Cpl>[]>(() => [
         {
             key: 'no',
@@ -89,7 +68,7 @@ export function CplTable({
             width: 50,
             className: 'text-center',
             render: (_item, index) => (
-                <span className="text-sm text-muted-foreground">{(page - 1) * pageSize + index + 1}</span>
+                <span className="text-sm text-muted-foreground">{(params.page - 1) * params.limit + index + 1}</span>
             ),
         },
         {
@@ -122,10 +101,9 @@ export function CplTable({
             width: 90,
             filter: {
                 type: 'select',
-                value: statusFilter,
+                value: params.status,
                 onChange: (value: string) => {
-                    setStatusFilter(value as 'active' | 'inactive' | 'all');
-                    setPage(1);
+                    onParamsChange({ ...params, status: value, page: 1 });
                 },
                 options: [
                     { label: 'Aktif', value: 'active' },
@@ -159,7 +137,8 @@ export function CplTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
                             onClick={() => setEditItem(item)}
-                            title="Edit"
+                            disabled={!item.isActive}
+                            title={!item.isActive ? 'CPL non-aktif tidak dapat diubah' : 'Edit'}
                         >
                             <Pencil className="h-4 w-4" />
                         </Button>
@@ -192,29 +171,29 @@ export function CplTable({
                 </div>
             ),
         },
-    ], [isToggling, isDeleting, onToggle, page, pageSize, statusFilter]);
+    ], [isToggling, isDeleting, onToggle, params, isManagement]);
 
     return (
         <>
             <CustomTable
                 columns={columns}
-                data={paginatedData}
+                data={data}
                 loading={isLoading}
                 isRefreshing={isFetching && !isLoading}
-                total={filteredData.length}
-                page={page}
-                pageSize={pageSize}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-                searchValue={search}
-                onSearchChange={setSearch}
+                total={total}
+                page={params.page}
+                pageSize={params.limit}
+                onPageChange={(p) => onParamsChange({ ...params, page: p })}
+                onPageSizeChange={(s) => onParamsChange({ ...params, limit: s })}
+                searchValue={params.search}
+                onSearchChange={(s) => onParamsChange({ ...params, search: s, page: 1 })}
                 enableColumnFilters
                 emptyText="Belum ada data CPL"
                 actions={
                     <div className="flex items-center gap-2">
                         {isManagement && (
                             <Button variant="outline" size="sm" onClick={onCreate}>
-                                <Plus className="mr-2 h-4 w-4" /> Tambah CPL
+                                <Plus className="mr-2 h-4 w-4" /> Tambah
                             </Button>
                         )}
                         <RefreshButton
@@ -261,6 +240,7 @@ export function CplTable({
                     onOpenChange={(open) => !open && setEditItem(null)}
                     editData={editItem}
                     onSubmit={onUpdate}
+                    isManagement={isManagement}
                 />
             )}
         </>
