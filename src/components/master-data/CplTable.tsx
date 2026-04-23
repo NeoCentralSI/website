@@ -29,6 +29,7 @@ interface CplTableProps {
     onRefresh: () => void;
     isToggling: boolean;
     isDeleting: boolean;
+    isManagement?: boolean;
 }
 
 export function CplTable({
@@ -42,6 +43,7 @@ export function CplTable({
     onRefresh,
     isToggling,
     isDeleting,
+    isManagement = false,
 }: CplTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<Cpl | null>(null);
@@ -151,15 +153,17 @@ export function CplTable({
             className: 'text-right',
             render: (item) => (
                 <div className="flex items-center justify-end gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        onClick={() => setEditItem(item)}
-                        title="Edit"
-                    >
-                        <Pencil className="h-4 w-4" />
-                    </Button>
+                    {isManagement && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => setEditItem(item)}
+                            title="Edit"
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -173,7 +177,7 @@ export function CplTable({
                     >
                         <Power className="h-4 w-4" />
                     </Button>
-                    {!item.hasRelatedScores && (
+                    {isManagement && !item.hasRelatedScores && (
                         <Button
                             variant="ghost"
                             size="icon"
@@ -208,9 +212,11 @@ export function CplTable({
                 emptyText="Belum ada data CPL"
                 actions={
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={onCreate}>
-                            <Plus className="mr-2 h-4 w-4" /> Tambah CPL
-                        </Button>
+                        {isManagement && (
+                            <Button variant="outline" size="sm" onClick={onCreate}>
+                                <Plus className="mr-2 h-4 w-4" /> Tambah CPL
+                            </Button>
+                        )}
                         <RefreshButton
                             onClick={onRefresh}
                             isRefreshing={isFetching && !isLoading}

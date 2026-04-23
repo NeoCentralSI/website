@@ -4,6 +4,8 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useCpl } from '@/hooks/master-data/useCpl';
 import { CplTable } from '@/components/master-data/CplTable';
 import { CplFormDialog } from '@/components/master-data/CplFormDialog';
+import { useAuth } from '@/hooks/shared';
+import { ROLES } from '@/lib/roles';
 
 export default function Cpl() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -31,13 +33,16 @@ export default function Cpl() {
         isDeleting,
     } = useCpl();
 
+    const { user } = useAuth();
+    const isManagement = user?.role === ROLES.SEKRETARIS_DEPARTEMEN || user?.role === ROLES.KETUA_DEPARTEMEN;
+
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
     return (
         <div className="p-6 space-y-6">
             <div>
                 <h1 className="text-2xl font-bold">Kelola CPL</h1>
-                <p className="text-muted-foreground">Atur Capaian Pembelajaran Lulusan (CPL) dan skor minimal untuk mendukung proses evaluasi dan validasi akademik</p>
+                <p className="text-muted-foreground">Atur capaian pembelajaran lulusan (CPL) dan skor minimal untuk mendukung proses evaluasi dan validasi akademik</p>
             </div>
 
             <CplTable
@@ -51,6 +56,7 @@ export default function Cpl() {
                 onRefresh={() => refetch()}
                 isToggling={isToggling}
                 isDeleting={isDeleting}
+                isManagement={isManagement}
             />
 
             <CplFormDialog
