@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Pencil, Power, Trash2, Plus } from 'lucide-react';
+import { Pencil, Power, Trash2, Plus, Users } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -96,6 +96,21 @@ export function CplTable({
             ),
         },
         {
+            key: 'studentCplScoreCount',
+            header: 'Mahasiswa',
+            width: 110,
+            render: (item) => (
+                item.studentCplScoreCount > 0
+                    ? (
+                        <Badge variant="outline" className="gap-1">
+                            <Users className="h-3 w-3" />
+                            {item.studentCplScoreCount}
+                        </Badge>
+                    )
+                    : <span className="text-muted-foreground">-</span>
+            ),
+        },
+        {
             key: 'status',
             header: 'Status',
             width: 90,
@@ -137,8 +152,8 @@ export function CplTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
                             onClick={() => setEditItem(item)}
-                            disabled={!item.isActive}
-                            title={!item.isActive ? 'CPL non-aktif tidak dapat diubah' : 'Edit'}
+                            disabled={!item.isActive || item.hasRelatedScores}
+                            title={!item.isActive ? 'CPL non-aktif tidak dapat diubah' : item.hasRelatedScores ? 'CPL yang sudah memiliki nilai mahasiswa tidak dapat diubah' : 'Edit'}
                         >
                             <Pencil className="h-4 w-4" />
                         </Button>
@@ -156,14 +171,14 @@ export function CplTable({
                     >
                         <Power className="h-4 w-4" />
                     </Button>
-                    {isManagement && !item.hasRelatedScores && (
+                    {isManagement && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => setDeleteId(item.id)}
-                            disabled={isDeleting}
-                            title="Hapus"
+                            disabled={isDeleting || item.hasRelatedScores}
+                            title={item.hasRelatedScores ? 'CPL tidak dapat dihapus karena sudah memiliki nilai mahasiswa' : 'Hapus'}
                         >
                             <Trash2 className="h-4 w-4" />
                         </Button>
@@ -218,7 +233,7 @@ export function CplTable({
                         <AlertDialogAction
                             onClick={handleConfirmDelete}
                             disabled={isDeleting}
-                            className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-red-600 hover:bg-red-700"
                         >
                             {isDeleting ? (
                                 <>

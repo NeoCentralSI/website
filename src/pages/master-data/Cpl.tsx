@@ -37,8 +37,7 @@ export default function Cpl() {
     } = useCpl();
 
     const { isKadep, isSekdep, isGkm } = useRole();
-    const isManagement = isKadep() || isSekdep();
-    const isGkmRole = isGkm();
+    const isManagement = isKadep() || isSekdep() || isGkm();
 
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 

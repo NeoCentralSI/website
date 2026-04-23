@@ -8,6 +8,7 @@ export interface Cpl {
     minimalScore: number;
     isActive: boolean;
     hasRelatedScores: boolean;
+    studentCplScoreCount: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -16,6 +17,7 @@ export interface CreateCplPayload {
     code: string;
     description: string;
     minimalScore: number;
+    isActive?: boolean;
 }
 
 export type UpdateCplPayload = Partial<CreateCplPayload>;

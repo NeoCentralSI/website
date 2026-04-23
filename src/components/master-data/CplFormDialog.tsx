@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import type { Cpl, CreateCplPayload, UpdateCplPayload } from '@/services/master-data/cpl.service';
 
@@ -31,12 +32,10 @@ export function CplFormDialog({
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
     const [minimalScore, setMinimalScore] = useState<number | ''>('');
+    const [isActive, setIsActive] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
-    const isLockedByRelatedScores = Boolean(isEdit && editData?.hasRelatedScores);
-    const isLockedByRole = !isManagement;
-    const isFieldLocked = isLockedByRelatedScores || isLockedByRole;
 
     useEffect(() => {
         if (editData) {
@@ -47,6 +46,7 @@ export function CplFormDialog({
             setCode('');
             setDescription('');
             setMinimalScore('');
+            setIsActive(true);
         }
     }, [editData, open]);
 
@@ -57,19 +57,18 @@ export function CplFormDialog({
         setIsSubmitting(true);
         try {
             if (isEdit && editData) {
-                const payload: UpdateCplPayload = isFieldLocked
-                    ? { description }
-                    : {
-                          code,
-                          description,
-                          minimalScore: Number(minimalScore),
-                      };
+                const payload: UpdateCplPayload = {
+                    code,
+                    description,
+                    minimalScore: Number(minimalScore),
+                };
                 await (onSubmit as (id: string, data: UpdateCplPayload) => Promise<unknown>)(editData.id, payload);
             } else {
                 const payload: CreateCplPayload = {
                     code,
                     description,
                     minimalScore: Number(minimalScore),
+                    isActive,
                 };
                 await (onSubmit as (data: CreateCplPayload) => Promise<unknown>)(payload);
             }
@@ -81,9 +80,7 @@ export function CplFormDialog({
         }
     };
 
-    const isValid = isFieldLocked
-        ? Boolean(description.trim())
-        : Boolean(code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0);
+    const isValid = Boolean(code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,7 +99,6 @@ export function CplFormDialog({
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             required
-                            disabled={isFieldLocked}
                         />
                     </div>
 
@@ -132,16 +128,25 @@ export function CplFormDialog({
                                 setMinimalScore(val === '' ? '' : Number(val));
                             }}
                             required
-                            disabled={isFieldLocked}
                         />
                     </div>
 
-                    {isFieldLocked && (
-                        <p className="text-xs text-muted-foreground">
-                            {isLockedByRole 
-                                ? "Kode CPL dan Skor Minimal hanya dapat diubah oleh pimpinan departemen."
-                                : "Kode CPL dan Skor Minimal dikunci karena CPL ini sudah memiliki nilai mahasiswa."}
-                        </p>
+                    {!isEdit && (
+                        <div className="flex items-center gap-3 rounded-md border p-3">
+                            <Checkbox
+                                id="isActive"
+                                checked={isActive}
+                                onCheckedChange={(checked) => setIsActive(Boolean(checked))}
+                            />
+                            <div className="space-y-0.5">
+                                <Label htmlFor="isActive" className="cursor-pointer font-medium">
+                                    Aktif
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                    Nonaktifkan jika ini adalah data CPL lama yang diarsipkan.
+                                </p>
+                            </div>
+                        </div>
                     )}
 
                     <DialogFooter>
