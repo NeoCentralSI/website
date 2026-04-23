@@ -22,7 +22,7 @@ import { useYudisiumEvents } from '@/hooks/master-data/useYudisiumEvents';
 import { useLecturerYudisiumParticipants, useDownloadDraftSk, useUploadSkResmi } from '@/hooks/yudisium/useLecturerYudisium';
 import { useRole } from '@/hooks/shared';
 import { ROLES } from '@/lib/roles';
-import type { AdminYudisiumParticipant } from '@/types/adminYudisium.types';
+import type { AdminYudisiumParticipant } from '@/types/admin-yudisium.types';
 import { formatDateOnlyId } from '@/lib/text';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {

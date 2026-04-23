@@ -15,7 +15,7 @@ import {
   submitDefenceRevisionAction,
   cancelDefenceRevisionSubmit,
   deleteDefenceRevision,
-} from '@/services/studentDefence.service';
+} from '@/services/thesis-defence/student-defence.service';
 import { toast } from 'sonner';
 import type {
   CreateDefenceRevisionPayload,

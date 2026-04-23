@@ -20,7 +20,7 @@ import {
   approveAudience,
   unapproveAudience,
   toggleAudiencePresence,
-} from '@/services/lecturerSeminar.service';
+} from '@/services/thesis-seminar/lecturer-seminar.service';
 import type {
   RespondAssignmentPayload,
   SubmitExaminerAssessmentPayload,

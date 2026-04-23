@@ -1,6 +1,6 @@
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from './auth.service';
-import type { ExitSurveyQuestionType } from '@/types/exitSurvey.types';
+import type { ExitSurveyQuestionType } from '@/types/exit-survey.types';
 
 export type StudentExitSurveyDetailResponse = {
   yudisium: {

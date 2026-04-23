@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loading } from '@/components/ui/spinner';
 import { CheckCircle2, Circle, Clock, CalendarRange, BookOpenText, Download, PartyPopper } from 'lucide-react';
 import { useStudentYudisiumOverview } from '@/hooks/yudisium/useStudentYudisium';
-import type { StudentYudisiumChecklistItem } from '@/types/studentYudisium.types';
+import type { StudentYudisiumChecklistItem } from '@/types/student-yudisium.types';
 import { UploadDokumenYudisium } from '@/components/yudisium/UploadDokumenYudisium';
 import emptyAnimation from '@/assets/lottie/empty.json';
 import { formatDateOnlyId } from '@/lib/text';

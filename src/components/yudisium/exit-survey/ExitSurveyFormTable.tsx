@@ -15,8 +15,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import type { ExitSurveyForm } from '@/types/exitSurvey.types';
-import type { UpdateExitSurveyFormPayload } from '@/types/exitSurvey.types';
+import type { ExitSurveyForm } from '@/types/exit-survey.types';
+import type { UpdateExitSurveyFormPayload } from '@/types/exit-survey.types';
 import { ExitSurveyFormDialog } from './ExitSurveyFormDialog';
 
 interface ExitSurveyFormTableProps {

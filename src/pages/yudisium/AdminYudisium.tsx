@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
 import { useAdminYudisiumEvents } from '@/hooks/yudisium/useAdminYudisium';
-import type { AdminYudisiumEvent } from '@/types/adminYudisium.types';
+import type { AdminYudisiumEvent } from '@/types/admin-yudisium.types';
 import { formatDateOnlyId } from '@/lib/text';
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {

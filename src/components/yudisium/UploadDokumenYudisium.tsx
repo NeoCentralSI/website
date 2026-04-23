@@ -7,7 +7,7 @@ import {
   useStudentYudisiumRequirements,
   useUploadYudisiumDocument,
 } from '@/hooks/yudisium/useStudentYudisium';
-import type { YudisiumRequirementUploadStatus } from '@/types/studentYudisium.types';
+import type { YudisiumRequirementUploadStatus } from '@/types/student-yudisium.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
 

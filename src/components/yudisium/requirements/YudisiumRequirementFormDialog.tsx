@@ -15,7 +15,7 @@ import type {
     CreateYudisiumRequirementPayload,
     UpdateYudisiumRequirementPayload,
     YudisiumRequirement,
-} from '@/services/yudisiumRequirement.service';
+} from '@/services/yudisium/yudisium-requirement.service';
 
 interface YudisiumRequirementFormDialogProps {
     open: boolean;
