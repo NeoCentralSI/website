@@ -116,11 +116,10 @@ export function CpmkTable({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-8 w-8 ${
-                            item.hasAssessmentDetails
+                        className={`h-8 w-8 ${item.hasAssessmentDetails
                                 ? 'text-red-400 hover:text-red-500'
                                 : 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                        }`}
+                            }`}
                         onClick={() => setDeleteId(item.id)}
                         disabled={isDeleting || item.hasAssessmentDetails}
                         title={
@@ -172,7 +171,7 @@ export function CpmkTable({
                             </Button>
                         )}
                         <Button variant="outline" size="sm" onClick={onCreate}>
-                            <Plus className="mr-2 h-4 w-4" /> Tambah CPMK
+                            <Plus className="mr-2 h-4 w-4" /> Tambah
                         </Button>
                         <RefreshButton
                             onClick={onRefresh}
