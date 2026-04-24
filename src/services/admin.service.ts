@@ -310,24 +310,34 @@ export const getActiveAcademicYearAPI = async (): Promise<{
   return response.json();
 };
 
-// Get all rooms
-export const getRoomsAPI = async (params?: {
+export type GetRoomsAPIParams = {
   page?: number;
+  /** Page size (preferred; mirrors CPL `limit`) */
+  limit?: number;
+  /** @deprecated use `limit` */
   pageSize?: number;
   search?: string;
-}): Promise<{
-  rooms: Room[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+  /** all | available (no relations) | in_use */
+  status?: 'all' | 'available' | 'in_use';
+};
+
+// Get rooms (server-side pagination; response matches CPL list shape: data + total)
+export const getRoomsAPI = async (
+  params?: GetRoomsAPIParams
+): Promise<{
+  success: boolean;
+  message?: string;
+  data: Room[];
+  total: number;
 }> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  const limit = params?.limit ?? params?.pageSize;
+  if (limit) queryParams.append('limit', String(limit));
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.status && params.status !== 'all') {
+    queryParams.append('status', params.status);
+  }
 
   const response = await fetch(getApiUrl(`/adminfeatures/rooms?${queryParams}`), {
     method: 'GET',
