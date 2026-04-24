@@ -5,7 +5,6 @@ import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { getActiveAcademicYearAPI } from '@/services/admin.service';
 import { DefenceCriteriaTable } from '@/components/master-data/defence-rubric/DefenceCriteriaTable';
 import { DefenceCriteriaFormDialog } from '@/components/master-data/defence-rubric/DefenceCriteriaFormDialog';
-import { Badge } from '@/components/ui/badge';
 import type {
     AssessmentCriteria,
     CpmkWithRubrics,
@@ -18,11 +17,6 @@ const ROLE_OPTIONS: { value: DefenceRole; label: string }[] = [
     { value: 'supervisor', label: 'Pembimbing' },
 ];
 
-function academicYearLabel(semester?: string, year?: string | null) {
-    const semesterLabel = semester === 'ganjil' ? 'Ganjil' : 'Genap';
-    return `${semesterLabel} ${year || '-'}`.trim();
-}
-
 export function DefenceRubricManagementPanel() {
     const [selectedRole, setSelectedRole] = useState<DefenceRole>('examiner');
 
@@ -32,11 +26,6 @@ export function DefenceRubricManagementPanel() {
     });
 
     const activeAcademicYearId = activeAcademicYearData?.academicYear?.id;
-    const activeAcademicYearText = academicYearLabel(
-        activeAcademicYearData?.academicYear?.semester,
-        activeAcademicYearData?.academicYear?.year,
-    );
-
     const {
         cpmks,
         weightSummary,
@@ -116,9 +105,6 @@ export function DefenceRubricManagementPanel() {
                         Kelola kriteria dan rubrik penilaian sidang berdasarkan CPMK dan role
                     </p>
                 </div>
-                <Badge variant="secondary" className="text-xs">
-                    Tahun Ajaran Aktif: {activeAcademicYearText}
-                </Badge>
             </div>
 
             <div className="flex gap-1 rounded-lg border bg-muted/30 p-1 w-fit">

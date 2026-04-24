@@ -5,17 +5,11 @@ import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { getActiveAcademicYearAPI } from '@/services/admin.service';
 import { CriteriaTable } from '@/components/master-data/seminar-rubric/CriteriaTable';
 import { CriteriaFormDialog } from '@/components/master-data/seminar-rubric/CriteriaFormDialog';
-import { Badge } from '@/components/ui/badge';
 import type {
     AssessmentCriteria,
     CpmkWithRubrics,
     UpdateCriteriaPayload,
 } from '@/services/master-data/seminar-rubric.service';
-
-function academicYearLabel(semester?: string, year?: string | null) {
-    const semesterLabel = semester === 'ganjil' ? 'Ganjil' : 'Genap';
-    return `${semesterLabel} ${year || '-'}`.trim();
-}
 
 export function SeminarRubricManagementPanel() {
     const { data: activeAcademicYearData } = useQuery({
@@ -24,11 +18,6 @@ export function SeminarRubricManagementPanel() {
     });
 
     const activeAcademicYearId = activeAcademicYearData?.academicYear?.id;
-    const activeAcademicYearText = academicYearLabel(
-        activeAcademicYearData?.academicYear?.semester,
-        activeAcademicYearData?.academicYear?.year,
-    );
-
     const {
         cpmks,
         weightSummary,
@@ -96,16 +85,13 @@ export function SeminarRubricManagementPanel() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div>
                 <div>
                     <h2 className="text-xl font-semibold">Rubrik Seminar</h2>
                     <p className="text-sm text-muted-foreground mt-0.5">
                         Kelola kriteria dan rubrik penilaian seminar berdasarkan CPMK
                     </p>
                 </div>
-                <Badge variant="secondary" className="text-xs">
-                    Tahun Ajaran Aktif: {activeAcademicYearText}
-                </Badge>
             </div>
 
             {weightSummary && (
