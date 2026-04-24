@@ -18,7 +18,6 @@ interface CplFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editData?: Cpl | null;
-    isManagement?: boolean;
     onSubmit: ((data: CreateCplPayload) => Promise<unknown>) | ((id: string, data: UpdateCplPayload) => Promise<unknown>);
 }
 
@@ -26,7 +25,6 @@ export function CplFormDialog({
     open,
     onOpenChange,
     editData,
-    isManagement = true,
     onSubmit,
 }: CplFormDialogProps) {
     const [code, setCode] = useState('');

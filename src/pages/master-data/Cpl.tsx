@@ -5,7 +5,6 @@ import { useCpl } from '@/hooks/master-data/useCpl';
 import { CplTable } from '@/components/master-data/CplTable';
 import { CplFormDialog } from '@/components/master-data/CplFormDialog';
 import { useRole } from '@/hooks/shared';
-import { ROLES } from '@/lib/roles';
 
 export default function Cpl() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -69,7 +68,6 @@ export default function Cpl() {
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
                 onSubmit={create}
-                isManagement={isManagement}
             />
         </div>
     );

@@ -255,7 +255,6 @@ export function CplTable({
                     onOpenChange={(open) => !open && setEditItem(null)}
                     editData={editItem}
                     onSubmit={onUpdate}
-                    isManagement={isManagement}
                 />
             )}
         </>

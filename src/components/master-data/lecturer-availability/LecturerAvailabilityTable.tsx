@@ -15,7 +15,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import type { LecturerAvailability, UpdateAvailabilityPayload } from '@/services/master-data/lecturer-availability.service';
+import type {
+    LecturerAvailability,
+    UpdateAvailabilityPayload,
+    GetLecturerAvailabilitiesParams,
+} from '@/services/master-data/lecturer-availability.service';
 import { LecturerAvailabilityFormDialog } from '@/components/master-data/lecturer-availability/LecturerAvailabilityFormDialog';
 
 const DAY_LABELS: Record<string, string> = {
@@ -46,8 +50,11 @@ function formatDateId(dateStr: string): string {
 
 interface LecturerAvailabilityTableProps {
     data: LecturerAvailability[];
+    total: number;
     isLoading: boolean;
     isFetching: boolean;
+    params: GetLecturerAvailabilitiesParams;
+    onParamsChange: (p: GetLecturerAvailabilitiesParams) => void;
     onDelete: (id: string) => void;
     onUpdate: (id: string, data: UpdateAvailabilityPayload) => Promise<unknown>;
     onCreate: () => void;
@@ -57,8 +64,11 @@ interface LecturerAvailabilityTableProps {
 
 export function LecturerAvailabilityTable({
     data,
+    total,
     isLoading,
     isFetching,
+    params,
+    onParamsChange,
     onDelete,
     onUpdate,
     onCreate,
@@ -67,9 +77,9 @@ export function LecturerAvailabilityTable({
 }: LecturerAvailabilityTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<LecturerAvailability | null>(null);
-    const [search, setSearch] = useState('');
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
 
     const handleConfirmDelete = () => {
         if (deleteId) {
@@ -78,108 +88,124 @@ export function LecturerAvailabilityTable({
         }
     };
 
-    const filteredData = useMemo(() => {
-        const term = search.toLowerCase();
-        if (!term) return data;
-        return data.filter((item) =>
-            (DAY_LABELS[item.day] || item.day).toLowerCase().includes(term) ||
-            formatTime(item.startTime).includes(term) ||
-            formatTime(item.endTime).includes(term)
-        );
-    }, [data, search]);
-
-    const paginatedData = useMemo(() => {
-        const start = (page - 1) * pageSize;
-        return filteredData.slice(start, start + pageSize);
-    }, [filteredData, page, pageSize]);
-
-    const columns = useMemo<Column<LecturerAvailability>[]>(() => [
-        {
-            key: 'day',
-            header: 'Hari',
-            render: (item) => (
-                <span className="font-medium">{DAY_LABELS[item.day] || item.day}</span>
-            ),
-        },
-        {
-            key: 'startTime',
-            header: 'Waktu Mulai',
-            render: (item) => formatTime(item.startTime),
-        },
-        {
-            key: 'endTime',
-            header: 'Waktu Selesai',
-            render: (item) => formatTime(item.endTime),
-        },
-        {
-            key: 'period',
-            header: 'Periode Berlaku',
-            render: (item) => (
-                <span className="text-sm">
-                    {formatDateId(item.validFrom)} — {formatDateId(item.validUntil)}
-                </span>
-            ),
-        },
-        {
-            key: 'status',
-            header: 'Status',
-            render: (item) => (
-                <Badge
-                    variant={item.isActive ? 'default' : 'secondary'}
-                    className={
-                        item.isActive
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-                    }
-                >
-                    {item.isActive ? 'Aktif' : 'Tidak Aktif'}
-                </Badge>
-            ),
-        },
-        {
-            key: 'actions',
-            header: 'Aksi',
-            className: 'text-right',
-            render: (item) => (
-                <div className="flex items-center justify-end gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        onClick={() => setEditItem(item)}
-                        title="Edit"
+    const columns = useMemo<Column<LecturerAvailability>[]>(
+        () => [
+            {
+                key: 'no',
+                header: 'No',
+                width: 50,
+                className: 'text-center',
+                render: (_row, index) => (
+                    <span className="text-sm text-muted-foreground">
+                        {(page - 1) * limit + index + 1}
+                    </span>
+                ),
+            },
+            {
+                key: 'day',
+                header: 'Hari',
+                render: (item) => (
+                    <span className="font-medium">{DAY_LABELS[item.day] || item.day}</span>
+                ),
+            },
+            {
+                key: 'startTime',
+                header: 'Waktu Mulai',
+                render: (item) => formatTime(item.startTime),
+            },
+            {
+                key: 'endTime',
+                header: 'Waktu Selesai',
+                render: (item) => formatTime(item.endTime),
+            },
+            {
+                key: 'period',
+                header: 'Periode Berlaku',
+                render: (item) => (
+                    <span className="text-sm">
+                        {formatDateId(item.validFrom)} — {formatDateId(item.validUntil)}
+                    </span>
+                ),
+            },
+            {
+                key: 'status',
+                header: 'Status',
+                filter: {
+                    type: 'select',
+                    value: params.status ?? 'all',
+                    onChange: (value: string) => {
+                        onParamsChange({
+                            ...params,
+                            status: value as GetLecturerAvailabilitiesParams['status'],
+                            page: 1,
+                        });
+                    },
+                    options: [
+                        { label: 'Semua', value: 'all' },
+                        { label: 'Aktif', value: 'active' },
+                        { label: 'Tidak Aktif', value: 'inactive' },
+                    ],
+                },
+                render: (item) => (
+                    <Badge
+                        variant={item.isActive ? 'default' : 'secondary'}
+                        className={
+                            item.isActive
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+                        }
                     >
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeleteId(item.id)}
-                        disabled={isDeleting}
-                        title="Hapus"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            ),
-        },
-    ], [isDeleting]);
+                        {item.isActive ? 'Aktif' : 'Tidak Aktif'}
+                    </Badge>
+                ),
+            },
+            {
+                key: 'actions',
+                header: 'Aksi',
+                className: 'text-right',
+                render: (item) => (
+                    <div className="flex items-center justify-end gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => setEditItem(item)}
+                            title="Edit"
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setDeleteId(item.id)}
+                            disabled={isDeleting}
+                            title="Hapus"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ),
+            },
+        ],
+        [isDeleting, limit, onParamsChange, page, params.status]
+    );
 
     return (
         <>
             <CustomTable
                 columns={columns}
-                data={paginatedData}
+                data={data}
                 loading={isLoading}
                 isRefreshing={isFetching && !isLoading}
-                total={filteredData.length}
+                total={total}
                 page={page}
-                pageSize={pageSize}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-                searchValue={search}
-                onSearchChange={setSearch}
+                pageSize={limit}
+                onPageChange={(p) => onParamsChange({ ...params, page: p })}
+                onPageSizeChange={(s) => onParamsChange({ ...params, limit: s, page: 1 })}
+                searchValue={params.search ?? ''}
+                onSearchChange={(s) => onParamsChange({ ...params, search: s, page: 1 })}
+                enableColumnFilters
                 emptyText="Belum ada jadwal ketersediaan"
                 actions={
                     <div className="flex items-center gap-2">
@@ -193,8 +219,10 @@ export function LecturerAvailabilityTable({
                     </div>
                 }
             />
+            <p className="text-xs text-muted-foreground -mt-2">
+                Pencarian memfilter menurut nama hari (contoh: Senin, Rabu).
+            </p>
 
-            {/* Delete Confirmation Dialog */}
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -208,7 +236,7 @@ export function LecturerAvailabilityTable({
                         <AlertDialogAction
                             onClick={handleConfirmDelete}
                             disabled={isDeleting}
-                            className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-red-600 hover:bg-red-700"
                         >
                             {isDeleting ? (
                                 <>
@@ -223,7 +251,6 @@ export function LecturerAvailabilityTable({
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Edit Dialog */}
             {editItem && (
                 <LecturerAvailabilityFormDialog
                     open={!!editItem}
