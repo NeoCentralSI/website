@@ -62,7 +62,13 @@ export function RoomFormDialog({
                   setFormData({ ...formData, name: e.target.value })
                 }
                 required
+                disabled={Boolean(editingRoom && editingRoom.relationCount > 0)}
               />
+              {editingRoom && editingRoom.relationCount > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Nama tidak dapat diubah karena ruangan sudah digunakan untuk penjadwalan.
+                </p>
+              ) : null}
             </div>
 
             <div className="grid gap-2">

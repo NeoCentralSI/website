@@ -28,6 +28,23 @@ const DAY_OPTIONS = [
     { value: 'friday', label: 'Jumat' },
 ];
 
+/** Calendar day in local timezone as YYYY-MM-DD (avoids UTC shift from toISOString()). */
+function toDateOnlyLocalString(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+/** Parse YYYY-MM-DD for DatePicker display at local noon (stable across DST). */
+function parseDateOnlyLocal(ymd: string): Date | undefined {
+    if (!ymd) return undefined;
+    const base = ymd.split('T')[0];
+    const [y, m, d] = base.split('-').map(Number);
+    if (!y || !m || !d) return undefined;
+    return new Date(y, m - 1, d, 12, 0, 0, 0);
+}
+
 function formatTimeForInput(dateStr: string): string {
     const date = new Date(dateStr);
     const hours = date.getUTCHours().toString().padStart(2, '0');
@@ -97,6 +114,8 @@ export function LecturerAvailabilityFormDialog({
 
     const isValid = day && startTime && endTime && validFrom && validUntil;
 
+    const minValidFromForEdit = isEdit && editData ? parseDateOnlyLocal(formatDateForInput(editData.validFrom)) : undefined;
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
@@ -149,17 +168,17 @@ export function LecturerAvailabilityFormDialog({
                         <div className="space-y-2">
                             <Label htmlFor="validFrom">Berlaku Dari</Label>
                             <DatePicker
-                                value={validFrom ? new Date(validFrom) : undefined}
-                                onChange={(date) => setValidFrom(date ? date.toISOString().split('T')[0] : '')}
+                                value={parseDateOnlyLocal(validFrom)}
+                                onChange={(date) => setValidFrom(date ? toDateOnlyLocalString(date) : '')}
                                 showPastDates={isEdit}
-                                minDate={isEdit ? undefined : new Date()}
+                                minDate={isEdit ? minValidFromForEdit : new Date()}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="validUntil">Berlaku Hingga</Label>
                             <DatePicker
-                                value={validUntil ? new Date(validUntil) : undefined}
-                                onChange={(date) => setValidUntil(date ? date.toISOString().split('T')[0] : '')}
+                                value={parseDateOnlyLocal(validUntil)}
+                                onChange={(date) => setValidUntil(date ? toDateOnlyLocalString(date) : '')}
                                 showPastDates={true}
                             />
                         </div>

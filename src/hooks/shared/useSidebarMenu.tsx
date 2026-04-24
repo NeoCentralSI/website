@@ -462,6 +462,17 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
+      // Kelola Menu for GKM
+      menuItems.push({
+        title: "Kelola",
+        url: "#",
+        icon: Database,
+        items: [
+          { title: "Kelola CPL", url: "/kelola/cpl" },
+          { title: "Kelola Nilai CPL", url: "/kelola/cpl-mahasiswa" },
+        ],
+      });
+
       // no Profil for gkm
 
       return {

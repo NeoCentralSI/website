@@ -88,9 +88,9 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
     // Fetch rooms
     const { data: roomsData } = useQuery({
         queryKey: ['rooms-list'],
-        queryFn: () => getRoomsAPI({ page: 1, pageSize: 500, search: '' }),
+        queryFn: () => getRoomsAPI({ page: 1, limit: 500, search: '' }),
     });
-    const rooms: Room[] = roomsData?.rooms || [];
+    const rooms: Room[] = roomsData?.data || [];
 
     const { data: studentsData } = useQuery({
         queryKey: ['eligible-students'],

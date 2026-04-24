@@ -132,6 +132,7 @@ const MasterDataTugasAkhirPage = lazy(() => import('./pages/master-data/TugasAkh
 const ScienceGroupPage = lazy(() => import('./pages/master-data/ScienceGroup'))
 const RoomPage = lazy(() => import('./pages/master-data/Room'))
 const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvailability'))
+const StudentCplScorePage = lazy(() => import('./pages/master-data/StudentCplScore'))
 // Kelola
 const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
 const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
@@ -351,11 +352,18 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                   <Route path="/kelola/sop" element={<KelolaSopPage />} />
-                  <Route path="/kelola/cpl" element={<Cpl />} />
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
+                </Route>
+
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.GKM]} />}>
+                  <Route path="/kelola/cpl" element={<Cpl />} />
+                </Route>
+
+                <Route element={<RoleGuard allowedRoles={[ROLES.GKM]} />}>
+                  <Route path="/kelola/cpl-mahasiswa" element={<StudentCplScorePage />} />
                 </Route>
 
                 {/* Kelola Metopen - Dosen Pengampu, Sekdep, Kadep */}

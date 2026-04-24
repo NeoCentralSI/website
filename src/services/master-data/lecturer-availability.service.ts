@@ -23,14 +23,34 @@ export interface CreateAvailabilityPayload {
 
 export type UpdateAvailabilityPayload = Partial<CreateAvailabilityPayload>;
 
-export const getMyAvailabilities = async (): Promise<LecturerAvailability[]> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.LECTURER_AVAILABILITY.BASE));
+export type GetLecturerAvailabilitiesParams = {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: 'all' | 'active' | 'inactive';
+};
+
+export const getMyAvailabilities = async (
+    params: GetLecturerAvailabilitiesParams = {}
+): Promise<{ data: LecturerAvailability[]; total: number }> => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', String(params.page));
+    if (params.limit) queryParams.append('limit', String(params.limit));
+    if (params.search) queryParams.append('search', params.search);
+    if (params.status && params.status !== 'all') {
+        queryParams.append('status', params.status);
+    }
+
+    const qs = queryParams.toString();
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.LECTURER_AVAILABILITY.BASE)}${qs ? `?${qs}` : ''}`;
+
+    const response = await apiRequest(url);
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Gagal mengambil jadwal ketersediaan');
     }
     const result = await response.json();
-    return result.data;
+    return { data: result.data, total: result.total };
 };
 
 export const createAvailability = async (payload: CreateAvailabilityPayload): Promise<LecturerAvailability> => {

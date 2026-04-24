@@ -316,7 +316,11 @@ export function DefenceCriteriaTable({
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                                    className={`h-7 w-7 ${
+                                                                        isLocked
+                                                                            ? 'text-red-400 hover:text-red-500'
+                                                                            : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                                    }`}
                                                                     title="Hapus kriteria"
                                                                     onClick={() => setDeleteCriteriaId(criteria.id)}
                                                                     disabled={isLocked}
@@ -390,7 +394,11 @@ export function DefenceCriteriaTable({
                                                                                         <Button
                                                                                             variant="ghost"
                                                                                             size="icon"
-                                                                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                                                            className={`h-7 w-7 ${
+                                                                                                isLocked
+                                                                                                    ? 'text-red-400 hover:text-red-500'
+                                                                                                    : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                                                            }`}
                                                                                             title="Hapus rubrik"
                                                                                             onClick={() => setDeleteRubricId(rubric.id)}
                                                                                             disabled={isLocked}
@@ -455,7 +463,7 @@ export function DefenceCriteriaTable({
                         <AlertDialogAction
                             onClick={handleConfirmDeleteCriteria}
                             disabled={isDeletingCriteria}
-                            className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-red-600 hover:bg-red-700"
                         >
                             {isDeletingCriteria ? (
                                 <>
@@ -488,7 +496,7 @@ export function DefenceCriteriaTable({
                         <AlertDialogAction
                             onClick={handleConfirmDeleteRubric}
                             disabled={isDeletingRubric}
-                            className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-red-600 hover:bg-red-700"
                         >
                             {isDeletingRubric ? (
                                 <>

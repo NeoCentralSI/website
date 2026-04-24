@@ -80,8 +80,8 @@ export function ThesisSeminarArchivePanel() {
   });
 
   const { data: roomOptionsData } = useQuery({
-    queryKey: ['rooms', { page: 1, pageSize: 500, search: '' }],
-    queryFn: () => getRoomsAPI({ page: 1, pageSize: 500, search: '' }),
+    queryKey: ['rooms', { page: 1, limit: 500, search: '' }],
+    queryFn: () => getRoomsAPI({ page: 1, limit: 500, search: '' }),
   });
 
   // Mutations
@@ -129,7 +129,7 @@ export function ThesisSeminarArchivePanel() {
   // Derived data
   const thesisOptions: SeminarResultThesisOption[] = thesisOptionsData?.data || [];
   const lecturerOptions: SeminarResultLecturerOption[] = lecturerOptionsData?.data || [];
-  const roomOptions: Room[] = roomOptionsData?.rooms || [];
+  const roomOptions: Room[] = roomOptionsData?.data || [];
   const seminarRows = seminarData?.seminars || [];
   const seminarTotal = seminarData?.meta?.total || 0;
 

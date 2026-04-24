@@ -20,9 +20,12 @@ export default function LecturerAvailability() {
 
     const {
         availabilities,
+        total,
         isLoading,
         isFetching,
         refetch,
+        params,
+        setParams,
         create,
         update,
         remove,
@@ -40,8 +43,11 @@ export default function LecturerAvailability() {
 
             <LecturerAvailabilityTable
                 data={availabilities}
+                total={total}
                 isLoading={isLoading}
                 isFetching={isFetching}
+                params={params}
+                onParamsChange={setParams}
                 onDelete={remove}
                 onUpdate={update}
                 onCreate={() => setCreateDialogOpen(true)}

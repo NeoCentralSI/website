@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Pencil, Power, Trash2, Plus } from 'lucide-react';
+import { Pencil, Power, Trash2, Plus, Users } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { CplFormDialog } from '@/components/master-data/CplFormDialog';
 
 interface CplTableProps {
     data: Cpl[];
+    total: number;
     isLoading: boolean;
     isFetching: boolean;
     onToggle: (id: string) => void;
@@ -29,10 +30,14 @@ interface CplTableProps {
     onRefresh: () => void;
     isToggling: boolean;
     isDeleting: boolean;
+    isManagement?: boolean;
+    params: any;
+    onParamsChange: (params: any) => void;
 }
 
 export function CplTable({
     data,
+    total,
     isLoading,
     isFetching,
     onToggle,
@@ -42,13 +47,12 @@ export function CplTable({
     onRefresh,
     isToggling,
     isDeleting,
+    isManagement = false,
+    params,
+    onParamsChange,
 }: CplTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<Cpl | null>(null);
-    const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
 
     const handleConfirmDelete = () => {
         if (deleteId) {
@@ -57,29 +61,6 @@ export function CplTable({
         }
     };
 
-    const filteredData = useMemo(() => {
-        const term = search.toLowerCase();
-        return data.filter((item) => {
-            const matchesStatus =
-                statusFilter === 'all' ||
-                (statusFilter === 'active' ? item.isActive : !item.isActive);
-            if (!matchesStatus) return false;
-
-            if (!term) return true;
-
-            return (
-                (item.code || '').toLowerCase().includes(term) ||
-                item.description.toLowerCase().includes(term) ||
-                String(item.minimalScore).includes(term)
-            );
-        });
-    }, [data, search, statusFilter]);
-
-    const paginatedData = useMemo(() => {
-        const start = (page - 1) * pageSize;
-        return filteredData.slice(start, start + pageSize);
-    }, [filteredData, page, pageSize]);
-
     const columns = useMemo<Column<Cpl>[]>(() => [
         {
             key: 'no',
@@ -87,7 +68,7 @@ export function CplTable({
             width: 50,
             className: 'text-center',
             render: (_item, index) => (
-                <span className="text-sm text-muted-foreground">{(page - 1) * pageSize + index + 1}</span>
+                <span className="text-sm text-muted-foreground">{(params.page - 1) * params.limit + index + 1}</span>
             ),
         },
         {
@@ -115,15 +96,29 @@ export function CplTable({
             ),
         },
         {
+            key: 'studentCplScoreCount',
+            header: 'Mahasiswa',
+            width: 110,
+            render: (item) => (
+                item.studentCplScoreCount > 0
+                    ? (
+                        <Badge variant="outline" className="gap-1">
+                            <Users className="h-3 w-3" />
+                            {item.studentCplScoreCount}
+                        </Badge>
+                    )
+                    : <span className="text-muted-foreground">-</span>
+            ),
+        },
+        {
             key: 'status',
             header: 'Status',
             width: 90,
             filter: {
                 type: 'select',
-                value: statusFilter,
+                value: params.status,
                 onChange: (value: string) => {
-                    setStatusFilter(value as 'active' | 'inactive' | 'all');
-                    setPage(1);
+                    onParamsChange({ ...params, status: value, page: 1 });
                 },
                 options: [
                     { label: 'Aktif', value: 'active' },
@@ -151,15 +146,18 @@ export function CplTable({
             className: 'text-right',
             render: (item) => (
                 <div className="flex items-center justify-end gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        onClick={() => setEditItem(item)}
-                        title="Edit"
-                    >
-                        <Pencil className="h-4 w-4" />
-                    </Button>
+                    {isManagement && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => setEditItem(item)}
+                            disabled={!item.isActive || item.hasRelatedScores}
+                            title={!item.isActive ? 'CPL non-aktif tidak dapat diubah' : item.hasRelatedScores ? 'CPL yang sudah memiliki nilai mahasiswa tidak dapat diubah' : 'Edit'}
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -173,14 +171,14 @@ export function CplTable({
                     >
                         <Power className="h-4 w-4" />
                     </Button>
-                    {!item.hasRelatedScores && (
+                    {isManagement && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => setDeleteId(item.id)}
-                            disabled={isDeleting}
-                            title="Hapus"
+                            disabled={isDeleting || item.hasRelatedScores}
+                            title={item.hasRelatedScores ? 'CPL tidak dapat dihapus karena sudah memiliki nilai mahasiswa' : 'Hapus'}
                         >
                             <Trash2 className="h-4 w-4" />
                         </Button>
@@ -188,29 +186,31 @@ export function CplTable({
                 </div>
             ),
         },
-    ], [isToggling, isDeleting, onToggle, page, pageSize, statusFilter]);
+    ], [isToggling, isDeleting, onToggle, params, isManagement]);
 
     return (
         <>
             <CustomTable
                 columns={columns}
-                data={paginatedData}
+                data={data}
                 loading={isLoading}
                 isRefreshing={isFetching && !isLoading}
-                total={filteredData.length}
-                page={page}
-                pageSize={pageSize}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-                searchValue={search}
-                onSearchChange={setSearch}
+                total={total}
+                page={params.page}
+                pageSize={params.limit}
+                onPageChange={(p) => onParamsChange({ ...params, page: p })}
+                onPageSizeChange={(s) => onParamsChange({ ...params, limit: s })}
+                searchValue={params.search}
+                onSearchChange={(s) => onParamsChange({ ...params, search: s, page: 1 })}
                 enableColumnFilters
                 emptyText="Belum ada data CPL"
                 actions={
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={onCreate}>
-                            <Plus className="mr-2 h-4 w-4" /> Tambah CPL
-                        </Button>
+                        {isManagement && (
+                            <Button variant="outline" size="sm" onClick={onCreate}>
+                                <Plus className="mr-2 h-4 w-4" /> Tambah
+                            </Button>
+                        )}
                         <RefreshButton
                             onClick={onRefresh}
                             isRefreshing={isFetching && !isLoading}
@@ -233,7 +233,7 @@ export function CplTable({
                         <AlertDialogAction
                             onClick={handleConfirmDelete}
                             disabled={isDeleting}
-                            className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-red-600 hover:bg-red-700"
                         >
                             {isDeleting ? (
                                 <>
