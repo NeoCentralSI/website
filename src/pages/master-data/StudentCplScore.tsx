@@ -36,6 +36,8 @@ export default function StudentCplScorePage() {
         deleteScore,
         importScores,
         exportScores,
+        studentOptions,
+        cplOptions,
         isCreating,
         isUpdating,
         isDeleting,
@@ -46,9 +48,9 @@ export default function StudentCplScorePage() {
     return (
         <div className="p-6 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">Kelola Nilai CPL Mahasiswa (Arsip Manual)</h1>
+                <h1 className="text-2xl font-bold">Kelola Nilai CPL Mahasiswa</h1>
                 <p className="text-muted-foreground">
-                    Fitur ini digunakan GKM untuk mengarsipkan data nilai CPL lama. Data SIA tetap immutable dan tidak dapat dioverride.
+                    Manajemen nilai capaian pembelajaran lulusan (CPL) mahasiswa
                 </p>
             </div>
 
@@ -70,7 +72,6 @@ export default function StudentCplScorePage() {
                 onDelete={(item) => deleteScore(item.studentId, item.cplId)}
                 isDeleting={isDeleting}
                 onImportClick={() => setImportOpen(true)}
-                onDownloadTemplate={downloadStudentCplTemplate}
                 onExport={exportScores}
                 isExporting={isExporting}
             />
@@ -82,6 +83,8 @@ export default function StudentCplScorePage() {
                 onCreate={createScore}
                 onUpdate={updateScore}
                 isSubmitting={isCreating || isUpdating}
+                studentOptions={studentOptions}
+                cplOptions={cplOptions}
             />
 
             <StudentCplScoreImportDialog
@@ -89,6 +92,7 @@ export default function StudentCplScorePage() {
                 onOpenChange={setImportOpen}
                 onImport={importScores}
                 isImporting={isImporting}
+                onDownloadTemplate={downloadStudentCplTemplate}
             />
         </div>
     );

@@ -5,8 +5,10 @@ import {
     createStudentCplScore,
     deleteStudentCplScore,
     exportStudentCplScores,
+    getStudentCplScoreOptions,
     getStudentCplScores,
     importStudentCplScores,
+    parseStudentCplImportFile,
     updateStudentCplScore,
     type CreateStudentCplScorePayload,
     type StudentCplImportResult,
@@ -18,11 +20,22 @@ const QUERY_KEY = ["student-cpl-scores"];
 
 export function useStudentCplScore() {
     const queryClient = useQueryClient();
-    const [filters, setFilters] = useState<StudentCplScoreFilters>({});
+    const [filters, setFilters] = useState<StudentCplScoreFilters>({
+        source: "MANUAL",
+        status: "finalized",
+    });
 
     const { data, isLoading, isFetching, refetch } = useQuery({
         queryKey: [...QUERY_KEY, filters],
         queryFn: () => getStudentCplScores(filters),
+    });
+    const { data: allScoresData } = useQuery({
+        queryKey: [...QUERY_KEY, "all"],
+        queryFn: () => getStudentCplScores({}),
+    });
+    const { data: optionsData } = useQuery({
+        queryKey: [...QUERY_KEY, "options"],
+        queryFn: getStudentCplScoreOptions,
     });
 
     const invalidate = () => queryClient.invalidateQueries({ queryKey: QUERY_KEY });
@@ -64,7 +77,13 @@ export function useStudentCplScore() {
     });
 
     const importMutation = useMutation({
-        mutationFn: (file: File) => importStudentCplScores(file),
+        mutationFn: async (file: File) => {
+            const rows = await parseStudentCplImportFile(file);
+            if (rows.length === 0) {
+                throw new Error("File Excel kosong atau tidak valid.");
+            }
+            return importStudentCplScores(rows, allScoresData?.data ?? [], optionsData ?? { students: [], cpls: [] });
+        },
         onSuccess: (result: StudentCplImportResult) => {
             invalidate();
             if (result.failed === 0) {
@@ -77,36 +96,24 @@ export function useStudentCplScore() {
     });
 
     const exportMutation = useMutation({
-        mutationFn: exportStudentCplScores,
+        mutationFn: () => exportStudentCplScores(allScoresData?.data ?? []),
         onSuccess: () => toast.success("Export berhasil diunduh"),
         onError: (error: Error) => toast.error(error.message),
     });
 
     const studentOptions = useMemo(() => {
-        const map = new Map<string, { id: string; label: string }>();
-        for (const row of data?.data ?? []) {
-            if (!map.has(row.studentId)) {
-                map.set(row.studentId, {
-                    id: row.studentId,
-                    label: `${row.student?.identityNumber ?? "-"} - ${row.student?.fullName ?? row.studentId}`,
-                });
-            }
-        }
-        return Array.from(map.values());
-    }, [data?.data]);
+        return (optionsData?.students ?? []).map((student) => ({
+            id: student.id,
+            label: `${student.fullName ?? "-"} (${student.identityNumber ?? "-"})`,
+        }));
+    }, [optionsData?.students]);
 
     const cplOptions = useMemo(() => {
-        const map = new Map<string, { id: string; label: string }>();
-        for (const row of data?.data ?? []) {
-            if (!map.has(row.cplId)) {
-                map.set(row.cplId, {
-                    id: row.cplId,
-                    label: `${row.cpl?.code ?? "-"} - ${row.cpl?.description ?? row.cplId}`,
-                });
-            }
-        }
-        return Array.from(map.values());
-    }, [data?.data]);
+        return (optionsData?.cpls ?? []).map((cpl) => ({
+            id: cpl.id,
+            label: `${cpl.code ?? "-"} - ${cpl.description} | Min: ${cpl.minimalScore}${cpl.isActive ? "" : " (Nonaktif)"}`,
+        }));
+    }, [optionsData?.cpls]);
 
     return {
         data: data?.data ?? [],

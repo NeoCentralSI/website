@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Download, FileSpreadsheet, RefreshCw, Upload } from "lucide-react";
 import type { StudentCplImportResult } from "@/services/master-data/student-cpl-score.service";
 
 interface StudentCplScoreImportDialogProps {
@@ -11,6 +13,7 @@ interface StudentCplScoreImportDialogProps {
     onOpenChange: (open: boolean) => void;
     onImport: (file: File) => Promise<StudentCplImportResult>;
     isImporting: boolean;
+    onDownloadTemplate: () => void;
 }
 
 export function StudentCplScoreImportDialog({
@@ -18,6 +21,7 @@ export function StudentCplScoreImportDialog({
     onOpenChange,
     onImport,
     isImporting,
+    onDownloadTemplate,
 }: StudentCplScoreImportDialogProps) {
     const [file, setFile] = useState<File | null>(null);
     const [result, setResult] = useState<StudentCplImportResult | null>(null);
@@ -45,12 +49,26 @@ export function StudentCplScoreImportDialog({
                 <DialogHeader>
                     <DialogTitle>Import Nilai CPL Manual</DialogTitle>
                     <DialogDescription>
-                        Upload file Excel berisi kolom: <code>studentId</code>, <code>cplCode</code>, <code>score</code>.
+                        Unggah file Excel untuk mengarsipkan nilai CPL manual secara massal.
                     </DialogDescription>
                 </DialogHeader>
 
                 {!result ? (
                     <div className="space-y-3">
+                        <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                            <div className="flex items-center gap-3">
+                                <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                                <div>
+                                    <p className="text-sm font-medium">Gunakan template standar</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Kolom wajib: No, NIM, Nama Mahasiswa, Kode CPL, Deskripsi CPL, Minimal Skor CPL, Skor CPL
+                                    </p>
+                                </div>
+                            </div>
+                            <Button type="button" variant="outline" size="sm" onClick={onDownloadTemplate}>
+                                <Download className="mr-2 h-4 w-4" /> Template
+                            </Button>
+                        </div>
                         <Input
                             type="file"
                             accept=".xlsx,.xls"
@@ -58,6 +76,13 @@ export function StudentCplScoreImportDialog({
                             disabled={isImporting}
                         />
                         {file && <p className="text-xs text-muted-foreground">File: {file.name}</p>}
+                        {isImporting && (
+                            <Alert>
+                                <Upload className="h-4 w-4 animate-bounce" />
+                                <AlertTitle>Sedang memproses...</AlertTitle>
+                                <AlertDescription>Mohon tunggu, sistem sedang memvalidasi data import.</AlertDescription>
+                            </Alert>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -90,20 +115,31 @@ export function StudentCplScoreImportDialog({
                 )}
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isImporting}>
-                        {result ? "Tutup" : "Batal"}
-                    </Button>
-                    {!result && (
-                        <Button onClick={handleSubmit} disabled={!file || isImporting}>
-                            {isImporting ? (
-                                <>
-                                    <Spinner className="mr-2 h-4 w-4" />
-                                    Memproses...
-                                </>
-                            ) : (
-                                "Import"
-                            )}
-                        </Button>
+                    {!result ? (
+                        <>
+                            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isImporting}>
+                                Batal
+                            </Button>
+                            <Button onClick={handleSubmit} disabled={!file || isImporting}>
+                                {isImporting ? (
+                                    <>
+                                        <Spinner className="mr-2 h-4 w-4" />
+                                        Memproses...
+                                    </>
+                                ) : (
+                                    "Import"
+                                )}
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button variant="outline" onClick={() => onOpenChange(false)}>
+                                Tutup
+                            </Button>
+                            <Button onClick={reset}>
+                                <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+                            </Button>
+                        </>
                     )}
                 </DialogFooter>
             </DialogContent>

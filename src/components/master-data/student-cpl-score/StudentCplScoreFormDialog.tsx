@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { StudentCplScore } from "@/services/master-data/student-cpl-score.service";
 
 interface StudentCplScoreFormDialogProps {
@@ -13,6 +14,8 @@ interface StudentCplScoreFormDialogProps {
     onCreate: (payload: { studentId: string; cplId: string; score: number }) => Promise<unknown>;
     onUpdate: (studentId: string, cplId: string, payload: { score: number }) => Promise<unknown>;
     isSubmitting: boolean;
+    studentOptions: Array<{ id: string; label: string }>;
+    cplOptions: Array<{ id: string; label: string }>;
 }
 
 export function StudentCplScoreFormDialog({
@@ -22,9 +25,11 @@ export function StudentCplScoreFormDialog({
     onCreate,
     onUpdate,
     isSubmitting,
+    studentOptions,
+    cplOptions,
 }: StudentCplScoreFormDialogProps) {
     const isEdit = Boolean(editData);
-    const isSiaData = editData?.source === "SIA";
+    const isSiaData = String(editData?.source).toUpperCase() === "SIA";
 
     const [studentId, setStudentId] = useState("");
     const [cplId, setCplId] = useState("");
@@ -69,24 +74,42 @@ export function StudentCplScoreFormDialog({
                 </DialogHeader>
                 <form className="space-y-4" onSubmit={handleSubmit}>
                     <div className="space-y-2">
-                        <Label htmlFor="studentId">Student ID</Label>
-                        <Input
-                            id="studentId"
+                        <Label htmlFor="studentId">Mahasiswa</Label>
+                        <Select
                             value={studentId}
-                            onChange={(e) => setStudentId(e.target.value)}
+                            onValueChange={setStudentId}
                             disabled={isEdit}
-                            required
-                        />
+                        >
+                            <SelectTrigger id="studentId">
+                                <SelectValue placeholder="Pilih mahasiswa..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {studentOptions.map((option) => (
+                                    <SelectItem key={option.id} value={option.id}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="cplId">CPL ID</Label>
-                        <Input
-                            id="cplId"
+                        <Label htmlFor="cplId">CPL</Label>
+                        <Select
                             value={cplId}
-                            onChange={(e) => setCplId(e.target.value)}
+                            onValueChange={setCplId}
                             disabled={isEdit}
-                            required
-                        />
+                        >
+                            <SelectTrigger id="cplId">
+                                <SelectValue placeholder="Pilih CPL..." />
+                            </SelectTrigger>
+                            <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
+                                {cplOptions.map((option) => (
+                                    <SelectItem key={option.id} value={option.id} className="max-w-full whitespace-normal">
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="score">Skor</Label>
