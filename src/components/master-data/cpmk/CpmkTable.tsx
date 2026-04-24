@@ -113,18 +113,24 @@ export function CpmkTable({
                     >
                         <Pencil className="h-4 w-4" />
                     </Button>
-                    {!item.hasAssessmentDetails && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => setDeleteId(item.id)}
-                            disabled={isDeleting}
-                            title="Hapus"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    )}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 ${
+                            item.hasAssessmentDetails
+                                ? 'text-red-400 hover:text-red-500'
+                                : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                        }`}
+                        onClick={() => setDeleteId(item.id)}
+                        disabled={isDeleting || item.hasAssessmentDetails}
+                        title={
+                            item.hasAssessmentDetails
+                                ? 'CPMK tidak dapat dihapus karena sudah memiliki detail penilaian'
+                                : 'Hapus'
+                        }
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
                 </div>
             ),
         },
@@ -190,7 +196,7 @@ export function CpmkTable({
                         <AlertDialogAction
                             onClick={handleConfirmDelete}
                             disabled={isDeleting}
-                            className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-red-600 hover:bg-red-700"
                         >
                             {isDeleting ? (
                                 <>
