@@ -211,8 +211,8 @@ export function ThesisSeminarArchivePanel() {
               <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
                 <Download className="w-4 h-4 mr-2" /> Export Excel
               </Button>
-              <Button variant="outline" size="sm" onClick={openCreate}>
-                <Plus className="w-4 h-4 mr-2" /> Tambah
+              <Button size="sm" onClick={openCreate}>
+                <Plus className="w-4 h-4 mr-2" /> Tambah Data
               </Button>
               <RefreshButton
                 onClick={() => seminarDataRefetch()}

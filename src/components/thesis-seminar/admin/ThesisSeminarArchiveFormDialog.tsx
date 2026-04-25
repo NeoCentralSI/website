@@ -150,7 +150,7 @@ export function ThesisSeminarArchiveFormDialog({
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Seminar Hasil' : 'Tambah Seminar Hasil'}</DialogTitle>
           <DialogDescription>
-            Isi data seminar hasil. Dosen penguji minimal 1 orang dan tidak boleh merupakan pembimbing Tugas Akhir.
+            Isi form berikut untuk menambah data arsip seminar hasil
           </DialogDescription>
         </DialogHeader>
 
