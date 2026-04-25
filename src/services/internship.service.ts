@@ -42,6 +42,7 @@ export {
   getStudentProposals,
   getCompanies,
   getEligibleStudents,
+  getWorkingDaysCount,
   submitProposal,
   updateProposal,
   deleteProposal,
@@ -145,8 +146,10 @@ export {
   bulkApproveSeminars,
   updateSeminarNotes,
   getInternshipAssessment,
-  submitLecturerAssessment
+  submitLecturerAssessment,
+  downloadBeritaAcara
 } from './internship/lecturer.service';
+
 
 // Export public service functions
 export {

@@ -184,3 +184,14 @@ export const submitLecturerAssessment = async (internshipId: string, scores: { c
     }
     return res.json();
 };
+
+export const downloadBeritaAcara = async (id: string): Promise<Blob> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${id}/berita-acara`);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunduh berita acara" }));
+        throw new Error(errorData.message || "Gagal mengunduh berita acara");
+    }
+    return res.blob();
+};
+

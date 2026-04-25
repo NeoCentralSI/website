@@ -14,7 +14,10 @@ import { getAdminProposalLetterDetail, updateAdminProposalLetter, type AdminAppr
 import { toTitleCaseName } from "@/lib/text";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Users, MapPin, User, Settings2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getHolidays, type InternshipHoliday } from "@/services/internship/holiday.service";
 import { API_CONFIG } from "@/config/api";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface LetterFormValues {
     documentNumber: string;
@@ -32,24 +35,46 @@ const ManageApplicationLetter: React.FC = () => {
     const { register, handleSubmit, reset, watch, control, formState: { errors } } = useForm<LetterFormValues>();
     const watchDates = watch(["startDatePlanned", "endDatePlanned"]);
 
-    const calculateBusinessDays = (startStr: string, endStr: string) => {
+    // Fetch holidays
+    const holidaysQuery = useQuery({
+        queryKey: ['internship-holidays'],
+        queryFn: async () => {
+            const res = await getHolidays();
+            return res.data;
+        },
+    });
+
+    const calculateBusinessDays = (startStr: string, endStr: string, holidayList: InternshipHoliday[] = []) => {
         if (!startStr || !endStr) return 0;
         const start = new Date(startStr);
         const end = new Date(endStr);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
         if (start > end) return 0;
 
+        const holidaySet = new Set(
+            holidayList.map((h) => {
+                const d = new Date(h.holidayDate);
+                return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+            })
+        );
+
         let count = 0;
-        const curDate = new Date(start.getTime());
-        while (curDate <= end) {
-            const dayOfWeek = curDate.getDay();
-            if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
-            curDate.setDate(curDate.getDate() + 1);
+        const current = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
+        const finalEnd = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
+
+        while (current <= finalEnd) {
+            const dayOfWeek = current.getUTCDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                const key = `${current.getUTCFullYear()}-${String(current.getUTCMonth() + 1).padStart(2, '0')}-${String(current.getUTCDate()).padStart(2, '0')}`;
+                if (!holidaySet.has(key)) count++;
+            }
+            current.setUTCDate(current.getUTCDate() + 1);
         }
         return count;
     };
 
-    const businessDays = calculateBusinessDays(watchDates[0], watchDates[1]);
+    const businessDays = calculateBusinessDays(watchDates[0], watchDates[1], holidaysQuery.data || []);
+    const isWorkingDaysValid = businessDays >= 30;
 
     useEffect(() => {
         if (id) {
@@ -64,15 +89,19 @@ const ManageApplicationLetter: React.FC = () => {
             const res = await getAdminProposalLetterDetail(id!);
             setProposal(res.data);
 
-            const formatDate = (dateStr: string | null) => {
+            const formatDate = (dateStr?: string | null) => {
                 if (!dateStr) return "";
-                return new Date(dateStr).toISOString().split('T')[0];
+                const d = new Date(dateStr);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
             };
 
             reset({
                 documentNumber: res.data.letterNumber || "",
-                startDatePlanned: formatDate(res.data.period?.start || null),
-                endDatePlanned: formatDate(res.data.period?.end || null)
+                startDatePlanned: formatDate(res.data.period?.start || res.data.proposedStartDate || null),
+                endDatePlanned: formatDate(res.data.period?.end || res.data.proposedEndDate || null)
             });
         } catch (error: any) {
             toast.error(error.message || "Gagal memuat detail pengajuan");
@@ -83,6 +112,10 @@ const ManageApplicationLetter: React.FC = () => {
     };
 
     const onSubmit = async (values: LetterFormValues) => {
+        if (businessDays < 30) {
+            toast.error("Jumlah hari kerja minimal adalah 30 hari.");
+            return;
+        }
         try {
             setSubmitting(true);
             await updateAdminProposalLetter(id!, values);
@@ -151,7 +184,7 @@ const ManageApplicationLetter: React.FC = () => {
                 <div className="space-y-6">
                     {/* Informasi Perusahaan */}
                     <Card>
-                        <CardHeader className="pb-3 text-base">
+                        <CardHeader className="text-base">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <Building2 className="h-4 w-4" />
                                 Informasi Perusahaan
@@ -170,7 +203,7 @@ const ManageApplicationLetter: React.FC = () => {
 
                     {/* Anggota Kelompok */}
                     <Card>
-                        <CardHeader className="pb-3 text-base">
+                        <CardHeader className="text-base">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <Users className="h-4 w-4" />
                                 Anggota Kelompok
@@ -264,7 +297,16 @@ const ManageApplicationLetter: React.FC = () => {
                                             render={({ field }) => (
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
-                                                    onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    onChange={(date) => {
+                                                        if (!date) {
+                                                            field.onChange("");
+                                                        } else {
+                                                            const year = date.getFullYear();
+                                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                            const day = String(date.getDate()).padStart(2, '0');
+                                                            field.onChange(`${year}-${month}-${day}`);
+                                                        }
+                                                    }}
                                                     disabled={proposal.isSigned}
                                                 />
                                             )}
@@ -285,7 +327,16 @@ const ManageApplicationLetter: React.FC = () => {
                                             render={({ field }) => (
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
-                                                    onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    onChange={(date) => {
+                                                        if (!date) {
+                                                            field.onChange("");
+                                                        } else {
+                                                            const year = date.getFullYear();
+                                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                            const day = String(date.getDate()).padStart(2, '0');
+                                                            field.onChange(`${year}-${month}-${day}`);
+                                                        }
+                                                    }}
                                                     disabled={proposal.isSigned}
                                                 />
                                             )}
@@ -297,15 +348,26 @@ const ManageApplicationLetter: React.FC = () => {
                                 </div>
 
                                 {watchDates[0] && watchDates[1] && (
-                                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                                            <Calendar className="h-4 w-4" />
-                                            Durasi Magang
+                                    <div className="space-y-4">
+                                        <div className={`p-3 rounded-lg flex items-center justify-between border ${isWorkingDaysValid ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-destructive/5 border-destructive/10 text-destructive'}`}>
+                                            <div className="flex items-center gap-2 text-sm font-medium">
+                                                <Info className="h-4 w-4" />
+                                                <span>Estimasi Hari Kerja:</span>
+                                            </div>
+                                            <div className="text-sm">
+                                                <span className="font-bold text-lg">{holidaysQuery.isLoading ? "..." : businessDays}</span>
+                                                <span className="ml-1 text-muted-foreground">Hari</span>
+                                            </div>
                                         </div>
-                                        <div className="text-sm">
-                                            <span className="font-bold text-lg">{businessDays}</span>
-                                            <span className="ml-1 text-muted-foreground">Hari Kerja</span>
-                                        </div>
+
+                                        {!isWorkingDaysValid && !holidaysQuery.isLoading && (
+                                            <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2">
+                                                <AlertTitle className="text-xs font-bold uppercase">Durasi Tidak Mencukupi</AlertTitle>
+                                                <AlertDescription className="text-xs">
+                                                    Jumlah hari kerja minimal adalah 30 hari. Silakan sesuaikan rentang tanggal Anda.
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
                                     </div>
                                 )}
 

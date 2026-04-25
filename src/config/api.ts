@@ -359,6 +359,7 @@ export const API_CONFIG = {
       ASSIGNMENT_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/proposals/${id}/assignment`,
       UPDATE_ASSIGNMENT_LETTER: (id: string) => `/insternship/admin/proposals/${id}/assignment-letter`,
       VERIFY_COMPANY_RESPONSE: (id: string) => `/insternship/admin/company-responses/${id}/verify`,
+      HOLIDAYS: '/insternship/holidays',
     },
     INTERNSHIP_TEMPLATES: {
       GET: (name: string) => `/insternship/templates/${name}`,

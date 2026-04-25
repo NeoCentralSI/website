@@ -4,12 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Check, MousePointer2, FileText, Info, Building2, User, ChevronUp } from 'lucide-react';
+import { Loader2, ArrowLeft, Check, MousePointer2, FileText, Info, Building2, User, ChevronUp, Calendar } from 'lucide-react';
 import { getKadepPendingLetters, approveKadepLetter } from '@/services/internship';
 import { API_CONFIG } from '@/config/api';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { formatDateShortId } from '@/lib/text';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Set worker for react-pdf
@@ -266,6 +267,14 @@ const SignLetterPage = () => {
                                     <Building2 className="h-4 w-4 shrink-0" />
                                     <span className="truncate" title={letter.companyName}>{letter.companyName}</span>
                                 </div>
+                                {letter.period && (
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <Calendar className="h-4 w-4 shrink-0" />
+                                        <span className="text-xs">
+                                            {formatDateShortId(letter.period.start)} - {formatDateShortId(letter.period.end)}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             <Separator />
@@ -416,7 +425,7 @@ const SignLetterPage = () => {
                                                     return (
                                                         <div
                                                             key={`sig_${globalIndex}`}
-                                                            className={`absolute border-2 border-green-500 bg-green-500/20 flex items-center justify-center transition-all duration-75 ring-4 ring-green-500/10 ${dragState?.index === globalIndex ? 'cursor-grabbing scale-105 z-50' : 'cursor-grab hover:scale-110 z-10'}`}
+                                                            className={`absolute border-2 border-green-500 bg-green-500/20 flex items-center justify-center transition-all duration-75 ring-4 ring-green-500/10 ${dragState?.index === globalIndex ? 'cursor-grabbing z-50' : 'cursor-grab z-10'}`}
                                                             style={{
                                                                 left: `${(pos.x / (pageDim?.width || 595)) * 100}%`,
                                                                 top: `${(pos.y / (pageDim?.height || 842)) * 100}%`,

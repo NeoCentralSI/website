@@ -11,7 +11,7 @@ import EmptyState from '@/components/ui/empty-state';
 import { Loading } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import EditLogbookDialog from '@/components/internship/student/EditLogbookDialog';
-import { Edit, FileText, Loader2, Printer, User } from 'lucide-react';
+import { Edit, FileText, Loader2, Printer, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -178,6 +178,11 @@ export default function LogbookPage() {
                 <div className="flex h-[400px] items-center justify-center">
                     <Loading size="lg" text="Memuat data logbook..." />
                 </div>
+            ) : !data?.data?.internship ? (
+                <EmptyState
+                    title="Belum Ada Kerja Praktik"
+                    description="Anda belum memiliki kegiatan Kerja Praktik yang sedang berjalan."
+                />
             ) : logbooks.length === 0 ? (
                 <EmptyState
                     title="Logbook Kosong"
