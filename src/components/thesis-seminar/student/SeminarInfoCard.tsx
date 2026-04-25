@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SeminarStatusBadge } from './SeminarStatusBadge';
+import { SeminarStatusBadge } from '../../seminar/SeminarStatusBadge';
 import { toTitleCaseName, formatDateOnlyId } from '@/lib/text';
 import { ChevronRight, Users, Calendar, MapPin, Video, Trophy } from 'lucide-react';
 import type { SeminarInfo, ThesisSeminarStatus } from '@/types/seminar.types';

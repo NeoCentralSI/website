@@ -6,19 +6,19 @@ import { Loading } from '@/components/ui/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useStudentSeminarOverview, useStudentSeminarHistory } from '@/hooks/thesis-seminar';
-import { SeminarStatusStepper } from '@/components/seminar/SeminarStatusStepper';
+import { SeminarStatusStepper } from '@/components/thesis-seminar/student/SeminarStatusStepper';
 import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
-import { SeminarInfoCard } from '@/components/seminar/SeminarInfoCard';
-import { ChecklistPersyaratan } from '@/components/seminar/ChecklistPersyaratan';
-import { UploadDokumenSeminar } from '@/components/seminar/UploadDokumenSeminar';
+import { SeminarInfoCard } from '@/components/thesis-seminar/student/SeminarInfoCard';
+import { ChecklistPersyaratan } from '@/components/thesis-seminar/student/ChecklistPersyaratan';
+import { UploadDokumenSeminar } from '@/components/thesis-seminar/student/UploadDokumenSeminar';
 import { formatDateOnlyId } from '@/lib/text';
 import { toTitleCaseName } from '@/lib/text';
 import { ChevronRight, Calendar, Users, Trophy, MapPin, Video } from 'lucide-react';
 import type { ThesisSeminarStatus, SeminarHistoryItem } from '@/types/seminar.types';
 
 const TABS = [
-  { label: 'Seminar Hasil', to: '/tugas-akhir/seminar/student', end: true },
-  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar/student/attendance', end: false },
+  { label: 'Seminar Hasil', to: '/tugas-akhir/seminar-hasil', end: true },
+  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar-hasil/riwayat-kehadiran', end: false },
 ];
 
 /** Statuses where the "Informasi Seminar" card is shown */
@@ -210,7 +210,7 @@ export default function StudentThesisSeminar() {
           {data.seminar && showInfoCard && (
             <SeminarInfoCard
               seminar={data.seminar}
-              onClick={() => navigate(`/tugas-akhir/seminar/student/history/${data.seminar!.id}`)}
+              onClick={() => navigate(`/tugas-akhir/seminar-hasil/student/history/${data.seminar!.id}`)}
             />
           )}
 
@@ -241,7 +241,7 @@ export default function StudentThesisSeminar() {
                     <HistoryCard
                       key={item.id}
                       item={item}
-                      onClick={() => navigate(`/tugas-akhir/seminar/student/history/${item.id}`)}
+                      onClick={() => navigate(`/tugas-akhir/seminar-hasil/student/history/${item.id}`)}
                     />
                   ))}
                 </div>

@@ -92,7 +92,7 @@ export const useSidebarMenu = () => {
           icon: FileText,
           items: [
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-            { title: "Seminar", url: "/tugas-akhir/seminar" },
+            { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
             { title: "Sidang", url: "/tugas-akhir/sidang" },
           ],
         },
@@ -187,7 +187,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar" },
+          { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
         ],
       });
@@ -268,7 +268,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
+          { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
@@ -366,7 +366,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar" },
+          { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
@@ -441,7 +441,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar" },
+          { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
