@@ -3,15 +3,15 @@ import { useOutletContext, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument, submitCompanyReport } from '@/services/internship';
+import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument, submitCompanyReport, submitFinalFixReport } from '@/services/internship';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 
-// Extracted Components
 import { ReportingTab } from '@/components/internship/student/ReportingTab';
 import { FinalReportTab } from '@/components/internship/student/FinalReportTab';
 import { SeminarTab } from '@/components/internship/student/SeminarTab';
 import { GradesTab } from '@/components/internship/student/GradesTab';
+import EmptyState from '@/components/ui/empty-state';
 
 export default function InternshipSeminarPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -53,7 +53,7 @@ export default function InternshipSeminarPage() {
         }
     }, [internship]);
 
-    const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT', file: File, title?: string) => {
+    const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT' | 'FINAL_FIX_REPORT', file: File, title?: string) => {
         try {
             setIsUploading(type);
             const { documentId } = await uploadInternshipDocument(file);
@@ -79,6 +79,9 @@ export default function InternshipSeminarPage() {
                 if (response.data?.assessmentInfo?.assessmentUrl) {
                     setGeneratedAssessmentUrl(response.data.assessmentInfo.assessmentUrl);
                 }
+            } else if (type === 'FINAL_FIX_REPORT') {
+                await submitFinalFixReport(documentId);
+                toast.success("Laporan Final Fix & Lembar Pengesahan berhasil diunggah");
             }
             
             queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
@@ -115,6 +118,10 @@ export default function InternshipSeminarPage() {
         }
     };
 
+    const handleFinalFixReportSubmit = async (file: File) => {
+        await handleUpload('FINAL_FIX_REPORT', file);
+    };
+
     const isPelaporan = location.pathname === '/kerja-praktik/seminar/pelaporan';
     const isLaporanAkhir = location.pathname === '/kerja-praktik/seminar/laporan-akhir';
     const isSeminar = location.pathname === '/kerja-praktik/seminar/jadwal';
@@ -142,6 +149,21 @@ export default function InternshipSeminarPage() {
         return (
             <div className="flex h-[400px] items-center justify-center">
                 <Loading size="lg" text="Memuat data pelaksanaan KP..." />
+            </div>
+        );
+    }
+
+    if (!internship) {
+        return (
+            <div className="flex flex-col gap-6 p-6">
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Seminar & Nilai Kerja Praktik</h1>
+                </div>
+                <TabsNav tabs={tabs} />
+                <EmptyState
+                    title="Belum Ada Kerja Praktik"
+                    description="Anda belum memiliki kegiatan Kerja Praktik yang sedang berjalan."
+                />
             </div>
         );
     }
@@ -178,6 +200,7 @@ export default function InternshipSeminarPage() {
                         internship={internship}
                         isUploading={isUploading}
                         onFinalReportSubmit={handleFinalReportSubmit}
+                        onFinalFixReportSubmit={handleFinalFixReportSubmit}
                     />
                 )}
                 {isSeminar && (

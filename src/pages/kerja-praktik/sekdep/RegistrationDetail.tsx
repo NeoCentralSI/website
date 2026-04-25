@@ -3,7 +3,7 @@ import { Link, useOutletContext, useParams, useNavigate } from 'react-router-dom
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSekdepProposalDetail, respondToSekdepProposal } from '@/services/internship';
-import { toTitleCaseName, formatDateId } from '@/lib/text';
+import { toTitleCaseName, formatDateId, formatDateShortId } from '@/lib/text';
 import { getInternshipStatusBadge } from '@/lib/internship/status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -187,6 +187,22 @@ export default function SekdepInternshipProposalDetail() {
                                 <div className="flex items-start gap-2 text-muted-foreground mt-1">
                                     <MapPin className="h-4 w-4 mt-1 shrink-0" />
                                     <p className="text-sm">{data.targetCompany.companyAddress}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 pt-4 border-t">
+                                <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium">Periode Pengajuan:</span>
+                                </div>
+                                <div className="text-sm">
+                                    {data.proposedStartDate && data.proposedEndDate ? (
+                                        <span className="font-semibold text-primary">
+                                            {formatDateShortId(data.proposedStartDate)} — {formatDateShortId(data.proposedEndDate)}
+                                        </span>
+                                    ) : (
+                                        <span className="text-muted-foreground italic">-</span>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>

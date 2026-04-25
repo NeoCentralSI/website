@@ -589,3 +589,22 @@ export const getCompanyStats = async (
     }
     return res.json();
 };
+
+export const rejectFinalReport = async (
+    id: string,
+    notes?: string
+): Promise<{ success: boolean; message: string }> => {
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.INTERNSHIPS_DETAIL(id))}/reject-final-report`;
+    const res = await apiRequest(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notes }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menolak laporan final" }));
+        throw new Error(errorData.message || "Gagal menolak laporan final");
+    }
+    return res.json();
+};

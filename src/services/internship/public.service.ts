@@ -6,14 +6,43 @@ import type {
     OverviewStats 
 } from "./types";
 
-export const verifyInternshipLetter = async (id: string) => {
-    const res = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_PUBLIC.VERIFY_LETTER(id)));
+export const verifyInternshipLetter = async (id: string, type: 'APPLICATION' | 'ASSIGNMENT' | 'SEMINAR_MINUTES' = 'APPLICATION') => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_PUBLIC.VERIFY_LETTER(id));
+    if (type === 'SEMINAR_MINUTES') {
+        url = getApiUrl(`/insternship/public/verify-seminar-minutes/${id}`);
+    } else {
+        url += `?type=${type}`;
+    }
+    const res = await fetch(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Dokumen tidak valid atau tidak ditemukan." }));
         throw new Error(errorData.message || "Gagal memverifikasi surat");
     }
     return res.json();
 };
+
+
+export const checkInternshipLetterHash = async (id: string, file: File, type: 'APPLICATION' | 'ASSIGNMENT' | 'SEMINAR_MINUTES') => {
+    const fd = new FormData();
+    fd.append('file', file);
+
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_PUBLIC.VERIFY_LETTER(id)) + `/check-hash?type=${type}`;
+    if (type === 'SEMINAR_MINUTES') {
+        url = getApiUrl(`/insternship/public/verify-seminar-minutes/${id}/check-hash`);
+    }
+
+    const res = await fetch(url, {
+        method: 'POST',
+        body: fd
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memverifikasi integritas file." }));
+        throw new Error(errorData.message || "Gagal memverifikasi integritas file");
+    }
+    return res.json();
+};
+
 
 export const getSeminarDetail = async (seminarId: string): Promise<{ success: boolean; data: any }> => {
     const res = await apiRequest(getApiUrl(`/insternship/activity/seminars/${seminarId}`));

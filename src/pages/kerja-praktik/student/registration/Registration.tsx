@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Loading } from '@/components/ui/spinner';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useStudentProposals } from '@/hooks/internship/useStudentProposals';
-import RegisterInternshipDialog from '@/components/internship/student/RegisterInternshipDialog';
 import UploadResponseLetterDialog from '@/components/internship/student/UploadResponseLetterDialog';
 import DeleteProposalDialog from '@/components/internship/student/DeleteProposalDialog';
 import { StudentProposalCard } from '@/components/internship/student/StudentProposalCard';
@@ -18,11 +17,9 @@ import { getSopDownloadUrl, getSopFilesPublic } from '@/services/sop.service';
 import { toast } from 'sonner';
 
 export default function InternshipProposalPage() {
-
+    const navigate = useNavigate();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
-    const [registerOpen, setRegisterOpen] = useState(false);
-    const [editItem, setEditItem] = useState<InternshipProposalItem | null>(null);
     const [deleteItem, setDeleteItem] = useState<InternshipProposalItem | null>(null);
     const [uploadResponseItem, setUploadResponseItem] = useState<InternshipProposalItem | null>(null);
 
@@ -36,9 +33,6 @@ export default function InternshipProposalPage() {
         refetch,
     } = useStudentProposals();
 
-    // Removal of academicYearId defaulting as it's now defaulted to 'all' in the hook
-    // and the filter UI is removed.
-
     const [docOpen, setDocOpen] = useState(false);
     const [docInfo, setDocInfo] = useState<{ fileName: string; filePath: string } | null>(null);
 
@@ -51,17 +45,12 @@ export default function InternshipProposalPage() {
 
     const activeProposal = useMemo(() => {
         return items.find(item => {
-            // If the proposal is cancelled or fully rejected, it's not active
             if (['REJECTED_BY_SEKDEP', 'REJECTED_BY_COMPANY'].includes(item.status)) {
                 return false;
             }
-
-            // If the member is rejected (either by declining invite or by company in partial acceptance), it's not active for them
             if (['REJECTED', 'REJECTED_BY_COMPANY'].includes(item.memberStatus as string)) {
                 return false;
             }
-
-            // Otherwise, it's an active proposal
             return true;
         });
     }, [items]);
@@ -71,7 +60,7 @@ export default function InternshipProposalPage() {
             toast.error("Anda masih memiliki proposal aktif. Selesaikan atau batalkan proposal tersebut sebelum mendaftar kembali.");
             return;
         }
-        setRegisterOpen(true);
+        navigate("/kerja-praktik/pendaftaran/baru");
     };
 
     const openDocumentPreview = (fileName: string, filePath: string) => {
@@ -91,8 +80,7 @@ export default function InternshipProposalPage() {
     };
 
     const handleEdit = (item: InternshipProposalItem) => {
-        setEditItem(item);
-        setRegisterOpen(true);
+        navigate(`/kerja-praktik/pendaftaran/edit/${item.id}`);
     };
 
     const handleDelete = (item: InternshipProposalItem) => {
@@ -200,16 +188,6 @@ export default function InternshipProposalPage() {
                     )}
                 </div>
             )}
-
-            <RegisterInternshipDialog
-                open={registerOpen}
-                onOpenChange={(open) => {
-                    setRegisterOpen(open);
-                    if (!open) setEditItem(null);
-                }}
-                onSubmitted={() => refetch()}
-                proposalToEdit={editItem}
-            />
 
             <DeleteProposalDialog
                 open={!!deleteItem}

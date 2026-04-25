@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
-import { FileText, Calendar, ArrowLeft, Save, Building2, Info, Check } from "lucide-react";
+import { FileText, Calendar, ArrowLeft, Save, Building2, Info, Check, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,11 +10,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getAdminAssignmentLetterDetail, updateAdminAssignmentLetter, type AdminAssignmentProposalItem } from "@/services/internship.service";
 import { toTitleCaseName } from "@/lib/text";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Users, MapPin, User, Settings2 } from "lucide-react";
 import { API_CONFIG } from "@/config/api";
+import { useQuery } from "@tanstack/react-query";
+import { getHolidays, type InternshipHoliday } from "@/services/internship/holiday.service";
+import DocumentPreviewDialog from "@/components/thesis/DocumentPreviewDialog";
 
 interface LetterFormValues {
     documentNumber: string;
@@ -28,28 +32,49 @@ const ManageAssignmentLetter: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [proposal, setProposal] = useState<AdminAssignmentProposalItem | null>(null);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const { register, handleSubmit, reset, watch, control, formState: { errors } } = useForm<LetterFormValues>();
     const watchDates = watch(["startDateActual", "endDateActual"]);
 
-    const calculateBusinessDays = (startStr: string, endStr: string) => {
+    const calculateBusinessDays = (startStr: string, endStr: string, holidayList: InternshipHoliday[] = []) => {
         if (!startStr || !endStr) return 0;
         const start = new Date(startStr);
         const end = new Date(endStr);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
         if (start > end) return 0;
 
+        // Build holiday set for O(1) lookup
+        const holidaySet = new Set(
+            holidayList.map((h) => {
+                const d = new Date(h.holidayDate);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })
+        );
+
         let count = 0;
         const curDate = new Date(start.getTime());
         while (curDate <= end) {
             const dayOfWeek = curDate.getDay();
-            if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                const key = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, '0')}-${String(curDate.getDate()).padStart(2, '0')}`;
+                if (!holidaySet.has(key)) count++;
+            }
             curDate.setDate(curDate.getDate() + 1);
         }
         return count;
     };
 
-    const businessDays = calculateBusinessDays(watchDates[0], watchDates[1]);
+    // Fetch holidays
+    const { data: holidaysData = [] } = useQuery({
+        queryKey: ['internship-holidays-assignment'],
+        queryFn: async () => {
+            const res = await getHolidays();
+            return res.data;
+        },
+    });
+
+    const businessDays = calculateBusinessDays(watchDates[0], watchDates[1], holidaysData);
 
     useEffect(() => {
         if (id) {
@@ -64,15 +89,19 @@ const ManageAssignmentLetter: React.FC = () => {
             const res = await getAdminAssignmentLetterDetail(id!);
             setProposal(res.data);
 
-            const formatDate = (dateStr: string | null) => {
+            const formatDate = (dateStr?: string | null) => {
                 if (!dateStr) return "";
-                return new Date(dateStr).toISOString().split('T')[0];
+                const d = new Date(dateStr);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
             };
 
             reset({
                 documentNumber: res.data.letterNumber === "—" ? "" : res.data.letterNumber,
-                startDateActual: formatDate(res.data.period?.start || null),
-                endDateActual: formatDate(res.data.period?.end || null)
+                startDateActual: formatDate(res.data.period?.start || res.data.startDatePlanned || res.data.proposedStartDate || null),
+                endDateActual: formatDate(res.data.period?.end || res.data.endDatePlanned || res.data.proposedEndDate || null)
             });
         } catch (error: any) {
             toast.error(error.message || "Gagal memuat detail pengajuan");
@@ -83,6 +112,14 @@ const ManageAssignmentLetter: React.FC = () => {
     };
 
     const onSubmit = async (values: LetterFormValues) => {
+        if (values.documentNumber === proposal?.appLetterNumber) {
+            toast.error("Nomor surat tugas tidak boleh sama dengan nomor surat permohonan.");
+            return;
+        }
+        if (businessDays < 30) {
+            toast.error("Jumlah hari kerja minimal adalah 30 hari.");
+            return;
+        }
         try {
             setSubmitting(true);
             await updateAdminAssignmentLetter(id!, values);
@@ -148,7 +185,7 @@ const ManageAssignmentLetter: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="space-y-6">
                     <Card>
-                        <CardHeader className="pb-3 text-base">
+                        <CardHeader className="text-base">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <Building2 className="h-4 w-4" />
                                 Informasi Perusahaan
@@ -166,7 +203,48 @@ const ManageAssignmentLetter: React.FC = () => {
                     </Card>
 
                     <Card>
-                        <CardHeader className="pb-3 text-base">
+                        <CardHeader className="text-base">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <FileText className="h-4 w-4" />
+                                Surat Balasan Perusahaan
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {proposal.companyResponseFile ? (
+                                <div className="space-y-3">
+                                    <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <FileText className="h-4 w-4 text-primary shrink-0" />
+                                                <span className="text-xs font-medium truncate">{proposal.companyResponseFile.fileName}</span>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 text-[10px] px-2"
+                                                onClick={() => setPreviewOpen(true)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    {proposal.companyResponseNotes && (
+                                        <div className="p-3 bg-muted/50 rounded-lg">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Catatan Balasan:</p>
+                                            <p className="text-xs italic">"{proposal.companyResponseNotes}"</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <p className="text-sm text-muted-foreground">Dokumen balasan tidak ditemukan</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="text-base">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <Users className="h-4 w-4" />
                                 Anggota Kelompok
@@ -239,7 +317,10 @@ const ManageAssignmentLetter: React.FC = () => {
                                         placeholder="Contoh: 123/UN27.02.1/PP/2024"
                                         className="font-mono bg-muted/30"
                                         disabled={proposal.isSigned}
-                                        {...register("documentNumber", { required: "Nomor surat wajib diisi" })}
+                                        {...register("documentNumber", { 
+                                            required: "Nomor surat wajib diisi",
+                                            validate: (value) => value !== proposal?.appLetterNumber || "Nomor surat tugas tidak boleh sama dengan nomor surat permohonan"
+                                        })}
                                     />
                                     {errors.documentNumber && (
                                         <p className="text-xs text-destructive">{errors.documentNumber.message}</p>
@@ -259,7 +340,16 @@ const ManageAssignmentLetter: React.FC = () => {
                                             render={({ field }) => (
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
-                                                    onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    onChange={(date) => {
+                                                        if (!date) {
+                                                            field.onChange("");
+                                                        } else {
+                                                            const year = date.getFullYear();
+                                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                            const day = String(date.getDate()).padStart(2, '0');
+                                                            field.onChange(`${year}-${month}-${day}`);
+                                                        }
+                                                    }}
                                                     disabled={proposal.isSigned}
                                                 />
                                             )}
@@ -280,7 +370,16 @@ const ManageAssignmentLetter: React.FC = () => {
                                             render={({ field }) => (
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
-                                                    onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    onChange={(date) => {
+                                                        if (!date) {
+                                                            field.onChange("");
+                                                        } else {
+                                                            const year = date.getFullYear();
+                                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                            const day = String(date.getDate()).padStart(2, '0');
+                                                            field.onChange(`${year}-${month}-${day}`);
+                                                        }
+                                                    }}
                                                     disabled={proposal.isSigned}
                                                 />
                                             )}
@@ -290,28 +389,26 @@ const ManageAssignmentLetter: React.FC = () => {
                                         )}
                                     </div>
                                 </div>
-
-                                {watchDates[0] && watchDates[1] && (
-                                    <div className="space-y-3">
-                                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                                                <Calendar className="h-4 w-4" />
-                                                Durasi Pelaksanaan
+                                 {watchDates[0] && watchDates[1] && (
+                                    <div className="space-y-4">
+                                        <div className={`p-3 rounded-lg flex items-center justify-between border ${businessDays >= 30 ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-destructive/5 border-destructive/10 text-destructive'}`}>
+                                            <div className="flex items-center gap-2 text-sm font-medium">
+                                                <Info className="h-4 w-4" />
+                                                <span>Estimasi Hari Kerja:</span>
                                             </div>
                                             <div className="text-sm">
                                                 <span className="font-bold text-lg">{businessDays}</span>
-                                                <span className="ml-1 text-muted-foreground">Hari Kerja</span>
+                                                <span className="ml-1 text-muted-foreground">Hari</span>
                                             </div>
                                         </div>
 
                                         {businessDays < 30 && (
-                                            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex gap-3 text-amber-800 animate-in shake duration-500">
-                                                <Info className="h-5 w-5 shrink-0" />
-                                                <div className="text-xs">
-                                                    <p className="font-bold">Peringatan: Durasi Kurang</p>
-                                                    <p className="opacity-90">Total hari kerja kurang dari 30 hari (Minimal standar KP). Pastikan rentang waktu sudah sesuai dengan kebijakan.</p>
-                                                </div>
-                                            </div>
+                                            <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2">
+                                                <AlertTitle className="text-xs font-bold uppercase">Durasi Tidak Mencukupi</AlertTitle>
+                                                <AlertDescription className="text-xs">
+                                                    Jumlah hari kerja minimal adalah 30 hari. Silakan sesuaikan rentang tanggal Anda.
+                                                </AlertDescription>
+                                            </Alert>
                                         )}
                                     </div>
                                 )}
@@ -385,6 +482,13 @@ const ManageAssignmentLetter: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            <DocumentPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                fileName={proposal.companyResponseFile?.fileName}
+                filePath={proposal.companyResponseFile?.filePath}
+            />
         </div>
     );
 };

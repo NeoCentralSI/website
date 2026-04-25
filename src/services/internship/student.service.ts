@@ -42,6 +42,15 @@ export const getEligibleStudents = async (): Promise<{ success: boolean; data: S
     return res.json();
 };
 
+export const getWorkingDaysCount = async (startDate: string, endDate: string): Promise<{ success: boolean; data: number }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.REGISTRATION + "/working-days") + `?startDate=${startDate}&endDate=${endDate}`);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menghitung hari kerja" }));
+        throw new Error(errorData.message || "Gagal menghitung hari kerja");
+    }
+    return res.json();
+};
+
 export const submitProposal = async (body: SubmitProposalBody): Promise<{ success: boolean; message: string }> => {
     const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.SUBMIT_PROPOSAL), {
         method: "POST",
@@ -204,6 +213,19 @@ export const submitInternshipReport = async (title: string, documentId: string):
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah laporan" }));
         throw new Error(errorData.message || "Gagal mengunggah laporan");
+    }
+    return res.json();
+};
+
+export const submitFinalFixReport = async (documentId: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/final-fix-report";
+    const res = await apiRequest(url, {
+        method: "POST",
+        body: JSON.stringify({ documentId }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah laporan final" }));
+        throw new Error(errorData.message || "Gagal mengunggah laporan final");
     }
     return res.json();
 };

@@ -3,6 +3,7 @@ import type { Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Check, Signature } from 'lucide-react';
+import { formatDateShortId } from '@/lib/text';
 
 export interface KadepLetterColumnProps {
     onViewDoc: (item: InternshipPendingLetter) => void;
@@ -31,6 +32,28 @@ export const getKadepInternshipLetterColumns = ({
             header: 'Perusahaan',
             accessor: 'companyName',
             className: 'text-sm',
+        },
+        {
+            key: 'period',
+            header: 'Periode',
+            render: (item) => (
+                <div className="flex flex-col py-1 text-center min-w-[120px]">
+                    {item.period ? (
+                        <>
+                            <span className="text-xs font-medium">
+                                {formatDateShortId(item.period.start)}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground italic">s/d</span>
+                            <span className="text-xs font-medium">
+                                {formatDateShortId(item.period.end)}
+                            </span>
+                        </>
+                    ) : (
+                        <span className="text-xs text-muted-foreground italic">Belum Diatur</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
         },
         {
             key: 'documentNumber',

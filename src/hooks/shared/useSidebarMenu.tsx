@@ -137,7 +137,7 @@ export const useSidebarMenu = () => {
 
     // LECTURER (NORMAL) MENU
     if (role.dosen && !role.kadep && !role.sekdep && !role.gkm) {
-      const menuItems = [
+      const menuItems: any[] = [
         {
           title: "Dashboard",
           url: "/dashboard",
@@ -146,12 +146,8 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Kerja Praktik",
-          url: "#",
+          url: "/kerja-praktik/dosen/bimbingan",
           icon: Briefcase,
-          items: [
-            { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
-          ],
         },
       ];
 
@@ -221,7 +217,7 @@ export const useSidebarMenu = () => {
 
     // LECTURER (KADEP) MENU
     if (role.kadep) {
-      const menuItems = [
+      const menuItems: any[] = [
         {
           title: "Dashboard",
           url: "/dashboard",
@@ -230,12 +226,8 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Kerja Praktik",
-          url: "#",
+          url: "/kerja-praktik/dosen/bimbingan",
           icon: Briefcase,
-          items: [
-            { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
-          ],
         },
       ];
 
@@ -320,7 +312,7 @@ export const useSidebarMenu = () => {
 
     // LECTURER (SEKDEP) MENU
     if (role.sekdep) {
-      const menuItems = [
+      const menuItems: any[] = [
         {
           title: "Dashboard",
           url: "/dashboard",
@@ -329,12 +321,8 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Kerja Praktik",
-          url: "#",
+          url: "/kerja-praktik/dosen/bimbingan",
           icon: Briefcase,
-          items: [
-            { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
-          ],
         },
       ];
 
@@ -417,7 +405,7 @@ export const useSidebarMenu = () => {
 
     // LECTURER (GKM) MENU
     if (role.gkm) {
-      const menuItems = [
+      const menuItems: any[] = [
         {
           title: "Dashboard",
           url: "/dashboard",
@@ -426,12 +414,8 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Kerja Praktik",
-          url: "#",
+          url: "/kerja-praktik/dosen/bimbingan",
           icon: Briefcase,
-          items: [
-            { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
-          ],
         },
       ];
 
@@ -579,6 +563,10 @@ export const useSidebarMenu = () => {
               {
                 title: "Kuota Bimbingan",
                 url: "/master-data/kuota-bimbingan",
+              },
+              {
+                title: "Data Hari Libur",
+                url: "/master-data/hari-libur",
               },
             ],
           },
