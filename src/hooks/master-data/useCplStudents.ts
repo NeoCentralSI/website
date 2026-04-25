@@ -21,10 +21,7 @@ interface UseCplStudentsFilters {
 
 export function useCplStudents(cplId: string) {
     const queryClient = useQueryClient();
-    const [filters, setFilters] = useState<UseCplStudentsFilters>({
-        source: 'MANUAL',
-        status: 'finalized',
-    });
+    const [filters, setFilters] = useState<UseCplStudentsFilters>({});
     const [optionSearch, setOptionSearch] = useState('');
 
     const queryKey = useMemo(() => ['cpl-students', cplId], [cplId]);

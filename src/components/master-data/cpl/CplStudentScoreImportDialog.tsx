@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { FileSpreadsheet, Download, Upload } from 'lucide-react';
+import { FileSpreadsheet, Download, Upload, RefreshCw } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import type { CplStudentImportResult } from '@/services/master-data/cpl.service';
 
@@ -55,7 +55,7 @@ export function CplStudentScoreImportDialog({
                 <DialogHeader>
                     <DialogTitle>Import Nilai CPL Mahasiswa</DialogTitle>
                     <DialogDescription>
-                        Unggah file Excel dengan kolom NIM dan Skor CPL sesuai template internal.
+                        Unggah file Excel dengan kolom NIM dan Skor CPL sesuai template
                     </DialogDescription>
                 </DialogHeader>
 
@@ -65,8 +65,8 @@ export function CplStudentScoreImportDialog({
                             <div className="flex items-center gap-3">
                                 <FileSpreadsheet className="h-8 w-8 text-green-600" />
                                 <div>
-                                    <p className="text-sm font-medium">Format kolom: No, Nama Mahasiswa, NIM, Skor CPL</p>
-                                    <p className="text-xs text-muted-foreground">Catatan: Kolom yang wajib adalah NIM dan Skor CPL</p>
+                                    <p className="font-medium text-sm">Gunakan template standar</p>
+                                    <p className="text-xs text-muted-foreground">Catatan: Kolom yang wajib diisi adalah NIM dan Skor CPL</p>
                                 </div>
                             </div>
                             <Button type="button" variant="outline" size="sm" onClick={handleDownloadTemplate} className="gap-2 shrink-0">
