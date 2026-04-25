@@ -135,7 +135,6 @@ const MasterDataTugasAkhirPage = lazy(() => import('./pages/master-data/TugasAkh
 const ScienceGroupPage = lazy(() => import('./pages/master-data/ScienceGroup'))
 const RoomPage = lazy(() => import('./pages/master-data/Room'))
 const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvailability'))
-const StudentCplScoreArchivePage = lazy(() => import('./pages/master-data/StudentCplScoreArchive'))
 // Kelola
 const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
 const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
@@ -367,10 +366,6 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.GKM]} />}>
                   <Route path="/kelola/cpl" element={<Cpl />} />
                   <Route path="/kelola/cpl/:id" element={<CplDetailPage />} />
-                </Route>
-
-                <Route element={<RoleGuard allowedRoles={[ROLES.GKM]} />}>
-                  <Route path="/kelola/cpl-mahasiswa" element={<StudentCplScoreArchivePage />} />
                 </Route>
 
                 {/* Kelola Metopen - Dosen Pengampu, Sekdep, Kadep */}

@@ -37,13 +37,6 @@ export const API_CONFIG = {
       STUDENT_IMPORT: (id: string) => `/cpls/${id}/students/import`,
       STUDENT_EXPORT: (id: string) => `/cpls/${id}/students/export`,
     },
-    STUDENT_CPL_SCORE: {
-      BASE: '/student-cpl-scores',
-      BY_ID: (studentId: string, cplId: string) => `/student-cpl-scores/${studentId}/${cplId}`,
-      IMPORT: '/student-cpl-scores/import',
-      TEMPLATE: '/student-cpl-scores/template',
-      EXPORT: '/student-cpl-scores/export',
-    },
     CPMK: {
       BASE: '/cpmks',
       BY_ID: (id: string) => `/cpmks/${id}`,
