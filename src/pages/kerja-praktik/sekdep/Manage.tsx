@@ -42,8 +42,6 @@ export default function SekdepInternshipProposalPage() {
             return <ProposalVerificationPanel />;
         }
 
-
-
         if (activeTab.label === "Daftar Mahasiswa") {
             return <InternshipListPanel />;
         }

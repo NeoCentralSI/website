@@ -9,10 +9,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { checkInternshipLetterHash } from '@/services/internship/public.service';
+import { toast } from 'sonner';
+import { CheckCircle2, AlertTriangle, Upload, X } from 'lucide-react';
 
 interface VerificationData {
     id: string;
-    type: 'APPLICATION' | 'ASSIGNMENT';
+    type: 'APPLICATION' | 'ASSIGNMENT' | 'SEMINAR_MINUTES';
+
     documentNumber: string;
     dateIssued: string;
     coordinatorName: string;
@@ -29,12 +33,19 @@ export default function InternshipLetterVerification() {
     const [data, setData] = useState<VerificationData | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Hash Integrity States
+    const [checkingHash, setCheckingHash] = useState(false);
+    const [integrityStatus, setIntegrityStatus] = useState<'IDLE' | 'MATCH' | 'TAMPERED' | 'ERROR'>('IDLE');
+    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
     useEffect(() => {
         const fetchData = async () => {
             if (!id) return;
             try {
                 setLoading(true);
-                const res = await verifyInternshipLetter(id);
+                // Detect type from path
+                const isSeminarPath = window.location.pathname.includes('seminar-minutes');
+                const res = await verifyInternshipLetter(id, isSeminarPath ? 'SEMINAR_MINUTES' : 'APPLICATION');
                 setData(res.data);
             } catch (err: any) {
                 setError(err.message || "Gagal memverifikasi dokumen.");
@@ -45,6 +56,41 @@ export default function InternshipLetterVerification() {
 
         fetchData();
     }, [id]);
+
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !id || !data) return;
+
+        if (file.type !== 'application/pdf') {
+            toast.error("Hanya file PDF yang diperbolehkan untuk pengecekan integritas.");
+            return;
+        }
+
+        try {
+            setUploadedFile(file);
+            setCheckingHash(true);
+            setIntegrityStatus('IDLE');
+            
+            const res = await checkInternshipLetterHash(id, file, data.type);
+            
+            if (res.isValid) {
+                setIntegrityStatus('MATCH');
+            } else {
+                setIntegrityStatus('TAMPERED');
+            }
+        } catch (err: any) {
+            setIntegrityStatus('ERROR');
+            toast.error(err.message || "Terjadi kesalahan saat mengecek integritas file.");
+        } finally {
+            setCheckingHash(false);
+        }
+    };
+
+    const resetIntegrityCheck = () => {
+        setUploadedFile(null);
+        setIntegrityStatus('IDLE');
+    };
 
     if (loading) {
         return (
@@ -131,8 +177,11 @@ export default function InternshipLetterVerification() {
                                     <FileText className="h-3 w-3" /> Jenis Dokumen
                                 </label>
                                 <p className="text-xl font-black text-black uppercase tracking-tight leading-none">
-                                    {data.type === 'APPLICATION' ? 'Surat Permohonan' : 'Surat Tugas'}
+                                    {data.type === 'APPLICATION' ? 'Surat Permohonan' : 
+                                     data.type === 'ASSIGNMENT' ? 'Surat Tugas' : 
+                                     'Berita Acara Seminar (KP-006)'}
                                 </p>
+
                             </div>
 
                             <div className="space-y-2">
@@ -148,8 +197,9 @@ export default function InternshipLetterVerification() {
 
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#F7931E]">
-                                    <User className="h-3 w-3" /> Koordinator
+                                    <User className="h-3 w-3" /> {data.type === 'SEMINAR_MINUTES' ? 'Mahasiswa' : 'Koordinator'}
                                 </label>
+
                                 <p className="font-black text-black text-xl tracking-tight leading-none uppercase">{data.coordinatorName}</p>
                                 <div className="inline-block mt-1">
                                     <div className="bg-black text-[#F7931E] px-2 py-0.5 rounded text-[10px] font-black tracking-widest">
@@ -162,8 +212,11 @@ export default function InternshipLetterVerification() {
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#F7931E]">
                                     <Building2 className="h-3 w-3" /> Instansi Tujuan
                                 </label>
-                                <p className="font-black text-black text-xl leading-tight tracking-tight uppercase">{data.companyName}</p>
+                                <p className="font-black text-black text-xl leading-tight tracking-tight uppercase">
+                                    {data.type === 'SEMINAR_MINUTES' ? 'Seminar Kerja Praktik' : data.companyName}
+                                </p>
                             </div>
+
 
                             <Separator className="bg-gray-200/50 sm:col-span-2" />
 
@@ -176,7 +229,10 @@ export default function InternshipLetterVerification() {
                                         <img src={logo} alt="NeoCentral Logo" className="h-48 w-48 text-white grayscale brightness-200" />
                                     </div>
                                     <p className="text-2xl font-black uppercase tracking-tighter relative z-10 leading-none">{data.signedBy}</p>
-                                    <p className="text-[10px] font-bold text-[#F7931E] uppercase tracking-widest mt-1 relative z-10 opacity-80">KETUA DEPARTEMEN</p>
+                                    <p className="text-[10px] font-bold text-[#F7931E] uppercase tracking-widest mt-1 relative z-10 opacity-80">
+                                        {data.type === 'SEMINAR_MINUTES' ? 'DOSEN PEMBIMBING' : 'KETUA DEPARTEMEN'}
+                                    </p>
+
 
                                     <div className="flex items-center gap-3 mt-8 bg-white/5 p-4 rounded-2xl relative z-10 ring-1 ring-white/10">
                                         <div className="h-3 w-3 rounded-full bg-[#F7931E] animate-pulse shadow-[0_0_10px_#F7931E]" />
@@ -188,6 +244,110 @@ export default function InternshipLetterVerification() {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Integrity Checker Section */}
+                        <div className="mt-8 px-8 sm:px-16">
+                            <div className="rounded-[2.5rem] bg-slate-50 p-8 ring-1 ring-gray-100 space-y-6">
+                                <div className="flex flex-col items-center text-center space-y-2">
+                                    <h3 className="text-sm font-black text-black uppercase tracking-widest">Alat Cek Integritas File</h3>
+                                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider max-w-xs">
+                                        Unggah file PDF surat ini untuk memastikan kontennya belum dimodifikasi/diedit
+                                    </p>
+                                </div>
+
+                                {integrityStatus === 'IDLE' && !checkingHash && (
+                                    <div className="relative group">
+                                        <input
+                                            type="file"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                            accept=".pdf"
+                                            onChange={handleFileChange}
+                                        />
+                                        <div className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center gap-3 transition-all group-hover:border-[#F7931E]/40 group-hover:bg-white">
+                                            <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 group-hover:text-[#F7931E] group-hover:bg-[#F7931E]/10 transition-colors">
+                                                <Upload className="h-6 w-6" />
+                                            </div>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Drop file atau klik untuk upload</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {checkingHash && (
+                                    <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center gap-4 ring-1 ring-gray-100 animate-pulse">
+                                        <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-100 border-t-black" />
+                                        <p className="text-[10px] font-black text-black uppercase tracking-[0.2em]">Mengkalkulasi Hash SHA-256...</p>
+                                    </div>
+                                )}
+
+                                {integrityStatus === 'MATCH' && (
+                                    <div className="bg-emerald-50 rounded-3xl p-8 flex flex-col items-center justify-center gap-4 ring-1 ring-emerald-100 animate-in zoom-in-95 duration-300 relative">
+                                        <button 
+                                            onClick={resetIntegrityCheck}
+                                            className="absolute top-4 right-4 text-emerald-300 hover:text-emerald-500 transition-colors"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                        <div className="h-16 w-16 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                                            <CheckCircle2 className="h-8 w-8" />
+                                        </div>
+                                        <div className="text-center space-y-1">
+                                            <p className="text-sm font-black text-emerald-900 uppercase tracking-widest leading-none">INTEGRITAS_SESUAI</p>
+                                            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight opacity-70">
+                                                {uploadedFile?.name} identik dengan versi sistem (ASLI)
+                                            </p>
+                                        </div>
+                                        <div className="mt-2 text-[8px] font-mono text-emerald-400 uppercase bg-white/50 px-3 py-1 rounded-full border border-emerald-100">
+                                            Checksum Verified: SHA-256 OK
+                                        </div>
+                                    </div>
+                                )}
+
+                                {integrityStatus === 'TAMPERED' && (
+                                    <div className="bg-red-50 rounded-3xl p-8 flex flex-col items-center justify-center gap-4 ring-1 ring-red-100 animate-in shake duration-500 relative">
+                                        <button 
+                                            onClick={resetIntegrityCheck}
+                                            className="absolute top-4 right-4 text-red-300 hover:text-red-500 transition-colors"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                        <div className="h-16 w-16 rounded-full bg-red-500 flex items-center justify-center text-white shadow-lg shadow-red-500/20 animate-bounce">
+                                            <AlertTriangle className="h-8 w-8" />
+                                        </div>
+                                        <div className="text-center space-y-1">
+                                            <p className="text-sm font-black text-red-900 uppercase tracking-widest leading-none">DOKUMEN_DIMODIFIKASI</p>
+                                            <p className="text-[10px] text-red-600 font-bold uppercase tracking-tight">
+                                                Peringatan: {uploadedFile?.name} telah dimanipulasi!
+                                            </p>
+                                        </div>
+                                        <div className="mt-2 text-[8px] font-mono text-red-400 uppercase bg-white/50 px-3 py-1 rounded-full border border-red-100">
+                                            Checksum mismatch: Integrity Broken
+                                        </div>
+                                    </div>
+                                )}
+
+                                {integrityStatus === 'ERROR' && (
+                                    <div className="bg-amber-50 rounded-3xl p-6 flex items-center justify-between ring-1 ring-amber-100">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-2xl bg-amber-200 flex items-center justify-center text-amber-700">
+                                                <XCircle className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-amber-900 uppercase tracking-widest leading-none">Verifikasi Gagal</p>
+                                                <p className="text-[8px] text-amber-600 font-bold mt-1 uppercase">Gagal membandingkan hash</p>
+                                            </div>
+                                        </div>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={resetIntegrityCheck}
+                                            className="text-amber-700 hover:bg-amber-100 rounded-xl text-[10px] font-black"
+                                        >
+                                            COBA LAGI
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </CardContent>

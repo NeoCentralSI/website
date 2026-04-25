@@ -32,8 +32,10 @@ export interface InternshipProposalItem {
         filePath: string;
     } | null;
     proposalSekdepNotes?: string | null;
-    companyResponseSekdepNotes?: string | null;
+    companyResponseNotes?: string | null;
     members?: { id: string; name: string; nim: string; role: string; status: string }[];
+    proposedStartDate?: string;
+    proposedEndDate?: string;
     [key: string]: unknown;
 }
 
@@ -96,12 +98,14 @@ export interface InternshipProposalDetail {
         fileName: string;
         filePath: string;
     } | null;
-    companyResponseSekdepNotes?: string | null;
+    companyResponseNotes?: string | null;
     companyResponseStatus?: string | null;
     isSigned?: boolean;
     isAssignmentSigned?: boolean;
     proposalSekdepNotes?: string | null;
     academicYearName?: string;
+    proposedStartDate?: string;
+    proposedEndDate?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -150,11 +154,14 @@ export interface SubmitProposalBody {
     proposalDocumentId: string;
     academicYearId: string;
     targetCompanyId?: string;
+    proposedStartDate?: string;
+    proposedEndDate?: string;
     newCompany?: {
         companyName: string;
         address: string;
         email?: string;
         phone?: string;
+        alasan?: string;
     };
     memberIds?: string[];
 }
@@ -166,8 +173,7 @@ export interface SekdepRegistrationItem {
     companyName: string;
     status: string;
     proposalSekdepNotes?: string | null;
-    companyResponseSekdepNotes?: string | null;
-    sekdepNotes?: string | null;
+    companyResponseNotes?: string | null;
     academicYearName?: string;
     memberCount: number;
     acceptedMemberCount: number;
@@ -196,6 +202,12 @@ export interface SekdepRegistrationItem {
         fileName: string;
         filePath: string;
     } | null;
+    proposedStartDate?: string;
+    proposedEndDate?: string;
+    startDatePlanned?: string;
+    endDatePlanned?: string;
+    startDateActual?: string;
+    endDateActual?: string;
 }
 
 export interface CompanyStatsItem {
@@ -225,6 +237,8 @@ export interface AdminApprovedProposalItem {
         end: string;
     } | null;
     isSigned: boolean;
+    proposedStartDate?: string;
+    proposedEndDate?: string;
     updatedAt: string;
 }
 
@@ -280,6 +294,7 @@ export interface SekdepInternshipDetail {
         completionCertificate: DocumentVerificationDetail;
         companyReceipt: DocumentVerificationDetail;
         logbookDocument: DocumentVerificationDetail;
+        reportFinal?: DocumentVerificationDetail;
     };
     status: string;
     academicYearName: string;
@@ -297,6 +312,12 @@ export interface AdminAssignmentProposalItem extends AdminApprovedProposalItem {
         role: string;
         isCoordinator: boolean;
     }[];
+    startDatePlanned?: string;
+    endDatePlanned?: string;
+    proposedStartDate?: string;
+    proposedEndDate?: string;
+    appLetterNumber?: string;
+    companyResponseNotes?: string | null;
 }
 
 export interface InternshipTemplate {
@@ -318,6 +339,10 @@ export interface InternshipPendingLetter {
     companyName: string;
     members: { studentId: string; name: string; nim: string; status: string }[];
     acceptedMemberCount: number;
+    period: {
+        start: string;
+        end: string;
+    } | null;
     createdAt: string;
     signedById: string | null;
     document: {
@@ -382,6 +407,10 @@ export interface StudentLogbookData {
         reportStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
         reportNotes?: string | null;
         reportUploadedAt?: string | null;
+        reportFinalDocId?: string | null;
+        reportFinalStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
+        reportFinalNotes?: string | null;
+        reportFinalUploadedAt?: string | null;
         completionCertificateDocId?: string | null;
         companyReceiptDocId?: string | null;
         finalNumericScore?: number | null;
@@ -394,6 +423,7 @@ export interface StudentLogbookData {
         companyReceiptDoc?: { id: string; fileName: string; filePath: string } | null;
         companyReportDoc?: { id: string; fileName: string; filePath: string } | null;
         logbookDocument?: { id: string; fileName: string; filePath: string } | null;
+        reportFinalDoc?: { id: string; fileName: string; filePath: string } | null;
     } | null;
     logbooks: InternshipLogbookItem[];
 }
@@ -567,6 +597,7 @@ export interface LecturerGuidanceTimeline {
             fileName: string;
             filePath: string;
         } | null;
+        feedbackDocumentId?: string | null;
     };
     seminars?: {
         id: string;
@@ -675,4 +706,14 @@ export interface OverviewStats {
     totalCompanies: number;
     totalInterns: number;
     totalReports: number;
+}
+
+export interface InternshipLogbookItem {
+    id: string;
+    internshipId: string;
+    activityDate: string;
+    activityDescription: string;
+    internshipNotes?: string;
+    createdAt: string;
+    updatedAt: string;
 }

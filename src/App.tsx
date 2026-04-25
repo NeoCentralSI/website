@@ -78,7 +78,8 @@ const LecturerDefenceDetailAssessmentPage = lazy(() => import('./pages/tugas-akh
 const LecturerDefenceDetailMinutesPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceDetailMinutes'))
 const LecturerDefenceDetailRevisionPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceDetailRevision'))
 // Kerja Praktik - Student
-const InternshipProposalPage = lazy(() => import('./pages/kerja-praktik/student/Registration'))
+const InternshipProposalPage = lazy(() => import('./pages/kerja-praktik/student/registration/Registration'))
+const RegisterInternshipFormPage = lazy(() => import('./pages/kerja-praktik/student/registration/RegisterInternshipForm'))
 const InternshipLogbookPage = lazy(() => import('./pages/kerja-praktik/student/activity/Logbook'))
 const InternshipGuidancePage = lazy(() => import('./pages/kerja-praktik/student/activity/Guidance'))
 const InternshipGuidanceDetailPage = lazy(() => import('./pages/kerja-praktik/student/activity/GuidanceDetail'))
@@ -101,6 +102,8 @@ const AdminAssignmentPage = lazy(() => import('./pages/kerja-praktik/admin/assig
 const ManageAssignmentLetter = lazy(() => import('./pages/kerja-praktik/admin/assignment/ManageAssignmentLetter'))
 const AssignmentTemplateEditor = lazy(() => import('./pages/kerja-praktik/admin/assignment/AssignmentTemplateEditor'))
 const InternshipTemplateEditor = lazy(() => import('./pages/kerja-praktik/admin/application/ApplicationTemplateEditor'))
+const BeritaAcaraTemplateEditor = lazy(() => import('./pages/kerja-praktik/admin/seminar/BeritaAcaraTemplateEditor'))
+const ManageHolidays = lazy(() => import('./pages/kerja-praktik/admin/holidays/ManageHolidays'))
 // Kerja Praktik - Kadep
 const KadepInternshipManagementPage = lazy(() => import('./pages/kerja-praktik/kadep/ManageInternship'))
 const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetterPage'))
@@ -194,6 +197,8 @@ function App() {
               <Route path="/auth/activate/email-sent" element={<ActivationEmailSent />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/internship-letter/:id" element={<InternshipLetterVerification />} />
+              <Route path="/verify/seminar-minutes/:id" element={<InternshipLetterVerification />} />
+
               <Route path="/field-assessment/:token" element={<FieldAssessmentPage />} />
 
               <Route element={<ProtectedLayout />}>
@@ -205,6 +210,8 @@ function App() {
                   <Route path="/kerja-praktik" element={<KerjaPraktekGuard />}>
                     <Route index element={<KerjaPraktekOverviewPage />} />
                     <Route path="pendaftaran" element={<InternshipProposalPage />} />
+                    <Route path="pendaftaran/baru" element={<RegisterInternshipFormPage />} />
+                    <Route path="pendaftaran/edit/:proposalId" element={<RegisterInternshipFormPage />} />
                     <Route path="kegiatan">
                       <Route index element={<Navigate to="logbook" replace />} />
                       <Route path="logbook" element={<InternshipLogbookPage />} />
@@ -429,7 +436,10 @@ function App() {
                   <Route path="/admin/kerja-praktik/surat-tugas" element={<AdminAssignmentPage />} />
                   <Route path="/admin/kerja-praktik/surat-tugas/:id" element={<ManageAssignmentLetter />} />
                   <Route path="/admin/kerja-praktik/surat-tugas/template" element={<AssignmentTemplateEditor />} />
+                  <Route path="/admin/kerja-praktik/seminar/template" element={<BeritaAcaraTemplateEditor />} />
                   <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
+
+                  <Route path="/master-data/hari-libur" element={<ManageHolidays />} />
                   <Route path="/tugas-akhir/seminar/admin" element={<AdminThesisSeminarManagementPage />} />
                   <Route path="/tugas-akhir/seminar/admin/:seminarId" element={<AdminSeminarDetailPage />} />
                   <Route path="/tugas-akhir/sidang/admin" element={<AdminThesisDefenceManagementPage />} />

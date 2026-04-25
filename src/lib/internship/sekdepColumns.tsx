@@ -4,11 +4,15 @@ import { Button } from '@/components/ui/button';
 import { FileText, Eye, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getInternshipStatusBadge } from './status';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 interface SekdepProposalColumnProps {
     onViewDetail: (item: SekdepRegistrationItem) => void;
     onViewProposalDoc: (item: SekdepRegistrationItem) => void;
     onViewAppLetterDoc: (item: SekdepRegistrationItem) => void;
+    onViewResponseDoc?: (item: SekdepRegistrationItem) => void;
+    onViewAssignmentDoc?: (item: SekdepRegistrationItem) => void;
     onRespondProposal: (item: SekdepRegistrationItem, response: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL') => void;
 }
 
@@ -18,6 +22,8 @@ interface SekdepProposalColumnProps {
 export const getSekdepProposalColumns = ({
     onViewProposalDoc,
     onViewAppLetterDoc,
+    onViewResponseDoc,
+    onViewAssignmentDoc,
     onViewDetail,
     onRespondProposal,
 }: SekdepProposalColumnProps): Column<SekdepRegistrationItem>[] => [
@@ -38,6 +44,7 @@ export const getSekdepProposalColumns = ({
             className: 'text-sm w-44 min-w-[150px] max-w-[200px] whitespace-normal break-words',
             sortable: true,
         },
+
         {
             key: 'tahunAjaran',
             header: 'Thn Ajaran',
@@ -59,17 +66,26 @@ export const getSekdepProposalColumns = ({
             key: 'proposalDoc',
             header: 'Proposal',
             render: (item) => (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center justify-center gap-1">
                     {item.dokumenProposal ? (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 gap-2 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            onClick={() => onViewProposalDoc(item)}
-                        >
-                            <FileText className="h-4 w-4" />
-                            <span className="text-xs font-medium">Lihat</span>
-                        </Button>
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-2 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={() => onViewProposalDoc(item)}
+                            >
+                                <FileText className="h-4 w-4" />
+                                <span className="text-xs font-medium">Lihat</span>
+                            </Button>
+                            {item.proposedStartDate && item.proposedEndDate && (
+                                <div className="flex flex-col text-[9px] leading-tight text-muted-foreground">
+                                    <span>{format(new Date(item.proposedStartDate), 'dd MMM yyyy', { locale: id })}</span>
+                                    <span className="italic">s/d</span>
+                                    <span>{format(new Date(item.proposedEndDate), 'dd MMM yyyy', { locale: id })}</span>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <span className="text-xs text-muted-foreground italic">-</span>
                     )}
@@ -93,10 +109,75 @@ export const getSekdepProposalColumns = ({
                                 <FileText className="h-4 w-4" />
                                 <span className="text-xs font-medium">Lihat</span>
                             </Button>
+                            {item.startDatePlanned && item.endDatePlanned && (
+                                <div className="flex flex-col text-[9px] leading-tight text-muted-foreground mt-0.5">
+                                    <span>{format(new Date(item.startDatePlanned), 'dd MMM yyyy', { locale: id })}</span>
+                                    <span className="italic">s/d</span>
+                                    <span>{format(new Date(item.endDatePlanned), 'dd MMM yyyy', { locale: id })}</span>
+                                </div>
+                            )}
                             {!item.isSigned && (
                                 <Badge variant="outline" className="text-[9px] h-4 bg-amber-50 text-amber-600 border-amber-200 px-1 py-0 font-medium">
                                     BELUM TTD
                                 </Badge>
+                            )}
+                        </>
+                    ) : (
+                        <span className="text-xs text-muted-foreground italic">-</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
+            key: 'responseDoc',
+            header: 'Balasan',
+            render: (item) => (
+                <div className="flex flex-col items-center justify-center gap-1">
+                    {item.dokumenSuratBalasan ? (
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-2 px-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                onClick={() => onViewResponseDoc?.(item)}
+                            >
+                                <FileText className="h-4 w-4" />
+                                <span className="text-xs font-medium">Lihat</span>
+                            </Button>
+                        </>
+                    ) : (
+                        <span className="text-xs text-muted-foreground italic">-</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
+            key: 'assignLetterDoc',
+            header: 'Surat Tugas',
+            render: (item) => (
+                <div className="flex flex-col items-center justify-center gap-1">
+                    {item.dokumenSuratTugas ? (
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-2 px-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                onClick={() => onViewAssignmentDoc?.(item)}
+                            >
+                                <FileText className="h-4 w-4" />
+                                <span className="text-xs font-medium">Lihat</span>
+                            </Button>
+                            {item.startDateActual && item.endDateActual && (
+                                <div className="flex flex-col text-[9px] leading-tight text-muted-foreground mt-0.5">
+                                    <span>{format(new Date(item.startDateActual), 'dd MMM yyyy', { locale: id })}</span>
+                                    <span className="italic">s/d</span>
+                                    <span>{format(new Date(item.endDateActual), 'dd MMM yyyy', { locale: id })}</span>
+                                </div>
+                            )}
+                            {!item.isAssignmentSigned && (
+                                <Badge variant="outline" className="text-[9px] h-4 bg-amber-50 text-amber-600 border-amber-200 px-1 py-0 font-medium">BELUM TTD</Badge>
                             )}
                         </>
                     ) : (
@@ -201,6 +282,7 @@ export const getSekdepResponseColumns = ({
             className: 'text-sm w-44 min-w-[150px] max-w-[200px] whitespace-normal break-words',
             sortable: true,
         },
+
         {
             key: 'tahunAjaran',
             header: 'Thn Ajaran',
@@ -222,17 +304,26 @@ export const getSekdepResponseColumns = ({
             key: 'responseDoc',
             header: 'Surat Balasan',
             render: (item) => (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center justify-center gap-1">
                     {item.dokumenSuratBalasan ? (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 gap-2 px-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                            onClick={() => onViewResponseDoc(item)}
-                        >
-                            <FileText className="h-4 w-4" />
-                            <span className="text-xs font-medium">Lihat</span>
-                        </Button>
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-2 px-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                                onClick={() => onViewResponseDoc(item)}
+                            >
+                                <FileText className="h-4 w-4" />
+                                <span className="text-xs font-medium">Lihat</span>
+                            </Button>
+                            {item.startDateActual && item.endDateActual && (
+                                <div className="flex flex-col text-[9px] leading-tight text-muted-foreground mt-0.5">
+                                    <span>{format(new Date(item.startDateActual), 'dd MMM yyyy', { locale: id })}</span>
+                                    <span className="italic">s/d</span>
+                                    <span>{format(new Date(item.endDateActual), 'dd MMM yyyy', { locale: id })}</span>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <span className="text-xs text-muted-foreground italic">Belum Unggah</span>
                     )}

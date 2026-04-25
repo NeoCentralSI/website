@@ -87,6 +87,16 @@ export function ProposalVerificationPanel() {
                 openDocumentPreview(item.dokumenSuratPermohonan.fileName, item.dokumenSuratPermohonan.filePath);
             }
         },
+        onViewResponseDoc: (item) => {
+            if (item.dokumenSuratBalasan) {
+                openDocumentPreview(item.dokumenSuratBalasan.fileName, item.dokumenSuratBalasan.filePath);
+            }
+        },
+        onViewAssignmentDoc: (item) => {
+            if (item.dokumenSuratTugas) {
+                openDocumentPreview(item.dokumenSuratTugas.fileName, item.dokumenSuratTugas.filePath);
+            }
+        },
         onRespondProposal: (item, response) => {
             setSelectedProposal(item);
             setResponseType(response);

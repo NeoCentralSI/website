@@ -21,7 +21,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { getSekdepInternshipDetail, verifyInternshipDocument, bulkVerifyInternshipDocuments } from '@/services/internship';
+import { getSekdepInternshipDetail, verifyInternshipDocument, bulkVerifyInternshipDocuments, rejectFinalReport } from '@/services/internship';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { SekdepLogbookTab } from './detail/SekdepLogbookTab';
 import { SekdepGuidanceTab } from './detail/SekdepGuidanceTab';
@@ -502,6 +502,13 @@ export default function InternshipLifecycleDetail() {
                                 canVerify={false}
                             />
                         )}
+                        {detail.reportingDocuments.reportFinal && detail.reportingDocuments.reportFinal.document && (
+                            <FinalReportVerificationCard 
+                                title="Laporan Akhir Final" 
+                                detail={detail.reportingDocuments.reportFinal}
+                                internshipId={detail.id}
+                            />
+                        )}
                     </div>
                 </div>
             )}
@@ -680,6 +687,130 @@ function DocumentVerificationCard({ title, docType, detail, internshipId, isSele
                 title={title}
                 initialNotes={detail.notes || ''}
                 mode={dialogMode}
+            />
+
+            <DocumentPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                fileName={detail.document?.fileName ?? undefined}
+                filePath={detail.document?.filePath ?? undefined}
+            />
+        </>
+    );
+}
+
+interface FinalReportVerificationCardProps {
+    title: string;
+    detail: DocumentVerificationDetail;
+    internshipId: string;
+}
+
+function FinalReportVerificationCard({ title, detail, internshipId }: FinalReportVerificationCardProps) {
+    const queryClient = useQueryClient();
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
+
+    const mutation = useMutation<{ success: boolean; message: string }, Error, { notes?: string }>({
+        mutationFn: ({ notes }: { notes?: string }) => 
+            rejectFinalReport(internshipId, notes),
+        onSuccess: (data) => {
+            toast.success(data.message || "Laporan final berhasil ditolak");
+            queryClient.invalidateQueries({ queryKey: ['sekdepInternshipDetail', internshipId] });
+            setDialogOpen(false);
+        },
+        onError: (error) => {
+            toast.error(error instanceof Error ? error.message : "Gagal menolak laporan final");
+        }
+    });
+
+    const getStatusBadge = (status: string | null) => {
+        switch (status) {
+            case 'APPROVED':
+                return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 pointer-events-none">Disetujui</Badge>;
+            case 'REVISION_NEEDED':
+                return <Badge className="bg-amber-100 text-amber-700 border-amber-200 pointer-events-none">Perlu Revisi Ulang</Badge>;
+            default:
+                return <Badge variant="outline" className="text-slate-400 pointer-events-none">Menunggu</Badge>;
+        }
+    };
+
+    const handleConfirmVerification = (status: 'APPROVED' | 'REVISION_NEEDED', notes?: string) => {
+        if (status === 'REVISION_NEEDED') {
+            mutation.mutate({ notes });
+        }
+    };
+
+    if (!detail.document) {
+        return null; // Do not show if final report isn't uploaded yet
+    }
+
+    return (
+        <>
+            <Card className="border overflow-hidden relative">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            {title}
+                        </CardTitle>
+                        {getStatusBadge(detail.status)}
+                    </div>
+                </CardHeader>
+                <CardContent className="px-4 space-y-4">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 truncate">
+                            <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                                <Download className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-slate-900 truncate">{detail.document.fileName}</p>
+                                <p className="text-[10px] text-slate-500">Laporan Akhir (Final Fix)</p>
+                            </div>
+                        </div>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/5"
+                            onClick={() => setPreviewOpen(true)}
+                        >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Lihat
+                        </Button>
+                    </div>
+
+                    {detail.notes && (
+                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                Catatan Tolakan Sekdep
+                            </p>
+                            <p className="text-xs text-slate-600 italic">"{detail.notes}"</p>
+                        </div>
+                    )}
+
+                    {detail.status !== 'REVISION_NEEDED' && (
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full h-8 text-xs font-semibold border-destructive/20 text-destructive hover:bg-destructive/5"
+                                onClick={() => setDialogOpen(true)}
+                            >
+                                Tolak Laporan Ini
+                            </Button>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <DocumentVerificationDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onConfirm={handleConfirmVerification}
+                isLoading={mutation.isPending}
+                title={title}
+                initialNotes={detail.notes || ''}
+                mode="REJECT"
             />
 
             <DocumentPreviewDialog

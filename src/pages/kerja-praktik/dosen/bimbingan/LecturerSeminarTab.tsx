@@ -8,8 +8,10 @@ import {
     validateSeminarAudience,
     unvalidateSeminarAudience,
     bulkValidateSeminarAudience,
-    updateSeminarNotes
+    updateSeminarNotes,
+    downloadBeritaAcara
 } from '@/services/internship';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,6 +50,8 @@ export default function LecturerSeminarTab() {
     const [unapprovingParticipantId, setUnapprovingParticipantId] = useState<string | null>(null);
     const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
     const [isBulkValidating, setIsBulkValidating] = useState(false);
+    const [isGeneratingBA, setIsGeneratingBA] = useState<string | null>(null);
+
     const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
     const [isSavingNotes, setIsSavingNotes] = useState<string | null>(null);
     const [isEditingNotesMap, setIsEditingNotesMap] = useState<Record<string, boolean>>({});
@@ -154,6 +158,33 @@ export default function LecturerSeminarTab() {
             setIsSavingNotes(null);
         }
     };
+
+    const handleGenerateBeritaAcara = async (seminarId: string) => {
+        try {
+            setIsGeneratingBA(seminarId);
+            const blob = await downloadBeritaAcara(seminarId);
+            
+            // Create a link and trigger download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `Berita_Acara_Seminar_${seminarId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            toast.success("Berita Acara berhasil diterbitkan dan diunduh.");
+            
+            // Refresh data to show updated status
+            queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
+        } catch (error: any) {
+            toast.error(error.message || "Gagal menerbitkan Berita Acara.");
+        } finally {
+            setIsGeneratingBA(null);
+        }
+    };
+
 
     if (isLoading) {
         return (
@@ -380,7 +411,32 @@ export default function LecturerSeminarTab() {
                                             Simpan Perubahan
                                         </Button>
                                     )}
+                                    {!isEditingNotesMap[seminar.id] && seminar.status !== 'REJECTED' && (
+                                        <div className="flex items-center gap-2">
+                                            {seminar.beritaAcaraDocumentId && (
+                                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 py-1 px-3">
+                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    Sudah Diterbitkan
+                                                </Badge>
+                                            )}
+                                            <Button 
+                                                variant={seminar.beritaAcaraDocumentId ? "outline" : "default"}
+                                                size="sm"
+                                                onClick={() => handleGenerateBeritaAcara(seminar.id)}
+                                                disabled={isGeneratingBA === seminar.id}
+                                                className="shadow-sm"
+                                            >
+                                                {isGeneratingBA === seminar.id ? (
+                                                    <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                                                ) : (
+                                                    <FileText className="w-3.5 h-3.5 mr-2" />
+                                                )}
+                                                {seminar.beritaAcaraDocumentId ? "Cetak Ulang Berita Acara" : "Terbitkan & Cetak Berita Acara"}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
+
                             </CardContent>
                         </Card>
 
