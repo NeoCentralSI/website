@@ -210,7 +210,7 @@ export function LecturerAvailabilityTable({
                 actions={
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={onCreate}>
-                            <Plus className="mr-2 h-4 w-4" /> Tambah Jadwal
+                            <Plus className="mr-2 h-4 w-4" /> Tambah
                         </Button>
                         <RefreshButton
                             onClick={onRefresh}
