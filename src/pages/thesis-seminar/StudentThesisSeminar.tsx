@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useStudentSeminarOverview, useStudentSeminarHistory } from '@/hooks/thesis-seminar';
 import { SeminarStatusStepper } from '@/components/thesis-seminar/student/SeminarStatusStepper';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { SeminarInfoCard } from '@/components/thesis-seminar/student/SeminarInfoCard';
 import { ChecklistPersyaratan } from '@/components/thesis-seminar/student/ChecklistPersyaratan';
 import { UploadDokumenSeminar } from '@/components/thesis-seminar/student/UploadDokumenSeminar';
@@ -74,7 +74,7 @@ function HistoryCard({ item, onClick }: { item: SeminarHistoryItem; onClick: () 
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Seminar Hasil</CardTitle>
           <div className="flex items-center gap-2">
-            <SeminarStatusBadge status={item.status} />
+            <ThesisEventStatusBadge status={item.status} />
             <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
         </div>

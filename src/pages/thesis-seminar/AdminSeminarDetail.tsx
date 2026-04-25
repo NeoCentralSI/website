@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
+import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { ValidationModal } from '@/components/seminar/ValidationModal';
 import { SeminarSchedulingSection } from '@/components/seminar/SeminarSchedulingSection';
 import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
@@ -129,7 +130,11 @@ export default function AdminSeminarDetail() {
               <p className="text-gray-500">{detail.student.nim}</p>
             </div>
             <div className="flex items-center gap-3">
-              <SeminarStatusBadge status={detail.status} />
+              <ThesisEventStatusBadge 
+              status={detail.status} 
+              scheduledDate={detail.date} 
+              startTime={detail.startTime} 
+            />
               {detail.status === 'registered' && (
                 <Button
                   variant="outline"
@@ -228,14 +233,7 @@ export default function AdminSeminarDetail() {
                         <span className="text-xs text-muted-foreground">
                           (Penguji {e.order})
                         </span>
-                        {e.availabilityStatus === 'available' && (
-                          <CheckCircle2 className="h-3 w-3 text-green-500" />
-                        )}
-                        {e.availabilityStatus === 'pending' && (
-                          <Badge variant="warning" className="text-[10px] px-1 py-0">
-                            Menunggu
-                          </Badge>
-                        )}
+                        <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
                       </div>
                     ))}
                   </div>

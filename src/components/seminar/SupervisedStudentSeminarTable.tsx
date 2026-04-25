@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
+import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -81,12 +82,7 @@ export function SupervisedStudentSeminarTable() {
               <div key={e.id} className="text-xs flex items-center gap-1">
                 <span className="text-muted-foreground">Penguji {e.order}:</span>{' '}
                 <span>{toTitleCaseName(e.lecturerName)}</span>
-                {e.availabilityStatus === 'available' && (
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
-                )}
-                {e.availabilityStatus === 'unavailable' && (
-                  <Badge variant="destructive" className="text-[10px] px-1 py-0">Ditolak</Badge>
-                )}
+                <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
               </div>
             ))}
           </div>
@@ -96,7 +92,13 @@ export function SupervisedStudentSeminarTable() {
     {
       key: 'status',
       header: 'Status Seminar',
-      render: (row) => <SeminarStatusBadge status={row.status} />,
+      render: (row) => (
+        <ThesisEventStatusBadge 
+          status={row.status} 
+          scheduledDate={row.date} 
+          startTime={row.startTime} 
+        />
+      ),
     },
     {
       key: 'actions',

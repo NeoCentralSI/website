@@ -4,7 +4,7 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { StudentIdentitasTab } from '@/components/seminar/student-detail/StudentIdentitasTab';
 import { StudentPenilaianTab } from '@/components/seminar/student-detail/StudentPenilaianTab';
 import { StudentRevisiTab } from '@/components/seminar/student-detail/StudentRevisiTab';
@@ -74,7 +74,7 @@ export default function StudentSeminarDetail() {
             <h1 className="text-2xl font-bold">Detail Seminar Hasil</h1>
             <p className="text-gray-500">{detail.thesis.title}</p>
           </div>
-          <SeminarStatusBadge status={detail.status} />
+          <ThesisEventStatusBadge status={detail.status} />
         </div>
       </div>
 

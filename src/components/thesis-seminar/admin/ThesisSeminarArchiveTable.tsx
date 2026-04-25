@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
 import type { SeminarResult } from '@/services/thesis-seminar/admin.service';
 
@@ -70,7 +70,7 @@ export function ThesisSeminarArchiveTable({
       key: 'status',
       header: 'Status',
       width: 180,
-      render: (row: SeminarResult) => <SeminarStatusBadge status={row.status as any} />,
+      render: (row: SeminarResult) => <ThesisEventStatusBadge status={row.status as any} />,
     },
     {
       key: 'examiners',

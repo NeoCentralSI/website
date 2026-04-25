@@ -12,6 +12,7 @@ import {
   User,
   XCircle,
 } from 'lucide-react';
+import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import type { DocumentSubmitStatus } from '@/types/defence.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
@@ -114,10 +115,7 @@ export default function LecturerDefenceDetailIdentity() {
                           <User className="h-3 w-3 text-muted-foreground" />
                           <span>{toTitleCaseName(e.lecturerName)}</span>
                           <span className="text-xs text-muted-foreground">(Penguji {e.order})</span>
-                          {e.availabilityStatus === 'available' && <CheckCircle2 className="h-3 w-3 text-green-500" />}
-                          {e.availabilityStatus === 'pending' && (
-                            <Badge variant="warning" className="text-[10px] px-1 py-0">Menunggu</Badge>
-                          )}
+                          <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
                         </div>
                       ))}
                     </div>

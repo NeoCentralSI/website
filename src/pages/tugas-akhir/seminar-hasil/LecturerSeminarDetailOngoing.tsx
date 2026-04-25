@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
+import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -190,7 +191,11 @@ export default function LecturerSeminarDetailOngoingPage() {
             <h1 className="text-2xl font-bold">{toTitleCaseName(detail.student.name)}</h1>
             <p className="text-gray-500">{detail.student.nim}</p>
           </div>
-          <SeminarStatusBadge status={detail.status} />
+          <ThesisEventStatusBadge 
+            status={detail.status} 
+            scheduledDate={detail.date} 
+            startTime={detail.startTime} 
+          />
         </div>
       </div>
 
@@ -262,7 +267,7 @@ export default function LecturerSeminarDetailOngoingPage() {
                           <User className="h-3 w-3 text-muted-foreground" />
                           <span>{toTitleCaseName(e.lecturerName)}</span>
                           <span className="text-xs text-muted-foreground">(Penguji {e.order})</span>
-                          {e.availabilityStatus === 'available' && <CheckCircle2 className="h-3 w-3 text-green-500" />}
+                          <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
                         </div>
                       ))}
                     </div>

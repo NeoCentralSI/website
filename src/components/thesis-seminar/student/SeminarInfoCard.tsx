@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SeminarStatusBadge } from '../../seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { toTitleCaseName, formatDateOnlyId } from '@/lib/text';
 import { ChevronRight, Users, Calendar, MapPin, Video, Trophy } from 'lucide-react';
 import type { SeminarInfo, ThesisSeminarStatus } from '@/types/seminar.types';
@@ -80,7 +80,11 @@ export function SeminarInfoCard({ seminar, onClick }: SeminarInfoCardProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Informasi Seminar</CardTitle>
           <div className="flex items-center gap-2">
-            <SeminarStatusBadge status={seminar.status} />
+            <ThesisEventStatusBadge 
+              status={seminar.status} 
+              scheduledDate={seminar.date} 
+              startTime={seminar.startTime} 
+            />
             <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
         </div>

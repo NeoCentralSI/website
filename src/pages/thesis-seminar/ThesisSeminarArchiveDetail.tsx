@@ -39,7 +39,7 @@ import {
   exportSeminarAudienceTemplateAPI,
 } from '@/services/thesis-seminar/admin.service';
 import type { SeminarAudience, SeminarAudienceStudentOption, SeminarAudienceImportResult } from '@/services/thesis-seminar/admin.service';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 
 import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/admin/ThesisSeminarAudienceTable';
 import { ThesisSeminarAudienceDialog } from '@/components/thesis-seminar/admin/ThesisSeminarAudienceDialog';
@@ -230,7 +230,7 @@ export default function ThesisSeminarArchiveDetailPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Status &amp; Audience</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <SeminarStatusBadge status={seminarDetail.status as any} />
+                    <ThesisEventStatusBadge status={seminarDetail.status as any} />
                     <Badge variant="outline" className="h-6">
                       {seminarDetail.audienceCount} Audience
                     </Badge>
