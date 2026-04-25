@@ -453,7 +453,7 @@ export const useSidebarMenu = () => {
         icon: Database,
         items: [
           { title: "Kelola CPL", url: "/kelola/cpl" },
-          { title: "Kelola Nilai CPL", url: "/kelola/cpl-mahasiswa" },
+          { title: "Nilai CPL (Arsip)", url: "/kelola/cpl-mahasiswa" },
         ],
       });
 

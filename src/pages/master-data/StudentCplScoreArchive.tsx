@@ -8,20 +8,20 @@ import { StudentCplScoreFormDialog } from "@/components/master-data/student-cpl-
 import { StudentCplScoreImportDialog } from "@/components/master-data/student-cpl-score/StudentCplScoreImportDialog";
 import type { StudentCplScore } from "@/services/master-data/student-cpl-score.service";
 
-export default function StudentCplScorePage() {
+export default function StudentCplScoreArchivePage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
     const [formOpen, setFormOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
     const [editData, setEditData] = useState<StudentCplScore | null>(null);
 
     const breadcrumbs = useMemo(
-        () => [{ label: "Kelola" }, { label: "Nilai CPL Mahasiswa" }],
+        () => [{ label: "Kelola" }, { label: "Nilai CPL Mahasiswa (Arsip)" }],
         []
     );
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle("Kelola Nilai CPL Mahasiswa");
+        setTitle("Kelola Nilai CPL Mahasiswa (Arsip)");
     }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
     const {
@@ -48,7 +48,7 @@ export default function StudentCplScorePage() {
     return (
         <div className="p-6 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">Kelola Nilai CPL Mahasiswa</h1>
+                <h1 className="text-2xl font-bold">Kelola Nilai CPL Mahasiswa (Arsip)</h1>
                 <p className="text-muted-foreground">
                     Manajemen nilai capaian pembelajaran lulusan (CPL) mahasiswa
                 </p>

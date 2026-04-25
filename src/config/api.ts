@@ -30,6 +30,12 @@ export const API_CONFIG = {
       BASE: '/cpls',
       BY_ID: (id: string) => `/cpls/${id}`,
       TOGGLE: (id: string) => `/cpls/${id}/toggle`,
+      EXPORT_ALL_SCORES: '/cpls/export',
+      STUDENTS: (id: string) => `/cpls/${id}/students`,
+      STUDENT_OPTIONS: (id: string) => `/cpls/${id}/students/options`,
+      STUDENT_BY_ID: (id: string, studentId: string) => `/cpls/${id}/students/${studentId}`,
+      STUDENT_IMPORT: (id: string) => `/cpls/${id}/students/import`,
+      STUDENT_EXPORT: (id: string) => `/cpls/${id}/students/export`,
     },
     STUDENT_CPL_SCORE: {
       BASE: '/student-cpl-scores',

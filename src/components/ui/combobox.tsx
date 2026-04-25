@@ -54,11 +54,10 @@ export function ComboBox({
 
   const selectedItem = items.find((item: ComboBoxItem) => item.value === value)
 
-  const handleSelect = (currentValue: string) => {
-    const item = items.find(i => i.value === currentValue);
-    if (item?.disabled) return;
+  const handleSelect = (item: ComboBoxItem) => {
+    if (item.disabled) return;
 
-    const newValue = currentValue === value ? "" : currentValue
+    const newValue = item.value === value ? "" : item.value
     setValue(newValue)
     setOpen(false)
     onChange?.(newValue)
@@ -94,8 +93,8 @@ export function ComboBox({
               {items.map((item) => (
                 <CommandItem
                   key={item.value}
-                  value={item.value}
-                  onSelect={handleSelect}
+                  value={item.label}
+                  onSelect={() => handleSelect(item)}
                   disabled={item.disabled}
                   className={cn(
                     "flex items-center justify-between",

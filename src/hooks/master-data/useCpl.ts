@@ -7,6 +7,7 @@ import {
     updateCpl,
     toggleCpl,
     deleteCpl,
+    exportAllCplStudentScores,
     type CreateCplPayload,
     type UpdateCplPayload,
     type GetCplsParams,
@@ -73,6 +74,16 @@ export function useCpl() {
         },
     });
 
+    const exportAllMutation = useMutation({
+        mutationFn: exportAllCplStudentScores,
+        onSuccess: () => {
+            toast.success('Export semua nilai CPL berhasil diunduh');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
     return {
         cpls: cpls?.data ?? [],
         total: cpls?.total ?? 0,
@@ -85,9 +96,11 @@ export function useCpl() {
         update: (id: string, data: UpdateCplPayload) => updateMutation.mutateAsync({ id, data }),
         toggle: toggleMutation.mutate,
         remove: deleteMutation.mutate,
+        exportAllScores: () => exportAllMutation.mutateAsync(),
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
         isToggling: toggleMutation.isPending,
         isDeleting: deleteMutation.isPending,
+        isExportingAllScores: exportAllMutation.isPending,
     };
 }

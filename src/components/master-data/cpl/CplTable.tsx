@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Pencil, Power, Trash2, Plus, Users } from 'lucide-react';
+import { Pencil, Power, Trash2, Plus, Users, Eye, Download } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import type { Cpl, UpdateCplPayload } from '@/services/master-data/cpl.service';
-import { CplFormDialog } from '@/components/master-data/CplFormDialog';
+import { CplFormDialog } from '@/components/master-data/cpl/CplFormDialog';
 
 interface CplTableProps {
     data: Cpl[];
@@ -28,8 +28,11 @@ interface CplTableProps {
     onUpdate: (id: string, data: UpdateCplPayload) => Promise<unknown>;
     onCreate: () => void;
     onRefresh: () => void;
+    onDetail: (id: string) => void;
+    onExportAllScores: () => void;
     isToggling: boolean;
     isDeleting: boolean;
+    isExportingAllScores?: boolean;
     isManagement?: boolean;
     params: any;
     onParamsChange: (params: any) => void;
@@ -45,8 +48,11 @@ export function CplTable({
     onUpdate,
     onCreate,
     onRefresh,
+    onDetail,
+    onExportAllScores,
     isToggling,
     isDeleting,
+    isExportingAllScores = false,
     isManagement = false,
     params,
     onParamsChange,
@@ -146,6 +152,15 @@ export function CplTable({
             className: 'text-right',
             render: (item) => (
                 <div className="flex items-center justify-end gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onClick={() => onDetail(item.id)}
+                        title="Detail nilai mahasiswa"
+                    >
+                        <Eye className="h-4 w-4" />
+                    </Button>
                     {isManagement && (
                         <Button
                             variant="ghost"
@@ -206,6 +221,9 @@ export function CplTable({
                 emptyText="Belum ada data CPL"
                 actions={
                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={onExportAllScores} disabled={isExportingAllScores}>
+                            <Download className="mr-2 h-4 w-4" /> Export Semua Nilai
+                        </Button>
                         {isManagement && (
                             <Button variant="outline" size="sm" onClick={onCreate}>
                                 <Plus className="mr-2 h-4 w-4" /> Tambah

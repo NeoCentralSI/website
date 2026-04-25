@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useCpl } from '@/hooks/master-data/useCpl';
-import { CplTable } from '@/components/master-data/CplTable';
-import { CplFormDialog } from '@/components/master-data/CplFormDialog';
+import { CplTable } from '@/components/master-data/cpl/CplTable';
+import { CplFormDialog } from '@/components/master-data/cpl/CplFormDialog';
 import { useRole } from '@/hooks/shared';
 
 export default function Cpl() {
@@ -31,9 +31,13 @@ export default function Cpl() {
         update,
         toggle,
         remove,
+        exportAllScores,
         isToggling,
         isDeleting,
+        isExportingAllScores,
     } = useCpl();
+
+    const navigate = useNavigate();
 
     const { isKadep, isSekdep, isGkm } = useRole();
     const isManagement = isKadep() || isSekdep() || isGkm();
@@ -57,8 +61,11 @@ export default function Cpl() {
                 onUpdate={update}
                 onCreate={() => setCreateDialogOpen(true)}
                 onRefresh={() => refetch()}
+                onDetail={(id) => navigate(`/kelola/cpl/${id}`)}
+                onExportAllScores={exportAllScores}
                 isToggling={isToggling}
                 isDeleting={isDeleting}
+                isExportingAllScores={isExportingAllScores}
                 isManagement={isManagement}
                 params={params}
                 onParamsChange={setParams}
