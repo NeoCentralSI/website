@@ -224,6 +224,23 @@ export const API_CONFIG = {
       SCHEDULING_DATA: (seminarId: string) => `/thesis-seminars/admin/${seminarId}/scheduling-data`,
       SET_SCHEDULE: (seminarId: string) => `/thesis-seminars/admin/${seminarId}/schedule`,
     },
+    THESIS_SEMINAR_ARCHIVE: {
+      LIST: '/thesis-seminars/archive',
+      DETAIL: (id: string) => `/thesis-seminars/archive/${id}`,
+      CREATE: '/thesis-seminars/archive',
+      UPDATE: (id: string) => `/thesis-seminars/archive/${id}`,
+      DELETE: (id: string) => `/thesis-seminars/archive/${id}`,
+      IMPORT: '/thesis-seminars/archive/import',
+      EXPORT: '/thesis-seminars/archive/export',
+      TEMPLATE: '/thesis-seminars/archive/template',
+      OPTIONS_THESES: '/thesis-seminars/archive/options/theses',
+      OPTIONS_LECTURERS: '/thesis-seminars/archive/options/lecturers',
+      OPTIONS_STUDENTS: '/thesis-seminars/archive/options/students',
+      AUDIENCES: '/thesis-seminars/archive/audiences',
+      AUDIENCES_ASSIGN: '/thesis-seminars/archive/audiences/assign',
+      AUDIENCES_REMOVE: (seminarId: string, studentId: string) =>
+        `/thesis-seminars/archive/audiences/${seminarId}/${studentId}`,
+    },
     THESIS_SEMINAR_LECTURER: {
       EXAMINER_REQUESTS: '/thesis-seminars/lecturer/examiner-requests',
       SUPERVISED_STUDENTS: '/thesis-seminars/lecturer/supervised-students',

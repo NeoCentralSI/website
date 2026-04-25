@@ -7,7 +7,7 @@ import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
-import { useLecturerSeminarDetail } from '@/hooks/seminar/useLecturerSeminar';
+import { useLecturerSeminarDetail } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName } from '@/lib/text';
 import type { LecturerSeminarDetailResponse } from '@/types/seminar.types';
 

@@ -233,7 +233,7 @@ export function StudentCplScoreTable({
                             <Upload className="mr-2 h-4 w-4" /> Import Excel
                         </Button>
                         <Button variant="outline" size="sm" onClick={onExport} disabled={isExporting}>
-                            {isExporting ? <Spinner className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />} Export
+                            {isExporting ? <Spinner className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />} Export Excel
                         </Button>
                         <Button variant="outline" size="sm" onClick={onCreate}>
                             <Plus className="mr-2 h-4 w-4" /> Tambah

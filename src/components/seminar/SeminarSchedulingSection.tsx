@@ -29,7 +29,7 @@ import {
 import { Spinner, Loading } from '@/components/ui/spinner';
 import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import { useSchedulingData, useSetSchedule } from '@/hooks/seminar/useAdminSeminar';
+import { useSchedulingData, useSetSchedule } from '@/hooks/thesis-seminar/useAdminSeminar';
 import { toTitleCaseName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/seminar.types';
 

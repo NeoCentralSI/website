@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
-import { useRespondExaminerAssignment } from '@/hooks/seminar/useLecturerSeminar';
+import { useRespondExaminerAssignment } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, UserCheck, BookOpen, GraduationCap } from 'lucide-react';

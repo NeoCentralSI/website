@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Loading } from '@/components/ui/spinner';
-import { useStudentSeminarAssessment } from '@/hooks/seminar';
+import { useStudentSeminarAssessment } from '@/hooks/thesis-seminar';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 
 const FINAL_RECOMMENDATIONS = [

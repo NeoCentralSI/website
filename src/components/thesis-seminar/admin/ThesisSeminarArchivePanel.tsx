@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { Plus } from 'lucide-react';
+import { Plus, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -24,18 +24,22 @@ import {
   deleteSeminarResultAPI,
   getSeminarResultThesisOptionsAPI,
   getSeminarResultLecturerOptionsAPI,
-} from '@/services/thesis-seminar/admin-seminar.service';
+  exportSeminarArchiveAPI,
+  downloadSeminarArchiveTemplateAPI,
+  importSeminarArchiveAPI,
+} from '@/services/thesis-seminar/admin.service';
 import { getRoomsAPI } from '@/services/admin.service';
 import type {
   SeminarResult,
   SeminarResultStatus,
   SeminarResultLecturerOption,
   SeminarResultThesisOption,
-} from '@/services/thesis-seminar/admin-seminar.service';
+} from '@/services/thesis-seminar/admin.service';
 import type { Room } from '@/services/admin.service';
 
 import { ThesisSeminarArchiveTable } from '@/components/thesis-seminar/admin/ThesisSeminarArchiveTable';
 import { ThesisSeminarArchiveFormDialog } from '@/components/thesis-seminar/admin/ThesisSeminarArchiveFormDialog';
+import { ThesisSeminarArchiveImportDialog } from '@/components/thesis-seminar/admin/ThesisSeminarArchiveImportDialog';
 
 type SeminarResultsResponse = Awaited<ReturnType<typeof getSeminarResultsAPI>>;
 
@@ -57,6 +61,8 @@ export function ThesisSeminarArchivePanel() {
   const [search, setSearch] = useState('');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [editingSeminar, setEditingSeminar] = useState<SeminarResult | null>(null);
   const [deleteSeminarId, setDeleteSeminarId] = useState<string | null>(null);
 
@@ -111,6 +117,14 @@ export function ThesisSeminarArchivePanel() {
     },
   });
 
+  const importMut = useMutation({
+    mutationFn: (file: File) => importSeminarArchiveAPI(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seminar-results-master'] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-result-thesis-options'] });
+    },
+  });
+
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteSeminarResultAPI(id),
     onSuccess: () => {
@@ -149,6 +163,27 @@ export function ThesisSeminarArchivePanel() {
     navigate(`/tugas-akhir/seminar-hasil/arsip/${id}`);
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await exportSeminarArchiveAPI();
+      toast.success('Data seminar berhasil diekspor');
+    } catch (error) {
+      toast.error((error as Error).message || 'Gagal mengekspor data seminar archive');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadSeminarArchiveTemplateAPI();
+      toast.success('Template berhasil diunduh');
+    } catch (error) {
+      toast.error((error as Error).message || 'Gagal mengunduh template');
+    }
+  };
+
   return (
     <div className="space-y-4">
 
@@ -170,8 +205,14 @@ export function ThesisSeminarArchivePanel() {
           onDelete={setDeleteSeminarId}
           actions={
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
+                <Upload className="w-4 h-4 mr-2" /> Import Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+                <Download className="w-4 h-4 mr-2" /> Export Excel
+              </Button>
               <Button variant="outline" size="sm" onClick={openCreate}>
-                <Plus className="w-4 h-4 mr-2" /> Tambah Seminar Hasil
+                <Plus className="w-4 h-4 mr-2" /> Tambah
               </Button>
               <RefreshButton
                 onClick={() => seminarDataRefetch()}
@@ -179,6 +220,14 @@ export function ThesisSeminarArchivePanel() {
               />
             </div>
           }
+        />
+
+        <ThesisSeminarArchiveImportDialog
+          open={isImportOpen}
+          onOpenChange={setIsImportOpen}
+          isImporting={importMut.isPending}
+          onImport={(file) => importMut.mutateAsync(file)}
+          onDownloadTemplate={handleDownloadTemplate}
         />
 
         <ThesisSeminarArchiveFormDialog
@@ -197,7 +246,7 @@ export function ThesisSeminarArchivePanel() {
             <AlertDialogHeader>
               <AlertDialogTitle>Hapus Data Seminar Hasil</AlertDialogTitle>
               <AlertDialogDescription>
-                Menghapus data seminar hasil akan sekaligus menghapus relasi dosen penguji dan audience seminar (cascade).
+                Menghapus data seminar hasil akan sekaligus menghapus data audience seminar. Lanjutkan?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

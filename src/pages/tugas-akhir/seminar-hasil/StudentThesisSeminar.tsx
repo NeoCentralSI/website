@@ -5,7 +5,7 @@ import { TabsNav } from '@/components/ui/tabs-nav';
 import { Loading } from '@/components/ui/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useStudentSeminarOverview, useStudentSeminarHistory } from '@/hooks/seminar';
+import { useStudentSeminarOverview, useStudentSeminarHistory } from '@/hooks/thesis-seminar';
 import { SeminarStatusStepper } from '@/components/seminar/SeminarStatusStepper';
 import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 import { SeminarInfoCard } from '@/components/seminar/SeminarInfoCard';

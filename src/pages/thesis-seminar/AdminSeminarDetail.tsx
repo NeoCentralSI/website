@@ -9,7 +9,7 @@ import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 import { ValidationModal } from '@/components/seminar/ValidationModal';
 import { SeminarSchedulingSection } from '@/components/seminar/SeminarSchedulingSection';
 import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
-import { useAdminSeminarDetail } from '@/hooks/seminar/useAdminSeminar';
+import { useAdminSeminarDetail } from '@/hooks/thesis-seminar/useAdminSeminar';
 import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId, formatRoleName } from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';

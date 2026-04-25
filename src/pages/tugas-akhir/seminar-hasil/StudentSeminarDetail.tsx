@@ -8,7 +8,7 @@ import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 import { StudentIdentitasTab } from '@/components/seminar/student-detail/StudentIdentitasTab';
 import { StudentPenilaianTab } from '@/components/seminar/student-detail/StudentPenilaianTab';
 import { StudentRevisiTab } from '@/components/seminar/student-detail/StudentRevisiTab';
-import { useStudentSeminarDetail } from '@/hooks/seminar';
+import { useStudentSeminarDetail } from '@/hooks/thesis-seminar';
 import { ArrowLeft } from 'lucide-react';
 
 export default function StudentSeminarDetail() {

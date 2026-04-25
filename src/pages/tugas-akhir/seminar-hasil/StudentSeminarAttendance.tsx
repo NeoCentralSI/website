@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { Loading } from '@/components/ui/spinner';
-import { useStudentAttendanceHistory } from '@/hooks/seminar';
+import { useStudentAttendanceHistory } from '@/hooks/thesis-seminar';
 import { AttendanceSummaryCard } from '@/components/seminar/AttendanceHistory';
 import { AttendanceHistoryTable } from '@/components/seminar/AttendanceHistoryTable';
 

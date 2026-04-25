@@ -28,8 +28,8 @@ import {
   assignSeminarResultAudiencesAPI,
   removeSeminarResultAudienceLinkAPI,
   getSeminarResultDetailAPI,
-} from '@/services/thesis-seminar/admin-seminar.service';
-import type { SeminarResultAudienceLink, SeminarResultStudentOption, SeminarResult } from '@/services/thesis-seminar/admin-seminar.service';
+} from '@/services/thesis-seminar/admin.service';
+import type { SeminarResultAudienceLink, SeminarResultStudentOption, SeminarResult } from '@/services/thesis-seminar/admin.service';
 import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 
 import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/admin/ThesisSeminarAudienceTable';

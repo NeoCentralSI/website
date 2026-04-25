@@ -5,7 +5,7 @@ import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useSupervisedStudentSeminars } from '@/hooks/seminar/useLecturerSeminar';
+import { useSupervisedStudentSeminars } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { CheckCircle2, Eye } from 'lucide-react';
 import { toast } from 'sonner';

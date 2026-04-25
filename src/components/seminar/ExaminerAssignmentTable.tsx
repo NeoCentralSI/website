@@ -4,7 +4,7 @@ import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useAssignmentSeminars } from '@/hooks/seminar/useLecturerSeminar';
+import { useAssignmentSeminars } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { UserPlus, Pencil, CheckCircle2, Eye } from 'lucide-react';
 import { toast } from 'sonner';

@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useEligibleExaminers, useAssignExaminers } from '@/hooks/seminar/useLecturerSeminar';
+import { useEligibleExaminers, useAssignExaminers } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName } from '@/lib/text';
 import { toast } from 'sonner';
 import { SearchIcon, Lock } from 'lucide-react';
@@ -191,13 +191,12 @@ export function AssignExaminerDialog({
                     return (
                       <label
                         key={l.id}
-                        className={`flex items-center gap-3 p-2 rounded-md transition-colors ${
-                          isLocked
+                        className={`flex items-center gap-3 p-2 rounded-md transition-colors ${isLocked
                             ? 'bg-primary/5 opacity-60 cursor-not-allowed'
                             : isSelected
                               ? 'bg-primary/10 cursor-pointer'
                               : 'hover:bg-muted cursor-pointer'
-                        }`}
+                          }`}
                       >
                         <Checkbox
                           checked={isSelected}

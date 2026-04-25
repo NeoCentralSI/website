@@ -7,7 +7,7 @@ import {
   useSeminarDocumentTypes,
   useStudentSeminarDocuments,
   useUploadSeminarDocument,
-} from '@/hooks/seminar';
+} from '@/hooks/thesis-seminar';
 import type { SeminarDocument, SeminarDocumentType } from '@/types/seminar.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';

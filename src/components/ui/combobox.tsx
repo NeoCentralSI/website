@@ -32,6 +32,7 @@ type ComboBoxProps = {
   defaultValue?: string
   width?: string
   disabled?: boolean
+  wrap?: boolean
 }
 
 export function ComboBox({
@@ -41,6 +42,7 @@ export function ComboBox({
   defaultValue = "",
   width = "w-50",
   disabled = false,
+  wrap = false,
 }: ComboBoxProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<string>(defaultValue)
@@ -70,9 +72,15 @@ export function ComboBox({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={`${width} justify-between truncate`}
+          className={cn(
+            width,
+            "justify-between font-normal text-left",
+            wrap ? "h-auto py-2 whitespace-normal" : "truncate"
+          )}
         >
-          <span className="truncate">{selectedItem ? selectedItem.label : placeholder}</span>
+          <span className={cn(wrap ? "whitespace-normal text-left break-words" : "truncate")}>
+            {selectedItem ? selectedItem.label : placeholder}
+          </span>
           <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

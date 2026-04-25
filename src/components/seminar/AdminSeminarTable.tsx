@@ -4,7 +4,7 @@ import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { SeminarStatusBadge, getStatusFilterOptions } from '@/components/seminar/SeminarStatusBadge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useAdminSeminarList } from '@/hooks/seminar/useAdminSeminar';
+import { useAdminSeminarList } from '@/hooks/thesis-seminar/useAdminSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { Eye, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';

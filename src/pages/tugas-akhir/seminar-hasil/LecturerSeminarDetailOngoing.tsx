@@ -31,7 +31,7 @@ import {
   useSeminarRevisionBoard,
   useSubmitExaminerAssessment,
   useSupervisorFinalizationData,
-} from '@/hooks/seminar/useLecturerSeminar';
+} from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { formatDateId, formatDateOnlyId, formatDateTimeId, formatRoleName, toTitleCaseName } from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
