@@ -130,12 +130,19 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {group.criteria.map((criterion) => (
+            {group.criteria.map((criterion) => {
+              const isOptionB = group.criteria.length === 1 && !String(criterion.name ?? '').trim();
+              return (
               <div key={criterion.id} className="space-y-2">
                 {/* Criteria row: label + input */}
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_140px] gap-2 items-start">
                   <div>
-                    <Label className="text-sm font-medium">{criterion.name}</Label>
+                    {!isOptionB && (
+                      <Label className="text-sm font-medium">{criterion.name}</Label>
+                    )}
+                    {isOptionB && (
+                      <Label className="text-sm text-muted-foreground">Skor langsung pada CPMK</Label>
+                    )}
                     <p className="text-xs text-muted-foreground">Maks. {criterion.maxScore} poin</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -195,7 +202,7 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
                   </Collapsible>
                 )}
               </div>
-            ))}
+            )})}
           </CardContent>
         </Card>
       ))}

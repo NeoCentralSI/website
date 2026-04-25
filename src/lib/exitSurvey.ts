@@ -1,4 +1,4 @@
-import type { ExitSurveyQuestionType } from '@/types/exitSurvey.types';
+import type { ExitSurveyQuestionType } from '@/types/exit-survey.types';
 
 export const EXIT_SURVEY_QUESTION_TYPE_LABELS: Record<ExitSurveyQuestionType, string> = {
   single_choice: 'Pilihan Tunggal',

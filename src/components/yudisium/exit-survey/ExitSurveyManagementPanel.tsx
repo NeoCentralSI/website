@@ -15,14 +15,14 @@ import {
   createExitSurveyQuestion,
   updateExitSurveyQuestion,
   deleteExitSurveyQuestion,
-} from '@/services/exitSurvey.service';
-import type { ExitSurveyForm, ExitSurveyQuestion } from '@/types/exitSurvey.types';
+} from '@/services/yudisium/exit-survey.service';
+import type { ExitSurveyForm, ExitSurveyQuestion } from '@/types/exit-survey.types';
 import type {
   CreateExitSurveyFormPayload,
   UpdateExitSurveyFormPayload,
   CreateExitSurveyQuestionPayload,
   UpdateExitSurveyQuestionPayload,
-} from '@/types/exitSurvey.types';
+} from '@/types/exit-survey.types';
 import { ExitSurveyFormTable } from './ExitSurveyFormTable';
 import { ExitSurveyFormDialog } from './ExitSurveyFormDialog';
 import { ExitSurveyQuestionTable } from './ExitSurveyQuestionTable';

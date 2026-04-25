@@ -21,11 +21,11 @@ import { Spinner } from '@/components/ui/spinner';
 import { Plus, Trash2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getQuestionTypeLabel } from '@/lib/exitSurvey';
-import type { ExitSurveyQuestion, ExitSurveyQuestionType } from '@/types/exitSurvey.types';
+import type { ExitSurveyQuestion, ExitSurveyQuestionType } from '@/types/exit-survey.types';
 import type {
   CreateExitSurveyQuestionPayload,
   UpdateExitSurveyQuestionPayload,
-} from '@/types/exitSurvey.types';
+} from '@/types/exit-survey.types';
 
 const QUESTION_TYPES: ExitSurveyQuestionType[] = [
   'single_choice',

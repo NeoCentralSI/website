@@ -178,7 +178,7 @@ export default function UserManagementPage() {
     { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
     { value: ROLES.PENGUJI, label: 'Penguji' },
     { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
-    { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
+    { value: ROLES.GKM, label: 'GKM' },
     { value: ROLES.DOSEN_METOPEN, label: 'Dosen Pengampu Metopel' },
   ];
 
@@ -241,7 +241,7 @@ export default function UserManagementPage() {
           { label: 'Mahasiswa', value: ROLES.MAHASISWA },
           { label: 'Penguji', value: ROLES.PENGUJI },
           { label: 'Koordinator Yudisium', value: ROLES.KOORDINATOR_YUDISIUM },
-          { label: 'Tim Pengelola CPL', value: ROLES.TIM_PENGELOLA_CPL },
+          { label: 'GKM', value: ROLES.GKM },
           { label: 'Dosen Pengampu Metopel', value: ROLES.DOSEN_METOPEN },
         ],
       },

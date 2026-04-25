@@ -44,6 +44,7 @@ export default function Mahasiswa() {
   const [editMkwu, setEditMkwu] = useState<boolean>(false);
   const [editInternship, setEditInternship] = useState<boolean>(false);
   const [editKkn, setEditKkn] = useState<boolean>(false);
+  const [editResearchMethod, setEditResearchMethod] = useState<boolean>(false);
 
   // Memoized breadcrumbs to avoid unnecessary re-renders
   const breadcrumbs = useMemo(() => [
@@ -82,8 +83,15 @@ export default function Mahasiswa() {
 
   const syncMutation = useMutation({
     mutationFn: triggerSiaSyncAPI,
-    onSuccess: () => {
-      toast.success('Sync SIA berhasil dijalankan');
+    onSuccess: (result) => {
+      const cplCreated = result.summary?.cplCreated ?? 0;
+      const cplUpdated = result.summary?.cplUpdated ?? 0;
+      const cplSkippedProtected = result.summary?.cplSkippedProtected ?? 0;
+      const cplUnmatchedCodes = result.summary?.cplUnmatchedCodes ?? 0;
+
+      toast.success(
+        `Sinkronisasi SIA Berhasil | CPL Baru: ${cplCreated}, Diperbarui: ${cplUpdated}, Data Manual Dipertahankan: ${cplSkippedProtected}, Kode Tidak Valid: ${cplUnmatchedCodes}`
+      );
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },
     onError: (err) => {
@@ -114,6 +122,7 @@ export default function Mahasiswa() {
       header: 'Nama',
       render: (row: Student) => toTitleCaseName(row.fullName),
     },
+    /*
     {
       key: 'email',
       header: 'Email',
@@ -124,6 +133,7 @@ export default function Mahasiswa() {
       header: 'Tahun Masuk',
       render: (row: Student) => row.student?.enrollmentYear || '-',
     },
+    */
     {
       key: 'currentSemester',
       header: 'Sem.',
@@ -182,6 +192,18 @@ export default function Mahasiswa() {
               <TooltipContent>KKN Selesai</TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 border-l pl-2">
+                  <span className="text-xs text-muted-foreground mr-1">MP:</span>
+                  {row.student?.researchMethodCompleted ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Metode Penelitian Selesai</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )
     },
@@ -230,6 +252,7 @@ export default function Mahasiswa() {
                 setEditMkwu(row.student?.mkwuCompleted || false);
                 setEditInternship(row.student?.internshipCompleted || false);
                 setEditKkn(row.student?.kknCompleted || false);
+                setEditResearchMethod(row.student?.researchMethodCompleted || false);
                 setIsEditOpen(true);
               }}
             >
@@ -377,6 +400,14 @@ export default function Mahasiswa() {
                 </div>
                 <Switch checked={editKkn} onCheckedChange={setEditKkn} />
               </div>
+
+              <div className="flex items-center justify-between p-2 border rounded-lg">
+                <div className="space-y-0.5">
+                  <Label>Metode Penelitian</Label>
+                  <p className="text-xs text-muted-foreground">Penyelesaian mata kuliah metodologi penelitian</p>
+                </div>
+                <Switch checked={editResearchMethod} onCheckedChange={setEditResearchMethod} />
+              </div>
             </div>
 
             <p className="text-xs text-muted-foreground mt-2 px-1">Mahasiswa: {toTitleCaseName(selectedStudent?.fullName || '')}</p>
@@ -408,7 +439,8 @@ export default function Mahasiswa() {
                   mandatoryCoursesCompleted: editMandatory,
                   mkwuCompleted: editMkwu,
                   internshipCompleted: editInternship,
-                  kknCompleted: editKkn
+                  kknCompleted: editKkn,
+                  researchMethodCompleted: editResearchMethod
                 }, {
                   onSuccess: () => setIsConfirmOpen(false)
                 });

@@ -47,8 +47,8 @@ const SeminarHasilEntry = lazy(() => import('./pages/tugas-akhir/seminar-hasil/S
 const StudentThesisSeminarPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentThesisSeminar'))
 const StudentSeminarAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarAttendance'))
 const StudentSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarDetail'))
-const AdminThesisSeminarManagementPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/AdminThesisSeminarManagement'))
-const AdminSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/AdminSeminarDetail'))
+const AdminThesisSeminarPage = lazy(() => import('./pages/thesis-seminar/AdminThesisSeminar'))
+const AdminSeminarDetailPage = lazy(() => import('./pages/thesis-seminar/AdminSeminarDetail'))
 const LecturerThesisSeminarPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerThesisSeminar'))
 const LecturerExaminerAssignmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerExaminerAssignment'))
 const LecturerSupervisedStudentsPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSupervisedStudents'))
@@ -56,6 +56,7 @@ const LecturerSeminarDetailIdentityPage = lazy(() => import('./pages/tugas-akhir
 const LecturerSeminarDetailAssessmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'))
 const LecturerSeminarDetailRevisionPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'))
 const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'))
+const ThesisSeminarArchiveDetailPage = lazy(() => import('./pages/thesis-seminar/ThesisSeminarArchiveDetail'))
 // Kerja Praktik - Dosen
 const InternshipGuidanceOverviewPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceOverview'))
 const StudentDetailPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/StudentDetail'))
@@ -69,7 +70,6 @@ const SidangEntry = lazy(() => import('./pages/tugas-akhir/sidang/SidangEntry'))
 const StudentThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/StudentThesisDefence'))
 const StudentDefenceDetailPage = lazy(() => import('./pages/tugas-akhir/sidang/StudentDefenceDetail'))
 const AdminThesisDefenceManagementPage = lazy(() => import('./pages/tugas-akhir/sidang/AdminThesisDefenceManagement'))
-const AdminDefenceDetailPage = lazy(() => import('./pages/tugas-akhir/sidang/AdminDefenceDetail'))
 const LecturerThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerThesisDefence'))
 const LecturerDefenceExaminerAssignmentPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerDefenceExaminerAssignment'))
 const LecturerSupervisedStudentDefencesPage = lazy(() => import('./pages/tugas-akhir/sidang/LecturerSupervisedStudentDefences'))
@@ -126,6 +126,7 @@ const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/
 // Master Data
 const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
 const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
+const Cpl = lazy(() => import('./pages/master-data/Cpl'))
 const MahasiswaPage = lazy(() => import('./pages/master-data/Mahasiswa'))
 const MahasiswaDetailPage = lazy(() => import('./pages/master-data/MahasiswaDetail'))
 const DosenPage = lazy(() => import('./pages/master-data/Dosen'))
@@ -133,7 +134,8 @@ const DosenDetailPage = lazy(() => import('./pages/master-data/DosenDetail'))
 const MasterDataTugasAkhirPage = lazy(() => import('./pages/master-data/TugasAkhir'))
 const ScienceGroupPage = lazy(() => import('./pages/master-data/ScienceGroup'))
 const RoomPage = lazy(() => import('./pages/master-data/Room'))
-const SeminarHasilMasterPage = lazy(() => import('./pages/master-data/SeminarHasilMaster'))
+const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvailability'))
+const StudentCplScorePage = lazy(() => import('./pages/master-data/StudentCplScore'))
 // Kelola
 const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
 const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
@@ -141,10 +143,8 @@ const PenilaianAkhirMetopen = lazy(() => import('./pages/dosen/metopen/Penilaian
 const InboxPembimbing = lazy(() => import('./pages/dosen/InboxPembimbing'))
 const DSSKadep = lazy(() => import('./pages/kelola/kadep/DSSKadep'))
 const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
-const Cpl = lazy(() => import('./pages/master-data/Cpl'))
 const KuotaBimbinganPage = lazy(() => import('./pages/master-data/KuotaBimbingan'))
-// Lecturer Availability
-const JadwalKetersediaan = lazy(() => import('./pages/lecturer/JadwalKetersediaan'))
+
 // Pengumuman
 const SeminarHasilAnnouncementPage = lazy(() => import('./pages/pengumuman/SeminarHasilAnnouncement'))
 const YudisiumAnnouncementPage = lazy(() => import('./pages/pengumuman/YudisiumAnnouncement'))
@@ -273,39 +273,39 @@ function App() {
                 {/* Kerja Praktik Shared */}
                 <Route path="/kerja-praktik/monitoring" element={<Placeholder title="Kerja Praktek - Monitoring" />} />
 
-              {/* Yudisium shared entry */}
-              <Route path="/yudisium" element={<YudisiumEntry />} />
+                {/* Yudisium shared entry */}
+                <Route path="/yudisium" element={<YudisiumEntry />} />
 
-              {/* Yudisium - Student */}
-              <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
-                <Route path="/yudisium/student" element={<StudentYudisiumPage />} />
-                <Route path="/yudisium/student/exit-survey" element={<StudentExitSurveyPage />} />
-              </Route>
+                {/* Yudisium - Student */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
+                  <Route path="/yudisium/student" element={<StudentYudisiumPage />} />
+                  <Route path="/yudisium/student/exit-survey" element={<StudentExitSurveyPage />} />
+                </Route>
 
-              {/* Yudisium - Lecturer */}
-              <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
-                <Route path="/yudisium/lecturer" element={<Navigate to="/yudisium/lecturer/event" replace />} />
-                <Route path="/yudisium/lecturer/event" element={<LecturerYudisiumPage />} />
-                <Route path="/yudisium/lecturer/event/:id" element={<LecturerYudisiumDetailPage />} />
-                <Route path="/yudisium/lecturer/event/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
-              </Route>
+                {/* Yudisium - Lecturer */}
+                <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
+                  <Route path="/yudisium/lecturer" element={<Navigate to="/yudisium/lecturer/event" replace />} />
+                  <Route path="/yudisium/lecturer/event" element={<LecturerYudisiumPage />} />
+                  <Route path="/yudisium/lecturer/event/:id" element={<LecturerYudisiumDetailPage />} />
+                  <Route path="/yudisium/lecturer/event/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
+                </Route>
 
-              <Route element={<RoleGuard allowedRoles={[ROLES.GKM, ROLES.TIM_PENGELOLA_CPL]} />}>
-                <Route path="/yudisium/lecturer/event/:id/participant/:participantId/cpl-validation" element={<YudisiumParticipantCPLValidationPage />} />
-              </Route>
+                <Route element={<RoleGuard allowedRoles={[ROLES.GKM, ROLES.GKM]} />}>
+                  <Route path="/yudisium/lecturer/event/:id/participant/:participantId/cpl-validation" element={<YudisiumParticipantCPLValidationPage />} />
+                </Route>
 
-              {/* Yudisium - Restricted Lecturer Tabs */}
-              <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_YUDISIUM]} />}>
-                <Route path="/yudisium/lecturer/persyaratan" element={<LecturerYudisiumPage />} />
-                <Route path="/yudisium/lecturer/exit-survey" element={<LecturerYudisiumPage />} />
-              </Route>
+                {/* Yudisium - Restricted Lecturer Tabs */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_YUDISIUM]} />}>
+                  <Route path="/yudisium/lecturer/persyaratan" element={<LecturerYudisiumPage />} />
+                  <Route path="/yudisium/lecturer/exit-survey" element={<LecturerYudisiumPage />} />
+                </Route>
 
-              {/* Yudisium - Admin */}
-              <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN]} />}>
-                <Route path="/yudisium/admin" element={<AdminYudisiumPage />} />
-                <Route path="/yudisium/admin/:id" element={<AdminYudisiumValidationPage />} />
-                <Route path="/yudisium/admin/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
-              </Route>
+                {/* Yudisium - Admin */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN]} />}>
+                  <Route path="/yudisium/admin" element={<AdminYudisiumPage />} />
+                  <Route path="/yudisium/admin/:id" element={<AdminYudisiumValidationPage />} />
+                  <Route path="/yudisium/admin/:id/participant/:participantId" element={<YudisiumParticipantDetailPage />} />
+                </Route>
 
                 {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
                 <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
@@ -342,7 +342,7 @@ function App() {
                   <Route path="/tugas-akhir/sidang/lecturer/:defenceId/assessment" element={<LecturerDefenceDetailAssessmentPage />} />
                   <Route path="/tugas-akhir/sidang/lecturer/:defenceId/minutes" element={<LecturerDefenceDetailMinutesPage />} />
                   <Route path="/tugas-akhir/sidang/lecturer/:defenceId/revision" element={<LecturerDefenceDetailRevisionPage />} />
-                  <Route path="/jadwal-ketersediaan" element={<JadwalKetersediaan />} />
+                  <Route path="/jadwal-ketersediaan" element={<LecturerAvailability />} />
                   <Route path="/dosen/inbox-pembimbing" element={<InboxPembimbing />} />
                 </Route>
 
@@ -356,14 +356,21 @@ function App() {
                 <Route path="/tugas-akhir/kelola" element={<Placeholder title="Tugas Akhir - Kelola (Deprecated)" />} />
 
                 {/* Shared Kelola - Sekdep & Kadep */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                   <Route path="/kelola/sop" element={<KelolaSopPage />} />
+                  <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
                 </Route>
 
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.GKM]} />}>
                   <Route path="/kelola/cpl" element={<Cpl />} />
+                </Route>
+
+                <Route element={<RoleGuard allowedRoles={[ROLES.GKM]} />}>
+                  <Route path="/kelola/cpl-mahasiswa" element={<StudentCplScorePage />} />
                 </Route>
 
                 {/* Kelola Metopen - Dosen Pengampu, Sekdep, Kadep */}
@@ -440,16 +447,17 @@ function App() {
                   <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
 
                   <Route path="/master-data/hari-libur" element={<ManageHolidays />} />
-                  <Route path="/tugas-akhir/seminar/admin" element={<AdminThesisSeminarManagementPage />} />
-                  <Route path="/tugas-akhir/seminar/admin/:seminarId" element={<AdminSeminarDetailPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil" element={<AdminThesisSeminarPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/validasi" element={<AdminThesisSeminarPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/arsip" element={<AdminThesisSeminarPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/admin/:seminarId" element={<AdminSeminarDetailPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/arsip/:id" element={<ThesisSeminarArchiveDetailPage />} />
                   <Route path="/tugas-akhir/sidang/admin" element={<AdminThesisDefenceManagementPage />} />
-                  <Route path="/tugas-akhir/sidang/admin/:defenceId" element={<AdminDefenceDetailPage />} />
                   <Route path="/master-data/mahasiswa" element={<MahasiswaPage />} />
                   <Route path="/master-data/mahasiswa/:id" element={<MahasiswaDetailPage />} />
                   <Route path="/master-data/dosen" element={<DosenPage />} />
                   <Route path="/master-data/dosen/:id" element={<DosenDetailPage />} />
                   <Route path="/master-data/tugas-akhir" element={<MasterDataTugasAkhirPage />} />
-                  <Route path="/master-data/seminar-hasil" element={<SeminarHasilMasterPage />} />
                   <Route path="/master-data/user" element={<UserManagementPage />} />
                   <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
                   <Route path="/master-data/ruangan" element={<RoomPage />} />

@@ -32,6 +32,7 @@ export interface Room {
   name: string;
   location: string | null;
   capacity: number | null;
+  relationCount: number;
   canDelete: boolean;
   createdAt: string;
   updatedAt: string;
@@ -309,24 +310,34 @@ export const getActiveAcademicYearAPI = async (): Promise<{
   return response.json();
 };
 
-// Get all rooms
-export const getRoomsAPI = async (params?: {
+export type GetRoomsAPIParams = {
   page?: number;
+  /** Page size (preferred; mirrors CPL `limit`) */
+  limit?: number;
+  /** @deprecated use `limit` */
   pageSize?: number;
   search?: string;
-}): Promise<{
-  rooms: Room[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+  /** all | available (no relations) | in_use */
+  status?: 'all' | 'available' | 'in_use';
+};
+
+// Get rooms (server-side pagination; response matches CPL list shape: data + total)
+export const getRoomsAPI = async (
+  params?: GetRoomsAPIParams
+): Promise<{
+  success: boolean;
+  message?: string;
+  data: Room[];
+  total: number;
 }> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  const limit = params?.limit ?? params?.pageSize;
+  if (limit) queryParams.append('limit', String(limit));
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.status && params.status !== 'all') {
+    queryParams.append('status', params.status);
+  }
 
   const response = await fetch(getApiUrl(`/adminfeatures/rooms?${queryParams}`), {
     method: 'GET',
@@ -395,215 +406,6 @@ export const deleteRoomAPI = async (id: string): Promise<{ success: boolean; mes
   return response.json();
 };
 
-export const getSeminarResultThesisOptionsAPI = async (): Promise<{ data: SeminarResultThesisOption[] }> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/theses'), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat opsi thesis');
-  }
-
-  return response.json();
-};
-
-export const getSeminarResultLecturerOptionsAPI = async (): Promise<{ data: SeminarResultLecturerOption[] }> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/lecturers'), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat opsi dosen');
-  }
-
-  return response.json();
-};
-
-export const getSeminarResultStudentOptionsAPI = async (): Promise<{ data: SeminarResultStudentOption[] }> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/students'), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat opsi mahasiswa');
-  }
-
-  return response.json();
-};
-
-export const getSeminarResultsAPI = async (params?: {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-}): Promise<{
-  seminars: SeminarResult[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
-}> => {
-  const queryParams = new URLSearchParams();
-  if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
-  if (params?.search) queryParams.append('search', params.search);
-
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results?${queryParams}`), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat data seminar hasil');
-  }
-
-  return response.json();
-};
-
-export const createSeminarResultAPI = async (data: CreateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal menambahkan seminar hasil');
-  }
-
-  return response.json();
-};
-
-export const updateSeminarResultAPI = async (id: string, data: UpdateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/${id}`), {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memperbarui seminar hasil');
-  }
-
-  return response.json();
-};
-
-export const deleteSeminarResultAPI = async (id: string): Promise<{ success: boolean; message: string }> => {
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/${id}`), {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal menghapus seminar hasil');
-  }
-
-  return response.json();
-};
-
-export const getSeminarResultAudienceLinksAPI = async (params?: {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-}): Promise<{
-  links: SeminarResultAudienceLink[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
-}> => {
-  const queryParams = new URLSearchParams();
-  if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
-  if (params?.search) queryParams.append('search', params.search);
-
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/audiences?${queryParams}`), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat relasi audience seminar');
-  }
-
-  return response.json();
-};
-
-export const assignSeminarResultAudiencesAPI = async (payload: {
-  studentId: string;
-  seminarIds: string[];
-}): Promise<{
-  data: {
-    created: number;
-    skippedOwnSeminarIds: string[];
-    skippedDuplicate: number;
-  };
-}> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/audiences/assign'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal mengaitkan audience seminar');
-  }
-
-  return response.json();
-};
-
-export const removeSeminarResultAudienceLinkAPI = async (seminarId: string, studentId: string): Promise<{ success: boolean; message: string }> => {
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/audiences/${seminarId}/${studentId}`), {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal menghapus relasi audience seminar');
-  }
-
-  return response.json();
-};
-
 // Get all users
 export const getUsersAPI = async (params?: {
   page?: number;
@@ -663,6 +465,7 @@ export interface Student {
     mkwuCompleted: boolean;
     internshipCompleted: boolean;
     kknCompleted: boolean;
+    researchMethodCompleted?: boolean;
     activeTheses: Array<{
       title: string;
       supervisors: Array<{
@@ -725,7 +528,16 @@ export const getStudentsAPI = async (params?: {
 };
 
 // Trigger SIA sync (fetch from SIA service and cache)
-export const triggerSiaSyncAPI = async (): Promise<{ success: boolean; message?: string }> => {
+export const triggerSiaSyncAPI = async (): Promise<{
+  success: boolean;
+  message?: string;
+  summary?: {
+    cplCreated?: number;
+    cplUpdated?: number;
+    cplSkippedProtected?: number;
+    cplUnmatchedCodes?: number;
+  };
+}> => {
   const response = await fetch(getApiUrl('/sia/sync'), {
     method: 'POST',
     headers: {
@@ -796,6 +608,7 @@ export interface StudentDetail {
     mkwuCompleted?: boolean | null;
     internshipCompleted?: boolean | null;
     kknCompleted?: boolean | null;
+    researchMethodCompleted?: boolean | null;
   };
   cplScores?: Array<{
     cplId: string;
@@ -1053,6 +866,7 @@ export const adminUpdateStudentAPI = async (id: string, data: {
   mkwuCompleted?: boolean;
   internshipCompleted?: boolean;
   kknCompleted?: boolean;
+  researchMethodCompleted?: boolean;
 }): Promise<{ data: any }> => {
   const response = await fetch(getApiUrl(`/adminfeatures/students/${id}`), {
     method: 'PATCH',
@@ -1068,7 +882,8 @@ export const adminUpdateStudentAPI = async (id: string, data: {
       mandatoryCoursesCompleted: data.mandatoryCoursesCompleted,
       mkwuCompleted: data.mkwuCompleted,
       internshipCompleted: data.internshipCompleted,
-      kknCompleted: data.kknCompleted
+      kknCompleted: data.kknCompleted,
+      researchMethodCompleted: data.researchMethodCompleted
     }),
   });
   if (!response.ok) {

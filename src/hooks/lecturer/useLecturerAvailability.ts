@@ -1,23 +1,30 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
     getMyAvailabilities,
     createAvailability,
     updateAvailability,
-    toggleAvailability,
     deleteAvailability,
     type CreateAvailabilityPayload,
     type UpdateAvailabilityPayload,
-} from '@/services/lecturerAvailability.service';
+    type GetLecturerAvailabilitiesParams,
+} from '@/services/master-data/lecturer-availability.service';
 
 const QUERY_KEY = ['lecturer-availability'];
 
 export function useLecturerAvailability() {
     const queryClient = useQueryClient();
+    const [params, setParams] = useState<GetLecturerAvailabilitiesParams>({
+        status: 'all',
+        search: '',
+        page: 1,
+        limit: 10,
+    });
 
-    const { data: availabilities, isLoading, isFetching, refetch } = useQuery({
-        queryKey: QUERY_KEY,
-        queryFn: getMyAvailabilities,
+    const { data, isLoading, isFetching, refetch } = useQuery({
+        queryKey: [...QUERY_KEY, params],
+        queryFn: () => getMyAvailabilities(params),
     });
 
     const createMutation = useMutation({
@@ -43,17 +50,6 @@ export function useLecturerAvailability() {
         },
     });
 
-    const toggleMutation = useMutation({
-        mutationFn: toggleAvailability,
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-            toast.success(data.isActive ? 'Jadwal berhasil diaktifkan' : 'Jadwal berhasil dinonaktifkan');
-        },
-        onError: (error: Error) => {
-            toast.error(error.message);
-        },
-    });
-
     const deleteMutation = useMutation({
         mutationFn: deleteAvailability,
         onSuccess: () => {
@@ -66,17 +62,19 @@ export function useLecturerAvailability() {
     });
 
     return {
-        availabilities: availabilities ?? [],
+        availabilities: data?.data ?? [],
+        total: data?.total ?? 0,
         isLoading,
         isFetching,
         refetch,
-        create: (data: CreateAvailabilityPayload) => createMutation.mutateAsync(data),
-        update: (id: string, data: UpdateAvailabilityPayload) => updateMutation.mutateAsync({ id, data }),
-        toggle: toggleMutation.mutate,
+        params,
+        setParams,
+        create: (payload: CreateAvailabilityPayload) => createMutation.mutateAsync(payload),
+        update: (id: string, payload: UpdateAvailabilityPayload) =>
+            updateMutation.mutateAsync({ id, data: payload }),
         remove: deleteMutation.mutate,
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
-        isToggling: toggleMutation.isPending,
         isDeleting: deleteMutation.isPending,
     };
 }

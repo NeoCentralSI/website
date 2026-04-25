@@ -5,7 +5,7 @@ import {
   validateSeminarDocument,
   getSchedulingData,
   setSchedule,
-} from '@/services/adminSeminar.service';
+} from '@/services/thesis-seminar/admin-seminar.service';
 import type { ValidateDocumentPayload, SetSchedulePayload } from '@/types/seminar.types';
 
 export function useAdminSeminarList(params?: {

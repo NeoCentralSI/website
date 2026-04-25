@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Plus, Info } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   RoomFormDialog,
   RoomTable,
@@ -28,10 +27,6 @@ import type { CreateRoomRequest, Room, UpdateRoomRequest } from '@/services/admi
 export default function RoomPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [searchValue, setSearchValue] = useState('');
-
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
 
@@ -39,11 +34,17 @@ export default function RoomPage() {
     rooms,
     total,
     isLoading,
-    isSubmitting,
-    createRoom,
-    updateRoom,
-    deleteRoom,
-  } = useRooms({ page, pageSize, search: searchValue });
+    isFetching,
+    refetch,
+    params,
+    setParams,
+    create,
+    update,
+    remove,
+    isCreating,
+    isUpdating,
+    isDeleting,
+  } = useRooms();
 
   const {
     dialogOpen,
@@ -66,10 +67,6 @@ export default function RoomPage() {
     setTitle('Kelola Ruangan');
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchValue]);
-
   const normalizePayload = (payload: CreateRoomRequest | UpdateRoomRequest) => ({
     ...payload,
     name: payload.name?.trim(),
@@ -82,15 +79,15 @@ export default function RoomPage() {
 
     const payload = normalizePayload(formData);
 
-    let success = false;
-    if (editingRoom) {
-      success = await updateRoom(editingRoom.id, payload as UpdateRoomRequest);
-    } else {
-      success = await createRoom(payload as CreateRoomRequest);
-    }
-
-    if (success) {
+    try {
+      if (editingRoom) {
+        await update(editingRoom.id, payload as UpdateRoomRequest);
+      } else {
+        await create(payload as CreateRoomRequest);
+      }
       closeDialog();
+    } catch {
+      // Toast handled in hook mutations
     }
   };
 
@@ -104,10 +101,12 @@ export default function RoomPage() {
 
   const handleConfirmDelete = async () => {
     if (!roomToDelete) return;
-    const success = await deleteRoom(roomToDelete);
-    if (success) {
+    try {
+      await remove(roomToDelete.id);
       setDeleteDialogOpen(false);
       setRoomToDelete(null);
+    } catch {
+      // Toast handled in hook
     }
   };
 
@@ -120,25 +119,16 @@ export default function RoomPage() {
         </div>
       </div>
 
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          Ruangan yang sudah memiliki relasi data (seminar, sidang, yudisium, atau seminar kerja praktik) tidak dapat dihapus.
-        </AlertDescription>
-      </Alert>
-
       <RoomTable
         data={rooms}
         loading={isLoading}
-        page={page}
-        pageSize={pageSize}
+        isFetching={isFetching}
+        params={params}
+        onParamsChange={setParams}
         total={total}
-        searchValue={searchValue}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-        onSearchChange={setSearchValue}
         onEdit={openEditDialog}
         onDelete={handleRequestDelete}
+        onRefresh={() => refetch()}
         actions={
           <Button variant="outline" size="sm" onClick={openCreateDialog}>
             <Plus className="w-4 h-4 mr-2" /> Tambah
@@ -153,7 +143,7 @@ export default function RoomPage() {
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
+        isSubmitting={isCreating || isUpdating}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -169,7 +159,7 @@ export default function RoomPage() {
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700"
-              disabled={isSubmitting}
+              disabled={isDeleting}
             >
               Hapus
             </AlertDialogAction>

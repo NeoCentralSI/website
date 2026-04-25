@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -8,16 +9,23 @@ import {
     deleteCpl,
     type CreateCplPayload,
     type UpdateCplPayload,
+    type GetCplsParams,
 } from '@/services/master-data/cpl.service';
 
 const QUERY_KEY = ['cpls'];
 
 export function useCpl() {
     const queryClient = useQueryClient();
+    const [params, setParams] = useState<GetCplsParams>({
+        status: 'active',
+        search: '',
+        page: 1,
+        limit: 10,
+    });
 
     const { data: cpls, isLoading, isFetching, refetch } = useQuery({
-        queryKey: QUERY_KEY,
-        queryFn: getCpls,
+        queryKey: [...QUERY_KEY, params],
+        queryFn: () => getCpls(params),
     });
 
     const createMutation = useMutation({
@@ -66,10 +74,13 @@ export function useCpl() {
     });
 
     return {
-        cpls: cpls ?? [],
+        cpls: cpls?.data ?? [],
+        total: cpls?.total ?? 0,
         isLoading,
         isFetching,
         refetch,
+        params,
+        setParams,
         create: (data: CreateCplPayload) => createMutation.mutateAsync(data),
         update: (id: string, data: UpdateCplPayload) => updateMutation.mutateAsync({ id, data }),
         toggle: toggleMutation.mutate,

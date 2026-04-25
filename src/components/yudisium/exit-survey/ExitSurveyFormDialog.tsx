@@ -11,8 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import type { ExitSurveyForm } from '@/types/exitSurvey.types';
-import type { CreateExitSurveyFormPayload, UpdateExitSurveyFormPayload } from '@/types/exitSurvey.types';
+import type { ExitSurveyForm } from '@/types/exit-survey.types';
+import type { CreateExitSurveyFormPayload, UpdateExitSurveyFormPayload } from '@/types/exit-survey.types';
 
 interface ExitSurveyFormDialogProps {
   open: boolean;

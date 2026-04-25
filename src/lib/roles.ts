@@ -12,7 +12,6 @@ export const ROLES = {
   MAHASISWA: "Mahasiswa",
   GKM: "GKM",
   KOORDINATOR_YUDISIUM: "Koordinator Yudisium",
-  TIM_PENGELOLA_CPL: "Tim Pengelola CPL",
   DOSEN_METOPEN: "Dosen Pengampu Metopel",
 } as const;
 
@@ -33,7 +32,6 @@ export const LECTURER_ROLES = [
   ROLES.PENGUJI,
   ROLES.GKM,
   ROLES.KOORDINATOR_YUDISIUM,
-  ROLES.TIM_PENGELOLA_CPL,
   ROLES.DOSEN_METOPEN,
 ] as const;
 
@@ -43,7 +41,7 @@ export const STAFF_ROLES = [
   ROLES.KETUA_DEPARTEMEN,
   ROLES.SEKRETARIS_DEPARTEMEN,
   ROLES.KOORDINATOR_YUDISIUM,
-  ROLES.TIM_PENGELOLA_CPL,
+  ROLES.GKM,
 ] as const;
 
 // Display name mapping (untuk tampilan UI yang lebih singkat jika diperlukan)
@@ -58,7 +56,6 @@ export const formatRoleName = (roleName: string): string => {
     [ROLES.MAHASISWA]: 'Mahasiswa',
     [ROLES.PENGUJI]: 'Penguji',
     [ROLES.KOORDINATOR_YUDISIUM]: 'Koordinator Yudisium',
-    [ROLES.TIM_PENGELOLA_CPL]: 'Tim Pengelola CPL',
     [ROLES.DOSEN_METOPEN]: 'Dosen Pengampu Metopel',
   };
   return roleMap[roleName] || roleName;
@@ -75,7 +72,6 @@ export const roleOptions = [
   { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
   { value: ROLES.PENGUJI, label: 'Penguji' },
   { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
-  { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
   { value: ROLES.DOSEN_METOPEN, label: 'Dosen Pengampu Metopel' },
 ];
 

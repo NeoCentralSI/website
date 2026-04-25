@@ -26,7 +26,7 @@ import {
   useUpdateCplRecommendationStatus,
 } from '@/hooks/yudisium/useLecturerYudisium';
 import { toTitleCaseName } from '@/lib/text';
-import type { CplScoreItem, CplRecommendationItem } from '@/types/adminYudisium.types';
+import type { CplScoreItem, CplRecommendationItem } from '@/types/admin-yudisium.types';
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   registered: { label: 'Menunggu Validasi Berkas', className: 'bg-amber-50 text-amber-700 border-amber-200' },

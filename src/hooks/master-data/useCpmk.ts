@@ -5,9 +5,11 @@ import {
     createCpmk,
     updateCpmk,
     deleteCpmk,
+    copyCpmkTemplate,
     type CreateCpmkPayload,
     type UpdateCpmkPayload,
-} from '@/services/cpmk.service';
+    type CopyCpmkTemplatePayload,
+} from '@/services/master-data/cpmk.service';
 
 const QUERY_KEY = ['cpmks'];
 
@@ -54,6 +56,17 @@ export function useCpmk(academicYearId?: string) {
         },
     });
 
+    const copyTemplateMutation = useMutation({
+        mutationFn: copyCpmkTemplate,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            toast.success('Template CPMK berhasil disalin');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
     return {
         cpmks: cpmks ?? [],
         isLoading,
@@ -62,8 +75,10 @@ export function useCpmk(academicYearId?: string) {
         create: (data: CreateCpmkPayload) => createMutation.mutateAsync(data),
         update: (id: string, data: UpdateCpmkPayload) => updateMutation.mutateAsync({ id, data }),
         remove: deleteMutation.mutate,
+        copyTemplate: (payload: CopyCpmkTemplatePayload) => copyTemplateMutation.mutateAsync(payload),
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
         isDeleting: deleteMutation.isPending,
+        isCopyingTemplate: copyTemplateMutation.isPending,
     };
 }

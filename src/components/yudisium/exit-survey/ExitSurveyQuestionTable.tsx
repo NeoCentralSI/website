@@ -16,8 +16,8 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { getQuestionTypeLabel } from '@/lib/exitSurvey';
-import type { ExitSurveyQuestion } from '@/types/exitSurvey.types';
-import type { UpdateExitSurveyQuestionPayload } from '@/types/exitSurvey.types';
+import type { ExitSurveyQuestion } from '@/types/exit-survey.types';
+import type { UpdateExitSurveyQuestionPayload } from '@/types/exit-survey.types';
 import { ExitSurveyQuestionDialog } from './ExitSurveyQuestionDialog';
 
 interface ExitSurveyQuestionTableProps {
@@ -37,7 +37,7 @@ interface ExitSurveyQuestionTableProps {
   setQuestionDialogOpen: (open: boolean) => void;
   onSubmitQuestion: (
     formId: string,
-    data: import('@/types/exitSurvey.types').CreateExitSurveyQuestionPayload | UpdateExitSurveyQuestionPayload,
+    data: import('@/types/exit-survey.types').CreateExitSurveyQuestionPayload | UpdateExitSurveyQuestionPayload,
     questionId?: string
   ) => Promise<unknown>;
 }

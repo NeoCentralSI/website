@@ -112,7 +112,7 @@ export const useSidebarMenu = () => {
               isActive: pathname.startsWith("/pengumuman/yudisium"),
             },
           ],
-         },
+        },
         // Yudisium — leaf item (no children)
         {
           title: "Yudisium",
@@ -120,7 +120,7 @@ export const useSidebarMenu = () => {
           icon: GraduationCap,
           items: [],
         },
-        
+
       ];
 
       return {
@@ -446,6 +446,17 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
+      // Kelola Menu for GKM
+      menuItems.push({
+        title: "Kelola",
+        url: "#",
+        icon: Database,
+        items: [
+          { title: "Kelola CPL", url: "/kelola/cpl" },
+          { title: "Kelola Nilai CPL", url: "/kelola/cpl-mahasiswa" },
+        ],
+      });
+
       // no Profil for gkm
 
       return {
@@ -506,7 +517,7 @@ export const useSidebarMenu = () => {
               },
               {
                 title: "Seminar Hasil",
-                url: "/tugas-akhir/seminar",
+                url: "/tugas-akhir/seminar-hasil",
               },
               {
                 title: "Sidang",
@@ -536,10 +547,6 @@ export const useSidebarMenu = () => {
               {
                 title: "Data TA",
                 url: "/master-data/tugas-akhir",
-              },
-              {
-                title: "Data Seminar Hasil",
-                url: "/master-data/seminar-hasil",
               },
               {
                 title: "Kelola User",

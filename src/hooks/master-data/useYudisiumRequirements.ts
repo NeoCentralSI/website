@@ -10,7 +10,7 @@ import {
     updateYudisiumRequirement,
     type CreateYudisiumRequirementPayload,
     type UpdateYudisiumRequirementPayload,
-} from '@/services/yudisiumRequirement.service';
+} from '@/services/yudisium/yudisium-requirement.service';
 
 const QUERY_KEY = ['yudisium-requirements'];
 
