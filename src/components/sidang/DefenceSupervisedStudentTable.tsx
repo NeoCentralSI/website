@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSupervisedStudentDefences } from '@/hooks/defence';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
-import { CheckCircle2, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SupervisedStudentDefenceItem } from '@/types/defence.types';
 

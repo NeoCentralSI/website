@@ -6,7 +6,6 @@ import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId,
 import {
   BookOpen,
   Calendar,
-  CheckCircle2,
   Download,
   FileText,
   User,

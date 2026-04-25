@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSupervisedStudentSeminars } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
-import { CheckCircle2, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SupervisedStudentSeminarItem } from '@/types/seminar.types';
 

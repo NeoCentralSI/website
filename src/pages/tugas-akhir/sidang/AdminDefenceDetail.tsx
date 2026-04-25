@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
+import {
+  ThesisExaminerAvailabilityStatusBadge,
+  type ThesisExaminerAvailabilityStatus,
+} from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { DefenceValidationModal } from '@/components/sidang/DefenceValidationModal';
 import { DefenceSchedulingSection } from '@/components/sidang/DefenceSchedulingSection';
 import { useAdminDefenceDetail } from '@/hooks/defence';
@@ -24,7 +27,6 @@ import {
   Calendar,
   ClipboardCheck,
   ArrowLeft,
-  CheckCircle2,
 } from 'lucide-react';
 import type { DocumentSubmitStatus, AdminDefenceListItem } from '@/types/defence.types';
 
@@ -228,7 +230,7 @@ export default function AdminDefenceDetail() {
                         <span className="text-xs text-muted-foreground">
                           (Penguji {e.order})
                         </span>
-                        <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
+                        <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus as ThesisExaminerAvailabilityStatus} className="text-[10px] px-1 py-0" />
                       </div>
                     ))}
                   </div>

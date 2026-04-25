@@ -152,8 +152,8 @@ export function CplTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
                             onClick={() => setEditItem(item)}
-                            disabled={!item.isActive || item.hasRelatedScores}
-                            title={!item.isActive ? 'CPL non-aktif tidak dapat diubah' : item.hasRelatedScores ? 'CPL yang sudah memiliki nilai mahasiswa tidak dapat diubah' : 'Edit'}
+                            disabled={item.hasRelatedScores}
+                            title={item.hasRelatedScores ? 'CPL yang sudah memiliki nilai mahasiswa tidak dapat diubah' : 'Edit'}
                         >
                             <Pencil className="h-4 w-4" />
                         </Button>
@@ -225,7 +225,7 @@ export function CplTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Data CPL</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Apakah Anda yakin ingin menghapus data CPL ini? Data yang sudah memiliki nilai CPL mahasiswa tidak dapat dihapus.
+                            Apakah Anda yakin ingin menghapus data CPL ini? Lanjutkan
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
