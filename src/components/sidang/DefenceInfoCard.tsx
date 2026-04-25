@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { toTitleCaseName, formatDateOnlyId } from '@/lib/text';
 import { Users, Calendar, MapPin, Video, Trophy } from 'lucide-react';
 import type { DefenceInfo, ThesisDefenceStatus } from '@/types/defence.types';
-import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 
 const FINALIZED_STATUSES: ThesisDefenceStatus[] = ['passed', 'passed_with_revision', 'failed'];
 const SCHEDULED_STATUSES: ThesisDefenceStatus[] = ['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed'];
@@ -66,7 +66,7 @@ export function DefenceInfoCard({ defence, onClick }: DefenceInfoCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Informasi Sidang</CardTitle>
-          <DefenceStatusBadge status={defence.status} />
+          <ThesisEventStatusBadge status={defence.status} />
         </div>
       </CardHeader>
       <CardContent>

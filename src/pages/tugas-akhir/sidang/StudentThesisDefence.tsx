@@ -7,7 +7,7 @@ import { Loading } from '@/components/ui/spinner';
 import { useStudentDefenceOverview, useStudentDefenceHistory } from '@/hooks/defence';
 import { DefenceStatusStepper } from '@/components/sidang/DefenceStatusStepper';
 import { DefenceInfoCard } from '@/components/sidang/DefenceInfoCard';
-import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { ChecklistPersyaratanSidang } from '@/components/sidang/ChecklistPersyaratanSidang';
 import { UploadDokumenSidang } from '@/components/sidang/UploadDokumenSidang';
 import type { ThesisDefenceStatus, StudentDefenceHistoryItem } from '@/types/defence.types';
@@ -61,7 +61,7 @@ function HistoryCard({ item, onClick }: { item: StudentDefenceHistoryItem; onCli
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Sidang Tugas Akhir</CardTitle>
           <div className="flex items-center gap-2">
-            <DefenceStatusBadge status={item.status} />
+            <ThesisEventStatusBadge status={item.status} />
             <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
         </div>

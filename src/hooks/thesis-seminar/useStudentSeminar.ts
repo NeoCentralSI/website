@@ -18,7 +18,7 @@ import {
   submitRevision,
   cancelRevisionSubmission,
   deleteRevision,
-} from '@/services/thesis-seminar/student-seminar.service';
+} from '@/services/thesis-seminar/student.service';
 import { toast } from 'sonner';
 import type { CreateRevisionPayload, SubmitRevisionActionPayload, SaveRevisionActionPayload } from '@/types/seminar.types';
 

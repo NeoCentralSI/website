@@ -24,11 +24,11 @@ export default function LecturerThesisSeminar() {
 
 	const tabs = useMemo(() => {
 		const t = [
-			{ label: 'Mahasiswa Bimbingan', to: '/tugas-akhir/seminar/lecturer/my-students', end: true },
-			{ label: 'Menguji Mahasiswa', to: '/tugas-akhir/seminar/lecturer', end: true },
+			{ label: 'Mahasiswa Bimbingan', to: '/tugas-akhir/seminar-hasil/lecturer/my-students', end: true },
+			{ label: 'Menguji Mahasiswa', to: '/tugas-akhir/seminar-hasil/lecturer', end: true },
 		]
 		if (isKadep()) {
-			t.push({ label: 'Tetapkan Penguji', to: '/tugas-akhir/seminar/lecturer/assignment', end: true })
+			t.push({ label: 'Tetapkan Penguji', to: '/tugas-akhir/seminar-hasil/lecturer/assignment', end: true })
 		}
 		return t
 	}, [isKadep])

@@ -5,20 +5,20 @@ import { TabsNav } from '@/components/ui/tabs-nav';
 import { Loading } from '@/components/ui/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useStudentSeminarOverview, useStudentSeminarHistory } from '@/hooks/seminar';
-import { SeminarStatusStepper } from '@/components/seminar/SeminarStatusStepper';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
-import { SeminarInfoCard } from '@/components/seminar/SeminarInfoCard';
-import { ChecklistPersyaratan } from '@/components/seminar/ChecklistPersyaratan';
-import { UploadDokumenSeminar } from '@/components/seminar/UploadDokumenSeminar';
+import { useStudentSeminarOverview, useStudentSeminarHistory } from '@/hooks/thesis-seminar';
+import { SeminarStatusStepper } from '@/components/thesis-seminar/student/SeminarStatusStepper';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
+import { SeminarInfoCard } from '@/components/thesis-seminar/student/SeminarInfoCard';
+import { ChecklistPersyaratan } from '@/components/thesis-seminar/student/ChecklistPersyaratan';
+import { UploadDokumenSeminar } from '@/components/thesis-seminar/student/UploadDokumenSeminar';
 import { formatDateOnlyId } from '@/lib/text';
 import { toTitleCaseName } from '@/lib/text';
 import { ChevronRight, Calendar, Users, Trophy, MapPin, Video } from 'lucide-react';
 import type { ThesisSeminarStatus, SeminarHistoryItem } from '@/types/seminar.types';
 
 const TABS = [
-  { label: 'Seminar Hasil', to: '/tugas-akhir/seminar/student', end: true },
-  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar/student/attendance', end: false },
+  { label: 'Seminar Hasil', to: '/tugas-akhir/seminar-hasil', end: true },
+  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar-hasil/riwayat-kehadiran', end: false },
 ];
 
 /** Statuses where the "Informasi Seminar" card is shown */
@@ -74,7 +74,7 @@ function HistoryCard({ item, onClick }: { item: SeminarHistoryItem; onClick: () 
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Seminar Hasil</CardTitle>
           <div className="flex items-center gap-2">
-            <SeminarStatusBadge status={item.status} />
+            <ThesisEventStatusBadge status={item.status} />
             <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function StudentThesisSeminar() {
           {data.seminar && showInfoCard && (
             <SeminarInfoCard
               seminar={data.seminar}
-              onClick={() => navigate(`/tugas-akhir/seminar/student/history/${data.seminar!.id}`)}
+              onClick={() => navigate(`/tugas-akhir/seminar-hasil/student/history/${data.seminar!.id}`)}
             />
           )}
 
@@ -241,7 +241,7 @@ export default function StudentThesisSeminar() {
                     <HistoryCard
                       key={item.id}
                       item={item}
-                      onClick={() => navigate(`/tugas-akhir/seminar/student/history/${item.id}`)}
+                      onClick={() => navigate(`/tugas-akhir/seminar-hasil/student/history/${item.id}`)}
                     />
                   ))}
                 </div>

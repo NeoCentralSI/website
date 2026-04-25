@@ -6,9 +6,9 @@ import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
-import type { SeminarResult } from '@/services/thesis-seminar/admin-seminar.service';
+import type { SeminarResult } from '@/services/thesis-seminar/admin.service';
 
 interface ThesisSeminarArchiveTableProps {
   data: SeminarResult[];
@@ -70,7 +70,7 @@ export function ThesisSeminarArchiveTable({
       key: 'status',
       header: 'Status',
       width: 180,
-      render: (row: SeminarResult) => <SeminarStatusBadge status={row.status as any} />,
+      render: (row: SeminarResult) => <ThesisEventStatusBadge status={row.status as any} />,
     },
     {
       key: 'examiners',
@@ -121,10 +121,24 @@ export function ThesisSeminarArchiveTable({
           <Button variant="ghost" size="icon" className="h-8 w-8 text-black" onClick={() => onDetail(row.id)}>
             <Eye className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-black" onClick={() => onEdit(row)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-black"
+            onClick={() => onEdit(row)}
+            disabled={!row.isEditable}
+            title={!row.isEditable ? "Seminar dari workflow utama tidak dapat diubah di sini" : ""}
+          >
             <Pencil className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => onDelete(row.id)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => onDelete(row.id)}
+            disabled={!row.isEditable}
+            title={!row.isEditable ? "Seminar dari workflow utama tidak dapat dihapus di sini" : ""}
+          >
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>

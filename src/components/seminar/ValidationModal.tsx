@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { useAdminSeminarDetail, useValidateSeminarDocument } from '@/hooks/seminar/useAdminSeminar';
+import { useAdminSeminarDetail, useValidateSeminarDocument } from '@/hooks/thesis-seminar/useAdminSeminar';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
 import { Download, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -46,9 +46,9 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
   // Build ordered document list (match docTypes order)
   const orderedDocs = detail
     ? detail.documentTypes.map((dt) => {
-        const doc = detail.documents.find((d) => d.documentTypeId === dt.id);
-        return { docType: dt, doc: doc || null };
-      })
+      const doc = detail.documents.find((d) => d.documentTypeId === dt.id);
+      return { docType: dt, doc: doc || null };
+    })
     : [];
 
   const currentEntry = orderedDocs[activeDocIndex];
@@ -158,11 +158,10 @@ export function ValidationModal({ seminar, open, onOpenChange }: ValidationModal
                 <button
                   key={entry.docType.id}
                   onClick={() => setActiveDocIndex(idx)}
-                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                    idx === activeDocIndex
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${idx === activeDocIndex
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-muted text-muted-foreground border-border hover:bg-accent'
-                  }`}
+                    }`}
                 >
                   {entry.docType.name}
                   {entry.doc && (

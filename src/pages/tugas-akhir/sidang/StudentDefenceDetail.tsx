@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Loading } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
-import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { StudentRevisiTab } from '@/components/sidang/student-detail/StudentRevisiTab';
 import {
   useStudentDefenceAssessment,
@@ -200,7 +200,7 @@ export default function StudentDefenceDetail() {
             <h1 className="text-2xl font-bold">Detail Sidang</h1>
             <p className="text-gray-500">{detail?.thesis.title ?? overview?.thesisTitle ?? 'Sidang Tugas Akhir'}</p>
           </div>
-          <DefenceStatusBadge status={effectiveStatus} />
+          <ThesisEventStatusBadge status={effectiveStatus} />
         </div>
       </div>
 

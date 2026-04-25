@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
@@ -90,7 +90,7 @@ export function LecturerDefenceDetailLayout({ children }: LecturerDefenceDetailL
             <h1 className="text-2xl font-bold">{toTitleCaseName(detail.student.name)}</h1>
             <p className="text-gray-500">{detail.student.nim}</p>
           </div>
-          <DefenceStatusBadge status={detail.status} />
+          <ThesisEventStatusBadge status={detail.status} />
         </div>
       </div>
 

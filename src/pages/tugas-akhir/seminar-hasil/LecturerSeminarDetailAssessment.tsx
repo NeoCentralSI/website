@@ -18,7 +18,7 @@ import {
   useFinalizeSeminarBySupervisor,
   useSubmitExaminerAssessment,
   useSupervisorFinalizationData,
-} from '@/hooks/seminar/useLecturerSeminar';
+} from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type {
   FinalizeSeminarPayload,
@@ -133,76 +133,77 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
             {group.criteria.map((criterion) => {
               const isOptionB = group.criteria.length === 1 && !String(criterion.name ?? '').trim();
               return (
-              <div key={criterion.id} className="space-y-2">
-                {/* Criteria row: label + input */}
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_140px] gap-2 items-start">
-                  <div>
-                    {!isOptionB && (
-                      <Label className="text-sm font-medium">{criterion.name}</Label>
-                    )}
-                    {isOptionB && (
-                      <Label className="text-sm text-muted-foreground">Skor langsung pada CPMK</Label>
-                    )}
-                    <p className="text-xs text-muted-foreground">Maks. {criterion.maxScore} poin</p>
+                <div key={criterion.id} className="space-y-2">
+                  {/* Criteria row: label + input */}
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_140px] gap-2 items-start">
+                    <div>
+                      {!isOptionB && (
+                        <Label className="text-sm font-medium">{criterion.name}</Label>
+                      )}
+                      {isOptionB && (
+                        <Label className="text-sm text-muted-foreground">Skor langsung pada CPMK</Label>
+                      )}
+                      <p className="text-xs text-muted-foreground">Maks. {criterion.maxScore} poin</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={criterion.maxScore}
+                        value={scores[criterion.id] ?? 0}
+                        disabled={isSubmitted}
+                        onChange={(e) => {
+                          const value = Number(e.target.value || 0);
+                          setScores((prev) => ({ ...prev, [criterion.id]: value }));
+                        }}
+                      />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">/ {criterion.maxScore}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={criterion.maxScore}
-                      value={scores[criterion.id] ?? 0}
-                      disabled={isSubmitted}
-                      onChange={(e) => {
-                        const value = Number(e.target.value || 0);
-                        setScores((prev) => ({ ...prev, [criterion.id]: value }));
-                      }}
-                    />
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">/ {criterion.maxScore}</span>
-                  </div>
-                </div>
 
-                {/* Rubric collapsible */}
-                {criterion.rubrics.length > 0 && (
-                  <Collapsible open={openRubrics[criterion.id] ?? false} onOpenChange={() => toggleRubric(criterion.id)}>
-                    <CollapsibleTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex items-center gap-1 text-xs text-primary hover:underline focus:outline-none"
-                      >
-                        {openRubrics[criterion.id] ? (
-                          <ChevronDown className="h-3 w-3" />
-                        ) : (
-                          <ChevronRight className="h-3 w-3" />
-                        )}
-                        Lihat rubrik penilaian
-                      </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="mt-2 rounded-md border bg-muted/30">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Range Skor</th>
-                              <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Deskripsi</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {criterion.rubrics.map((rubric) => (
-                              <tr key={rubric.id} className="border-b last:border-0">
-                                <td className="px-3 py-1.5 whitespace-nowrap font-medium">
-                                  {rubric.minScore} – {rubric.maxScore}
-                                </td>
-                                <td className="px-3 py-1.5">{rubric.description}</td>
+                  {/* Rubric collapsible */}
+                  {criterion.rubrics.length > 0 && (
+                    <Collapsible open={openRubrics[criterion.id] ?? false} onOpenChange={() => toggleRubric(criterion.id)}>
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-xs text-primary hover:underline focus:outline-none"
+                        >
+                          {openRubrics[criterion.id] ? (
+                            <ChevronDown className="h-3 w-3" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3" />
+                          )}
+                          Lihat rubrik penilaian
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mt-2 rounded-md border bg-muted/30">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b">
+                                <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Range Skor</th>
+                                <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Deskripsi</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
-              </div>
-            )})}
+                            </thead>
+                            <tbody>
+                              {criterion.rubrics.map((rubric) => (
+                                <tr key={rubric.id} className="border-b last:border-0">
+                                  <td className="px-3 py-1.5 whitespace-nowrap font-medium">
+                                    {rubric.minScore} – {rubric.maxScore}
+                                  </td>
+                                  <td className="px-3 py-1.5">{rubric.description}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+                </div>
+              )
+            })}
           </CardContent>
         </Card>
       ))}

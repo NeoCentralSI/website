@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
-import { SeminarStatusBadge, getStatusFilterOptions } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge, getThesisEventStatusFilterOptions as getStatusFilterOptions } from '@/components/shared/ThesisEventStatusBadge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useAdminSeminarList } from '@/hooks/seminar/useAdminSeminar';
+import { useAdminSeminarList } from '@/hooks/thesis-seminar/useAdminSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { Eye, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -108,7 +108,13 @@ export function AdminSeminarTable({ onValidate }: AdminSeminarTableProps) {
         },
         options: statusOptions,
       },
-      render: (row) => <SeminarStatusBadge status={row.status} />,
+      render: (row) => (
+        <ThesisEventStatusBadge 
+          status={row.status} 
+          scheduledDate={row.date} 
+          startTime={row.startTime} 
+        />
+      ),
     },
     {
       key: 'actions',

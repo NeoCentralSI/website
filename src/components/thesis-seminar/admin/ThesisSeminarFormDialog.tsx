@@ -25,7 +25,7 @@ import type {
   SeminarResultStatus,
   SeminarResultLecturerOption,
   SeminarResultThesisOption,
-} from '@/services/thesis-seminar/admin-seminar.service';
+} from '@/services/thesis-seminar/admin.service';
 import type { Room } from '@/services/admin.service';
 
 interface ThesisSeminarFormDialogProps {
