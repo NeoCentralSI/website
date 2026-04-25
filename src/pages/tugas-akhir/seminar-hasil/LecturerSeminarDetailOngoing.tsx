@@ -5,7 +5,6 @@ import {
   BookOpen,
   Calendar,
   CheckCircle,
-  CheckCircle2,
   Clock,
   Download,
   FileText,

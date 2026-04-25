@@ -34,7 +34,6 @@ import {
   Calendar,
   ClipboardCheck,
   ArrowLeft,
-  CheckCircle2,
 } from 'lucide-react';
 import type { DocumentSubmitStatus, AdminSeminarListItem } from '@/types/seminar.types';
 

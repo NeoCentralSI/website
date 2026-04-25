@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useDefenceExaminerRequests } from '@/hooks/defence';
