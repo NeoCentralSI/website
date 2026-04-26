@@ -1,108 +1,121 @@
-import { Check, Clock, AlertCircle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ThesisSeminarStatus } from '@/types/seminar.types';
 
 const STEPS = [
-  { 
-    id: 'registration', 
-    label: 'Pendaftaran', 
-    statuses: ['registered'],
-    description: 'Mahasiswa mendaftar seminar hasil'
-  },
-  { 
-    id: 'validation', 
-    label: 'Validasi Admin', 
-    statuses: ['verified'],
-    description: 'Dokumen sedang divalidasi oleh admin'
-  },
-  { 
-    id: 'assignment', 
-    label: 'Penetapan Penguji', 
-    statuses: ['examiner_assigned'],
-    description: 'Penetapan tim penguji oleh Departemen'
-  },
-  { 
-    id: 'scheduling', 
-    label: 'Penjadwalan', 
-    statuses: ['scheduled'],
-    description: 'Penentuan jadwal dan ruang seminar'
-  },
-  { 
-    id: 'ongoing', 
-    label: 'Pelaksanaan', 
-    statuses: ['ongoing'],
-    description: 'Seminar hasil sedang berlangsung'
-  },
-  { 
-    id: 'result', 
-    label: 'Selesai', 
-    statuses: ['passed', 'passed_with_revision', 'failed'],
-    description: 'Hasil seminar telah diputuskan'
-  }
-];
+  { key: 'checklist', label: 'Checklist Persyaratan' },
+  { key: 'verified', label: 'Dokumen Seminar Lengkap' },
+  { key: 'examiner_assigned', label: 'Penetapan Dosen Penguji' },
+  { key: 'scheduled', label: 'Penetapan Jadwal Seminar Hasil' },
+  { key: 'seminar', label: 'Pelaksanaan Seminar Hasil' },
+] as const;
 
-interface StepperProps {
+function getActiveStepIndex(status: ThesisSeminarStatus | null, allChecklistMet: boolean): number {
+  if (!status) return allChecklistMet ? 0 : -1;
+
+  // Failed → reset back to checklist phase (student starts over)
+  if (status === 'failed' || status === 'cancelled') return allChecklistMet ? 0 : -1;
+
+  const statusMap: Record<string, number> = {
+    registered: 1,
+    verified: 2,
+    examiner_assigned: 3,
+    scheduled: 4,
+    ongoing: 4,
+    passed: 5,
+    passed_with_revision: 5,
+  };
+
+  return statusMap[status] ?? -1;
+}
+
+type StepperTheme = 'default' | 'success';
+
+function getStepperTheme(status: ThesisSeminarStatus | null): StepperTheme {
+  if (status === 'passed' || status === 'passed_with_revision') return 'success';
+  return 'default';
+}
+
+interface SeminarStatusStepperProps {
   status: ThesisSeminarStatus | null;
   allChecklistMet: boolean;
 }
 
-export const SeminarStatusStepper = ({ status, allChecklistMet }: StepperProps) => {
-  // Determine current step index
-  const currentStepIndex = STEPS.findIndex(step => step.statuses.includes(status as string));
-  const isCancelled = status === 'cancelled';
+export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: SeminarStatusStepperProps) {
+  const activeIndex = getActiveStepIndex(status, allChecklistMet);
+  const theme = getStepperTheme(status);
+
+  // Theme color classes
+  const themeClasses = {
+    default: {
+      completed: 'border-primary bg-primary text-primary-foreground',
+      current: 'border-primary bg-primary/10 text-primary',
+      line: 'bg-primary',
+      text: 'text-primary',
+    },
+    success: {
+      completed: 'border-emerald-500 bg-emerald-500 text-white',
+      current: 'border-emerald-500 bg-emerald-50 text-emerald-600',
+      line: 'bg-emerald-500',
+      text: 'text-emerald-600',
+    },
+  };
+
+  const colors = themeClasses[theme];
 
   return (
-    <Card className="overflow-hidden border-none shadow-sm bg-muted/20">
-      <CardContent className="p-6">
-        <div className="relative flex justify-between">
-          {/* Connector Line */}
-          <div className="absolute top-5 left-0 w-full h-0.5 bg-muted -z-0" />
-          
-          {STEPS.map((step, index) => {
-            const isCompleted = currentStepIndex > index || (status === 'passed' && index === STEPS.length - 1);
-            const isCurrent = currentStepIndex === index;
-            const isLocked = !allChecklistMet && index > 0;
+    <div className="rounded-lg border border-gray-200 bg-card p-6">
+      <h3 className="text-lg font-semibold mb-6">Status Seminar</h3>
+      <div className="flex items-center">
+        {STEPS.map((step, i) => {
+          const isCompleted = i < activeIndex;
+          const isCurrent = i === activeIndex;
 
-            return (
-              <div key={step.id} className="relative z-10 flex flex-col items-center group">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-4 bg-background",
-                  isCompleted ? "border-primary bg-primary text-primary-foreground" : 
-                  isCurrent ? "border-primary text-primary scale-110 shadow-md ring-4 ring-primary/20" : 
-                  "border-muted text-muted-foreground"
-                )}>
-                  {isCompleted ? <Check className="h-5 w-5" /> : 
-                   isCurrent ? <Clock className="h-5 w-5 animate-pulse" /> : 
-                   <span className="text-xs font-bold">{index + 1}</span>}
+          return (
+            <div key={step.key} className="flex flex-1 flex-col items-center">
+              <div className="flex w-full items-center">
+                {/* Left connector line */}
+                <div
+                  className={cn(
+                    'h-0.5 flex-1',
+                    i === 0 ? 'bg-transparent' : isCompleted ? colors.line : 'bg-muted'
+                  )}
+                />
+                {/* Circle */}
+                <div
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                    isCompleted && colors.completed,
+                    isCurrent && colors.current,
+                    !isCompleted && !isCurrent && 'border-muted bg-muted/30 text-muted-foreground'
+                  )}
+                >
+                  {isCompleted ? (
+                    <CheckCircle2 className="h-5 w-5" />
+                  ) : (
+                    <Circle className="h-5 w-5" />
+                  )}
                 </div>
-                <div className="mt-3 text-center">
-                  <p className={cn(
-                    "text-[10px] font-bold uppercase tracking-tighter leading-none",
-                    isCurrent ? "text-primary" : "text-muted-foreground"
-                  )}>
-                    {step.label}
-                  </p>
-                </div>
-                
-                {/* Tooltip-like description on hover */}
-                <div className="absolute top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-popover text-popover-foreground text-[10px] p-2 rounded shadow-lg border w-32 text-center z-20">
-                  {step.description}
-                </div>
+                {/* Right connector line */}
+                <div
+                  className={cn(
+                    'h-0.5 flex-1',
+                    i === STEPS.length - 1 ? 'bg-transparent' : isCompleted ? colors.line : 'bg-muted'
+                  )}
+                />
               </div>
-            );
-          })}
-        </div>
-
-        {isCancelled && (
-          <div className="mt-6 flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm font-medium">
-            <AlertCircle className="h-5 w-5" />
-            <span>Seminar ini telah dibatalkan.</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              <span
+                className={cn(
+                  'mt-2 text-xs text-center max-w-[100px]',
+                  (isCompleted || isCurrent) ? cn(colors.text, 'font-medium') : 'text-muted-foreground'
+                )}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
-};
-
-export const StudentThesisSeminarStatusCard = SeminarStatusStepper;
+}

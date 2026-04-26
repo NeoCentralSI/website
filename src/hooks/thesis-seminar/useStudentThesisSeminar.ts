@@ -22,10 +22,13 @@ export const useStudentThesisSeminar = () => {
     history: historyQuery.data || [],
     attendance: attendanceQuery.data,
     isLoading: overviewQuery.isLoading || historyQuery.isLoading,
+    isAttendanceLoading: attendanceQuery.isLoading,
+    isAttendanceFetching: attendanceQuery.isFetching,
     isError: overviewQuery.isError || historyQuery.isError,
     refetch: () => {
       overviewQuery.refetch();
       historyQuery.refetch();
+      attendanceQuery.refetch();
     }
   };
 };

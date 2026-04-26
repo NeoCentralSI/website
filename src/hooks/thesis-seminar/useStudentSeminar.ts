@@ -2,23 +2,35 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getStudentSeminarOverview,
   getStudentAttendanceHistory,
+  getSeminarAnnouncements,
+  getStudentSeminarHistory,
+} from '@/services/thesis-seminar/student.service';
+
+import {
   getSeminarDocumentTypes,
   getStudentSeminarDocuments,
   uploadSeminarDocument,
-  getSeminarAnnouncements,
+} from '@/services/thesis-seminar/doc.service';
+
+import {
   registerToSeminar,
   cancelSeminarRegistration,
+} from '@/services/thesis-seminar/audience.service';
+
+import {
   getStudentRevisions,
   createRevision,
   submitRevisionAction,
-  getStudentSeminarHistory,
-  getStudentSeminarDetail,
-  getStudentSeminarAssessment,
   saveRevisionAction,
   submitRevision,
   cancelRevisionSubmission,
   deleteRevision,
-} from '@/services/thesis-seminar/student.service';
+} from '@/services/thesis-seminar/revision.service';
+
+import {
+  getStudentSeminarDetail,
+  getStudentSeminarAssessment,
+} from '@/services/thesis-seminar/core.service';
 import { toast } from 'sonner';
 import type { CreateRevisionPayload, SubmitRevisionActionPayload, SaveRevisionActionPayload } from '@/types/seminar.types';
 
@@ -56,9 +68,13 @@ export function useSeminarDocumentTypes() {
 }
 
 export function useStudentSeminarDocuments() {
+  const { data: overview } = useStudentSeminarOverview();
+  const seminarId = overview?.id || 'active';
+
   return useQuery({
     queryKey: seminarKeys.documents(),
-    queryFn: getStudentSeminarDocuments,
+    queryFn: () => getStudentSeminarDocuments(seminarId),
+    enabled: !!overview || seminarId === 'active',
   });
 }
 

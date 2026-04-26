@@ -1,5 +1,5 @@
-export { SeminarStatusStepper } from '../thesis-seminar/student/SeminarStatusStepper';
-export { ChecklistPersyaratan } from '../thesis-seminar/student/ChecklistPersyaratan';
-export { UploadDokumenSeminar } from '../thesis-seminar/student/UploadDokumenSeminar';
-export { AttendanceSummaryCard } from '../thesis-seminar/student/AttendanceHistory';
-export { AttendanceHistoryTable } from '../thesis-seminar/student/AttendanceHistoryTable';
+export { StudentThesisSeminarStatusCard } from '../thesis-seminar/StudentThesisSeminarStatusCard';
+export { StudentThesisSeminarChecklistRequirementsCard } from '../thesis-seminar/StudentThesisSeminarChecklistRequirementsCard';
+export { StudentThesisSeminarDocumentCard } from '../thesis-seminar/StudentThesisSeminarDocumentCard';
+export { StudentThesisSeminarAttendanceHistoryCard } from '../thesis-seminar/StudentThesisSeminarAttendanceHistoryCard';
+export { StudentThesisSeminarAttendanceHistoryTable } from '../thesis-seminar/StudentThesisSeminarAttendanceHistoryTable';

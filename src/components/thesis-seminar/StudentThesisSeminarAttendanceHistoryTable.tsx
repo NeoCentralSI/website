@@ -12,7 +12,7 @@ interface AttendanceHistoryTableProps {
   isFetching: boolean;
 }
 
-export function AttendanceHistoryTable({
+export function StudentThesisSeminarAttendanceHistoryTable({
   records,
   isLoading,
   isFetching,
@@ -118,7 +118,9 @@ export function AttendanceHistoryTable({
       emptyText="Belum ada data kehadiran"
       actions={
         <RefreshButton
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['student-seminar', 'attendance'] })}
+          onClick={() =>
+            queryClient.invalidateQueries({ queryKey: ['thesis-seminar', 'student', 'attendance'] })
+          }
           isRefreshing={isFetching && !isLoading}
         />
       }

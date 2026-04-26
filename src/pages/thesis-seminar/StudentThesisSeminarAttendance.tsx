@@ -4,8 +4,8 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { Loading } from '@/components/ui/spinner';
 import { useStudentAttendanceHistory } from '@/hooks/thesis-seminar';
-import { AttendanceSummaryCard } from '@/components/thesis-seminar/student/AttendanceHistory';
-import { AttendanceHistoryTable } from '@/components/thesis-seminar/student/AttendanceHistoryTable';
+import { StudentThesisSeminarAttendanceHistoryCard } from '@/components/thesis-seminar/StudentThesisSeminarAttendanceHistoryCard';
+import { StudentThesisSeminarAttendanceHistoryTable } from '@/components/thesis-seminar/StudentThesisSeminarAttendanceHistoryTable';
 
 const TABS = [
   { label: 'Seminar Hasil', to: '/tugas-akhir/seminar-hasil', end: true },
@@ -48,8 +48,8 @@ export default function StudentSeminarAttendance() {
         </div>
       ) : data ? (
         <div className="space-y-6">
-          <AttendanceSummaryCard summary={data.summary} />
-          <AttendanceHistoryTable
+          <StudentThesisSeminarAttendanceHistoryCard summary={data.summary} />
+          <StudentThesisSeminarAttendanceHistoryTable
             records={data.records}
             isLoading={isLoading}
             isFetching={isFetching}

@@ -1,59 +1,58 @@
-import { SeminarStatusStepper } from './StudentThesisSeminarStatusCard';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks/shared';
+import { StudentThesisSeminarStatusCard } from './StudentThesisSeminarStatusCard';
 import { StudentThesisSeminarIdentityCard } from './StudentThesisSeminarIdentityCard';
 import { StudentThesisSeminarChecklistRequirementsCard } from './StudentThesisSeminarChecklistRequirementsCard';
 import { StudentThesisSeminarDocumentCard } from './StudentThesisSeminarDocumentCard';
 import { StudentThesisSeminarHistoryCard } from './StudentThesisSeminarHistoryCard';
-import type { ThesisSeminarStatus, SeminarHistoryItem, StudentSeminarOverview } from '@/types/seminar.types';
+import { toTitleCaseName } from '@/lib/text';
+import type { SeminarHistoryItem, SeminarOverviewResponse } from '@/types/seminar.types';
 
 interface OverviewPanelProps {
-  data: StudentSeminarOverview;
+  overview: SeminarOverviewResponse;
   history: SeminarHistoryItem[];
   onDetailClick: (seminarId: string) => void;
 }
 
-export const StudentThesisSeminarOverviewPanel = ({ data, history, onDetailClick }: OverviewPanelProps) => {
-  const seminarStatus = data.seminar?.status ?? null;
-  const isPassed = seminarStatus === 'passed' || seminarStatus === 'passed_with_revision';
-  
-  // Filter history to only show failed/cancelled or previous attempts
-  const historyItems = history.filter(item => !isPassed || item.id !== data.seminar?.id);
+export const StudentThesisSeminarOverviewPanel = ({
+  overview,
+  history,
+  onDetailClick,
+}: OverviewPanelProps) => {
+  const { user } = useAuth();
+  const seminarStatus = overview.seminar?.status ?? null;
+  const historyItems = history.filter((item) => item.id !== overview.seminar?.id);
 
   return (
     <div className="space-y-6">
-      {/* Status Stepper */}
-      <SeminarStatusStepper 
-        status={seminarStatus} 
-        allChecklistMet={data.allChecklistMet} 
+      <StudentThesisSeminarStatusCard
+        status={seminarStatus}
+        allChecklistMet={overview.allChecklistMet}
       />
 
-      {/* Identity Card (Current Seminar) */}
-      {data.seminar && (
-        <StudentThesisSeminarIdentityCard 
-          seminar={data.seminar} 
-          onClick={() => onDetailClick(data.seminar!.id)}
+      {overview.seminar ? (
+        <StudentThesisSeminarIdentityCard
+          seminar={overview.seminar}
+          onClick={() => onDetailClick(overview.seminar!.id)}
         />
-      )}
+      ) : null}
 
-      {/* Requirements & Documents */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <StudentThesisSeminarChecklistRequirementsCard 
-          checklist={data.checklist} 
-          isRecap={isPassed}
-        />
-        <StudentThesisSeminarDocumentCard 
-          allChecklistMet={data.allChecklistMet} 
+        <StudentThesisSeminarChecklistRequirementsCard checklist={overview.checklist} />
+        <StudentThesisSeminarDocumentCard
+          allChecklistMet={overview.allChecklistMet}
+          documents={overview.seminar?.documents ?? []}
         />
       </div>
 
-      {/* History Session */}
       {historyItems.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">Riwayat Percobaan Seminar Hasil</h2>
           <div className="space-y-3">
             {historyItems.map((item) => (
-              <StudentThesisSeminarHistoryCard 
-                key={item.id} 
-                item={item} 
+              <StudentThesisSeminarHistoryCard
+                key={item.id}
+                item={item}
                 onClick={() => onDetailClick(item.id)}
               />
             ))}

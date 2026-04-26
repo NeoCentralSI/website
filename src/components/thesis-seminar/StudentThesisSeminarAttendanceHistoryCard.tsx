@@ -5,7 +5,7 @@ interface AttendanceSummaryCardProps {
   summary: AttendanceSummary;
 }
 
-export function AttendanceSummaryCard({ summary }: AttendanceSummaryCardProps) {
+export function StudentThesisSeminarAttendanceHistoryCard({ summary }: AttendanceSummaryCardProps) {
   return (
     <div className="rounded-lg border-2 border-green-200 bg-green-50/50 p-6">
       <div className="flex items-center justify-between">

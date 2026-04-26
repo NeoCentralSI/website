@@ -196,75 +196,60 @@ export const API_CONFIG = {
       TRANSFER_APPROVE: (notifId: string) => `/kadep-transfers/${notifId}/approve`,
       TRANSFER_REJECT: (notifId: string) => `/kadep-transfers/${notifId}/reject`,
     },
-    THESIS_SEMINAR_STUDENT: {
-      OVERVIEW: '/thesis-seminars/student/overview',
-      ATTENDANCE: '/thesis-seminars/student/attendance',
-      DOCUMENT_TYPES: '/thesis-seminars/student/documents/types',
-      DOCUMENTS: '/thesis-seminars/student/documents',
-      DOCUMENT_UPLOAD: '/thesis-seminars/student/documents/upload',
-      DOCUMENT_VIEW: (documentTypeId: string) => `/thesis-seminars/student/documents/${documentTypeId}`,
-      ANNOUNCEMENTS: '/thesis-seminars/student/announcements',
-      REGISTER_AUDIENCE: (seminarId: string) => `/thesis-seminars/student/announcements/${seminarId}/register`,
-      REVISIONS: '/thesis-seminars/student/revisions',
-      REVISION_SUBMIT: (revisionId: string) => `/thesis-seminars/student/revisions/${revisionId}/submit`,
-      REVISION_SAVE_ACTION: (revisionId: string) => `/thesis-seminars/student/revisions/${revisionId}/action`,
-      REVISION_SUBMIT_NEW: (revisionId: string) => `/thesis-seminars/student/revisions/${revisionId}/submit`,
-      REVISION_CANCEL_SUBMIT: (revisionId: string) => `/thesis-seminars/student/revisions/${revisionId}/cancel-submit`,
-      REVISION_DELETE: (revisionId: string) => `/thesis-seminars/student/revisions/${revisionId}`,
-      HISTORY: '/thesis-seminars/student/history',
-      SEMINAR_DETAIL: (seminarId: string) => `/thesis-seminars/student/seminars/${seminarId}`,
-      SEMINAR_ASSESSMENT: (seminarId: string) => `/thesis-seminars/student/seminars/${seminarId}/assessment`,
-    },
-    THESIS_SEMINAR_ADMIN: {
-      LIST: '/thesis-seminars/admin',
-      DETAIL: (seminarId: string) => `/thesis-seminars/admin/${seminarId}`,
-      VALIDATE_DOCUMENT: (seminarId: string, documentTypeId: string) =>
-        `/thesis-seminars/admin/${seminarId}/documents/${documentTypeId}/validate`,
-      SCHEDULING_DATA: (seminarId: string) => `/thesis-seminars/admin/${seminarId}/scheduling-data`,
-      SET_SCHEDULE: (seminarId: string) => `/thesis-seminars/admin/${seminarId}/schedule`,
-    },
-    THESIS_SEMINAR_ARCHIVE: {
-      LIST: '/thesis-seminars/archive',
-      DETAIL: (id: string) => `/thesis-seminars/archive/${id}`,
-      CREATE: '/thesis-seminars/archive',
-      UPDATE: (id: string) => `/thesis-seminars/archive/${id}`,
-      DELETE: (id: string) => `/thesis-seminars/archive/${id}`,
-      IMPORT: '/thesis-seminars/archive/import',
-      EXPORT: '/thesis-seminars/archive/export',
-      TEMPLATE: '/thesis-seminars/archive/template',
-      OPTIONS_THESES: '/thesis-seminars/archive/options/theses',
-      OPTIONS_LECTURERS: '/thesis-seminars/archive/options/examiners',
-      OPTIONS_STUDENTS: '/thesis-seminars/archive/options/students',
-      AUDIENCES: (seminarId: string) => `/thesis-seminars/archive/${seminarId}/audiences`,
-      AUDIENCES_OPTIONS_STUDENTS: (seminarId: string) => `/thesis-seminars/archive/${seminarId}/audiences/options/students`,
-      AUDIENCES_TEMPLATE: (seminarId: string) => `/thesis-seminars/archive/${seminarId}/audiences/template`,
-      AUDIENCES_CREATE: (seminarId: string) => `/thesis-seminars/archive/${seminarId}/audiences`,
-      AUDIENCES_UPDATE: (seminarId: string, studentId: string) => `/thesis-seminars/archive/${seminarId}/audiences/${studentId}`,
-      AUDIENCES_DELETE: (seminarId: string, studentId: string) => `/thesis-seminars/archive/${seminarId}/audiences/${studentId}`,
-      AUDIENCES_IMPORT: (seminarId: string) => `/thesis-seminars/archive/${seminarId}/audiences/import`,
-      AUDIENCES_EXPORT: (seminarId: string, format: string) => `/thesis-seminars/archive/${seminarId}/audiences/export?format=${format}`,
-    },
-    THESIS_SEMINAR_LECTURER: {
-      EXAMINER_REQUESTS: '/thesis-seminars/lecturer/examiner-requests',
-      SUPERVISED_STUDENTS: '/thesis-seminars/lecturer/supervised-students',
-      SEMINAR_DETAIL: (seminarId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}`,
-      EXAMINER_ASSESSMENT: (seminarId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/assessment`,
-      FINALIZATION_DATA: (seminarId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/finalization`,
-      FINALIZE_SEMINAR: (seminarId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/finalize`,
-      SEMINAR_REVISIONS: (seminarId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/revisions`,
-      FINALIZE_REVISIONS: (seminarId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/revisions/finalize`,
-      APPROVE_REVISION: (seminarId: string, revisionId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/revisions/${revisionId}/approve`,
-      UNAPPROVE_REVISION: (seminarId: string, revisionId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/revisions/${revisionId}/unapprove`,
-      SEMINAR_AUDIENCES: (seminarId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/audiences`,
-      APPROVE_AUDIENCE: (seminarId: string, studentId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/audiences/${studentId}/approve`,
-      UNAPPROVE_AUDIENCE: (seminarId: string, studentId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/audiences/${studentId}/unapprove`,
-      TOGGLE_AUDIENCE_PRESENCE: (seminarId: string, studentId: string) => `/thesis-seminars/lecturer/seminars/${seminarId}/audiences/${studentId}/presence`,
-      RESPOND: (examinerId: string) => `/thesis-seminars/lecturer/seminars/${examinerId}/respond`,
-      ASSIGNMENT_LIST: '/thesis-seminars/lecturer/assignment',
-      ELIGIBLE_EXAMINERS: (seminarId: string) =>
-        `/thesis-seminars/lecturer/assignment/${seminarId}/eligible-examiners`,
-      ASSIGN_EXAMINERS: (seminarId: string) =>
-        `/thesis-seminars/lecturer/assignment/${seminarId}`,
+    THESIS_SEMINAR: {
+      // Global Options
+      OPTIONS_THESES: '/thesis-seminars/options/theses',
+      OPTIONS_LECTURERS: '/thesis-seminars/options/lecturers',
+      OPTIONS_STUDENTS: '/thesis-seminars/options/students',
+      OPTIONS_ROOMS: '/thesis-seminars/options/rooms',
+      TEMPLATE: '/thesis-seminars/template',
+      EXPORT: '/thesis-seminars/export',
+      IMPORT: '/thesis-seminars/import',
+
+      // User Specific (Self)
+      ME_OVERVIEW: '/thesis-seminars/me/overview',
+      ME_ATTENDANCE: '/thesis-seminars/me/attendance',
+      ME_HISTORY: '/thesis-seminars/me/history',
+      ANNOUNCEMENTS: '/thesis-seminars/announcements',
+
+      // Documents (Global Types)
+      DOCUMENT_TYPES: '/thesis-seminars/documents/types',
+
+      // Core Resource
+      BASE: '/thesis-seminars', // GET (list), POST (create archive)
+      BY_ID: (id: string) => `/thesis-seminars/${id}`, // GET, PATCH, DELETE
+
+      // Scheduling
+      SCHEDULING_DATA: (id: string) => `/thesis-seminars/${id}/scheduling-data`,
+      SCHEDULE: (id: string) => `/thesis-seminars/${id}/schedule`,
+
+      // Documents (Per Seminar)
+      DOCUMENTS: (id: string) => `/thesis-seminars/${id}/documents`, // GET, POST
+      DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}`, // GET
+      VALIDATE_DOCUMENT: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}/validate`, // POST
+
+      // Examiners & Assignment
+      ELIGIBLE_EXAMINERS: (id: string) => `/thesis-seminars/${id}/eligible-examiners`,
+      EXAMINERS: (id: string) => `/thesis-seminars/${id}/examiners`, // POST
+      RESPOND_ASSIGNMENT: (id: string, examinerId: string) => `/thesis-seminars/${id}/examiners/${examinerId}/respond`, // POST
+
+      // Assessment & Finalization
+      ASSESSMENT: (id: string) => `/thesis-seminars/${id}/assessment`, // GET, POST
+      FINALIZATION_DATA: (id: string) => `/thesis-seminars/${id}/finalization`, // GET
+      FINALIZE: (id: string) => `/thesis-seminars/${id}/finalize`, // POST
+
+      // Revisions
+      REVISIONS: (id: string) => `/thesis-seminars/${id}/revisions`, // GET, POST
+      REVISION_BY_ID: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}`, // PATCH, DELETE
+      FINALIZE_REVISIONS: (id: string) => `/thesis-seminars/${id}/revisions/finalize`, // POST
+
+      // Audiences
+      AUDIENCES: (id: string) => `/thesis-seminars/${id}/audiences`, // GET, POST
+      AUDIENCE_BY_ID: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}`, // PATCH, DELETE
+      AUDIENCES_OPTIONS: (id: string) => `/thesis-seminars/${id}/audiences/options/students`,
+      AUDIENCES_TEMPLATE: (id: string) => `/thesis-seminars/${id}/audiences/template`,
+      AUDIENCES_EXPORT: (id: string) => `/thesis-seminars/${id}/audiences/export`,
+      AUDIENCES_IMPORT: (id: string) => `/thesis-seminars/${id}/audiences/import`,
     },
     THESIS_DEFENCE_STUDENT: {
       OVERVIEW: '/thesis-defences/student/overview',

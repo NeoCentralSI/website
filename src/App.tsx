@@ -242,7 +242,7 @@ function App() {
                     <Route path="/metopel/logbook" element={<MetopenOverviewPage />} />
                   </Route>
 
-                  <Route path="/tugas-akhir" element={<TugasAkhirGuard />}>
+                  <Route path="tugas-akhir" element={<TugasAkhirGuard />}>
                     <Route index element={<TugasAkhirOverviewPage />} />
                     {/* Removed bimbingan/ route to allow BimbinganEntry to handle role-based redirection */}
                     <Route path="bimbingan/student" element={<StudentGuidance />} />
@@ -250,7 +250,8 @@ function App() {
                     <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                     <Route path="bimbingan/student/history" element={<CompletedHistory />} />
                     <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
-                    <Route path="seminar-hasil/riwayat-kehadiran" element={<StudentThesisSeminarAttendancePage />} />
+                    <Route path="seminar-hasil" element={<ThesisSeminarEntry />} />
+                    <Route path="seminar-hasil/*" element={<ThesisSeminarEntry />} />
                     <Route path="seminar-hasil/student/history/:seminarId" element={<StudentSeminarDetailPage />} />
                     <Route path="sidang/student" element={<StudentThesisDefencePage />} />
                     <Route path="sidang/student/history/:defenceId" element={<StudentDefenceDetailPage />} />
@@ -266,7 +267,7 @@ function App() {
                 {/* Tugas Akhir Shared */}
                 <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
                 <Route element={<TugasAkhirGuard />}>
-                  <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntry />} />
+                  <Route path="/tugas-akhir/seminar-hasil/*" element={<ThesisSeminarEntry />} />
                   <Route path="/tugas-akhir/sidang" element={<SidangEntry />} />
                 </Route>
 

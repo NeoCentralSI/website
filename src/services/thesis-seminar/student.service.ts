@@ -4,32 +4,49 @@ import type { SeminarOverviewResponse, AttendanceHistoryResponse, SeminarHistory
 
 export const studentSeminarService = {
   getOverview: async (): Promise<SeminarOverviewResponse> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.OVERVIEW));
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ME_OVERVIEW));
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Gagal mengambil data overview seminar');
     }
     const result = await response.json();
-    return result.data;
+    return result;
   },
 
   getHistory: async (): Promise<SeminarHistoryItem[]> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.HISTORY));
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ME_HISTORY));
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Gagal mengambil riwayat seminar');
     }
     const result = await response.json();
-    return result.data;
+    return result;
   },
 
   getAttendanceHistory: async (): Promise<AttendanceHistoryResponse> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_STUDENT.ATTENDANCE));
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ME_ATTENDANCE));
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Gagal mengambil riwayat kehadiran');
     }
     const result = await response.json();
-    return result.data;
+    return result;
+  },
+
+  getAnnouncements: async (): Promise<any[]> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ANNOUNCEMENTS));
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Gagal mengambil pengumuman seminar');
+    }
+    const result = await response.json();
+    return result;
   },
 };
+
+// Also export these directly as they are used directly by the old hooks structure
+export const getStudentSeminarOverview = studentSeminarService.getOverview;
+export const getStudentSeminarHistory = studentSeminarService.getHistory;
+export const getStudentAttendanceHistory = studentSeminarService.getAttendanceHistory;
+export const getSeminarAnnouncements = studentSeminarService.getAnnouncements;
+
