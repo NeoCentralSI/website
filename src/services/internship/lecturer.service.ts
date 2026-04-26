@@ -195,3 +195,14 @@ export const downloadBeritaAcara = async (id: string): Promise<Blob> => {
     return res.blob();
 };
 
+export const getLecturerSupervisorLetter = async (academicYearId?: string): Promise<any> => {
+    const query = academicYearId ? `?academicYearId=${academicYearId}` : '';
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/supervisor-letter${query}`);
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat surat tugas" }));
+        throw new Error(errorData.message || "Gagal memuat surat tugas");
+    }
+    const json = await res.json();
+    return json.data;
+};

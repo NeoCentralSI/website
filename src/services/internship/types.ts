@@ -330,15 +330,18 @@ export interface InternshipTemplate {
 
 export interface InternshipPendingLetter {
     id: string;
-    type: 'APPLICATION' | 'ASSIGNMENT';
+    type: 'APPLICATION' | 'ASSIGNMENT' | 'LECTURER_ASSIGNMENT';
     documentNumber: string;
-    coordinatorName: string;
-    coordinatorNim: string;
-    coordinatorStudentId: string;
-    coordinatorStatus: string;
-    companyName: string;
-    members: { studentId: string; name: string; nim: string; status: string }[];
-    acceptedMemberCount: number;
+    coordinatorName?: string;
+    coordinatorNim?: string;
+    coordinatorStudentId?: string;
+    coordinatorStatus?: string;
+    lecturerName?: string;
+    lecturerNip?: string;
+    companyName?: string;
+    members?: { studentId: string; name: string; nim: string; status: string }[];
+    memberCount?: number;
+    acceptedMemberCount?: number;
     period: {
         start: string;
         end: string;
@@ -370,6 +373,8 @@ export interface StudentLogbookData {
         unitSection: string | null;
         actualStartDate: string | null;
         actualEndDate: string | null;
+        isLogbookLocked: boolean;
+        logbookLockedAt: string | null;
         activeAssessmentUrl?: string | null;
         student?: {
             user: {

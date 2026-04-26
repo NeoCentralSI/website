@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { cn } from "@/lib/utils";
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Upload, CheckCircle2, Clock, Info, AlertCircle, XCircle, Eye } from 'lucide-react';
-import { Loading } from '@/components/ui/spinner';
+import { Spinner } from '@/components/ui/spinner';
+import { Badge } from '@/components/ui/badge';
 
 interface ReportingTabProps {
     internship: any;
@@ -43,8 +45,10 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
             filePath
         });
     };
-    const getStatusIcon = (status: string | null | undefined, hasDoc: boolean) => {
+    const getStatusIcon = (status: string | null | undefined, hasDoc: boolean, type?: string) => {
         if (!hasDoc) {
+            if (type === 'KP-002') return <Clock className="h-5 w-5 text-slate-300" />;
+            if (type === 'CERTIFICATE') return <Clock className="h-5 w-5 text-slate-300" />;
             return <Clock className="h-5 w-5 text-orange-500" />;
         }
         
@@ -98,7 +102,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                 Status Pelaporan
                             </CardTitle>
                             <CardDescription>
-                                Pastikan semua dokumen wajib telah diunggah sebelum mendaftar seminar.
+                                Lengkapi dokumen pelaporan yang diperlukan sebelum mendaftar seminar.
                             </CardDescription>
                         </div>
                         {endDate && (
@@ -116,8 +120,11 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                         {/* Completion Certificate */}
                         <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase text-muted-foreground">Sertifikat Selesai KP</span>
-                                {getStatusIcon(internship?.completionCertificateStatus, !!internship?.completionCertificateDocId)}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold uppercase text-muted-foreground">Sertifikat Selesai KP</span>
+                                    <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-bold uppercase border-slate-200 text-slate-400">Opsional</Badge>
+                                </div>
+                                {getStatusIcon(internship?.completionCertificateStatus, !!internship?.completionCertificateDocId, 'CERTIFICATE')}
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-background rounded-lg border">
@@ -153,7 +160,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                         onClick={() => document.getElementById('upload-cert')?.click()}
                                         disabled={!!isUploading}
                                     >
-                                        {isUploading === 'CERTIFICATE' ? <Loading size="sm" /> : <Upload className="h-4 w-4" />}
+                                        {isUploading === 'CERTIFICATE' ? <Spinner className="text-current" /> : <Upload className="h-4 w-4" />}
                                         {internship?.completionCertificateDocId ? "Ganti File" : "Unggah File"}
                                     </Button>
                                 </div>
@@ -200,29 +207,37 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                         onClick={() => document.getElementById('upload-receipt')?.click()}
                                         disabled={!!isUploading}
                                     >
-                                        {isUploading === 'RECEIPT' ? <Loading size="sm" /> : <Upload className="h-4 w-4" />}
+                                        {isUploading === 'RECEIPT' ? <Spinner className="text-current" /> : <Upload className="h-4 w-4" />}
                                         {internship?.companyReceiptDocId ? "Ganti File" : "Unggah File"}
                                     </Button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Laporan Kegiatan */}
+                        {/* Laporan Kegiatan (KP-002) */}
                         <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Kegiatan (KP-002)</span>
-                                {getStatusIcon(internship?.logbookDocumentStatus, !!internship?.logbookDocumentId)}
+                                {getStatusIcon(internship?.logbookDocumentStatus, !!internship?.logbookDocumentId, 'KP-002')}
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-background rounded-lg border">
-                                    <FileText className="h-6 w-6 text-primary" />
+                                <div className={cn(
+                                    "p-2 rounded-lg border transition-colors",
+                                    internship?.logbookDocumentId ? "bg-primary/10 border-primary/20" : "bg-background border-slate-200"
+                                )}>
+                                    <FileText className={cn("h-6 w-6", internship?.logbookDocumentId ? "text-primary" : "text-slate-400")} />
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="text-sm font-medium truncate">
-                                        {internship?.logbookDocumentId ? "Sudah Diunggah" : "Belum Diunggah"}
+                                    <span className={cn(
+                                        "text-sm font-bold truncate",
+                                        internship?.logbookDocumentId ? "text-slate-900" : "text-slate-500"
+                                    )}>
+                                        {internship?.logbookDocumentId ? "Logbook Bersertifikat" : "Belum Tersedia"}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-muted-foreground">Logbook yang telah disahkan</span>
+                                        <span className="text-[10px] text-muted-foreground">
+                                            {internship?.logbookDocumentId ? "Dihasilkan secara otomatis" : "Otomatis saat TTD Pembimbing"}
+                                        </span>
                                         {internship?.logbookDocument?.fileName && (
                                             <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handlePreview(internship.logbookDocument.fileName, internship.logbookDocument.filePath)}>
                                                 <Eye className="h-3 w-3 text-primary" />
@@ -231,27 +246,25 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     </div>
                                 </div>
                             </div>
-                            {internship?.logbookDocumentStatus !== 'APPROVED' && (
-                                <div className="mt-auto pt-2">
-                                    <input 
-                                        type="file" 
-                                        id="upload-report-internal" 
-                                        className="hidden" 
-                                        accept=".pdf"
-                                        onChange={(e) => onFileChange(e, 'REPORT')}
-                                    />
+                            
+                            <div className="mt-auto pt-2">
+                                {internship?.logbookDocumentId ? (
                                     <Button 
                                         size="sm" 
-                                        variant="outline" 
-                                        className="w-full gap-2"
-                                        onClick={() => document.getElementById('upload-report-internal')?.click()}
-                                        disabled={!!isUploading}
+                                        className="w-full gap-2 font-bold"
+                                        onClick={() => handlePreview(internship.logbookDocument.fileName, internship.logbookDocument.filePath)}
                                     >
-                                        {isUploading === 'REPORT' ? <Loading size="sm" /> : <Upload className="h-4 w-4" />}
-                                        {internship?.logbookDocumentId ? "Ganti File" : "Unggah File"}
+                                        <Eye className="h-4 w-4" />
+                                        Lihat / Download
                                     </Button>
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="w-full p-3 rounded-lg bg-slate-100 border border-slate-200 text-center">
+                                        <p className="text-[10px] font-semibold text-slate-500">
+                                            Menunggu Penilaian & TTD Pembimbing Lapangan
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         {/* Laporan Akhir Instansi */}
                         <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
@@ -319,11 +332,16 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                         variant="outline" 
                                         className="w-full gap-2"
                                         onClick={() => document.getElementById('upload-company-report')?.click()}
-                                        disabled={!!isUploading}
+                                        disabled={!!isUploading || !internship?.isLogbookLocked}
                                     >
-                                        {isUploading === 'COMPANY_REPORT' ? <Loading size="sm" /> : <Upload className="h-4 w-4" />}
+                                        {isUploading === 'COMPANY_REPORT' ? <Spinner className="text-current" /> : <Upload className="h-4 w-4" />}
                                         {internship?.companyReportDocId ? "Ganti File" : "Unggah File"}
                                     </Button>
+                                    {!internship?.isLogbookLocked && (
+                                        <p className="text-[9px] text-amber-600 font-medium mt-1 leading-tight">
+                                            *Selesaikan logbook terlebih dahulu untuk mengunggah.
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </div>
