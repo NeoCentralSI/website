@@ -3,13 +3,13 @@ import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { Loading } from '@/components/ui/spinner';
-import { useStudentAttendanceHistory } from '@/hooks/seminar';
-import { AttendanceSummaryCard } from '@/components/seminar/AttendanceHistory';
-import { AttendanceHistoryTable } from '@/components/seminar/AttendanceHistoryTable';
+import { useStudentAttendanceHistory } from '@/hooks/thesis-seminar';
+import { AttendanceSummaryCard } from '@/components/thesis-seminar/student/AttendanceHistory';
+import { AttendanceHistoryTable } from '@/components/thesis-seminar/student/AttendanceHistoryTable';
 
 const TABS = [
-  { label: 'Seminar Hasil', to: '/tugas-akhir/seminar/student', end: true },
-  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar/student/attendance', end: false },
+  { label: 'Seminar Hasil', to: '/tugas-akhir/seminar-hasil', end: true },
+  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar-hasil/riwayat-kehadiran', end: false },
 ];
 
 export default function StudentSeminarAttendance() {
@@ -18,7 +18,7 @@ export default function StudentSeminarAttendance() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar/student' },
+      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
       { label: 'Riwayat Kehadiran' },
     ],
     []

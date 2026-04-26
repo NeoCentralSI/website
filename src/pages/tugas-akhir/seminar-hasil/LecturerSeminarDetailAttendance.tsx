@@ -8,7 +8,7 @@ import {
   useSeminarAudiences,
   useApproveAudience,
   useUnapproveAudience,
-} from '@/hooks/seminar/useLecturerSeminar';
+} from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { Users } from 'lucide-react';
 
 export default function LecturerSeminarDetailAttendance() {

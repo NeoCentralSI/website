@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useExaminerRequests } from '@/hooks/seminar/useLecturerSeminar';
+import { useExaminerRequests } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { CheckCircle2, XCircle, Eye } from 'lucide-react';
 import { toast } from 'sonner';
@@ -124,7 +124,7 @@ export function ExaminerRequestsTable() {
     {
       key: 'seminarStatus',
       header: 'Status Seminar',
-      render: (row) => <SeminarStatusBadge status={row.status} />,
+      render: (row) => <ThesisEventStatusBadge status={row.status} />,
     },
     {
       key: 'actions',

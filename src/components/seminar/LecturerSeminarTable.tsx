@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useLecturerSeminars } from '@/hooks/seminar/useLecturerSeminar';
+import { useLecturerSeminars } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
-import { Eye, CheckCircle2, XCircle } from 'lucide-react';
+import { Eye } from 'lucide-react';
+import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { toast } from 'sonner';
 import type { LecturerSeminarListItem } from '@/types/seminar.types';
 import { ExaminerResponseDialog } from './ExaminerResponseDialog';
@@ -87,39 +88,20 @@ export function LecturerSeminarTable({ onViewDetail }: LecturerSeminarTableProps
     {
       key: 'status',
       header: 'Status',
-      render: (row) => <SeminarStatusBadge status={row.status} />,
+      render: (row) => (
+        <ThesisEventStatusBadge 
+          status={row.status} 
+          scheduledDate={row.date} 
+          startTime={row.startTime} 
+        />
+      ),
     },
     {
       key: 'examinerStatus',
       header: 'Persetujuan',
-      render: (row) => {
-        if (!row.myExaminerStatus) return null;
-
-        if (row.myExaminerStatus === 'pending') {
-          return (
-            <Badge variant="warning" className="text-xs">
-              Menunggu Respons
-            </Badge>
-          );
-        }
-        if (row.myExaminerStatus === 'available') {
-          return (
-            <Badge variant="success" className="text-xs">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Disetujui
-            </Badge>
-          );
-        }
-        if (row.myExaminerStatus === 'unavailable') {
-          return (
-            <Badge variant="destructive" className="text-xs">
-              <XCircle className="h-3 w-3 mr-1" />
-              Ditolak
-            </Badge>
-          );
-        }
-        return null;
-      },
+      render: (row) => (
+        <ThesisExaminerAvailabilityStatusBadge status={row.myExaminerStatus || 'pending'} />
+      ),
     },
     {
       key: 'actions',

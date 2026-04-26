@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, useParams, Link } from 'react-router-dom';
-import { Plus, ArrowLeft, User, Calendar, MapPin, Users } from 'lucide-react';
+import { Plus, ArrowLeft, User, Calendar, MapPin, Users, Download, FileDown, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -20,59 +20,63 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import {
-  getSeminarResultsAPI,
-  getSeminarResultStudentOptionsAPI,
-  getSeminarResultAudienceLinksAPI,
-  assignSeminarResultAudiencesAPI,
-  removeSeminarResultAudienceLinkAPI,
   getSeminarResultDetailAPI,
-} from '@/services/thesis-seminar/admin-seminar.service';
-import type { SeminarResultAudienceLink, SeminarResultStudentOption, SeminarResult } from '@/services/thesis-seminar/admin-seminar.service';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+  getSeminarAudiencesAPI,
+  getStudentOptionsForAudienceAPI,
+  addSeminarAudienceAPI,
+  removeSeminarAudienceAPI,
+  importSeminarAudiencesAPI,
+  exportSeminarAudiencesAPI,
+  exportSeminarAudiencesPdfAPI,
+  exportSeminarAudienceTemplateAPI,
+} from '@/services/thesis-seminar/admin.service';
+import type { SeminarAudience, SeminarAudienceStudentOption, SeminarAudienceImportResult } from '@/services/thesis-seminar/admin.service';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 
 import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/admin/ThesisSeminarAudienceTable';
-import { ThesisSeminarAudienceAssignDialog } from '@/components/thesis-seminar/admin/ThesisSeminarAudienceAssignDialog';
+import { ThesisSeminarAudienceDialog } from '@/components/thesis-seminar/admin/ThesisSeminarAudienceDialog';
+import { ThesisSeminarAudienceImportDialog } from '@/components/thesis-seminar/admin/ThesisSeminarAudienceImportDialog';
 
-type AudienceLinksResponse = Awaited<ReturnType<typeof getSeminarResultAudienceLinksAPI>>;
-type AssignAudienceResponse = Awaited<ReturnType<typeof assignSeminarResultAudiencesAPI>>;
-
-export default function ThesisSeminarDetailPage() {
+export default function ThesisSeminarArchiveDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const queryClient = useQueryClient();
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState('');
-
-  useEffect(() => setPage(1), [search]);
-
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [deleteLink, setDeleteLink] = useState<{ seminarId: string; studentId: string } | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   // Queries
   const { data: seminarDetail, refetch: refetchDetail } = useQuery({
     queryKey: ['seminar-result-detail', id],
-    queryFn: () => getSeminarResultDetailAPI(id!).then(res => res.data),
+    queryFn: () => getSeminarResultDetailAPI(id!).then((res) => res.data),
     enabled: !!id,
   });
 
-  const { data: audienceData, isLoading, isFetching, refetch: refetchAudiences } = useQuery({
-    queryKey: ['seminar-result-audience-links', { page, pageSize, search }],
-    queryFn: () => getSeminarResultAudienceLinksAPI({ page, pageSize, search }),
-    placeholderData: (previousData: AudienceLinksResponse | undefined) => previousData,
+  const {
+    data: audienceData,
+    isLoading: isAudienceLoading,
+    isFetching: isAudienceFetching,
+    refetch: refetchAudiences,
+  } = useQuery({
+    queryKey: ['seminar-audiences', id],
+    queryFn: () => getSeminarAudiencesAPI(id!),
+    enabled: !!id,
   });
 
-  const { data: studentOptionsData } = useQuery({
-    queryKey: ['seminar-result-student-options'],
-    queryFn: getSeminarResultStudentOptionsAPI,
-  });
-
-  const { data: seminarSelectData } = useQuery({
-    queryKey: ['seminar-results-select-options'],
-    queryFn: () => getSeminarResultsAPI({ page: 1, pageSize: 500, search: '' }),
+  const { data: studentOptionsData, refetch: refetchStudentOptions } = useQuery({
+    queryKey: ['seminar-audience-student-options', id],
+    queryFn: () => getStudentOptionsForAudienceAPI(id!),
+    enabled: !!id && (seminarDetail?.isEditable ?? false),
   });
 
   useEffect(() => {
@@ -91,49 +95,77 @@ export default function ThesisSeminarDetailPage() {
         { label: 'Tugas Akhir' },
         { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
         { label: 'Arsip', href: '/tugas-akhir/seminar-hasil/arsip' },
-        { label: `${seminarDetail.student.fullName}` },
+        { label: seminarDetail.student.fullName },
       ]);
     }
   }, [seminarDetail, setBreadcrumbs]);
 
   // Mutations
-  const assignMut = useMutation({
-    mutationFn: (payload: { studentId: string; seminarIds: string[] }) =>
-      assignSeminarResultAudiencesAPI(payload),
-    onSuccess: (res: AssignAudienceResponse) => {
-      const detail = res.data;
-      const summaries = [
-        `Berhasil ditautkan: ${detail.created}`,
-        `Skip duplikat: ${detail.skippedDuplicate}`,
-        `Skip seminar milik sendiri: ${detail.skippedOwnSeminarIds.length}`,
-      ];
-      toast.success(summaries.join(' | '));
-      setIsAssignOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['seminar-result-audience-links'] });
+  const addMut = useMutation({
+    mutationFn: (studentId: string) => addSeminarAudienceAPI(id!, studentId),
+    onSuccess: () => {
+      toast.success('Audience berhasil ditambahkan');
+      setIsAddOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['seminar-audiences', id] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-audience-student-options', id] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-result-detail', id] });
     },
     onError: (error: unknown) => {
-      toast.error((error as Error).message || 'Gagal mengaitkan audience seminar');
+      toast.error((error as Error).message || 'Gagal menambahkan audience');
     },
   });
 
   const removeMut = useMutation({
-    mutationFn: ({ seminarId, studentId }: { seminarId: string; studentId: string }) =>
-      removeSeminarResultAudienceLinkAPI(seminarId, studentId),
+    mutationFn: (studentId: string) => removeSeminarAudienceAPI(id!, studentId),
     onSuccess: () => {
-      toast.success('Relasi audience seminar berhasil dihapus');
-      queryClient.invalidateQueries({ queryKey: ['seminar-result-audience-links'] });
-      setDeleteLink(null);
+      toast.success('Audience berhasil dihapus');
+      setDeleteStudentId(null);
+      queryClient.invalidateQueries({ queryKey: ['seminar-audiences', id] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-audience-student-options', id] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-result-detail', id] });
     },
     onError: (error: unknown) => {
-      toast.error((error as Error).message || 'Gagal menghapus relasi audience');
+      toast.error((error as Error).message || 'Gagal menghapus audience');
     },
   });
 
+  const exportMut = useMutation({
+    mutationFn: () => exportSeminarAudiencesAPI(id!),
+    onError: (error: unknown) => toast.error((error as Error).message || 'Gagal mengekspor data'),
+  });
+
+  const exportPdfMut = useMutation({
+    mutationFn: () => exportSeminarAudiencesPdfAPI(id!),
+    onError: (error: unknown) => toast.error((error as Error).message || 'Gagal mengekspor PDF'),
+  });
+
+  const exportTemplateMut = useMutation({
+    mutationFn: () => exportSeminarAudienceTemplateAPI(id!),
+    onError: (error: unknown) => toast.error((error as Error).message || 'Gagal mengunduh template'),
+  });
+
+  const handleImport = async (file: File): Promise<SeminarAudienceImportResult> => {
+    const result = await importSeminarAudiencesAPI(id!, file);
+    if (result.successCount > 0) {
+      queryClient.invalidateQueries({ queryKey: ['seminar-audiences', id] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-audience-student-options', id] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-result-detail', id] });
+    }
+    toast.success(`Import selesai: ${result.successCount} sukses, ${result.failed} gagal`);
+    return result;
+  };
+
   // Derived data
-  const audienceRows: SeminarResultAudienceLink[] = audienceData?.links || [];
-  const audienceTotal = audienceData?.meta?.total || 0;
-  const studentOptions: SeminarResultStudentOption[] = studentOptionsData?.data || [];
-  const seminarOptions: SeminarResult[] = seminarSelectData?.seminars || [];
+  const isEditable = seminarDetail?.isEditable ?? false;
+  const rawAudienceRows: SeminarAudience[] = audienceData?.data || [];
+  const studentOptions: SeminarAudienceStudentOption[] = studentOptionsData?.data || [];
+
+  const audienceRows = search
+    ? rawAudienceRows.filter((r) =>
+      r.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      r.nim.toLowerCase().includes(search.toLowerCase())
+    )
+    : rawAudienceRows;
 
   return (
     <div className="p-6 space-y-6">
@@ -178,7 +210,7 @@ export default function ThesisSeminarDetailPage() {
                   <Calendar className="h-5 w-5 text-slate-950" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Waktu & Tempat</p>
+                  <p className="text-sm text-muted-foreground">Waktu &amp; Tempat</p>
                   <p className="text-xl font-bold">
                     {seminarDetail.date ? format(new Date(seminarDetail.date), 'd MMM yyyy', { locale: idLocale }) : '-'}
                   </p>
@@ -196,13 +228,16 @@ export default function ThesisSeminarDetailPage() {
                   <Users className="h-5 w-5 text-slate-950" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Status & Audience</p>
+                  <p className="text-sm text-muted-foreground">Status &amp; Audience</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <SeminarStatusBadge status={seminarDetail.status as any} />
+                    <ThesisEventStatusBadge status={seminarDetail.status as any} />
                     <Badge variant="outline" className="h-6">
                       {seminarDetail.audienceCount} Audience
                     </Badge>
                   </div>
+                  {!isEditable && (
+                    <p className="text-xs text-amber-600 mt-1">Tidak bisa mengelola audience karena seminar hasil ini bukan data dari pengarsipan manual</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -210,58 +245,90 @@ export default function ThesisSeminarDetailPage() {
         </div>
       )}
 
+      {/* Audience Table */}
       <div className="space-y-4">
         <ThesisSeminarAudienceTable
           data={audienceRows}
-          loading={isLoading}
-          isRefreshing={isFetching && !isLoading}
-          page={page}
-          pageSize={pageSize}
-          total={audienceTotal}
+          loading={isAudienceLoading}
+          isRefreshing={isAudienceFetching && !isAudienceLoading}
+          isEditable={isEditable}
+          onDelete={setDeleteStudentId}
           searchValue={search}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
           onSearchChange={setSearch}
-          onDelete={setDeleteLink}
           actions={
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setIsAssignOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" /> Kaitkan Audience
-              </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {isEditable && (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
+                    <Upload className="w-4 h-4 mr-2" /> Import
+                  </Button>
+                </>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={exportMut.isPending || exportPdfMut.isPending}>
+                    <Download className="w-4 h-4 mr-2" /> Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportMut.mutate()}>
+                    <FileDown className="w-4 h-4 mr-2" /> Export Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportPdfMut.mutate()}>
+                    <FileDown className="w-4 h-4 mr-2" /> Export PDF/Presentasi (.html)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {isEditable && (
+                <>
+                  <Button size="sm" onClick={() => setIsAddOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Data
+                  </Button>
+                </>
+              )}
               <RefreshButton
                 onClick={() => {
                   refetchDetail();
                   refetchAudiences();
+                  refetchStudentOptions();
                 }}
-                isRefreshing={isFetching && !isLoading}
+                isRefreshing={isAudienceFetching && !isAudienceLoading}
               />
             </div>
           }
         />
 
-        <ThesisSeminarAudienceAssignDialog
-          open={isAssignOpen}
-          onOpenChange={setIsAssignOpen}
+        {/* Dialogs */}
+        <ThesisSeminarAudienceDialog
+          open={isAddOpen}
+          onOpenChange={setIsAddOpen}
           studentOptions={studentOptions}
-          seminarOptions={seminarOptions}
-          isPending={assignMut.isPending}
-          onSubmit={(payload) => assignMut.mutate(payload)}
+          isPending={addMut.isPending}
+          onSubmit={(studentId) => addMut.mutate(studentId)}
         />
 
-        <AlertDialog open={Boolean(deleteLink)} onOpenChange={(open) => !open && setDeleteLink(null)}>
+        <ThesisSeminarAudienceImportDialog
+          open={isImportOpen}
+          onOpenChange={setIsImportOpen}
+          onImport={handleImport}
+          onDownloadTemplate={() => exportTemplateMut.mutate()}
+          isImporting={false}
+        />
+
+        <AlertDialog open={Boolean(deleteStudentId)} onOpenChange={(open) => !open && setDeleteStudentId(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Hapus Relasi Audience</AlertDialogTitle>
+              <AlertDialogTitle>Hapus Audience Seminar</AlertDialogTitle>
               <AlertDialogDescription>
-                Relasi mahasiswa dengan seminar hasil akan dihapus.
+                Mahasiswa ini akan dihapus dari daftar audience seminar. Lanjutkan?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={removeMut.isPending}>Batal</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-red-600 hover:bg-red-700"
-                disabled={removeMut.isPending || !deleteLink}
-                onClick={() => deleteLink && removeMut.mutate(deleteLink)}
+                disabled={removeMut.isPending || !deleteStudentId}
+                onClick={() => deleteStudentId && removeMut.mutate(deleteStudentId)}
               >
                 Hapus
               </AlertDialogAction>

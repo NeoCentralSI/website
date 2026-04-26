@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Loading, Spinner } from '@/components/ui/spinner';
-import { useSeminarAnnouncements, useRegisterToSeminar, useCancelSeminarRegistration } from '@/hooks/seminar';
+import { useSeminarAnnouncements, useRegisterToSeminar, useCancelSeminarRegistration } from '@/hooks/thesis-seminar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -303,8 +303,8 @@ export default function SeminarHasilAnnouncement() {
         statusFilter === 'all'
           ? true
           : statusFilter === 'upcoming'
-          ? !s.isPast
-          : s.isPast;
+            ? !s.isPast
+            : s.isPast;
       return matchSearch && matchFilter;
     });
   }, [seminars, search, statusFilter]);

@@ -4,7 +4,7 @@ import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAdminDefenceList } from '@/hooks/defence';
-import { DefenceStatusBadge, getDefenceStatusFilterOptions } from '@/components/sidang/DefenceStatusBadge';
+import { ThesisEventStatusBadge, getThesisEventStatusFilterOptions as getDefenceStatusFilterOptions } from '@/components/shared/ThesisEventStatusBadge';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { ClipboardCheck, Eye } from 'lucide-react';
 import { toast } from 'sonner';
@@ -98,7 +98,13 @@ export function AdminDefenceTable({ onValidate }: AdminDefenceTableProps) {
         },
         options: getDefenceStatusFilterOptions(),
       },
-      render: (row) => <DefenceStatusBadge status={row.status} />,
+      render: (row) => (
+        <ThesisEventStatusBadge 
+          status={row.status} 
+          scheduledDate={row.date} 
+          startTime={row.startTime} 
+        />
+      ),
     },
     {
       key: 'actions',

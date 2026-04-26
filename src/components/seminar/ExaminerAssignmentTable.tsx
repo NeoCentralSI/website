@@ -2,9 +2,10 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
+import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useAssignmentSeminars } from '@/hooks/seminar/useLecturerSeminar';
+import { useAssignmentSeminars } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { UserPlus, Pencil, CheckCircle2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
@@ -144,12 +145,7 @@ export function ExaminerAssignmentTable() {
               <div key={e.id} className="text-xs flex items-center gap-1">
                 <span className="text-muted-foreground">Penguji {e.order}:</span>{' '}
                 <span>{toTitleCaseName(e.lecturerName)}</span>
-                {e.availabilityStatus === 'available' && (
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
-                )}
-                {e.availabilityStatus === 'unavailable' && (
-                  <Badge variant="destructive" className="text-[10px] px-1 py-0">Ditolak</Badge>
-                )}
+                <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
               </div>
             ))}
           </div>

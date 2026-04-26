@@ -3,11 +3,11 @@ import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { SeminarStatusBadge } from '@/components/seminar/SeminarStatusBadge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
-import { useLecturerSeminarDetail } from '@/hooks/seminar/useLecturerSeminar';
+import { useLecturerSeminarDetail } from '@/hooks/thesis-seminar/useLecturerSeminar';
 import { toTitleCaseName } from '@/lib/text';
 import type { LecturerSeminarDetailResponse } from '@/types/seminar.types';
 
@@ -88,7 +88,7 @@ export function LecturerSeminarDetailLayout({ children }: LecturerSeminarDetailL
             <h1 className="text-2xl font-bold">{toTitleCaseName(detail.student.name)}</h1>
             <p className="text-gray-500">{detail.student.nim}</p>
           </div>
-          <SeminarStatusBadge status={detail.status} />
+          <ThesisEventStatusBadge status={detail.status} />
         </div>
       </div>
 

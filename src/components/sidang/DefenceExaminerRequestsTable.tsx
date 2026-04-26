@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
-import { DefenceStatusBadge } from '@/components/sidang/DefenceStatusBadge';
-import { Badge } from '@/components/ui/badge';
+import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useDefenceExaminerRequests } from '@/hooks/defence';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
-import { CheckCircle2, XCircle, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
+import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { toast } from 'sonner';
 import type { ExaminerDefenceRequestItem } from '@/types/defence.types';
 import { DefenceExaminerResponseDialog } from './DefenceExaminerResponseDialog';
@@ -85,37 +85,14 @@ export function DefenceExaminerRequestsTable() {
     {
       key: 'examinerStatus',
       header: 'Status Persetujuan',
-      render: (row) => {
-        if (row.myExaminerStatus === 'pending') {
-          return (
-            <Badge variant="warning" className="text-xs">
-              Menunggu Respons
-            </Badge>
-          );
-        }
-        if (row.myExaminerStatus === 'available') {
-          return (
-            <Badge variant="success" className="text-xs">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Disetujui
-            </Badge>
-          );
-        }
-        if (row.myExaminerStatus === 'unavailable') {
-          return (
-            <Badge variant="destructive" className="text-xs">
-              <XCircle className="h-3 w-3 mr-1" />
-              Ditolak
-            </Badge>
-          );
-        }
-        return null;
-      },
+      render: (row) => (
+        <ThesisExaminerAvailabilityStatusBadge status={row.myExaminerStatus || 'pending'} />
+      ),
     },
     {
       key: 'defenceStatus',
       header: 'Status Sidang',
-      render: (row) => <DefenceStatusBadge status={row.status} />,
+      render: (row) => <ThesisEventStatusBadge status={row.status} />,
     },
     {
       key: 'actions',

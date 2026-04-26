@@ -47,7 +47,7 @@ import {
   useSubmitRevision,
   useCancelRevisionSubmission,
   useDeleteRevision,
-} from '@/hooks/seminar';
+} from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 import type {
   StudentSeminarDetailResponse,
