@@ -265,8 +265,10 @@ function App() {
                 {/* Shared Routes (Student & Lecturer & Others) */}
                 {/* Tugas Akhir Shared */}
                 <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
-                <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntry />} />
-                <Route path="/tugas-akhir/sidang" element={<SidangEntry />} />
+                <Route element={<TugasAkhirGuard />}>
+                  <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntry />} />
+                  <Route path="/tugas-akhir/sidang" element={<SidangEntry />} />
+                </Route>
 
                 {/* Kerja Praktik Shared */}
                 <Route path="/kerja-praktik/monitoring" element={<Placeholder title="Kerja Praktek - Monitoring" />} />

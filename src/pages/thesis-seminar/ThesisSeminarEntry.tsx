@@ -3,7 +3,7 @@ import { useRole } from '@/hooks/shared/useRole'
 import { Loading } from '@/components/ui/spinner'
 
 const StudentThesisSeminarPage = lazy(() => import('./StudentThesisSeminar'))
-const LecturerThesisSeminarPage = lazy(() => import('../tugas-akhir/seminar-hasil/LecturerThesisSeminar'))
+const LecturerThesisSeminarPage = lazy(() => import('./LecturerThesisSeminar'))
 const AdminThesisSeminarPage = lazy(() => import('./AdminThesisSeminar'))
 
 export default function SeminarHasilEntry() {
