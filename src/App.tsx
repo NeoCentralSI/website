@@ -19,7 +19,6 @@ import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import NotFoundPage from './pages/NotFound'
 import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification'
-import FieldAssessmentPage from './pages/kerja-praktik/public/FieldAssessmentPage'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
@@ -58,13 +57,13 @@ const LecturerSeminarDetailRevisionPage = lazy(() => import('./pages/tugas-akhir
 const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'))
 const ThesisSeminarArchiveDetailPage = lazy(() => import('./pages/thesis-seminar/ThesisSeminarArchiveDetail'))
 // Kerja Praktik - Dosen
-const InternshipGuidanceOverviewPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceOverview'))
-const StudentDetailPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/StudentDetail'))
-const StudentGuidanceTimelinePage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/StudentGuidanceTimeline'))
-const GuidanceEvaluatePage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceEvaluate'))
-const LecturerFinalReportTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerFinalReportTab'))
-const LecturerSeminarTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerSeminarTab'))
-const LecturerNilaiTab = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/LecturerNilaiTab'))
+const InternshipGuidanceOverviewPage = lazy(() => import('./pages/kerja-praktik/dosen/GuidanceOverview'))
+const StudentDetailPage = lazy(() => import('./pages/kerja-praktik/dosen/StudentDetail'))
+const StudentGuidanceTimelinePage = lazy(() => import('./pages/kerja-praktik/dosen/StudentGuidanceTimeline'))
+const GuidanceEvaluatePage = lazy(() => import('./pages/kerja-praktik/dosen/GuidanceEvaluate'))
+const LecturerFinalReportTab = lazy(() => import('./pages/kerja-praktik/dosen/LecturerFinalReportTab'))
+const LecturerSeminarTab = lazy(() => import('./pages/kerja-praktik/dosen/LecturerSeminarTab'))
+const LecturerNilaiTab = lazy(() => import('./pages/kerja-praktik/dosen/LecturerNilaiTab'))
 // Tugas Akhir - Sidang
 const SidangEntry = lazy(() => import('./pages/tugas-akhir/sidang/SidangEntry'))
 const StudentThesisDefencePage = lazy(() => import('./pages/tugas-akhir/sidang/StudentThesisDefence'))
@@ -150,6 +149,13 @@ const SeminarHasilAnnouncementPage = lazy(() => import('./pages/pengumuman/Semin
 const YudisiumAnnouncementPage = lazy(() => import('./pages/pengumuman/YudisiumAnnouncement'))
 const PengumumanOverviewPage = lazy(() => import('./pages/pengumuman/Overview'))
 
+// Field Assessment Portal
+const FieldAssessmentPortal = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentPortal'))
+const FieldAssessmentLogin = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentLogin'))
+const FieldAssessmentLayout = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentLayout'))
+const FieldAssessmentLogbook = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentLogbook'))
+const FieldAssessmentForm = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentForm'))
+
 function App() {
   const [showServerError, setShowServerError] = useState(false);
 
@@ -197,9 +203,16 @@ function App() {
               <Route path="/auth/activate/email-sent" element={<ActivationEmailSent />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/internship-letter/:id" element={<InternshipLetterVerification />} />
+              <Route path="/verify/lecturer-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/seminar-minutes/:id" element={<InternshipLetterVerification />} />
 
-              <Route path="/field-assessment/:token" element={<FieldAssessmentPage />} />
+              <Route path="/field-assessment/:token" element={<FieldAssessmentPortal />}>
+                <Route index element={<FieldAssessmentLogin />} />
+                <Route element={<FieldAssessmentLayout />}>
+                  <Route path="logbook" element={<FieldAssessmentLogbook />} />
+                  <Route path="nilai" element={<FieldAssessmentForm />} />
+                </Route>
+              </Route>
 
               <Route element={<ProtectedLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -429,6 +442,9 @@ function App() {
                   <Route path="/kelola/tugas-akhir/kadep/acc-rubrik" element={<KelolaTugasAkhirKadepPage />} />
                   <Route path="/kelola/tugas-akhir/kadep/master-data" element={<KelolaTugasAkhirKadepPage />} />
                   <Route path="/kelola/kerja-praktik/kadep/persetujuan" element={<KadepInternshipManagementPage />} />
+                  <Route path="/kelola/kerja-praktik/kadep/persetujuan/permohonan" element={<KadepInternshipManagementPage />} />
+                  <Route path="/kelola/kerja-praktik/kadep/persetujuan/penugasan" element={<KadepInternshipManagementPage />} />
+                  <Route path="/kelola/kerja-praktik/kadep/persetujuan/dosen" element={<KadepInternshipManagementPage />} />
                   <Route path="/kelola/kerja-praktik/kadep/sign/:type/:id" element={<SignLetterPage />} />
                   <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
                   <Route path="/kelola/metopen/dss" element={<DSSKadep />} />

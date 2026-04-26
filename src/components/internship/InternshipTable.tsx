@@ -46,6 +46,7 @@ export type Column<T> = {
     render?: (row: T, index: number) => React.ReactNode;
     filter?: ColumnFilterElement | ColumnFilterControl;
     sortable?: boolean;
+    rowSpan?: (row: T, index: number) => number;
 };
 
 export type InternshipTableProps<T> = {
@@ -417,7 +418,19 @@ export function InternshipTable<T extends Record<string, any>>({
                                                             : col.accessor
                                                                 ? (row[col.accessor as keyof T] as any)
                                                                 : null;
-                                                    return <TableCell key={col.key} className={col.className}>{content}</TableCell>;
+                                                    
+                                                    const rs = col.rowSpan ? col.rowSpan(row, idx) : 1;
+                                                    if (rs === 0) return null;
+
+                                                    return (
+                                                        <TableCell 
+                                                            key={col.key} 
+                                                            className={col.className}
+                                                            rowSpan={rs > 1 ? rs : undefined}
+                                                        >
+                                                            {content}
+                                                        </TableCell>
+                                                    );
                                                 })}
                                             </TableRow>
                                             {expanded && expandedRowRender && (

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
-import { getStudentLogbooks, type InternshipLogbookItem, updateInternshipDetails, downloadLogbookPdf, downloadLogbookDocx } from '@/services/internship';
+import { getStudentLogbooks, type InternshipLogbookItem, updateInternshipDetails, downloadLogbookPdf, finishLogbook } from '@/services/internship';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
@@ -11,7 +11,7 @@ import EmptyState from '@/components/ui/empty-state';
 import { Loading } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import EditLogbookDialog from '@/components/internship/student/EditLogbookDialog';
-import { Edit, FileText, Loader2, Printer, User, AlertCircle } from 'lucide-react';
+import { Edit, Loader2, User, ShieldCheck, Lock, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -39,6 +39,7 @@ export default function LogbookPage() {
     const [fieldSupervisor, setFieldSupervisor] = useState("");
     const [fieldSupervisorEmail, setFieldSupervisorEmail] = useState("");
     const [unitSection, setUnitSection] = useState("");
+    const [finishOpen, setFinishOpen] = useState(false);
 
     const updateDetailsMutation = useMutation({
         mutationFn: (body: { fieldSupervisorName: string; fieldSupervisorEmail: string; unitSection: string }) => updateInternshipDetails(body),
@@ -49,6 +50,18 @@ export default function LogbookPage() {
         },
         onError: (error: Error) => {
             toast.error(error.message || "Gagal memperbarui informasi");
+        }
+    });
+
+    const finishLogbookMutation = useMutation({
+        mutationFn: () => finishLogbook(),
+        onSuccess: () => {
+            toast.success("Logbook berhasil diselesaikan dan dikunci.");
+            qc.invalidateQueries({ queryKey: ['student-logbooks'] });
+            setFinishOpen(false);
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Gagal menyelesaikan logbook");
         }
     });
 
@@ -89,25 +102,6 @@ export default function LogbookPage() {
         }
     };
 
-    const handleDownloadDocx = async () => {
-        try {
-            setIsDownloading(true);
-            const blob = await downloadLogbookDocx();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Logbook_${data?.data?.internship?.student?.user?.fullName || 'Mahasiswa'}.docx`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            toast.success("Logbook DOCX berhasil diunduh");
-        } catch (error: any) {
-            toast.error(error.message || "Gagal mengunduh logbook DOCX");
-        } finally {
-            setIsDownloading(false);
-        }
-    };
 
     const breadcrumb = useMemo(() => [
         { label: 'Kerja Praktik', to: '/kerja-praktik' },
@@ -124,7 +118,8 @@ export default function LogbookPage() {
         setEditOpen(true);
     };
 
-    const columns = useMemo(() => getLogbookColumns({ onEdit: handleEdit }), []);
+    const isLocked = data?.data?.internship?.fieldAssessmentStatus === 'COMPLETED' || data?.data?.internship?.isLogbookLocked;
+    const columns = useMemo(() => getLogbookColumns({ onEdit: handleEdit, isLocked }), [handleEdit, isLocked]);
 
     const tabs = [
         { label: 'Logbook', to: '/kerja-praktik/kegiatan/logbook', end: true },
@@ -148,7 +143,7 @@ export default function LogbookPage() {
                     <div className="flex items-center justify-between">
                         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Informasi Kerja Praktik</h2>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="h-8 gap-2 text-primary" onClick={handleEditDetails}>
+                            <Button variant="outline" size="sm" className="h-8 gap-2 text-primary" onClick={handleEditDetails} disabled={isLocked}>
                                 <Edit className="h-4 w-4" />
                                 Edit Info
                             </Button>
@@ -202,23 +197,32 @@ export default function LogbookPage() {
                         onPageChange={() => { }}
                         actions={
                             <div className="flex items-center gap-2">
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={handleDownloadDocx}
-                                    disabled={isDownloading || logbooks.length === 0}
-                                >
-                                    {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                                    Cetak DOCX
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    onClick={handleDownloadPdf}
-                                    disabled={isDownloading || logbooks.length === 0}
-                                >
-                                    {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-                                    Cetak PDF
-                                </Button>
+                                {data?.data?.internship?.fieldAssessmentStatus === 'COMPLETED' ? (
+                                    <Button
+                                        size="sm"
+                                        onClick={handleDownloadPdf}
+                                        disabled={isDownloading}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9"
+                                    >
+                                        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                                        Cetak PDF (Tersertifikasi)
+                                    </Button>
+                                ) : data?.data?.internship?.isLogbookLocked ? (
+                                    <div className="flex items-center px-4 h-9 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        <ShieldCheck className="h-3 w-3 mr-2 opacity-50" />
+                                        PDF Tersedia Setelah Disahkan
+                                    </div>
+                                ) : (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-9 gap-2 text-amber-600 border-amber-200 hover:bg-amber-50 rounded-xl px-4"
+                                        onClick={() => setFinishOpen(true)}
+                                    >
+                                        <Lock className="h-4 w-4" />
+                                        Selesaikan Logbook
+                                    </Button>
+                                )}
                                 <RefreshButton
                                     onClick={() => refetch()}
                                     isRefreshing={isFetching && !isLoading}
@@ -286,6 +290,45 @@ export default function LogbookPage() {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-amber-600">
+                            <Lock className="h-5 w-5" />
+                            Selesaikan Logbook?
+                        </DialogTitle>
+                        <DialogDescription className="pt-2 text-slate-600 font-medium">
+                            Setelah diselesaikan, logbook akan <span className="text-red-600 font-bold underline">dikunci secara permanen</span>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-xs text-amber-800 space-y-2">
+                        <p className="font-bold uppercase flex items-center gap-2">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Penting:
+                        </p>
+                        <ul className="list-disc pl-4 space-y-1">
+                            <li>Anda tidak akan bisa lagi menambah, mengubah, atau menghapus kegiatan harian.</li>
+                            <li>Status logbook akan berubah menjadi <strong>Selesai</strong>.</li>
+                            <li>Langkah ini wajib dilakukan sebelum Anda mengunggah <strong>Laporan Instansi</strong>.</li>
+                        </ul>
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setFinishOpen(false)}>Batal</Button>
+                        <Button 
+                            type="button" 
+                            variant="destructive" 
+                            size="sm" 
+                            className="bg-amber-600 hover:bg-amber-700 gap-2"
+                            onClick={() => finishLogbookMutation.mutate()}
+                            disabled={finishLogbookMutation.isPending}
+                        >
+                            {finishLogbookMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                            Ya, Selesaikan & Kunci
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

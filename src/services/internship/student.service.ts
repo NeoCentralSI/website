@@ -43,7 +43,7 @@ export const getEligibleStudents = async (): Promise<{ success: boolean; data: S
 };
 
 export const getWorkingDaysCount = async (startDate: string, endDate: string): Promise<{ success: boolean; data: number }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.REGISTRATION + "/working-days") + `?startDate=${startDate}&endDate=${endDate}`);
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.BASE + "/working-days") + `?startDate=${startDate}&endDate=${endDate}`);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal menghitung hari kerja" }));
         throw new Error(errorData.message || "Gagal menghitung hari kerja");
@@ -137,6 +137,17 @@ export const getStudentLogbooks = async (): Promise<{ success: boolean; data: St
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat logbook" }));
         throw new Error(errorData.message || "Gagal memuat logbook");
+    }
+    return res.json();
+};
+
+export const finishLogbook = async (): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.LOGBOOK) + "/finish", {
+        method: "POST"
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyelesaikan logbook" }));
+        throw new Error(errorData.message || "Gagal menyelesaikan logbook");
     }
     return res.json();
 };

@@ -1,34 +1,44 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
+import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Loading } from '@/components/ui/spinner';
 import CustomTable from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { Signature } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { useQuery } from '@tanstack/react-query';
 import { getKadepPendingLetters } from '@/services/internship';
 import { getKadepInternshipLetterColumns } from '@/lib/internship';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
 
+const TAB_ITEMS: TabItem[] = [
+    { label: "Permohonan", to: "/kelola/kerja-praktik/kadep/persetujuan/permohonan" },
+    { label: "Penugasan", to: "/kelola/kerja-praktik/kadep/persetujuan/penugasan" },
+    { label: "Penugasan Dosen", to: "/kelola/kerja-praktik/kadep/persetujuan/dosen" },
+];
+
 export default function KadepInternshipManagementPage() {
     const navigate = useNavigate();
+    const { pathname, search } = useLocation();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
     const [docOpen, setDocOpen] = useState(false);
     const [docInfo, setDocInfo] = useState<{ fileName: string; filePath: string } | null>(null);
 
-    const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = searchParams.get('tab') || 'application';
+    const searchParams = new URLSearchParams(search);
     const academicYearId = searchParams.get('academicYearId') || '';
     const searchQuery = searchParams.get('q') || '';
 
     const { academicYears } = useAcademicYears({ pageSize: 50 });
 
+    const activeTab = useMemo(() => 
+        TAB_ITEMS.find((tab) => pathname.startsWith(tab.to)) || TAB_ITEMS[0]
+    , [pathname]);
+
     const updateParams = (updates: Record<string, string | undefined>) => {
-        const newParams = new URLSearchParams(searchParams);
+        const newParams = new URLSearchParams(search);
         Object.entries(updates).forEach(([key, value]) => {
             if (value === undefined || value === '' || (value === 'all' && key === 'academicYearId')) {
                 newParams.delete(key);
@@ -36,7 +46,7 @@ export default function KadepInternshipManagementPage() {
                 newParams.set(key, value);
             }
         });
-        setSearchParams(newParams);
+        navigate({ pathname, search: newParams.toString() }, { replace: true });
     };
 
     useEffect(() => {
@@ -60,7 +70,11 @@ export default function KadepInternshipManagementPage() {
         setDocOpen(true);
     };
 
-    const breadcrumb = useMemo(() => [{ label: 'Kerja Praktik' }, { label: 'Kelola' }], []);
+    const breadcrumb = useMemo(() => [
+        { label: 'Kerja Praktik' }, 
+        { label: 'Kelola' },
+        { label: 'Persetujuan Surat' }
+    ], []);
 
     useEffect(() => {
         setBreadcrumbs(breadcrumb);
@@ -81,9 +95,9 @@ export default function KadepInternshipManagementPage() {
     const filteredApplicationLetters = useMemo(() => {
         const letters = data?.applicationLetters || [];
         const filtered = letters.filter(l =>
-            l.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            l.coordinatorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            l.coordinatorNim.includes(searchQuery) ||
+            l.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.coordinatorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.coordinatorNim?.includes(searchQuery) ||
             l.documentNumber?.toLowerCase().includes(searchQuery.toLowerCase())
         );
         return [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -92,25 +106,121 @@ export default function KadepInternshipManagementPage() {
     const filteredAssignmentLetters = useMemo(() => {
         const letters = data?.assignmentLetters || [];
         const filtered = letters.filter(l =>
-            l.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            l.coordinatorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            l.coordinatorNim.includes(searchQuery) ||
+            l.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.coordinatorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.coordinatorNim?.includes(searchQuery) ||
             l.documentNumber?.toLowerCase().includes(searchQuery.toLowerCase())
         );
         return [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [data?.assignmentLetters, searchQuery]);
 
+    const filteredSupervisorLetters = useMemo(() => {
+        const letters = data?.supervisorLetters || [];
+        const filtered = letters.filter(l =>
+            l.lecturerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            l.lecturerNip?.includes(searchQuery) ||
+            l.documentNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        return [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [data?.supervisorLetters, searchQuery]);
+
     const summary = useMemo(() => {
         const pendingApp = filteredApplicationLetters.filter(l => !l.signedById).length;
         const pendingAssign = filteredAssignmentLetters.filter(l => !l.signedById).length;
-        return { pendingApp, pendingAssign, total: pendingApp + pendingAssign };
-    }, [filteredApplicationLetters, filteredAssignmentLetters]);
+        const pendingSup = filteredSupervisorLetters.filter(l => !l.signedById).length;
+        return { pendingApp, pendingAssign, pendingSup, total: pendingApp + pendingAssign + pendingSup };
+    }, [filteredApplicationLetters, filteredAssignmentLetters, filteredSupervisorLetters]);
+
+    const tabItemsWithCount = useMemo(() => {
+        return TAB_ITEMS.map(tab => {
+            let count = 0;
+            let pending = 0;
+            if (tab.label === "Permohonan") {
+                count = filteredApplicationLetters.length;
+                pending = summary.pendingApp;
+            } else if (tab.label === "Penugasan") {
+                count = filteredAssignmentLetters.length;
+                pending = summary.pendingAssign;
+            } else if (tab.label === "Penugasan Dosen") {
+                count = filteredSupervisorLetters.length;
+                pending = summary.pendingSup;
+            }
+            
+            return {
+                ...tab,
+                label: `${tab.label} (${count})`,
+                badge: pending > 0 ? pending : undefined
+            };
+        });
+    }, [filteredApplicationLetters.length, filteredAssignmentLetters.length, filteredSupervisorLetters.length, summary]);
+
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <div className="flex h-60 items-center justify-center">
+                    <Loading size="lg" text="Memuat data surat..." />
+                </div>
+            );
+        }
+
+        let tableData = [];
+        let emptyText = "";
+
+        if (activeTab.label.startsWith("Permohonan")) {
+            tableData = filteredApplicationLetters;
+            emptyText = searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat permohonan.";
+        } else if (activeTab.label.startsWith("Penugasan Dosen")) {
+            tableData = filteredSupervisorLetters;
+            emptyText = searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat tugas dosen.";
+        } else {
+            tableData = filteredAssignmentLetters;
+            emptyText = searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat tugas.";
+        }
+
+        return (
+            <CustomTable
+                columns={columns as any}
+                data={tableData}
+                loading={isLoading}
+                isRefreshing={isFetching && !isLoading}
+                total={tableData.length}
+                page={1}
+                onPageChange={() => { }}
+                pageSize={10}
+                enableColumnFilters
+                searchValue={searchQuery}
+                onSearchChange={(v) => updateParams({ q: v })}
+                emptyText={emptyText}
+                actions={
+                    <div className="flex items-center gap-2">
+                        <Select value={academicYearId} onValueChange={(v) => updateParams({ academicYearId: v })}>
+                            <SelectTrigger className="w-[200px] h-9">
+                                <SelectValue placeholder="Pilih Tahun Ajaran" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
+                                {academicYears.map((ay) => (
+                                    <SelectItem key={ay.id} value={ay.id}>
+                                        <span className={ay.isActive ? "text-blue-600 font-semibold" : ""}>
+                                            {ay.year} {ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}
+                                            {ay.isActive && ' (Aktif)'}
+                                        </span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />
+                    </div>
+                }
+            />
+        );
+    };
 
     return (
         <div className="p-4 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
                 <div className="flex items-center gap-2 text-2xl font-semibold">
-                    <Signature className="h-6 w-6 text-primary" />
+                    <FileText className="h-6 w-6 text-primary" />
                     <h1>Persetujuan Surat Kerja Praktik</h1>
                 </div>
 
@@ -128,114 +238,11 @@ export default function KadepInternshipManagementPage() {
                 )}
             </div>
 
-            <Tabs value={activeTab} onValueChange={(v) => updateParams({ tab: v })} className="w-full">
-                <TabsList className="mb-4">
-                    <TabsTrigger value="application" className="px-6 relative">
-                        Permohonan ({filteredApplicationLetters.length})
-                        {summary.pendingApp > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white ring-2 ring-background">
-                                {summary.pendingApp}
-                            </span>
-                        )}
-                    </TabsTrigger>
-                    <TabsTrigger value="assignment" className="px-6 relative">
-                        Penugasan ({filteredAssignmentLetters.length})
-                        {summary.pendingAssign > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white ring-2 ring-background">
-                                {summary.pendingAssign}
-                            </span>
-                        )}
-                    </TabsTrigger>
-                </TabsList>
+            <TabsNav tabs={tabItemsWithCount as any} preserveSearch />
 
-                <TabsContent value="application">
-                    {isLoading ? (
-                        <div className="flex h-60 items-center justify-center">
-                            <Loading size="lg" text="Memuat data surat..." />
-                        </div>
-                    ) : (
-                        <CustomTable
-                            columns={columns as any}
-                            data={filteredApplicationLetters}
-                            loading={isLoading}
-                            isRefreshing={isFetching && !isLoading}
-                            total={filteredApplicationLetters.length}
-                            page={1}
-                            onPageChange={() => { }}
-                            pageSize={10}
-                            enableColumnFilters
-                            searchValue={searchQuery}
-                            onSearchChange={(v) => updateParams({ q: v })}
-                            emptyText={searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat permohonan."}
-                            actions={
-                                <div className="flex items-center gap-2">
-                                    <Select value={academicYearId} onValueChange={(v) => updateParams({ academicYearId: v })}>
-                                        <SelectTrigger className="w-[200px] h-9">
-                                            <SelectValue placeholder="Pilih Tahun Ajaran" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
-                                            {academicYears.map((ay) => (
-                                                <SelectItem key={ay.id} value={ay.id}>
-                                                    <span className={ay.isActive ? "text-blue-600 font-semibold" : ""}>
-                                                        {ay.year} {ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}
-                                                        {ay.isActive && ' (Aktif)'}
-                                                    </span>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />
-                                </div>
-                            }
-                        />
-                    )}
-                </TabsContent>
-
-                <TabsContent value="assignment">
-                    {isLoading ? (
-                        <div className="flex h-60 items-center justify-center">
-                            <Loading size="lg" text="Memuat data surat..." />
-                        </div>
-                    ) : (
-                        <CustomTable
-                            columns={columns as any}
-                            data={filteredAssignmentLetters}
-                            loading={isLoading}
-                            isRefreshing={isFetching && !isLoading}
-                            total={filteredAssignmentLetters.length}
-                            page={1}
-                            onPageChange={() => { }}
-                            pageSize={10}
-                            enableColumnFilters
-                            searchValue={searchQuery}
-                            onSearchChange={(v) => updateParams({ q: v })}
-                            emptyText={searchQuery ? "Pencarian tidak menemukan hasil." : "Tidak ada data surat tugas."}
-                            actions={
-                                <div className="flex items-center gap-2">
-                                    <Select value={academicYearId} onValueChange={(v) => updateParams({ academicYearId: v })}>
-                                        <SelectTrigger className="w-[200px] h-9">
-                                            <SelectValue placeholder="Pilih Tahun Ajaran" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Semua Tahun Ajaran</SelectItem>
-                                            {academicYears.map((ay) => (
-                                                <SelectItem key={ay.id} value={ay.id}>
-                                                    <span className={ay.isActive ? "text-blue-600 font-semibold" : ""}>
-                                                        {ay.year} {ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}
-                                                        {ay.isActive && ' (Aktif)'}
-                                                    </span>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />
-                                </div>
-                            }
-                        />
-                    )}
-                </TabsContent>
-            </Tabs>
+            <div className="mt-6">
+                {renderContent()}
+            </div>
 
             <DocumentPreviewDialog
                 open={docOpen}

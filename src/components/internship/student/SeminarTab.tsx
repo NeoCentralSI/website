@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, MapPin, User, Info, Edit2, AlertCircle, CheckCircle2, XCircle, Search, Users } from 'lucide-react';
-import { Loading } from '@/components/ui/spinner';
+import { Loading, Spinner } from '@/components/ui/spinner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { registerSeminar, getUpcomingSeminars, updateSeminarProposal, getEligibleStudents } from '@/services/internship';
@@ -501,7 +501,7 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
             <DialogFooter className="mt-2">
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
                 <Button onClick={handleSubmit} disabled={isSubmitting}>
-                    {isSubmitting ? <><Loading size="sm" className="mr-2" /> Menyimpan...</> : (isEditing ? 'Simpan' : 'Tetapkan Jadwal')}
+                    {isSubmitting ? <><Spinner className="text-current mr-2" /> Menyimpan...</> : (isEditing ? 'Simpan' : 'Tetapkan Jadwal')}
                 </Button>
             </DialogFooter>
         </DialogContent>
