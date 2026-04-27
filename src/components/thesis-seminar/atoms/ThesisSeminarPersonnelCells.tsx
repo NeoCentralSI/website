@@ -60,3 +60,15 @@ export function ThesisSeminarAudienceCell({ count }: ThesisSeminarAudienceCellPr
     </Badge>
   );
 }
+
+interface ThesisSeminarLecturerCellProps {
+  name: string;
+}
+
+export function ThesisSeminarLecturerCell({ name }: ThesisSeminarLecturerCellProps) {
+  if (!name || name === '-') {
+    return <span className="text-muted-foreground text-sm">-</span>;
+  }
+
+  return <span className="text-sm">{name}</span>;
+}

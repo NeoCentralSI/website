@@ -24,7 +24,7 @@ export const StudentThesisSeminarOverviewPanel = ({
   const historyItems = history.filter((item) => item.id !== overview.seminar?.id);
 
   return (
-    <div className="space-y-6">
+    <div className="mt-6 space-y-6">
       <StudentThesisSeminarStatusCard
         status={seminarStatus}
         allChecklistMet={overview.allChecklistMet}
