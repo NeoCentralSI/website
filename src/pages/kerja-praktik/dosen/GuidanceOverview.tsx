@@ -2,15 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery } from '@tanstack/react-query';
-import { getLecturerSupervisedStudents, bulkApproveSeminars } from '@/services/internship';
+import { getLecturerSupervisedStudents, bulkApproveSeminars, getLecturerSupervisorLetter } from '@/services/internship';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle, Clock, CheckCircle2, FileText } from 'lucide-react';
 import InternshipTable from '@/components/internship/InternshipTable';
 import { getLecturerSupervisedStudentsColumns } from '@/lib/internship/lecturerColumns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
 import { toast } from 'sonner';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 
 export default function GuidanceOverviewPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -23,6 +24,7 @@ export default function GuidanceOverviewPage() {
     const [academicYearFilter, setAcademicYearFilter] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isProcessingApproval, setIsProcessingApproval] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const { academicYears } = useAcademicYears({ pageSize: 50 });
 
@@ -48,6 +50,12 @@ export default function GuidanceOverviewPage() {
     const { data: students, isLoading, error, isFetching, refetch } = useQuery({
         queryKey: ['lecturerSupervisedStudents'],
         queryFn: getLecturerSupervisedStudents,
+    });
+
+    const { data: supervisorLetter } = useQuery({
+        queryKey: ['lecturerSupervisorLetter', academicYearFilter],
+        queryFn: () => getLecturerSupervisorLetter(academicYearFilter || undefined),
+        enabled: !!academicYearFilter && academicYearFilter !== 'all'
     });
 
     const handleApproveSeminar = async (student: any) => {
@@ -184,6 +192,19 @@ export default function GuidanceOverviewPage() {
                 emptyText={searchTerm ? 'Pencarian tidak menemukan hasil.' : 'Belum ada mahasiswa bimbingan.'}
                 actions={
                     <div className="flex items-center gap-3">
+                        {supervisorLetter?.document && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-9 gap-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800"
+                                onClick={() => {
+                                    setPreviewOpen(true);
+                                }}
+                            >
+                                <FileText className="w-4 h-4" />
+                                Surat Tugas
+                            </Button>
+                        )}
                         {selectedIds.length > 0 && (
                              <Button 
                                 size="sm" 
@@ -216,6 +237,13 @@ export default function GuidanceOverviewPage() {
                         </Select>
                     </div>
                 }
+            />
+
+            <DocumentPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                fileName={supervisorLetter?.document?.fileName}
+                filePath={supervisorLetter?.document?.filePath}
             />
         </div>
     );

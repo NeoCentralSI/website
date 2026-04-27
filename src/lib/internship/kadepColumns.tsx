@@ -19,19 +19,16 @@ export const getKadepInternshipLetterColumns = ({
 }: KadepLetterColumnProps): Column<InternshipPendingLetter>[] => [
         {
             key: 'nama',
-            header: 'Nama Koordinator',
-            render: (item) => (
-                <div className="flex flex-col py-1">
-                    <span className="font-medium text-sm leading-tight">{item.coordinatorName}</span>
-                    <span className="text-xs text-muted-foreground">{item.coordinatorNim}</span>
-                </div>
-            ),
-        },
-        {
-            key: 'companyName',
-            header: 'Perusahaan',
-            accessor: 'companyName',
-            className: 'text-sm',
+            header: 'Nama Dosen',
+            render: (item) => {
+                const isLecturer = item.type === 'LECTURER_ASSIGNMENT';
+                return (
+                    <div className="flex flex-col py-1 text-left">
+                        <span className="font-medium text-sm leading-tight">{isLecturer ? item.lecturerName : item.coordinatorName}</span>
+                        <span className="text-xs text-muted-foreground">{isLecturer ? item.lecturerNip : item.coordinatorNim}</span>
+                    </div>
+                );
+            },
         },
         {
             key: 'period',
@@ -69,17 +66,16 @@ export const getKadepInternshipLetterColumns = ({
         },
         {
             key: 'members',
-            header: 'Anggota',
+            header: 'Jumlah Mahasiswa',
             render: (item) => {
                 let totalMahasiswa = 0;
 
                 if (item.type === 'APPLICATION') {
-                    // For Application, we count all members + coordinator (assuming they are all active)
-                    const members = item.members || [];
-                    totalMahasiswa = members.length + 1;
-                } else {
-                    // For Assignment, we use the pre-calculated acceptedMemberCount from backend
-                    totalMahasiswa = item.acceptedMemberCount;
+                    totalMahasiswa = (item.members?.length || 0) + 1;
+                } else if (item.type === 'ASSIGNMENT') {
+                    totalMahasiswa = item.acceptedMemberCount || 0;
+                } else if (item.type === 'LECTURER_ASSIGNMENT') {
+                    totalMahasiswa = item.memberCount || 0;
                 }
 
                 return (

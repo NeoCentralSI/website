@@ -15,13 +15,15 @@ import { CheckCircle2, AlertTriangle, Upload, X } from 'lucide-react';
 
 interface VerificationData {
     id: string;
-    type: 'APPLICATION' | 'ASSIGNMENT' | 'SEMINAR_MINUTES';
+    type: 'APPLICATION' | 'ASSIGNMENT' | 'SEMINAR_MINUTES' | 'LECTURER_ASSIGNMENT';
 
     documentNumber: string;
     dateIssued: string;
     coordinatorName: string;
     coordinatorNim: string;
     companyName: string;
+    lecturerName?: string;
+    lecturerNip?: string;
     isSigned: boolean;
     signedBy: string;
     signedAt: string;
@@ -43,9 +45,18 @@ export default function InternshipLetterVerification() {
             if (!id) return;
             try {
                 setLoading(true);
+                const queryParams = new URLSearchParams(window.location.search);
+                const queryType = queryParams.get('type') as any;
+
                 // Detect type from path
                 const isSeminarPath = window.location.pathname.includes('seminar-minutes');
-                const res = await verifyInternshipLetter(id, isSeminarPath ? 'SEMINAR_MINUTES' : 'APPLICATION');
+                const isLecturerPath = window.location.pathname.includes('lecturer-assignment');
+                
+                let type: 'APPLICATION' | 'ASSIGNMENT' | 'SEMINAR_MINUTES' | 'LECTURER_ASSIGNMENT' = queryType || 'APPLICATION';
+                if (isSeminarPath) type = 'SEMINAR_MINUTES';
+                else if (isLecturerPath) type = 'LECTURER_ASSIGNMENT';
+
+                const res = await verifyInternshipLetter(id, type);
                 setData(res.data);
             } catch (err: any) {
                 setError(err.message || "Gagal memverifikasi dokumen.");
@@ -179,6 +190,7 @@ export default function InternshipLetterVerification() {
                                 <p className="text-xl font-black text-black uppercase tracking-tight leading-none">
                                     {data.type === 'APPLICATION' ? 'Surat Permohonan' : 
                                      data.type === 'ASSIGNMENT' ? 'Surat Tugas' : 
+                                     data.type === 'LECTURER_ASSIGNMENT' ? 'Surat Tugas Dosen' :
                                      'Berita Acara Seminar (KP-006)'}
                                 </p>
 
@@ -197,7 +209,9 @@ export default function InternshipLetterVerification() {
 
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#F7931E]">
-                                    <User className="h-3 w-3" /> {data.type === 'SEMINAR_MINUTES' ? 'Mahasiswa' : 'Koordinator'}
+                                    <User className="h-3 w-3" /> 
+                                    {data.type === 'LECTURER_ASSIGNMENT' ? 'Dosen Pembimbing' : 
+                                     data.type === 'SEMINAR_MINUTES' ? 'Mahasiswa' : 'Koordinator'}
                                 </label>
 
                                 <p className="font-black text-black text-xl tracking-tight leading-none uppercase">{data.coordinatorName}</p>
@@ -213,7 +227,9 @@ export default function InternshipLetterVerification() {
                                     <Building2 className="h-3 w-3" /> Instansi Tujuan
                                 </label>
                                 <p className="font-black text-black text-xl leading-tight tracking-tight uppercase">
-                                    {data.type === 'SEMINAR_MINUTES' ? 'Seminar Kerja Praktik' : data.companyName}
+                                    {data.type === 'SEMINAR_MINUTES' ? 'Seminar Kerja Praktik' : 
+                                     data.type === 'LECTURER_ASSIGNMENT' ? 'Departemen Sistem Informasi' : 
+                                     data.companyName}
                                 </p>
                             </div>
 

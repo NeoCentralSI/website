@@ -39,7 +39,9 @@ type PushEventType =
   | "internship_final_report_verification"
   | "internship_seminar_scheduled"
   | "internship_seminar_reminder"
-  | "internship_grading_completed";
+  | "internship_grading_completed"
+  | "internship_lecturer_assignment_generated"
+  | "internship_supervisor_letter_signed";
 
 export function useGuidanceRealtime() {
   const qc = useQueryClient();
@@ -294,6 +296,25 @@ export function useGuidanceRealtime() {
                 toast.info(title, { description: body, duration: 5000 });
                 playBeep();
                 qc.invalidateQueries({ queryKey: ["lecturer-student-guidance-timeline"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_lecturer_assignment_generated": {
+                const title = payload?.notification?.title || payload?.data?.title || "Surat Tugas Pembimbing Baru";
+                const body = payload?.notification?.body || payload?.data?.body || "";
+                toast.info(title, { description: body, duration: 8000 });
+                playBeep();
+                qc.invalidateQueries({ queryKey: ["kadep-pending-letters"] });
+                qc.invalidateQueries({ queryKey: ["notification-unread"] });
+                break;
+              }
+              case "internship_supervisor_letter_signed": {
+                const title = payload?.notification?.title || payload?.data?.title || "Surat Tugas Pembimbing Ditandatangani ✓";
+                const body = payload?.notification?.body || payload?.data?.body || "";
+                toast.success(title, { description: body, duration: 8000 });
+                playBeep();
+                qc.invalidateQueries({ queryKey: ["lecturerSupervisedStudents"] });
+                qc.invalidateQueries({ queryKey: ["lecturerSupervisorLetter"] });
                 qc.invalidateQueries({ queryKey: ["notification-unread"] });
                 break;
               }

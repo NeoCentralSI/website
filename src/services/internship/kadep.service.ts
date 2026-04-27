@@ -2,7 +2,7 @@ import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "../auth.service";
 import type { InternshipPendingLetter } from "./types";
 
-export const getKadepPendingLetters = async (academicYearId?: string): Promise<{ success: boolean; data: { applicationLetters: InternshipPendingLetter[], assignmentLetters: InternshipPendingLetter[] } }> => {
+export const getKadepPendingLetters = async (academicYearId?: string): Promise<{ success: boolean; data: { applicationLetters: InternshipPendingLetter[], assignmentLetters: InternshipPendingLetter[], supervisorLetters: InternshipPendingLetter[] } }> => {
     let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.PENDING_LETTERS);
     if (academicYearId) {
         url += `?academicYear=${academicYearId}`;
@@ -17,7 +17,7 @@ export const getKadepPendingLetters = async (academicYearId?: string): Promise<{
 
 export const approveKadepLetter = async (
     id: string,
-    type: 'APPLICATION' | 'ASSIGNMENT',
+    type: 'APPLICATION' | 'ASSIGNMENT' | 'LECTURER_ASSIGNMENT',
     signaturePositions?: { x: number, y: number, pageNumber: number }[]
 ): Promise<{ success: boolean; message: string }> => {
     const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_KADEP.APPROVE_LETTER), {

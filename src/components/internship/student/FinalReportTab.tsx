@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileText, Upload, Clock, MessageSquare, CheckCircle2, XCircle, AlertCircle, X, Save, Edit, Eye } from 'lucide-react';
-import { Loading } from '@/components/ui/spinner';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 
@@ -363,7 +363,7 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                                         >
                                             {isUploading === 'FINAL_REPORT' ? (
                                                 <>
-                                                    <Loading size="sm" />
+                                                    <Spinner className="text-current" />
                                                     Mengunggah...
                                                 </>
                                             ) : (
@@ -579,7 +579,7 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                                                 >
                                                     {isUploading === 'FINAL_FIX_REPORT' ? (
                                                         <>
-                                                            <Loading size="sm" />
+                                                            <Spinner className="text-current" />
                                                             Mengunggah...
                                                         </>
                                                     ) : (
