@@ -2,16 +2,11 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import { toast } from 'sonner';
 
 import {
-  addAdminThesisSeminarAudience,
   createAdminThesisSeminarArchive,
   deleteAdminThesisSeminarArchive,
   downloadAdminThesisSeminarArchiveTemplate,
-  downloadAdminThesisSeminarAudienceTemplate,
   exportAdminThesisSeminarArchive,
-  exportAdminThesisSeminarAudiences,
   getAdminThesisSeminarArchiveList,
-  getAdminThesisSeminarAudienceStudentOptions,
-  getAdminThesisSeminarAudiences,
   getAdminThesisSeminarDetail,
   getAdminThesisSeminarLecturerOptions,
   getAdminThesisSeminarRoomOptions,
@@ -19,13 +14,20 @@ import {
   getAdminThesisSeminarThesisOptions,
   getAdminThesisSeminarValidationList,
   importAdminThesisSeminarArchive,
-  importAdminThesisSeminarAudiences,
-  removeAdminThesisSeminarAudience,
   setAdminThesisSeminarSchedule,
   updateAdminThesisSeminarArchive,
   type AdminThesisSeminarArchivePayload,
 } from '@/services/thesis-seminar/core.service';
-import { validateAdminSeminarDocument } from '@/services/thesis-seminar/doc.service';
+import {
+  addAdminThesisSeminarAudience,
+  downloadAdminThesisSeminarAudienceTemplate,
+  exportAdminThesisSeminarAudiences,
+  getAdminThesisSeminarAudienceStudentOptions,
+  getAdminThesisSeminarAudiences,
+  importAdminThesisSeminarAudiences,
+  removeAdminThesisSeminarAudience,
+} from '@/services/thesis-seminar/audience.service';
+import { validateSeminarDocument } from '@/services/thesis-seminar/doc.service';
 import type { SetSchedulePayload, ValidateDocumentPayload } from '@/types/seminar.types';
 
 export function useAdminThesisSeminarValidation(params?: {
@@ -120,7 +122,7 @@ export function useValidateAdminThesisSeminarDocument() {
       seminarId: string;
       documentTypeId: string;
       payload: ValidateDocumentPayload;
-    }) => validateAdminSeminarDocument(seminarId, documentTypeId, payload),
+    }) => validateSeminarDocument(seminarId, documentTypeId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', variables.seminarId] });

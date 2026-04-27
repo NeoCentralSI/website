@@ -6,8 +6,22 @@ import type {
   SeminarSchedulingData,
   SetSchedulePayload,
   SetScheduleResponse,
+  ExaminerAssessmentFormResponse,
+  SubmitExaminerAssessmentPayload,
+  SubmitExaminerAssessmentResponse,
+  SupervisorFinalizationDataResponse,
+  FinalizeSeminarPayload,
+  FinalizeSeminarResponse,
+  ExaminerRequestItem,
+  SupervisedStudentSeminarItem,
+  LecturerSeminarDetailResponse,
+  AssignmentSeminarItem,
 } from '@/types/seminar.types';
 import type { Room } from '@/services/admin.service';
+
+// ============================================================
+// Types & Interfaces
+// ============================================================
 
 export interface AdminThesisSeminarExaminerOption {
   id: string;
@@ -59,30 +73,6 @@ export interface AdminThesisSeminarArchiveItem {
   updatedAt: string;
 }
 
-export interface AdminThesisSeminarAudience {
-  studentId: string;
-  fullName: string;
-  nim: string;
-  approvedAt: string | null;
-  approvedByName: string;
-  registeredAt: string | null;
-  createdAt: string;
-}
-
-export interface AdminThesisSeminarAudienceStudentOption {
-  id: string;
-  fullName: string;
-  nim: string;
-}
-
-export interface AdminThesisSeminarAudienceImportResult {
-  success: boolean;
-  total: number;
-  successCount: number;
-  failed: number;
-  failedRows: { row: number; error: string }[];
-}
-
 export interface AdminThesisSeminarArchiveImportResult {
   success: boolean;
   total: number;
@@ -109,6 +99,18 @@ type ArchiveListResponse = {
   };
 };
 
+// ============================================================
+// Internal Helpers
+// ============================================================
+
+async function parseJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
+  const result = await response.json();
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || fallbackMessage);
+  }
+  return result.data as T;
+}
+
 function buildSeminarListEndpoint(params?: {
   search?: string;
   status?: string;
@@ -126,14 +128,6 @@ function buildSeminarListEndpoint(params?: {
   return queryParts.length > 0
     ? `${API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE}?${queryParts.join('&')}`
     : API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE;
-}
-
-async function parseJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new Error(error?.message || fallbackMessage);
-  }
-  return response.json() as Promise<T>;
 }
 
 function normalizeValidationSeminar(item: any): AdminSeminarListItem {
@@ -188,31 +182,110 @@ function normalizeArchiveSeminar(item: any): AdminThesisSeminarArchiveItem {
   };
 }
 
+// ============================================================
+// Core Seminar List & Detail (Multi-role)
+// ============================================================
+
 export const getStudentSeminarDetail = async (seminarId: string) => {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId)));
-  return parseJsonResponse(response, 'Gagal memuat detail seminar mahasiswa');
+  return parseJsonResponse(response, 'Gagal memuat detail seminar');
 };
 
-export const getStudentSeminarAssessment = async (seminarId: string) => {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ASSESSMENT(seminarId)));
-  return parseJsonResponse(response, 'Gagal memuat penilaian seminar mahasiswa');
+export const getLecturerSeminarDetail = async (seminarId: string): Promise<LecturerSeminarDetailResponse> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId)));
+  return parseJsonResponse(res, 'Gagal memuat detail seminar');
 };
+
+export async function getAdminThesisSeminarDetail(seminarId: string): Promise<AdminSeminarDetailResponse> {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId)));
+  return parseJsonResponse(response, 'Gagal memuat detail seminar');
+}
+
+// ============================================================
+// Role-specific Lists
+// ============================================================
 
 export async function getAdminThesisSeminarValidationList(params?: {
   search?: string;
   status?: string;
 }): Promise<AdminSeminarListItem[]> {
-  const response = await apiRequest(
-    getApiUrl(
-      buildSeminarListEndpoint({
-        ...params,
-        view: 'validation',
-      })
-    )
-  );
-  const data = await parseJsonResponse<any[]>(response, 'Gagal memuat data validasi seminar hasil');
+  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'validation' })));
+  const data = await parseJsonResponse<any[]>(response, 'Gagal memuat data validasi seminar');
   return data.map(normalizeValidationSeminar);
 }
+
+export async function getExaminerRequests(params?: { search?: string }): Promise<ExaminerRequestItem[]> {
+  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'examiner_requests' })));
+  return parseJsonResponse(response, 'Gagal memuat permintaan penguji');
+}
+
+export async function getSupervisedStudentSeminars(params?: { search?: string }): Promise<SupervisedStudentSeminarItem[]> {
+  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'supervised_students' })));
+  return parseJsonResponse(response, 'Gagal memuat data mahasiswa bimbingan');
+}
+
+export async function getAssignmentSeminars(params?: { search?: string }): Promise<AssignmentSeminarItem[]> {
+  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'assignment' })));
+  return parseJsonResponse(response, 'Gagal memuat data penetapan penguji');
+}
+
+// ============================================================
+// Scheduling
+// ============================================================
+
+export async function getAdminThesisSeminarSchedulingData(seminarId: string): Promise<SeminarSchedulingData> {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.SCHEDULING_DATA(seminarId)));
+  return parseJsonResponse(response, 'Gagal memuat data penjadwalan');
+}
+
+export async function setAdminThesisSeminarSchedule(seminarId: string, payload: SetSchedulePayload): Promise<SetScheduleResponse> {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.SCHEDULE(seminarId)), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(response, 'Gagal menyimpan jadwal');
+}
+
+// ============================================================
+// Assessment & Finalization
+// ============================================================
+
+export const getStudentSeminarAssessment = async (seminarId: string) => {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ASSESSMENT(seminarId)));
+  return parseJsonResponse(response, 'Gagal memuat penilaian');
+};
+
+export async function getExaminerAssessmentForm(seminarId: string): Promise<ExaminerAssessmentFormResponse> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ASSESSMENT(seminarId)));
+  return parseJsonResponse(res, 'Gagal memuat form penilaian');
+}
+
+export async function submitExaminerAssessment(seminarId: string, payload: SubmitExaminerAssessmentPayload): Promise<SubmitExaminerAssessmentResponse> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ASSESSMENT(seminarId)), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(res, 'Gagal submit penilaian');
+}
+
+export async function getSupervisorFinalizationData(seminarId: string): Promise<SupervisorFinalizationDataResponse> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.FINALIZATION_DATA(seminarId)));
+  return parseJsonResponse(res, 'Gagal memuat data finalisasi');
+}
+
+export async function finalizeSeminarBySupervisor(seminarId: string, payload: FinalizeSeminarPayload): Promise<FinalizeSeminarResponse> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.FINALIZE(seminarId)), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(res, 'Gagal menetapkan hasil seminar');
+}
+
+// ============================================================
+// Archive Management (Master Data)
+// ============================================================
 
 export async function getAdminThesisSeminarArchiveList(params?: {
   page?: number;
@@ -220,52 +293,42 @@ export async function getAdminThesisSeminarArchiveList(params?: {
   search?: string;
   status?: string;
 }): Promise<ArchiveListResponse> {
-  const response = await apiRequest(
-    getApiUrl(
-      buildSeminarListEndpoint({
-        ...params,
-        view: 'archive',
-      })
-    )
-  );
-  const data = await parseJsonResponse<any>(response, 'Gagal memuat arsip seminar hasil');
+  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'archive' })));
+  const data = await parseJsonResponse<any>(response, 'Gagal memuat arsip seminar');
   return {
     seminars: (data.seminars ?? []).map(normalizeArchiveSeminar),
     meta: data.meta,
   };
 }
 
-export async function getAdminThesisSeminarDetail(
-  seminarId: string
-): Promise<AdminSeminarDetailResponse> {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId))
-  );
-  return parseJsonResponse(response, 'Gagal memuat detail seminar hasil');
+export async function createAdminThesisSeminarArchive(payload: AdminThesisSeminarArchivePayload): Promise<AdminThesisSeminarArchiveItem> {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJsonResponse<any>(response, 'Gagal menambahkan seminar');
+  return normalizeArchiveSeminar(data);
 }
 
-export async function getAdminThesisSeminarSchedulingData(
-  seminarId: string
-): Promise<SeminarSchedulingData> {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.SCHEDULING_DATA(seminarId))
-  );
-  return parseJsonResponse(response, 'Gagal memuat data penjadwalan seminar');
+export async function updateAdminThesisSeminarArchive(seminarId: string, payload: AdminThesisSeminarArchivePayload): Promise<AdminThesisSeminarArchiveItem> {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId)), {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJsonResponse<any>(response, 'Gagal memperbarui seminar');
+  return normalizeArchiveSeminar(data);
 }
 
-export async function setAdminThesisSeminarSchedule(
-  seminarId: string,
-  payload: SetSchedulePayload
-): Promise<SetScheduleResponse> {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.SCHEDULE(seminarId)),
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }
-  );
-  return parseJsonResponse(response, 'Gagal menyimpan jadwal seminar');
+export async function deleteAdminThesisSeminarArchive(seminarId: string) {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId)), {
+    method: 'DELETE',
+  });
+  return parseJsonResponse<{ success: boolean }>(response, 'Gagal menghapus seminar');
 }
+
+// ============================================================
+// Options
+// ============================================================
 
 export async function getAdminThesisSeminarThesisOptions(): Promise<AdminThesisSeminarOption[]> {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.OPTIONS_THESES));
@@ -296,39 +359,13 @@ export async function getAdminThesisSeminarRoomOptions(): Promise<Room[]> {
   return parseJsonResponse(response, 'Gagal memuat opsi ruangan');
 }
 
-export async function createAdminThesisSeminarArchive(
-  payload: AdminThesisSeminarArchivePayload
-): Promise<AdminThesisSeminarArchiveItem> {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE), {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-  const data = await parseJsonResponse<any>(response, 'Gagal menambahkan seminar hasil');
-  return normalizeArchiveSeminar(data);
-}
-
-export async function updateAdminThesisSeminarArchive(
-  seminarId: string,
-  payload: AdminThesisSeminarArchivePayload
-): Promise<AdminThesisSeminarArchiveItem> {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId)), {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
-  const data = await parseJsonResponse<any>(response, 'Gagal memperbarui seminar hasil');
-  return normalizeArchiveSeminar(data);
-}
-
-export async function deleteAdminThesisSeminarArchive(seminarId: string) {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId)), {
-    method: 'DELETE',
-  });
-  return parseJsonResponse<{ success: boolean }>(response, 'Gagal menghapus seminar hasil');
-}
+// ============================================================
+// Import / Export
+// ============================================================
 
 export async function exportAdminThesisSeminarArchive() {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.EXPORT));
-  if (!response.ok) throw new Error('Gagal mengekspor arsip seminar');
+  if (!response.ok) throw new Error('Gagal mengekspor arsip');
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -342,7 +379,7 @@ export async function exportAdminThesisSeminarArchive() {
 
 export async function downloadAdminThesisSeminarArchiveTemplate() {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.TEMPLATE));
-  if (!response.ok) throw new Error('Gagal mengunduh template seminar hasil');
+  if (!response.ok) throw new Error('Gagal mengunduh template');
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -354,91 +391,12 @@ export async function downloadAdminThesisSeminarArchiveTemplate() {
   window.URL.revokeObjectURL(url);
 }
 
-export async function importAdminThesisSeminarArchive(
-  file: File
-): Promise<AdminThesisSeminarArchiveImportResult> {
+export async function importAdminThesisSeminarArchive(file: File): Promise<AdminThesisSeminarArchiveImportResult> {
   const formData = new FormData();
   formData.append('file', file);
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.IMPORT), {
     method: 'POST',
     body: formData,
   });
-  return parseJsonResponse(response, 'Gagal mengimpor arsip seminar');
-}
-
-export async function getAdminThesisSeminarAudiences(
-  seminarId: string
-): Promise<AdminThesisSeminarAudience[]> {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)));
-  return parseJsonResponse(response, 'Gagal memuat audience seminar');
-}
-
-export async function getAdminThesisSeminarAudienceStudentOptions(
-  seminarId: string
-): Promise<AdminThesisSeminarAudienceStudentOption[]> {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_OPTIONS(seminarId))
-  );
-  return parseJsonResponse(response, 'Gagal memuat opsi mahasiswa audience');
-}
-
-export async function addAdminThesisSeminarAudience(seminarId: string, studentId: string) {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)), {
-    method: 'POST',
-    body: JSON.stringify({ studentId }),
-  });
-  return parseJsonResponse<{ success: boolean }>(response, 'Gagal menambahkan audience seminar');
-}
-
-export async function removeAdminThesisSeminarAudience(seminarId: string, studentId: string) {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCE_BY_ID(seminarId, studentId)),
-    { method: 'DELETE' }
-  );
-  return parseJsonResponse<{ success: boolean }>(response, 'Gagal menghapus audience seminar');
-}
-
-export async function importAdminThesisSeminarAudiences(
-  seminarId: string,
-  file: File
-): Promise<AdminThesisSeminarAudienceImportResult> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_IMPORT(seminarId)),
-    { method: 'POST', body: formData }
-  );
-  return parseJsonResponse(response, 'Gagal mengimpor audience seminar');
-}
-
-export async function downloadAdminThesisSeminarAudienceTemplate(seminarId: string) {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_TEMPLATE(seminarId))
-  );
-  if (!response.ok) throw new Error('Gagal mengunduh template audience seminar');
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'Template_Audience_Seminar.xlsx';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-}
-
-export async function exportAdminThesisSeminarAudiences(seminarId: string) {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_EXPORT(seminarId))
-  );
-  if (!response.ok) throw new Error('Gagal mengekspor audience seminar');
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `Audience_Seminar_${new Date().toISOString().split('T')[0]}.xlsx`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
+  return parseJsonResponse(response, 'Gagal mengimpor arsip');
 }

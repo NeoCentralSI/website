@@ -17,5 +17,6 @@ export {
   useSubmitRevision,
   useCancelRevisionSubmission,
   useDeleteRevision,
-} from './useStudentSeminar';
+} from './useStudentThesisSeminar';
 export * from './useAdminThesisSeminar';
+export * from './useLecturerThesisSeminar';

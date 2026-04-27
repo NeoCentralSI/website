@@ -12,7 +12,7 @@ export default function SeminarHasilEntry() {
   return (
     <Suspense fallback={
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-        <Loading size="lg" text="Memuat Seminar..." />
+        <Loading size="lg" text="Memuat..." />
       </div>
     }>
       {isAdmin() ? (

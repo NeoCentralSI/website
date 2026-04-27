@@ -5,7 +5,7 @@ import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBad
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useExaminerRequests } from '@/hooks/thesis-seminar/useLecturerSeminar';
+import { useExaminerRequests } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 import { ThesisStudentInfoCell, ThesisTitleCell, ThesisPersonnelListCell } from '@/components/shared/ThesisTableCells';
 import { CheckCircle2, XCircle, Eye } from 'lucide-react';
@@ -106,7 +106,7 @@ export function LecturerThesisSeminarExaminerRequestsTable() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/tugas-akhir/seminar-hasil/lecturer/${row.id}`)}
+            onClick={() => navigate(`/tugas-akhir/seminar-hasil/penguji/${row.id}`)}
             title="Lihat Detail"
           >
             <Eye className="h-4 w-4" />

@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useEligibleExaminers, useAssignExaminers } from '@/hooks/thesis-seminar/useLecturerSeminar';
+import { useEligibleExaminers, useAssignExaminers } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 import { toast } from 'sonner';
 import { SearchIcon, Lock } from 'lucide-react';

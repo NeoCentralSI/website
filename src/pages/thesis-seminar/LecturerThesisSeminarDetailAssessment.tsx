@@ -18,7 +18,7 @@ import {
   useFinalizeSeminarBySupervisor,
   useSubmitExaminerAssessment,
   useSupervisorFinalizationData,
-} from '@/hooks/thesis-seminar/useLecturerSeminar';
+} from '@/hooks/thesis-seminar';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type {
   FinalizeSeminarPayload,

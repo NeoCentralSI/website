@@ -7,7 +7,7 @@ import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBad
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
-import { useLecturerSeminarDetail } from '@/hooks/thesis-seminar/useLecturerSeminar';
+import { useLecturerSeminarDetail } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 import type { LecturerSeminarDetailResponse } from '@/types/seminar.types';
 
@@ -32,7 +32,7 @@ export function LecturerThesisSeminarDetailLayout({ children }: LecturerThesisSe
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir' },
-      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil/lecturer/my-students' },
+      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil/mahasiswa-bimbingan' },
       { label: 'Detail' },
     ],
     [],
@@ -44,7 +44,7 @@ export function LecturerThesisSeminarDetailLayout({ children }: LecturerThesisSe
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   const tabs = useMemo(() => {
-    const base = `/tugas-akhir/seminar-hasil/lecturer/${seminarId}`;
+    const base = `/tugas-akhir/seminar-hasil/penguji/${seminarId}`;
     const items: TabItem[] = [{ label: 'Identitas', to: base, end: true }];
     if (showExaminerAssessmentTab) {
       items.push({ label: 'Penilaian', to: `${base}/assessment` });
@@ -80,7 +80,7 @@ export function LecturerThesisSeminarDetailLayout({ children }: LecturerThesisSe
     <div className="p-4 space-y-6">
       {/* Back + Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/tugas-akhir/seminar-hasil/lecturer/my-students')} className="shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/tugas-akhir/seminar-hasil/mahasiswa-bimbingan')} className="shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 flex items-center justify-between">

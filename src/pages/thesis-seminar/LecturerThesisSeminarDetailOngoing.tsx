@@ -31,7 +31,7 @@ import {
   useSeminarRevisionBoard,
   useSubmitExaminerAssessment,
   useSupervisorFinalizationData,
-} from '@/hooks/thesis-seminar/useLecturerSeminar';
+} from '@/hooks/thesis-seminar';
 import { formatDateId, formatDateOnlyId, formatDateTimeId, formatRoleName, toTitleCaseName } from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
@@ -99,7 +99,7 @@ export default function LecturerThesisSeminarDetailOngoingPage() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir' },
-      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil/lecturer/assignment' },
+      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil/menguji-mahasiswa' },
       { label: 'Detail' },
     ],
     [],

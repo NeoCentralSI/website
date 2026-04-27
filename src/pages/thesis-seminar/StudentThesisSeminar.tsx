@@ -4,7 +4,11 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import { StudentThesisSeminarOverviewPanel } from '@/components/thesis-seminar/StudentThesisSeminarOverviewPanel';
 import { StudentThesisSeminarAttendanceHistoryPanel } from '@/components/thesis-seminar/StudentThesisSeminarAttendanceHistoryPanel';
-import { useStudentThesisSeminar } from '@/hooks/thesis-seminar/useStudentThesisSeminar';
+import {
+  useStudentSeminarOverview,
+  useStudentSeminarHistory,
+  useStudentAttendanceHistory
+} from '@/hooks/thesis-seminar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const TAB_ITEMS: TabItem[] = [
@@ -17,8 +21,13 @@ export default function StudentThesisSeminar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const activeTab = pathname.includes('riwayat-kehadiran') ? 'attendance' : 'overview';
-  const { overview, history, attendance, isLoading, isAttendanceLoading, isAttendanceFetching } =
-    useStudentThesisSeminar();
+
+  const { data: overview, isLoading: isOverviewLoading, isError: isOverviewError, refetch: refetchOverview } = useStudentSeminarOverview();
+  const { data: history, isLoading: isHistoryLoading, isError: isHistoryError, refetch: refetchHistory } = useStudentSeminarHistory();
+  const { data: attendance, isLoading: isAttendanceLoading, isFetching: isAttendanceFetching, refetch: refetchAttendance } = useStudentAttendanceHistory();
+
+  const isLoading = isOverviewLoading || isHistoryLoading;
+  const isError = isOverviewError || isHistoryError;
 
   const breadcrumbs = useMemo(
     () => [
@@ -73,8 +82,8 @@ export default function StudentThesisSeminar() {
       ) : overview ? (
         <StudentThesisSeminarOverviewPanel
           overview={overview}
-          history={history}
-          onDetailClick={(id) => navigate(`/tugas-akhir/seminar-hasil/student/history/${id}`)}
+          history={history || []}
+          onDetailClick={(id) => navigate(`/tugas-akhir/seminar-hasil/mahasiswa/${id}`)}
         />
       ) : (
         <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">

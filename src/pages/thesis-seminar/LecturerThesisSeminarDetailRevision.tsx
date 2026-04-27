@@ -29,7 +29,7 @@ import {
   useApproveRevision,
   useUnapproveRevision,
   useFinalizeSeminarRevisions,
-} from '@/hooks/thesis-seminar/useLecturerSeminar';
+} from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 import { MessageSquareText, CheckCircle2, Undo2, Send, ChevronDown } from 'lucide-react';
 import type { SeminarRevisionBoardItem } from '@/types/seminar.types';

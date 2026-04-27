@@ -8,23 +8,32 @@ import type {
 } from '@/types/seminar.types';
 
 async function parseJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new Error(error?.message || fallbackMessage);
+  const result = await response.json();
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || fallbackMessage);
   }
-  return response.json() as Promise<T>;
+  return result.data as T;
 }
 
+/**
+ * Get all available seminar document types
+ */
 export const getSeminarDocumentTypes = async (): Promise<SeminarDocumentType[]> => {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.DOCUMENT_TYPES));
   return parseJsonResponse(response, 'Gagal memuat tipe dokumen seminar');
 };
 
+/**
+ * Get documents for a specific seminar
+ */
 export const getStudentSeminarDocuments = async (seminarId: string): Promise<{ seminarId: string | null; documents: SeminarDocument[] }> => {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.DOCUMENTS(seminarId)));
-  return parseJsonResponse(response, 'Gagal memuat dokumen seminar mahasiswa');
+  return parseJsonResponse(response, 'Gagal memuat dokumen seminar');
 };
 
+/**
+ * Upload a document to a seminar
+ */
 export const uploadSeminarDocument = async (file: File, documentTypeName: string, seminarId?: string) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -42,7 +51,10 @@ export const uploadSeminarDocument = async (file: File, documentTypeName: string
   return parseJsonResponse(response, 'Gagal mengunggah dokumen seminar');
 };
 
-export const validateAdminSeminarDocument = async (
+/**
+ * Validate (approve/decline) a seminar document (Admin/Lecturer)
+ */
+export const validateSeminarDocument = async (
   seminarId: string,
   documentTypeId: string,
   payload: ValidateDocumentPayload

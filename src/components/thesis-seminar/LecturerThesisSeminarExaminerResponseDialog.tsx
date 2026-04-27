@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
-import { useRespondExaminerAssignment } from '@/hooks/thesis-seminar/useLecturerSeminar';
+import { useRespondExaminerAssignment } from '@/hooks/thesis-seminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, UserCheck, BookOpen, GraduationCap } from 'lucide-react';
@@ -35,6 +35,7 @@ export function LecturerThesisSeminarExaminerResponseDialog({
 
     respondMutation.mutate(
       {
+        seminarId: seminar.id,
         examinerId: seminar.myExaminerId,
         payload: { status },
       },

@@ -21,7 +21,7 @@ export default function StudentThesisSeminarDetail() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil/student' },
+      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
       { label: 'Detail' },
     ],
     []
@@ -64,7 +64,7 @@ export default function StudentThesisSeminarDetail() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/tugas-akhir/seminar-hasil/student')}
+          onClick={() => navigate('/tugas-akhir/seminar-hasil')}
           className="shrink-0"
         >
           <ArrowLeft className="h-5 w-5" />

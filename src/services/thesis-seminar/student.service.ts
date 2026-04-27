@@ -5,42 +5,38 @@ import type { SeminarOverviewResponse, AttendanceHistoryResponse, SeminarHistory
 export const studentSeminarService = {
   getOverview: async (): Promise<SeminarOverviewResponse> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ME_OVERVIEW));
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Gagal mengambil data overview seminar');
-    }
     const result = await response.json();
-    return result;
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Gagal mengambil data overview seminar');
+    }
+    return result.data;
   },
 
   getHistory: async (): Promise<SeminarHistoryItem[]> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ME_HISTORY));
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Gagal mengambil riwayat seminar');
-    }
     const result = await response.json();
-    return result;
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Gagal mengambil riwayat seminar');
+    }
+    return result.data;
   },
 
   getAttendanceHistory: async (): Promise<AttendanceHistoryResponse> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ME_ATTENDANCE));
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Gagal mengambil riwayat kehadiran');
-    }
     const result = await response.json();
-    return result;
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Gagal mengambil riwayat kehadiran');
+    }
+    return result.data;
   },
 
   getAnnouncements: async (): Promise<any[]> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ANNOUNCEMENTS));
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Gagal mengambil pengumuman seminar');
-    }
     const result = await response.json();
-    return result;
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Gagal mengambil pengumuman seminar');
+    }
+    return result.data;
   },
 };
 
