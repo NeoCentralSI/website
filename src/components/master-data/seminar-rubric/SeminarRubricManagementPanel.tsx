@@ -34,6 +34,8 @@ export function SeminarRubricManagementPanel() {
         isDeletingRubric,
         reorderCriteria,
         reorderRubrics,
+        removeCpmkConfig,
+        isRemovingCpmkConfig,
     } = useSeminarRubric();
 
     const { cpmks: allCpmks } = useCpmk(activeAcademicYearId);
@@ -129,10 +131,12 @@ export function SeminarRubricManagementPanel() {
                 onCreateRubric={createRubric}
                 onUpdateRubric={updateRubric}
                 onDeleteRubric={deleteRubric}
+                onRemoveCpmkConfig={removeCpmkConfig}
                 onReorderCriteria={reorderCriteria}
                 onReorderRubrics={reorderRubrics}
                 isDeletingCriteria={isDeletingCriteria}
                 isDeletingRubric={isDeletingRubric}
+                isRemovingCpmkConfig={isRemovingCpmkConfig}
             />
 
             <CriteriaFormDialog

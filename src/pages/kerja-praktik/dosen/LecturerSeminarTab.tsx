@@ -19,19 +19,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-import { 
-    Loader2, 
-    FileText, 
-    CalendarDays, 
-    MapPin, 
-    Clock, 
-    User, 
-    CheckCircle2, 
-    XCircle, 
+import {
+    Loader2,
+    FileText,
+    CalendarDays,
+    MapPin,
+    Clock,
+    User,
+    CheckCircle2,
+    XCircle,
     Users,
     AlertCircle
 } from 'lucide-react';
-import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
+import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarDetailAudienceTable';
 
 
 export default function LecturerSeminarTab() {
@@ -127,7 +127,7 @@ export default function LecturerSeminarTab() {
 
     const handleBulkValidateParticipants = async (seminarId: string) => {
         if (selectedParticipantIds.length === 0) return;
-        
+
         setIsBulkValidating(true);
         try {
             await bulkValidateSeminarAudience(seminarId, selectedParticipantIds);
@@ -163,7 +163,7 @@ export default function LecturerSeminarTab() {
         try {
             setIsGeneratingBA(seminarId);
             const blob = await downloadBeritaAcara(seminarId);
-            
+
             // Create a link and trigger download
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -173,9 +173,9 @@ export default function LecturerSeminarTab() {
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
-            
+
             toast.success("Berita Acara berhasil diterbitkan dan diunduh.");
-            
+
             // Refresh data to show updated status
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
         } catch (error: any) {
@@ -312,8 +312,8 @@ export default function LecturerSeminarTab() {
 
                                 {seminar.status === 'REQUESTED' && (
                                     <div className="flex justify-end gap-3 pt-6 mt-6 border-t">
-                                        <Button 
-                                            variant="outline" 
+                                        <Button
+                                            variant="outline"
                                             className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 px-6"
                                             onClick={() => handleReject(seminar.id)}
                                             disabled={!!isRejecting || !!isApproving}
@@ -321,7 +321,7 @@ export default function LecturerSeminarTab() {
                                             {isRejecting === seminar.id ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
                                             Tolak Pengajuan
                                         </Button>
-                                        <Button 
+                                        <Button
                                             variant="default"
                                             className="bg-green-600 hover:bg-green-700 text-white px-6"
                                             onClick={() => handleApprove(seminar.id)}
@@ -348,18 +348,18 @@ export default function LecturerSeminarTab() {
                                 {!isCompleted && (
                                     <div className="flex items-center gap-2">
                                         {!isEditingNotesMap[seminar.id] ? (
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 className="h-8 gap-2"
                                                 onClick={() => handleStartEdit(seminar.id, seminar.supervisorNotes)}
                                             >
                                                 Edit Catatan
                                             </Button>
                                         ) : (
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
                                                 className="h-8 gap-2 text-muted-foreground"
                                                 onClick={() => handleCancelEdit(seminar.id)}
                                             >
@@ -371,7 +371,7 @@ export default function LecturerSeminarTab() {
                             </CardHeader>
                             <CardContent className="space-y-4 pt-4">
                                 {isEditingNotesMap[seminar.id] ? (
-                                    <Textarea 
+                                    <Textarea
                                         placeholder="Tuliskan poin-poin penting, pertanyaan, atau catatan selama seminar berlangsung untuk berita acara..."
                                         className="min-h-[140px] bg-white resize-none focus-visible:ring-primary leading-relaxed"
                                         value={editingNotes[seminar.id] ?? seminar.supervisorNotes ?? ''}
@@ -401,7 +401,7 @@ export default function LecturerSeminarTab() {
                                         )}
                                     </div>
                                     {isEditingNotesMap[seminar.id] && (
-                                        <Button 
+                                        <Button
                                             size="sm"
                                             onClick={() => handleSaveNotes(seminar.id)}
                                             disabled={isSavingNotes === seminar.id || editingNotes[seminar.id] === undefined || editingNotes[seminar.id] === seminar.supervisorNotes}
@@ -419,7 +419,7 @@ export default function LecturerSeminarTab() {
                                                     Sudah Diterbitkan
                                                 </Badge>
                                             )}
-                                            <Button 
+                                            <Button
                                                 variant={seminar.beritaAcaraDocumentId ? "outline" : "default"}
                                                 size="sm"
                                                 onClick={() => handleGenerateBeritaAcara(seminar.id)}
@@ -470,7 +470,7 @@ export default function LecturerSeminarTab() {
                                     )}
                                 </CardHeader>
                                 <CardContent>
-                                    <SeminarAudienceTable 
+                                    <ThesisSeminarAudienceTable
                                         rows={audienceRows}
                                         showAction={seminar.status === 'APPROVED' || seminar.status === 'COMPLETED'}
                                         approvingStudentId={approvingParticipantId}

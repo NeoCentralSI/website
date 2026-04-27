@@ -51,8 +51,10 @@ interface DefenceCriteriaTableProps {
     onDeleteRubric: (id: string) => void;
     onReorderCriteria: (cpmkId: string, orderedIds: string[]) => Promise<unknown>;
     onReorderRubrics: (criteriaId: string, orderedIds: string[]) => Promise<unknown>;
+    onRemoveCpmkConfig: (cpmkId: string) => Promise<unknown>;
     isDeletingCriteria: boolean;
     isDeletingRubric: boolean;
+    isRemovingCpmkConfig: boolean;
 }
 
 export function DefenceCriteriaTable({
@@ -68,9 +70,12 @@ export function DefenceCriteriaTable({
     onDeleteRubric,
     onReorderCriteria,
     onReorderRubrics,
+    onRemoveCpmkConfig,
     isDeletingCriteria,
     isDeletingRubric,
+    isRemovingCpmkConfig,
 }: DefenceCriteriaTableProps) {
+    const [deleteCpmkId, setDeleteCpmkId] = useState<string | null>(null);
     const [deleteCriteriaId, setDeleteCriteriaId] = useState<string | null>(null);
     const [deleteRubricId, setDeleteRubricId] = useState<string | null>(null);
     const [openCpmks, setOpenCpmks] = useState<string[]>([]);
@@ -116,6 +121,13 @@ export function DefenceCriteriaTable({
         if (deleteCriteriaId) {
             onDeleteCriteria(deleteCriteriaId);
             setDeleteCriteriaId(null);
+        }
+    };
+
+    const handleConfirmRemoveCpmkConfig = async () => {
+        if (deleteCpmkId) {
+            await onRemoveCpmkConfig(deleteCpmkId);
+            setDeleteCpmkId(null);
         }
     };
 
@@ -226,6 +238,20 @@ export function DefenceCriteriaTable({
                                                     Total skor kriteria: <strong>{skor}</strong>
                                                 </p>
                                                 <div className="flex items-center gap-2 flex-wrap">
+                                                    {cpmk.assessmentCriterias.length > 0 && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                                            disabled={cpmk.hasAssessmentDetails}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setDeleteCpmkId(cpmk.id);
+                                                            }}
+                                                        >
+                                                            <Trash2 className="mr-1 h-3 w-3" /> Hapus Semua
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -505,6 +531,39 @@ export function DefenceCriteriaTable({
                                 </>
                             ) : (
                                 'Hapus'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Konfirmasi hapus semua kriteria di CPMK */}
+            <AlertDialog
+                open={!!deleteCpmkId}
+                onOpenChange={(open: boolean) => !open && setDeleteCpmkId(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Semua Kriteria CPMK</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah Anda yakin ingin menghapus seluruh kriteria dan rubrik pada CPMK ini secara permanen?
+                            Tindakan ini tidak dapat dibatalkan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleConfirmRemoveCpmkConfig}
+                            disabled={isRemovingCpmkConfig}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {isRemovingCpmkConfig ? (
+                                <>
+                                    <Spinner className="mr-2 h-4 w-4" />
+                                    Menghapus...
+                                </>
+                            ) : (
+                                'Hapus Semua'
                             )}
                         </AlertDialogAction>
                     </AlertDialogFooter>

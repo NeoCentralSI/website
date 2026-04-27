@@ -2,14 +2,14 @@ import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { 
-    Calendar, 
-    Clock, 
-    MapPin, 
-    User, 
-    ArrowLeft, 
-    Users, 
-    Link as LinkIcon, 
+import {
+    Calendar,
+    Clock,
+    MapPin,
+    User,
+    ArrowLeft,
+    Users,
+    Link as LinkIcon,
     Building,
     CheckCircle2,
     UserPlus,
@@ -21,9 +21,9 @@ import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/spinner';
 import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { 
-    getSeminarDetail, 
-    registerSeminarAudience, 
+import {
+    getSeminarDetail,
+    registerSeminarAudience,
     unregisterSeminarAudience,
     validateSeminarAudience,
     unvalidateSeminarAudience
@@ -111,30 +111,30 @@ export default function SeminarDetail() {
         if (!seminar) return false;
         if (seminar.status === 'COMPLETED') return true; // Already finished, can't register? Or actually if it's completed, registration might be closed. 
         // User said: "hanya bisa diambil untuk di hari itu saja mulai dari start timenya"
-        
+
         try {
             const now = new Date();
-            
+
             // Extract local components for date comparison
             const d = new Date(seminar.seminarDate);
             const seminarYear = d.getFullYear();
             const seminarMonth = d.getMonth();
             const seminarDay = d.getDate();
-            
-            const isSameDay = 
-                now.getFullYear() === seminarYear && 
-                now.getMonth() === seminarMonth && 
+
+            const isSameDay =
+                now.getFullYear() === seminarYear &&
+                now.getMonth() === seminarMonth &&
                 now.getDate() === seminarDay;
 
             // Extract time components
             const timeObj = new Date(seminar.startTime);
             const hours = timeObj.getUTCHours();
             const minutes = timeObj.getUTCMinutes();
-            
+
             const seminarStartLocal = new Date(seminarYear, seminarMonth, seminarDay, hours, minutes, 0, 0);
-            
+
             const isAfterStart = now >= seminarStartLocal;
-            
+
             return isSameDay && isAfterStart;
         } catch (error) {
             console.error('Error calculating canRegister:', error);
@@ -158,7 +158,7 @@ export default function SeminarDetail() {
             </div>
         );
     }
-    
+
     // @ts-ignore - roles can be compared with strings
     const isLecturer = user?.roles?.some(r => LECTURER_ROLES.includes(r as any));
     const isSupervisor = seminar.internship?.supervisor?.user?.id === user?.id;
@@ -287,7 +287,7 @@ export default function SeminarDetail() {
                                 <CardTitle className="text-lg flex items-center gap-2">
                                     <Users className="h-5 w-5 text-primary" />
                                     Daftar Hadir Penonton
-                                </CardTitle> 
+                                </CardTitle>
                             </div>
 
                             {!seminar.isOwnSeminar && seminar.status === 'APPROVED' && (
@@ -302,12 +302,12 @@ export default function SeminarDetail() {
                                                 )}
                                                 {seminar.myRegistrationStatus === 'VALIDATED' ? 'Kehadiran Valid' : 'Terdaftar'}
                                             </Badge>
-                                            
+
                                             {seminar.myRegistrationStatus !== 'VALIDATED' && (
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
-                                                    className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/5" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/5"
                                                     onClick={handleUnregister}
                                                 >
                                                     Batalkan
@@ -329,7 +329,7 @@ export default function SeminarDetail() {
                             )}
                         </CardHeader>
                         <CardContent>
-                            <SeminarAudienceTable 
+                            <SeminarAudienceTable
                                 rows={audienceRows}
                                 showAction={canValidate}
                                 onApprove={(row) => handleValidate(row.studentId!)}

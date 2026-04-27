@@ -1,36 +1,40 @@
 import { useEffect, useMemo } from 'react'
-import { useOutletContext, useLocation, Navigate } from 'react-router-dom'
+import { useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import type { LayoutContext } from '@/components/layout/ProtectedLayout'
 import { TabsNav } from '@/components/ui/tabs-nav'
-import { ThesisSeminarValidationPanel } from '@/components/thesis-seminar/admin/ThesisSeminarValidationPanel'
-import { ThesisSeminarArchivePanel } from '@/components/thesis-seminar/admin/ThesisSeminarArchivePanel'
+import { AdminThesisSeminarValidationPanel } from '@/components/thesis-seminar/AdminThesisSeminarValidationPanel'
+import { AdminThesisSeminarArchivePanel } from '@/components/thesis-seminar/AdminThesisSeminarArchivePanel'
 
 export default function AdminThesisSeminar() {
 	const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>()
+	const navigate = useNavigate()
 	const location = useLocation()
+	const activeTab = location.pathname.includes('/arsip') ? 'archive' : 'validation'
 
 	const breadcrumbs = useMemo(
 		() => [
-			{ label: 'Tugas Akhir' },
-			{ label: 'Seminar Hasil' },
+			{ label: 'Tugas Akhir', href: '/tugas-akhir' },
+			{ label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil/validasi' },
+			{ label: activeTab === 'archive' ? 'Arsip' : 'Validasi' },
 		],
-		[]
+		[activeTab]
 	)
 
 	useEffect(() => {
+		if (
+			location.pathname === '/tugas-akhir/seminar-hasil' ||
+			location.pathname === '/tugas-akhir/seminar-hasil/'
+		) {
+			navigate('/tugas-akhir/seminar-hasil/validasi', { replace: true })
+		}
 		setBreadcrumbs(breadcrumbs)
-		setTitle(undefined)
-	}, [setBreadcrumbs, setTitle, breadcrumbs])
+		setTitle('Seminar Hasil')
+	}, [breadcrumbs, location.pathname, navigate, setBreadcrumbs, setTitle])
 
 	const tabs = [
-		{ label: 'Validasi', to: '/tugas-akhir/seminar-hasil/validasi', end: true },
-		{ label: 'Arsip', to: '/tugas-akhir/seminar-hasil/arsip', end: true },
+		{ label: 'Validasi', to: '/tugas-akhir/seminar-hasil/validasi' },
+		{ label: 'Arsip', to: '/tugas-akhir/seminar-hasil/arsip' },
 	]
-
-	// Handle redirect from base URL to default tab
-	if (location.pathname === '/tugas-akhir/seminar-hasil') {
-		return <Navigate to="/tugas-akhir/seminar-hasil/validasi" replace />
-	}
 
 	return (
 		<div className="p-6 space-y-6">
@@ -41,8 +45,8 @@ export default function AdminThesisSeminar() {
 
 			<TabsNav tabs={tabs} />
 
-			{location.pathname.includes('/validasi') && <ThesisSeminarValidationPanel />}
-			{location.pathname.includes('/arsip') && <ThesisSeminarArchivePanel />}
+			{activeTab === 'validation' && <AdminThesisSeminarValidationPanel />}
+			{activeTab === 'archive' && <AdminThesisSeminarArchivePanel />}
 		</div>
 	)
 }

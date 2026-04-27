@@ -3,7 +3,7 @@ import { useRole } from '@/hooks/shared/useRole'
 import { Loading } from '@/components/ui/spinner'
 
 const StudentThesisSeminarPage = lazy(() => import('./StudentThesisSeminar'))
-const LecturerThesisSeminarPage = lazy(() => import('../tugas-akhir/seminar-hasil/LecturerThesisSeminar'))
+const LecturerThesisSeminarPage = lazy(() => import('./LecturerThesisSeminar'))
 const AdminThesisSeminarPage = lazy(() => import('./AdminThesisSeminar'))
 
 export default function SeminarHasilEntry() {
@@ -12,13 +12,16 @@ export default function SeminarHasilEntry() {
   return (
     <Suspense fallback={
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-        <Loading size="lg" text="Memuat Seminar..." />
+        <Loading size="lg" text="Memuat..." />
       </div>
     }>
-      {isStudent() && <StudentThesisSeminarPage />}
-      {isDosen() && <LecturerThesisSeminarPage />}
-      {isAdmin() && <AdminThesisSeminarPage />}
-      {!isStudent() && !isDosen() && !isAdmin() && (
+      {isAdmin() ? (
+        <AdminThesisSeminarPage />
+      ) : isStudent() ? (
+        <StudentThesisSeminarPage />
+      ) : isDosen() ? (
+        <LecturerThesisSeminarPage />
+      ) : (
         <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
           <p className="text-muted-foreground text-sm">Anda tidak memiliki akses ke halaman ini.</p>
         </div>

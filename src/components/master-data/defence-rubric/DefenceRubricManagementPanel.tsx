@@ -42,6 +42,8 @@ export function DefenceRubricManagementPanel() {
         isDeletingRubric,
         reorderCriteria,
         reorderRubrics,
+        removeCpmkConfig,
+        isRemovingCpmkConfig,
     } = useDefenceRubric(selectedRole);
 
     const { cpmks: allCpmks } = useCpmk(activeAcademicYearId);
@@ -169,10 +171,12 @@ export function DefenceRubricManagementPanel() {
                 onCreateRubric={createRubric}
                 onUpdateRubric={updateRubric}
                 onDeleteRubric={deleteRubric}
+                onRemoveCpmkConfig={removeCpmkConfig}
                 onReorderCriteria={reorderCriteria}
                 onReorderRubrics={reorderRubrics}
                 isDeletingCriteria={isDeletingCriteria}
                 isDeletingRubric={isDeletingRubric}
+                isRemovingCpmkConfig={isRemovingCpmkConfig}
             />
 
             <DefenceCriteriaFormDialog

@@ -44,6 +44,13 @@ export interface SeminarDocument {
   filePath?: string | null;
 }
 
+export interface AdminSeminarDocumentSummary {
+  total: number;
+  submitted: number;
+  approved: number;
+  declined: number;
+}
+
 export interface SeminarDocumentType {
   id: string;
   name: string;
@@ -104,6 +111,7 @@ export interface SeminarOverviewResponse {
 export interface AttendanceRecord {
   seminarId: string;
   presenterName: string;
+  presenterNim?: string;
   thesisTitle: string;
   date: string | null;
   isPresent: boolean;
@@ -123,17 +131,6 @@ export interface AttendanceHistoryResponse {
   records: AttendanceRecord[];
 }
 
-// ============================================================
-// Admin Seminar Management Types
-// ============================================================
-
-export interface AdminSeminarDocumentSummary {
-  total: number;
-  submitted: number;
-  approved: number;
-  declined: number;
-}
-
 export interface AdminSeminarSupervisor {
   name: string;
   role: string;
@@ -151,6 +148,15 @@ export interface AdminSeminarListItem {
   date: string | null;
   startTime: string | null;
   endTime: string | null;
+  room?: { id: string; name: string } | null;
+  examiners?: Array<{
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    availabilityStatus: ExaminerAvailabilityStatus;
+  }>;
+  audienceCount?: number;
   documentSummary: AdminSeminarDocumentSummary;
 }
 
