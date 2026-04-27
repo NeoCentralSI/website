@@ -9,6 +9,26 @@ import type {
   SetSchedulePayload,
   SetScheduleResponse,
 } from '@/types/seminar.types';
+import type { Room } from '@/services/admin.service';
+
+function buildThesisSeminarListEndpoint(params?: {
+  search?: string;
+  status?: string;
+  view?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const queryParts: string[] = [];
+  if (params?.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+  if (params?.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
+  if (params?.view) queryParts.push(`view=${encodeURIComponent(params.view)}`);
+  if (params?.page) queryParts.push(`page=${params.page}`);
+  if (params?.pageSize) queryParts.push(`pageSize=${params.pageSize}`);
+
+  return queryParts.length > 0
+    ? `${API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE}?${queryParts.join('&')}`
+    : API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE;
+}
 
 /**
  * Get all seminars for admin list view (active seminars)
@@ -16,17 +36,18 @@ import type {
 export async function getAdminSeminarList(params?: {
   search?: string;
   status?: string;
+  view?: string;
 }): Promise<AdminSeminarListItem[]> {
-  let endpoint = API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ADMIN.LIST;
-  const queryParts: string[] = [];
-  if (params?.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
-  if (params?.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
-  if (queryParts.length > 0) endpoint += `?${queryParts.join('&')}`;
-
+  const endpoint = buildThesisSeminarListEndpoint({
+    ...params,
+    view: params?.view ?? 'validation',
+  });
   const res = await apiRequest(getApiUrl(endpoint));
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat data seminar');
-  return json.data;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat data seminar');
+  }
+  return res.json();
 }
 
 /**
@@ -35,12 +56,12 @@ export async function getAdminSeminarList(params?: {
 export async function getAdminSeminarDetail(
   seminarId: string
 ): Promise<AdminSeminarDetailResponse> {
-  const res = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ADMIN.DETAIL(seminarId))
-  );
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat detail seminar');
-  return json.data;
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(seminarId)));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat detail seminar');
+  }
+  return res.json();
 }
 
 /**
@@ -53,7 +74,7 @@ export async function validateSeminarDocument(
 ): Promise<ValidateDocumentResponse> {
   const res = await apiRequest(
     getApiUrl(
-      API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ADMIN.VALIDATE_DOCUMENT(
+      API_CONFIG.ENDPOINTS.THESIS_SEMINAR.VALIDATE_DOCUMENT(
         seminarId,
         documentTypeId
       )
@@ -63,21 +84,23 @@ export async function validateSeminarDocument(
       body: JSON.stringify(payload),
     }
   );
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memvalidasi dokumen');
-  return json.data;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memvalidasi dokumen');
+  }
+  return res.json();
 }
 
 /**
  * Get scheduling data (rooms + lecturer availabilities) for a seminar
  */
 export async function getSchedulingData(seminarId: string): Promise<SeminarSchedulingData> {
-  const res = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ADMIN.SCHEDULING_DATA(seminarId))
-  );
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat data penjadwalan');
-  return json.data;
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.SCHEDULING_DATA(seminarId)));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat data penjadwalan');
+  }
+  return res.json();
 }
 
 /**
@@ -88,22 +111,24 @@ export async function setSchedule(
   payload: SetSchedulePayload
 ): Promise<SetScheduleResponse> {
   const res = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ADMIN.SET_SCHEDULE(seminarId)),
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.SCHEDULE(seminarId)),
     {
       method: 'POST',
       body: JSON.stringify(payload),
     }
   );
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal menyimpan jadwal seminar');
-  return json.data;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal menyimpan jadwal seminar');
+  }
+  return res.json();
 }
 
 // ============================================================
 // ARCHIVE SERVICE FUNCTIONS
 // ============================================================
 
-export type SeminarResultStatus = 'passed' | 'passed_with_revision' | 'failed';
+export type SeminarResultStatus = 'passed' | 'passed_with_revision' | 'failed' | 'cancelled';
 
 export interface SeminarResult {
   id: string;
@@ -173,6 +198,7 @@ export const getSeminarResultsAPI = async (params?: {
   page?: number;
   pageSize?: number;
   search?: string;
+  status?: string;
 }): Promise<{
   seminars: SeminarResult[];
   meta: {
@@ -182,87 +208,148 @@ export const getSeminarResultsAPI = async (params?: {
     totalPages: number;
   };
 }> => {
-  const queryParams = new URLSearchParams();
-  if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
-  if (params?.search) queryParams.append('search', params.search);
-
-  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.LIST}?${queryParams}`));
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat data seminar hasil');
-  return json;
+  const endpoint = buildThesisSeminarListEndpoint({
+    ...params,
+    view: 'archive',
+  });
+  const res = await apiRequest(getApiUrl(endpoint));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat data seminar hasil');
+  }
+  return res.json();
 };
 
 /**
  * Get archive detail
  */
 export const getSeminarResultDetailAPI = async (id: string): Promise<{ data: SeminarResult }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.DETAIL(id)));
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat detail seminar hasil');
-  return json;
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(id)));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat detail seminar hasil');
+  }
+  const data = await res.json();
+  return {
+    data: {
+      id: data.id,
+      thesisId: data.thesis?.id ?? '',
+      thesisTitle: data.thesis?.title ?? '-',
+      student: {
+        id: null,
+        fullName: data.student?.name ?? '-',
+        nim: data.student?.nim ?? '-',
+      },
+      date: data.date ?? null,
+      room: data.room
+        ? {
+            id: data.room.id,
+            name: data.room.name,
+            location: null,
+          }
+        : null,
+      status: data.status,
+      isEditable: false,
+      audienceCount: Array.isArray(data.audiences) ? data.audiences.length : 0,
+      examiners: (data.examiners ?? []).map((examiner: any) => ({
+        id: examiner.id,
+        lecturerId: examiner.lecturerId ?? examiner.id,
+        lecturerName: examiner.lecturerName,
+        order: examiner.order,
+      })),
+      createdAt: data.registeredAt ?? data.date ?? new Date().toISOString(),
+      updatedAt: data.resultFinalizedAt ?? data.date ?? new Date().toISOString(),
+    },
+  };
 };
 
 /**
  * Create archive entry (Old Data)
  */
 export const createSeminarResultAPI = async (data: CreateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.CREATE), {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE), {
     method: 'POST',
     body: JSON.stringify(data),
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal menambahkan seminar hasil');
-  return json;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal menambahkan seminar hasil');
+  }
+  const result = await res.json();
+  return { data: result };
 };
 
 /**
  * Update archive entry
  */
 export const updateSeminarResultAPI = async (id: string, data: UpdateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.UPDATE(id)), {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(id)), {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memperbarui seminar hasil');
-  return json;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memperbarui seminar hasil');
+  }
+  const result = await res.json();
+  return { data: result };
 };
 
 /**
  * Delete archive entry
  */
 export const deleteSeminarResultAPI = async (id: string): Promise<{ success: boolean; message: string }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.DELETE(id)), {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BY_ID(id)), {
     method: 'DELETE',
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal menghapus seminar hasil');
-  return json;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal menghapus seminar hasil');
+  }
+  return res.json();
 };
 
 /**
  * Get options for dropdowns
  */
 export const getSeminarResultThesisOptionsAPI = async (): Promise<{ data: SeminarResultThesisOption[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.OPTIONS_THESES));
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat opsi thesis');
-  return json;
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.OPTIONS_THESES));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat opsi thesis');
+  }
+  const data = await res.json();
+  return { data };
 };
 
 export const getSeminarResultLecturerOptionsAPI = async (): Promise<{ data: SeminarResultLecturerOption[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.OPTIONS_LECTURERS));
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat opsi dosen');
-  return json;
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.OPTIONS_LECTURERS));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat opsi dosen');
+  }
+  const data = await res.json();
+  return { data };
 };
 
 export const getSeminarResultStudentOptionsAPI = async (): Promise<{ data: SeminarResultStudentOption[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.OPTIONS_STUDENTS));
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat opsi mahasiswa');
-  return json;
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.OPTIONS_STUDENTS));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat opsi mahasiswa');
+  }
+  const data = await res.json();
+  return { data };
+};
+
+export const getSeminarRoomOptionsAPI = async (): Promise<{ data: Room[] }> => {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.OPTIONS_ROOMS));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat opsi ruangan');
+  }
+  const data = await res.json();
+  return { data };
 };
 
 export interface SeminarAudience {
@@ -285,45 +372,55 @@ export interface SeminarAudienceStudentOption {
  * Get audience list for a seminar
  */
 export const getSeminarAudiencesAPI = async (seminarId: string): Promise<{ data: SeminarAudience[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.AUDIENCES(seminarId)));
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat data audience seminar');
-  return json;
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat data audience seminar');
+  }
+  const data = await res.json();
+  return { data };
 };
 
 /**
  * Get student options (not yet in audience) for a seminar
  */
 export const getStudentOptionsForAudienceAPI = async (seminarId: string): Promise<{ data: SeminarAudienceStudentOption[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.AUDIENCES_OPTIONS_STUDENTS(seminarId)));
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memuat opsi mahasiswa audience');
-  return json;
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_OPTIONS(seminarId)));
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal memuat opsi mahasiswa audience');
+  }
+  const data = await res.json();
+  return { data };
 };
 
 /**
  * Add a student to seminar audience
  */
 export const addSeminarAudienceAPI = async (seminarId: string, studentId: string): Promise<{ success: boolean }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.AUDIENCES_CREATE(seminarId)), {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)), {
     method: 'POST',
     body: JSON.stringify({ studentId }),
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal menambahkan audience seminar');
-  return json;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal menambahkan audience seminar');
+  }
+  return res.json();
 };
 
 /**
  * Remove a student from seminar audience
  */
 export const removeSeminarAudienceAPI = async (seminarId: string, studentId: string): Promise<{ success: boolean }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.AUDIENCES_DELETE(seminarId, studentId)), {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCE_BY_ID(seminarId, studentId)), {
     method: 'DELETE',
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal menghapus audience seminar');
-  return json;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal menghapus audience seminar');
+  }
+  return res.json();
 };
 
 export interface SeminarAudienceImportResult {
@@ -341,20 +438,22 @@ export const importSeminarAudiencesAPI = async (seminarId: string, file: File): 
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.AUDIENCES_IMPORT(seminarId)), {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_IMPORT(seminarId)), {
     method: 'POST',
     body: formData,
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal mengimpor data audience');
-  return json;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal mengimpor data audience');
+  }
+  return res.json();
 };
 
 /**
  * Export seminar audiences template (Excel)
  */
 export const exportSeminarAudienceTemplateAPI = async (seminarId: string): Promise<void> => {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.AUDIENCES_TEMPLATE(seminarId));
+  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_TEMPLATE(seminarId));
   const res = await apiRequest(url, { method: 'GET' });
   if (!res.ok) throw new Error('Gagal mengunduh template audience seminar');
 
@@ -373,7 +472,7 @@ export const exportSeminarAudienceTemplateAPI = async (seminarId: string): Promi
  * Export audience to Excel
  */
 export const exportSeminarAudiencesAPI = async (seminarId: string): Promise<void> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.AUDIENCES_EXPORT(seminarId, 'excel')));
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_EXPORT(seminarId)));
   if (!res.ok) throw new Error('Gagal mengekspor data audience seminar');
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
@@ -390,7 +489,7 @@ export const exportSeminarAudiencesAPI = async (seminarId: string): Promise<void
  * Export audience to PDF (as HTML file for presentation)
  */
 export const exportSeminarAudiencesPdfAPI = async (seminarId: string): Promise<void> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.AUDIENCES_EXPORT(seminarId, 'pdf')));
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_EXPORT(seminarId)));
   if (!res.ok) throw new Error('Gagal mengekspor data audience seminar');
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
@@ -407,7 +506,7 @@ export const exportSeminarAudiencesPdfAPI = async (seminarId: string): Promise<v
  * Import/Export
  */
 export const exportSeminarArchiveAPI = async (): Promise<void> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.EXPORT));
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.EXPORT));
   if (!res.ok) throw new Error('Gagal mengekspor data seminar archive');
 
   const blob = await res.blob();
@@ -425,7 +524,7 @@ export const exportSeminarArchiveAPI = async (): Promise<void> => {
  * Download seminar archive template
  */
 export const downloadSeminarArchiveTemplateAPI = async (): Promise<void> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.TEMPLATE));
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.TEMPLATE));
   if (!res.ok) throw new Error('Gagal mengunduh template seminar archive');
 
   const blob = await res.blob();
@@ -454,12 +553,14 @@ export const importSeminarArchiveAPI = async (file: File): Promise<SeminarArchiv
   const formData = new FormData();
   formData.append('file', file);
   
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR_ARCHIVE.IMPORT), {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.IMPORT), {
     method: 'POST',
     body: formData,
   });
-  
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal mengimpor data seminar archive');
-  return json;
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Gagal mengimpor data seminar archive');
+  }
+  return res.json();
 };

@@ -5,10 +5,10 @@ import { Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import CustomTable from '@/components/layout/CustomTable';
-import type { SeminarAudience } from '@/services/thesis-seminar/admin.service';
+import type { AdminThesisSeminarAudience } from '@/services/thesis-seminar/core.service';
 
-interface ThesisSeminarAudienceTableProps {
-  data: SeminarAudience[];
+interface AdminThesisSeminarAudienceTableProps {
+  data: AdminThesisSeminarAudience[];
   loading: boolean;
   isRefreshing?: boolean;
   isEditable: boolean;
@@ -18,7 +18,7 @@ interface ThesisSeminarAudienceTableProps {
   onSearchChange?: (value: string) => void;
 }
 
-export function ThesisSeminarAudienceTable({
+export function AdminThesisSeminarAudienceTable({
   data,
   loading,
   isRefreshing,
@@ -27,12 +27,12 @@ export function ThesisSeminarAudienceTable({
   actions,
   searchValue,
   onSearchChange,
-}: ThesisSeminarAudienceTableProps) {
+}: AdminThesisSeminarAudienceTableProps) {
   const columns = useMemo(() => {
     const cols: {
       key: string;
       header: string;
-      render: (row: SeminarAudience) => React.ReactNode;
+      render: (row: AdminThesisSeminarAudience) => React.ReactNode;
     }[] = [
       {
         key: 'nama',

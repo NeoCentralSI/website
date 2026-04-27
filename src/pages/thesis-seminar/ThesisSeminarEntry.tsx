@@ -15,10 +15,13 @@ export default function SeminarHasilEntry() {
         <Loading size="lg" text="Memuat Seminar..." />
       </div>
     }>
-      {isStudent() && <StudentThesisSeminarPage />}
-      {isDosen() && <LecturerThesisSeminarPage />}
-      {isAdmin() && <AdminThesisSeminarPage />}
-      {!isStudent() && !isDosen() && !isAdmin() && (
+      {isAdmin() ? (
+        <AdminThesisSeminarPage />
+      ) : isStudent() ? (
+        <StudentThesisSeminarPage />
+      ) : isDosen() ? (
+        <LecturerThesisSeminarPage />
+      ) : (
         <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
           <p className="text-muted-foreground text-sm">Anda tidak memiliki akses ke halaman ini.</p>
         </div>

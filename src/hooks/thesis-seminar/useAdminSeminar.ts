@@ -11,9 +11,10 @@ import type { ValidateDocumentPayload, SetSchedulePayload } from '@/types/semina
 export function useAdminSeminarList(params?: {
   search?: string;
   status?: string;
+  view?: string;
 }) {
   return useQuery({
-    queryKey: ['admin-seminars', params?.search, params?.status],
+    queryKey: ['admin-seminars', params?.search, params?.status, params?.view],
     queryFn: () => getAdminSeminarList(params),
   });
 }

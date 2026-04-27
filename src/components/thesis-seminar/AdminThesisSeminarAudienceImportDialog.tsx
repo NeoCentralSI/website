@@ -5,27 +5,27 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, FileSpreadsheet, RefreshCw, Upload } from "lucide-react";
+import { FileSpreadsheet, RefreshCw, Upload, Download } from "lucide-react";
 
-import type { SeminarArchiveImportResult } from "../../../services/thesis-seminar/admin.service";
+import type { AdminThesisSeminarAudienceImportResult } from "@/services/thesis-seminar/core.service";
 
-interface ThesisSeminarArchiveImportDialogProps {
+interface AdminThesisSeminarAudienceImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (file: File) => Promise<SeminarArchiveImportResult>;
+  onImport: (file: File) => Promise<AdminThesisSeminarAudienceImportResult>;
+  onDownloadTemplate?: () => void;
   isImporting: boolean;
-  onDownloadTemplate: () => void;
 }
 
-export function ThesisSeminarArchiveImportDialog({
+export function AdminThesisSeminarAudienceImportDialog({
   open,
   onOpenChange,
   onImport,
-  isImporting,
   onDownloadTemplate,
-}: ThesisSeminarArchiveImportDialogProps) {
+  isImporting,
+}: AdminThesisSeminarAudienceImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<SeminarArchiveImportResult | null>(null);
+  const [result, setResult] = useState<AdminThesisSeminarAudienceImportResult | null>(null);
 
   const reset = () => {
     setFile(null);
@@ -37,8 +37,8 @@ export function ThesisSeminarArchiveImportDialog({
     try {
       const importResult = await onImport(file);
       setResult(importResult);
-    } catch (error) {
-      // Error handled by parent/toast
+    } catch (_) {
+      // Error handled by parent toast
     }
   };
 
@@ -52,30 +52,27 @@ export function ThesisSeminarArchiveImportDialog({
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Import Arsip Seminar Hasil</DialogTitle>
+          <DialogTitle>Import Audience Seminar</DialogTitle>
           <DialogDescription>
-            Unggah file Excel untuk mengarsipkan data seminar hasil
+            Unggah file Excel untuk mengarsipkan data mahasiswa audience seminar hasil
           </DialogDescription>
         </DialogHeader>
 
         {!result ? (
           <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
               <div className="flex items-center gap-3">
-                <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                <FileSpreadsheet className="h-8 w-8 text-green-600 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Gunakan template standar</p>
-                  <p className="text-xs text-muted-foreground">
-                    Kolom wajib: Nama, NIM, Judul TA, Tanggal, Ruangan, Hasil, Dosen Penguji 1, Dosen Penguji 2
-                  </p>
-                  {/* <p className="text-xs text-muted-foreground">
-                    Catatan: Dosen Penguji 3 bersifat opsional.
-                  </p> */}
+                  <p className="text-sm font-medium">Gunakan template standar </p>
+                  <p className="text-xs text-muted-foreground">Kolom wajib: No, Nama Mahasiswa, NIM</p>
                 </div>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={onDownloadTemplate}>
-                <Download className="mr-2 h-4 w-4" /> Template
-              </Button>
+              {onDownloadTemplate && (
+                <Button type="button" variant="outline" size="sm" onClick={onDownloadTemplate} disabled={isImporting}>
+                  <Download className="mr-2 h-4 w-4" /> Template
+                </Button>
+              )}
             </div>
             <Input
               type="file"
@@ -88,7 +85,7 @@ export function ThesisSeminarArchiveImportDialog({
               <Alert>
                 <Upload className="h-4 w-4 animate-bounce text-blue-600" />
                 <AlertTitle>Sedang memproses...</AlertTitle>
-                <AlertDescription>Mohon tunggu, sistem sedang memvalidasi dan menyimpan data import.</AlertDescription>
+                <AlertDescription>Mohon tunggu, sistem sedang memvalidasi dan menyimpan data audience.</AlertDescription>
               </Alert>
             )}
           </div>
@@ -145,7 +142,7 @@ export function ThesisSeminarArchiveImportDialog({
                 Tutup
               </Button>
               <Button onClick={reset}>
-                <RefreshCw className="mr-2 h-4 w-4" /> Reset
+                <RefreshCw className="mr-2 h-4 w-4" /> Import Lagi
               </Button>
             </>
           )}

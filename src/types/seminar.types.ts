@@ -151,6 +151,15 @@ export interface AdminSeminarListItem {
   date: string | null;
   startTime: string | null;
   endTime: string | null;
+  room?: { id: string; name: string } | null;
+  examiners?: Array<{
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    availabilityStatus: ExaminerAvailabilityStatus;
+  }>;
+  audienceCount?: number;
   documentSummary: AdminSeminarDocumentSummary;
 }
 

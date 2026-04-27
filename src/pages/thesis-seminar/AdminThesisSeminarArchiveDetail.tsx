@@ -34,21 +34,17 @@ import {
   useExportAdminThesisSeminarAudiences,
   useImportAdminThesisSeminarAudiences,
   useRemoveAdminThesisSeminarAudience,
+  useAdminThesisSeminarDetail,
 } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
-import {
-  getAdminThesisSeminarDetail,
-  type AdminThesisSeminarAudience,
-  type AdminThesisSeminarAudienceImportResult,
-  type AdminThesisSeminarAudienceStudentOption,
-} from '@/services/thesis-seminar/core.service';
+import type { AdminThesisSeminarAudience, AdminThesisSeminarAudienceStudentOption } from '@/services/thesis-seminar/core.service';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 
 import { AdminThesisSeminarAudienceTable } from '@/components/thesis-seminar/AdminThesisSeminarAudienceTable';
 import { AdminThesisSeminarAudienceDialog } from '@/components/thesis-seminar/AdminThesisSeminarAudienceDialog';
 import { AdminThesisSeminarAudienceImportDialog } from '@/components/thesis-seminar/AdminThesisSeminarAudienceImportDialog';
 
-export default function ThesisSeminarArchiveDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export default function AdminThesisSeminarArchiveDetail() {
+  const { seminarId } = useParams<{ seminarId: string }>();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -57,13 +53,14 @@ export default function ThesisSeminarArchiveDetailPage() {
   const [search, setSearch] = useState("");
 
   // Queries
-  const { data: seminarDetail, isLoading: isDetailLoading } = useAdminThesisSeminarDetail(id);
+  const { data: seminarDetail, isLoading: isDetailLoading, refetch: refetchDetail } = useAdminThesisSeminarDetail(seminarId);
   const {
     data: audienceData,
     isLoading: isAudienceLoading,
     isFetching: isAudienceFetching,
-  } = useAdminThesisSeminarAudiences(id);
-  const { data: studentOptionsData } = useAdminThesisSeminarAudienceStudentOptions(id, seminarDetail?.isEditable ?? false);
+    refetch: refetchAudiences,
+  } = useAdminThesisSeminarAudiences(seminarId);
+  const { data: studentOptionsData, refetch: refetchStudentOptions } = useAdminThesisSeminarAudienceStudentOptions(seminarId, seminarDetail?.isEditable ?? false);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -94,8 +91,8 @@ export default function ThesisSeminarArchiveDetailPage() {
   const exportTemplateMut = useDownloadAdminThesisSeminarAudienceTemplate();
   const importMut = useImportAdminThesisSeminarAudiences();
 
-  const handleImport = async (file: File): Promise<AdminThesisSeminarAudienceImportResult> => {
-    const result = await importMut.mutateAsync({ seminarId: id!, file });
+  const handleImport = async (file: File) => {
+    const result = await importMut.mutateAsync({ seminarId: seminarId!, file });
     toast.success(`Import selesai: ${result.successCount} sukses, ${result.failed} gagal`);
     return result;
   };
@@ -257,7 +254,7 @@ export default function ThesisSeminarArchiveDetailPage() {
           onOpenChange={setIsImportOpen}
           onImport={handleImport}
           onDownloadTemplate={() => exportTemplateMut.mutate()}
-          isImporting={false}
+          isImporting={importMut.isPending}
         />
 
         <AlertDialog open={Boolean(deleteStudentId)} onOpenChange={(open) => !open && setDeleteStudentId(null)}>

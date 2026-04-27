@@ -11,23 +11,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { SeminarAudienceStudentOption } from '@/services/thesis-seminar/admin.service';
+import type { AdminThesisSeminarAudienceStudentOption } from '@/services/thesis-seminar/core.service';
 
-interface ThesisSeminarAudienceDialogProps {
+interface AdminThesisSeminarAudienceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  studentOptions: SeminarAudienceStudentOption[];
+  studentOptions: AdminThesisSeminarAudienceStudentOption[];
   isPending: boolean;
   onSubmit: (studentId: string) => void;
 }
 
-export function ThesisSeminarAudienceDialog({
+export function AdminThesisSeminarAudienceDialog({
   open,
   onOpenChange,
   studentOptions,
   isPending,
   onSubmit,
-}: ThesisSeminarAudienceDialogProps) {
+}: AdminThesisSeminarAudienceDialogProps) {
   const [selectedStudentId, setSelectedStudentId] = useState('');
 
   const handleOpenChange = (isOpen: boolean) => {

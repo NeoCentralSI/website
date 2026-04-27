@@ -18,3 +18,4 @@ export {
   useCancelRevisionSubmission,
   useDeleteRevision,
 } from './useStudentSeminar';
+export * from './useAdminThesisSeminar';

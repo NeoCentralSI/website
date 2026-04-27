@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
-import { ValidationModal } from '@/components/seminar/ValidationModal';
-import { SeminarSchedulingSection } from '@/components/seminar/SeminarSchedulingSection';
+import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationModal';
+import { AdminThesisSeminarSchedulingSection } from '@/components/thesis-seminar/AdminThesisSeminarSchedulingSection';
+
 import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
-import { useAdminSeminarDetail } from '@/hooks/thesis-seminar/useAdminSeminar';
+
+import { useAdminThesisSeminarDetail } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId, formatRoleName } from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
@@ -53,14 +55,15 @@ export default function AdminSeminarDetail() {
   const { seminarId } = useParams<{ seminarId: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { data: detail, isLoading } = useAdminSeminarDetail(seminarId);
+  const { data: detail, isLoading } = useAdminThesisSeminarDetail(seminarId);
 
   const [validationOpen, setValidationOpen] = useState(false);
 
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir' },
-      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar/admin' },
+      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
+      { label: 'Validasi', href: '/tugas-akhir/seminar-hasil/validasi' },
       { label: 'Detail' },
     ],
     []
@@ -116,7 +119,7 @@ export default function AdminSeminarDetail() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/tugas-akhir/seminar/admin')}
+            onClick={() => navigate('/tugas-akhir/seminar-hasil/validasi')}
             className="shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -238,27 +241,6 @@ export default function AdminSeminarDetail() {
                   </div>
                 </div>
               )}
-              {detail.rejectedExaminers && detail.rejectedExaminers.length > 0 && (
-                <div className="pt-2 border-t">
-                  <span className="text-muted-foreground text-xs">Riwayat Penolakan:</span>
-                  <div className="mt-1 space-y-1">
-                    {detail.rejectedExaminers.map((e) => (
-                      <div key={e.id} className="flex items-center gap-2 opacity-60">
-                        <XCircle className="h-3 w-3 text-red-400" />
-                        <span className="text-xs line-through">{toTitleCaseName(e.lecturerName)}</span>
-                        <span className="text-xs text-muted-foreground">
-                          (Penguji {e.order})
-                        </span>
-                        {e.respondedAt && (
-                          <span className="text-[10px] text-muted-foreground">
-                            — {formatDateTimeId(e.respondedAt)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
@@ -339,7 +321,7 @@ export default function AdminSeminarDetail() {
 
         {/* Scheduling Section */}
         {(detail.status === 'examiner_assigned' || detail.status === 'scheduled') && (
-          <SeminarSchedulingSection
+          <AdminThesisSeminarSchedulingSection
             seminarId={detail.id}
             isEditable={detail.status === 'examiner_assigned' || detail.status === 'scheduled'}
           />
@@ -362,11 +344,12 @@ export default function AdminSeminarDetail() {
       </div>
 
       {/* Validation Modal */}
-      <ValidationModal
+      <AdminThesisSeminarValidationModal
         seminar={seminarForModal}
         open={validationOpen}
         onOpenChange={setValidationOpen}
       />
+
     </>
   );
 }
