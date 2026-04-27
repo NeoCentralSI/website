@@ -2,10 +2,10 @@ import { useEffect, useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import type { LayoutContext } from '@/components/layout/ProtectedLayout'
 import { TabsNav } from '@/components/ui/tabs-nav'
-import { LecturerThesisSeminarExaminerRequestsTable } from '@/components/thesis-seminar/LecturerThesisSeminarExaminerRequestsTable'
+import { LecturerThesisSeminarSupervisedStudentsTable } from '@/components/thesis-seminar/LecturerThesisSeminarSupervisedStudentsTable'
 import { useRole } from '@/hooks/shared/useRole'
 
-export default function LecturerThesisSeminar() {
+export default function LecturerThesisSeminarSupervisedStudents() {
 	const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>()
 	const { isKadep } = useRole()
 
@@ -18,8 +18,8 @@ export default function LecturerThesisSeminar() {
 	)
 
 	useEffect(() => {
-		setBreadcrumbs(breadcrumbs);
-		setTitle(undefined);
+		setBreadcrumbs(breadcrumbs)
+		setTitle(undefined)
 	}, [setBreadcrumbs, setTitle, breadcrumbs])
 
 	const tabs = useMemo(() => {
@@ -36,13 +36,13 @@ export default function LecturerThesisSeminar() {
 	return (
 		<div className="p-4 space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold">Menguji Mahasiswa</h1>
-				<p className="text-gray-500">Daftar penugasan dan penilaian sebagai penguji seminar hasil</p>
+				<h1 className="text-2xl font-bold">Mahasiswa Bimbingan</h1>
+				<p className="text-gray-500">Seminar hasil mahasiswa yang Anda bimbing</p>
 			</div>
 
 			<TabsNav tabs={tabs} />
 
-			<LecturerThesisSeminarExaminerRequestsTable />
+			<LecturerThesisSeminarSupervisedStudentsTable />
 		</div>
 	)
 }

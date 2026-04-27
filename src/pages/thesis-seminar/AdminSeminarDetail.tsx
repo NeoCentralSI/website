@@ -10,7 +10,7 @@ import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/Thesi
 import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationModal';
 import { AdminThesisSeminarSchedulingSection } from '@/components/thesis-seminar/AdminThesisSeminarSchedulingSection';
 
-import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
+import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarAudienceTable';
 
 import { useAdminThesisSeminarDetail } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId, formatRoleName } from '@/lib/text';
@@ -337,7 +337,7 @@ export default function AdminSeminarDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <SeminarAudienceTable rows={detail.audiences} />
+              <ThesisSeminarAudienceTable rows={detail.audiences} />
             </CardContent>
           </Card>
         )}

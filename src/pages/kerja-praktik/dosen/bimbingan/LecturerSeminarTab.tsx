@@ -31,7 +31,7 @@ import {
     Users,
     AlertCircle
 } from 'lucide-react';
-import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
+import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarAudienceTable';
 
 
 export default function LecturerSeminarTab() {
@@ -470,7 +470,7 @@ export default function LecturerSeminarTab() {
                                     )}
                                 </CardHeader>
                                 <CardContent>
-                                    <SeminarAudienceTable 
+                                    <ThesisSeminarAudienceTable 
                                         rows={audienceRows}
                                         showAction={seminar.status === 'APPROVED' || seminar.status === 'COMPLETED'}
                                         approvingStudentId={approvingParticipantId}

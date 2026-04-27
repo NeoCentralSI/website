@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/spinner';
-import { SeminarAudienceTable } from '@/components/seminar/SeminarAudienceTable';
+import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarAudienceTable';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { 
     getSeminarDetail, 
@@ -329,7 +329,7 @@ export default function SeminarDetail() {
                             )}
                         </CardHeader>
                         <CardContent>
-                            <SeminarAudienceTable 
+                            <ThesisSeminarAudienceTable 
                                 rows={audienceRows}
                                 showAction={canValidate}
                                 onApprove={(row) => handleValidate(row.studentId!)}

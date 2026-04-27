@@ -54,7 +54,7 @@ import type {
   StudentRevisionItem,
 } from '@/types/seminar.types';
 
-interface StudentRevisiTabProps {
+interface StudentThesisSeminarRevisiTabProps {
   detail: StudentSeminarDetailResponse;
   onRefresh: () => Promise<unknown> | unknown;
   isRefreshing?: boolean;
@@ -91,7 +91,7 @@ function StatusBadge({ status }: { status: RevisionStatus }) {
   }
 }
 
-export function StudentRevisiTab({ detail, onRefresh, isRefreshing }: StudentRevisiTabProps) {
+export function StudentThesisSeminarRevisiTab({ detail, onRefresh, isRefreshing }: StudentThesisSeminarRevisiTabProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

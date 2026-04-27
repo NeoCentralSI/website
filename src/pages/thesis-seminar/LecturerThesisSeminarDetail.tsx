@@ -1,4 +1,4 @@
-import LecturerSeminarDetailIdentity from './LecturerSeminarDetailIdentity';
+import LecturerThesisSeminarDetailIdentity from './LecturerThesisSeminarDetailIdentity';
 
 /**
  * Default lecturer seminar detail page.
@@ -10,6 +10,6 @@ import LecturerSeminarDetailIdentity from './LecturerSeminarDetailIdentity';
  * - Catatan penguji ditampilkan di kartu rekap penguji pada halaman penilaian
  * - Supervisor action tab label: Berita Acara
  */
-export default function LecturerSeminarDetailPage() {
-  return <LecturerSeminarDetailIdentity />;
+export default function LecturerThesisSeminarDetailPage() {
+  return <LecturerThesisSeminarDetailIdentity />;
 }

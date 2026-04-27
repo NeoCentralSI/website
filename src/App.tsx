@@ -44,17 +44,17 @@ const LecturerMyStudentDetailPage = lazy(() => import('./pages/tugas-akhir/bimbi
 const SecretaryKelolaTugasAkhirPage = lazy(() => import('./pages/tugas-akhir/bimbingan/secretary/TugasAkhir'))
 // Tugas Akhir - Seminar Hasil
 const ThesisSeminarEntry = lazy(() => import('./pages/thesis-seminar/ThesisSeminarEntry'))
-const StudentSeminarDetailPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/StudentSeminarDetail'))
+const StudentThesisSeminarDetailPage = lazy(() => import('./pages/thesis-seminar/StudentThesisSeminarDetail'))
 const AdminThesisSeminarPage = lazy(() => import('./pages/thesis-seminar/AdminThesisSeminar'))
 const AdminSeminarDetailPage = lazy(() => import('./pages/thesis-seminar/AdminSeminarDetail'))
 const AdminThesisSeminarArchiveDetail = lazy(() => import('./pages/thesis-seminar/AdminThesisSeminarArchiveDetail'))
-const LecturerThesisSeminarPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerThesisSeminar'))
-const LecturerExaminerAssignmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerExaminerAssignment'))
-const LecturerSupervisedStudentsPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSupervisedStudents'))
-const LecturerSeminarDetailIdentityPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailIdentity'))
-const LecturerSeminarDetailAssessmentPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAssessment'))
-const LecturerSeminarDetailRevisionPage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailRevision'))
-const LecturerSeminarDetailAttendancePage = lazy(() => import('./pages/tugas-akhir/seminar-hasil/LecturerSeminarDetailAttendance'))
+const LecturerThesisSeminarPage = lazy(() => import('./pages/thesis-seminar/LecturerThesisSeminar'))
+const LecturerThesisSeminarExaminerAssignmentPage = lazy(() => import('./pages/thesis-seminar/LecturerThesisSeminarExaminerAssignment'))
+const LecturerThesisSeminarSupervisedStudentsPage = lazy(() => import('./pages/thesis-seminar/LecturerThesisSeminarSupervisedStudents'))
+const LecturerThesisSeminarDetailIdentityPage = lazy(() => import('./pages/thesis-seminar/LecturerThesisSeminarDetailIdentity'))
+const LecturerThesisSeminarDetailAssessmentPage = lazy(() => import('./pages/thesis-seminar/LecturerThesisSeminarDetailAssessment'))
+const LecturerThesisSeminarDetailRevisionPage = lazy(() => import('./pages/thesis-seminar/LecturerThesisSeminarDetailRevision'))
+const LecturerThesisSeminarDetailAttendancePage = lazy(() => import('./pages/thesis-seminar/LecturerThesisSeminarDetailAttendance'))
 
 // Kerja Praktik - Dosen
 const InternshipGuidanceOverviewPage = lazy(() => import('./pages/kerja-praktik/dosen/bimbingan/GuidanceOverview'))
@@ -255,7 +255,7 @@ function App() {
                     <Route path="bimbingan/student/history" element={<CompletedHistory />} />
                     <Route path="bimbingan/danger-zone" element={<DangerZonePage />} />
                     {/* Seminar Hasil handled by top-level route */}
-                    <Route path="seminar-hasil/student/history/:seminarId" element={<StudentSeminarDetailPage />} />
+                    <Route path="seminar-hasil/student/history/:seminarId" element={<StudentThesisSeminarDetailPage />} />
                     <Route path="sidang/student" element={<StudentThesisDefencePage />} />
                     <Route path="sidang/student/history/:defenceId" element={<StudentDefenceDetailPage />} />
                   </Route>
@@ -331,12 +331,12 @@ function App() {
                   <Route path="/tugas-akhir/bimbingan/lecturer/my-students" element={<LecturerMyStudentsPage />} />
                   <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
                   <Route path="/tugas-akhir/seminar-hasil/lecturer" element={<LecturerThesisSeminarPage />} />
-                  <Route path="/tugas-akhir/seminar-hasil/lecturer/assignment" element={<LecturerExaminerAssignmentPage />} />
-                  <Route path="/tugas-akhir/seminar-hasil/lecturer/my-students" element={<LecturerSupervisedStudentsPage />} />
-                  <Route path="/tugas-akhir/seminar-hasil/lecturer/:seminarId" element={<LecturerSeminarDetailIdentityPage />} />
-                  <Route path="/tugas-akhir/seminar-hasil/lecturer/:seminarId/assessment" element={<LecturerSeminarDetailAssessmentPage />} />
-                  <Route path="/tugas-akhir/seminar-hasil/lecturer/:seminarId/revision" element={<LecturerSeminarDetailRevisionPage />} />
-                  <Route path="/tugas-akhir/seminar-hasil/lecturer/:seminarId/attendance" element={<LecturerSeminarDetailAttendancePage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/lecturer/assignment" element={<LecturerThesisSeminarExaminerAssignmentPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/lecturer/my-students" element={<LecturerThesisSeminarSupervisedStudentsPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/lecturer/:seminarId" element={<LecturerThesisSeminarDetailIdentityPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/lecturer/:seminarId/assessment" element={<LecturerThesisSeminarDetailAssessmentPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/lecturer/:seminarId/revision" element={<LecturerThesisSeminarDetailRevisionPage />} />
+                  <Route path="/tugas-akhir/seminar-hasil/lecturer/:seminarId/attendance" element={<LecturerThesisSeminarDetailAttendancePage />} />
                   <Route path="/tugas-akhir/sidang/lecturer" element={<Navigate to="/tugas-akhir/sidang/lecturer/my-students" replace />} />
                   <Route path="/tugas-akhir/sidang/lecturer/examiner-requests" element={<LecturerThesisDefencePage />} />
                   <Route path="/tugas-akhir/sidang/lecturer/assignment" element={<LecturerDefenceExaminerAssignmentPage />} />
