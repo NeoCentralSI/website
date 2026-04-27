@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { LecturerThesisSeminarDetailLayout } from '@/components/thesis-seminar/LecturerThesisSeminarDetailLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,10 +13,11 @@ import { Loading, Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useExaminerAssessmentForm,
-  useFinalizeSeminarBySupervisor,
   useSubmitExaminerAssessment,
   useSupervisorFinalizationData,
+  useFinalizeSeminarBySupervisor,
 } from '@/hooks/thesis-seminar';
+import { useRole } from '@/hooks/shared/useRole';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type {
   FinalizeSeminarPayload,
@@ -33,23 +32,62 @@ const FINAL_RECOMMENDATIONS: { value: FinalizeSeminarPayload['status']; label: s
 ];
 
 function getMaxScoreFromDetails(
-  details: Array<{ criteria: Array<{ maxScore: number }> }> = []
+  details: Array<{ criteria: Array<{ maxScore: number }> }> = [],
 ): number {
   return details.reduce(
-    (sum, group) => sum + group.criteria.reduce((groupSum, criterion) => groupSum + Number(criterion.maxScore || 0), 0),
+    (sum, group) => sum + group.criteria.reduce((gs, c) => gs + Number(c.maxScore || 0), 0),
     0,
   );
 }
 
 function formatScoreFraction(score: number | null, maxScore: number): string {
   if (score === null || score === undefined || Number.isNaN(Number(score))) return `- / ${maxScore}`;
-  const numeric = Number(score);
-  const display = Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(2);
-  return `${display} / ${maxScore}`;
+  const n = Number(score);
+  return `${Number.isInteger(n) ? String(n) : n.toFixed(2)} / ${maxScore}`;
+}
+
+interface Props {
+  seminarId: string;
+  detail: any;
+}
+
+export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props) {
+  return (
+    <div className="space-y-6">
+      {/* 1. Form Penilaian (Dosen Penguji) */}
+      <ExaminerAssessmentSection seminarId={seminarId} />
+      
+      <hr className="border-dashed" />
+
+      {/* 2. Rekap Penilaian & Penetapan */}
+      <SupervisorFinalizationSection
+        seminarId={seminarId}
+        detail={detail}
+        isSupervisor={true}
+      />
+
+      {/* 3. Info Admin */}
+      <AdminAssessmentInfo detail={detail} />
+    </div>
+  );
+}
+
+function AdminAssessmentInfo({ detail }: { detail: any }) {
+  const finalized = ['passed', 'passed_with_revision', 'failed'].includes(detail.status);
+  if (finalized) return null;
+  return (
+    <Card className="bg-muted/10 border-dashed">
+      <CardContent className="pt-4 text-center">
+        <p className="text-muted-foreground text-sm">
+          Menunggu penilaian dari seluruh penguji dan penetapan hasil oleh dosen pembimbing.
+        </p>
+      </CardContent>
+    </Card>
+  );
 }
 
 // ──────────────────────────────────────────────────────────────
-// Examiner Assessment Section
+// Section 1: Examiner Assessment Form (FOR DOSEN PENGUJI)
 // ──────────────────────────────────────────────────────────────
 
 function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
@@ -72,11 +110,21 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
     setRevisionNotes(form.examiner.revisionNotes || '');
   }, [form]);
 
-  if (isLoading || !form) {
+  if (isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
         <Loading size="lg" text="Memuat form penilaian..." />
       </div>
+    );
+  }
+
+  if (!form) {
+    return (
+      <Card className="bg-muted/10 border-dashed">
+        <CardContent className="pt-4 text-center">
+          <p className="text-muted-foreground text-sm">Form penilaian penguji tidak tersedia.</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -108,13 +156,12 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
     }
   };
 
-  const toggleRubric = (criterionId: string) => {
-    setOpenRubrics((prev) => ({ ...prev, [criterionId]: !prev[criterionId] }));
-  };
-
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Penilaian Seminar Hasil</h2>
+      <h2 className="text-lg font-semibold flex items-center gap-2">
+        <GraduationCap className="h-5 w-5 text-primary" />
+        Input Penilaian Anda
+      </h2>
 
       {isSubmitted && (
         <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
@@ -134,13 +181,11 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
               const isOptionB = group.criteria.length === 1 && !String(criterion.name ?? '').trim();
               return (
                 <div key={criterion.id} className="space-y-2">
-                  {/* Criteria row: label + input */}
                   <div className="grid grid-cols-1 md:grid-cols-[1fr_140px] gap-2 items-start">
                     <div>
-                      {!isOptionB && (
+                      {!isOptionB ? (
                         <Label className="text-sm font-medium">{criterion.name}</Label>
-                      )}
-                      {isOptionB && (
+                      ) : (
                         <Label className="text-sm text-muted-foreground">Skor langsung pada CPMK</Label>
                       )}
                       <p className="text-xs text-muted-foreground">Maks. {criterion.maxScore} poin</p>
@@ -161,9 +206,13 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
                     </div>
                   </div>
 
-                  {/* Rubric collapsible */}
                   {criterion.rubrics.length > 0 && (
-                    <Collapsible open={openRubrics[criterion.id] ?? false} onOpenChange={() => toggleRubric(criterion.id)}>
+                    <Collapsible
+                      open={openRubrics[criterion.id] ?? false}
+                      onOpenChange={() =>
+                        setOpenRubrics((prev) => ({ ...prev, [criterion.id]: !prev[criterion.id] }))
+                      }
+                    >
                       <CollapsibleTrigger asChild>
                         <button
                           type="button"
@@ -202,13 +251,12 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
                     </Collapsible>
                   )}
                 </div>
-              )
+              );
             })}
           </CardContent>
         </Card>
       ))}
 
-      {/* Total Score */}
       <Card className="bg-muted/20">
         <CardContent className="pt-4 flex items-center justify-between">
           <span className="font-medium">Total Skor</span>
@@ -216,7 +264,6 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
         </CardContent>
       </Card>
 
-      {/* Revision Notes */}
       <div className="space-y-2">
         <Label htmlFor="revisionNotes">Catatan Penguji</Label>
         {isSubmitted ? (
@@ -238,10 +285,9 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
         )}
       </div>
 
-      {/* Submit */}
       {!isSubmitted && (
         <div className="flex justify-end">
-          <Button onClick={handleSubmit} disabled={!canSubmit || submitMutation.isPending}>
+          <Button onClick={() => void handleSubmit()} disabled={!canSubmit || submitMutation.isPending}>
             {submitMutation.isPending ? (
               <>
                 <Spinner className="mr-2 h-4 w-4" />
@@ -258,34 +304,32 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Supervisor Finalization Section
+// Section 2: Rekap Penilaian & Finalisasi
 // ──────────────────────────────────────────────────────────────
 
-function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
+function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { seminarId: string; detail: any; isSupervisor: boolean }) {
   const { data, isLoading } = useSupervisorFinalizationData(seminarId);
   const finalizeMutation = useFinalizeSeminarBySupervisor();
 
   const [finalRecommendation, setFinalRecommendation] = useState<ThesisSeminarStatus | ''>('');
   const [expandedExaminers, setExpandedExaminers] = useState<Record<string, boolean>>({});
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
-        <Loading size="lg" text="Memuat data penilaian..." />
+        <Loading size="lg" text="Memuat data rekap..." />
       </div>
     );
   }
+
+  // Fallback if data is not available (e.g. before assessment phase)
+  if (!data) return null;
 
   const isFinalized = !!data.seminar.resultFinalizedAt;
   const displayGrade = data.averageGrade || data.seminar.grade;
   const totalMaxScore = getMaxScoreFromDetails(data.examiners?.[0]?.assessmentDetails || []) || 100;
   const totalScoreText = formatScoreFraction(data.averageScore, totalMaxScore);
-
-  const canFinalize = !!data.recommendationUnlocked && !!finalRecommendation && !isFinalized;
-
-  const toggleExaminer = (id: string) => {
-    setExpandedExaminers((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const canFinalize = isSupervisor && !!data.recommendationUnlocked && !!finalRecommendation && !isFinalized;
 
   const handleFinalize = async () => {
     if (!canFinalize) return;
@@ -302,7 +346,7 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Penilaian Penguji & Penetapan Hasil</h2>
+      <h2 className="text-lg font-semibold">Rekap Penilaian Penguji & Hasil Akhir</h2>
 
       {isFinalized && (
         <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
@@ -310,7 +354,6 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
         </div>
       )}
 
-      {/* Examiner Cards with per-criteria details */}
       {data.examiners.map((examiner) => {
         const isExpanded = expandedExaminers[examiner.id] ?? false;
         const hasDetails = (examiner.assessmentDetails ?? []).length > 0;
@@ -318,7 +361,6 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
         return (
           <Card key={examiner.id}>
             <CardContent className="pt-4 space-y-3">
-              {/* Header row */}
               <div className="flex items-center justify-between">
                 <p className="font-medium text-sm">
                   Penguji {examiner.order} — {toTitleCaseName(examiner.lecturerName)}
@@ -327,22 +369,24 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
                   {examiner.assessmentSubmittedAt ? 'Sudah Submit' : 'Belum Submit'}
                 </Badge>
               </div>
-
-              {/* Total Score */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Total Skor:</span>
-                <span className="font-semibold text-base">{formatScoreFraction(examiner.assessmentScore, examinerMaxScore || 100)}</span>
+                <span className="font-semibold text-base">
+                  {formatScoreFraction(examiner.assessmentScore, examinerMaxScore || 100)}
+                </span>
               </div>
-
               {examiner.assessmentSubmittedAt && (
                 <p className="text-xs text-muted-foreground">
                   Disubmit: {formatDateTimeId(examiner.assessmentSubmittedAt)}
                 </p>
               )}
-
-              {/* Per-criteria expandable */}
               {hasDetails && (
-                <Collapsible open={isExpanded} onOpenChange={() => toggleExaminer(examiner.id)}>
+                <Collapsible
+                  open={isExpanded}
+                  onOpenChange={() =>
+                    setExpandedExaminers((prev) => ({ ...prev, [examiner.id]: !prev[examiner.id] }))
+                  }
+                >
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
@@ -383,7 +427,6 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
                   </CollapsibleContent>
                 </Collapsible>
               )}
-
               {examiner.assessmentSubmittedAt && (
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                   <p className="text-xs font-medium text-muted-foreground">Catatan Penguji</p>
@@ -399,7 +442,7 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
 
       <Card className="bg-muted/20">
         <CardContent className="pt-4 flex items-center justify-between">
-          <span className="font-medium">Total Skor</span>
+          <span className="font-medium">Rata-rata Skor</span>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold">{totalScoreText}</span>
             {displayGrade && <span className="text-lg font-semibold">({displayGrade})</span>}
@@ -407,101 +450,71 @@ function SupervisorFinalizationSection({ seminarId }: { seminarId: string }) {
         </CardContent>
       </Card>
 
-      {!data.recommendationUnlocked && (
+      {!data.recommendationUnlocked && !isFinalized && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-          Fitur rekomendasi akhir terkunci sampai kedua penguji submit penilaian.
+          Fitur rekomendasi hasil akhir terkunci sampai seluruh penguji submit penilaian.
         </div>
       )}
 
-      {/* Final Recommendation */}
-      {isFinalized ? (
+      {(isFinalized || (isSupervisor && data.recommendationUnlocked)) && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold">Keputusan Akhir</h3>
-          {FINAL_RECOMMENDATIONS.map((item) => {
-            const isSelected = data.seminar.status === item.value;
-            return (
-              <div
-                key={item.value}
-                className={`flex items-start gap-3 rounded-lg border p-3 ${isSelected ? 'border-green-300 bg-green-50' : 'opacity-50'}`}
+          {isFinalized ? (
+            <div className="space-y-2">
+              {FINAL_RECOMMENDATIONS.map((item) => {
+                const isSelected = detail.status === item.value;
+                return (
+                  <div
+                    key={item.value}
+                    className={`flex items-start gap-3 rounded-lg border p-3 ${isSelected ? 'border-green-300 bg-green-50' : 'opacity-50'}`}
+                  >
+                    {isSelected && <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />}
+                    <div>
+                      <p className={`font-medium text-sm ${isSelected ? 'text-green-700' : ''}`}>{item.label}</p>
+                      <p className={`text-xs ${isSelected ? 'text-green-600' : 'text-muted-foreground'}`}>{item.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <>
+              <RadioGroup
+                value={finalRecommendation}
+                onValueChange={(v) => setFinalRecommendation(v as ThesisSeminarStatus)}
+                disabled={!data.recommendationUnlocked}
               >
-                {isSelected && <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />}
-                <div>
-                  <p className={`font-medium text-sm ${isSelected ? 'text-green-700' : ''}`}>{item.label}</p>
-                  <p className={`text-xs ${isSelected ? 'text-green-600' : 'text-muted-foreground'}`}>{item.desc}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <>
-          <RadioGroup
-            value={finalRecommendation}
-            onValueChange={(v) => setFinalRecommendation(v as ThesisSeminarStatus)}
-            disabled={!data.recommendationUnlocked}
-          >
-            {FINAL_RECOMMENDATIONS.map((item) => (
-              <Label
-                key={item.value}
-                htmlFor={`final-${item.value}`}
-                className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer"
-              >
-                <RadioGroupItem value={item.value} id={`final-${item.value}`} className="mt-1" />
-                <div>
-                  <p className="font-medium text-sm">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </div>
-              </Label>
-            ))}
-          </RadioGroup>
+                {FINAL_RECOMMENDATIONS.map((item) => (
+                  <Label
+                    key={item.value}
+                    htmlFor={`final-${item.value}`}
+                    className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                  >
+                    <RadioGroupItem value={item.value} id={`final-${item.value}`} className="mt-1" />
+                    <div>
+                      <p className="font-medium text-sm">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </Label>
+                ))}
+              </RadioGroup>
 
-          <div className="flex justify-end">
-            <Button onClick={handleFinalize} disabled={!canFinalize || finalizeMutation.isPending}>
-              {finalizeMutation.isPending ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" />
-                  Menetapkan...
-                </>
-              ) : (
-                'Tetapkan Hasil Seminar'
-              )}
-            </Button>
-          </div>
-        </>
+              <div className="flex justify-end mt-4">
+                <Button onClick={() => void handleFinalize()} disabled={!canFinalize || finalizeMutation.isPending}>
+                  {finalizeMutation.isPending ? (
+                    <>
+                      <Spinner className="mr-2 h-4 w-4" />
+                      Menetapkan...
+                    </>
+                  ) : (
+                    'Tetapkan Hasil Seminar'
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       )}
     </div>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────
-// Main Assessment Page
-// ──────────────────────────────────────────────────────────────
-
-export default function LecturerThesisSeminarDetailAssessment() {
-  const { seminarId } = useParams<{ seminarId: string }>();
-
-  return (
-    <LecturerThesisSeminarDetailLayout>
-      {(detail) => {
-        const showExaminer = !!detail.canOpenExaminerAssessment;
-        const showSupervisor = !!detail.canOpenSupervisorFinalization;
-
-        if (!seminarId || (!showExaminer && !showSupervisor)) {
-          return (
-            <div className="flex h-40 items-center justify-center">
-              <p className="text-muted-foreground text-sm">Anda tidak memiliki akses ke halaman penilaian ini.</p>
-            </div>
-          );
-        }
-
-        return (
-          <div className="space-y-6">
-            {showExaminer && <ExaminerAssessmentSection seminarId={seminarId} />}
-            {showExaminer && showSupervisor && <hr className="border-dashed" />}
-            {showSupervisor && <SupervisorFinalizationSection seminarId={seminarId} />}
-          </div>
-        );
-      }}
-    </LecturerThesisSeminarDetailLayout>
   );
 }

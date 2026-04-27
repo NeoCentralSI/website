@@ -49,7 +49,7 @@ export function AdminThesisSeminarValidationPanel() {
         setSearch(value);
         setPage(1);
       }}
-      onDetail={(id) => navigate(`/tugas-akhir/seminar-hasil/validasi/${id}`)}
+      onDetail={(id) => navigate(`/tugas-akhir/seminar-hasil/${id}`)}
       actions={
         <RefreshButton
           onClick={() => refetch()}

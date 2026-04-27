@@ -77,12 +77,12 @@ export function useSeminarDocumentTypes() {
 
 export function useStudentSeminarDocuments() {
   const { data: overview } = useStudentSeminarOverview();
-  const seminarId = overview?.id || 'active';
+  const seminarId = overview?.id;
 
   return useQuery({
     queryKey: seminarKeys.documents(),
-    queryFn: () => getStudentSeminarDocuments(seminarId),
-    enabled: !!overview || seminarId === 'active',
+    queryFn: () => getStudentSeminarDocuments(seminarId!),
+    enabled: !!seminarId,
   });
 }
 

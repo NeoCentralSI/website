@@ -83,7 +83,7 @@ export default function StudentThesisSeminar() {
         <StudentThesisSeminarOverviewPanel
           overview={overview}
           history={history || []}
-          onDetailClick={(id) => navigate(`/tugas-akhir/seminar-hasil/mahasiswa/${id}`)}
+          onDetailClick={(id) => navigate(`/tugas-akhir/seminar-hasil/${id}`)}
         />
       ) : (
         <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">

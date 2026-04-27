@@ -156,7 +156,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/tugas-akhir/seminar-hasil/penguji/${row.id}`)}
+              onClick={() => navigate(`/tugas-akhir/seminar-hasil/${row.id}`)}
               title="Lihat Detail"
             >
               <Eye className="h-4 w-4" />
