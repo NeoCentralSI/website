@@ -35,35 +35,17 @@ export default function ThesisSeminarDetailPage() {
   const [validationOpen, setValidationOpen] = useState(false);
 
   const breadcrumbs = useMemo(() => {
-    if (isArchiveRoute) {
-      return [
-        { label: 'Tugas Akhir' },
-        { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-        { label: 'Arsip', href: '/tugas-akhir/seminar-hasil/arsip' },
-        { label: 'Detail' },
-      ];
-    }
-    if (_isAdmin) {
-      return [
-        { label: 'Tugas Akhir' },
-        { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-        { label: 'Validasi', href: '/tugas-akhir/seminar-hasil/validasi' },
-        { label: 'Detail' },
-      ];
-    }
-    if (_isStudent) {
-      return [
-        { label: 'Tugas Akhir', href: '/tugas-akhir' },
-        { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-        { label: 'Detail' },
-      ];
-    }
-    return [
-      { label: 'Tugas Akhir' },
+    // Shared breadcrumbs for all roles
+    const base = [
+      { label: 'Tugas Akhir', href: _isStudent ? '/tugas-akhir' : undefined },
       { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
+    ];
+
+    return [
+      ...base,
       { label: 'Detail' },
     ];
-  }, [_isAdmin, _isStudent, isArchiveRoute]);
+  }, [_isStudent]);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
@@ -132,15 +114,15 @@ export default function ThesisSeminarDetailPage() {
     : null;
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="shrink-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div>
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold tracking-tight">
               {isStudent()
                 ? (isArchiveRoute ? 'Detail Arsip Seminar' : 'Detail Seminar Hasil')
                 : toTitleCaseName(d.student?.name || 'Seminar Detail')}
@@ -149,19 +131,20 @@ export default function ThesisSeminarDetailPage() {
               {isStudent() ? d.thesis?.title : d.student?.nim}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <ThesisEventStatusBadge
-              status={detail.status}
-              scheduledDate={d.date}
-              startTime={d.startTime}
-            />
-            {canValidate && (
-              <Button variant="outline" size="sm" onClick={() => setValidationOpen(true)}>
-                <ClipboardCheck className="h-4 w-4 mr-1" />
-                Validasi Dokumen
-              </Button>
-            )}
-          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <ThesisEventStatusBadge
+            status={detail.status}
+            scheduledDate={d.date}
+            startTime={d.startTime}
+          />
+          {canValidate && (
+            <Button variant="outline" size="sm" onClick={() => setValidationOpen(true)}>
+              <ClipboardCheck className="h-4 w-4 mr-1" />
+              Validasi Dokumen
+            </Button>
+          )}
         </div>
       </div>
 
