@@ -73,7 +73,7 @@ export function AdminThesisSeminarFormDialog({
         setThesisId(editingSeminar.thesisId);
         setDate(editingSeminar.date ? new Date(editingSeminar.date).toISOString().slice(0, 10) : '');
         setRoomId(editingSeminar.room?.id || '');
-        setStatus(editingSeminar.status);
+        setStatus(editingSeminar.status === 'cancelled' ? 'passed' : editingSeminar.status);
         setExaminerIds(editingSeminar.examiners.map((e) => e.lecturerId));
       } else {
         setThesisId('');

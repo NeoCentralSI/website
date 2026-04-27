@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { Eye } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
 import { 
   ThesisStudentInfoCell, 

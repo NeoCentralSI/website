@@ -614,6 +614,7 @@ export interface StudentRevisionResponse {
 }
 
 export interface CreateRevisionPayload {
+  seminarId?: string;
   seminarExaminerId: string;
   description: string;
 }
@@ -725,6 +726,22 @@ export interface LecturerAudienceItem {
   isPresent: boolean;
   approvedAt: string | null;
   approvedByName: string | null;
+}
+
+export type AdminThesisSeminarAudience = LecturerAudienceItem;
+
+export interface AdminThesisSeminarAudienceStudentOption {
+  id: string;
+  fullName: string;
+  name?: string;
+  nim: string;
+}
+
+export interface AdminThesisSeminarAudienceImportResult {
+  total: number;
+  successCount: number;
+  failed: number;
+  failedRows: { row: number; error: string }[];
 }
 
 // ============================================================

@@ -23,7 +23,6 @@ import {
   useApproveAudience,
   useUnapproveAudience,
 } from '@/hooks/thesis-seminar';
-import { useRole } from '@/hooks/shared/useRole';
 import { Users, Plus, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
 

@@ -39,13 +39,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { Loading, Spinner } from '@/components/ui/spinner';
+import { Loading } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useCreateRevision,
   useSaveRevisionAction,
   useSubmitRevision,
-  useCancelRevisionSubmission,
   useDeleteRevision,
   useSeminarRevisionBoard,
   useSupervisorFinalizationData,
@@ -53,9 +52,7 @@ import {
   useUnapproveRevision,
   useFinalizeSeminarRevisions,
 } from '@/hooks/thesis-seminar';
-import { useRole } from '@/hooks/shared/useRole';
 import { toTitleCaseName } from '@/lib/text';
-import type { StudentRevisionItem, SeminarRevisionBoardItem } from '@/types/seminar.types';
 
 interface Props {
   seminarId: string;
@@ -65,8 +62,6 @@ interface Props {
 }
 
 export function ThesisSeminarDetailRevisionPanel({ seminarId, detail, onRefresh, isRefreshing }: Props) {
-  const { isStudent, isDosen } = useRole();
-
   const showSupervisorActions = true;
   const showStudentActions = true;
 
@@ -169,7 +164,6 @@ function RevisionBoardSection({
   const createMutation = useCreateRevision();
   const saveMutation = useSaveRevisionAction();
   const submitMutation = useSubmitRevision();
-  const cancelMutation = useCancelRevisionSubmission();
   const deleteMutation = useDeleteRevision();
   const approveMutation = useApproveRevision();
   const unapproveMutation = useUnapproveRevision();
@@ -180,7 +174,6 @@ function RevisionBoardSection({
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitConfirmId, setSubmitConfirmId] = useState<string | null>(null);
-  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [unapproveConfirmId, setUnapproveConfirmId] = useState<string | null>(null);
   const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
@@ -195,7 +188,7 @@ function RevisionBoardSection({
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
 
-  const revisions = Array.isArray(board) ? board : (board as any)?.revisions || [];
+  const revisions: any[] = Array.isArray(board) ? board : (board as any)?.revisions || [];
   const isRevisionFinalized = !!finalizationData?.seminar?.revisionFinalizedAt;
 
   const filteredData = useMemo(() => {
@@ -227,7 +220,7 @@ function RevisionBoardSection({
     const created = await createMutation.mutateAsync({
       seminarExaminerId: selectedExaminerId,
       description: newDescription.trim(),
-    });
+    }) as { id: string };
     if (newRevisionAction.trim()) {
       await saveMutation.mutateAsync({
         revisionId: created.id,
@@ -318,10 +311,6 @@ function RevisionBoardSection({
               <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(row.id)} className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
             </>
           )}
-          {showStudentActions && row.studentSubmittedAt && !row.isFinished && (
-            <Button variant="ghost" size="icon" onClick={() => setCancelConfirmId(row.id)} className="h-8 w-8 text-amber-600"><Undo2 className="h-4 w-4" /></Button>
-          )}
-
           {/* Supervisor Actions */}
           {showSupervisorActions && row.studentSubmittedAt && !row.isFinished && (
             <Button size="sm" onClick={() => approveMutation.mutate({ seminarId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-7 px-2 text-xs">

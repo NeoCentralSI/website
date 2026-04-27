@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { AdminThesisSeminarAudienceStudentOption } from '@/services/thesis-seminar/core.service';
+import type { AdminThesisSeminarAudienceStudentOption } from '@/types/seminar.types';
 
 interface AdminThesisSeminarAudienceDialogProps {
   open: boolean;
@@ -60,7 +60,7 @@ export function AdminThesisSeminarAudienceDialog({
               width="w-full"
               items={studentOptions.map((s) => ({
                 value: s.id,
-                label: `${s.fullName} (${s.nim})`,
+                label: `${s.fullName || s.name} (${s.nim})`,
               }))}
               placeholder="Pilih mahasiswa..."
               defaultValue={selectedStudentId}
