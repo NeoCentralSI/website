@@ -1,8 +1,6 @@
 import { useRef, useCallback } from 'react';
-import { FileText, Upload, AlertCircle, Eye, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { FileText, Eye, AlertCircle } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
 import {
   useSeminarDocumentTypes,
   useStudentSeminarDocuments,
@@ -37,17 +35,32 @@ export function StudentThesisSeminarDocumentCard({
   );
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-card p-6">
-      <h3 className="text-lg font-semibold mb-4">Upload Dokumen Seminar</h3>
+    <div style={{ background: '#fff', border: '1px solid #e8e8e4', borderRadius: 10, padding: '16px 18px' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 14 }}>
+        Upload Dokumen Seminar
+      </div>
 
       {isLocked && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 p-3 bg-muted/30 rounded-md">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 11.5,
+            color: '#888',
+            marginBottom: 12,
+            padding: '8px 12px',
+            background: '#fafaf8',
+            border: '1px solid #e8e8e4',
+            borderRadius: 7,
+          }}
+        >
+          <AlertCircle size={14} style={{ flexShrink: 0, color: '#aaa' }} />
           <span>Lengkapi checklist persyaratan untuk mengakses fitur upload.</span>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {(docTypes ?? []).map((docType) => (
           <DocumentRow
             key={docType.id}
@@ -68,10 +81,6 @@ export function StudentThesisSeminarDocumentCard({
   );
 }
 
-// ============================================================
-// Sub-component: DocumentRow
-// ============================================================
-
 interface DocumentRowProps {
   docType: SeminarDocumentType;
   doc: SeminarDocument | undefined;
@@ -90,17 +99,12 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      onUpload(file);
-    }
-    // Reset input so the same file can be re-selected
+    if (file) onUpload(file);
     e.target.value = '';
   };
 
   const handleUploadClick = () => {
-    if (canUpload) {
-      fileInputRef.current?.click();
-    }
+    if (canUpload) fileInputRef.current?.click();
   };
 
   const handleViewClick = async () => {
@@ -113,101 +117,144 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     }
   };
 
-  // Build accept string from docType.accept array
   const acceptStr = docType.accept
     .map((ext) => (ext.startsWith('.') ? ext : `.${ext}`))
     .join(',');
 
+  const fileStatusColor = isApproved ? '#16A34A' : isDeclined ? '#dc2626' : '#888';
+  const fileStatusText = isApproved
+    ? '✓ Terverifikasi'
+    : isDeclined
+      ? `Ditolak${doc?.notes ? `: ${doc.notes}` : ''}`
+      : 'Menunggu verifikasi';
+
+  const buttonBorderColor = isDeclined ? '#ef4444' : canUpload ? '#F59E0B' : '#e8e8e4';
+  const buttonColor = isDeclined ? '#ef4444' : canUpload ? '#F59E0B' : '#bbb';
+
   return (
     <div
-      className={cn(
-        'flex items-center justify-between gap-4 rounded-lg border p-4',
-        isLocked && 'opacity-50'
-      )}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '7px 10px',
+        borderRadius: 7,
+        background: '#fafaf8',
+        border: '1px solid #eeece8',
+        opacity: isLocked ? 0.55 : 1,
+      }}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div
-          className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-            isApproved && 'bg-green-100 text-green-600',
-            isDeclined && 'bg-red-100 text-red-600',
-            isUploaded && !isApproved && !isDeclined && 'bg-blue-100 text-blue-600',
-            !isUploaded && 'bg-muted text-muted-foreground'
-          )}
-        >
-          <FileText className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{docType.label}</p>
-          {isUploaded && (
-            <>
-              <p
-                className={cn(
-                  'text-xs mt-0.5',
-                  isApproved && 'text-green-600',
-                  isDeclined && 'text-red-600',
-                  !isApproved && !isDeclined && 'text-blue-600'
-                )}
-              >
-                {isApproved && 'Terverifikasi'}
-                {isDeclined && `Ditolak${doc?.notes ? `: ${doc.notes}` : ''}`}
-                {!isApproved && !isDeclined && 'Menunggu verifikasi'}
-              </p>
-              {doc?.fileName && (
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {doc.fileName}
-                </p>
-              )}
-            </>
-          )}
-        </div>
+      {/* File icon */}
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 6,
+          background: isApproved ? '#dcfce7' : isDeclined ? '#fef2f2' : isUploaded ? '#dbeafe' : '#f3f4f6',
+          color: isApproved ? '#16A34A' : isDeclined ? '#dc2626' : isUploaded ? '#2563eb' : '#9ca3af',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <FileText size={14} />
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        {/* Hidden file input */}
+      {/* File info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 11.5,
+            fontWeight: 500,
+            color: '#111',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {docType.label}
+        </div>
+        {isUploaded && (
+          <>
+            <div style={{ fontSize: 10, color: fileStatusColor, fontWeight: 500, marginTop: 1 }}>
+              {fileStatusText}
+            </div>
+            {doc?.fileName && (
+              <div
+                style={{
+                  fontSize: 10,
+                  color: '#aaa',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {doc.fileName}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
         <input
           ref={fileInputRef}
           type="file"
           accept={acceptStr}
-          className="hidden"
+          style={{ display: 'none' }}
           onChange={handleFileChange}
         />
 
-        {/* View button (when document exists) */}
         {isUploaded && doc?.filePath && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={handleViewClick}
             title="Lihat dokumen"
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 5,
+              background: '#f8f7f4',
+              border: '1px solid #e8e8e4',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#888',
+              flexShrink: 0,
+            }}
           >
-            <Eye className="h-4 w-4" />
-          </Button>
+            <Eye size={12} />
+          </button>
         )}
 
-        {/* Upload / Re-upload button */}
-        <Button
-          variant={isDeclined ? 'destructive' : 'outline'}
-          size="sm"
-          disabled={!canUpload}
-          onClick={handleUploadClick}
-        >
-          {isUploading ? (
-            <>
-              <Spinner className="mr-1.5 h-4 w-4" />
-              Mengupload...
-            </>
-          ) : (
-            <>
-              {isUploaded && !isApproved ? (
-                <RefreshCw className="h-4 w-4 mr-1.5" />
-              ) : (
-                <Upload className="h-4 w-4 mr-1.5" />
-              )}
-              {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Ganti File') : 'Upload'}
-            </>
-          )}
-        </Button>
+        {isUploading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: '#888' }}>
+            <Spinner className="h-3 w-3" />
+            Upload...
+          </div>
+        ) : (
+          <button
+            disabled={!canUpload}
+            onClick={handleUploadClick}
+            style={{
+              flexShrink: 0,
+              padding: '4px 9px',
+              border: `1px solid ${buttonBorderColor}`,
+              background: 'transparent',
+              color: buttonColor,
+              fontSize: 10.5,
+              fontWeight: 600,
+              borderRadius: 5,
+              cursor: canUpload ? 'pointer' : 'default',
+              whiteSpace: 'nowrap',
+              fontFamily: 'inherit',
+            }}
+          >
+            {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Ganti File') : 'Upload'}
+          </button>
+        )}
       </div>
     </div>
   );

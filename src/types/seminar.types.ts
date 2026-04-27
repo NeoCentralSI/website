@@ -92,6 +92,7 @@ export interface SeminarInfo {
   endTime: string | null;
   meetingLink: string | null;
   finalScore: number | null;
+  maxWeight?: number;
   grade: string | null;
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
@@ -642,6 +643,7 @@ export interface SeminarHistoryItem {
   endTime: string | null;
   meetingLink: string | null;
   finalScore: number | null;
+  maxWeight?: number;
   grade: string | null;
   resultFinalizedAt: string | null;
   cancelledReason: string | null;

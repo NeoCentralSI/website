@@ -1,14 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { toTitleCaseName, formatDateOnlyId } from '@/lib/text';
 import { ChevronRight, Users, Calendar, MapPin, Video, Trophy } from 'lucide-react';
 import type { SeminarInfo, ThesisSeminarStatus } from '@/types/seminar.types';
 
-/** Statuses that show full info including score/grade */
 const FINALIZED_STATUSES: ThesisSeminarStatus[] = ['passed', 'passed_with_revision', 'failed'];
 
-/** Statuses that show schedule info */
 const SCHEDULED_STATUSES: ThesisSeminarStatus[] = [
   'scheduled',
   'ongoing',
@@ -17,7 +13,6 @@ const SCHEDULED_STATUSES: ThesisSeminarStatus[] = [
   'failed',
 ];
 
-/** Statuses where the card should be rendered */
 const CARD_VISIBLE_STATUSES: ThesisSeminarStatus[] = [
   'examiner_assigned',
   'scheduled',
@@ -27,7 +22,7 @@ const CARD_VISIBLE_STATUSES: ThesisSeminarStatus[] = [
 ];
 
 function formatTimeRange(startTime: string | null, endTime: string | null): string {
-  if (!startTime || !endTime) return '-';
+  if (!startTime || !endTime) return '';
   const fmtTime = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleTimeString('id-ID', {
@@ -37,7 +32,7 @@ function formatTimeRange(startTime: string | null, endTime: string | null): stri
       hour12: false,
     });
   };
-  return `${fmtTime(startTime)} - ${fmtTime(endTime)} WIB`;
+  return `${fmtTime(startTime)} – ${fmtTime(endTime)} WIB`;
 }
 
 interface SeminarInfoCardProps {
@@ -51,134 +46,156 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
   const showSchedule = SCHEDULED_STATUSES.includes(seminar.status);
   const showScore = FINALIZED_STATUSES.includes(seminar.status) && seminar.finalScore !== null;
   const isOnline = !seminar.room && !!seminar.meetingLink;
+  const timeRange = formatTimeRange(seminar.startTime, seminar.endTime);
 
-  // Filter to available examiners only
   const activeExaminers = seminar.examiners.filter(
     (e) => e.availabilityStatus === 'available'
   );
 
-  // Count how many sections are visible to determine grid cols
-  let sectionCount = 0;
-  if (activeExaminers.length > 0) sectionCount++;
-  if (showSchedule) sectionCount++; // jadwal
-  if (showSchedule && (seminar.room || isOnline)) sectionCount++; // ruangan/daring
-  if (showScore) sectionCount++;
+  // Build visible info blocks for dynamic column count
+  const blocks: React.ReactNode[] = [];
 
-  const gridCols =
-    sectionCount <= 2
-      ? 'grid-cols-1 sm:grid-cols-2'
-      : sectionCount === 3
-        ? 'grid-cols-1 sm:grid-cols-3'
-        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+  if (activeExaminers.length > 0) {
+    blocks.push(
+      <div key="examiners" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Users size={12} style={{ opacity: 0.5 }} />
+          Dosen Penguji
+        </div>
+        {activeExaminers.map((e, idx) => (
+          <div
+            key={e.id}
+            style={{
+              fontSize: idx === 0 ? 12.5 : 11,
+              color: idx === 0 ? '#111' : '#888',
+              fontWeight: 500,
+            }}
+          >
+            {toTitleCaseName(e.lecturerName)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (showSchedule && seminar.date) {
+    blocks.push(
+      <div key="schedule" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Calendar size={12} style={{ opacity: 0.5 }} />
+          Jadwal
+        </div>
+        <div style={{ fontSize: 12.5, color: '#111', fontWeight: 500 }}>
+          {formatDateOnlyId(seminar.date)}
+        </div>
+        {timeRange && (
+          <div style={{ fontSize: 11, color: '#888' }}>{timeRange}</div>
+        )}
+      </div>
+    );
+  }
+
+  if (showSchedule && (seminar.room || isOnline)) {
+    blocks.push(
+      <div key="location" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+          {isOnline ? (
+            <Video size={12} style={{ opacity: 0.5 }} />
+          ) : (
+            <MapPin size={12} style={{ opacity: 0.5 }} />
+          )}
+          {isOnline ? 'Mode Seminar' : 'Ruangan'}
+        </div>
+        {isOnline ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                background: '#dbeafe',
+                color: '#2563eb',
+                fontSize: 11,
+                fontWeight: 600,
+                borderRadius: 4,
+                padding: '2px 7px',
+              }}
+            >
+              Daring
+            </span>
+            {seminar.meetingLink && (
+              <a
+                href={seminar.meetingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 11.5, color: '#16A34A', textDecoration: 'underline' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Buka Link
+              </a>
+            )}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12.5, color: '#111', fontWeight: 500 }}>
+            {seminar.room?.name}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (showScore) {
+    blocks.push(
+      <div key="score" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Trophy size={12} style={{ opacity: 0.5 }} />
+          Nilai Akhir
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>
+            {seminar.finalScore?.toFixed(2)}
+          </span>
+          <span style={{ fontSize: 11, color: '#aaa' }}>/ {seminar.maxWeight || 100}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const colCount = blocks.length || 1;
+  const gridCols = `repeat(${Math.min(colCount, 4)}, 1fr)`;
 
   return (
-    <Card
-      className="cursor-pointer transition-colors hover:bg-muted/50"
+    <div
       onClick={onClick}
+      style={{
+        background: '#fff',
+        border: '1px solid #e8e8e4',
+        borderRadius: 10,
+        padding: '16px 18px',
+        cursor: onClick ? 'pointer' : 'default',
+      }}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold">Informasi Seminar</CardTitle>
-          <div className="flex items-center gap-2">
-            <ThesisEventStatusBadge 
-              status={seminar.status} 
-              scheduledDate={seminar.date} 
-              startTime={seminar.startTime} 
-            />
-            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-          </div>
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>Informasi Seminar</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ThesisEventStatusBadge
+            status={seminar.status}
+            scheduledDate={seminar.date}
+            startTime={seminar.startTime}
+          />
+          {onClick && <ChevronRight size={16} style={{ color: '#aaa', flexShrink: 0 }} />}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className={`grid ${gridCols} gap-4`}>
-          {/* Examiners Section */}
-          {activeExaminers.length > 0 && (
-            <div className="flex gap-2.5">
-              <Users className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div className="space-y-0.5 min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">Dosen Penguji</p>
-                {activeExaminers.map((e) => (
-                  <p key={e.id} className="text-sm truncate">
-                    <span className="text-muted-foreground">Penguji {e.order}:</span>{' '}
-                    <span className="font-medium">{toTitleCaseName(e.lecturerName)}</span>
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
+      </div>
 
-          {/* Schedule Section */}
-          {showSchedule && (
-            <div className="flex gap-2.5">
-              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div className="space-y-0.5">
-                <p className="text-xs font-medium text-muted-foreground">Jadwal</p>
-                <p className="text-sm font-medium">{formatDateOnlyId(seminar.date)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatTimeRange(seminar.startTime, seminar.endTime)}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Room / Meeting Link */}
-          {showSchedule && (
-            <>
-              {isOnline ? (
-                <div className="flex gap-2.5">
-                  <Video className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-muted-foreground">Mode Seminar</p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">Daring</Badge>
-                      {seminar.meetingLink && (
-                        <a
-                          href={seminar.meetingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Buka Link
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : seminar.room ? (
-                <div className="flex gap-2.5">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-muted-foreground">Ruangan</p>
-                    <p className="text-sm font-medium">{seminar.room.name}</p>
-                  </div>
-                </div>
-              ) : null}
-            </>
-          )}
-
-          {/* Score Section */}
-          {showScore && (
-            <div className="flex gap-2.5">
-              <Trophy className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div className="space-y-0.5">
-                <p className="text-xs font-medium text-muted-foreground">Nilai Akhir</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold">{seminar.finalScore?.toFixed(2)}</span>
-                  {seminar.grade && (
-                    <Badge
-                      variant={seminar.status === 'failed' ? 'destructive' : 'success'}
-                      className="text-sm"
-                    >
-                      {seminar.grade}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      {/* Info grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '12px 16px' }}>
+        {blocks}
+      </div>
+    </div>
   );
 }
