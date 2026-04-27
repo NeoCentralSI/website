@@ -77,7 +77,7 @@ export function useSeminarDocumentTypes() {
 
 export function useStudentSeminarDocuments() {
   const { data: overview } = useStudentSeminarOverview();
-  const seminarId = overview?.id;
+  const seminarId = overview?.seminar?.id;
 
   return useQuery({
     queryKey: seminarKeys.documents(),
@@ -154,7 +154,7 @@ export function useCancelSeminarRegistration() {
 export function useStudentRevisions() {
   return useQuery({
     queryKey: seminarKeys.revisions(),
-    queryFn: getStudentRevisions,
+    queryFn: () => getStudentRevisions(),
   });
 }
 

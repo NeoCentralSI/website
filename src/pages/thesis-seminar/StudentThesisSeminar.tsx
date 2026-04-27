@@ -22,12 +22,11 @@ export default function StudentThesisSeminar() {
   const { pathname } = useLocation();
   const activeTab = pathname.includes('riwayat-kehadiran') ? 'attendance' : 'overview';
 
-  const { data: overview, isLoading: isOverviewLoading, isError: isOverviewError, refetch: refetchOverview } = useStudentSeminarOverview();
-  const { data: history, isLoading: isHistoryLoading, isError: isHistoryError, refetch: refetchHistory } = useStudentSeminarHistory();
-  const { data: attendance, isLoading: isAttendanceLoading, isFetching: isAttendanceFetching, refetch: refetchAttendance } = useStudentAttendanceHistory();
+  const { data: overview, isLoading: isOverviewLoading } = useStudentSeminarOverview();
+  const { data: history, isLoading: isHistoryLoading } = useStudentSeminarHistory();
+  const { data: attendance, isLoading: isAttendanceLoading, isFetching: isAttendanceFetching } = useStudentAttendanceHistory();
 
   const isLoading = isOverviewLoading || isHistoryLoading;
-  const isError = isOverviewError || isHistoryError;
 
   const breadcrumbs = useMemo(
     () => [

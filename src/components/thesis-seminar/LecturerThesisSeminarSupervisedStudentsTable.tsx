@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSupervisedStudentSeminars } from '@/hooks/thesis-seminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
-import { ThesisStudentInfoCell, ThesisTitleCell, ThesisPersonnelListCell } from '@/components/shared/ThesisTableCells';
+import { ThesisStudentInfoCell, ThesisTitleCell } from '@/components/shared/ThesisTableCells';
 import { Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SupervisedStudentSeminarItem } from '@/types/seminar.types';

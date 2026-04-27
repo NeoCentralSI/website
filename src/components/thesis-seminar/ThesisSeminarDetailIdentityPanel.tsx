@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarDetailAudienceTable';
 import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
-import { useRole } from '@/hooks/shared/useRole';
 import {
   toTitleCaseName,
   formatDateOnlyId,
@@ -38,8 +37,6 @@ interface Props {
 }
 
 export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
-  const { isAdmin } = useRole();
-
   const supervisors: any[] = detail.supervisors || (detail.thesis?.supervisors || []).map((s: any) => ({
     name: s.lecturerName || s.name,
     role: s.role,

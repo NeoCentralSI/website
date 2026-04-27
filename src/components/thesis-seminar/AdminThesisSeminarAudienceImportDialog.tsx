@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileSpreadsheet, RefreshCw, Upload, Download } from "lucide-react";
 
-import type { AdminThesisSeminarAudienceImportResult } from "@/services/thesis-seminar/core.service";
+import type { AdminThesisSeminarAudienceImportResult } from "@/types/seminar.types";
 
 interface AdminThesisSeminarAudienceImportDialogProps {
   open: boolean;
@@ -108,7 +108,7 @@ export function AdminThesisSeminarAudienceImportDialog({
             {result.failedRows.length > 0 && (
               <ScrollArea className="h-44 rounded border p-3">
                 <div className="space-y-1">
-                  {result.failedRows.map((row, idx) => (
+                  {result.failedRows.map((row: { row: number; error: string }, idx: number) => (
                     <p key={idx} className="text-xs text-red-600">
                       Baris {row.row}: {row.error}
                     </p>

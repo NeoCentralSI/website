@@ -24,9 +24,8 @@ export default function ThesisSeminarDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isAdmin, isStudent, isDosen } = useRole();
+  const { isAdmin, isStudent } = useRole();
 
-  const _isAdmin = isAdmin();
   const _isStudent = isStudent();
   const isArchiveRoute = location.pathname.includes('/arsip/');
 
@@ -71,7 +70,7 @@ export default function ThesisSeminarDetailPage() {
     );
   }
 
-  const status = detail.status;
+  const status = (detail as any).status;
   const d = detail as any;
 
   // Tab visibility based on lifecycle
@@ -93,14 +92,14 @@ export default function ThesisSeminarDetailPage() {
 
   const seminarForModal: AdminSeminarListItem | null = isAdmin()
     ? {
-      id: detail.id,
+      id: d.id,
       thesisId: d.thesis?.id || null,
       studentName: d.student?.name || '',
       studentNim: d.student?.nim || '',
       thesisTitle: d.thesis?.title || '',
       supervisors: d.supervisors || [],
-      status: detail.status,
-      registeredAt: detail.registeredAt,
+      status: d.status,
+      registeredAt: d.registeredAt,
       date: d.date || null,
       startTime: d.startTime || null,
       endTime: d.endTime || null,
@@ -135,7 +134,7 @@ export default function ThesisSeminarDetailPage() {
 
         <div className="flex items-center gap-3">
           <ThesisEventStatusBadge
-            status={detail.status}
+            status={d.status}
             scheduledDate={d.date}
             startTime={d.startTime}
           />

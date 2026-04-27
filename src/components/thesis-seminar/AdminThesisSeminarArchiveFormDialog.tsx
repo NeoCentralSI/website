@@ -80,7 +80,7 @@ export function AdminThesisSeminarArchiveFormDialog({
       setThesisId(editingSeminar.thesisId);
       setDate(editingSeminar.date ? new Date(editingSeminar.date) : undefined);
       setRoomId(editingSeminar.room?.id || '');
-      setStatus(editingSeminar.status);
+      setStatus(editingSeminar.status === 'cancelled' ? 'passed' : editingSeminar.status);
       setExaminerIds(editingSeminar.examiners.map((e) => e.lecturerId));
     } else {
       setThesisId('');
@@ -206,7 +206,10 @@ export function AdminThesisSeminarArchiveFormDialog({
 
             <div className="space-y-2">
               <Label>Status Seminar</Label>
-              <Select value={status} onValueChange={(value: SeminarResultStatus) => setStatus(value)}>
+              <Select
+                value={status}
+                onValueChange={(value: Exclude<AdminThesisSeminarArchiveStatus, 'cancelled'>) => setStatus(value)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

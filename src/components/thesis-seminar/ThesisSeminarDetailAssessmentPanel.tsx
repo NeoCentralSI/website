@@ -17,7 +17,6 @@ import {
   useSupervisorFinalizationData,
   useFinalizeSeminarBySupervisor,
 } from '@/hooks/thesis-seminar';
-import { useRole } from '@/hooks/shared/useRole';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type {
   FinalizeSeminarPayload,

@@ -5,7 +5,7 @@ import { Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import CustomTable from '@/components/layout/CustomTable';
-import type { AdminThesisSeminarAudience } from '@/services/thesis-seminar/core.service';
+import type { AdminThesisSeminarAudience } from '@/types/seminar.types';
 
 interface AdminThesisSeminarAudienceTableProps {
   data: AdminThesisSeminarAudience[];
@@ -39,7 +39,7 @@ export function AdminThesisSeminarAudienceTable({
         header: 'Nama',
         render: (row) => (
           <div>
-            <div className="font-medium">{row.fullName}</div>
+            <div className="font-medium">{row.studentName}</div>
           </div>
         ),
       },
@@ -86,7 +86,7 @@ export function AdminThesisSeminarAudienceTable({
   return (
     <CustomTable
       data={data}
-      columns={columns as any}
+      columns={columns}
       loading={loading}
       isRefreshing={isRefreshing}
       emptyText="Belum ada data audience seminar"

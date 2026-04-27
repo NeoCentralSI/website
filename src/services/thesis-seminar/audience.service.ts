@@ -2,7 +2,6 @@ import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from '@/services/auth.service';
 import type { 
   LecturerAudienceItem, 
-  AdminThesisSeminarAudience,
   AdminThesisSeminarAudienceStudentOption,
   AdminThesisSeminarAudienceImportResult
 } from '@/types/seminar.types';

@@ -1,11 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks/shared';
 import { StudentThesisSeminarStatusCard } from './StudentThesisSeminarStatusCard';
 import { StudentThesisSeminarIdentityCard } from './StudentThesisSeminarIdentityCard';
 import { StudentThesisSeminarChecklistRequirementsCard } from './StudentThesisSeminarChecklistRequirementsCard';
 import { StudentThesisSeminarDocumentCard } from './StudentThesisSeminarDocumentCard';
 import { StudentThesisSeminarHistoryCard } from './StudentThesisSeminarHistoryCard';
-import { toTitleCaseName } from '@/lib/text';
 import type { SeminarHistoryItem, SeminarOverviewResponse } from '@/types/seminar.types';
 
 interface OverviewPanelProps {
@@ -19,7 +16,6 @@ export const StudentThesisSeminarOverviewPanel = ({
   history,
   onDetailClick,
 }: OverviewPanelProps) => {
-  const { user } = useAuth();
   const seminarStatus = overview.seminar?.status ?? null;
   const historyItems = history.filter((item) => item.id !== overview.seminar?.id);
 

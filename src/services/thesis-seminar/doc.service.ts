@@ -45,8 +45,7 @@ export const uploadSeminarDocument = async (file: File, documentTypeName: string
     {
       method: 'POST',
       body: formData,
-    },
-    true
+    }
   );
   return parseJsonResponse(response, 'Gagal mengunggah dokumen seminar');
 };

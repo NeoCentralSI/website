@@ -298,7 +298,7 @@ export default function SeminarHasilAnnouncement() {
         !q ||
         s.presenterName.toLowerCase().includes(q) ||
         s.thesisTitle.toLowerCase().includes(q) ||
-        s.supervisors.some((sv) => sv.name.toLowerCase().includes(q));
+        s.supervisors.some((sv: { name: string }) => sv.name.toLowerCase().includes(q));
       const matchFilter =
         statusFilter === 'all'
           ? true
