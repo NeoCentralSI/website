@@ -316,7 +316,7 @@ export function InternshipCpmkPanel() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {row.rubrics.map((rubric: any, idx: number) => (
+                                    {[...(row.rubrics || [])].sort((a, b) => a.minScore - b.minScore).map((rubric: any, idx: number) => (
                                         <TableRow key={rubric.id} className="transition-colors">
                                             <TableCell className="text-center text-muted-foreground font-medium">
                                                 {idx + 1}
@@ -347,11 +347,16 @@ export function InternshipCpmkPanel() {
     };
 
     const filteredCpmks = useMemo(() => {
-        if (!searchTerm) return cpmks;
-        const s = searchTerm.toLowerCase();
-        return cpmks.filter(c => 
-            c.code.toLowerCase().includes(s) || 
-            c.name.toLowerCase().includes(s)
+        let result = cpmks;
+        if (searchTerm) {
+            const s = searchTerm.toLowerCase();
+            result = cpmks.filter(c => 
+                c.code.toLowerCase().includes(s) || 
+                c.name.toLowerCase().includes(s)
+            );
+        }
+        return [...result].sort((a, b) => 
+            a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
         );
     }, [cpmks, searchTerm]);
 

@@ -131,17 +131,22 @@ export default function FieldAssessmentForm() {
         );
     }
     
-    const flattenedRubrics = data.cpmks.flatMap((cpmk: any, cpmkIdx: number) => 
-        cpmk.rubrics.map((rubric: any, rubricIdx: number) => ({
+    const sortedCpmks = [...(data.cpmks || [])].sort((a, b) => 
+        a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+    const flattenedRubrics = sortedCpmks.flatMap((cpmk: any, cpmkIdx: number) => {
+        const sortedRubrics = [...(cpmk.rubrics || [])].sort((a, b) => a.minScore - b.minScore);
+        return sortedRubrics.map((rubric: any, rubricIdx: number) => ({
             ...rubric,
             cpmkName: cpmk.name,
             cpmkId: cpmk.id,
             cpmkCode: cpmk.code,
             cpmkNo: cpmkIdx + 1,
             isFirst: rubricIdx === 0,
-            rubricCount: cpmk.rubrics.length
-        }))
-    );
+            rubricCount: sortedRubrics.length
+        }));
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 w-full">

@@ -79,12 +79,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({ internship }) => {
                             {internship?.lecturerAssessmentStatus === 'COMPLETED' ? 'Sudah Dinilai' : 'Belum Dinilai'}
                         </Badge>
                     </div>
-
-                    <div className="p-4 bg-muted/20 rounded-xl border border-dashed text-center">
-                        <p className="text-xs text-muted-foreground">
-                            Sertifikat nilai dapat diunduh melalui Dashboard setelah status KP berubah menjadi "Selesai".
-                        </p>
-                    </div>
                 </CardContent>
             </Card>
         </div>
