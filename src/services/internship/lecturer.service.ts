@@ -143,7 +143,6 @@ export const bulkApproveSeminars = async (ids: string[]): Promise<{ success: boo
     }
     return res.json();
 };
-
 export const updateSeminarNotes = async (id: string, notes: string): Promise<{ success: boolean; message: string }> => {
     const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${id}/notes`);
     const res = await apiRequest(url, {
@@ -156,6 +155,16 @@ export const updateSeminarNotes = async (id: string, notes: string): Promise<{ s
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal menyimpan catatan seminar" }));
         throw new Error(errorData.message || "Gagal menyimpan catatan seminar");
+    }
+    return res.json();
+};
+
+export const completeSeminar = async (id: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${id}/complete`);
+    const res = await apiRequest(url, { method: 'POST' });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menyelesaikan seminar" }));
+        throw new Error(errorData.message || "Gagal menyelesaikan seminar");
     }
     return res.json();
 };

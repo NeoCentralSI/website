@@ -239,6 +239,7 @@ export interface AdminApprovedProposalItem {
     isSigned: boolean;
     proposedStartDate?: string;
     proposedEndDate?: string;
+    academicYearName?: string;
     updatedAt: string;
 }
 
@@ -283,6 +284,7 @@ export interface SekdepInternshipDetail {
         fieldStatus: string;
         finalScore: number | null;
         finalGrade: string | null;
+        isLogbookLocked: boolean;
     };
     logbooks: any[];
     guidanceSessions: any[];
@@ -295,6 +297,7 @@ export interface SekdepInternshipDetail {
         companyReceipt: DocumentVerificationDetail;
         logbookDocument: DocumentVerificationDetail;
         reportFinal?: DocumentVerificationDetail;
+        fieldAssessmentDocument?: DocumentVerificationDetail;
     };
     status: string;
     academicYearName: string;
@@ -721,4 +724,34 @@ export interface InternshipLogbookItem {
     internshipNotes?: string;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface InternshipMonitoringStats {
+    totalActive: number;
+    waitingVerification: number;
+    overdue: number;
+    completed: number;
+    distribution: {
+        PROPOSAL: number;
+        ONGOING: number;
+        GUIDANCE: number;
+        SEMINAR: number;
+        COMPLETED: number;
+    };
+}
+
+export interface MonitoringStudentItem {
+    id: string;
+    name: string;
+    nim: string;
+    supervisor: string;
+    endDate: string;
+    daysPast: number;
+    status: 'Aman' | 'Peringatan' | 'Terlambat';
+    progress: {
+        field: boolean;
+        lecturer: boolean;
+        seminar: boolean;
+        report: boolean;
+    };
 }

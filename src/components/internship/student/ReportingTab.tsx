@@ -347,7 +347,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     )}
                                 </div>
                             </div>
-                            {(!internship?.companyReportDocId || internship?.companyReportStatus === 'SUBMITTED' || internship?.companyReportStatus === 'REVISION_NEEDED') && 
+                            {(!internship?.companyReportDocId || internship?.companyReportStatus === 'REVISION_NEEDED') && 
                              internship?.fieldAssessmentStatus !== 'COMPLETED' && (
                                 <div className="mt-auto pt-2">
                                     <input 

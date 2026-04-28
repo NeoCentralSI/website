@@ -2,14 +2,23 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getInternshipAssessment, submitLecturerAssessment } from '@/services/internship';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, GraduationCap, CheckCircle2, AlertCircle, Save } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import InternshipTable from '@/components/internship/InternshipTable';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Rubric {
     id: string;
@@ -144,9 +153,8 @@ export default function LecturerNilaiTab() {
 
     const cpmks: Cpmk[] = assessmentData?.data?.cpmks || [];
     const lecturerCpmks = cpmks.filter(c => c.assessorType === 'LECTURER');
-    const fieldCpmks = cpmks.filter(c => c.assessorType === 'FIELD');
-    const internshipStatus = assessmentData?.data?.internship?.status;
-    const isCompleted = internshipStatus === 'COMPLETED';
+    const internshipData = assessmentData?.data?.internship;
+    const isCompleted = internshipData?.status === 'COMPLETED' || internshipData?.lecturerAssessmentStatus === 'COMPLETED';
 
     const calculateCurrentTotal = () => {
         let totalScore = 0;
@@ -157,29 +165,28 @@ export default function LecturerNilaiTab() {
             }
         });
 
-        assessmentData?.data?.fieldScores?.forEach((fs: any) => {
-            const cpmk = cpmks.find(c => c.rubrics.some(r => r.id === fs.chosenRubricId));
-            if (cpmk) {
-                totalScore += (fs.score * cpmk.weight / 100);
-            }
-        });
-
         return totalScore;
     };
 
     const currentTotal = calculateCurrentTotal();
-    
-    const getGrade = (score: number) => {
-        if (score >= 80) return "A";
-        if (score >= 75) return "A-";
-        if (score >= 70) return "B+";
-        if (score >= 65) return "B";
-        if (score >= 60) return "B-";
-        if (score >= 55) return "C+";
-        if (score >= 50) return "C";
-        if (score >= 45) return "D";
-        return "E";
-    };
+
+    const TotalRow = (
+        <div className="bg-slate-50/50 border-t border-slate-200 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+                <div>
+                    <p className="font-bold uppercase tracking-tight text-slate-500 text-[11px]">Total Nilai</p>
+                </div>
+            </div>
+            
+            <div className="flex items-center gap-6">
+                <div className="text-center sm:text-right">
+                    <div className="flex items-baseline gap-2 justify-center sm:justify-end">
+                        <span className="text-2xl font-black text-slate-900 leading-none">{currentTotal.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 
     const onSave = () => {
         const scoresToSubmit = Object.values(selectedScores);
@@ -205,57 +212,6 @@ export default function LecturerNilaiTab() {
 
     return (
         <div className="space-y-6 pb-20">
-            {/* Header info */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <GraduationCap className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-900 leading-none">
-                                Penilaian Kerja Praktik
-                            </h2>
-                            <p className="text-xs text-slate-500 mt-1 font-medium">
-                                Berikan penilaian berdasarkan rubrik CPMK yang tersedia.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="flex items-center gap-6">
-                    <div className="text-right">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Nilai Akhir (Estimasi)</p>
-                        <div className="flex items-center gap-3 justify-end mt-0.5">
-                            <span className="text-3xl font-black text-slate-900">{currentTotal.toFixed(2)}</span>
-                            <Badge variant="outline" className="text-sm font-bold bg-primary/5 text-primary border-primary/20 px-2 py-0.5 rounded-lg">
-                                {getGrade(currentTotal)}
-                            </Badge>
-                        </div>
-                    </div>
-
-                    {!isCompleted && (
-                        <div className="border-l border-slate-100 pl-6">
-                            {!isEditing ? (
-                                <Button onClick={() => setIsEditing(true)} size="sm" className="font-bold">
-                                    Edit Penilaian
-                                </Button>
-                            ) : (
-                                <Button onClick={resetEditing} variant="ghost" size="sm" className="font-bold text-slate-500 hover:text-red-500 hover:bg-red-50">
-                                    Batal
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="space-y-6">
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary" />
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Penilaian Dosen</h3>
-                </div>
-
                 <InternshipTable
                     columns={[
                         {
@@ -285,8 +241,8 @@ export default function LecturerNilaiTab() {
                                 const isSelected = selectedScores[row.cpmkId]?.chosenRubricId === row.id;
                                 return (
                                     <div className={cn(
-                                        "text-[10px] font-black uppercase tracking-tight py-1 px-2 rounded-md inline-block transition-colors",
-                                        isSelected ? "bg-primary/10 text-primary border border-primary/20" : "text-slate-400"
+                                        "text-xs font-bold uppercase tracking-tight py-1 px-2 rounded-md inline-block",
+                                        isSelected ? "bg-amber-100 text-amber-700" : ""
                                     )}>
                                         {row.levelName}
                                     </div>
@@ -304,7 +260,7 @@ export default function LecturerNilaiTab() {
                                         <div 
                                             className={cn(
                                                 "text-xs leading-relaxed prose prose-slate prose-xs max-w-none transition-all", 
-                                                isSelected ? "text-slate-900 font-semibold" : "text-slate-600"
+                                                isSelected ? "text-slate-900 font-semibold" : ""
                                             )}
                                             dangerouslySetInnerHTML={{ __html: row.rubricLevelDescription || "" }}
                                         />
@@ -320,8 +276,8 @@ export default function LecturerNilaiTab() {
                                 const isSelected = selectedScores[row.cpmkId]?.chosenRubricId === row.id;
                                 return (
                                     <div className={cn(
-                                        "text-[10px] py-1 tabular-nums transition-colors rounded-full px-3 font-bold",
-                                        isSelected ? "bg-primary/10 text-primary" : "bg-slate-100/50 text-slate-400"
+                                        "text-xs py-1 tabular-nums bg-slate-100/50 rounded-full px-3",
+                                        isSelected ? "bg-amber-100 text-amber-700" : ""
                                     )}>
                                         {row.minScore} - {row.maxScore}
                                     </div>
@@ -346,7 +302,7 @@ export default function LecturerNilaiTab() {
                                             min={min}
                                             max={max}
                                             placeholder={`${min}-${max}`}
-                                            className="h-9 w-20 text-center font-bold text-xs tabular-nums border-slate-200 focus:border-primary focus:ring-primary/20 rounded-lg bg-white shadow-none"
+                                            className="text-center font-bold text-xs tabular-nums border-slate-200 focus:border-primary focus:ring-primary/20 rounded-lg bg-white shadow-none"
                                             value={selectedScores[row.cpmkId]?.score ?? ""}
                                             onChange={(e) => handleScoreChange(row.cpmkId, e.target.value)}
                                             disabled={!isEditing || isCompleted}
@@ -366,7 +322,59 @@ export default function LecturerNilaiTab() {
                     onPageChange={() => {}}
                     hidePagination={true}
                     rowKey={(row) => row.id}
-                    className="rounded-2xl border-slate-200 overflow-hidden shadow-sm"
+                    className="rounded-2xl border-slate-200 overflow-hidden"
+                    appendRow={TotalRow}
+                    actions={
+                        <div className="flex items-center gap-2">
+                            {!isCompleted && (
+                                <>
+                                    {!isEditing ? (
+                                        <Button onClick={() => setIsEditing(true)} size="sm" className="font-bold h-9">
+                                            Edit Penilaian
+                                        </Button>
+                                    ) : (
+                                        <>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button 
+                                                        size="sm" 
+                                                        disabled={!isDirty || mutation.isPending}
+                                                        className="gap-2 font-bold h-9 px-4"
+                                                    >
+                                                        {mutation.isPending ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Save className="h-4 w-4" />
+                                                        )}
+                                                        Simpan Nilai
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Konfirmasi Penilaian</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Apakah Anda yakin ingin menyimpan penilaian ini? 
+                                                            Setelah disimpan, nilai <span className="font-bold text-slate-900">tidak akan bisa diubah lagi</span>.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={onSave} className="bg-primary text-white hover:bg-primary/90">
+                                                            Ya, Simpan
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+
+                                            <Button onClick={resetEditing} variant="ghost" size="sm" className="font-bold h-9 text-slate-500 hover:text-red-500 hover:bg-red-50">
+                                                Batal
+                                            </Button>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    }
                     rowProps={(row) => ({
                         className: cn(
                             "transition-colors",
@@ -374,71 +382,6 @@ export default function LecturerNilaiTab() {
                         )
                     })}
                 />
-
-                {isEditing && (
-                    <div className="flex justify-end pt-2">
-                        <Button 
-                            size="sm" 
-                            onClick={onSave}
-                            disabled={!isDirty || mutation.isPending}
-                            className="gap-2 font-bold px-6 shadow-lg shadow-primary/20"
-                        >
-                            {mutation.isPending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="h-4 w-4" />
-                            )}
-                            Simpan Penilaian
-                        </Button>
-                    </div>
-                )}
-            </div>
-
-            {/* Field Assessment (Read Only Info) */}
-            {fieldCpmks.length > 0 && (
-                <div className="mt-12 pt-10 border-t border-slate-100">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="h-2 w-2 rounded-full bg-slate-300" />
-                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Penilaian Pembimbing Lapangan</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {fieldCpmks.map(cpmk => {
-                            const scoreData = assessmentData?.data?.fieldScores?.find((fs: any) => 
-                                cpmk.rubrics.some(r => r.id === fs.chosenRubricId)
-                            );
-
-                            return (
-                                <Card key={cpmk.id} className="bg-white border-slate-200 shadow-sm rounded-2xl overflow-hidden hover:border-slate-300 transition-colors">
-                                    <CardHeader className="py-5 px-6 bg-slate-50/50 border-b border-slate-100">
-                                        <CardTitle className="text-sm font-bold text-slate-800 leading-tight">{cpmk.name}</CardTitle>
-                                        <CardDescription className="text-[10px] font-bold text-slate-400 uppercase">Bobot: {cpmk.weight}%</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="py-6 px-6">
-                                        {scoreData ? (
-                                            <div className="flex items-end justify-between">
-                                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold text-[10px] px-2 py-0.5 rounded-lg">
-                                                    TERVERIFIKASI
-                                                </Badge>
-                                                <div className="text-right">
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1">Skor</p>
-                                                    <p className="text-3xl font-black text-slate-900 leading-none">{scoreData.score.toFixed(1)}</p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-between opacity-50">
-                                                <Badge variant="outline" className="bg-slate-100 text-slate-500 border-slate-200 font-bold text-[10px] px-2 py-0.5 rounded-lg">
-                                                    BELUM TERSEDIA
-                                                </Badge>
-                                                <span className="text-2xl font-black text-slate-300">-</span>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

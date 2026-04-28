@@ -1,5 +1,5 @@
 import type { SekdepRegistrationItem, InternshipListItem } from '@/services/internship';
-import type { Column } from '@/components/layout/CustomTable';
+import type { Column } from '@/components/internship/InternshipTable';
 import { Button } from '@/components/ui/button';
 import { FileText, Eye, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -263,7 +263,6 @@ export const getSekdepResponseColumns = ({
     onViewResponseDoc,
     onViewAssignmentDoc,
     onViewDetail,
-    onVerifyResponse,
 }: SekdepResponseColumnProps): Column<SekdepRegistrationItem>[] => [
         {
             key: 'koordinator',
@@ -372,32 +371,8 @@ export const getSekdepResponseColumns = ({
             key: 'actions',
             header: 'Aksi',
             render: (item) => {
-                const canVerifyResponse = item.status === 'WAITING_FOR_VERIFICATION' && item.dokumenSuratBalasan && !item.isAssignmentSigned;
-
                 return (
                     <div className="flex items-center justify-center gap-1">
-                        {canVerifyResponse && (
-                            <>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-700 px-2"
-                                    onClick={() => onVerifyResponse(item, 'APPROVED_PROPOSAL')}
-                                    title="Setujui Balasan"
-                                >
-                                    <Check className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 border-destructive text-destructive hover:bg-destructive/5 px-2"
-                                    onClick={() => onVerifyResponse(item, 'REJECTED_PROPOSAL')}
-                                    title="Tolak Balasan (Dokumen Invalid)"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </>
-                        )}
                         <Button
                             variant="ghost"
                             size="icon"

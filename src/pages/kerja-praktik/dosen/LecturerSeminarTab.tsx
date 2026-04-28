@@ -9,7 +9,7 @@ import {
     unvalidateSeminarAudience,
     bulkValidateSeminarAudience,
     updateSeminarNotes,
-    downloadBeritaAcara
+    completeSeminar,
 } from '@/services/internship';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,10 +50,11 @@ export default function LecturerSeminarTab() {
     const [unapprovingParticipantId, setUnapprovingParticipantId] = useState<string | null>(null);
     const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
     const [isBulkValidating, setIsBulkValidating] = useState(false);
-    const [isGeneratingBA, setIsGeneratingBA] = useState<string | null>(null);
+
 
     const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
     const [isSavingNotes, setIsSavingNotes] = useState<string | null>(null);
+    const [isCompleting, setIsCompleting] = useState<string | null>(null);
     const [isEditingNotesMap, setIsEditingNotesMap] = useState<Record<string, boolean>>({});
 
     const handleStartEdit = (id: string, notes: string) => {
@@ -158,32 +159,22 @@ export default function LecturerSeminarTab() {
             setIsSavingNotes(null);
         }
     };
+    const handleCompleteSeminar = async (seminarId: string) => {
+        if (!confirm("Apakah Anda yakin ingin menyelesaikan seminar ini? Setelah diselesaikan, catatan seminar tidak dapat diubah lagi.")) return;
 
-    const handleGenerateBeritaAcara = async (seminarId: string) => {
+        setIsCompleting(seminarId);
         try {
-            setIsGeneratingBA(seminarId);
-            const blob = await downloadBeritaAcara(seminarId);
-
-            // Create a link and trigger download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `Berita_Acara_Seminar_${seminarId}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-
-            toast.success("Berita Acara berhasil diterbitkan dan diunduh.");
-
-            // Refresh data to show updated status
+            await completeSeminar(seminarId);
+            toast.success('Seminar berhasil diselesaikan');
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
+            queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
         } catch (error: any) {
-            toast.error(error.message || "Gagal menerbitkan Berita Acara.");
+            toast.error(error.message || 'Gagal menyelesaikan seminar');
         } finally {
-            setIsGeneratingBA(null);
+            setIsCompleting(null);
         }
     };
+
 
 
     if (isLoading) {
@@ -244,7 +235,7 @@ export default function LecturerSeminarTab() {
                     <div key={seminar.id} className="space-y-6">
                         {/* 1. Pengajuan Seminar Card */}
                         <Card className="overflow-hidden border-gray-200 transition-all">
-                            <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 py-4">
+                            <CardHeader className="flex flex-row items-center justify-between border-b">
                                 <div className="space-y-1">
                                     <CardTitle className="text-lg flex items-center gap-2">
                                         <CalendarDays className="h-5 w-5 text-primary" />
@@ -336,8 +327,8 @@ export default function LecturerSeminarTab() {
                         </Card>
 
                         {/* 2. Catatan Seminar Card */}
-                        <Card className={cn("border-gray-200 transition-all shadow-sm", isEditingNotesMap[seminar.id] && "ring-1 ring-primary/20")}>
-                            <CardHeader className="py-4 border-b flex flex-row items-center justify-between space-y-0">
+                        <Card className={cn("border-gray-200 transition-all", isEditingNotesMap[seminar.id] && "ring-1 ring-primary/20")}>
+                            <CardHeader className="border-b flex flex-row items-center justify-between space-y-0">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                         <FileText className="h-4 w-4 text-primary" />
@@ -348,14 +339,26 @@ export default function LecturerSeminarTab() {
                                 {!isCompleted && (
                                     <div className="flex items-center gap-2">
                                         {!isEditingNotesMap[seminar.id] ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-8 gap-2"
-                                                onClick={() => handleStartEdit(seminar.id, seminar.supervisorNotes)}
-                                            >
-                                                Edit Catatan
-                                            </Button>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 gap-2 border-primary/20 text-primary hover:bg-primary/5 hover:text-primary"
+                                                    onClick={() => handleCompleteSeminar(seminar.id)}
+                                                    disabled={isCompleting === seminar.id}
+                                                >
+                                                    {isCompleting === seminar.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                                    Selesaikan Seminar
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 gap-2"
+                                                    onClick={() => handleStartEdit(seminar.id, seminar.supervisorNotes)}
+                                                >
+                                                    Edit Catatan
+                                                </Button>
+                                            </div>
                                         ) : (
                                             <Button
                                                 variant="ghost"
@@ -410,30 +413,6 @@ export default function LecturerSeminarTab() {
                                             {isSavingNotes === seminar.id ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-2" />}
                                             Simpan Perubahan
                                         </Button>
-                                    )}
-                                    {!isEditingNotesMap[seminar.id] && seminar.status !== 'REJECTED' && (
-                                        <div className="flex items-center gap-2">
-                                            {seminar.beritaAcaraDocumentId && (
-                                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 py-1 px-3">
-                                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                                    Sudah Diterbitkan
-                                                </Badge>
-                                            )}
-                                            <Button
-                                                variant={seminar.beritaAcaraDocumentId ? "outline" : "default"}
-                                                size="sm"
-                                                onClick={() => handleGenerateBeritaAcara(seminar.id)}
-                                                disabled={isGeneratingBA === seminar.id}
-                                                className="shadow-sm"
-                                            >
-                                                {isGeneratingBA === seminar.id ? (
-                                                    <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                                                ) : (
-                                                    <FileText className="w-3.5 h-3.5 mr-2" />
-                                                )}
-                                                {seminar.beritaAcaraDocumentId ? "Cetak Ulang Berita Acara" : "Terbitkan & Cetak Berita Acara"}
-                                            </Button>
-                                        </div>
                                     )}
                                 </div>
 

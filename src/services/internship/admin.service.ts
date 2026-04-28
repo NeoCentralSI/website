@@ -18,8 +18,12 @@ export const verifyCompanyResponse = async (id: string, status: 'APPROVED_PROPOS
     return res.json();
 };
 
-export const getAdminApprovedProposals = async (): Promise<{ success: boolean; data: AdminApprovedProposalItem[] }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.APPROVED_PROPOSALS));
+export const getAdminApprovedProposals = async (academicYearId?: string): Promise<{ success: boolean; data: AdminApprovedProposalItem[] }> => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.APPROVED_PROPOSALS);
+    if (academicYearId && academicYearId !== 'all') {
+        url += `?academicYear=${academicYearId}`;
+    }
+    const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar pengajuan" }));
         throw new Error(errorData.message || "Gagal memuat daftar pengajuan");
@@ -50,8 +54,12 @@ export const updateAdminProposalLetter = async (id: string, body: { documentNumb
     return res.json();
 };
 
-export const getAdminAssignmentProposals = async (): Promise<{ success: boolean; data: AdminAssignmentProposalItem[] }> => {
-    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.ASSIGNMENT_PROPOSALS));
+export const getAdminAssignmentProposals = async (academicYearId?: string): Promise<{ success: boolean; data: AdminAssignmentProposalItem[] }> => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.ASSIGNMENT_PROPOSALS);
+    if (academicYearId && academicYearId !== 'all') {
+        url += `?academicYear=${academicYearId}`;
+    }
+    const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar pengajuan" }));
         throw new Error(errorData.message || "Gagal memuat daftar pengajuan");
@@ -106,6 +114,18 @@ export const saveInternshipTemplate = async (name: string, content?: string | nu
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal menyimpan template" }));
         throw new Error(errorData.message || "Gagal menyimpan template");
+    }
+    return res.json();
+};
+
+export const adminUploadCompanyResponse = async (proposalId: string, documentId: string): Promise<{ success: boolean; message: string }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.UPLOAD_COMPANY_RESPONSE(proposalId)), {
+        method: "POST",
+        body: JSON.stringify({ documentId }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah surat balasan" }));
+        throw new Error(errorData.message || "Gagal mengunggah surat balasan");
     }
     return res.json();
 };

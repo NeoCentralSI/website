@@ -12,10 +12,10 @@ import {
     MapPin,
     FileText,
     Download,
-    Eye,
     MessageSquare,
-    CheckSquare,
+    XCircle,
 } from 'lucide-react';
+import InternshipTable from '@/components/internship/InternshipTable';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
@@ -27,7 +27,6 @@ import { SekdepLogbookTab } from './detail/SekdepLogbookTab';
 import { SekdepGuidanceTab } from './detail/SekdepGuidanceTab';
 import { SekdepSeminarTab } from './detail/SekdepSeminarTab';
 import { SekdepGradesTab } from './detail/SekdepGradesTab';
-import type { DocumentVerificationDetail } from '@/services/internship';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,8 +37,9 @@ import { toTitleCaseName, formatDateId } from '@/lib/text';
 import { Progress } from '@/components/ui/progress';
 import DocumentVerificationDialog from '@/components/internship/sekdep/DocumentVerificationDialog';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
-import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 export default function InternshipLifecycleDetail() {
     const { internshipId } = useParams<{ internshipId: string }>();
@@ -48,7 +48,7 @@ export default function InternshipLifecycleDetail() {
     const queryClient = useQueryClient();
     
     // State for bulk verification
-    const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
     const [bulkDialogMode, setBulkDialogMode] = useState<'APPROVE' | 'REJECT'>('APPROVE');
 
@@ -64,6 +64,11 @@ export default function InternshipLifecycleDetail() {
     });
 
     const detail = response?.data;
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewDoc, setPreviewDoc] = useState<any>(null);
+    const [singleActionDoc, setSingleActionDoc] = useState<any>(null);
+    const [singleActionMode, setSingleActionMode] = useState<'APPROVE' | 'REJECT'>('APPROVE');
+    const [singleDialogOpen, setSingleDialogOpen] = useState(false);
     const location = useLocation();
     const isDashboard = location.pathname.endsWith(internshipId!);
 
@@ -74,26 +79,6 @@ export default function InternshipLifecycleDetail() {
         { label: 'Seminar', to: `/kelola/kerja-praktik/mahasiswa/${internshipId}/seminar` },
         { label: 'Nilai Akhir', to: `/kelola/kerja-praktik/mahasiswa/${internshipId}/nilai` },
     ], [internshipId]);
-
-    // Get available documents for bulk selection
-    // Note: Laporan Akhir tidak termasuk karena diverifikasi oleh dosen pembimbing, bukan sekdep
-    const availableDocs = useMemo(() => {
-        if (!detail) return [];
-        const docs: Array<{ docType: 'report' | 'completionCertificate' | 'companyReceipt' | 'logbookDocument', title: string, detail: DocumentVerificationDetail }> = [];
-        
-        if (detail.reportingDocuments.completionCertificate?.document && detail.reportingDocuments.completionCertificate.status !== 'APPROVED') {
-            docs.push({ docType: 'completionCertificate', title: 'Sertifikat Selesai KP', detail: detail.reportingDocuments.completionCertificate });
-        }
-        if (detail.reportingDocuments.companyReceipt?.document && detail.reportingDocuments.companyReceipt.status !== 'APPROVED') {
-            docs.push({ docType: 'companyReceipt', title: 'Tanda Terima (KP-004)', detail: detail.reportingDocuments.companyReceipt });
-        }
-        if (detail.reportingDocuments.logbookDocument?.document && detail.reportingDocuments.logbookDocument.status !== 'APPROVED') {
-            docs.push({ docType: 'logbookDocument', title: 'Laporan Kegiatan (KP-002)', detail: detail.reportingDocuments.logbookDocument });
-        }
-        // Laporan Akhir tidak termasuk karena diverifikasi oleh dosen pembimbing
-        
-        return docs;
-    }, [detail]);
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kerja Praktik', href: '/kelola/kerja-praktik/pendaftaran' },
@@ -107,9 +92,66 @@ export default function InternshipLifecycleDetail() {
     }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
     // Bulk verification mutation - menggunakan API bulk dari backend
+    const singleVerificationMutation = useMutation({
+        mutationFn: ({ status, notes }: { status: 'APPROVED' | 'REVISION_NEEDED', notes?: string }) => {
+            if (singleActionDoc.docType === 'reportFinal') {
+                return rejectFinalReport(internshipId!, notes || '');
+            }
+            return verifyInternshipDocument(internshipId!, singleActionDoc.docType, status, notes);
+        },
+        onSuccess: (data) => {
+            toast.success(data.message);
+            queryClient.invalidateQueries({ queryKey: ['sekdepInternshipDetail', internshipId] });
+            setSingleDialogOpen(false);
+            setSingleActionDoc(null);
+        },
+        onError: (error) => {
+            toast.error(error instanceof Error ? error.message : "Gagal memverifikasi dokumen");
+        }
+    });
+
+    const handleSingleVerify = (status: 'APPROVED' | 'REVISION_NEEDED', notes?: string) => {
+        singleVerificationMutation.mutate({ status, notes });
+    };
+
+    const handleAction = (mode: 'APPROVE' | 'REJECT', row: any) => {
+        setSingleActionDoc(row);
+        setSingleActionMode(mode);
+        setSingleDialogOpen(true);
+    };
+
+
+
+    const handleDownloadZip = async () => {
+        if (selectedIds.length === 0 || !detail) return;
+        
+        const zip = new JSZip();
+        const selectedData = reportingTableData.filter(d => selectedIds.includes(d.id) && d.detail?.document);
+        
+        toast.info(`Menyiapkan ${selectedData.length} dokumen untuk diunduh...`);
+        
+        try {
+            const promises = selectedData.map(async (item) => {
+                if (!item.detail?.document) return;
+                const response = await fetch(item.detail.document.filePath);
+                const blob = await response.blob();
+                const fileName = `${item.title.replace(/[/\\?%*:|"<>]/g, '-')}-${item.detail.document.fileName}`;
+                zip.file(fileName, blob);
+            });
+            
+            await Promise.all(promises);
+            const content = await zip.generateAsync({ type: "blob" });
+            saveAs(content, `dokumen-pelaporan-${detail.student.nim}.zip`);
+            toast.success("Dokumen berhasil diunduh dalam format ZIP");
+        } catch (error) {
+            console.error("Zip error:", error);
+            toast.error("Gagal mengunduh dokumen. Pastikan file tersedia.");
+        }
+    };
+
     const bulkVerificationMutation = useMutation({
         mutationFn: async ({ status, notes }: { status: 'APPROVED' | 'REVISION_NEEDED', notes?: string }) => {
-            const docTypes = Array.from(selectedDocs) as Array<'report' | 'completionCertificate' | 'companyReceipt' | 'logbookDocument'>;
+            const docTypes = selectedIds as Array<'report' | 'completionCertificate' | 'companyReceipt' | 'logbookDocument'>;
             const documents = docTypes.map(docType => ({
                 documentType: docType,
                 status,
@@ -119,33 +161,15 @@ export default function InternshipLifecycleDetail() {
             return await bulkVerifyInternshipDocuments(internshipId!, documents, status, notes);
         },
         onSuccess: () => {
-            toast.success(`Berhasil memverifikasi ${selectedDocs.size} dokumen`);
+            toast.success(`Berhasil memverifikasi ${selectedIds.length} dokumen`);
             queryClient.invalidateQueries({ queryKey: ['sekdepInternshipDetail', internshipId] });
-            setSelectedDocs(new Set());
+            setSelectedIds([]);
             setBulkDialogOpen(false);
         },
         onError: (error) => {
             toast.error(error instanceof Error ? error.message : "Gagal memverifikasi dokumen");
         }
     });
-
-    const handleToggleDoc = (docType: string) => {
-        const newSelected = new Set(selectedDocs);
-        if (newSelected.has(docType)) {
-            newSelected.delete(docType);
-        } else {
-            newSelected.add(docType);
-        }
-        setSelectedDocs(newSelected);
-    };
-
-    const handleSelectAll = () => {
-        if (selectedDocs.size === availableDocs.length) {
-            setSelectedDocs(new Set());
-        } else {
-            setSelectedDocs(new Set(availableDocs.map(d => d.docType)));
-        }
-    };
 
     const handleBulkVerify = (status: 'APPROVED' | 'REVISION_NEEDED', notes?: string) => {
         bulkVerificationMutation.mutate({ status, notes });
@@ -175,6 +199,154 @@ export default function InternshipLifecycleDetail() {
             </div>
         );
     }
+
+    const getStatusBadge = (status: string | null) => {
+        switch (status) {
+            case 'SUBMITTED':
+                return <Badge className="bg-blue-100 text-blue-700 border-blue-200 pointer-events-none">Menunggu Verifikasi</Badge>;
+            case 'APPROVED':
+                return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 pointer-events-none">Disetujui</Badge>;
+            case 'REVISION_NEEDED':
+                return <Badge className="bg-amber-100 text-amber-700 border-amber-200 pointer-events-none">Perlu Revisi</Badge>;
+            default:
+                return <Badge variant="outline" className="text-slate-400 pointer-events-none">Belum Diunggah</Badge>;
+        }
+    };
+
+    const reportingTableData = useMemo(() => {
+        if (!detail) return [];
+        const docs = [];
+        
+        docs.push({
+            id: 'completionCertificate',
+            title: 'Sertifikat Selesai KP',
+            docType: 'completionCertificate',
+            detail: detail.reportingDocuments.completionCertificate,
+            canVerify: true,
+            isSelectable: !!detail.reportingDocuments.completionCertificate?.document
+        });
+        
+        docs.push({
+            id: 'companyReceipt',
+            title: 'Tanda Terima (KP-004)',
+            docType: 'companyReceipt',
+            detail: detail.reportingDocuments.companyReceipt,
+            canVerify: true,
+            isSelectable: !!detail.reportingDocuments.companyReceipt?.document
+        });
+        
+        docs.push({
+            id: 'logbookDocument',
+            title: 'Laporan Kegiatan (KP-002)',
+            docType: 'logbookDocument',
+            detail: detail.reportingDocuments.logbookDocument,
+            canVerify: true,
+            isSelectable: !!detail.reportingDocuments.logbookDocument?.document
+        });
+        
+        if (detail.reportingDocuments.report) {
+            docs.push({
+                id: 'report',
+                title: 'Laporan Akhir',
+                docType: 'report',
+                detail: detail.reportingDocuments.report,
+                canVerify: false,
+                isSelectable: !!detail.reportingDocuments.report?.document
+            });
+        }
+        
+        if (detail.reportingDocuments.reportFinal && detail.reportingDocuments.reportFinal.document) {
+            docs.push({
+                id: 'reportFinal',
+                title: 'Laporan Akhir Final',
+                docType: 'reportFinal',
+                detail: detail.reportingDocuments.reportFinal,
+                canVerify: true,
+                isSelectable: true
+            });
+        }
+        
+        return docs;
+    }, [detail]);
+
+    const reportingColumns = useMemo(() => [
+        {
+            key: 'title',
+            header: 'Nama Dokumen',
+            render: (row: any) => (
+                <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium text-slate-700">{row.title}</span>
+                </div>
+            )
+        },
+        {
+            key: 'status',
+            header: 'Status & Verifikasi',
+            render: (row: any) => (
+                <div className="flex items-center gap-3">
+                    {getStatusBadge(row.detail?.status)}
+                    {row.canVerify && row.detail?.document && (
+                        <div className="flex items-center gap-1">
+                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'REVISION_NEEDED') && row.docType !== 'reportFinal' && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 text-emerald-600 hover:bg-emerald-50 text-[10px] font-bold"
+                                    onClick={() => handleAction('APPROVE', row)}
+                                >
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    TERIMA
+                                </Button>
+                            )}
+                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'APPROVED') && row.docType !== 'logbookDocument' && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 text-destructive hover:bg-destructive/5 text-[10px] font-bold"
+                                    onClick={() => handleAction('REJECT', row)}
+                                >
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    TOLAK
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )
+        },
+        {
+            key: 'fileName',
+            header: 'File',
+            render: (row: any) => row.detail?.document ? (
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 gap-2 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    title="Lihat Dokumen"
+                    onClick={() => {
+                        setPreviewDoc(row.detail.document);
+                        setPreviewOpen(true);
+                    }}
+                >
+                    <FileText className="h-4 w-4" />
+                    <span className="text-xs">Lihat</span>
+                </Button>
+            ) : (
+                <span className="text-xs text-slate-400 italic">Belum diunggah</span>
+            )
+        },
+        {
+            key: 'notes',
+            header: 'Catatan',
+            render: (row: any) => row.detail?.notes ? (
+                <div className="flex items-start gap-1 max-w-[250px]">
+                    <MessageSquare className="h-3 w-3 text-slate-400 mt-0.5 shrink-0" />
+                    <span className="text-xs text-slate-500 italic truncate">{row.detail.notes}</span>
+                </div>
+            ) : '-'
+        }
+    ], [getStatusBadge]);
 
     return (
         <div className="space-y-6 mt-6 p-4 animate-in fade-in duration-500">
@@ -396,7 +568,7 @@ export default function InternshipLifecycleDetail() {
                 </div>
             ) : (
                 <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {location.pathname.includes('logbook') && <SekdepLogbookTab logbooks={detail.logbooks} />}
+                    {location.pathname.includes('logbook') && <SekdepLogbookTab logbooks={detail.logbooks} isLocked={detail.assessment.isLogbookLocked} />}
                     {location.pathname.includes('bimbingan') && <SekdepGuidanceTab sessions={detail.guidanceSessions} />}
                     {location.pathname.includes('seminar') && <SekdepSeminarTab seminars={detail.seminars} />}
                     {location.pathname.includes('nilai') && (
@@ -404,6 +576,7 @@ export default function InternshipLifecycleDetail() {
                             assessment={detail.assessment} 
                             lecturerScores={detail.lecturerScores}
                             fieldScores={detail.fieldScores}
+                            reportingDocuments={detail.reportingDocuments}
                         />
                     )}
                 </div>
@@ -419,17 +592,39 @@ export default function InternshipLifecycleDetail() {
                             <FileText className="h-5 w-5 text-primary" />
                             <h2 className="text-lg font-bold text-slate-800">Dokumen Pelaporan</h2>
                         </div>
-                        {availableDocs.length > 0 && (
+                    </div>
+                    
+                    <InternshipTable
+                        columns={reportingColumns}
+                        data={reportingTableData}
+                        loading={isLoading}
+                        total={reportingTableData.length}
+                        page={1}
+                        pageSize={10}
+                        onPageChange={() => {}}
+                        selectedIds={selectedIds}
+                        onSelectionChange={setSelectedIds}
+                        isRowSelectable={(row: any) => row.isSelectable}
+                        actions={
                             <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleSelectAll}
-                                    className="h-8 text-xs"
-                                >
-                                    {selectedDocs.size === availableDocs.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
-                                </Button>
-                                {selectedDocs.size > 0 && (
+
+                                
+                                {selectedIds.length > 0 && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleDownloadZip}
+                                        className="h-8 text-xs font-bold border-blue-200 text-blue-600 hover:bg-blue-50"
+                                    >
+                                        <Download className="h-3 w-3 mr-1" />
+                                        Download ZIP ({selectedIds.length})
+                                    </Button>
+                                )}
+
+                                {selectedIds.length > 0 && selectedIds.every(id => {
+                                    const item = reportingTableData.find(d => d.id === id);
+                                    return item && item.canVerify && item.detail?.status !== 'APPROVED';
+                                }) && (
                                     <>
                                         <Button
                                             variant="outline"
@@ -438,11 +633,11 @@ export default function InternshipLifecycleDetail() {
                                                 setBulkDialogMode('APPROVE');
                                                 setBulkDialogOpen(true);
                                             }}
-                                            className="h-8 text-xs border-primary/20 text-primary hover:bg-primary/5"
+                                            className="h-8 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50 font-bold"
                                             disabled={bulkVerificationMutation.isPending}
                                         >
-                                            <CheckSquare className="h-3 w-3 mr-1" />
-                                            Setujui ({selectedDocs.size})
+                                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                                            Setujui Terpilih
                                         </Button>
                                         <Button
                                             variant="outline"
@@ -451,67 +646,40 @@ export default function InternshipLifecycleDetail() {
                                                 setBulkDialogMode('REJECT');
                                                 setBulkDialogOpen(true);
                                             }}
-                                            className="h-8 text-xs border-destructive/20 text-destructive hover:bg-destructive/5"
+                                            className="h-8 text-xs border-destructive/20 text-destructive hover:bg-destructive/5 font-bold"
                                             disabled={bulkVerificationMutation.isPending}
                                         >
-                                            Tolak ({selectedDocs.size})
+                                            <XCircle className="h-3 w-3 mr-1" />
+                                            Tolak Terpilih
                                         </Button>
                                     </>
                                 )}
                             </div>
-                        )}
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <DocumentVerificationCard 
-                            title="Sertifikat Selesai KP" 
-                            docType="completionCertificate"
-                            detail={detail.reportingDocuments.completionCertificate}
-                            internshipId={detail.id}
-                            isSelected={selectedDocs.has('completionCertificate')}
-                            onToggleSelect={() => handleToggleDoc('completionCertificate')}
-                            canSelect={!!(detail.reportingDocuments.completionCertificate?.document && detail.reportingDocuments.completionCertificate.status !== 'APPROVED')}
-                        />
-                        <DocumentVerificationCard 
-                            title="Tanda Terima (KP-004)" 
-                            docType="companyReceipt"
-                            detail={detail.reportingDocuments.companyReceipt}
-                            internshipId={detail.id}
-                            isSelected={selectedDocs.has('companyReceipt')}
-                            onToggleSelect={() => handleToggleDoc('companyReceipt')}
-                            canSelect={!!(detail.reportingDocuments.companyReceipt?.document && detail.reportingDocuments.companyReceipt.status !== 'APPROVED')}
-                        />
-                        <DocumentVerificationCard 
-                            title="Laporan Kegiatan (KP-002)" 
-                            docType="logbookDocument"
-                            detail={detail.reportingDocuments.logbookDocument}
-                            internshipId={detail.id}
-                            isSelected={selectedDocs.has('logbookDocument')}
-                            onToggleSelect={() => handleToggleDoc('logbookDocument')}
-                            canSelect={!!(detail.reportingDocuments.logbookDocument?.document && detail.reportingDocuments.logbookDocument.status !== 'APPROVED')}
-                        />
-                        {detail.reportingDocuments.report && (
-                            <DocumentVerificationCard 
-                                title="Laporan Akhir" 
-                                docType="report"
-                                detail={detail.reportingDocuments.report}
-                                internshipId={detail.id}
-                                isSelected={selectedDocs.has('report')}
-                                onToggleSelect={() => handleToggleDoc('report')}
-                                canSelect={false}
-                                canVerify={false}
-                            />
-                        )}
-                        {detail.reportingDocuments.reportFinal && detail.reportingDocuments.reportFinal.document && (
-                            <FinalReportVerificationCard 
-                                title="Laporan Akhir Final" 
-                                detail={detail.reportingDocuments.reportFinal}
-                                internshipId={detail.id}
-                            />
-                        )}
-                    </div>
+                        }
+                    />
                 </div>
             )}
+
+            {/* Single Verification Dialog */}
+            {singleActionDoc && (
+                <DocumentVerificationDialog
+                    open={singleDialogOpen}
+                    onOpenChange={setSingleDialogOpen}
+                    onConfirm={(status, notes) => handleSingleVerify(status, notes)}
+                    isLoading={singleVerificationMutation.isPending}
+                    title={singleActionDoc.title}
+                    initialNotes={singleActionDoc.detail?.notes || ''}
+                    mode={singleActionMode}
+                />
+            )}
+
+            {/* Preview Dialog */}
+            <DocumentPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                fileName={previewDoc?.fileName}
+                filePath={previewDoc?.filePath}
+            />
 
             {/* Bulk Verification Dialog */}
             <DocumentVerificationDialog
@@ -519,7 +687,7 @@ export default function InternshipLifecycleDetail() {
                 onOpenChange={setBulkDialogOpen}
                 onConfirm={handleBulkVerify}
                 isLoading={bulkVerificationMutation.isPending}
-                title={`${selectedDocs.size} Dokumen`}
+                title={`${selectedIds.length} Dokumen`}
                 initialNotes=""
                 mode={bulkDialogMode}
             />
@@ -527,298 +695,4 @@ export default function InternshipLifecycleDetail() {
     );
 }
 
-interface DocumentVerificationCardProps {
-    title: string;
-    docType: 'report' | 'completionCertificate' | 'companyReceipt' | 'logbookDocument';
-    detail: DocumentVerificationDetail;
-    internshipId: string;
-    isSelected?: boolean;
-    onToggleSelect?: () => void;
-    canSelect?: boolean;
-    canVerify?: boolean; // Jika false, tombol verifikasi tidak ditampilkan
-}
 
-function DocumentVerificationCard({ title, docType, detail, internshipId, isSelected = false, onToggleSelect, canSelect = false, canVerify = true }: DocumentVerificationCardProps) {
-    const queryClient = useQueryClient();
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [dialogMode, setDialogMode] = useState<'APPROVE' | 'REJECT'>('APPROVE');
-    const [previewOpen, setPreviewOpen] = useState(false);
-
-    const mutation = useMutation({
-        mutationFn: ({ status, notes }: { status: 'APPROVED' | 'REVISION_NEEDED', notes?: string }) => 
-            verifyInternshipDocument(internshipId, docType, status, notes),
-        onSuccess: (data) => {
-            toast.success(data.message);
-            queryClient.invalidateQueries({ queryKey: ['sekdepInternshipDetail', internshipId] });
-            setDialogOpen(false);
-        },
-        onError: (error) => {
-            toast.error(error instanceof Error ? error.message : "Gagal memverifikasi dokumen");
-        }
-    });
-
-    const getStatusBadge = (status: string | null) => {
-        switch (status) {
-            case 'SUBMITTED':
-                return <Badge className="bg-blue-100 text-blue-700 border-blue-200 pointer-events-none">Menunggu Verifikasi</Badge>;
-            case 'APPROVED':
-                return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 pointer-events-none">Disetujui</Badge>;
-            case 'REVISION_NEEDED':
-                return <Badge className="bg-amber-100 text-amber-700 border-amber-200 pointer-events-none">Perlu Revisi</Badge>;
-            default:
-                return <Badge variant="outline" className="text-slate-400 pointer-events-none">Belum Diunggah</Badge>;
-        }
-    };
-
-    const handleConfirmVerification = (status: 'APPROVED' | 'REVISION_NEEDED', notes?: string) => {
-        mutation.mutate({ status, notes });
-    };
-
-    const handleOpenDialog = (mode: 'APPROVE' | 'REJECT') => {
-        setDialogMode(mode);
-        setDialogOpen(true);
-    };
-
-    if (!detail.document) {
-        return (
-            <Card className="border border-dashed bg-slate-50/50">
-                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
-                    <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-slate-400" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold text-slate-600">{title}</p>
-                        <p className="text-xs text-slate-400">Mahasiswa belum mengunggah dokumen ini.</p>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    return (
-        <>
-            <Card className={`border overflow-hidden relative ${isSelected ? 'ring-2 ring-primary' : ''}`}>
-                {canSelect && onToggleSelect && (
-                    <div className="absolute top-3 right-3 z-10">
-                        <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={onToggleSelect}
-                            className="shrink-0"
-                        />
-                    </div>
-                )}
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-bold flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary" />
-                            {title}
-                        </CardTitle>
-                        {getStatusBadge(detail.status)}
-                    </div>
-                </CardHeader>
-                <CardContent className="px-4 space-y-4">
-                    <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 truncate">
-                            <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
-                                <Download className="h-4 w-4 text-primary" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-xs font-medium text-slate-900 truncate">{detail.document.fileName}</p>
-                                <p className="text-[10px] text-slate-500">Pelaporan Mahasiswa</p>
-                            </div>
-                        </div>
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/5"
-                            onClick={() => setPreviewOpen(true)}
-                        >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Lihat
-                        </Button>
-                    </div>
-
-                    {detail.notes && (
-                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                <MessageSquare className="h-3 w-3" />
-                                Catatan Terakhir
-                            </p>
-                            <p className="text-xs text-slate-600 italic">"{detail.notes}"</p>
-                        </div>
-                    )}
-
-                    {detail.status !== 'APPROVED' && canVerify && (
-                        <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1 h-8 text-xs font-semibold border-destructive/20 text-destructive hover:bg-destructive/5"
-                                onClick={() => handleOpenDialog('REJECT')}
-                                disabled={detail.status === 'REVISION_NEEDED'}
-                            >
-                                Tolak
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1 h-8 text-xs font-semibold border-primary/20 text-primary hover:bg-primary/5"
-                                onClick={() => handleOpenDialog('APPROVE')}
-                            >
-                                Setuju
-                            </Button>
-                        </div>
-                    )}
-                    {!canVerify && detail.status !== 'APPROVED' && (
-                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                            <p className="text-[10px] text-slate-500 text-center italic">
-                                Verifikasi oleh Dosen Pembimbing
-                            </p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            <DocumentVerificationDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                onConfirm={handleConfirmVerification}
-                isLoading={mutation.isPending}
-                title={title}
-                initialNotes={detail.notes || ''}
-                mode={dialogMode}
-            />
-
-            <DocumentPreviewDialog
-                open={previewOpen}
-                onOpenChange={setPreviewOpen}
-                fileName={detail.document?.fileName ?? undefined}
-                filePath={detail.document?.filePath ?? undefined}
-            />
-        </>
-    );
-}
-
-interface FinalReportVerificationCardProps {
-    title: string;
-    detail: DocumentVerificationDetail;
-    internshipId: string;
-}
-
-function FinalReportVerificationCard({ title, detail, internshipId }: FinalReportVerificationCardProps) {
-    const queryClient = useQueryClient();
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [previewOpen, setPreviewOpen] = useState(false);
-
-    const mutation = useMutation<{ success: boolean; message: string }, Error, { notes?: string }>({
-        mutationFn: ({ notes }: { notes?: string }) => 
-            rejectFinalReport(internshipId, notes),
-        onSuccess: (data) => {
-            toast.success(data.message || "Laporan final berhasil ditolak");
-            queryClient.invalidateQueries({ queryKey: ['sekdepInternshipDetail', internshipId] });
-            setDialogOpen(false);
-        },
-        onError: (error) => {
-            toast.error(error instanceof Error ? error.message : "Gagal menolak laporan final");
-        }
-    });
-
-    const getStatusBadge = (status: string | null) => {
-        switch (status) {
-            case 'APPROVED':
-                return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 pointer-events-none">Disetujui</Badge>;
-            case 'REVISION_NEEDED':
-                return <Badge className="bg-amber-100 text-amber-700 border-amber-200 pointer-events-none">Perlu Revisi Ulang</Badge>;
-            default:
-                return <Badge variant="outline" className="text-slate-400 pointer-events-none">Menunggu</Badge>;
-        }
-    };
-
-    const handleConfirmVerification = (status: 'APPROVED' | 'REVISION_NEEDED', notes?: string) => {
-        if (status === 'REVISION_NEEDED') {
-            mutation.mutate({ notes });
-        }
-    };
-
-    if (!detail.document) {
-        return null; // Do not show if final report isn't uploaded yet
-    }
-
-    return (
-        <>
-            <Card className="border overflow-hidden relative">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-bold flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary" />
-                            {title}
-                        </CardTitle>
-                        {getStatusBadge(detail.status)}
-                    </div>
-                </CardHeader>
-                <CardContent className="px-4 space-y-4">
-                    <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 truncate">
-                            <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
-                                <Download className="h-4 w-4 text-primary" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-xs font-medium text-slate-900 truncate">{detail.document.fileName}</p>
-                                <p className="text-[10px] text-slate-500">Laporan Akhir (Final Fix)</p>
-                            </div>
-                        </div>
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/5"
-                            onClick={() => setPreviewOpen(true)}
-                        >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Lihat
-                        </Button>
-                    </div>
-
-                    {detail.notes && (
-                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                <MessageSquare className="h-3 w-3" />
-                                Catatan Tolakan Sekdep
-                            </p>
-                            <p className="text-xs text-slate-600 italic">"{detail.notes}"</p>
-                        </div>
-                    )}
-
-                    {detail.status !== 'REVISION_NEEDED' && (
-                        <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full h-8 text-xs font-semibold border-destructive/20 text-destructive hover:bg-destructive/5"
-                                onClick={() => setDialogOpen(true)}
-                            >
-                                Tolak Laporan Ini
-                            </Button>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            <DocumentVerificationDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                onConfirm={handleConfirmVerification}
-                isLoading={mutation.isPending}
-                title={title}
-                initialNotes={detail.notes || ''}
-                mode="REJECT"
-            />
-
-            <DocumentPreviewDialog
-                open={previewOpen}
-                onOpenChange={setPreviewOpen}
-                fileName={detail.document?.fileName ?? undefined}
-                filePath={detail.document?.filePath ?? undefined}
-            />
-        </>
-    );
-}

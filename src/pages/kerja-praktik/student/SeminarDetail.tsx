@@ -339,7 +339,7 @@ export default function SeminarDetail() {
                     </Card>
                 </div>
 
-                {seminar.supervisorNotes && (
+                {(seminar.isOwnSeminar || seminar.isModerator) && seminar.supervisorNotes && (
                     <div className="lg:col-span-12">
                         <Card className="border-primary/20 bg-primary/5">
                             <CardHeader>

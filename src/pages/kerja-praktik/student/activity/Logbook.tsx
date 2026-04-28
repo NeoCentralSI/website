@@ -2,17 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
-import { getStudentLogbooks, type InternshipLogbookItem, updateInternshipDetails, downloadLogbookPdf, finishLogbook } from '@/services/internship';
+import { getStudentLogbooks, type InternshipLogbookItem, updateInternshipDetails, finishLogbook } from '@/services/internship';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import CustomTable from '@/components/layout/CustomTable';
+import { InternshipTable } from '@/components/internship/InternshipTable';
 import { getLogbookColumns } from '@/lib/internship/activityColumns';
 import EmptyState from '@/components/ui/empty-state';
 import { Loading } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import EditLogbookDialog from '@/components/internship/student/EditLogbookDialog';
-import { Edit, Loader2, User, ShieldCheck, Lock, CheckCircle2 } from 'lucide-react';
+import { Edit, Loader2, User, ShieldCheck, Lock, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import {
     Dialog,
     DialogContent,
@@ -81,25 +82,22 @@ export default function LogbookPage() {
         });
     };
 
-    const [isDownloading, setIsDownloading] = useState(false);
-    const handleDownloadPdf = async () => {
-        try {
-            setIsDownloading(true);
-            const blob = await downloadLogbookPdf();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Logbook_${data?.data?.internship?.student?.user?.fullName || 'Mahasiswa'}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            toast.success("Logbook PDF berhasil diunduh");
-        } catch (error: any) {
-            toast.error(error.message || "Gagal mengunduh logbook PDF");
-        } finally {
-            setIsDownloading(false);
-        }
+    const [previewConfig, setPreviewConfig] = useState<{
+        open: boolean;
+        fileName: string;
+        filePath: string;
+    }>({
+        open: false,
+        fileName: '',
+        filePath: ''
+    });
+
+    const handlePreview = (fileName: string, filePath: string) => {
+        setPreviewConfig({
+            open: true,
+            fileName,
+            filePath
+        });
     };
 
 
@@ -186,8 +184,8 @@ export default function LogbookPage() {
                 />
             ) : (
                 <div className="flex flex-col gap-4">
-                    <CustomTable
-                        columns={columns}
+                    <InternshipTable
+                        columns={columns as any}
                         data={logbooks}
                         loading={isLoading}
                         isRefreshing={isFetching && !isLoading}
@@ -195,17 +193,20 @@ export default function LogbookPage() {
                         page={1}
                         pageSize={100}
                         onPageChange={() => { }}
+                        hidePagination={logbooks.length <= 100}
                         actions={
                             <div className="flex items-center gap-2">
-                                {data?.data?.internship?.fieldAssessmentStatus === 'COMPLETED' ? (
+                                {data?.data?.internship?.logbookDocument?.filePath ? (
                                     <Button
                                         size="sm"
-                                        onClick={handleDownloadPdf}
-                                        disabled={isDownloading}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9"
+                                        onClick={() => handlePreview(
+                                            data.data!.internship!.logbookDocument!.fileName,
+                                            data.data!.internship!.logbookDocument!.filePath
+                                        )}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9 gap-2"
                                     >
-                                        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                                        Cetak PDF (Tersertifikasi)
+                                        <Eye className="h-4 w-4" />
+                                        Lihat Logbook (KP-002)
                                     </Button>
                                 ) : data?.data?.internship?.isLogbookLocked ? (
                                     <div className="flex items-center px-4 h-9 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -331,6 +332,13 @@ export default function LogbookPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <DocumentPreviewDialog
+                open={previewConfig.open}
+                onOpenChange={(open) => setPreviewConfig(prev => ({ ...prev, open }))}
+                fileName={previewConfig.fileName}
+                filePath={previewConfig.filePath}
+            />
         </div>
     );
 }

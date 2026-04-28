@@ -289,7 +289,7 @@ export const useSidebarMenu = () => {
         items: [
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/kadep" },
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
-          { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
+          { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep" },
           { title: "DSS Pembimbing", url: "/kelola/metopen/dss" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "Kelola CPL", url: "/kelola/cpl" },
