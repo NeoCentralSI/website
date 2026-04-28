@@ -103,7 +103,7 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
     return (
         <>
             {/* 1. INFO CARD KERJA PRAKTIK — matches TA Overview main card */}
-            <Card className="w-full border-primary/20 bg-linear-to-br from-primary/5 via-background to-background">
+            <Card className="w-full border-slate-200">
                 <CardHeader className="pb-4">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-3">
@@ -228,7 +228,7 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
             {/* 2. QUICK ACCESS & STATS — matches TA Overview grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Quick Actions */}
-                <Card className="md:col-span-1 border-primary/20">
+                <Card className="md:col-span-1 border-slate-200">
                     <CardHeader>
                         <CardTitle className="text-lg">Aksi Cepat</CardTitle>
                     </CardHeader>

@@ -175,31 +175,6 @@ export default function InternshipLifecycleDetail() {
         bulkVerificationMutation.mutate({ status, notes });
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center">
-                <Spinner className="h-10 w-10 text-primary" />
-                <p className="mt-3 text-sm text-muted-foreground">Memuat detail pelaksanaan KP...</p>
-            </div>
-        );
-    }
-
-    if (isError || !detail) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-                <Alert variant="destructive" className="max-w-md">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>
-                        {error instanceof Error ? error.message : "Gagal memuat data detail kerja praktik."}
-                    </AlertDescription>
-                </Alert>
-                <Button variant="outline" onClick={() => navigate('/kelola/kerja-praktik/pendaftaran/mahasiswa')}>
-                    Kembali ke Daftar
-                </Button>
-            </div>
-        );
-    }
-
     const getStatusBadge = (status: string | null) => {
         switch (status) {
             case 'SUBMITTED':
@@ -219,7 +194,7 @@ export default function InternshipLifecycleDetail() {
         
         docs.push({
             id: 'completionCertificate',
-            title: 'Sertifikat Selesai KP',
+            title: 'Sertifikat Selesai',
             docType: 'completionCertificate',
             detail: detail.reportingDocuments.completionCertificate,
             canVerify: true,
@@ -228,7 +203,7 @@ export default function InternshipLifecycleDetail() {
         
         docs.push({
             id: 'companyReceipt',
-            title: 'Tanda Terima (KP-004)',
+            title: 'Tanda Terima',
             docType: 'companyReceipt',
             detail: detail.reportingDocuments.companyReceipt,
             canVerify: true,
@@ -237,7 +212,7 @@ export default function InternshipLifecycleDetail() {
         
         docs.push({
             id: 'logbookDocument',
-            title: 'Laporan Kegiatan (KP-002)',
+            title: 'Laporan Kegiatan',
             docType: 'logbookDocument',
             detail: detail.reportingDocuments.logbookDocument,
             canVerify: true,
@@ -250,7 +225,7 @@ export default function InternshipLifecycleDetail() {
                 title: 'Laporan Akhir',
                 docType: 'report',
                 detail: detail.reportingDocuments.report,
-                canVerify: false,
+                canVerify: true,
                 isSelectable: !!detail.reportingDocuments.report?.document
             });
         }
@@ -288,7 +263,7 @@ export default function InternshipLifecycleDetail() {
                     {getStatusBadge(row.detail?.status)}
                     {row.canVerify && row.detail?.document && (
                         <div className="flex items-center gap-1">
-                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'REVISION_NEEDED') && row.docType !== 'reportFinal' && (
+                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'REVISION_NEEDED') && row.docType !== 'reportFinal' && row.docType !== 'report' && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -347,6 +322,33 @@ export default function InternshipLifecycleDetail() {
             ) : '-'
         }
     ], [getStatusBadge]);
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center">
+                <Spinner className="h-10 w-10 text-primary" />
+                <p className="mt-3 text-sm text-muted-foreground">Memuat detail pelaksanaan KP...</p>
+            </div>
+        );
+    }
+
+    if (isError || !detail) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                <Alert variant="destructive" className="max-w-md">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>
+                        {error instanceof Error ? error.message : "Gagal memuat data detail kerja praktik."}
+                    </AlertDescription>
+                </Alert>
+                <Button variant="outline" onClick={() => navigate('/kelola/kerja-praktik/pendaftaran/mahasiswa')}>
+                    Kembali ke Daftar
+                </Button>
+            </div>
+        );
+    }
+
+
 
     return (
         <div className="space-y-6 mt-6 p-4 animate-in fade-in duration-500">

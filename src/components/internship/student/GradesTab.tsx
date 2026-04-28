@@ -8,7 +8,8 @@ interface GradesTabProps {
 }
 
 export const GradesTab: React.FC<GradesTabProps> = ({ internship }) => {
-    const hasScore = internship?.finalNumericScore !== null && internship?.finalNumericScore !== undefined;
+    const isCompleted = internship?.status === 'COMPLETED';
+    const hasScore = isCompleted && internship?.finalNumericScore !== null && internship?.finalNumericScore !== undefined;
 
     if (!hasScore) {
         return (
@@ -19,7 +20,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({ internship }) => {
                     </div>
                     <CardTitle>Nilai Belum Tersedia</CardTitle>
                     <CardDescription>
-                        Nilai akhir akan diproses dan ditampilkan setelah seluruh proses bimbingan, pelaksanaan KP, dan seminar selesai dinilai.
+                        {isCompleted 
+                            ? "Data nilai Anda sedang diproses oleh sistem."
+                            : "Nilai akhir akan ditampilkan setelah status Kerja Praktik Anda dinyatakan 'SELESAI'."}
                     </CardDescription>
                 </CardHeader>
             </Card>

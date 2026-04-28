@@ -98,7 +98,10 @@ export default function InternshipSeminarPage() {
                     setGeneratedAssessmentUrl(response.data.assessmentInfo.assessmentUrl);
                 }
             } else if (type === 'FINAL_FIX_REPORT') {
-                await submitFinalFixReport(documentId);
+                if (!title || !title.trim()) {
+                    throw new Error("Judul laporan akhir final wajib diisi");
+                }
+                await submitFinalFixReport(title.trim(), documentId);
                 toast.success("Laporan Final Fix & Lembar Pengesahan berhasil diunggah");
             }
             
@@ -151,8 +154,22 @@ export default function InternshipSeminarPage() {
         }
     };
 
-    const handleFinalFixReportSubmit = async (file: File) => {
-        await handleUpload('FINAL_FIX_REPORT', file);
+    const handleFinalFixReportSubmit = async (title: string, file: File) => {
+        // If file is empty (dummy file for title-only update), use existing documentId
+        if (file.size === 0 && internship?.reportFinalDocId) {
+            try {
+                setIsUploading('FINAL_FIX_REPORT');
+                await submitFinalFixReport(title, internship.reportFinalDocId);
+                toast.success("Judul laporan akhir final berhasil diperbarui");
+                queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
+            } catch (error: unknown) {
+                toast.error((error as Error).message || "Gagal memperbarui judul");
+            } finally {
+                setIsUploading(null);
+            }
+        } else {
+            await handleUpload('FINAL_FIX_REPORT', file, title);
+        }
     };
 
     const isPelaporan = location.pathname === '/kerja-praktik/seminar/pelaporan';
