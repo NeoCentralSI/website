@@ -41,7 +41,7 @@ export default function FieldAssessmentLogbook() {
                         "{row.activityDescription}"
                     </p>
                 ) : (
-                    <p className="text-xs font-medium text-slate-300 italic">Belum diisi</p>
+                    <p className="text-xs font-medium text-slate-300 italic">-</p>
                 )
             )
         },

@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Trash2, FileDigit, FileText, Edit, HelpCircle, Download } from "lucide-react";
+import { Loader2, Plus, Trash2, FileDigit, FileText, Edit, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import * as sopService from "@/services/sop.service";
 import type { SopFile, SopType } from "@/types/sop.types";
@@ -86,7 +85,7 @@ export function SopManager() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { id: string; type: SopType; title?: string }) => sopService.updateSop(payload.id, { type: payload.type, title: payload.title }),
+    mutationFn: (payload: { id: string; type: SopType; title?: string; file?: File | null }) => sopService.updateSop(payload.id, { type: payload.type, title: payload.title, file: payload.file }),
     onSuccess: () => {
       toast.success("Dokumen berhasil diperbarui");
       qc.invalidateQueries({ queryKey: ["sop-files"] });
@@ -305,7 +304,7 @@ export function SopManager() {
     if (!editingSop) return;
 
     const type = `${selectedCategory}_${selectedSubject}` as SopType;
-    updateMutation.mutate({ id: editingSop.id, type, title: docTitle });
+    updateMutation.mutate({ id: editingSop.id, type, title: docTitle, file });
   };
 
   return (
@@ -343,7 +342,7 @@ export function SopManager() {
               onClick={() => refetch()}
               isRefreshing={isFetching && !isLoading}
             />
-            <Popover>
+            {/* <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="icon" className="h-9 w-9 text-muted-foreground" title="Panduan Placeholder">
                   <HelpCircle className="h-4 w-4" />
@@ -373,7 +372,7 @@ export function SopManager() {
                   </div>
                 </div>
               </PopoverContent>
-            </Popover>
+            </Popover> */}
             <Dialog open={addDialogOpen} onOpenChange={(open) => {
               setAddDialogOpen(open);
               if (!open) resetForm();
@@ -533,6 +532,34 @@ export function SopManager() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-file" className="text-xs font-bold uppercase text-muted-foreground">
+                  Ganti File (Opsional)
+                </Label>
+                <Input
+                  id="edit-file"
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="h-9 text-xs file:text-xs file:bg-primary/10 file:text-primary file:border-0 file:rounded-full file:px-3 file:mr-2 cursor-pointer pt-1.5"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    const allowedTypes = [
+                      "application/pdf",
+                      "application/msword",
+                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    ];
+
+                    if (f && !allowedTypes.includes(f.type) && !f.name.endsWith('.docx') && !f.name.endsWith('.doc')) {
+                      toast.error("File harus PDF, DOC, atau DOCX");
+                      e.target.value = "";
+                      setFile(null);
+                    } else {
+                      setFile(f || null);
+                    }
+                  }}
+                />
+                <p className="text-[10px] text-muted-foreground">Biarkan kosong jika tidak ingin mengganti file.</p>
               </div>
             </div>
             <DialogFooter>

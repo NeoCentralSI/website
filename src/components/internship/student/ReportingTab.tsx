@@ -165,6 +165,19 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     </Button>
                                 </div>
                             )}
+                            
+                            {internship?.completionCertificateStatus === 'APPROVED' && internship?.completionCertificateDocId && (
+                                <div className="mt-auto pt-2">
+                                    <Button 
+                                        size="sm" 
+                                        className="w-full gap-2 font-bold"
+                                        onClick={() => handlePreview(internship.completionCertificateDoc.fileName, internship.completionCertificateDoc.filePath)}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                        Lihat 
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Company Receipt (KP-004) */}
@@ -212,6 +225,19 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     </Button>
                                 </div>
                             )}
+
+                            {internship?.companyReceiptStatus === 'APPROVED' && internship?.companyReceiptDocId && (
+                                <div className="mt-auto pt-2">
+                                    <Button 
+                                        size="sm" 
+                                        className="w-full gap-2 font-bold"
+                                        onClick={() => handlePreview(internship.companyReceiptDoc.fileName, internship.companyReceiptDoc.filePath)}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                        Lihat 
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Laporan Kegiatan (KP-002) */}
@@ -255,7 +281,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                         onClick={() => handlePreview(internship.logbookDocument.fileName, internship.logbookDocument.filePath)}
                                     >
                                         <Eye className="h-4 w-4" />
-                                        Lihat / Download
+                                        Lihat 
                                     </Button>
                                 ) : (
                                     <div className="w-full p-3 rounded-lg bg-slate-100 border border-slate-200 text-center">
@@ -270,7 +296,10 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                         <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Instansi</span>
-                                {getStatusIcon(internship?.companyReportStatus, !!internship?.companyReportDocId)}
+                                {getStatusIcon(
+                                    internship?.fieldAssessmentStatus === 'COMPLETED' ? 'APPROVED' : internship?.companyReportStatus, 
+                                    !!internship?.companyReportDocId
+                                )}
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-background rounded-lg border">
@@ -278,8 +307,8 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
                                     <span className="text-sm font-medium truncate">
-                                        {internship?.companyReportDocId ? "Sudah Diunggah" : "Belum Diunggah"}
-                                    </span>
+                                    {internship?.fieldAssessmentStatus === 'COMPLETED' ? "Diterima (Sesuai Penilaian)" : (internship?.companyReportDocId ? "Sudah Diunggah" : "Belum Diunggah")}
+                                </span>
                                     {internship?.companyReportDocId && internship.companyReportDoc?.fileName && (
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-[10px] text-muted-foreground truncate">{internship.companyReportDoc.fileName}</span>
@@ -318,7 +347,8 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     )}
                                 </div>
                             </div>
-                            {(!internship?.companyReportDocId || internship?.companyReportStatus === 'SUBMITTED' || internship?.companyReportStatus === 'REVISION_NEEDED') && (
+                            {(!internship?.companyReportDocId || internship?.companyReportStatus === 'SUBMITTED' || internship?.companyReportStatus === 'REVISION_NEEDED') && 
+                             internship?.fieldAssessmentStatus !== 'COMPLETED' && (
                                 <div className="mt-auto pt-2">
                                     <input 
                                         type="file" 
@@ -342,6 +372,19 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                             *Selesaikan logbook terlebih dahulu untuk mengunggah.
                                         </p>
                                     )}
+                                </div>
+                            )}
+
+                            {internship?.fieldAssessmentStatus === 'COMPLETED' && internship?.companyReportDocId && (
+                                <div className="mt-auto pt-2">
+                                    <Button 
+                                        size="sm" 
+                                        className="w-full gap-2 font-bold"
+                                        onClick={() => handlePreview(internship.companyReportDoc.fileName, internship.companyReportDoc.filePath)}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                        Lihat 
+                                    </Button>
                                 </div>
                             )}
                         </div>
