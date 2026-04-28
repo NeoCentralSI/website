@@ -432,6 +432,7 @@ export interface StudentLogbookData {
         companyReportDoc?: { id: string; fileName: string; filePath: string } | null;
         logbookDocument?: { id: string; fileName: string; filePath: string } | null;
         reportFinalDoc?: { id: string; fileName: string; filePath: string } | null;
+        reportFinalTitle?: string | null;
     } | null;
     logbooks: InternshipLogbookItem[];
 }
@@ -708,22 +709,13 @@ export interface OverviewReportItem {
     academicYear: string | null;
     supervisorName: string;
     uploadedAt: string | null;
+    fileId: string | null;
 }
 
 export interface OverviewStats {
     totalCompanies: number;
     totalInterns: number;
     totalReports: number;
-}
-
-export interface InternshipLogbookItem {
-    id: string;
-    internshipId: string;
-    activityDate: string;
-    activityDescription: string;
-    internshipNotes?: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export interface InternshipMonitoringStats {

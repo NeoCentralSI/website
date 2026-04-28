@@ -228,11 +228,11 @@ export const submitInternshipReport = async (title: string, documentId: string):
     return res.json();
 };
 
-export const submitFinalFixReport = async (documentId: string): Promise<{ success: boolean; message: string }> => {
+export const submitFinalFixReport = async (title: string, documentId: string): Promise<{ success: boolean; message: string }> => {
     const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/final-fix-report";
     const res = await apiRequest(url, {
         method: "POST",
-        body: JSON.stringify({ documentId }),
+        body: JSON.stringify({ reportFinalTitle: title, documentId }),
     });
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah laporan final" }));

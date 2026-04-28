@@ -18,6 +18,16 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import {
     Loader2,
@@ -56,6 +66,7 @@ export default function LecturerSeminarTab() {
     const [isSavingNotes, setIsSavingNotes] = useState<string | null>(null);
     const [isCompleting, setIsCompleting] = useState<string | null>(null);
     const [isEditingNotesMap, setIsEditingNotesMap] = useState<Record<string, boolean>>({});
+    const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
 
     const handleStartEdit = (id: string, notes: string) => {
         setEditingNotes(prev => ({ ...prev, [id]: notes || "" }));
@@ -159,8 +170,11 @@ export default function LecturerSeminarTab() {
             setIsSavingNotes(null);
         }
     };
-    const handleCompleteSeminar = async (seminarId: string) => {
-        if (!confirm("Apakah Anda yakin ingin menyelesaikan seminar ini? Setelah diselesaikan, catatan seminar tidak dapat diubah lagi.")) return;
+    const handleCompleteSeminar = (seminarId: string) => {
+        setConfirmCompleteId(seminarId);
+    };
+
+    const processCompleteSeminar = async (seminarId: string) => {
 
         setIsCompleting(seminarId);
         try {
@@ -466,6 +480,25 @@ export default function LecturerSeminarTab() {
                     </div>
                 );
             })}
+            <AlertDialog open={!!confirmCompleteId} onOpenChange={(open) => !open && setConfirmCompleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Selesaikan Seminar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah Anda yakin ingin menyelesaikan seminar ini? Setelah diselesaikan, catatan seminar akan dikunci dan tidak dapat diubah lagi untuk keperluan Berita Acara.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={() => confirmCompleteId && processCompleteSeminar(confirmCompleteId)}
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                        >
+                            Ya, Selesaikan
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
