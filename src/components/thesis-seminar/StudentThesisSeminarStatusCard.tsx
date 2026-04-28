@@ -1,5 +1,6 @@
 import { Check, Clock } from 'lucide-react';
 import type { ThesisSeminarStatus } from '@/types/seminar.types';
+import { cn } from '@/lib/utils';
 
 const STEPS = [
   { key: 'checklist', label: 'Checklist Persyaratan' },
@@ -10,21 +11,15 @@ const STEPS = [
 ] as const;
 
 function getActiveStepIndex(status: ThesisSeminarStatus | null, allChecklistMet: boolean): number {
-  if (!status) return allChecklistMet ? 0 : -1;
-
-  if (status === 'failed' || status === 'cancelled') return allChecklistMet ? 0 : -1;
-
-  const statusMap: Record<string, number> = {
-    registered: 1,
-    verified: 2,
-    examiner_assigned: 3,
-    scheduled: 4,
-    ongoing: 4,
-    passed: 5,
-    passed_with_revision: 5,
-  };
-
-  return statusMap[status] ?? -1;
+  if (status === 'passed' || status === 'passed_with_revision') return 4;
+  if (status === 'scheduled' || status === 'ongoing') return 3;
+  if (status === 'examiner_assigned') return 2;
+  if (status === 'verified') return 1;
+  if (status === 'registered') return 0;
+  
+  if (allChecklistMet) return 0;
+  
+  return -1;
 }
 
 interface SeminarStatusStepperProps {
@@ -34,73 +29,48 @@ interface SeminarStatusStepperProps {
 
 export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: SeminarStatusStepperProps) {
   const activeIndex = getActiveStepIndex(status, allChecklistMet);
-  const completedCount = Math.max(0, activeIndex);
-  const spinePct = Math.round((completedCount / STEPS.length) * 100);
+  const spinePct = activeIndex === -1 ? 0 : (activeIndex + 1) * 20;
+  const completedCount = activeIndex + 1;
 
   return (
-    <div
-      style={{
-        background: '#fff',
-        border: '1px solid #e8e8e4',
-        borderRadius: 10,
-        padding: '18px 18px 14px',
-        height: '100%',
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 6 }}>
+    <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[18px_18px_14px] h-full flex flex-col box-border">
+      <div className="text-[13px] font-bold text-[#111] mb-1.5">
         Status Seminar
       </div>
-      <div style={{ fontSize: 10.5, color: '#aaa', marginBottom: 18 }}>
+      <div className="text-[10.5px] text-[#aaa] mb-[18px]">
         Progres pengajuan seminar hasil
       </div>
 
-      <div style={{ position: 'relative', paddingLeft: 32, flex: 1 }}>
-        {/* Spine */}
-        <div
-          style={{
-            position: 'absolute',
-            left: 10,
-            top: 6,
-            bottom: 6,
-            width: 2,
-            background:
-              spinePct > 0
-                ? `linear-gradient(to bottom, #16A34A ${spinePct}%, #d1d5db ${spinePct}%)`
-                : '#d1d5db',
-          }}
-        />
-
+      <div className="relative pl-8 flex-1 flex flex-col">
         {STEPS.map((step, i) => {
-          const isCompleted = i < activeIndex;
-          const isCurrent = i === activeIndex && activeIndex >= 0;
-          const isActive = isCompleted || isCurrent;
+          const isActive = i <= activeIndex;
 
           return (
             <div
               key={step.key}
-              style={{ position: 'relative', paddingBottom: i < STEPS.length - 1 ? 22 : 0 }}
+              className={cn(
+                "relative",
+                i < STEPS.length - 1 ? "pb-[22px]" : "pb-0"
+              )}
             >
+              {/* Segment to next node */}
+              {i < STEPS.length - 1 && (
+                <div
+                  className={cn(
+                    "absolute top-[13px] bottom-[-13px] w-[2px] z-[0]",
+                    i < activeIndex ? "bg-[#16A34A]" : "bg-[#d1d5db]"
+                  )}
+                  style={{ left: '-21px' }}
+                />
+              )}
               {/* Node */}
               <div
-                style={{
-                  position: 'absolute',
-                  left: -32,
-                  top: 2,
-                  width: 22,
-                  height: 22,
-                  borderRadius: '50%',
-                  background: isActive ? '#16A34A' : '#fff',
-                  border: `2.5px solid ${isActive ? '#16A34A' : '#d1d5db'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: isActive ? '#fff' : '#bbb',
-                  zIndex: 1,
-                  boxShadow: isActive ? '0 0 0 3px #dcfce7' : '0 0 0 3px #f3f4f6',
-                }}
+                className={cn(
+                  "absolute -left-8 top-[2px] w-[22px] h-[22px] rounded-full flex items-center justify-center z-[1] border-[2.5px]",
+                  isActive
+                    ? "bg-[#16A34A] border-[#16A34A] text-white shadow-[0_0_0_3px_#dcfce7]"
+                    : "bg-white border-[#d1d5db] text-[#bbb] shadow-[0_0_0_3px_#f3f4f6]"
+                )}
               >
                 {isActive ? (
                   <Check size={10} strokeWidth={2.5} />
@@ -111,27 +81,20 @@ export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: Semi
 
               {/* Step name */}
               <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: isActive ? '#111' : '#aaa',
-                  lineHeight: 1.3,
-                  marginBottom: 3,
-                }}
+                className={cn(
+                  "text-[12px] font-semibold leading-[1.3] mb-0.5",
+                  isActive ? "text-[#111]" : "text-[#aaa]"
+                )}
               >
                 {step.label}
               </div>
 
               {/* Step status */}
               <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: 10.5,
-                  fontWeight: 500,
-                  color: isActive ? '#16A34A' : '#bbb',
-                }}
+                className={cn(
+                  "inline-flex items-center gap-1 text-[10.5px] font-medium",
+                  isActive ? "text-[#16A34A]" : "text-[#bbb]"
+                )}
               >
                 {isActive ? 'Terpenuhi' : 'Menunggu'}
               </div>
@@ -141,32 +104,19 @@ export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: Semi
       </div>
 
       {/* Progress summary */}
-      <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid #f0ede8' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 6,
-          }}
-        >
-          <span style={{ fontSize: 10.5, color: '#888', fontWeight: 500 }}>Progres Keseluruhan</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#16A34A' }}>{spinePct}%</span>
+      <div className="mt-[18px] pt-[14px] border-t border-[#f0ede8]">
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-[10.5px] text-[#888] font-medium">Progres Keseluruhan</span>
+          <span className="text-[11px] font-bold text-[#16A34A]">{spinePct}%</span>
         </div>
-        <div
-          style={{ background: '#e8e8e4', borderRadius: 100, height: 6, overflow: 'hidden' }}
-        >
+        <div className="bg-[#e8e8e4] rounded-full h-[6px] overflow-hidden">
           <div
-            style={{
-              width: `${spinePct}%`,
-              height: '100%',
-              borderRadius: 100,
-              background: 'linear-gradient(to right, #16A34A, #22c55e)',
-            }}
+            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 transition-all duration-300"
+            style={{ width: `${spinePct}%` }}
           />
         </div>
-        <div style={{ fontSize: 10, color: '#aaa', marginTop: 5 }}>
-          {completedCount} dari {STEPS.length} tahap selesai
+        <div className="text-[10px] text-[#aaa] mt-1.5 font-medium">
+          {completedCount > 0 ? `${completedCount} dari ${STEPS.length} tahap selesai` : 'Checklist Persyaratan Belum Terpenuhi'}
         </div>
       </div>
     </div>

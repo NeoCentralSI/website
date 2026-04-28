@@ -9,6 +9,7 @@ import {
 import type { SeminarDocument, SeminarDocumentType } from '@/types/seminar.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface UploadDokumenSeminarProps {
   allChecklistMet: boolean;
@@ -34,33 +35,22 @@ export function StudentThesisSeminarDocumentCard({
     [documents]
   );
 
+  const showLockNotice = isLocked && (!documents || documents.length === 0);
+
   return (
-    <div style={{ background: '#fff', border: '1px solid #e8e8e4', borderRadius: 10, padding: '16px 18px' }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 14 }}>
+    <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px]">
+      <div className="text-[13px] font-bold text-[#111] mb-[14px]">
         Upload Dokumen Seminar
       </div>
 
-      {isLocked && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 11.5,
-            color: '#888',
-            marginBottom: 12,
-            padding: '8px 12px',
-            background: '#fafaf8',
-            border: '1px solid #e8e8e4',
-            borderRadius: 7,
-          }}
-        >
-          <AlertCircle size={14} style={{ flexShrink: 0, color: '#aaa' }} />
+      {showLockNotice && (
+        <div className="flex items-center gap-2 text-[11.5px] text-[#888] mb-3 p-[8px_12px] bg-[#fafaf8] border border-[#e8e8e4] rounded-[7px]">
+          <AlertCircle size={14} className="shrink-0 text-[#aaa]" />
           <span>Lengkapi checklist persyaratan untuk mengakses fitur upload.</span>
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="flex flex-col gap-1.5">
         {(docTypes ?? []).map((docType) => (
           <DocumentRow
             key={docType.id}
@@ -121,75 +111,45 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     .map((ext) => (ext.startsWith('.') ? ext : `.${ext}`))
     .join(',');
 
-  const fileStatusColor = isApproved ? '#16A34A' : isDeclined ? '#dc2626' : '#888';
+  const fileStatusColor = isApproved ? 'text-[#16A34A]' : isDeclined ? 'text-[#dc2626]' : 'text-[#888]';
   const fileStatusText = isApproved
     ? '✓ Terverifikasi'
     : isDeclined
       ? `Ditolak${doc?.notes ? `: ${doc.notes}` : ''}`
       : 'Menunggu verifikasi';
 
-  const buttonBorderColor = isDeclined ? '#ef4444' : canUpload ? '#F59E0B' : '#e8e8e4';
-  const buttonColor = isDeclined ? '#ef4444' : canUpload ? '#F59E0B' : '#bbb';
-
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '7px 10px',
-        borderRadius: 7,
-        background: '#fafaf8',
-        border: '1px solid #eeece8',
-        opacity: isLocked ? 0.55 : 1,
-      }}
+      className={cn(
+        "flex items-center gap-[10px] p-[7px_10px] rounded-[7px] bg-[#fafaf8] border border-[#eeece8] transition-all duration-200",
+        isLocked && "opacity-[0.55]"
+      )}
     >
       {/* File icon */}
       <div
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 6,
-          background: isApproved ? '#dcfce7' : isDeclined ? '#fef2f2' : isUploaded ? '#dbeafe' : '#f3f4f6',
-          color: isApproved ? '#16A34A' : isDeclined ? '#dc2626' : isUploaded ? '#2563eb' : '#9ca3af',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
+        className={cn(
+          "w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0",
+          isApproved ? "bg-[#dcfce7] text-[#16A34A]" : 
+          isDeclined ? "bg-[#fef2f2] text-[#dc2626]" : 
+          isUploaded ? "bg-[#dbeafe] text-[#2563eb]" : 
+          "bg-[#f3f4f6] text-[#9ca3af]"
+        )}
       >
         <FileText size={14} />
       </div>
 
       {/* File info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 11.5,
-            fontWeight: 500,
-            color: '#111',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
+      <div className="flex-1 min-w-0">
+        <div className="text-[11.5px] font-medium text-[#111] truncate">
           {docType.label}
         </div>
         {isUploaded && (
           <>
-            <div style={{ fontSize: 10, color: fileStatusColor, fontWeight: 500, marginTop: 1 }}>
+            <div className={cn("text-[10px] font-medium mt-0.5", fileStatusColor)}>
               {fileStatusText}
             </div>
             {doc?.fileName && (
-              <div
-                style={{
-                  fontSize: 10,
-                  color: '#aaa',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
+              <div className="text-[10px] text-[#aaa] truncate">
                 {doc.fileName}
               </div>
             )}
@@ -198,12 +158,12 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <div className="flex items-center gap-1.5 shrink-0">
         <input
           ref={fileInputRef}
           type="file"
           accept={acceptStr}
-          style={{ display: 'none' }}
+          className="hidden"
           onChange={handleFileChange}
         />
 
@@ -211,26 +171,15 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
           <button
             onClick={handleViewClick}
             title="Lihat dokumen"
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: 5,
-              background: '#f8f7f4',
-              border: '1px solid #e8e8e4',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#888',
-              flexShrink: 0,
-            }}
+            className="px-[9px] py-[4px] rounded-[5px] bg-transparent border border-[#F59E0B] flex items-center gap-1 shrink-0 text-[#F59E0B] hover:bg-amber-50 transition-all duration-200 cursor-pointer text-[10.5px] font-semibold"
           >
             <Eye size={12} />
+            <span>Lihat</span>
           </button>
         )}
 
         {isUploading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: '#888' }}>
+          <div className="flex items-center gap-1 text-[10.5px] text-[#888]">
             <Spinner className="h-3 w-3" />
             Upload...
           </div>
@@ -238,19 +187,14 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
           <button
             disabled={!canUpload}
             onClick={handleUploadClick}
-            style={{
-              flexShrink: 0,
-              padding: '4px 9px',
-              border: `1px solid ${buttonBorderColor}`,
-              background: 'transparent',
-              color: buttonColor,
-              fontSize: 10.5,
-              fontWeight: 600,
-              borderRadius: 5,
-              cursor: canUpload ? 'pointer' : 'default',
-              whiteSpace: 'nowrap',
-              fontFamily: 'inherit',
-            }}
+            className={cn(
+              "shrink-0 px-[9px] py-[4px] text-[10.5px] font-semibold rounded-[5px] transition-all duration-200 cursor-pointer border",
+              isDeclined 
+                ? "border-[#ef4444] text-[#ef4444] bg-transparent hover:bg-red-50" 
+                : canUpload 
+                  ? "border-[#F59E0B] text-[#F59E0B] bg-transparent hover:bg-amber-50" 
+                  : "border-[#e8e8e4] text-[#bbb] cursor-default"
+            )}
           >
             {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Ganti File') : 'Upload'}
           </button>

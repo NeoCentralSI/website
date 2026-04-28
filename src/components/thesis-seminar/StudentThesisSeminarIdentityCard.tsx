@@ -2,6 +2,7 @@ import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBad
 import { toTitleCaseName, formatDateOnlyId } from '@/lib/text';
 import { ChevronRight, Users, Calendar, MapPin, Video, Trophy } from 'lucide-react';
 import type { SeminarInfo, ThesisSeminarStatus } from '@/types/seminar.types';
+import { cn } from '@/lib/utils';
 
 const FINALIZED_STATUSES: ThesisSeminarStatus[] = ['passed', 'passed_with_revision', 'failed'];
 
@@ -57,19 +58,18 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
 
   if (activeExaminers.length > 0) {
     blocks.push(
-      <div key="examiners" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Users size={12} style={{ opacity: 0.5 }} />
+      <div key="examiners" className="flex flex-col gap-0.5">
+        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+          <Users size={12} className="opacity-50" />
           Dosen Penguji
         </div>
         {activeExaminers.map((e, idx) => (
           <div
             key={e.id}
-            style={{
-              fontSize: idx === 0 ? 12.5 : 11,
-              color: idx === 0 ? '#111' : '#888',
-              fontWeight: 500,
-            }}
+            className={cn(
+              "font-medium truncate",
+              idx === 0 ? "text-[12.5px] text-foreground" : "text-[11px] text-muted-foreground"
+            )}
           >
             {toTitleCaseName(e.lecturerName)}
           </div>
@@ -80,16 +80,16 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
 
   if (showSchedule && seminar.date) {
     blocks.push(
-      <div key="schedule" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Calendar size={12} style={{ opacity: 0.5 }} />
+      <div key="schedule" className="flex flex-col gap-0.5">
+        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+          <Calendar size={12} className="opacity-50" />
           Jadwal
         </div>
-        <div style={{ fontSize: 12.5, color: '#111', fontWeight: 500 }}>
+        <div className="text-[12.5px] text-foreground font-medium">
           {formatDateOnlyId(seminar.date)}
         </div>
         {timeRange && (
-          <div style={{ fontSize: 11, color: '#888' }}>{timeRange}</div>
+          <div className="text-[11px] text-muted-foreground">{timeRange}</div>
         )}
       </div>
     );
@@ -97,27 +97,18 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
 
   if (showSchedule && (seminar.room || isOnline)) {
     blocks.push(
-      <div key="location" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div key="location" className="flex flex-col gap-0.5">
+        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
           {isOnline ? (
-            <Video size={12} style={{ opacity: 0.5 }} />
+            <Video size={12} className="opacity-50" />
           ) : (
-            <MapPin size={12} style={{ opacity: 0.5 }} />
+            <MapPin size={12} className="opacity-50" />
           )}
           {isOnline ? 'Mode Seminar' : 'Ruangan'}
         </div>
         {isOnline ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span
-              style={{
-                background: '#dbeafe',
-                color: '#2563eb',
-                fontSize: 11,
-                fontWeight: 600,
-                borderRadius: 4,
-                padding: '2px 7px',
-              }}
-            >
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="bg-blue-50 text-blue-600 text-[10px] font-semibold px-1.5 py-0.5 rounded">
               Daring
             </span>
             {seminar.meetingLink && (
@@ -125,7 +116,7 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
                 href={seminar.meetingLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ fontSize: 11.5, color: '#16A34A', textDecoration: 'underline' }}
+                className="text-[11px] text-emerald-600 font-medium hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
                 Buka Link
@@ -133,7 +124,7 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
             )}
           </div>
         ) : (
-          <div style={{ fontSize: 12.5, color: '#111', fontWeight: 500 }}>
+          <div className="text-[12.5px] text-foreground font-medium truncate">
             {seminar.room?.name}
           </div>
         )}
@@ -143,57 +134,47 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
 
   if (showScore) {
     blocks.push(
-      <div key="score" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div style={{ fontSize: 10.5, color: '#aaa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Trophy size={12} style={{ opacity: 0.5 }} />
+      <div key="score" className="flex flex-col gap-0.5">
+        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+          <Trophy size={12} className="opacity-50" />
           Nilai Akhir
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>
+        <div className="flex items-baseline gap-1">
+          <span className="text-[16px] font-bold text-foreground">
             {seminar.finalScore?.toFixed(2)}
           </span>
-          <span style={{ fontSize: 11, color: '#aaa' }}>/ {seminar.maxWeight || 100}</span>
+          <span className="text-[11px] text-muted-foreground">/ {seminar.maxWeight || 100}</span>
         </div>
       </div>
     );
   }
 
   const colCount = blocks.length || 1;
-  const gridCols = `repeat(${Math.min(colCount, 4)}, 1fr)`;
+  const gridCols = colCount === 1 ? 'grid-cols-1' : colCount === 2 ? 'grid-cols-2' : colCount === 3 ? 'grid-cols-3' : 'grid-cols-4';
 
   return (
     <div
       onClick={onClick}
-      style={{
-        background: '#fff',
-        border: '1px solid #e8e8e4',
-        borderRadius: 10,
-        padding: '16px 18px',
-        cursor: onClick ? 'pointer' : 'default',
-      }}
+      className={cn(
+        "bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px] transition-all duration-200",
+        onClick && "cursor-pointer hover:bg-gray-50/80 hover:border-gray-300/80 hover:shadow-sm"
+      )}
     >
       {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 14,
-        }}
-      >
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>Informasi Seminar</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="flex items-center justify-between mb-[14px]">
+        <div className="text-[13px] font-bold text-foreground">Informasi Seminar</div>
+        <div className="flex items-center gap-2">
           <ThesisEventStatusBadge
             status={seminar.status}
             scheduledDate={seminar.date}
             startTime={seminar.startTime}
           />
-          {onClick && <ChevronRight size={16} style={{ color: '#aaa', flexShrink: 0 }} />}
+          {onClick && <ChevronRight size={16} className="text-muted-foreground opacity-50 shrink-0" />}
         </div>
       </div>
 
       {/* Info grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '12px 16px' }}>
+      <div className={cn("grid gap-y-3 gap-x-4", gridCols)}>
         {blocks}
       </div>
     </div>

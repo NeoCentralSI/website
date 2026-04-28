@@ -20,7 +20,7 @@ export const StudentThesisSeminarOverviewPanel = ({
   const historyItems = history.filter((item) => item.id !== overview.seminar?.id);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div className="flex flex-col gap-[14px]">
       {/* Full-width identity card */}
       {overview.seminar ? (
         <StudentThesisSeminarIdentityCard
@@ -30,12 +30,9 @@ export const StudentThesisSeminarOverviewPanel = ({
       ) : null}
 
       {/* Two-column: roadmap left | checklist + documents right */}
-      <div
-        className="grid grid-cols-1 md:grid-cols-[260px_1fr]"
-        style={{ gap: 14, alignItems: 'start' }}
-      >
+      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-[14px] items-start">
         {/* Left: vertical roadmap — stretch to match right column height */}
-        <div style={{ alignSelf: 'stretch' }}>
+        <div className="self-stretch">
           <StudentThesisSeminarStatusCard
             status={seminarStatus}
             allChecklistMet={overview.allChecklistMet}
@@ -43,7 +40,7 @@ export const StudentThesisSeminarOverviewPanel = ({
         </div>
 
         {/* Right: stacked cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="flex flex-col gap-[14px]">
           <StudentThesisSeminarChecklistRequirementsCard checklist={overview.checklist} />
           <StudentThesisSeminarDocumentCard
             allChecklistMet={overview.allChecklistMet}
@@ -54,49 +51,21 @@ export const StudentThesisSeminarOverviewPanel = ({
 
       {/* Riwayat percobaan — single card with table rows */}
       {historyItems.length > 0 && (
-        <div
-          style={{
-            background: '#fff',
-            border: '1px solid #e8e8e4',
-            borderRadius: 10,
-            padding: '16px 18px',
-          }}
-        >
+        <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px]">
           {/* Card header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 14,
-            }}
-          >
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>Riwayat Percobaan</div>
-            <span style={{ fontSize: 11, color: '#aaa', fontWeight: 500 }}>
+          <div className="flex items-center justify-between mb-[14px]">
+            <div className="text-[13px] font-bold text-[#111]">Riwayat Percobaan</div>
+            <span className="text-[11px] text-[#aaa] font-medium">
               {historyItems.length} percobaan sebelumnya
             </span>
           </div>
 
           {/* Column headers */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '40px 1.5fr 1fr 1fr 1fr 1fr auto',
-              gap: 8,
-              padding: '6px 10px',
-              marginBottom: 6,
-            }}
-          >
+          <div className="grid grid-cols-[40px_1.5fr_1fr_1fr_1fr_1fr_auto] gap-2 px-[10px] py-[6px] mb-[6px]">
             {['#', 'Dosen Penguji', 'Tanggal', 'Ruangan', 'Nilai', 'Status', ''].map((col, i) => (
               <span
                 key={i}
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: '#bbb',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.4px',
-                }}
+                className="text-[10px] font-semibold text-[#bbb] uppercase tracking-[0.4px]"
               >
                 {col}
               </span>
@@ -104,7 +73,7 @@ export const StudentThesisSeminarOverviewPanel = ({
           </div>
 
           {/* Rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-2">
             {historyItems.map((item, idx) => (
               <StudentThesisSeminarHistoryCard
                 key={item.id}

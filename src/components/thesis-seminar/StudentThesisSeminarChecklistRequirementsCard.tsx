@@ -1,5 +1,6 @@
 import { Check, Clock } from 'lucide-react';
 import type { SeminarChecklist } from '@/types/seminar.types';
+import { cn } from '@/lib/utils';
 
 interface ChecklistPersyaratanProps {
   checklist: SeminarChecklist;
@@ -27,38 +28,27 @@ function ChecklistRow({
 
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '8px 12px',
-        borderRadius: 7,
-        background: met ? '#f0fdf4' : '#fafaf8',
-        border: `1px solid ${met ? '#bbf7d0' : '#e8e8e4'}`,
-      }}
+      className={cn(
+        "flex items-center gap-[10px] p-[8px_12px] rounded-[7px] border transition-all duration-200",
+        met ? "bg-[#f0fdf4] border-[#bbf7d0]" : "bg-[#fafaf8] border-[#e8e8e4]"
+      )}
     >
       <div
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: '50%',
-          background: met ? '#16A34A' : '#f3f4f6',
-          border: met ? 'none' : '1.5px solid #d1d5db',
-          color: met ? '#fff' : '#9ca3af',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
+        className={cn(
+          "w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0",
+          met ? "bg-[#16A34A] text-white" : "bg-[#f3f4f6] border-[1.5px] border-[#d1d5db] text-[#9ca3af]"
+        )}
       >
         {met ? <Check size={11} strokeWidth={2.5} /> : <Clock size={11} strokeWidth={2} />}
       </div>
 
       <div>
-        <strong style={{ fontSize: 12, fontWeight: 600, color: '#111', display: 'block' }}>
+        <strong className="text-[12px] font-semibold text-[#111] block">
           {label}
         </strong>
-        <span style={{ fontSize: 10.5, color: met ? '#16A34A' : '#aaa' }}>{statusText}</span>
+        <span className={cn("text-[10.5px]", met ? "text-[#16A34A]" : "text-[#aaa]")}>
+          {statusText}
+        </span>
       </div>
     </div>
   );
@@ -66,11 +56,15 @@ function ChecklistRow({
 
 export function StudentThesisSeminarChecklistRequirementsCard({ checklist }: ChecklistPersyaratanProps) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e8e8e4', borderRadius: 10, padding: '16px 18px' }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 14 }}>
+    <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px]">
+      <div className="text-[13px] font-bold text-[#111] mb-[14px]">
         Checklist Persyaratan
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="flex flex-col gap-1.5">
+        <ChecklistRow
+          label={checklist.metopen?.label || "Lulus Mata Kuliah Metode Penelitian"}
+          met={checklist.metopen?.met || false}
+        />
         <ChecklistRow
           label={checklist.bimbingan.label}
           met={checklist.bimbingan.met}

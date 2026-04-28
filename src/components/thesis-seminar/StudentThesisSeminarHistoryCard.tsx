@@ -2,6 +2,7 @@ import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBad
 import { formatDateOnlyId, toTitleCaseName } from '@/lib/text';
 import type { SeminarHistoryItem } from '@/types/seminar.types';
 
+
 function formatTimeRange(startTime: string | null, endTime: string | null): string {
   if (!startTime || !endTime) return '';
   const fmtTime = (iso: string) => {
@@ -31,73 +32,47 @@ export const StudentThesisSeminarHistoryCard = ({
   return (
     <div
       onClick={onClick}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '40px 1.5fr 1fr 1fr 1fr 1fr auto',
-        gap: 8,
-        alignItems: 'center',
-        padding: '10px 10px',
-        background: '#fafaf8',
-        border: '1px solid #eeece8',
-        borderRadius: 8,
-        cursor: 'pointer',
-      }}
+      className="grid grid-cols-[40px_1.5fr_1fr_1fr_1fr_1fr_auto] gap-2 items-center p-[10px] bg-[#fafaf8] border border-[#eeece8] rounded-[8px] cursor-pointer hover:bg-[#f4f4f2] hover:border-[#d8d8d0] hover:shadow-sm transition-all duration-200"
     >
       {/* # */}
-      <span style={{ fontSize: 12, fontWeight: 600, color: '#bbb' }}>{index}</span>
+      <span className="text-[12px] font-semibold text-[#bbb]">{index}</span>
 
       {/* Examiners */}
-      <div style={{ minWidth: 0 }}>
+      <div className="min-w-0 flex flex-col">
         {item.examiners.length > 0 ? (
           item.examiners.map((e) => (
             <div
               key={e.order}
-              style={{
-                fontSize: e.order === 1 ? 12 : 10.5,
-                fontWeight: e.order === 1 ? 500 : 400,
-                color: e.order === 1 ? '#111' : '#aaa',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
+              className="truncate text-[11.5px] font-medium text-[#333]"
             >
               {toTitleCaseName(e.lecturerName)}
             </div>
           ))
         ) : (
-          <span style={{ fontSize: 11.5, color: '#bbb' }}>—</span>
+          <span className="text-[11.5px] text-[#bbb]">—</span>
         )}
       </div>
 
       {/* Date + time */}
-      <div>
+      <div className="flex flex-col">
         {item.date ? (
           <>
-            <div style={{ fontSize: 11.5, color: '#555' }}>{formatDateOnlyId(item.date)}</div>
+            <div className="text-[11.5px] text-[#555] font-medium">{formatDateOnlyId(item.date)}</div>
             {timeRange && (
-              <div style={{ fontSize: 10.5, color: '#aaa' }}>{timeRange}</div>
+              <div className="text-[10.5px] text-[#aaa] font-medium">{timeRange}</div>
             )}
           </>
         ) : (
-          <span style={{ fontSize: 11.5, color: '#bbb' }}>—</span>
+          <span className="text-[11.5px] text-[#bbb]">—</span>
         )}
       </div>
 
       {/* Room */}
-      <div style={{ fontSize: 11.5, color: '#555' }}>
+      <div className="text-[11.5px] text-[#555] font-medium truncate">
         {item.room ? (
           item.room.name
         ) : isOnline ? (
-          <span
-            style={{
-              background: '#dbeafe',
-              color: '#2563eb',
-              fontSize: 10.5,
-              fontWeight: 600,
-              borderRadius: 4,
-              padding: '2px 7px',
-            }}
-          >
+          <span className="bg-blue-50 text-blue-600 text-[10.5px] font-semibold px-[7px] py-[2px] rounded">
             Daring
           </span>
         ) : (
@@ -108,11 +83,11 @@ export const StudentThesisSeminarHistoryCard = ({
       {/* Score */}
       <div>
         {item.finalScore !== null ? (
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>
+          <span className="text-[15px] font-bold text-[#111]">
             {item.finalScore.toFixed(2)}
           </span>
         ) : (
-          <span style={{ fontSize: 11.5, color: '#bbb' }}>—</span>
+          <span className="text-[11.5px] text-[#bbb]">—</span>
         )}
       </div>
 
@@ -124,17 +99,7 @@ export const StudentThesisSeminarHistoryCard = ({
       {/* Detail button */}
       <button
         onClick={(e) => { e.stopPropagation(); onClick(); }}
-        style={{
-          padding: '3px 9px',
-          border: '1px solid #e8e8e4',
-          background: '#fff',
-          color: '#888',
-          fontSize: 10.5,
-          borderRadius: 5,
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          whiteSpace: 'nowrap',
-        }}
+        className="px-[9px] py-[3px] border border-[#e8e8e4] bg-white text-[#888] text-[10.5px] rounded-[5px] cursor-pointer font-medium hover:bg-gray-50 hover:border-gray-300 hover:text-[#111] transition-all duration-200"
       >
         Detail
       </button>

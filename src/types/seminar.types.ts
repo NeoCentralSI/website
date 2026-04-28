@@ -28,6 +28,7 @@ export interface SeminarChecklistItem {
 export interface SeminarChecklist {
   bimbingan: SeminarChecklistItem;
   kehadiran: SeminarChecklistItem;
+  metopen: SeminarChecklistItem;
   pembimbing: SeminarChecklistItem;
 }
 
