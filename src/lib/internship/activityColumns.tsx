@@ -1,5 +1,5 @@
 import type { InternshipLogbookItem } from "@/services/internship.service";
-import type { Column } from "@/components/layout/CustomTable";
+import type { Column } from "@/components/internship/InternshipTable";
 import { Button } from "@/components/ui/button";
 import { Edit2 } from "lucide-react";
 import { format } from "date-fns";
@@ -31,7 +31,8 @@ export const getLogbookColumns = ({ onEdit, isLocked }: ActivityColumnProps): Co
         header: "Aktivitas",
         render: (item) => {
             const val = item.activityDescription;
-            return val || <span className="text-muted-foreground italic">Belum diisi</span>;
+            if (val) return val;
+            return isLocked ? "-" : <span className="text-muted-foreground italic">Belum diisi</span>;
         },
     },
     {

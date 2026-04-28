@@ -73,18 +73,34 @@ export const getSeminarDetail = async (id: string) => {
 };
 
 /**
- * Get overview companies.
+ * Get overview companies with optional search and limit.
  */
-export const getOverviewCompanies = async () => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_OVERVIEW.COMPANIES));
+export const getOverviewCompanies = async (params?: { search?: string; limit?: number }) => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_OVERVIEW.COMPANIES);
+    if (params) {
+        const query = new URLSearchParams();
+        if (params.search) query.append('search', params.search);
+        if (params.limit) query.append('limit', params.limit.toString());
+        const queryString = query.toString();
+        if (queryString) url += `?${queryString}`;
+    }
+    const response = await apiRequest(url);
     return response.json();
 };
 
 /**
- * Get overview reports.
+ * Get overview reports with optional search and limit.
  */
-export const getOverviewReports = async () => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_OVERVIEW.REPORTS));
+export const getOverviewReports = async (params?: { search?: string; limit?: number }) => {
+    let url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_OVERVIEW.REPORTS);
+    if (params) {
+        const query = new URLSearchParams();
+        if (params.search) query.append('search', params.search);
+        if (params.limit) query.append('limit', params.limit.toString());
+        const queryString = query.toString();
+        if (queryString) url += `?${queryString}`;
+    }
+    const response = await apiRequest(url);
     return response.json();
 };
 

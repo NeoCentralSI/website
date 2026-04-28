@@ -12,6 +12,16 @@ import { FinalReportTab } from '@/components/internship/student/FinalReportTab';
 import { SeminarTab } from '@/components/internship/student/SeminarTab';
 import { GradesTab } from '@/components/internship/student/GradesTab';
 import EmptyState from '@/components/ui/empty-state';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function InternshipSeminarPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -46,6 +56,14 @@ export default function InternshipSeminarPage() {
 
     const [isUploading, setIsUploading] = useState<string | null>(null);
     const [generatedAssessmentUrl, setGeneratedAssessmentUrl] = useState<string | null>(null);
+
+    // Confirmation State
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingUpload, setPendingUpload] = useState<{
+        type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT' | 'FINAL_FIX_REPORT';
+        file: File;
+        title?: string;
+    } | null>(null);
 
     useEffect(() => {
         if (internship?.activeAssessmentUrl) {
@@ -94,8 +112,23 @@ export default function InternshipSeminarPage() {
 
     const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT') => {
         const file = e.target.files?.[0];
-        if (file) {
+        if (!file) return;
+
+        // Reset input value so same file can be selected again if cancelled
+        e.target.value = '';
+
+        if (['CERTIFICATE', 'RECEIPT', 'COMPANY_REPORT'].includes(type)) {
+            setPendingUpload({ type, file });
+            setConfirmOpen(true);
+        } else {
             handleUpload(type, file);
+        }
+    };
+
+    const handleConfirmUpload = () => {
+        if (pendingUpload) {
+            handleUpload(pendingUpload.type, pendingUpload.file, pendingUpload.title);
+            setPendingUpload(null);
         }
     };
 
@@ -217,6 +250,25 @@ export default function InternshipSeminarPage() {
                     <GradesTab internship={internship} />
                 )}
             </div>
+
+            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Unggah Dokumen</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Dokumen ini hanya dapat diunggah satu kali dan tidak dapat diubah kembali setelah berhasil dikirim (kecuali jika nantinya diminta revisi oleh Sekdep).
+                            <br /><br />
+                            Pastikan file yang Anda pilih sudah benar. Apakah Anda yakin ingin melanjutkan?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setPendingUpload(null)}>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmUpload} className="bg-primary hover:bg-primary/90">
+                            Ya, Unggah
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -190,7 +190,7 @@ export default function FieldAssessmentForm() {
                         },
                         {
                             key: 'level',
-                            header: 'Nama Level',
+                            header: 'Level Penilaian',
                             className: 'w-[12%]',
                             render: (row) => {
                                 const isSelected = scores[row.cpmkId]?.chosenRubricId === row.id;

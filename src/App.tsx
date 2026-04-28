@@ -392,15 +392,15 @@ function App() {
                 {/* Kelola - Sekretaris */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN]} />}>
                   <Route path="/kelola" element={<Placeholder title="main menu Kelola" />} />
-                  <Route path="/kelola/kerja-praktik" element={<Navigate to="/kelola/kerja-praktik/pendaftaran" replace />} />
-                  <Route path="/kelola/kerja-praktik/pendaftaran" element={<SekdepInternshipProposalPage />} />
-                  <Route path="/kelola/kerja-praktik/pendaftaran/proposal" element={<SekdepInternshipProposalPage />} />
-                  <Route path="/kelola/kerja-praktik/pendaftaran/balasan" element={<SekdepInternshipProposalPage />} />
-                  <Route path="/kelola/kerja-praktik/pendaftaran/mahasiswa" element={<SekdepInternshipProposalPage />} />
-                  <Route path="/kelola/kerja-praktik/pendaftaran/dosen" element={<SekdepInternshipProposalPage />} />
-                  <Route path="/kelola/kerja-praktik/pendaftaran/bimbingan" element={<SekdepInternshipProposalPage />} />
-                  <Route path="/kelola/kerja-praktik/pendaftaran/cpmk" element={<SekdepInternshipProposalPage />} />
-                  <Route path="/kelola/kerja-praktik/pendaftaran/cpmk/:cpmkId/rubrik" element={<BulkRubricManage />} />
+                  <Route path="/kelola/kerja-praktik" element={<Navigate to="/kelola/kerja-praktik/monitoring" replace />} />
+                  <Route path="/kelola/kerja-praktik/monitoring" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/proposal" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/balasan" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/mahasiswa" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/dosen" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/bimbingan" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/cpmk" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/cpmk/:cpmkId/rubrik" element={<BulkRubricManage />} />
                   <Route path="/kelola/kerja-praktik/dosen/:supervisorId" element={<LecturerWorkloadDetail />} />
                   <Route path="/kelola/kerja-praktik/dosen/:supervisorId/surat-tugas" element={<LecturerWorkloadManageLetter />} />
                   <Route path="/kelola/kerja-praktik/dosen/template/surat-tugas" element={<SupervisorTemplateEditor />} />
@@ -410,7 +410,7 @@ function App() {
                     <Route path="seminar" element={<div />} />
                     <Route path="nilai" element={<div />} />
                   </Route>
-                  <Route path="/kelola/kerja-praktik/pendaftaran/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
+                  <Route path="/kelola/kerja-praktik/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
                   <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                   <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/monitor" element={<SecretaryKelolaTugasAkhirPage />} />
@@ -433,6 +433,8 @@ function App() {
                   <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<KelolaTugasAkhirKadepPage />} />
                   <Route path="/kelola/tugas-akhir/kadep/acc-rubrik" element={<KelolaTugasAkhirKadepPage />} />
                   <Route path="/kelola/tugas-akhir/kadep/master-data" element={<KelolaTugasAkhirKadepPage />} />
+                  <Route path="/kelola/kerja-praktik/kadep" element={<Navigate to="/kelola/kerja-praktik/kadep/monitoring" replace />} />
+                  <Route path="/kelola/kerja-praktik/kadep/monitoring" element={<KadepInternshipManagementPage />} />
                   <Route path="/kelola/kerja-praktik/kadep/persetujuan" element={<KadepInternshipManagementPage />} />
                   <Route path="/kelola/kerja-praktik/kadep/persetujuan/permohonan" element={<KadepInternshipManagementPage />} />
                   <Route path="/kelola/kerja-praktik/kadep/persetujuan/penugasan" element={<KadepInternshipManagementPage />} />

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getOverviewStats, getOverviewCompanies, getOverviewReports } from "@/services/internship.service";
+import type { OverviewReportItem, OverviewCompanyItem } from "@/services/internship.service";
 import { Loading } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Building2, Users, FileText, Clock } from "lucide-react";
@@ -121,7 +122,7 @@ export function ExplorerTab() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {reports.map((report) => (
+                                            {reports.map((report: OverviewReportItem) => (
                                                 <TableRow key={report.id}>
                                                     <TableCell className="font-medium max-w-[300px]">
                                                         {report.reportTitle}
@@ -190,7 +191,7 @@ export function ExplorerTab() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {companies.map((company) => (
+                                            {companies.map((company: OverviewCompanyItem) => (
                                                 <TableRow key={company.id}>
                                                     <TableCell className="font-medium">
                                                         <div className="flex items-center gap-2">

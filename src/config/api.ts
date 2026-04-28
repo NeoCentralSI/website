@@ -351,6 +351,8 @@ export const API_CONFIG = {
       TEMPLATES_GET: (name: string) => `/insternship/sekdep/templates/${name}`,
       TEMPLATES_PREVIEW: (name: string) => `/insternship/sekdep/templates/${name}/preview`,
       TEMPLATES_SAVE: '/insternship/sekdep/templates',
+      MONITORING_STATS: '/insternship/monitoring/stats',
+      MONITORING_LIST: '/insternship/monitoring/list',
     },
     INTERNSHIP_KADEP: {
       BASE: '/insternship/kadep',
@@ -370,6 +372,7 @@ export const API_CONFIG = {
       ASSIGNMENT_PROPOSAL_DETAIL: (id: string) => `/insternship/admin/proposals/${id}/assignment`,
       UPDATE_ASSIGNMENT_LETTER: (id: string) => `/insternship/admin/proposals/${id}/assignment-letter`,
       VERIFY_COMPANY_RESPONSE: (id: string) => `/insternship/admin/company-responses/${id}/verify`,
+      UPLOAD_COMPANY_RESPONSE: (id: string) => `/insternship/admin/proposals/${id}/company-response`,
       HOLIDAYS: '/insternship/holidays',
     },
     INTERNSHIP_TEMPLATES: {

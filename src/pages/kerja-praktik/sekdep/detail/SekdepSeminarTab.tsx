@@ -30,7 +30,7 @@ export const SekdepSeminarTab: React.FC<SekdepSeminarTabProps> = ({ seminars }) 
             </CardHeader>
             <CardContent className="px-0 space-y-6">
                 {seminars.map((seminar) => (
-                    <div key={seminar.id} className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                    <div key={seminar.id} className="bg-white rounded-2xl border-slate-200 border overflow-hidden">
                         <div className="bg-slate-50/50 px-6 py-4 border-b flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600">
