@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import { useRole } from '@/hooks/shared/useRole';
+import { useRole, useAuth } from '@/hooks/shared';
 import { useThesisSeminarDetail } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 
@@ -22,7 +22,8 @@ export default function ThesisSeminarDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isStudent } = useRole();
+  const { isStudent, isAdmin } = useRole();
+  const { user } = useAuth();
 
   const _isStudent = isStudent();
   const isArchiveRoute = location.pathname.includes('/arsip/');
@@ -70,10 +71,32 @@ export default function ThesisSeminarDetailPage() {
   const d = detail as any;
 
   // Tab visibility based on lifecycle
-  const showScheduling = true;
-  const showAssessment = true;
-  const showAudience = true;
-  const showRevisions = true;
+  const isUserAdmin = isAdmin();
+  const isUserStudent = isStudent() && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
+  const isUserExaminer = d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
+  const isUserSupervisor = d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
+
+  // Tab visibility based on lifecycle
+  const showScheduling = isUserAdmin && ['examiner_assigned', 'scheduled'].includes(d.status);
+
+  let showAssessment = false;
+  const isAllowedRoleForAssessment = isUserAdmin || isUserExaminer || isUserSupervisor || isUserStudent;
+  if (isAllowedRoleForAssessment) {
+    if (d.status === 'ongoing') {
+      showAssessment = isUserExaminer || isUserSupervisor;
+    } else if (['passed', 'passed_with_revision', 'failed'].includes(d.status)) {
+      showAssessment = true;
+    }
+  }
+
+  let showAudience = false;
+  if (isUserAdmin || isUserStudent) {
+    showAudience = true;
+  } else if (isUserSupervisor) {
+    showAudience = ['ongoing', 'passed', 'passed_with_revision', 'failed'].includes(d.status);
+  }
+
+  const showRevisions = (isUserStudent || isUserSupervisor) && d.status === 'passed_with_revision';
 
   const tabs = [{ label: 'Identitas', value: 'identitas' }];
   if (showScheduling) tabs.push({ label: 'Penjadwalan', value: 'penjadwalan' });
@@ -114,7 +137,9 @@ export default function ThesisSeminarDetailPage() {
       </div>
 
       {/* Tabs */}
-      <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
+      {tabs.length > 1 && (
+        <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
+      )}
 
       {/* Panel content */}
       <div className="space-y-6">
