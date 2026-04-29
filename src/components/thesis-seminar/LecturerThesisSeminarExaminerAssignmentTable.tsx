@@ -2,13 +2,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
-import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
+
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAssignmentSeminars } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
-import { ThesisStudentInfoCell, ThesisTitleCell, ThesisPersonnelListCell } from '@/components/shared/ThesisTableCells';
-import { UserPlus, Pencil, CheckCircle2, Eye } from 'lucide-react';
+import { ThesisEventTitleCell, ThesisPersonnelListCell } from '@/components/shared/ThesisTableCells';
+import { UserPlus, Pencil, CheckCircle2, Eye, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AssignmentSeminarItem, ExaminerAssignmentStatus } from '@/types/seminar.types';
 import { LecturerThesisSeminarAssignExaminerDialog } from './LecturerThesisSeminarAssignExaminerDialog';
@@ -26,6 +26,7 @@ const ASSIGNMENT_STATUS_MAP: Record<
   rejected: { label: 'Ditolak', variant: 'destructive' },
   partially_rejected: { label: 'Sebagian Ditolak', variant: 'warning' },
   confirmed: { label: 'Ditetapkan', variant: 'success' },
+  finished: { label: 'Selesai', variant: 'secondary' },
 };
 
 function AssignmentStatusBadge({ status }: { status: ExaminerAssignmentStatus }) {
@@ -54,7 +55,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
     return params;
   }, [search]);
 
-  const { data: seminars, isLoading, isFetching, error, refetch } = useAssignmentSeminars(queryParams);
+  const { data: seminars, isLoading, isFetching, error, refetch } = useAssignmentSeminars();
 
   useEffect(() => {
     if (error) {
@@ -62,14 +63,24 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
     }
   }, [error]);
 
-  // Client-side assignment status filter
+  // Client-side assignment status & search filter
   const filteredData = useMemo(() => {
     if (!seminars) return [];
+    let result = seminars;
     if (statusFilter) {
-      return seminars.filter((s) => s.assignmentStatus === statusFilter);
+      result = result.filter((s) => s.assignmentStatus === statusFilter);
     }
-    return seminars;
-  }, [seminars, statusFilter]);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (s) =>
+          s.studentName.toLowerCase().includes(q) ||
+          s.studentNim.toLowerCase().includes(q) ||
+          s.thesisTitle.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [seminars, statusFilter, search]);
 
   const total = filteredData.length;
   const pagedData = useMemo(() => {
@@ -84,6 +95,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
     { label: 'Sebagian Ditolak', value: 'partially_rejected' },
     { label: 'Ditolak', value: 'rejected' },
     { label: 'Ditetapkan', value: 'confirmed' },
+    { label: 'Selesai', value: 'finished' },
   ];
 
   const openAssignDialog = (seminar: AssignmentSeminarItem) => {
@@ -95,34 +107,48 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
     {
       key: 'student',
       header: 'Mahasiswa',
-      render: (row) => <ThesisStudentInfoCell name={row.studentName} nim={row.studentNim} />,
-    },
-    {
-      key: 'thesisTitle',
-      header: 'Judul TA',
-      render: (row) => <ThesisTitleCell title={row.thesisTitle} />,
+      width: 280,
+      render: (row) => (
+        <ThesisEventTitleCell
+          title={row.thesisTitle}
+          studentName={row.studentName}
+          studentNim={row.studentNim}
+        />
+      ),
     },
     {
       key: 'supervisors',
       header: 'Pembimbing',
+      width: 200,
       render: (row) => <ThesisPersonnelListCell people={row.supervisors.map((s, i) => ({ name: s.name, order: i + 1 }))} />,
     },
     {
       key: 'examiners',
       header: 'Penguji',
+      width: 220,
       render: (row) => {
         if (row.examiners.length === 0) {
-          return <span className="text-xs text-muted-foreground italic">Belum ditetapkan</span>;
+          return <span className="text-sm text-muted-foreground italic">-</span>;
         }
         return (
-          <div className="space-y-0.5">
-            {row.examiners.map((e) => (
-              <div key={e.id} className="text-xs flex items-center gap-1">
-                <span className="text-muted-foreground">Penguji {e.order}:</span>{' '}
-                <span>{toTitleCaseName(e.lecturerName)}</span>
-                <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
-              </div>
-            ))}
+          <div className="space-y-1 text-sm leading-snug text-foreground">
+            {row.examiners.map((e, idx) => {
+              let StatusIcon = Clock;
+              let iconColor = 'text-amber-500';
+              if (e.availabilityStatus === 'available') {
+                StatusIcon = CheckCircle2;
+                iconColor = 'text-emerald-600';
+              } else if (e.availabilityStatus === 'unavailable') {
+                StatusIcon = XCircle;
+                iconColor = 'text-red-600';
+              }
+              return (
+                <div key={e.id} className="flex items-center gap-1.5 truncate" title={`${idx + 1}. ${toTitleCaseName(e.lecturerName)}`}>
+                  <span>{idx + 1}. {toTitleCaseName(e.lecturerName)}</span>
+                  <StatusIcon className={`w-3.5 h-3.5 ${iconColor} shrink-0`} />
+                </div>
+              );
+            })}
           </div>
         );
       },
@@ -130,6 +156,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
     {
       key: 'assignmentStatus',
       header: 'Status',
+      width: 160,
       filter: {
         type: 'select',
         value: statusFilter,
@@ -145,17 +172,18 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
       key: 'actions',
       header: 'Aksi',
       className: 'text-center',
-      width: 180,
+      width: 100,
       render: (row) => {
         const canAssign = row.assignmentStatus === 'unassigned' || row.assignmentStatus === 'rejected';
         const canReplace = row.assignmentStatus === 'partially_rejected';
-        const canChange = row.assignmentStatus === 'pending';
+        const canChange = row.assignmentStatus === 'pending' || row.assignmentStatus === 'confirmed';
 
         return (
           <div className="flex items-center justify-center gap-1">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
               onClick={() => navigate(`/tugas-akhir/seminar-hasil/${row.id}`)}
               title="Lihat Detail"
             >
@@ -163,39 +191,47 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
             </Button>
             {canAssign && (
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
                 onClick={() => openAssignDialog(row)}
+                title="Tetapkan Penguji"
               >
-                <UserPlus className="h-4 w-4 mr-1" />
-                Tetapkan
+                <UserPlus className="h-4 w-4" />
               </Button>
             )}
             {canReplace && (
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
                 onClick={() => openAssignDialog(row)}
+                title="Ganti Penguji"
               >
-                <Pencil className="h-4 w-4 mr-1" />
-                Ganti
+                <Pencil className="h-4 w-4" />
               </Button>
             )}
             {canChange && (
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
                 onClick={() => openAssignDialog(row)}
+                title="Ubah Penguji"
               >
-                <Pencil className="h-4 w-4 mr-1" />
-                Ubah
+                <Pencil className="h-4 w-4" />
               </Button>
             )}
-            {row.assignmentStatus === 'confirmed' && (
-              <Badge variant="success" className="text-xs">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Selesai
-              </Badge>
+            {row.assignmentStatus === 'finished' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground"
+                disabled
+                title="Seminar sudah selesai"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
             )}
           </div>
         );

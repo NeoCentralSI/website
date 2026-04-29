@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
-import { Eye } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { CheckSquare, Eye } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
 import type { AdminSeminarListItem } from '@/types/seminar.types';
+import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationModal';
 
 import { 
   ThesisStudentInfoCell, 
@@ -42,6 +43,9 @@ export function AdminThesisSeminarValidationTable({
   onDetail,
   actions,
 }: AdminThesisSeminarValidationTableProps) {
+  const [selectedSeminar, setSelectedSeminar] = useState<AdminSeminarListItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const columns = useMemo(
     () => [
       {
@@ -83,17 +87,32 @@ export function AdminThesisSeminarValidationTable({
       {
         key: 'actions',
         header: 'Aksi',
-        width: 64,
+        width: 96,
         className: 'text-center',
         render: (row: AdminSeminarListItem) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onDetail(row.id)}
-          >
-            <Eye className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center justify-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onDetail(row.id)}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+            {row.status === 'registered' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => {
+                  setSelectedSeminar(row);
+                  setIsModalOpen(true);
+                }}
+              >
+                <CheckSquare className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         ),
       },
     ],
@@ -101,21 +120,28 @@ export function AdminThesisSeminarValidationTable({
   );
 
   return (
-    <CustomTable
-      data={data}
-      columns={columns as any}
-      loading={loading}
-      isRefreshing={isRefreshing}
-      emptyText="Belum ada data pendaftaran yang perlu divalidasi"
-      page={page}
-      pageSize={pageSize}
-      total={total}
-      onPageChange={onPageChange}
-      onPageSizeChange={onPageSizeChange}
-      searchValue={searchValue}
-      onSearchChange={onSearchChange}
-      actions={actions}
+    <>
+      <CustomTable<AdminSeminarListItem>
+        data={data}
+        columns={columns}
+        loading={loading}
+        isRefreshing={isRefreshing}
+        emptyText="Belum ada data pendaftaran yang perlu divalidasi"
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        searchValue={searchValue}
+        onSearchChange={onSearchChange}
+        actions={actions}
+      />
 
-    />
+      <AdminThesisSeminarValidationModal
+        seminar={selectedSeminar}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
+    </>
   );
 }

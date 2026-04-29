@@ -282,7 +282,7 @@ export interface SetScheduleResponse {
 // Lecturer Seminar Types
 // ============================================================
 
-export type ExaminerAssignmentStatus = 'unassigned' | 'pending' | 'rejected' | 'partially_rejected' | 'confirmed';
+export type ExaminerAssignmentStatus = 'unassigned' | 'pending' | 'rejected' | 'partially_rejected' | 'confirmed' | 'finished';
 
 /** Rejected examiner historical log entry */
 export interface RejectedExaminer {
@@ -316,6 +316,7 @@ export interface AssignmentSeminarItem {
   registeredAt: string | null;
   assignmentStatus: ExaminerAssignmentStatus;
   examiners: LecturerSeminarExaminer[];
+  rejectedExaminers?: RejectedExaminer[];
 }
 
 /** Combined seminar list item for lecturer views */
@@ -381,6 +382,25 @@ export interface EligibleExaminer {
   fullName: string;
   identityNumber: string;
   scienceGroup: string;
+  upcomingCount?: number;
+  workloadIndex?: number;
+  workloadLevel?: 'Ringan' | 'Sedang' | 'Berat';
+  availabilityRanges?: Array<{
+    day: string;
+    dayLabel: string;
+    startTime: string | null;
+    endTime: string | null;
+    validFrom: string;
+    validUntil: string;
+    label: string;
+  }>;
+  hasScheduleConflict?: boolean;
+  scheduleConflicts?: Array<{
+    type: 'seminar' | 'defence';
+    refId: string;
+  }>;
+  recommendation?: string;
+  isSelectable?: boolean;
 }
 
 /** Lecturer seminar detail response */

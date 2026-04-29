@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams, useOutletContext, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ClipboardCheck } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
@@ -10,28 +10,25 @@ import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBad
 import { useRole } from '@/hooks/shared/useRole';
 import { useThesisSeminarDetail } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
-import type { AdminSeminarListItem } from '@/types/seminar.types';
 
 import { ThesisSeminarDetailIdentityPanel } from '@/components/thesis-seminar/ThesisSeminarDetailIdentityPanel';
 import { ThesisSeminarDetailSchedulingPanel } from '@/components/thesis-seminar/ThesisSeminarDetailSchedulingPanel';
 import { ThesisSeminarDetailAssessmentPanel } from '@/components/thesis-seminar/ThesisSeminarDetailAssessmentPanel';
 import { ThesisSeminarAudiencePanel } from '@/components/thesis-seminar/ThesisSeminarDetailAudiencePanel';
 import { ThesisSeminarDetailRevisionPanel } from '@/components/thesis-seminar/ThesisSeminarDetailRevisionPanel';
-import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationModal';
 
 export default function ThesisSeminarDetailPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isAdmin, isStudent } = useRole();
+  const { isStudent } = useRole();
 
   const _isStudent = isStudent();
   const isArchiveRoute = location.pathname.includes('/arsip/');
 
   const { data: detail, isLoading, isFetching, refetch } = useThesisSeminarDetail(id!);
   const [activeTab, setActiveTab] = useState('identitas');
-  const [validationOpen, setValidationOpen] = useState(false);
 
   const breadcrumbs = useMemo(() => {
     // Shared breadcrumbs for all roles
@@ -70,8 +67,7 @@ export default function ThesisSeminarDetailPage() {
     );
   }
 
-  const status = (detail as any).status;
-  const d = detail as any;
+  const d = detail;
 
   // Tab visibility based on lifecycle
   const showScheduling = true;
@@ -87,30 +83,6 @@ export default function ThesisSeminarDetailPage() {
 
   // Guard active tab validity after detail loads
   const validTab = tabs.find((t) => t.value === activeTab) ? activeTab : 'identitas';
-
-  const canValidate = isAdmin() && status === 'registered';
-
-  const seminarForModal: AdminSeminarListItem | null = isAdmin()
-    ? {
-      id: d.id,
-      thesisId: d.thesis?.id || null,
-      studentName: d.student?.name || '',
-      studentNim: d.student?.nim || '',
-      thesisTitle: d.thesis?.title || '',
-      supervisors: d.supervisors || [],
-      status: d.status,
-      registeredAt: d.registeredAt,
-      date: d.date || null,
-      startTime: d.startTime || null,
-      endTime: d.endTime || null,
-      documentSummary: {
-        total: d.documentTypes?.length || 0,
-        submitted: d.documents?.filter((doc: any) => doc.status === 'submitted').length || 0,
-        approved: d.documents?.filter((doc: any) => doc.status === 'approved').length || 0,
-        declined: d.documents?.filter((doc: any) => doc.status === 'declined').length || 0,
-      },
-    }
-    : null;
 
   return (
     <div className="p-6 space-y-6">
@@ -138,12 +110,6 @@ export default function ThesisSeminarDetailPage() {
             scheduledDate={d.date}
             startTime={d.startTime}
           />
-          {canValidate && (
-            <Button variant="outline" size="sm" onClick={() => setValidationOpen(true)}>
-              <ClipboardCheck className="h-4 w-4 mr-1" />
-              Validasi Dokumen
-            </Button>
-          )}
         </div>
       </div>
 
@@ -173,14 +139,6 @@ export default function ThesisSeminarDetailPage() {
           />
         )}
       </div>
-
-      {isAdmin() && seminarForModal && (
-        <AdminThesisSeminarValidationModal
-          seminar={seminarForModal}
-          open={validationOpen}
-          onOpenChange={setValidationOpen}
-        />
-      )}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export default function LecturerThesisSeminar() {
 	// Redirect to default tab if base lecturer path is visited
 	useEffect(() => {
 		if (
-			pathname === '/tugas-akhir/seminar-hasil' || 
+			pathname === '/tugas-akhir/seminar-hasil' ||
 			pathname === '/tugas-akhir/seminar-hasil/'
 		) {
 			navigate('/tugas-akhir/seminar-hasil/mahasiswa-bimbingan', { replace: true })
@@ -72,7 +72,7 @@ export default function LecturerThesisSeminar() {
 		<div className="p-6 space-y-6">
 			<div>
 				<h1 className="text-2xl font-bold">Seminar Hasil</h1>
-				<p className="text-gray-500">Pantau bimbingan, kelola penugasan penguji, dan manajemen penilaian seminar hasil</p>
+				<p className="text-gray-500">Pantau mahasiswa bimbingan, respon penugasan penguji, dan kelola penilaian seminar hasil</p>
 			</div>
 
 			<TabsNav tabs={tabs} />
