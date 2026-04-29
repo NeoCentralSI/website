@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Spinner, Loading } from '@/components/ui/spinner';
-import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle } from 'lucide-react';
+import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle, Sparkles, Lock, Ban, Video } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName } from '@/lib/text';
@@ -110,6 +110,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
 
   const [pendingSchedule, setPendingSchedule] = useState<PendingSchedule | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
 
   // ── Stable color assignment per lecturer ──────────────────────────────────
   const lecturerColorMap = useMemo(() => {
@@ -167,6 +168,30 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
     return events;
   }, [schedulingData, lecturerColorMap]);
 
+  const effectiveRoomId = selectedRoomId || schedulingData?.rooms[0]?.id;
+
+  // ── Blocked events for chosen room (red) ──────────────────────────────────
+  const blockedEvents = useMemo((): EventInput[] => {
+    if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
+    return schedulingData.roomBookings
+      .filter((b: any) => b.roomId === effectiveRoomId)
+      .map((b: any) => {
+        const dateStr = b.date.slice(0, 10);
+        return {
+          id: `blocked-${b.id}`,
+          title: `🔒 ${b.title}`,
+          start: `${dateStr}T${extractTime(b.startTime)}:00`,
+          end: `${dateStr}T${extractTime(b.endTime)}:00`,
+          backgroundColor: '#ef4444',
+          borderColor: '#dc2626',
+          textColor: '#ffffff',
+          display: 'block',
+          classNames: ['blocked-event'],
+          extendedProps: { type: 'blocked', ...b },
+        };
+      });
+  }, [schedulingData, effectiveRoomId]);
+
   // ── Already-scheduled seminar event (green) ───────────────────────────────
   const scheduleEvent = useMemo((): EventInput[] => {
     const cs = schedulingData?.currentSchedule;
@@ -189,9 +214,33 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   }, [schedulingData]);
 
   const allEvents = useMemo(
-    () => [...availabilityEvents, ...scheduleEvent],
-    [availabilityEvents, scheduleEvent]
+    () => [...availabilityEvents, ...scheduleEvent, ...blockedEvents],
+    [availabilityEvents, scheduleEvent, blockedEvents]
   );
+
+  const roomConflicts = useMemo(() => {
+    if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
+    return schedulingData.roomBookings.filter((b: any) => b.roomId === effectiveRoomId);
+  }, [schedulingData, effectiveRoomId]);
+
+  const handleSelectAllow = (selectInfo: any) => {
+    if (!schedulingData?.roomBookings || !effectiveRoomId) return true;
+    const start = selectInfo.start.getTime();
+    const end = selectInfo.end.getTime();
+
+    const activeRoomBookings = schedulingData.roomBookings.filter(
+      (b: any) => b.roomId === effectiveRoomId
+    );
+
+    const hasOverlap = activeRoomBookings.some((b: any) => {
+      const bDate = b.date.slice(0, 10);
+      const bStart = new Date(`${bDate}T${extractTime(b.startTime)}:00`).getTime();
+      const bEnd = new Date(`${bDate}T${extractTime(b.endTime)}:00`).getTime();
+      return start < bEnd && end > bStart;
+    });
+
+    return !hasOverlap;
+  };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleDateSelect = (info: DateSelectArg) => {
@@ -201,7 +250,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
       date: info.startStr.slice(0, 10),
       startTime: info.startStr.slice(11, 16) || '08:00',
       endTime: info.endStr?.slice(11, 16) || '10:00',
-      roomId: schedulingData?.rooms[0]?.id || null,
+      roomId: selectedRoomId || schedulingData?.rooms[0]?.id || null,
       isOnline: false,
       meetingLink: '',
     });
@@ -292,129 +341,234 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      <Card>
-        {/* ── Card header ── */}
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Penjadwalan Seminar Hasil
-            </CardTitle>
-            {current && (
-              <Badge variant="success" className="flex items-center gap-1 text-xs">
-                <CheckCircle2 className="h-3 w-3" />
-                Terjadwal
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-5">
-          {/* ── Current schedule banner ── */}
-          {current && (
-            <div className="flex flex-col sm:flex-row gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
-              <div className="flex-1 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
-                  Jadwal Ditetapkan
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-green-800">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-green-600 shrink-0" />
-                    <span>{formatDateLong(current.date)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-green-600 shrink-0" />
-                    <span>
-                      {extractTime(current.startTime || '')} – {extractTime(current.endTime || '')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-green-600 shrink-0" />
-                    <span>{current.isOnline ? 'Seminar Daring' : (current.room?.name || '-')}</span>
-                  </div>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .fc-timegrid-event-harness:has(.blocked-event) {
+          left: 0px !important;
+          right: 0px !important;
+          width: 100% !important;
+          z-index: 50 !important;
+        }
+        .blocked-event {
+          opacity: 1 !important;
+          border-radius: 6px !important;
+        }
+        .blocked-event .fc-event-main {
+          font-weight: 700 !important;
+          font-size: 11px !important;
+          padding: 6px !important;
+        }
+      `}} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        {/* Left: Calendar card */}
+        <div className="lg:col-span-2 flex flex-col">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="pb-3 shrink-0">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Penjadwalan Seminar Hasil
+                </CardTitle>
+                <div className="flex items-center gap-3">
+                  {schedulingData?.rooms?.length > 0 && (
+                    <Select
+                      value={selectedRoomId || schedulingData.rooms[0]?.id}
+                      onValueChange={(val) => setSelectedRoomId(val)}
+                    >
+                      <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
+                        <SelectValue placeholder="Pilih ruangan..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {schedulingData.rooms.map((r: any) => (
+                          <SelectItem key={r.id} value={r.id} className="text-xs">
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {current && (
+                    <Badge variant="success" className="flex items-center gap-1 text-xs shrink-0">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Terjadwal
+                    </Badge>
+                  )}
                 </div>
-                {current.isOnline && current.meetingLink && (
-                  <a
-                    href={current.meetingLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-green-700 underline break-all"
-                  >
-                    {current.meetingLink}
-                  </a>
-                )}
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col min-h-0 justify-between space-y-4">
+              {/* Legend Items mapped on top */}
+              {legendItems.length > 0 && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pb-2 border-b">
+                  <span className="font-medium">Ketersediaan dosen:</span>
+                  {legendItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-1.5">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-sm border"
+                        style={{ backgroundColor: item.color + '33', borderColor: item.color }}
+                      />
+                      <span className="text-foreground font-medium">{toTitleCaseName(item.name)}</span>
+                    </div>
+                  ))}
+                  {current && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-600" />
+                      <span className="text-foreground font-medium">Jadwal Seminar</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden flex-1 min-h-[520px]">
+                <FullCalendar
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                  initialView="timeGridWeek"
+                  locale={idLocale}
+                  firstDay={1}
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridWeek,timeGridDay',
+                  }}
+                  height={520}
+                  slotMinTime="06:00:00"
+                  slotMaxTime="22:00:00"
+                  nowIndicator
+                  allDaySlot={false}
+                  weekends={false}
+                  selectable={isEditable}
+                  selectMirror={isEditable}
+                  select={handleDateSelect}
+                  events={allEvents}
+                  selectAllow={handleSelectAllow}
+                  eventClick={(info) => info.jsEvent.preventDefault()}
+                  slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                  eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                  dayHeaderContent={(args) => {
+                    const day = args.date.toLocaleDateString('id-ID', { weekday: 'short' });
+                    return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+                  }}
+                />
               </div>
               {isEditable && (
-                <p className="text-xs text-green-600 flex items-center gap-1 self-center">
-                  <PencilLine className="h-3 w-3" />
-                  Pilih slot baru untuk ubah jadwal
+                <p className="text-xs text-muted-foreground text-center shrink-0">
+                  Klik dan seret pada kalender untuk memilih slot waktu seminar.
                 </p>
               )}
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* ── Legend ── */}
-          {legendItems.length > 0 && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-              <span className="font-medium">Ketersediaan dosen:</span>
-              {legendItems.map((item) => (
-                <div key={item.id} className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block h-2.5 w-2.5 rounded-sm border"
-                    style={{ backgroundColor: item.color + '33', borderColor: item.color }}
-                  />
-                  <span className="text-foreground">{toTitleCaseName(item.name)}</span>
+        {/* Right Column: Recommendations & Blocked Slots */}
+        <div className="lg:col-span-1 flex flex-col gap-4 min-h-full">
+          {/* 1. Rekomendasi Jadwal */}
+          <Card className="flex flex-col flex-1 shadow-sm min-h-0">
+            <CardHeader className="pb-3 border-b shrink-0">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Rekomendasi Jadwal
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex-1 flex flex-col justify-center min-h-0">
+              {current ? (
+                <div className="flex flex-col gap-3">
+                  <div className="space-y-3 text-sm text-green-800 p-3 rounded-xl border border-green-200 bg-green-50/50">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-green-600 shrink-0" />
+                      <span className="font-semibold">{formatDateLong(current.date)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-green-600 shrink-0" />
+                      <span className="font-medium">
+                        {extractTime(current.startTime || '')} – {extractTime(current.endTime || '')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-green-600 shrink-0" />
+                      <span className="font-medium">
+                        {current.isOnline ? 'Seminar Daring' : (current.room?.name || '-')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {current.isOnline && current.meetingLink && (
+                    <div className="p-3 rounded-xl border border-blue-100 bg-blue-50/50 flex flex-col gap-1">
+                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide flex items-center gap-1">
+                        <Video className="h-3.5 w-3.5 text-blue-600" />
+                        Link Meeting
+                      </p>
+                      <a
+                        href={current.meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 underline break-all font-medium"
+                      >
+                        {current.meetingLink}
+                      </a>
+                    </div>
+                  )}
+
+                  {isEditable && (
+                    <div className="flex items-center gap-1.5 p-2.5 rounded-lg bg-muted/50 text-xs text-muted-foreground mt-2">
+                      <AlertCircle className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
+                      <span>Pilih slot baru pada kalender untuk mengubah jadwal.</span>
+                    </div>
+                  )}
                 </div>
-              ))}
-              {current && (
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-600" />
-                  <span className="text-foreground">Jadwal Seminar</span>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center py-6 text-muted-foreground space-y-2 my-auto">
+                  <AlertCircle className="h-6 w-6 text-muted-foreground/40" />
+                  <p className="text-xs font-semibold text-foreground">Tidak Ada Rekomendasi</p>
+                  <p className="text-[11px] max-w-[200px] mx-auto">
+                    Gunakan ketersediaan waktu dosen di kalender untuk memilih jadwal.
+                  </p>
                 </div>
               )}
-            </div>
-          )}
+            </CardContent>
+          </Card>
 
-          {/* ── FullCalendar ── */}
-          <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden">
-            <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="timeGridWeek"
-              locale={idLocale}
-              firstDay={1}
-              headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'timeGridWeek,timeGridDay',
-              }}
-              height={520}
-              slotMinTime="06:00:00"
-              slotMaxTime="22:00:00"
-              nowIndicator
-              allDaySlot={false}
-              weekends={false}
-              selectable={isEditable}
-              selectMirror={isEditable}
-              select={handleDateSelect}
-              events={allEvents}
-              eventClick={(info) => info.jsEvent.preventDefault()}
-              slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-              eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-              dayHeaderContent={(args) => {
-                const day = args.date.toLocaleDateString('id-ID', { weekday: 'short' });
-                return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
-              }}
-            />
-          </div>
-
-          {/* ── Hint text ── */}
-          {isEditable && (
-            <p className="text-xs text-muted-foreground text-center">
-              Klik dan seret pada kalender untuk memilih slot waktu seminar.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          {/* 2. Slot Terblokir */}
+          <Card className="flex flex-col flex-1 shadow-sm min-h-0">
+            <CardHeader className="pb-3 border-b shrink-0">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                Slot Terblokir
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto space-y-2 text-xs">
+              {roomConflicts.length > 0 ? (
+                <div className="flex flex-col gap-2 w-full">
+                  {roomConflicts.map((c: any) => (
+                    <div key={c.id} className="p-2.5 rounded-lg border bg-destructive/5 border-destructive/20 flex flex-col gap-1 text-left">
+                      <div className="flex items-center gap-1.5 font-semibold text-destructive text-[13px]">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{c.title}</span>
+                      </div>
+                      <div className="flex flex-col text-muted-foreground text-[11px] pl-5 space-y-0.5">
+                        <div className="flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          <span>{formatDateLong(c.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          <span>{extractTime(c.startTime)} - {extractTime(c.endTime)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-2 my-auto w-full">
+                  <Ban className="h-6 w-6 text-muted-foreground/40" />
+                  <p className="text-xs font-semibold text-foreground">Tidak Ada Slot Terblokir</p>
+                  <p className="text-[11px] max-w-[200px] mx-auto">
+                    Seluruh waktu ketersediaan terpilih saat ini berstatus aman dari konflik.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* ── Schedule form modal ── */}
       <Dialog
