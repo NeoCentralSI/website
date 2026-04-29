@@ -27,11 +27,21 @@ export default function ThesisSeminarDetailPage() {
 
   const _isStudent = isStudent();
   const isArchiveRoute = location.pathname.includes('/arsip/');
+  const isFromSeminarAnnouncement =
+    (location.state as { fromAnnouncement?: string } | null)?.fromAnnouncement === 'seminar-hasil';
 
   const { data: detail, isLoading, isFetching, refetch } = useThesisSeminarDetail(id!);
   const [activeTab, setActiveTab] = useState('identitas');
 
   const breadcrumbs = useMemo(() => {
+    if (isFromSeminarAnnouncement) {
+      return [
+        { label: 'Pengumuman', href: '/pengumuman/seminar-hasil' },
+        { label: 'Seminar Hasil', href: '/pengumuman/seminar-hasil' },
+        { label: 'Detail' },
+      ];
+    }
+
     // Shared breadcrumbs for all roles
     const base = [
       { label: 'Tugas Akhir', href: _isStudent ? '/tugas-akhir' : undefined },
@@ -42,7 +52,7 @@ export default function ThesisSeminarDetailPage() {
       ...base,
       { label: 'Detail' },
     ];
-  }, [_isStudent]);
+  }, [_isStudent, isFromSeminarAnnouncement]);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);

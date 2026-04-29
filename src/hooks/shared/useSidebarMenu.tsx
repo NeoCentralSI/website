@@ -16,9 +16,12 @@ import { useAvatarBlob } from "@/hooks/profile";
 import { useAdvisorAccessState } from "./useAdvisorAccessState";
 
 export const useSidebarMenu = () => {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1, isDosenPengampuMetopel } = useRole();
   const { user: authUser } = useAuth();
+  const isFromSeminarAnnouncement =
+    (location.state as { fromAnnouncement?: string } | null)?.fromAnnouncement === "seminar-hasil";
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
   const { data: advisorAccess } = useAdvisorAccessState(Boolean(authUser?.id) && isStudent());
@@ -98,13 +101,13 @@ export const useSidebarMenu = () => {
         },
         {
           title: "Pengumuman",
-          url: "/pengumuman",
+          url: "/pengumuman/seminar-hasil",
           icon: Megaphone,
           items: [
             {
               title: "Seminar Hasil",
               url: "/pengumuman/seminar-hasil",
-              isActive: pathname.startsWith("/pengumuman/seminar-hasil"),
+              isActive: pathname.startsWith("/pengumuman/seminar-hasil") || isFromSeminarAnnouncement,
             },
             {
               title: "Yudisium",
@@ -600,9 +603,10 @@ export const useSidebarMenu = () => {
     authUser?.fullName, authUser?.email, authUser?.identityNumber,
     avatarBlobUrl,
     advisorAccess?.canOpenLogbook,
-    advisorAccess?.hasOfficialSupervisor
+    advisorAccess?.hasOfficialSupervisor,
+    pathname,
+    isFromSeminarAnnouncement,
   ]);
 
   return menuData;
 };
-
