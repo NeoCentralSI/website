@@ -11,10 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { useAdminThesisSeminarDetail, useValidateAdminThesisSeminarDocument } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
-import { Download, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { ExternalLink, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AdminSeminarListItem, DocumentSubmitStatus } from '@/types/seminar.types';
 import { openProtectedFile } from '@/lib/protected-file';
+import { apiRequest } from '@/services/auth.service';
+import { ENV } from '@/config/env';
 
 interface AdminThesisSeminarValidationModalProps {
   seminar: AdminSeminarListItem | null;
@@ -42,6 +44,8 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
 
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [notes, setNotes] = useState('');
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isFileLoading, setIsFileLoading] = useState(false);
 
   // Build ordered document list (match docTypes order)
   const orderedDocs = detail
@@ -67,6 +71,47 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
   useEffect(() => {
     setNotes('');
   }, [activeDocIndex]);
+
+  // Fetch and create blob URL for PDF preview
+  useEffect(() => {
+    if (!currentDoc?.filePath) {
+      setBlobUrl(null);
+      return;
+    }
+
+    let active = true;
+    setIsFileLoading(true);
+
+    const fetchFile = async () => {
+      try {
+        const normalized = currentDoc.filePath!.replace(/^\/+/, '');
+        const fileUrl = `${ENV.API_BASE_URL}/${normalized}`;
+
+        const res = await apiRequest(fileUrl, { method: 'GET' });
+        if (!res.ok) throw new Error();
+
+        const blob = await res.blob();
+        if (active) {
+          const url = URL.createObjectURL(blob);
+          setBlobUrl(url);
+        }
+      } catch {
+        if (active) toast.error('Gagal memuat preview dokumen');
+      } finally {
+        if (active) setIsFileLoading(false);
+      }
+    };
+
+    fetchFile();
+
+    return () => {
+      active = false;
+      setBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    };
+  }, [currentDoc?.filePath]);
 
   const handleValidate = useCallback(
     (action: 'approve' | 'decline') => {
@@ -111,7 +156,7 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Validasi Dokumen Seminar Hasil</DialogTitle>
           {detail && (
@@ -153,7 +198,7 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
             </div>
 
             {/* Documents overview pills */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap justify-center">
               {orderedDocs.map((entry, idx) => (
                 <button
                   key={entry.docType.id}
@@ -168,7 +213,6 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                     <span className="ml-1.5">
                       {entry.doc.status === 'approved' && '✓'}
                       {entry.doc.status === 'declined' && '✗'}
-                      {entry.doc.status === 'submitted' && '•'}
                     </span>
                   )}
                 </button>
@@ -199,9 +243,28 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                           }
                         }}
                       >
-                        <Download className="h-3.5 w-3.5 mr-1" />
-                        Download
+                        <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                        Buka di Tab Baru
                       </Button>
+                    )}
+                  </div>
+
+                  {/* PDF preview */}
+                  <div className="rounded border bg-muted overflow-hidden" style={{ height: '480px' }}>
+                    {isFileLoading ? (
+                      <div className="flex items-center justify-center h-full">
+                        <Spinner className="h-6 w-6" />
+                      </div>
+                    ) : blobUrl ? (
+                      <iframe
+                        src={blobUrl}
+                        title="Preview Dokumen"
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                        Preview tidak tersedia
+                      </div>
                     )}
                   </div>
 

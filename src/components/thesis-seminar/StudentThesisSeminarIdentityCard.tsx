@@ -1,14 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { toTitleCaseName, formatDateOnlyId } from '@/lib/text';
 import { ChevronRight, Users, Calendar, MapPin, Video, Trophy } from 'lucide-react';
 import type { SeminarInfo, ThesisSeminarStatus } from '@/types/seminar.types';
+import { cn } from '@/lib/utils';
 
-/** Statuses that show full info including score/grade */
 const FINALIZED_STATUSES: ThesisSeminarStatus[] = ['passed', 'passed_with_revision', 'failed'];
 
-/** Statuses that show schedule info */
 const SCHEDULED_STATUSES: ThesisSeminarStatus[] = [
   'scheduled',
   'ongoing',
@@ -17,7 +14,6 @@ const SCHEDULED_STATUSES: ThesisSeminarStatus[] = [
   'failed',
 ];
 
-/** Statuses where the card should be rendered */
 const CARD_VISIBLE_STATUSES: ThesisSeminarStatus[] = [
   'examiner_assigned',
   'scheduled',
@@ -27,7 +23,7 @@ const CARD_VISIBLE_STATUSES: ThesisSeminarStatus[] = [
 ];
 
 function formatTimeRange(startTime: string | null, endTime: string | null): string {
-  if (!startTime || !endTime) return '-';
+  if (!startTime || !endTime) return '';
   const fmtTime = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleTimeString('id-ID', {
@@ -37,7 +33,7 @@ function formatTimeRange(startTime: string | null, endTime: string | null): stri
       hour12: false,
     });
   };
-  return `${fmtTime(startTime)} - ${fmtTime(endTime)} WIB`;
+  return `${fmtTime(startTime)} – ${fmtTime(endTime)} WIB`;
 }
 
 interface SeminarInfoCardProps {
@@ -51,134 +47,136 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
   const showSchedule = SCHEDULED_STATUSES.includes(seminar.status);
   const showScore = FINALIZED_STATUSES.includes(seminar.status) && seminar.finalScore !== null;
   const isOnline = !seminar.room && !!seminar.meetingLink;
+  const timeRange = formatTimeRange(seminar.startTime, seminar.endTime);
 
-  // Filter to available examiners only
   const activeExaminers = seminar.examiners.filter(
     (e) => e.availabilityStatus === 'available'
   );
 
-  // Count how many sections are visible to determine grid cols
-  let sectionCount = 0;
-  if (activeExaminers.length > 0) sectionCount++;
-  if (showSchedule) sectionCount++; // jadwal
-  if (showSchedule && (seminar.room || isOnline)) sectionCount++; // ruangan/daring
-  if (showScore) sectionCount++;
+  // Build visible info blocks for dynamic column count
+  const blocks: React.ReactNode[] = [];
 
-  const gridCols =
-    sectionCount <= 2
-      ? 'grid-cols-1 sm:grid-cols-2'
-      : sectionCount === 3
-        ? 'grid-cols-1 sm:grid-cols-3'
-        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+  if (activeExaminers.length > 0) {
+    blocks.push(
+      <div key="examiners" className="flex flex-col gap-0.5">
+        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+          <Users size={12} className="opacity-50" />
+          Dosen Penguji
+        </div>
+        {activeExaminers.map((e, idx) => (
+          <div
+            key={e.id}
+            className={cn(
+              "font-medium truncate",
+              idx === 0 ? "text-[12.5px] text-foreground" : "text-[11px] text-muted-foreground"
+            )}
+          >
+            {toTitleCaseName(e.lecturerName)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (showSchedule && seminar.date) {
+    blocks.push(
+      <div key="schedule" className="flex flex-col gap-0.5">
+        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+          <Calendar size={12} className="opacity-50" />
+          Jadwal
+        </div>
+        <div className="text-[12.5px] text-foreground font-medium">
+          {formatDateOnlyId(seminar.date)}
+        </div>
+        {timeRange && (
+          <div className="text-[11px] text-muted-foreground">{timeRange}</div>
+        )}
+      </div>
+    );
+  }
+
+  if (showSchedule && (seminar.room || isOnline)) {
+    blocks.push(
+      <div key="location" className="flex flex-col gap-0.5">
+        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+          {isOnline ? (
+            <Video size={12} className="opacity-50" />
+          ) : (
+            <MapPin size={12} className="opacity-50" />
+          )}
+          {isOnline ? 'Mode Seminar' : 'Ruangan'}
+        </div>
+        {isOnline ? (
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="bg-blue-50 text-blue-600 text-[10px] font-semibold px-1.5 py-0.5 rounded">
+              Daring
+            </span>
+            {seminar.meetingLink && (
+              <a
+                href={seminar.meetingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-emerald-600 font-medium hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Buka Link
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="text-[12.5px] text-foreground font-medium truncate">
+            {seminar.room?.name}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (showScore) {
+    blocks.push(
+      <div key="score" className="flex flex-col gap-0.5">
+        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+          <Trophy size={12} className="opacity-50" />
+          Nilai Akhir
+        </div>
+        <div className="flex items-baseline gap-1">
+          <span className="text-[16px] font-bold text-foreground">
+            {seminar.finalScore?.toFixed(2)}
+          </span>
+          <span className="text-[11px] text-muted-foreground">/ {seminar.maxWeight || 100}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const colCount = blocks.length || 1;
+  const gridCols = colCount === 1 ? 'grid-cols-1' : colCount === 2 ? 'grid-cols-2' : colCount === 3 ? 'grid-cols-3' : 'grid-cols-4';
 
   return (
-    <Card
-      className="cursor-pointer transition-colors hover:bg-muted/50"
+    <div
       onClick={onClick}
+      className={cn(
+        "bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px] transition-all duration-200",
+        onClick && "cursor-pointer hover:bg-gray-50/80 hover:border-gray-300/80 hover:shadow-sm"
+      )}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold">Informasi Seminar</CardTitle>
-          <div className="flex items-center gap-2">
-            <ThesisEventStatusBadge 
-              status={seminar.status} 
-              scheduledDate={seminar.date} 
-              startTime={seminar.startTime} 
-            />
-            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-[14px]">
+        <div className="text-[13px] font-bold text-foreground">Informasi Seminar</div>
+        <div className="flex items-center gap-2">
+          <ThesisEventStatusBadge
+            status={seminar.status}
+            scheduledDate={seminar.date}
+            startTime={seminar.startTime}
+          />
+          {onClick && <ChevronRight size={16} className="text-muted-foreground opacity-50 shrink-0" />}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className={`grid ${gridCols} gap-4`}>
-          {/* Examiners Section */}
-          {activeExaminers.length > 0 && (
-            <div className="flex gap-2.5">
-              <Users className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div className="space-y-0.5 min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">Dosen Penguji</p>
-                {activeExaminers.map((e) => (
-                  <p key={e.id} className="text-sm truncate">
-                    <span className="text-muted-foreground">Penguji {e.order}:</span>{' '}
-                    <span className="font-medium">{toTitleCaseName(e.lecturerName)}</span>
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
+      </div>
 
-          {/* Schedule Section */}
-          {showSchedule && (
-            <div className="flex gap-2.5">
-              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div className="space-y-0.5">
-                <p className="text-xs font-medium text-muted-foreground">Jadwal</p>
-                <p className="text-sm font-medium">{formatDateOnlyId(seminar.date)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatTimeRange(seminar.startTime, seminar.endTime)}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Room / Meeting Link */}
-          {showSchedule && (
-            <>
-              {isOnline ? (
-                <div className="flex gap-2.5">
-                  <Video className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-muted-foreground">Mode Seminar</p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">Daring</Badge>
-                      {seminar.meetingLink && (
-                        <a
-                          href={seminar.meetingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Buka Link
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : seminar.room ? (
-                <div className="flex gap-2.5">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-muted-foreground">Ruangan</p>
-                    <p className="text-sm font-medium">{seminar.room.name}</p>
-                  </div>
-                </div>
-              ) : null}
-            </>
-          )}
-
-          {/* Score Section */}
-          {showScore && (
-            <div className="flex gap-2.5">
-              <Trophy className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div className="space-y-0.5">
-                <p className="text-xs font-medium text-muted-foreground">Nilai Akhir</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold">{seminar.finalScore?.toFixed(2)}</span>
-                  {seminar.grade && (
-                    <Badge
-                      variant={seminar.status === 'failed' ? 'destructive' : 'success'}
-                      className="text-sm"
-                    >
-                      {seminar.grade}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      {/* Info grid */}
+      <div className={cn("grid gap-y-3 gap-x-4", gridCols)}>
+        {blocks}
+      </div>
+    </div>
   );
 }

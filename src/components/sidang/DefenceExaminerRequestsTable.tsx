@@ -35,7 +35,22 @@ export function DefenceExaminerRequestsTable() {
     }
   }, [error]);
 
-  const filteredData = defences || [];
+  const filteredData = useMemo(() => {
+    const items = [...(defences || [])];
+    const priority = (status: ExaminerDefenceRequestItem['myExaminerStatus']) =>
+      status === 'pending' ? 0 : 1;
+
+    items.sort((a, b) => {
+      const rankDiff = priority(a.myExaminerStatus) - priority(b.myExaminerStatus);
+      if (rankDiff !== 0) return rankDiff;
+
+      const aTime = a.registeredAt ? new Date(a.registeredAt).getTime() : 0;
+      const bTime = b.registeredAt ? new Date(b.registeredAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    return items;
+  }, [defences]);
   const total = filteredData.length;
 
   const pagedData = useMemo(() => {

@@ -171,7 +171,7 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
   ];
 
   return (
-    <div className="mt-6 space-y-6">
+    <div className="space-y-6">
       <CustomTable
         data={pagedRecords}
         columns={columns}

@@ -1,8 +1,6 @@
 import { useRef, useCallback } from 'react';
-import { FileText, Upload, AlertCircle, Eye, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { FileText, Eye, AlertCircle } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
 import {
   useSeminarDocumentTypes,
   useStudentSeminarDocuments,
@@ -11,6 +9,7 @@ import {
 import type { SeminarDocument, SeminarDocumentType } from '@/types/seminar.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface UploadDokumenSeminarProps {
   allChecklistMet: boolean;
@@ -36,18 +35,22 @@ export function StudentThesisSeminarDocumentCard({
     [documents]
   );
 
-  return (
-    <div className="rounded-lg border border-gray-200 bg-card p-6">
-      <h3 className="text-lg font-semibold mb-4">Upload Dokumen Seminar</h3>
+  const showLockNotice = isLocked && (!documents || documents.length === 0);
 
-      {isLocked && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 p-3 bg-muted/30 rounded-md">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+  return (
+    <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px]">
+      <div className="text-[13px] font-bold text-[#111] mb-[14px]">
+        Upload Dokumen Seminar
+      </div>
+
+      {showLockNotice && (
+        <div className="flex items-center gap-2 text-[11.5px] text-[#888] mb-3 p-[8px_12px] bg-[#fafaf8] border border-[#e8e8e4] rounded-[7px]">
+          <AlertCircle size={14} className="shrink-0 text-[#aaa]" />
           <span>Lengkapi checklist persyaratan untuk mengakses fitur upload.</span>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-1.5">
         {(docTypes ?? []).map((docType) => (
           <DocumentRow
             key={docType.id}
@@ -68,10 +71,6 @@ export function StudentThesisSeminarDocumentCard({
   );
 }
 
-// ============================================================
-// Sub-component: DocumentRow
-// ============================================================
-
 interface DocumentRowProps {
   docType: SeminarDocumentType;
   doc: SeminarDocument | undefined;
@@ -90,17 +89,12 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      onUpload(file);
-    }
-    // Reset input so the same file can be re-selected
+    if (file) onUpload(file);
     e.target.value = '';
   };
 
   const handleUploadClick = () => {
-    if (canUpload) {
-      fileInputRef.current?.click();
-    }
+    if (canUpload) fileInputRef.current?.click();
   };
 
   const handleViewClick = async () => {
@@ -113,58 +107,58 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     }
   };
 
-  // Build accept string from docType.accept array
   const acceptStr = docType.accept
     .map((ext) => (ext.startsWith('.') ? ext : `.${ext}`))
     .join(',');
 
+  const fileStatusColor = isApproved ? 'text-[#16A34A]' : isDeclined ? 'text-[#dc2626]' : 'text-[#888]';
+  const fileStatusText = isApproved
+    ? '✓ Terverifikasi'
+    : isDeclined
+      ? `Ditolak${doc?.notes ? `: ${doc.notes}` : ''}`
+      : 'Menunggu verifikasi';
+
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-4 rounded-lg border p-4',
-        isLocked && 'opacity-50'
+        "flex items-center gap-[10px] p-[7px_10px] rounded-[7px] bg-[#fafaf8] border border-[#eeece8] transition-all duration-200",
+        isLocked && "opacity-[0.55]"
       )}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div
-          className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-            isApproved && 'bg-green-100 text-green-600',
-            isDeclined && 'bg-red-100 text-red-600',
-            isUploaded && !isApproved && !isDeclined && 'bg-blue-100 text-blue-600',
-            !isUploaded && 'bg-muted text-muted-foreground'
-          )}
-        >
-          <FileText className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{docType.label}</p>
-          {isUploaded && (
-            <>
-              <p
-                className={cn(
-                  'text-xs mt-0.5',
-                  isApproved && 'text-green-600',
-                  isDeclined && 'text-red-600',
-                  !isApproved && !isDeclined && 'text-blue-600'
-                )}
-              >
-                {isApproved && 'Terverifikasi'}
-                {isDeclined && `Ditolak${doc?.notes ? `: ${doc.notes}` : ''}`}
-                {!isApproved && !isDeclined && 'Menunggu verifikasi'}
-              </p>
-              {doc?.fileName && (
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {doc.fileName}
-                </p>
-              )}
-            </>
-          )}
-        </div>
+      {/* File icon */}
+      <div
+        className={cn(
+          "w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0",
+          isApproved ? "bg-[#dcfce7] text-[#16A34A]" : 
+          isDeclined ? "bg-[#fef2f2] text-[#dc2626]" : 
+          isUploaded ? "bg-[#dbeafe] text-[#2563eb]" : 
+          "bg-[#f3f4f6] text-[#9ca3af]"
+        )}
+      >
+        <FileText size={14} />
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        {/* Hidden file input */}
+      {/* File info */}
+      <div className="flex-1 min-w-0">
+        <div className="text-[11.5px] font-medium text-[#111] truncate">
+          {docType.label}
+        </div>
+        {isUploaded && (
+          <>
+            <div className={cn("text-[10px] font-medium mt-0.5", fileStatusColor)}>
+              {fileStatusText}
+            </div>
+            {doc?.fileName && (
+              <div className="text-[10px] text-[#aaa] truncate">
+                {doc.fileName}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1.5 shrink-0">
         <input
           ref={fileInputRef}
           type="file"
@@ -173,41 +167,38 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
           onChange={handleFileChange}
         />
 
-        {/* View button (when document exists) */}
         {isUploaded && doc?.filePath && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={handleViewClick}
             title="Lihat dokumen"
+            className="px-[9px] py-[4px] rounded-[5px] bg-transparent border border-[#F59E0B] flex items-center gap-1 shrink-0 text-[#F59E0B] hover:bg-amber-50 transition-all duration-200 cursor-pointer text-[10.5px] font-semibold"
           >
-            <Eye className="h-4 w-4" />
-          </Button>
+            <Eye size={12} />
+            <span>Lihat</span>
+          </button>
         )}
 
-        {/* Upload / Re-upload button */}
-        <Button
-          variant={isDeclined ? 'destructive' : 'outline'}
-          size="sm"
-          disabled={!canUpload}
-          onClick={handleUploadClick}
-        >
-          {isUploading ? (
-            <>
-              <Spinner className="mr-1.5 h-4 w-4" />
-              Mengupload...
-            </>
-          ) : (
-            <>
-              {isUploaded && !isApproved ? (
-                <RefreshCw className="h-4 w-4 mr-1.5" />
-              ) : (
-                <Upload className="h-4 w-4 mr-1.5" />
-              )}
-              {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Ganti File') : 'Upload'}
-            </>
-          )}
-        </Button>
+        {isUploading ? (
+          <div className="flex items-center gap-1 text-[10.5px] text-[#888]">
+            <Spinner className="h-3 w-3" />
+            Upload...
+          </div>
+        ) : (
+          <button
+            disabled={!canUpload}
+            onClick={handleUploadClick}
+            className={cn(
+              "shrink-0 px-[9px] py-[4px] text-[10.5px] font-semibold rounded-[5px] transition-all duration-200 cursor-pointer border",
+              isDeclined 
+                ? "border-[#ef4444] text-[#ef4444] bg-transparent hover:bg-red-50" 
+                : canUpload 
+                  ? "border-[#F59E0B] text-[#F59E0B] bg-transparent hover:bg-amber-50" 
+                  : "border-[#e8e8e4] text-[#bbb] cursor-default"
+            )}
+          >
+            {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Ganti File') : 'Upload'}
+          </button>
+        )}
       </div>
     </div>
   );

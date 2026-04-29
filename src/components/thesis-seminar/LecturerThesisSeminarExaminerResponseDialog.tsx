@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,10 +10,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { useRespondExaminerAssignment } from '@/hooks/thesis-seminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { toast } from 'sonner';
-import { CheckCircle2, XCircle, UserCheck, BookOpen, GraduationCap } from 'lucide-react';
+import { CheckCircle2, XCircle, BookOpen, GraduationCap } from 'lucide-react';
 import type { ExaminerRequestItem } from '@/types/seminar.types';
 
 interface LecturerThesisSeminarExaminerResponseDialogProps {
@@ -29,6 +31,13 @@ export function LecturerThesisSeminarExaminerResponseDialog({
   onSuccess,
 }: LecturerThesisSeminarExaminerResponseDialogProps) {
   const respondMutation = useRespondExaminerAssignment();
+  const [unavailableReasons, setUnavailableReasons] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setUnavailableReasons('');
+    }
+  }, [open]);
 
   const handleRespond = (status: 'available' | 'unavailable') => {
     if (!seminar?.myExaminerId) return;
@@ -37,7 +46,10 @@ export function LecturerThesisSeminarExaminerResponseDialog({
       {
         seminarId: seminar.id,
         examinerId: seminar.myExaminerId,
-        payload: { status },
+        payload: {
+          status,
+          unavailableReasons: status === 'unavailable' ? (unavailableReasons.trim() || null) : null
+        },
       },
       {
         onSuccess: (data) => {
@@ -63,11 +75,10 @@ export function LecturerThesisSeminarExaminerResponseDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
             Konfirmasi Penugasan Penguji
           </DialogTitle>
           <DialogDescription>
-            Anda ditugaskan sebagai penguji seminar hasil.
+            Anda ditugaskan sebagai penguji seminar hasil
           </DialogDescription>
         </DialogHeader>
 
@@ -114,6 +125,20 @@ export function LecturerThesisSeminarExaminerResponseDialog({
             <p className="text-sm">
               Apakah Anda bersedia menjadi penguji untuk seminar hasil mahasiswa ini?
             </p>
+
+            {/* Optional Rejection Reason */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Alasan Tidak Bersedia (Opsional)
+              </label>
+              <Textarea
+                placeholder="Masukkan alasan jika tidak bersedia..."
+                value={unavailableReasons}
+                onChange={(e) => setUnavailableReasons(e.target.value)}
+                className="text-sm resize-none"
+                rows={3}
+              />
+            </div>
           </div>
         )}
 

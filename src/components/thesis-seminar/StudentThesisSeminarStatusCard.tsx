@@ -1,6 +1,6 @@
-import { CheckCircle2, Circle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Check, Clock } from 'lucide-react';
 import type { ThesisSeminarStatus } from '@/types/seminar.types';
+import { cn } from '@/lib/utils';
 
 const STEPS = [
   { key: 'checklist', label: 'Checklist Persyaratan' },
@@ -11,29 +11,15 @@ const STEPS = [
 ] as const;
 
 function getActiveStepIndex(status: ThesisSeminarStatus | null, allChecklistMet: boolean): number {
-  if (!status) return allChecklistMet ? 0 : -1;
-
-  // Failed → reset back to checklist phase (student starts over)
-  if (status === 'failed' || status === 'cancelled') return allChecklistMet ? 0 : -1;
-
-  const statusMap: Record<string, number> = {
-    registered: 1,
-    verified: 2,
-    examiner_assigned: 3,
-    scheduled: 4,
-    ongoing: 4,
-    passed: 5,
-    passed_with_revision: 5,
-  };
-
-  return statusMap[status] ?? -1;
-}
-
-type StepperTheme = 'default' | 'success';
-
-function getStepperTheme(status: ThesisSeminarStatus | null): StepperTheme {
-  if (status === 'passed' || status === 'passed_with_revision') return 'success';
-  return 'default';
+  if (status === 'passed' || status === 'passed_with_revision') return 4;
+  if (status === 'scheduled' || status === 'ongoing') return 3;
+  if (status === 'examiner_assigned') return 2;
+  if (status === 'verified') return 1;
+  if (status === 'registered') return 0;
+  
+  if (allChecklistMet) return 0;
+  
+  return -1;
 }
 
 interface SeminarStatusStepperProps {
@@ -43,78 +29,95 @@ interface SeminarStatusStepperProps {
 
 export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: SeminarStatusStepperProps) {
   const activeIndex = getActiveStepIndex(status, allChecklistMet);
-  const theme = getStepperTheme(status);
-
-  // Theme color classes
-  const themeClasses = {
-    default: {
-      completed: 'border-primary bg-primary text-primary-foreground',
-      current: 'border-primary bg-primary/10 text-primary',
-      line: 'bg-primary',
-      text: 'text-primary',
-    },
-    success: {
-      completed: 'border-emerald-500 bg-emerald-500 text-white',
-      current: 'border-emerald-500 bg-emerald-50 text-emerald-600',
-      line: 'bg-emerald-500',
-      text: 'text-emerald-600',
-    },
-  };
-
-  const colors = themeClasses[theme];
+  const spinePct = activeIndex === -1 ? 0 : (activeIndex + 1) * 20;
+  const completedCount = activeIndex + 1;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-card p-6">
-      <h3 className="text-lg font-semibold mb-6">Status Seminar</h3>
-      <div className="flex items-center">
+    <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[18px_18px_14px] h-full flex flex-col box-border">
+      <div className="text-[13px] font-bold text-[#111] mb-1.5">
+        Status Seminar
+      </div>
+      <div className="text-[10.5px] text-[#aaa] mb-[18px]">
+        Progres pengajuan seminar hasil
+      </div>
+
+      <div className="relative pl-8 flex-1 flex flex-col">
         {STEPS.map((step, i) => {
-          const isCompleted = i < activeIndex;
-          const isCurrent = i === activeIndex;
+          const isActive = i <= activeIndex;
 
           return (
-            <div key={step.key} className="flex flex-1 flex-col items-center">
-              <div className="flex w-full items-center">
-                {/* Left connector line */}
+            <div
+              key={step.key}
+              className={cn(
+                "relative",
+                i < STEPS.length - 1 ? "pb-[22px]" : "pb-0"
+              )}
+            >
+              {/* Segment to next node */}
+              {i < STEPS.length - 1 && (
                 <div
                   className={cn(
-                    'h-0.5 flex-1',
-                    i === 0 ? 'bg-transparent' : isCompleted ? colors.line : 'bg-muted'
+                    "absolute top-[13px] bottom-[-13px] w-[2px] z-[0]",
+                    i < activeIndex ? "bg-[#16A34A]" : "bg-[#d1d5db]"
                   )}
+                  style={{ left: '-21px' }}
                 />
-                {/* Circle */}
-                <div
-                  className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-                    isCompleted && colors.completed,
-                    isCurrent && colors.current,
-                    !isCompleted && !isCurrent && 'border-muted bg-muted/30 text-muted-foreground'
-                  )}
-                >
-                  {isCompleted ? (
-                    <CheckCircle2 className="h-5 w-5" />
-                  ) : (
-                    <Circle className="h-5 w-5" />
-                  )}
-                </div>
-                {/* Right connector line */}
-                <div
-                  className={cn(
-                    'h-0.5 flex-1',
-                    i === STEPS.length - 1 ? 'bg-transparent' : isCompleted ? colors.line : 'bg-muted'
-                  )}
-                />
-              </div>
-              <span
+              )}
+              {/* Node */}
+              <div
                 className={cn(
-                  'mt-2 text-xs text-center max-w-[100px]',
-                  (isCompleted || isCurrent) ? cn(colors.text, 'font-medium') : 'text-muted-foreground'
+                  "absolute -left-8 top-[2px] w-[22px] h-[22px] rounded-full flex items-center justify-center z-[1] border-[2.5px]",
+                  isActive
+                    ? "bg-[#16A34A] border-[#16A34A] text-white shadow-[0_0_0_3px_#dcfce7]"
+                    : "bg-white border-[#d1d5db] text-[#bbb] shadow-[0_0_0_3px_#f3f4f6]"
+                )}
+              >
+                {isActive ? (
+                  <Check size={10} strokeWidth={2.5} />
+                ) : (
+                  <Clock size={10} strokeWidth={2} />
+                )}
+              </div>
+
+              {/* Step name */}
+              <div
+                className={cn(
+                  "text-[12px] font-semibold leading-[1.3] mb-0.5",
+                  isActive ? "text-[#111]" : "text-[#aaa]"
                 )}
               >
                 {step.label}
-              </span>
+              </div>
+
+              {/* Step status */}
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1 text-[10.5px] font-medium",
+                  isActive ? "text-[#16A34A]" : "text-[#bbb]"
+                )}
+              >
+                {isActive ? 'Terpenuhi' : 'Menunggu'}
+              </div>
             </div>
           );
         })}
+      </div>
+
+      {/* Progress summary */}
+      <div className="mt-[18px] pt-[14px] border-t border-[#f0ede8]">
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-[10.5px] text-[#888] font-medium">Progres Keseluruhan</span>
+          <span className="text-[11px] font-bold text-[#16A34A]">{spinePct}%</span>
+        </div>
+        <div className="bg-[#e8e8e4] rounded-full h-[6px] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 transition-all duration-300"
+            style={{ width: `${spinePct}%` }}
+          />
+        </div>
+        <div className="text-[10px] text-[#aaa] mt-1.5 font-medium">
+          {completedCount > 0 ? `${completedCount} dari ${STEPS.length} tahap selesai` : 'Checklist Persyaratan Belum Terpenuhi'}
+        </div>
       </div>
     </div>
   );
