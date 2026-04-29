@@ -218,6 +218,129 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
     [availabilityEvents, scheduleEvent, blockedEvents]
   );
 
+  const recommendations = useMemo(() => {
+    if (!schedulingData) return [];
+    const participantIds = schedulingData.participantIds || [];
+    if (!participantIds.length || !effectiveRoomId) return [];
+    if (!schedulingData.lecturerAvailabilities) return [];
+
+    const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+    interface TimeSlot {
+      start: number; // minutes from midnight
+      end: number;
+    }
+
+    const recommendationsList: Array<{
+      date: string;
+      startTime: string;
+      endTime: string;
+      roomId: string;
+    }> = [];
+
+    daysOfWeek.forEach((dayName) => {
+      const availByLecturer: Record<string, TimeSlot[]> = {};
+      participantIds.forEach((lId) => {
+        const avails = schedulingData.lecturerAvailabilities.filter(
+          (a: any) => a.lecturerId === lId && a.day === dayName
+        );
+        availByLecturer[lId] = avails.map((a: any) => {
+          const s = extractTime(a.startTime);
+          const e = extractTime(a.endTime);
+          if (s === '--:--' || e === '--:--') return { start: 0, end: 0 };
+          const [sH, sM] = s.split(':').map(Number);
+          const [eH, eM] = e.split(':').map(Number);
+          return { start: sH * 60 + sM, end: eH * 60 + eM };
+        }).filter(slot => slot.start < slot.end);
+      });
+
+      if (participantIds.some((lId) => availByLecturer[lId].length === 0)) return;
+
+      let commonSlots = availByLecturer[participantIds[0]];
+
+      for (let i = 1; i < participantIds.length; i++) {
+        const nextSlots = availByLecturer[participantIds[i]];
+        const newCommon: TimeSlot[] = [];
+
+        commonSlots.forEach((c) => {
+          nextSlots.forEach((n) => {
+            const start = Math.max(c.start, n.start);
+            const end = Math.min(c.end, n.end);
+            if (start < end) {
+              newCommon.push({ start, end });
+            }
+          });
+        });
+        commonSlots = newCommon;
+      }
+
+      const twoHourSlots: TimeSlot[] = [];
+      commonSlots.forEach((slot) => {
+        let currentStart = slot.start;
+        while (currentStart + 120 <= slot.end) {
+          twoHourSlots.push({ start: currentStart, end: currentStart + 120 });
+          currentStart += 60;
+        }
+      });
+
+      if (twoHourSlots.length === 0) return;
+
+      const dayIndexMap: Record<string, number> = {
+        monday: 1,
+        tuesday: 2,
+        wednesday: 3,
+        thursday: 4,
+        friday: 5,
+      };
+      const targetDay = dayIndexMap[dayName];
+
+      const now = new Date();
+      for (let d = 0; d < 30; d++) {
+        const testDate = new Date(now.getTime() + d * 24 * 60 * 60 * 1000);
+        if (testDate.getDay() === targetDay) {
+          const dateStr = testDate.toISOString().slice(0, 10);
+
+          twoHourSlots.forEach((timeSlot) => {
+            const sH = Math.floor(timeSlot.start / 60);
+            const sM = timeSlot.start % 60;
+            const eH = Math.floor(timeSlot.end / 60);
+            const eM = timeSlot.end % 60;
+
+            const startTimeStr = `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`;
+            const endTimeStr = `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`;
+
+            const hasConflict = (schedulingData.roomBookings || []).some((b: any) => {
+              if (b.roomId !== effectiveRoomId) return false;
+              if (b.date.slice(0, 10) !== dateStr) return false;
+
+              const [bSH, bSM] = extractTime(b.startTime).split(':').map(Number);
+              const [bEH, bEM] = extractTime(b.endTime).split(':').map(Number);
+              const bStart = bSH * 60 + bSM;
+              const bEnd = bEH * 60 + bEM;
+
+              return timeSlot.start < bEnd && timeSlot.end > bStart;
+            });
+
+            if (!hasConflict) {
+              recommendationsList.push({
+                date: dateStr,
+                startTime: startTimeStr,
+                endTime: endTimeStr,
+                roomId: effectiveRoomId,
+              });
+            }
+          });
+        }
+      }
+    });
+
+    return recommendationsList.sort((a, b) => {
+      const dateCompare = a.date.localeCompare(b.date);
+      if (dateCompare !== 0) return dateCompare;
+      return a.startTime.localeCompare(b.startTime);
+    });
+  }, [schedulingData, effectiveRoomId]);
+
   const roomConflicts = useMemo(() => {
     if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
     return schedulingData.roomBookings.filter((b: any) => b.roomId === effectiveRoomId);
@@ -341,7 +464,8 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .fc-timegrid-event-harness:has(.blocked-event) {
           left: 0px !important;
           right: 0px !important;
@@ -468,58 +592,49 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                 Rekomendasi Jadwal
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 flex-1 flex flex-col justify-center min-h-0">
-              {current ? (
-                <div className="flex flex-col gap-3">
-                  <div className="space-y-3 text-sm text-green-800 p-3 rounded-xl border border-green-200 bg-green-50/50">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4 text-green-600 shrink-0" />
-                      <span className="font-semibold">{formatDateLong(current.date)}</span>
+            <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto space-y-2 text-xs">
+              {recommendations.length > 0 ? (
+                <div className="flex flex-col gap-2 w-full">
+                  {recommendations.map((rec, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        if (!isEditable) return;
+                        setFormError(null);
+                        setPendingSchedule({
+                          date: rec.date,
+                          startTime: rec.startTime,
+                          endTime: rec.endTime,
+                          roomId: rec.roomId,
+                          isOnline: false,
+                          meetingLink: '',
+                        });
+                      }}
+                      className="p-2.5 rounded-lg border-2 bg-card hover:bg-accent/50 transition-all cursor-pointer border-primary/20 hover:border-primary/40 flex flex-col gap-1 text-left"
+                    >
+                      <div className="flex items-center gap-1.5 font-semibold text-primary text-[13px]">
+                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary/80" />
+                        <span>Rekomendasi Jadwal #{idx + 1}</span>
+                      </div>
+                      <div className="flex flex-col text-muted-foreground text-[11px] pl-5 space-y-0.5">
+                        <div className="flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+                          <span>{formatDateLong(rec.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+                          <span>{rec.startTime} - {rec.endTime}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-green-600 shrink-0" />
-                      <span className="font-medium">
-                        {extractTime(current.startTime || '')} – {extractTime(current.endTime || '')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-green-600 shrink-0" />
-                      <span className="font-medium">
-                        {current.isOnline ? 'Seminar Daring' : (current.room?.name || '-')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {current.isOnline && current.meetingLink && (
-                    <div className="p-3 rounded-xl border border-blue-100 bg-blue-50/50 flex flex-col gap-1">
-                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide flex items-center gap-1">
-                        <Video className="h-3.5 w-3.5 text-blue-600" />
-                        Link Meeting
-                      </p>
-                      <a
-                        href={current.meetingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-600 underline break-all font-medium"
-                      >
-                        {current.meetingLink}
-                      </a>
-                    </div>
-                  )}
-
-                  {isEditable && (
-                    <div className="flex items-center gap-1.5 p-2.5 rounded-lg bg-muted/50 text-xs text-muted-foreground mt-2">
-                      <AlertCircle className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
-                      <span>Pilih slot baru pada kalender untuk mengubah jadwal.</span>
-                    </div>
-                  )}
+                  ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center text-center py-6 text-muted-foreground space-y-2 my-auto">
+                <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-2 my-auto w-full">
                   <AlertCircle className="h-6 w-6 text-muted-foreground/40" />
                   <p className="text-xs font-semibold text-foreground">Tidak Ada Rekomendasi</p>
                   <p className="text-[11px] max-w-[200px] mx-auto">
-                    Gunakan ketersediaan waktu dosen di kalender untuk memilih jadwal.
+                    Tidak ditemukan slot waktu 2 jam yang sesuai untuk seluruh peserta seminar.
                   </p>
                 </div>
               )}
@@ -575,10 +690,9 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
         open={pendingSchedule !== null && isEditable}
         onOpenChange={(open) => { if (!open) { setPendingSchedule(null); setFormError(null); } }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <PencilLine className="h-4 w-4 text-primary" />
               Atur Jadwal Seminar
             </DialogTitle>
           </DialogHeader>
