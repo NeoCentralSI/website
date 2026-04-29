@@ -27,9 +27,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Spinner, Loading } from '@/components/ui/spinner';
-import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle, Sparkles, Lock, Ban, Video, Copy } from 'lucide-react';
+import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle, Sparkles, Lock, Ban, Video, Copy, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule, useFinalizeAdminThesisSeminarSchedule, useAdminThesisSeminarDetail } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
+import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule, useFinalizeAdminThesisSeminarSchedule, useAdminThesisSeminarDetail, useDownloadAdminThesisSeminarInvitation } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/seminar.types';
 
@@ -109,6 +109,19 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const { data: seminarDetail } = useAdminThesisSeminarDetail(seminarId);
   const { mutate: doSetSchedule, isPending: isSaving } = useSetAdminThesisSeminarSchedule();
   const { mutate: doFinalizeSchedule, isPending: isFinalizing } = useFinalizeAdminThesisSeminarSchedule();
+  const { mutate: doDownloadInvitation, isPending: isDownloadingInvitation } = useDownloadAdminThesisSeminarInvitation();
+  
+  const [isInvitationDialogOpen, setIsInvitationDialogOpen] = useState<boolean>(false);
+  const [inputNomorSurat, setInputNomorSurat] = useState<string>('');
+
+  const handleDownloadInvitation = () => {
+    setIsInvitationDialogOpen(true);
+  };
+
+  const confirmDownloadInvitation = () => {
+    doDownloadInvitation({ seminarId, nomorSurat: inputNomorSurat });
+    setIsInvitationDialogOpen(false);
+  };
 
   const [pendingSchedule, setPendingSchedule] = useState<PendingSchedule | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -546,10 +559,22 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                     </Badge>
                   )}
                   {seminarDetail?.status === 'scheduled' && (
-                    <Badge variant="success" className="flex items-center gap-1 text-xs shrink-0 px-2.5 py-1">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Terjadwal
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="success" className="flex items-center gap-1 text-xs shrink-0 px-2.5 py-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Terjadwal
+                      </Badge>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        disabled={isDownloadingInvitation}
+                        onClick={handleDownloadInvitation}
+                        className="h-8 w-8 shadow-sm border-border/80 hover:bg-accent text-muted-foreground hover:text-foreground"
+                        title="Unduh Surat Undangan"
+                      >
+                        {isDownloadingInvitation ? <Spinner className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-4 w-4" />}
+                      </Button>
+                    </div>
                   )}
                   {seminarDetail?.status === 'examiner_assigned' && current?.date && (
                     <div className="flex items-center gap-1.5">
@@ -578,6 +603,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                     <Select
                       value={selectedRoomId || schedulingData.rooms[0]?.id}
                       onValueChange={(val) => setSelectedRoomId(val)}
+                      disabled={seminarDetail?.status === 'scheduled'}
                     >
                       <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
                         <SelectValue placeholder="Pilih ruangan..." />
@@ -874,6 +900,36 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
               Jadwalkan
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Download Invitation Modal ── */}
+      <Dialog open={isInvitationDialogOpen} onOpenChange={setIsInvitationDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-sm border-border/60 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              <FileText className="h-5 w-5 text-primary" />
+              Unduh Surat Undangan
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="nomorSurat" className="text-xs text-muted-foreground">Nomor Surat (Opsional)</Label>
+            <Input
+              id="nomorSurat"
+              placeholder="Contoh: 0123/UN16.15/TA/2026"
+              value={inputNomorSurat}
+              onChange={(e) => setInputNomorSurat(e.target.value)}
+              className="bg-background text-sm"
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <Button variant="outline" onClick={() => setIsInvitationDialogOpen(false)} className="text-xs">
+              Batal
+            </Button>
+            <Button onClick={confirmDownloadInvitation} className="text-xs">
+              Unduh PDF
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

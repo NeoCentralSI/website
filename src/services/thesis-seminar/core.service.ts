@@ -407,3 +407,15 @@ export async function importAdminThesisSeminarArchive(file: File): Promise<Admin
   });
   return parseJsonResponse(response, 'Gagal mengimpor arsip');
 }
+
+export async function downloadAdminThesisSeminarInvitation(seminarId: string, nomorSurat?: string): Promise<Blob> {
+  let url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.INVITATION(seminarId));
+  if (nomorSurat) {
+    url += `?nomorSurat=${encodeURIComponent(nomorSurat)}`;
+  }
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    throw new Error('Gagal mengunduh surat undangan');
+  }
+  return await response.blob();
+}

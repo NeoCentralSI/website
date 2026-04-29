@@ -17,6 +17,7 @@ import {
   setAdminThesisSeminarSchedule,
   finalizeAdminThesisSeminarSchedule,
   updateAdminThesisSeminarArchive,
+  downloadAdminThesisSeminarInvitation,
   type AdminThesisSeminarArchivePayload,
 } from '@/services/thesis-seminar/core.service';
 import {
@@ -267,5 +268,25 @@ export function useExportAdminThesisSeminarAudiences() {
 export function useDownloadAdminThesisSeminarAudienceTemplate() {
   return useMutation({
     mutationFn: (seminarId: string) => downloadAdminThesisSeminarAudienceTemplate(seminarId),
+  });
+}
+
+export function useDownloadAdminThesisSeminarInvitation() {
+  return useMutation({
+    mutationFn: ({ seminarId, nomorSurat }: { seminarId: string; nomorSurat?: string }) => downloadAdminThesisSeminarInvitation(seminarId, nomorSurat),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Surat-Undangan-Seminar-Hasil.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Surat undangan berhasil diunduh');
+    },
+    onError: () => {
+      toast.error('Gagal mengunduh surat undangan');
+    }
   });
 }
