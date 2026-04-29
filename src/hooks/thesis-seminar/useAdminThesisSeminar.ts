@@ -15,6 +15,7 @@ import {
   getAdminThesisSeminarValidationList,
   importAdminThesisSeminarArchive,
   setAdminThesisSeminarSchedule,
+  finalizeAdminThesisSeminarSchedule,
   updateAdminThesisSeminarArchive,
   type AdminThesisSeminarArchivePayload,
 } from '@/services/thesis-seminar/core.service';
@@ -145,6 +146,19 @@ export function useSetAdminThesisSeminarSchedule() {
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', variables.seminarId] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'scheduling', variables.seminarId] });
+    },
+  });
+}
+
+export function useFinalizeAdminThesisSeminarSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (seminarId: string) => finalizeAdminThesisSeminarSchedule(seminarId),
+    onSuccess: (_data, seminarId) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'scheduling', seminarId] });
     },
   });
 }

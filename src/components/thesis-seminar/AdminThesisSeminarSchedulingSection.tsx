@@ -27,10 +27,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Spinner, Loading } from '@/components/ui/spinner';
-import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle, Sparkles, Lock, Ban, Video } from 'lucide-react';
+import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle, Sparkles, Lock, Ban, Video, Copy } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
-import { toTitleCaseName } from '@/lib/text';
+import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule, useFinalizeAdminThesisSeminarSchedule, useAdminThesisSeminarDetail } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
+import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/seminar.types';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -106,11 +106,14 @@ interface PendingSchedule {
 
 export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: Props) {
   const { data: schedulingData, isLoading } = useAdminThesisSeminarSchedulingData(seminarId);
+  const { data: seminarDetail } = useAdminThesisSeminarDetail(seminarId);
   const { mutate: doSetSchedule, isPending: isSaving } = useSetAdminThesisSeminarSchedule();
+  const { mutate: doFinalizeSchedule, isPending: isFinalizing } = useFinalizeAdminThesisSeminarSchedule();
 
   const [pendingSchedule, setPendingSchedule] = useState<PendingSchedule | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState<boolean>(false);
 
   // ── Stable color assignment per lecturer ──────────────────────────────────
   const lecturerColorMap = useMemo(() => {
@@ -182,8 +185,8 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
           title: `🔒 ${b.title}`,
           start: `${dateStr}T${extractTime(b.startTime)}:00`,
           end: `${dateStr}T${extractTime(b.endTime)}:00`,
-          backgroundColor: '#ef4444',
-          borderColor: '#dc2626',
+          backgroundColor: b.id === `seminar-${seminarId}` ? '#0ea5e9' : '#ef4444',
+          borderColor: b.id === `seminar-${seminarId}` ? '#0284c7' : '#dc2626',
           textColor: '#ffffff',
           display: 'block',
           classNames: ['blocked-event'],
@@ -452,6 +455,14 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const { rooms, currentSchedule: current } = schedulingData;
   const selectedRoom = rooms.find((r) => r.id === pendingSchedule?.roomId);
 
+  const supervisors = seminarDetail?.supervisors || (seminarDetail?.thesis?.supervisors || []).map((s: any) => ({
+    name: s.lecturerName || s.name || s.lecturer?.name,
+    role: s.role,
+  }));
+  const examiners = seminarDetail?.examiners || [];
+
+  const canEditSchedule = isEditable && seminarDetail?.status !== 'scheduled';
+
   // Unique lecturers for the legend
   const legendItems = [
     ...new Set(schedulingData.lecturerAvailabilities.map((a) => a.lecturerId)),
@@ -460,6 +471,41 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
     name: schedulingData.lecturerAvailabilities.find((a) => a.lecturerId === id)?.lecturerName || '-',
     color: lecturerColorMap[id] || '#94a3b8',
   }));
+
+  const handleCopyMessage = () => {
+    const studentName = toTitleCaseName(seminarDetail?.student?.name) || '-';
+    const studentNim = seminarDetail?.student?.nim || '-';
+    const title = seminarDetail?.thesis?.title || '-';
+
+    const formattedSupervisors = supervisors.map((s: any) => `• ${toTitleCaseName(s.name)} ${s.role ? `(${formatRoleName(s.role)})` : ''}`).join('\n');
+    const formattedExaminers = examiners.map((e: any) => `• ${toTitleCaseName(e.lecturerName || e.lecturer?.name || '-')}`).join('\n');
+
+    const schedDate = current?.date ? formatDateLong(current.date) : '-';
+    const schedTime = current?.startTime && current?.endTime ? `${extractTime(current.startTime)} - ${extractTime(current.endTime)}` : '-';
+    const place = current?.isOnline ? `Daring: ${current.meetingLink || 'Tautan belum diatur'}` : `Luring: ${current.room?.name || 'Ruangan belum diatur'}`;
+
+    const recsText = recommendations.length > 0
+      ? recommendations.map((r, idx) => `   ${idx + 1}. ${formatDateLong(r.date)} (${r.startTime} - ${r.endTime})`).join('\n')
+      : '   (Tidak ada rekomendasi alternatif)';
+
+    const message = `Berikut ini adalah informasi dan jadwal Seminar Hasil Tugas Akhir yang akan ditetapkan:
+• Mahasiswa: ${studentName} (${studentNim})
+• Judul TA: ${title}
+• Dosen Pembimbing:
+${formattedSupervisors}
+• Dosen Penguji:
+${formattedExaminers}
+• Waktu: ${schedDate}, ${schedTime}
+• Tempat: ${place}
+
+Berikut ini adalah beberapa jadwal rekomendasi tambahan jika tidak bisa mengikuti jadwal di atas:
+${recsText}
+
+Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir mahasiswa kita tersebut.`;
+
+    navigator.clipboard.writeText(message);
+    toast.success('Pesan jadwal seminar berhasil disalin.');
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -493,6 +539,41 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                   Penjadwalan Seminar Hasil
                 </CardTitle>
                 <div className="flex items-center gap-3">
+                  {seminarDetail?.status === 'examiner_assigned' && current?.date && (
+                    <Badge variant="secondary" className="flex items-center gap-1 text-xs shrink-0 px-2.5 py-1">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground/80 mt-0.5" />
+                      Draft Jadwal Tersimpan
+                    </Badge>
+                  )}
+                  {seminarDetail?.status === 'scheduled' && (
+                    <Badge variant="success" className="flex items-center gap-1 text-xs shrink-0 px-2.5 py-1">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Terjadwal
+                    </Badge>
+                  )}
+                  {seminarDetail?.status === 'examiner_assigned' && current?.date && (
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="icon"
+                        disabled={isFinalizing}
+                        onClick={() => setShowFinalizeConfirm(true)}
+                        className="h-8 w-8 shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+                        title="Tetapkan Jadwal"
+                      >
+                        {isFinalizing ? <Spinner className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      </Button>
+
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={handleCopyMessage}
+                        className="h-8 w-8 shadow-sm border-border/80 hover:bg-accent text-muted-foreground hover:text-foreground"
+                        title="Salin Pesan Jadwal"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
                   {schedulingData?.rooms?.length > 0 && (
                     <Select
                       value={selectedRoomId || schedulingData.rooms[0]?.id}
@@ -509,12 +590,6 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                         ))}
                       </SelectContent>
                     </Select>
-                  )}
-                  {current && (
-                    <Badge variant="success" className="flex items-center gap-1 text-xs shrink-0">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Terjadwal
-                    </Badge>
                   )}
                 </div>
               </div>
@@ -542,7 +617,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                 </div>
               )}
 
-              <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden flex-1 min-h-[520px]">
+              <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden flex-1 flex flex-col min-h-[520px]">
                 <FullCalendar
                   plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                   initialView="timeGridWeek"
@@ -553,14 +628,14 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                     center: 'title',
                     right: 'timeGridWeek,timeGridDay',
                   }}
-                  height={520}
+                  height="100%"
                   slotMinTime="06:00:00"
                   slotMaxTime="22:00:00"
                   nowIndicator
                   allDaySlot={false}
                   weekends={false}
-                  selectable={isEditable}
-                  selectMirror={isEditable}
+                  selectable={canEditSchedule}
+                  selectMirror={canEditSchedule}
                   select={handleDateSelect}
                   events={allEvents}
                   selectAllow={handleSelectAllow}
@@ -573,7 +648,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                   }}
                 />
               </div>
-              {isEditable && (
+              {canEditSchedule && (
                 <p className="text-xs text-muted-foreground text-center shrink-0">
                   Klik dan seret pada kalender untuk memilih slot waktu seminar.
                 </p>
@@ -599,7 +674,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                     <div
                       key={idx}
                       onClick={() => {
-                        if (!isEditable) return;
+                        if (!canEditSchedule) return;
                         setFormError(null);
                         setPendingSchedule({
                           date: rec.date,
@@ -610,7 +685,11 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                           meetingLink: '',
                         });
                       }}
-                      className="p-2.5 rounded-lg border-2 bg-card hover:bg-accent/50 transition-all cursor-pointer border-primary/20 hover:border-primary/40 flex flex-col gap-1 text-left"
+                      className={`p-2.5 rounded-lg border-2 bg-card transition-all flex flex-col gap-1 text-left ${
+                        canEditSchedule
+                          ? 'hover:bg-accent/50 cursor-pointer border-primary/20 hover:border-primary/40'
+                          : 'opacity-60 border-border/50 cursor-not-allowed'
+                      }`}
                     >
                       <div className="flex items-center gap-1.5 font-semibold text-primary text-[13px]">
                         <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary/80" />
@@ -652,24 +731,34 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
             <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto space-y-2 text-xs">
               {roomConflicts.length > 0 ? (
                 <div className="flex flex-col gap-2 w-full">
-                  {roomConflicts.map((c: any) => (
-                    <div key={c.id} className="p-2.5 rounded-lg border bg-destructive/5 border-destructive/20 flex flex-col gap-1 text-left">
-                      <div className="flex items-center gap-1.5 font-semibold text-destructive text-[13px]">
-                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{c.title}</span>
-                      </div>
-                      <div className="flex flex-col text-muted-foreground text-[11px] pl-5 space-y-0.5">
-                        <div className="flex items-center gap-1">
-                          <CalendarDays className="h-3 w-3 shrink-0 text-muted-foreground" />
-                          <span>{formatDateLong(c.date)}</span>
+                  {roomConflicts.map((c: any) => {
+                    const isCurrent = c.id === `seminar-${seminarId}`;
+                    return (
+                      <div
+                        key={c.id}
+                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${
+                          isCurrent
+                            ? 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm'
+                            : 'bg-destructive/5 border-destructive/20 text-destructive'
+                        }`}
+                      >
+                        <div className={`flex items-center gap-1.5 font-semibold text-[13px] ${isCurrent ? 'text-sky-600 dark:text-sky-400' : 'text-destructive'}`}>
+                          {isCurrent ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
+                          <span className="truncate">{c.title}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
-                          <span>{extractTime(c.startTime)} - {extractTime(c.endTime)}</span>
+                        <div className="flex flex-col text-muted-foreground text-[11px] pl-5 space-y-0.5">
+                          <div className="flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span>{formatDateLong(c.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span>{extractTime(c.startTime)} - {extractTime(c.endTime)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-2 my-auto w-full">
@@ -684,6 +773,109 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
           </Card>
         </div>
       </div>
+
+      {/* ── Finalize confirmation modal ── */}
+      <Dialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              Jadwalkan Seminar Hasil Secara Resmi
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2 text-xs sm:text-sm text-muted-foreground">
+            <p>Anda akan menjadwalkan Seminar Hasil TA berikut:</p>
+
+            <div className="space-y-3 bg-muted/40 rounded-lg border p-4 font-medium text-foreground">
+              <div>
+                <span className="text-xs text-muted-foreground block font-normal">Mahasiswa</span>
+                <span className="block mt-0.5 text-xs sm:text-sm font-semibold">
+                  {toTitleCaseName(seminarDetail?.student?.name)} ({seminarDetail?.student?.nim})
+                </span>
+              </div>
+
+              <div>
+                <span className="text-xs text-muted-foreground block font-normal">Judul TA</span>
+                <span className="block mt-0.5 text-xs sm:text-sm leading-snug font-medium">{seminarDetail?.thesis?.title || '-'}</span>
+              </div>
+
+              {supervisors.length > 0 && (
+                <div>
+                  <span className="text-xs text-muted-foreground block font-normal">Dosen Pembimbing</span>
+                  <div className="space-y-0.5 mt-0.5">
+                    {supervisors.map((s: any, idx: number) => (
+                      <span key={idx} className="block text-xs font-medium">
+                        • {toTitleCaseName(s.name)} {s.role ? `(${formatRoleName(s.role)})` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {examiners.length > 0 && (
+                <div>
+                  <span className="text-xs text-muted-foreground block font-normal">Dosen Penguji</span>
+                  <div className="space-y-0.5 mt-0.5">
+                    {examiners.map((e: any, idx: number) => (
+                      <span key={idx} className="block text-xs font-medium">
+                        • {toTitleCaseName(e.lecturerName || e.lecturer?.name || '-')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {current && (
+                <div className="border-t pt-3 mt-2 space-y-1.5">
+                  <span className="text-xs text-muted-foreground block font-normal">Informasi Jadwal</span>
+                  <div className="flex items-center gap-2 text-xs font-medium">
+                    <CalendarDays className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span>{formatDateLong(current.date)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-medium">
+                    <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span>{extractTime(current.startTime)} - {extractTime(current.endTime)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-medium">
+                    {current.isOnline ? (
+                      <>
+                        <Video className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="truncate text-blue-600 underline max-w-[300px]">{current.meetingLink || 'Tautan belum diatur'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span>{current.room?.name || 'Ruangan belum diatur'}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2 border-t">
+            <Button variant="outline" onClick={() => setShowFinalizeConfirm(false)} disabled={isFinalizing} className="px-4">
+              Batal
+            </Button>
+            <Button
+              disabled={isFinalizing}
+              onClick={() => {
+                doFinalizeSchedule(seminarId, {
+                  onSuccess: () => {
+                    toast.success('Jadwal seminar berhasil ditetapkan.');
+                    setShowFinalizeConfirm(false);
+                  },
+                  onError: () => toast.error('Gagal menetapkan jadwal seminar.'),
+                });
+              }}
+              className="px-4 font-semibold"
+            >
+              {isFinalizing ? <Spinner className="h-4 w-4 animate-spin mr-2" /> : null}
+              Jadwalkan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Schedule form modal ── */}
       <Dialog
