@@ -1,7 +1,6 @@
 import { Check, Clock } from 'lucide-react';
 import type { ThesisSeminarStatus } from '@/types/seminar.types';
 import { cn } from '@/lib/utils';
-
 const STEPS = [
   { key: 'checklist', label: 'Checklist Persyaratan' },
   { key: 'verified', label: 'Dokumen Seminar Lengkap' },
@@ -33,11 +32,11 @@ export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: Semi
   const completedCount = activeIndex + 1;
 
   return (
-    <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[18px_18px_14px] h-full flex flex-col box-border">
-      <div className="text-[13px] font-bold text-[#111] mb-1.5">
+    <div className="bg-card border border-gray-200 rounded-[10px] p-[18px_18px_14px] h-full flex flex-col box-border">
+      <div className="text-base font-semibold text-foreground mb-1.5">
         Status Seminar
       </div>
-      <div className="text-[10.5px] text-[#aaa] mb-[18px]">
+      <div className="text-xs text-muted-foreground mb-[18px]">
         Progres pengajuan seminar hasil
       </div>
 
@@ -58,7 +57,7 @@ export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: Semi
                 <div
                   className={cn(
                     "absolute top-[13px] bottom-[-13px] w-[2px] z-[0]",
-                    i < activeIndex ? "bg-[#16A34A]" : "bg-[#d1d5db]"
+                    i < activeIndex ? "bg-[#16A34A]" : "bg-muted"
                   )}
                   style={{ left: '-21px' }}
                 />
@@ -82,8 +81,8 @@ export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: Semi
               {/* Step name */}
               <div
                 className={cn(
-                  "text-[12px] font-semibold leading-[1.3] mb-0.5",
-                  isActive ? "text-[#111]" : "text-[#aaa]"
+                  "text-sm font-semibold leading-[1.3] mb-0.5",
+                  isActive ? "text-foreground" : "text-muted-foreground"
                 )}
               >
                 {step.label}
@@ -92,8 +91,8 @@ export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: Semi
               {/* Step status */}
               <div
                 className={cn(
-                  "inline-flex items-center gap-1 text-[10.5px] font-medium",
-                  isActive ? "text-[#16A34A]" : "text-[#bbb]"
+                  "inline-flex items-center gap-1 text-xs font-medium",
+                  isActive ? "text-[#16A34A]" : "text-muted-foreground"
                 )}
               >
                 {isActive ? 'Terpenuhi' : 'Menunggu'}
@@ -104,18 +103,18 @@ export function StudentThesisSeminarStatusCard({ status, allChecklistMet }: Semi
       </div>
 
       {/* Progress summary */}
-      <div className="mt-[18px] pt-[14px] border-t border-[#f0ede8]">
+      <div className="mt-[18px] pt-[14px] border-t border-gray-200">
         <div className="flex justify-between items-center mb-1.5">
-          <span className="text-[10.5px] text-[#888] font-medium">Progres Keseluruhan</span>
-          <span className="text-[11px] font-bold text-[#16A34A]">{spinePct}%</span>
+          <span className="text-xs text-muted-foreground font-medium">Progres Keseluruhan</span>
+          <span className="text-xs font-bold text-[#16A34A]">{spinePct}%</span>
         </div>
-        <div className="bg-[#e8e8e4] rounded-full h-[6px] overflow-hidden">
+        <div className="bg-muted rounded-full h-[6px] overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 transition-all duration-300"
             style={{ width: `${spinePct}%` }}
           />
         </div>
-        <div className="text-[10px] text-[#aaa] mt-1.5 font-medium">
+        <div className="text-xs text-muted-foreground mt-1.5 font-medium">
           {completedCount > 0 ? `${completedCount} dari ${STEPS.length} tahap selesai` : 'Checklist Persyaratan Belum Terpenuhi'}
         </div>
       </div>

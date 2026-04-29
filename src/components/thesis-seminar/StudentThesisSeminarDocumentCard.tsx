@@ -38,14 +38,14 @@ export function StudentThesisSeminarDocumentCard({
   const showLockNotice = isLocked && (!documents || documents.length === 0);
 
   return (
-    <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px]">
-      <div className="text-[13px] font-bold text-[#111] mb-[14px]">
+    <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
+      <div className="text-base font-semibold text-foreground mb-[14px]">
         Upload Dokumen Seminar
       </div>
 
       {showLockNotice && (
-        <div className="flex items-center gap-2 text-[11.5px] text-[#888] mb-3 p-[8px_12px] bg-[#fafaf8] border border-[#e8e8e4] rounded-[7px]">
-          <AlertCircle size={14} className="shrink-0 text-[#aaa]" />
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 p-[8px_12px] bg-muted border border-gray-200 rounded-[7px]">
+          <AlertCircle size={14} className="shrink-0 text-muted-foreground" />
           <span>Lengkapi checklist persyaratan untuk mengakses fitur upload.</span>
         </div>
       )}
@@ -111,7 +111,7 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     .map((ext) => (ext.startsWith('.') ? ext : `.${ext}`))
     .join(',');
 
-  const fileStatusColor = isApproved ? 'text-[#16A34A]' : isDeclined ? 'text-[#dc2626]' : 'text-[#888]';
+  const fileStatusColor = isApproved ? 'text-[#16A34A]' : isDeclined ? 'text-[#dc2626]' : 'text-muted-foreground';
   const fileStatusText = isApproved
     ? '✓ Terverifikasi'
     : isDeclined
@@ -121,7 +121,7 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
   return (
     <div
       className={cn(
-        "flex items-center gap-[10px] p-[7px_10px] rounded-[7px] bg-[#fafaf8] border border-[#eeece8] transition-all duration-200",
+        "flex items-center gap-[10px] p-[7px_10px] rounded-[7px] bg-card border border-gray-200 transition-all duration-200",
         isLocked && "opacity-[0.55]"
       )}
     >
@@ -132,7 +132,7 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
           isApproved ? "bg-[#dcfce7] text-[#16A34A]" : 
           isDeclined ? "bg-[#fef2f2] text-[#dc2626]" : 
           isUploaded ? "bg-[#dbeafe] text-[#2563eb]" : 
-          "bg-[#f3f4f6] text-[#9ca3af]"
+          "bg-muted text-muted-foreground"
         )}
       >
         <FileText size={14} />
@@ -140,16 +140,16 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
 
       {/* File info */}
       <div className="flex-1 min-w-0">
-        <div className="text-[11.5px] font-medium text-[#111] truncate">
+        <div className="text-sm font-medium text-foreground truncate">
           {docType.label}
         </div>
         {isUploaded && (
           <>
-            <div className={cn("text-[10px] font-medium mt-0.5", fileStatusColor)}>
+            <div className={cn("text-xs font-medium mt-0.5", fileStatusColor)}>
               {fileStatusText}
             </div>
             {doc?.fileName && (
-              <div className="text-[10px] text-[#aaa] truncate">
+              <div className="text-xs text-muted-foreground truncate">
                 {doc.fileName}
               </div>
             )}
@@ -171,7 +171,7 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
           <button
             onClick={handleViewClick}
             title="Lihat dokumen"
-            className="px-[9px] py-[4px] rounded-[5px] bg-transparent border border-[#F59E0B] flex items-center gap-1 shrink-0 text-[#F59E0B] hover:bg-amber-50 transition-all duration-200 cursor-pointer text-[10.5px] font-semibold"
+            className="px-[9px] py-[4px] rounded-[5px] bg-transparent border border-gray-200 flex items-center gap-1 shrink-0 text-foreground hover:bg-accent transition-all duration-200 cursor-pointer text-xs font-semibold"
           >
             <Eye size={12} />
             <span>Lihat</span>
@@ -179,7 +179,7 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
         )}
 
         {isUploading ? (
-          <div className="flex items-center gap-1 text-[10.5px] text-[#888]">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Spinner className="h-3 w-3" />
             Upload...
           </div>
@@ -188,12 +188,12 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
             disabled={!canUpload}
             onClick={handleUploadClick}
             className={cn(
-              "shrink-0 px-[9px] py-[4px] text-[10.5px] font-semibold rounded-[5px] transition-all duration-200 cursor-pointer border",
+              "shrink-0 px-[9px] py-[4px] text-xs font-semibold rounded-[5px] transition-all duration-200 cursor-pointer border",
               isDeclined 
-                ? "border-[#ef4444] text-[#ef4444] bg-transparent hover:bg-red-50" 
+                ? "border-destructive text-destructive bg-transparent hover:bg-destructive/10" 
                 : canUpload 
-                  ? "border-[#F59E0B] text-[#F59E0B] bg-transparent hover:bg-amber-50" 
-                  : "border-[#e8e8e4] text-[#bbb] cursor-default"
+                  ? "border-gray-200 text-foreground bg-transparent hover:bg-accent" 
+                  : "border-gray-200 text-muted-foreground cursor-default"
             )}
           >
             {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Ganti File') : 'Upload'}
