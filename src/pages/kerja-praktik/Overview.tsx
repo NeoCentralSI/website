@@ -1,4 +1,4 @@
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +10,14 @@ import { ExplorerTab } from "@/components/internship/student/overview/ExplorerTa
 
 export default function KerjaPraktekOverviewPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get("tab") || "status";
+
+    const handleTabChange = (value: string) => {
+        const params = new URLSearchParams(searchParams);
+        params.set("tab", value);
+        setSearchParams(params, { replace: true });
+    };
 
     useEffect(() => {
         setBreadcrumbs([{ label: "Kerja Praktik" }]);
@@ -30,7 +38,7 @@ export default function KerjaPraktekOverviewPage() {
 
     return (
         <div className="flex flex-1 flex-col p-6 w-full">
-            <Tabs defaultValue="status" className="space-y-6 w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6 w-full">
                 <TabsList>
                     <TabsTrigger value="status">Status Terkini</TabsTrigger>
                     <TabsTrigger value="explorer">Jelajah</TabsTrigger>

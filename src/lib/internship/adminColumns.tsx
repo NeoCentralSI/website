@@ -1,7 +1,7 @@
 import type { AdminApprovedProposalItem, AdminAssignmentProposalItem } from '@/services/internship';
-import type { Column } from '@/components/layout/CustomTable';
+import type { Column } from '@/components/internship/InternshipTable';
 import { Button } from '@/components/ui/button';
-import { FileText, Edit, FileCheck } from 'lucide-react';
+import { FileText, Edit, FileCheck, Upload } from 'lucide-react';
 
 interface AdminApprovedProposalColumnProps {
     onViewLetterDoc: (item: AdminApprovedProposalItem) => void;
@@ -30,6 +30,12 @@ export const getAdminApprovedProposalColumns = ({
             header: 'Perusahaan',
             accessor: 'companyName',
             className: 'text-sm',
+        },
+        {
+            key: 'tahunAjaran',
+            header: 'Thn Ajaran',
+            accessor: 'academicYearName',
+            className: 'text-sm text-center',
         },
         {
             key: 'members',
@@ -68,7 +74,7 @@ export const getAdminApprovedProposalColumns = ({
             header: 'No. Surat Pengantar',
             render: (item) => (
                 <div className="flex justify-center">
-                    <code className="text-[10px] font-mono px-1.5 py-0.5">
+                    <code className="text-[12px] font-mono px-1.5 py-0.5">
                         {item.letterNumber}
                     </code>
                 </div>
@@ -122,6 +128,7 @@ interface AdminAssignmentProposalColumnProps {
     onViewLetterDoc: (item: AdminAssignmentProposalItem) => void;
     onViewResponseDoc: (item: AdminAssignmentProposalItem) => void;
     onVerifyResponse: (item: AdminAssignmentProposalItem, status: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY') => void;
+    onUploadResponse: (item: AdminAssignmentProposalItem) => void;
     onAction: (item: AdminAssignmentProposalItem) => void;
 }
 
@@ -132,6 +139,7 @@ export const getAdminAssignmentProposalColumns = ({
     onViewLetterDoc,
     onViewResponseDoc,
     onVerifyResponse,
+    onUploadResponse,
     onAction,
 }: AdminAssignmentProposalColumnProps): Column<AdminAssignmentProposalItem>[] => [
         {
@@ -149,6 +157,12 @@ export const getAdminAssignmentProposalColumns = ({
             header: 'Perusahaan',
             accessor: 'companyName',
             className: 'text-sm',
+        },
+        {
+            key: 'tahunAjaran',
+            header: 'Thn Ajaran',
+            accessor: 'academicYearName',
+            className: 'text-sm text-center',
         },
         {
             key: 'members',
@@ -199,7 +213,16 @@ export const getAdminAssignmentProposalColumns = ({
                             <span className="text-xs">Lihat</span>
                         </Button>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Upload</span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            title="Upload Surat Balasan"
+                            onClick={() => onUploadResponse(item)}
+                        >
+                            <Upload className="h-4 w-4" />
+                            <span className="text-xs">Upload</span>
+                        </Button>
                     )}
                 </div>
             ),
@@ -211,7 +234,7 @@ export const getAdminAssignmentProposalColumns = ({
             render: (item) => (
                 <div className="flex justify-center">
                     {item.letterNumber !== "—" ? (
-                        <code className="text-[10px] font-mono px-1.5 py-0.5">
+                        <code className="text-[12px] font-mono px-1.5 py-0.5">
                             {item.letterNumber}
                         </code>
                     ) : (

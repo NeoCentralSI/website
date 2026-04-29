@@ -80,7 +80,8 @@ export {
   getAdminAssignmentLetterDetail,
   updateAdminAssignmentLetter,
   getInternshipTemplate,
-  saveInternshipTemplate
+  saveInternshipTemplate,
+  adminUploadCompanyResponse
 } from './internship/admin.service';
 
 // Export sekdep service functions

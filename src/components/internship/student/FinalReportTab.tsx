@@ -12,7 +12,7 @@ interface FinalReportTabProps {
     internship: any;
     isUploading: string | null;
     onFinalReportSubmit?: (title: string, file: File) => void;
-    onFinalFixReportSubmit?: (file: File) => void;
+    onFinalFixReportSubmit?: (title: string, file: File) => void;
 }
 
 export const FinalReportTab: React.FC<FinalReportTabProps> = ({
@@ -22,6 +22,7 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
     onFinalFixReportSubmit
 }) => {
     const [reportTitle, setReportTitle] = useState<string>(internship?.reportTitle || '');
+    const [finalReportTitle, setFinalReportTitle] = useState<string>(internship?.reportFinalTitle || internship?.reportTitle || '');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [previewOpen, setPreviewOpen] = useState<boolean>(false);
@@ -38,7 +39,10 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
         if (internship?.reportTitle) {
             setReportTitle(internship.reportTitle);
         }
-    }, [internship?.reportTitle]);
+        if (internship?.reportFinalTitle) {
+            setFinalReportTitle(internship.reportFinalTitle);
+        }
+    }, [internship?.reportTitle, internship?.reportFinalTitle]);
 
     // Reset edit mode when status changes to APPROVED
     useEffect(() => {
@@ -147,12 +151,20 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
     };
 
     const handleFinalFixSubmit = () => {
-        if (!selectedFinalFixFile) {
+        if (!finalReportTitle.trim()) {
+            toast.error("Judul laporan akhir final wajib diisi");
+            return;
+        }
+        if (!selectedFinalFixFile && !internship?.reportFinalDocId) {
             toast.error("File laporan akhir final wajib diunggah");
             return;
         }
         if (onFinalFixReportSubmit) {
-            onFinalFixReportSubmit(selectedFinalFixFile);
+            if (selectedFinalFixFile) {
+                onFinalFixReportSubmit(finalReportTitle.trim(), selectedFinalFixFile);
+            } else if (internship?.reportFinalDocId) {
+                onFinalFixReportSubmit(finalReportTitle.trim(), new File([], 'dummy.pdf'));
+            }
             setSelectedFinalFixFile(null);
             setIsFinalFixEditMode(false);
             const fileInput = document.getElementById('upload-final-fix-internal') as HTMLInputElement;
@@ -476,9 +488,13 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                                     {hasFinalFixDocument && !isFinalFixEditMode && !selectedFinalFixFile && (
                                         <div className="flex flex-col gap-3">
                                             <div className="flex flex-col gap-2 p-4 rounded-xl bg-background border">
-                                                <div className="flex items-center justify-between text-sm">
+                                                <div className="flex flex-col gap-1 text-sm">
+                                                    <span className="font-semibold text-primary">Judul Laporan Final:</span>
+                                                    <span className="leading-relaxed">{internship.reportFinalTitle || internship.reportTitle}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-xs pt-2 border-t mt-1">
                                                     <span className="font-medium">Status Pengiriman:</span>
-                                                    <span className="text-muted-foreground">{new Date(internship.reportFinalUploadedAt || '').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                                    <span className="text-muted-foreground">{internship.reportFinalUploadedAt ? new Date(internship.reportFinalUploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</span>
                                                 </div>
                                             </div>
                                             
@@ -509,86 +525,102 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                                     )}
 
                                     {(isFinalFixEditMode || !hasFinalFixDocument) && (
-                                        <div className="flex flex-col gap-2">
-                                            <Label htmlFor="upload-final-fix-internal" className="text-sm font-medium">
-                                                File Laporan Final Fix {!hasFinalFixDocument && <span className="text-destructive">*</span>}
-                                            </Label>
-                                            <input 
-                                                type="file" 
-                                                id="upload-final-fix-internal" 
-                                                className="hidden" 
-                                                accept=".pdf"
-                                                onChange={handleFinalFixFileSelect}
-                                                disabled={isUploading === 'FINAL_FIX_REPORT' || isApprovedFinalFix}
-                                            />
-                                            
-                                            {selectedFinalFixFile ? (
-                                                <div className="flex items-center justify-between p-4 rounded-xl bg-background border">
-                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <FileText className="h-5 w-5 text-primary shrink-0" />
-                                                        <div className="flex flex-col min-w-0 flex-1">
-                                                            <span className="text-sm font-medium truncate">{selectedFinalFixFile.name}</span>
-                                                            <span className="text-xs text-muted-foreground">
-                                                                {(selectedFinalFixFile.size / 1024 / 1024).toFixed(2)} MB
-                                                            </span>
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="final-report-title" className="text-sm font-medium">
+                                                    Judul Laporan Akhir Final <span className="text-destructive">*</span>
+                                                </Label>
+                                                <Input
+                                                    id="final-report-title"
+                                                    placeholder="Masukkan judul laporan akhir resmi..."
+                                                    value={finalReportTitle}
+                                                    onChange={(e) => setFinalReportTitle(e.target.value)}
+                                                    disabled={isUploading === 'FINAL_FIX_REPORT' || isApprovedFinalFix}
+                                                    className="bg-background"
+                                                />
+                                            </div>
+
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="upload-final-fix-internal" className="text-sm font-medium">
+                                                    File Laporan Final Fix {!hasFinalFixDocument && <span className="text-destructive">*</span>}
+                                                </Label>
+                                                <input 
+                                                    type="file" 
+                                                    id="upload-final-fix-internal" 
+                                                    className="hidden" 
+                                                    accept=".pdf"
+                                                    onChange={handleFinalFixFileSelect}
+                                                    disabled={isUploading === 'FINAL_FIX_REPORT' || isApprovedFinalFix}
+                                                />
+                                                
+                                                {selectedFinalFixFile ? (
+                                                    <div className="flex items-center justify-between p-4 rounded-xl bg-background border">
+                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                            <FileText className="h-5 w-5 text-primary shrink-0" />
+                                                            <div className="flex flex-col min-w-0 flex-1">
+                                                                <span className="text-sm font-medium truncate">{selectedFinalFixFile.name}</span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {(selectedFinalFixFile.size / 1024 / 1024).toFixed(2)} MB
+                                                                </span>
+                                                            </div>
                                                         </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={handleRemoveFinalFixFile}
+                                                            disabled={isUploading === 'FINAL_FIX_REPORT'}
+                                                            className="shrink-0"
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
                                                     </div>
+                                                ) : (
                                                     <Button
                                                         type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={handleRemoveFinalFixFile}
-                                                        disabled={isUploading === 'FINAL_FIX_REPORT'}
-                                                        className="shrink-0"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    className="w-full gap-2"
-                                                    onClick={() => document.getElementById('upload-final-fix-internal')?.click()}
-                                                    disabled={isUploading === 'FINAL_FIX_REPORT' || isApprovedFinalFix}
-                                                >
-                                                    <Upload className="h-4 w-4" />
-                                                    {hasFinalFixDocument ? "Ganti File PDF" : "Pilih File PDF"}
-                                                </Button>
-                                            )}
-
-                                            <div className="pt-2 flex gap-2">
-                                                {isFinalFixEditMode && (
-                                                    <Button 
-                                                        type="button"
                                                         variant="outline"
-                                                        className="flex-1 gap-2"
-                                                        onClick={() => {
-                                                            setIsFinalFixEditMode(false);
-                                                            handleRemoveFinalFixFile();
-                                                        }}
-                                                        disabled={isUploading === 'FINAL_FIX_REPORT'}
+                                                        className="w-full gap-2"
+                                                        onClick={() => document.getElementById('upload-final-fix-internal')?.click()}
+                                                        disabled={isUploading === 'FINAL_FIX_REPORT' || isApprovedFinalFix}
                                                     >
-                                                        Batal
+                                                        <Upload className="h-4 w-4" />
+                                                        {hasFinalFixDocument ? "Ganti File PDF" : "Pilih File PDF"}
                                                     </Button>
                                                 )}
-                                                <Button 
-                                                    className={`${isFinalFixEditMode ? 'flex-1' : 'w-full'} gap-2`}
-                                                    onClick={handleFinalFixSubmit}
-                                                    disabled={isUploading === 'FINAL_FIX_REPORT' || !selectedFinalFixFile}
-                                                >
-                                                    {isUploading === 'FINAL_FIX_REPORT' ? (
-                                                        <>
-                                                            <Spinner className="text-current" />
-                                                            Mengunggah...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Save className="h-4 w-4" />
-                                                            {hasFinalFixDocument ? "Simpan Perubahan" : "Simpan Laporan Akhir Final"}
-                                                        </>
+
+                                                <div className="pt-2 flex gap-2">
+                                                    {isFinalFixEditMode && (
+                                                        <Button 
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="flex-1 gap-2"
+                                                            onClick={() => {
+                                                                setIsFinalFixEditMode(false);
+                                                                handleRemoveFinalFixFile();
+                                                            }}
+                                                            disabled={isUploading === 'FINAL_FIX_REPORT'}
+                                                        >
+                                                            Batal
+                                                        </Button>
                                                     )}
-                                                </Button>
+                                                    <Button 
+                                                        className={`${isFinalFixEditMode ? 'flex-1' : 'w-full'} gap-2`}
+                                                        onClick={handleFinalFixSubmit}
+                                                        disabled={isUploading === 'FINAL_FIX_REPORT' || (!selectedFinalFixFile && !hasFinalFixDocument)}
+                                                    >
+                                                        {isUploading === 'FINAL_FIX_REPORT' ? (
+                                                            <>
+                                                                <Spinner className="text-current" />
+                                                                Mengunggah...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Save className="h-4 w-4" />
+                                                                {hasFinalFixDocument ? "Simpan Perubahan" : "Simpan Laporan Akhir Final"}
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     )}

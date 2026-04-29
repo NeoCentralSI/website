@@ -12,6 +12,16 @@ import { FinalReportTab } from '@/components/internship/student/FinalReportTab';
 import { SeminarTab } from '@/components/internship/student/SeminarTab';
 import { GradesTab } from '@/components/internship/student/GradesTab';
 import EmptyState from '@/components/ui/empty-state';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function InternshipSeminarPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -47,6 +57,14 @@ export default function InternshipSeminarPage() {
     const [isUploading, setIsUploading] = useState<string | null>(null);
     const [generatedAssessmentUrl, setGeneratedAssessmentUrl] = useState<string | null>(null);
 
+    // Confirmation State
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [pendingUpload, setPendingUpload] = useState<{
+        type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT' | 'FINAL_FIX_REPORT';
+        file: File;
+        title?: string;
+    } | null>(null);
+
     useEffect(() => {
         if (internship?.activeAssessmentUrl) {
             setGeneratedAssessmentUrl(internship.activeAssessmentUrl);
@@ -80,7 +98,10 @@ export default function InternshipSeminarPage() {
                     setGeneratedAssessmentUrl(response.data.assessmentInfo.assessmentUrl);
                 }
             } else if (type === 'FINAL_FIX_REPORT') {
-                await submitFinalFixReport(documentId);
+                if (!title || !title.trim()) {
+                    throw new Error("Judul laporan akhir final wajib diisi");
+                }
+                await submitFinalFixReport(title.trim(), documentId);
                 toast.success("Laporan Final Fix & Lembar Pengesahan berhasil diunggah");
             }
             
@@ -94,8 +115,23 @@ export default function InternshipSeminarPage() {
 
     const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT') => {
         const file = e.target.files?.[0];
-        if (file) {
+        if (!file) return;
+
+        // Reset input value so same file can be selected again if cancelled
+        e.target.value = '';
+
+        if (['CERTIFICATE', 'RECEIPT', 'COMPANY_REPORT'].includes(type)) {
+            setPendingUpload({ type, file });
+            setConfirmOpen(true);
+        } else {
             handleUpload(type, file);
+        }
+    };
+
+    const handleConfirmUpload = () => {
+        if (pendingUpload) {
+            handleUpload(pendingUpload.type, pendingUpload.file, pendingUpload.title);
+            setPendingUpload(null);
         }
     };
 
@@ -118,8 +154,22 @@ export default function InternshipSeminarPage() {
         }
     };
 
-    const handleFinalFixReportSubmit = async (file: File) => {
-        await handleUpload('FINAL_FIX_REPORT', file);
+    const handleFinalFixReportSubmit = async (title: string, file: File) => {
+        // If file is empty (dummy file for title-only update), use existing documentId
+        if (file.size === 0 && internship?.reportFinalDocId) {
+            try {
+                setIsUploading('FINAL_FIX_REPORT');
+                await submitFinalFixReport(title, internship.reportFinalDocId);
+                toast.success("Judul laporan akhir final berhasil diperbarui");
+                queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
+            } catch (error: unknown) {
+                toast.error((error as Error).message || "Gagal memperbarui judul");
+            } finally {
+                setIsUploading(null);
+            }
+        } else {
+            await handleUpload('FINAL_FIX_REPORT', file, title);
+        }
     };
 
     const isPelaporan = location.pathname === '/kerja-praktik/seminar/pelaporan';
@@ -217,6 +267,25 @@ export default function InternshipSeminarPage() {
                     <GradesTab internship={internship} />
                 )}
             </div>
+
+            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Unggah Dokumen</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Dokumen ini hanya dapat diunggah satu kali dan tidak dapat diubah kembali setelah berhasil dikirim (kecuali jika nantinya diminta revisi oleh Sekdep).
+                            <br /><br />
+                            Pastikan file yang Anda pilih sudah benar. Apakah Anda yakin ingin melanjutkan?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setPendingUpload(null)}>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmUpload} className="bg-primary hover:bg-primary/90">
+                            Ya, Unggah
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

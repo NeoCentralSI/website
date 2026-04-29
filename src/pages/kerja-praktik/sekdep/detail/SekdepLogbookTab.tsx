@@ -1,15 +1,62 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import React, { useMemo } from 'react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDateId } from '@/lib/text';
-import { ClipboardList, Calendar } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
+import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 interface SekdepLogbookTabProps {
     logbooks: any[];
+    isLocked?: boolean;
 }
 
-export const SekdepLogbookTab: React.FC<SekdepLogbookTabProps> = ({ logbooks }) => {
+export const SekdepLogbookTab: React.FC<SekdepLogbookTabProps> = ({ logbooks, isLocked }) => {
+    const sortedLogbooks = useMemo(() => {
+        return [...(logbooks || [])].sort((a, b) => 
+            new Date(a.activityDate).getTime() - new Date(b.activityDate).getTime()
+        );
+    }, [logbooks]);
+
+    const columns = useMemo<Column<any>[]>(() => [
+        {
+            key: 'index',
+            header: 'Hari Ke',
+            render: (_, index) => index + 1,
+            className: 'text-center w-[80px]',
+        },
+        {
+            key: 'activityDate',
+            header: 'Tanggal',
+            render: (item) => (
+                <div>
+                    {format(new Date(item.activityDate), "EEEE, d MMMM yyyy", { locale: id })}
+                </div>
+            ),
+            className: 'w-[250px]',
+        },
+        {
+            key: 'activityDescription',
+            header: 'Aktivitas',
+            render: (item) => (
+                <div className="leading-relaxed whitespace-pre-wrap py-2">
+                    {item.activityDescription ? item.activityDescription : (isLocked ? "-" : <span className="text-muted-foreground italic">Belum diisi</span>)}
+                </div>
+            ),
+        },
+        {
+            key: 'createdAt',
+            header: 'Waktu Input',
+            render: (item) => (
+                <span className="text-[12px] text-slate-400 tracking-wider">
+                    {formatDateId(item.createdAt)}
+                </span>
+            ),
+            className: 'w-[150px] text-center',
+        },
+    ], [isLocked]);
+
     if (!logbooks || logbooks.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground bg-slate-50/50 rounded-xl border-2 border-dashed">
@@ -36,37 +83,18 @@ export const SekdepLogbookTab: React.FC<SekdepLogbookTabProps> = ({ logbooks }) 
                     </Badge>
                 </div>
             </CardHeader>
-            <CardContent className="px-0">
-                <div className="rounded-xl border bg-white overflow-hidden">
-                    <Table>
-                        <TableHeader className="bg-slate-50/50">
-                            <TableRow>
-                                <TableHead className="w-[180px] font-semibold text-slate-700">Tanggal</TableHead>
-                                <TableHead className="font-semibold text-slate-700">Aktivitas</TableHead>
-                                <TableHead className="w-[150px] font-semibold text-slate-700">Waktu Input</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {logbooks.map((log) => (
-                                <TableRow key={log.id} className="hover:bg-slate-50/30 transition-colors">
-                                    <TableCell className="font-medium align-top">
-                                        <div className="flex items-center gap-2 text-slate-700">
-                                            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                                            {formatDateId(log.activityDate)}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-slate-600 leading-relaxed whitespace-pre-wrap py-4">
-                                        {log.activityDescription || "-"}
-                                    </TableCell>
-                                    <TableCell className="text-[11px] text-slate-400 align-top">
-                                        {formatDateId(log.createdAt)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
+            <div className="flex flex-col gap-4">
+                <InternshipTable
+                    columns={columns}
+                    data={sortedLogbooks}
+                    total={sortedLogbooks.length}
+                    page={1}
+                    pageSize={100}
+                    onPageChange={() => {}}
+                    hidePagination={logbooks.length <= 100}
+                    emptyText="Belum ada entri logbook"
+                />
+            </div>
         </Card>
     );
 };

@@ -8,14 +8,15 @@ import { InternshipListPanel } from '@/components/internship/sekdep/InternshipLi
 import { LecturerWorkloadPanel } from '@/components/internship/sekdep/LecturerWorkloadPanel';
 import { GuidanceMasterPanel } from '@/components/internship/sekdep/GuidanceMasterPanel';
 import { InternshipCpmkPanel } from '@/components/internship/sekdep/InternshipCpmkPanel';
+import { MonitoringPanel } from '@/components/internship/MonitoringPanel';
 
 const TAB_ITEMS: TabItem[] = [
-    { label: "Verifikasi Proposal", to: "/kelola/kerja-praktik/pendaftaran/proposal" },
-
-    { label: "Daftar Mahasiswa", to: "/kelola/kerja-praktik/pendaftaran/mahasiswa" },
-    { label: "Daftar Dosen", to: "/kelola/kerja-praktik/pendaftaran/dosen" },
-    { label: "Bimbingan", to: "/kelola/kerja-praktik/pendaftaran/bimbingan" },
-    { label: "CPMK", to: "/kelola/kerja-praktik/pendaftaran/cpmk" },
+    { label: "Monitoring", to: "/kelola/kerja-praktik/monitoring" },
+    { label: "Verifikasi Proposal", to: "/kelola/kerja-praktik/proposal" },
+    { label: "Daftar Mahasiswa", to: "/kelola/kerja-praktik/mahasiswa" },
+    { label: "Daftar Dosen", to: "/kelola/kerja-praktik/dosen" },
+    { label: "Bimbingan", to: "/kelola/kerja-praktik/bimbingan" },
+    { label: "CPMK", to: "/kelola/kerja-praktik/cpmk" },
 ];
 
 export default function SekdepInternshipProposalPage() {
@@ -28,16 +29,20 @@ export default function SekdepInternshipProposalPage() {
 
     const breadcrumb = useMemo(() => [
         { label: 'Kerja Praktik' },
-        { label: 'Pendaftaran', href: '/kelola/kerja-praktik/pendaftaran' },
+        { label: 'Kelola', href: '/kelola/kerja-praktik' },
         { label: activeTab.label }
     ], [activeTab.label]);
 
     useEffect(() => {
         setBreadcrumbs(breadcrumb);
-        setTitle('Pendaftaran Kerja Praktik');
+        setTitle('Kelola Kerja Praktik');
     }, [breadcrumb, setBreadcrumbs, setTitle]);
 
     const renderContent = () => {
+        if (activeTab.label === "Monitoring") {
+            return <MonitoringPanel />;
+        }
+
         if (activeTab.label === "Verifikasi Proposal") {
             return <ProposalVerificationPanel />;
         }
@@ -65,7 +70,7 @@ export default function SekdepInternshipProposalPage() {
         <div className="p-4 space-y-6">
             <div className="flex items-center gap-2 text-2xl font-semibold">
                 <FileText className="h-6 w-6 text-primary" />
-                <h1>Pendaftaran Kerja Praktik</h1>
+                <h1>Kelola Kerja Praktik</h1>
             </div>
 
             <TabsNav tabs={TAB_ITEMS} />

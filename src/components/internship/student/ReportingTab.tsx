@@ -51,7 +51,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
             if (type === 'CERTIFICATE') return <Clock className="h-5 w-5 text-slate-300" />;
             return <Clock className="h-5 w-5 text-orange-500" />;
         }
-        
+
         switch (status) {
             case 'APPROVED':
                 return <CheckCircle2 className="h-5 w-5 text-green-500" />;
@@ -72,21 +72,21 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-bold text-red-900">Batas Waktu Pelaporan Terlewati!</span>
                         <p className="text-xs text-red-700 leading-relaxed">
-                            Batas waktu pelaporan adalah 1 bulan dari tanggal selesai KP ({endDate?.toLocaleDateString('id-ID')}). 
-                            Sesuai Pedoman KP, Anda terancam sanksi <strong>wajib mengulang Kerja Praktik</strong> pada semester berikutnya. 
+                            Batas waktu pelaporan adalah 1 bulan dari tanggal selesai KP ({endDate?.toLocaleDateString('id-ID')}).
+                            Sesuai Pedoman KP, Anda terancam sanksi <strong>wajib mengulang Kerja Praktik</strong> pada semester berikutnya.
                             Silakan segera hubungi Sekretaris Departemen.
                         </p>
                     </div>
                 </div>
             )}
-            
+
             {isReportingApproaching && !isReportingOverdue && !internship?.logbookDocumentId && (
                 <div className="p-4 rounded-xl border border-orange-200 bg-orange-50 flex gap-4 items-start">
                     <Clock className="h-5 w-5 text-orange-600 mt-0.5" />
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-bold text-orange-900">Masa Pelaporan Segera Berakhir</span>
                         <p className="text-xs text-orange-700 leading-relaxed">
-                            Batas waktu pelaporan Anda adalah {reportingDeadline?.toLocaleDateString('id-ID')}. 
+                            Batas waktu pelaporan Anda adalah {reportingDeadline?.toLocaleDateString('id-ID')}.
                             Segera unggah dokumen wajib untuk menghindari sanksi.
                         </p>
                     </div>
@@ -121,7 +121,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                         <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold uppercase text-muted-foreground">Sertifikat Selesai KP</span>
+                                    <span className="text-xs font-bold uppercase text-muted-foreground">Sertifikat Selesai</span>
                                     <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-bold uppercase border-slate-200 text-slate-400">Opsional</Badge>
                                 </div>
                                 {getStatusIcon(internship?.completionCertificateStatus, !!internship?.completionCertificateDocId, 'CERTIFICATE')}
@@ -146,16 +146,16 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                             </div>
                             {internship?.completionCertificateStatus !== 'APPROVED' && (
                                 <div className="mt-auto pt-2">
-                                    <input 
-                                        type="file" 
-                                        id="upload-cert" 
-                                        className="hidden" 
+                                    <input
+                                        type="file"
+                                        id="upload-cert"
+                                        className="hidden"
                                         accept=".pdf"
                                         onChange={(e) => onFileChange(e, 'CERTIFICATE')}
                                     />
-                                    <Button 
-                                        size="sm" 
-                                        variant="outline" 
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
                                         className="w-full gap-2"
                                         onClick={() => document.getElementById('upload-cert')?.click()}
                                         disabled={!!isUploading}
@@ -165,12 +165,25 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     </Button>
                                 </div>
                             )}
+
+                            {internship?.completionCertificateStatus === 'APPROVED' && internship?.completionCertificateDocId && (
+                                <div className="mt-auto pt-2">
+                                    <Button
+                                        size="sm"
+                                        className="w-full gap-2 font-bold"
+                                        onClick={() => handlePreview(internship.completionCertificateDoc.fileName, internship.completionCertificateDoc.filePath)}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                        Lihat
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Company Receipt (KP-004) */}
                         <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase text-muted-foreground">Tanda Terima (KP-004)</span>
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Tanda Terima</span>
                                 {getStatusIcon(internship?.companyReceiptStatus, !!internship?.companyReceiptDocId)}
                             </div>
                             <div className="flex items-center gap-3">
@@ -193,16 +206,16 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                             </div>
                             {internship?.companyReceiptStatus !== 'APPROVED' && (
                                 <div className="mt-auto pt-2">
-                                    <input 
-                                        type="file" 
-                                        id="upload-receipt" 
-                                        className="hidden" 
+                                    <input
+                                        type="file"
+                                        id="upload-receipt"
+                                        className="hidden"
                                         accept=".pdf"
                                         onChange={(e) => onFileChange(e, 'RECEIPT')}
                                     />
-                                    <Button 
-                                        size="sm" 
-                                        variant="outline" 
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
                                         className="w-full gap-2"
                                         onClick={() => document.getElementById('upload-receipt')?.click()}
                                         disabled={!!isUploading}
@@ -212,12 +225,25 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     </Button>
                                 </div>
                             )}
+
+                            {internship?.companyReceiptStatus === 'APPROVED' && internship?.companyReceiptDocId && (
+                                <div className="mt-auto pt-2">
+                                    <Button
+                                        size="sm"
+                                        className="w-full gap-2 font-bold"
+                                        onClick={() => handlePreview(internship.companyReceiptDoc.fileName, internship.companyReceiptDoc.filePath)}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                        Lihat
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Laporan Kegiatan (KP-002) */}
                         <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Kegiatan (KP-002)</span>
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Kegiatan</span>
                                 {getStatusIcon(internship?.logbookDocumentStatus, !!internship?.logbookDocumentId, 'KP-002')}
                             </div>
                             <div className="flex items-center gap-3">
@@ -246,16 +272,16 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="mt-auto pt-2">
                                 {internship?.logbookDocumentId ? (
-                                    <Button 
-                                        size="sm" 
+                                    <Button
+                                        size="sm"
                                         className="w-full gap-2 font-bold"
                                         onClick={() => handlePreview(internship.logbookDocument.fileName, internship.logbookDocument.filePath)}
                                     >
                                         <Eye className="h-4 w-4" />
-                                        Lihat / Download
+                                        Lihat
                                     </Button>
                                 ) : (
                                     <div className="w-full p-3 rounded-lg bg-slate-100 border border-slate-200 text-center">
@@ -270,7 +296,10 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                         <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Instansi</span>
-                                {getStatusIcon(internship?.companyReportStatus, !!internship?.companyReportDocId)}
+                                {getStatusIcon(
+                                    internship?.fieldAssessmentStatus === 'COMPLETED' ? 'APPROVED' : internship?.companyReportStatus,
+                                    !!internship?.companyReportDocId
+                                )}
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-background rounded-lg border">
@@ -278,7 +307,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
                                     <span className="text-sm font-medium truncate">
-                                        {internship?.companyReportDocId ? "Sudah Diunggah" : "Belum Diunggah"}
+                                        {internship?.fieldAssessmentStatus === 'COMPLETED' ? "Diterima (Sesuai Penilaian)" : (internship?.companyReportDocId ? "Sudah Diunggah" : "Belum Diunggah")}
                                     </span>
                                     {internship?.companyReportDocId && internship.companyReportDoc?.fileName && (
                                         <div className="flex items-center gap-2 mt-1">
@@ -301,8 +330,8 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                                 <div className="flex-1 bg-background border px-2 py-1 rounded text-[10px] truncate font-mono text-muted-foreground">
                                                     {generatedAssessmentUrl}
                                                 </div>
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant="secondary"
                                                     className="h-6 gap-1 text-[10px] px-2"
                                                     onClick={() => window.open(generatedAssessmentUrl, '_blank')}
@@ -318,30 +347,44 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     )}
                                 </div>
                             </div>
-                            {(!internship?.companyReportDocId || internship?.companyReportStatus === 'SUBMITTED' || internship?.companyReportStatus === 'REVISION_NEEDED') && (
+                            {(!internship?.companyReportDocId || internship?.companyReportStatus === 'REVISION_NEEDED') &&
+                                internship?.fieldAssessmentStatus !== 'COMPLETED' && (
+                                    <div className="mt-auto pt-2">
+                                        <input
+                                            type="file"
+                                            id="upload-company-report"
+                                            className="hidden"
+                                            accept=".pdf"
+                                            onChange={(e) => onFileChange(e, 'COMPANY_REPORT')}
+                                        />
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="w-full gap-2"
+                                            onClick={() => document.getElementById('upload-company-report')?.click()}
+                                            disabled={!!isUploading || !internship?.isLogbookLocked}
+                                        >
+                                            {isUploading === 'COMPANY_REPORT' ? <Spinner className="text-current" /> : <Upload className="h-4 w-4" />}
+                                            {internship?.companyReportDocId ? "Ganti File" : "Unggah File"}
+                                        </Button>
+                                        {!internship?.isLogbookLocked && (
+                                            <p className="text-[9px] text-amber-600 font-medium mt-1 leading-tight">
+                                                *Selesaikan logbook terlebih dahulu untuk mengunggah.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                            {internship?.fieldAssessmentStatus === 'COMPLETED' && internship?.companyReportDocId && (
                                 <div className="mt-auto pt-2">
-                                    <input 
-                                        type="file" 
-                                        id="upload-company-report" 
-                                        className="hidden" 
-                                        accept=".pdf"
-                                        onChange={(e) => onFileChange(e, 'COMPANY_REPORT')}
-                                    />
-                                    <Button 
-                                        size="sm" 
-                                        variant="outline" 
-                                        className="w-full gap-2"
-                                        onClick={() => document.getElementById('upload-company-report')?.click()}
-                                        disabled={!!isUploading || !internship?.isLogbookLocked}
+                                    <Button
+                                        size="sm"
+                                        className="w-full gap-2 font-bold"
+                                        onClick={() => handlePreview(internship.companyReportDoc.fileName, internship.companyReportDoc.filePath)}
                                     >
-                                        {isUploading === 'COMPANY_REPORT' ? <Spinner className="text-current" /> : <Upload className="h-4 w-4" />}
-                                        {internship?.companyReportDocId ? "Ganti File" : "Unggah File"}
+                                        <Eye className="h-4 w-4" />
+                                        Lihat
                                     </Button>
-                                    {!internship?.isLogbookLocked && (
-                                        <p className="text-[9px] text-amber-600 font-medium mt-1 leading-tight">
-                                            *Selesaikan logbook terlebih dahulu untuk mengunggah.
-                                        </p>
-                                    )}
                                 </div>
                             )}
                         </div>

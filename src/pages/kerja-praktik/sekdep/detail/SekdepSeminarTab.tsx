@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDateId } from '@/lib/text';
-import { Presentation, Calendar, Clock, MapPin, Link as LinkIcon, MessageSquare } from 'lucide-react';
+import { Presentation, Calendar, Clock, MapPin, Link as LinkIcon, MessageSquare, Users, CheckCircle2, Clock3 } from 'lucide-react';
+import InternshipTable from '@/components/internship/InternshipTable';
 
 interface SekdepSeminarTabProps {
     seminars: any[];
@@ -30,7 +31,7 @@ export const SekdepSeminarTab: React.FC<SekdepSeminarTabProps> = ({ seminars }) 
             </CardHeader>
             <CardContent className="px-0 space-y-6">
                 {seminars.map((seminar) => (
-                    <div key={seminar.id} className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                    <div key={seminar.id} className="bg-white rounded-2xl border-slate-200 border overflow-hidden">
                         <div className="bg-slate-50/50 px-6 py-4 border-b flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -105,6 +106,72 @@ export const SekdepSeminarTab: React.FC<SekdepSeminarTabProps> = ({ seminars }) 
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        
+                        {/* 4. Audience Table Section */}
+                        <div className="px-6 pb-6 pt-2 border-t border-slate-50">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Users className="h-4 w-4 text-indigo-500" />
+                                <h4 className="text-sm font-bold text-slate-700">Daftar Kehadiran Peserta</h4>
+                            </div>
+                            
+                            <InternshipTable
+                                hidePagination
+                                columns={[
+                                    {
+                                        key: 'student',
+                                        header: 'Mahasiswa',
+                                        render: (row: any) => (
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-slate-700 text-xs">{row.studentName}</span>
+                                                <span className="text-[10px] text-slate-400 font-medium">{row.nim}</span>
+                                            </div>
+                                        )
+                                    },
+                                    {
+                                        key: 'registeredAt',
+                                        header: 'Waktu Presensi',
+                                        render: (row: any) => (
+                                            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
+                                                <Clock3 className="h-3 w-3 opacity-60" />
+                                                {row.registeredAt ? formatDateId(row.registeredAt) : '-'}
+                                            </div>
+                                        )
+                                    },
+                                    {
+                                        key: 'status',
+                                        header: 'Status Validasi',
+                                        className: 'text-right',
+                                        render: (row: any) => (
+                                            <div className="flex justify-end">
+                                                {row.validatedAt ? (
+                                                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[9px] font-bold h-5 px-1.5">
+                                                        <CheckCircle2 className="h-2.5 w-2.5 mr-1" />
+                                                        Valid
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-100 text-[9px] font-bold h-5 px-1.5">
+                                                        Belum Valid
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        )
+                                    }
+                                ]}
+                                data={(seminar.audiences || []).map((a: any) => ({
+                                    studentId: a.studentId,
+                                    studentName: a.student?.user?.fullName || 'Unknown',
+                                    nim: a.student?.user?.identityNumber || '-',
+                                    registeredAt: a.createdAt,
+                                    validatedAt: a.validatedAt,
+                                }))}
+                                total={(seminar.audiences || []).length}
+                                page={1}
+                                pageSize={100}
+                                onPageChange={() => {}}
+                                emptyText="Belum ada peserta yang melakukan presensi"
+                                className="border-none shadow-none p-0"
+                            />
                         </div>
                     </div>
                 ))}

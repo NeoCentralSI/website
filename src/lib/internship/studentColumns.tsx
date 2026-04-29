@@ -1,5 +1,5 @@
 import type { InternshipProposalItem } from '@/services/internship';
-import type { Column } from '@/components/layout/CustomTable';
+import type { Column } from '@/components/internship/InternshipTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Eye, Check, X, Edit, Trash2, Upload } from 'lucide-react';

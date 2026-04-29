@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {  User, Building2, TrendingUp } from 'lucide-react';
+import { User, Building2, Search, FileText } from 'lucide-react';
+import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 
 interface SekdepGradesTabProps {
     assessment: {
@@ -10,67 +15,141 @@ interface SekdepGradesTabProps {
         fieldStatus: string;
         finalScore: number | null;
         finalGrade: string | null;
+        isLogbookLocked: boolean;
     };
     lecturerScores: any[];
     fieldScores: any[];
+    reportingDocuments?: any;
 }
 
-export const SekdepGradesTab: React.FC<SekdepGradesTabProps> = ({ assessment, lecturerScores, fieldScores }) => {
-    const getScoreColor = (score: number) => {
-        if (score >= 80) return 'text-green-600';
-        if (score >= 60) return 'text-blue-600';
-        if (score >= 40) return 'text-amber-600';
-        return 'text-red-600';
+export const SekdepGradesTab: React.FC<SekdepGradesTabProps> = ({ 
+    assessment, 
+    lecturerScores, 
+    fieldScores,
+    reportingDocuments 
+}) => {
+    const [typeFilter, setTypeFilter] = useState<'all' | 'LECTURER' | 'FIELD'>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [previewOpen, setPreviewOpen] = useState(false);
+
+    const combinedScores = useMemo(() => {
+        const lecturer = (lecturerScores || []).map(s => ({ ...s, type: 'LECTURER' }));
+        const field = (fieldScores || []).map(s => ({ ...s, type: 'FIELD' }));
+        return [...lecturer, ...field].sort((a, b) => {
+            return (a.cpmk?.code || '').localeCompare(b.cpmk?.code || '', undefined, { numeric: true });
+        });
+    }, [lecturerScores, fieldScores]);
+
+    const filteredScores = useMemo(() => {
+        return combinedScores.filter(s => {
+            const matchType = typeFilter === 'all' || s.type === typeFilter;
+            const matchSearch = !searchQuery || 
+                s.cpmk?.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                s.cpmk?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchType && matchSearch;
+        });
+    }, [combinedScores, typeFilter, searchQuery]);
+
+    const columns = useMemo<Column<any>[]>(() => [
+        {
+            key: 'cpmk',
+            header: 'CPMK',
+            render: (item) => (
+                <div className="py-1">
+                    <div className="font-bold text-slate-700 tracking-tight">{item.cpmk?.code}</div>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed max-w-[250px]">{item.cpmk?.name}</p>
+                </div>
+            ),
+            className: 'w-[280px]',
+        },
+        {
+            key: 'level',
+            header: 'Level Penilaian',
+            render: (item) => (
+                <div className="font-medium text-slate-700">
+                    {item.rubricLevel?.levelName || "-"}
+                </div>
+            ),
+            className: 'w-[150px]',
+        },
+        {
+            key: 'rubric',
+            header: 'Kriteria Rubrik',
+            render: (item) => (
+                <div 
+                    className="text-[13px] text-slate-600 italic leading-relaxed py-2 prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: item.rubricLevel?.rubricLevelDescription || "Tanpa deskripsi rubrik" }}
+                />
+            ),
+        },
+        {
+            key: 'score',
+            header: 'Skor',
+            render: (item) => (
+                <div className="text-center">
+                    <div className="font-black">
+                        {item.score}
+                    </div>
+                </div>
+            ),
+            className: 'w-[80px] text-center',
+        },
+        {
+            key: 'type',
+            header: 'Penilai',
+            render: (item) => (
+                <Badge variant="outline" className={cn(
+                    "font-medium px-2.5 py-0.5 rounded-full border text-[10px]",
+                    item.type === 'LECTURER' 
+                        ? 'text-purple-700 border-purple-200 bg-purple-50' 
+                        : 'text-blue-700 border-blue-200 bg-blue-50'
+                )}>
+                    {item.type === 'LECTURER' ? (
+                        <div className="flex items-center gap-1.5">
+                            <User className="h-3 w-3" />
+                            Dosen
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5">
+                            <Building2 className="h-3 w-3" />
+                            Lapangan
+                        </div>
+                    )}
+                </Badge>
+            ),
+            className: 'w-[130px] items-center text-center',
+        },
+    ], []);
+
+    const getGradeColor = (grade: string | null) => {
+        if (!grade || grade === '-') return 'text-slate-400';
+        const g = grade.toUpperCase();
+        if (['A', 'A-', 'B+', 'B', 'B-'].includes(g)) return 'text-emerald-600';
+        if (['C+', 'C'].includes(g)) return 'text-amber-600';
+        if (['D', 'E'].includes(g)) return 'text-red-600';
+        return 'text-slate-600';
     };
 
-    const ScoresTable = ({ title, icon: Icon, scores, status, colorClass }: any) => (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className={`p-2 rounded-lg ${colorClass} bg-opacity-10`}>
-                        <Icon className={`h-4 w-4 ${colorClass}`} />
-                    </div>
-                    <h3 className="font-bold text-slate-800">{title}</h3>
+    const isGraded = assessment.finalGrade && assessment.finalGrade !== '-';
+    const isPassing = isGraded && !['D', 'E'].includes(assessment.finalGrade!);
+
+    const TotalRow = (
+        <div className="bg-slate-50/50 border-t border-slate-200 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+                <div>
+                    <p className="font-bold uppercase tracking-wide">Nilai Akhir</p>
                 </div>
-                <Badge variant={status === 'SUBMITTED' ? 'default' : 'outline'} className={status === 'SUBMITTED' ? 'bg-green-600' : ''}>
-                    {status === 'SUBMITTED' ? 'Selesai' : 'Belum Tersedia'}
-                </Badge>
             </div>
             
-            <div className="rounded-xl border bg-white overflow-hidden shadow-sm">
-                <Table>
-                    <TableHeader className="bg-slate-50/50 text-[11px] uppercase tracking-wider">
-                        <TableRow>
-                            <TableHead className="font-bold">CPMK</TableHead>
-                            <TableHead className="text-right font-bold w-[100px]">Skor</TableHead>
-                            <TableHead className="font-bold">Kriteria Rubrik</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {scores.length > 0 ? scores.map((score: any) => (
-                            <TableRow key={score.id}>
-                                <TableCell className="align-top py-4">
-                                    <div className="font-bold text-slate-700">{score.cpmk?.code}</div>
-                                    <p className="text-xs text-slate-500 mt-0.5 leading-snug">{score.cpmk?.name}</p>
-                                </TableCell>
-                                <TableCell className="text-right font-black text-lg py-4">
-                                    <span className={getScoreColor(score.score)}>{score.score}</span>
-                                </TableCell>
-                                <TableCell className="align-top py-4">
-                                    <p className="text-xs text-slate-600 italic leading-relaxed">
-                                        {score.rubricLevel?.rubricLevelDescription || "Tanpa deskripsi rubrik"}
-                                    </p>
-                                </TableCell>
-                            </TableRow>
-                        )) : (
-                            <TableRow>
-                                <TableCell colSpan={3} className="h-24 text-center text-slate-400 italic text-sm">
-                                    Data penilaian belum diinput oleh assessor.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+            <div className="flex items-center gap-6">
+                <div className="text-center sm:text-right">
+                    <div className="flex items-baseline gap-2 justify-center sm:justify-end">
+                        <span className="text-2xl font-black text-slate-900 leading-none">{assessment.finalScore || "0"}</span>
+                        <span className={cn("text-xl font-black self-center leading-none", getGradeColor(assessment.finalGrade))}>
+                            {assessment.finalGrade || "-"}
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -78,60 +157,93 @@ export const SekdepGradesTab: React.FC<SekdepGradesTabProps> = ({ assessment, le
     return (
         <Card className="border-none shadow-none bg-transparent pt-0">
             <CardHeader className="px-0 pt-0">
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between">
                     <div>
-                        <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-800">
+                        <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-800 tracking-tight">
                             Penilaian Akhir
                         </CardTitle>
                         <p className="text-sm text-slate-500 mt-1">
-                            Breakdown nilai berdasarkan capaian CPMK dari Dosen Pembimbing dan Pembimbing Lapangan.
+                            Detail komponen penilaian dari Dosen Pembimbing dan Pembimbing Lapangan.
                         </p>
                     </div>
-                </div>
-            </CardHeader>
-            <CardContent className="px-0 space-y-12">
-                {/* Summary Card */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 text-slate-900 flex items-center justify-between overflow-hidden relative">
-                    <div className="absolute top-0 right-0 p-4 opacity-5">
-                        <TrendingUp className="h-24 w-24 text-primary" />
-                    </div>
-                    <div className="space-y-1 relative z-10">
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Nilai Akhir Mahasiswa</p>
-                        <div className="flex items-baseline gap-3">
-                            <h2 className="text-5xl font-black text-slate-900">{assessment.finalScore || "0"}</h2>
-                            <span className="text-2xl font-bold text-amber-600">{assessment.finalGrade || "-"}</span>
-                        </div>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-4 border border-gray-200 relative z-10 ">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 mb-2 uppercase tracking-tight">
-                            Status Kelulusan
-                        </div>
-                        <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-200 transition-colors">
-                            {assessment.finalScore && assessment.finalScore >= 60 ? 'LULUS' : 'Status Pending'}
+                    <div className="flex items-center gap-3">
+                        {reportingDocuments?.fieldAssessmentDocument?.document && (
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 gap-2 font-bold text-[11px] uppercase tracking-wider border-slate-200 hover:bg-slate-50 transition-colors"
+                                onClick={() => setPreviewOpen(true)}
+                            >
+                                <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                Preview Penilaian Lapangan
+                            </Button>
+                        )}
+                        <Badge className={cn(
+                            "px-4 py-1.5 rounded-full font-bold text-[11px] tracking-wide",
+                            !isGraded 
+                                ? "bg-slate-100 text-slate-500 border-slate-200" 
+                                : isPassing
+                                    ? "bg-emerald-100 text-emerald-700 border-emerald-200" 
+                                    : "bg-red-100 text-red-700 border-red-200"
+                        )}>
+                            {!isGraded ? 'PENDING' : isPassing ? 'LULUS' : 'TIDAK LULUS'}
                         </Badge>
                     </div>
                 </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                    {/* Lecturer Assessment */}
-                    <ScoresTable 
-                        title="Penilaian Dosen Pembimbing"
-                        icon={User}
-                        scores={lecturerScores}
-                        status={assessment.lecturerStatus}
-                        colorClass="text-purple-600"
-                    />
-
-                    {/* Field Assessment */}
-                    <ScoresTable 
-                        title="Penilaian Pembimbing Lapangan"
-                        icon={Building2}
-                        scores={fieldScores}
-                        status={assessment.fieldStatus}
-                        colorClass="text-blue-600"
-                    />
+            </CardHeader>
+            <CardContent className="px-0 space-y-6">
+                <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
+                        <InternshipTable 
+                            columns={columns}
+                            data={filteredScores}
+                            total={filteredScores.length}
+                            page={1}
+                            pageSize={100}
+                            onPageChange={() => {}}
+                            hidePagination={true}
+                            emptyText="Tidak ada data penilaian yang ditemukan."
+                            appendRow={TotalRow}
+                            actions={                                                   
+                                <div className="flex flex-col sm:flex-row items-center gap-3">
+                                    <div className="relative w-full sm:w-[280px]">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                        <Input 
+                                            placeholder="Cari CPMK..." 
+                                            className="pl-9 h-10 rounded-xl border-slate-200 focus:ring-primary/20 focus:border-primary transition-all text-sm"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                                        <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
+                                            <SelectTrigger className="w-full sm:w-[180px] h-10 rounded-xl border-slate-200 bg-white shadow-sm hover:border-primary/50 transition-all text-sm">
+                                                <SelectValue placeholder="Semua Tipe" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                                                <SelectItem value="all" className="text-sm">Semua Tipe</SelectItem>
+                                                <SelectItem value="LECTURER" className="text-sm">Dosen Pembimbing</SelectItem>
+                                                <SelectItem value="FIELD" className="text-sm">Pembimbing Lapangan</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            }
+                        />
+                    </div>
                 </div>
             </CardContent>
+
+            {reportingDocuments?.fieldAssessmentDocument?.document && (
+                <DocumentPreviewDialog 
+                    open={previewOpen}
+                    onOpenChange={setPreviewOpen}
+                    fileName={reportingDocuments.fieldAssessmentDocument.document.fileName}
+                    filePath={reportingDocuments.fieldAssessmentDocument.document.filePath}
+                />
+            )}
         </Card>
     );
 };
+
+
