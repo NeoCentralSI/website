@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useRespondExaminerAssignment } from '@/hooks/thesis-seminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { toast } from 'sonner';
-import { CheckCircle2, XCircle, UserCheck, BookOpen, GraduationCap } from 'lucide-react';
+import { CheckCircle2, XCircle, BookOpen, GraduationCap } from 'lucide-react';
 import type { ExaminerRequestItem } from '@/types/seminar.types';
 
 interface LecturerThesisSeminarExaminerResponseDialogProps {

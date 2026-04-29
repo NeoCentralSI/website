@@ -67,7 +67,7 @@ export default function ThesisSeminarDetailPage() {
     );
   }
 
-  const d = detail;
+  const d = detail as any;
 
   // Tab visibility based on lifecycle
   const showScheduling = true;

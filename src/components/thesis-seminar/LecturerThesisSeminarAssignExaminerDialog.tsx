@@ -216,15 +216,10 @@ export function LecturerThesisSeminarAssignExaminerDialog({
       )
       .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    return { ...base, sharedSlots, combinedEvents };
+    return { ...base, sharedSlots, combinedIntervals: combinedEvents as any };
   }, [selectedLecturers]);
 
-  const workloadCountVariant = (count?: number): 'success' | 'warning' | 'destructive' | 'secondary' => {
-    if (typeof count !== 'number') return 'secondary';
-    if (count <= 2) return 'success';
-    if (count <= 5) return 'warning';
-    return 'destructive';
-  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -282,7 +277,6 @@ export function LecturerThesisSeminarAssignExaminerDialog({
                       const isSelected = selectedIds.includes(l.id);
                       const isLocked = lockedIds.includes(l.id);
                       const isRejected = rejectedIds.has(l.id);
-                      const recommendationVariant = l.hasScheduleConflict ? 'destructive' : 'info';
                       return (
                         <label
                           key={l.id}
@@ -303,11 +297,6 @@ export function LecturerThesisSeminarAssignExaminerDialog({
                               <Badge variant="outline" className="text-[10px]">
                                 Acara Mendatang: {l.upcomingCount ?? 0}
                               </Badge>
-                              {l.isPreviousExaminer && (
-                                <Badge variant="secondary" className="text-[10px] bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200">
-                                  Penguji Sebelumnya
-                                </Badge>
-                              )}
                             </div>
                           </div>
                           {isLocked && (
@@ -372,11 +361,11 @@ export function LecturerThesisSeminarAssignExaminerDialog({
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">Jadwal Kesibukan:</p>
               <ScrollArea className="h-[140px] rounded-md border p-2">
-                {(scheduleDashboard.combinedEvents ?? []).length === 0 ? (
+                {(scheduleDashboard.combinedIntervals ?? []).length === 0 ? (
                   <p className="text-xs text-muted-foreground">Belum ada acara terjadwal untuk profil terpilih.</p>
                 ) : (
                   <div className="space-y-2">
-                    {(scheduleDashboard.combinedEvents ?? []).map((ev: any, idx: number) => (
+                    {(scheduleDashboard.combinedIntervals ?? []).map((ev: any, idx: number) => (
                       <div key={`${ev.type}-${ev.date}-${ev.lecturerName}-${idx}`} className="rounded border p-2">
                         <div className="text-sm font-medium">
                           {ev.title} · {toTitleCaseName(ev.studentName)}

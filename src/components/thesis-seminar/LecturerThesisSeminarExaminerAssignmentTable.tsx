@@ -49,11 +49,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSeminar, setSelectedSeminar] = useState<AssignmentSeminarItem | null>(null);
 
-  const queryParams = useMemo(() => {
-    const params: { search?: string } = {};
-    if (search.trim()) params.search = search.trim();
-    return params;
-  }, [search]);
+
 
   const { data: seminars, isLoading, isFetching, error, refetch } = useAssignmentSeminars();
 

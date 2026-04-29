@@ -559,6 +559,7 @@ export interface SeminarRevisionBoardItem {
 
 export interface RespondAssignmentPayload {
   status: 'available' | 'unavailable';
+  unavailableReasons?: string | null;
 }
 
 export interface RespondAssignmentResponse {
