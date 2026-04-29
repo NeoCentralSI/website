@@ -25,6 +25,7 @@ import {
 } from '@/hooks/thesis-seminar';
 import { Users, Plus, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRole, useAuth } from '@/hooks/shared';
 
 interface Props {
   seminarId: string;
@@ -32,52 +33,59 @@ interface Props {
 }
 
 export function ThesisSeminarAudiencePanel({ seminarId, detail }: Props) {
-  return (
-    <div className="space-y-6">
-      {/* 1. Admin Management View */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold px-1">Manajemen Admin (Import/Export/Manage)</h3>
-        <AdminAudienceContent seminarId={seminarId} detail={detail} />
-      </div>
+  const { isAdmin } = useRole();
+  const { user } = useAuth();
+  
+  const _isAdmin = isAdmin();
+  const _isSupervisor = !!user?.lecturer?.id && detail?.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
-      <hr className="border-dashed" />
+  const allowedStatuses = ['passed', 'passed_with_revision', 'failed'];
+  const isFinalized = allowedStatuses.includes(detail?.status);
 
-      {/* 2. Supervisor/Dosen Approval View */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold px-1">Persetujuan Dosen (Approve/Unapprove)</h3>
-        <SupervisorAudienceContent seminarId={seminarId} />
-      </div>
+  let isOngoing = false;
+  if (detail?.status === 'ongoing') {
+    isOngoing = true;
+  } else if (detail?.status === 'scheduled' && detail.date && detail.startTime) {
+    const dateObj = new Date(detail.date);
+    const timeObj = new Date(detail.startTime);
+    const seminarStart = new Date(
+      dateObj.getUTCFullYear(),
+      dateObj.getUTCMonth(),
+      dateObj.getUTCDate(),
+      timeObj.getUTCHours(),
+      timeObj.getUTCMinutes()
+    );
+    isOngoing = new Date() >= seminarStart;
+  }
 
-      <hr className="border-dashed" />
+  if (!isFinalized && !isOngoing) {
+    return null;
+  }
 
-      {/* 3. General Viewer View */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold px-1">Tampilan Publik/Mahasiswa (View Only)</h3>
-        <ViewerAudienceContent seminarId={seminarId} />
-      </div>
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────
-// Admin view
-// ──────────────────────────────────────────────────────────────
-
-function AdminAudienceContent({ seminarId, detail }: { seminarId: string; detail: any }) {
   const isArchived = !detail.registeredAt;
-  const { data: audiences, isLoading, isFetching, refetch } = useAdminThesisSeminarAudiences(seminarId);
+  
+  // Admin Data & Hooks
+  const adminQuery = useAdminThesisSeminarAudiences(seminarId);
   const { data: studentOptions } = useAdminThesisSeminarAudienceStudentOptions(seminarId, isArchived);
   const addMutation = useAddAdminThesisSeminarAudience();
   const removeMutation = useRemoveAdminThesisSeminarAudience();
   const importMutation = useImportAdminThesisSeminarAudiences();
+  
+  // Public/Supervisor Data & Hooks
+  const publicQuery = useSeminarAudiences(seminarId);
+  const approveMutation = useApproveAudience();
+  const unapproveMutation = useUnapproveAudience();
   const exportMutation = useExportAdminThesisSeminarAudiences();
 
   const [addOpen, setAddOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const rows = Array.isArray(audiences) ? audiences : (audiences as any)?.audiences || [];
-  const isRefreshing = isFetching && !isLoading;
+  const currentQuery = _isAdmin ? adminQuery : publicQuery;
+  const rows = Array.isArray(currentQuery.data) 
+    ? currentQuery.data 
+    : (currentQuery.data as any)?.audiences || [];
+  const isRefreshing = currentQuery.isFetching && !currentQuery.isLoading;
 
   const handleAdd = async () => {
     if (!selectedStudentId) return;
@@ -91,10 +99,9 @@ function AdminAudienceContent({ seminarId, detail }: { seminarId: string; detail
     }
   };
 
-  const handleRemove = async (row: any) => {
-    if (!row.studentId) return;
+  const handleRemove = async (studentId: string) => {
     try {
-      await removeMutation.mutateAsync({ seminarId, studentId: row.studentId });
+      await removeMutation.mutateAsync({ seminarId, studentId });
       toast.success('Peserta berhasil dihapus');
     } catch (err) {
       toast.error((err as Error).message || 'Gagal menghapus peserta');
@@ -116,174 +123,127 @@ function AdminAudienceContent({ seminarId, detail }: { seminarId: string; detail
     });
   };
 
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Daftar Hadir (Admin) — {rows.length} Peserta
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <Loading size="lg" text="Memuat daftar hadir admin..." />
-          </div>
-        ) : (
-          <ThesisSeminarAudienceTable
-            rows={rows}
-            showAction={true}
-            onUnapprove={handleRemove}
-            loading={isRefreshing}
-            actions={
-              <div className="flex items-center gap-2">
-                <RefreshButton onClick={() => refetch()} isRefreshing={isRefreshing} />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleExport}
-                  disabled={exportMutation.isPending}
-                >
-                  {exportMutation.isPending ? (
-                    <Spinner className="h-3 w-3 mr-1" />
-                  ) : (
-                    <Download className="h-3 w-3 mr-1" />
-                  )}
-                  Export
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={importMutation.isPending}
-                >
-                  {importMutation.isPending ? (
-                    <Spinner className="h-3 w-3 mr-1" />
-                  ) : (
-                    <Upload className="h-3 w-3 mr-1" />
-                  )}
-                  Import
-                </Button>
-                <Button size="sm" onClick={() => setAddOpen(true)}>
-                  <Plus className="h-3 w-3 mr-1" />
-                  Tambah
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void handleImport(file);
-                    e.target.value = '';
-                  }}
-                />
-              </div>
-            }
-          />
+  if (currentQuery.isLoading) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <Loading size="lg" text="Memuat data peserta..." />
+      </div>
+    );
+  }
+
+  const renderActions = () => {
+    return (
+      <div className="flex items-center gap-2">
+        <RefreshButton onClick={() => currentQuery.refetch()} isRefreshing={isRefreshing} />
+        {(!isOngoing || _isAdmin) && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleExport}
+            disabled={exportMutation.isPending}
+          >
+            {exportMutation.isPending ? (
+              <Spinner className="h-3 w-3 mr-1" />
+            ) : (
+              <Download className="h-3 w-3 mr-1" />
+            )}
+            Export
+          </Button>
         )}
-      </CardContent>
-
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Tambah Peserta</DialogTitle>
-          </DialogHeader>
-          <div className="py-2">
-            <select
-              value={selectedStudentId}
-              onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        
+        {_isAdmin && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importMutation.isPending}
             >
-              <option value="">Pilih mahasiswa...</option>
-              {(studentOptions ?? []).map((s: any) => (
-                <option key={s.studentId} value={s.studentId}>
-                  {s.name} ({s.nim})
-                </option>
-              ))}
-            </select>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Batal</Button>
-            <Button onClick={() => void handleAdd()} disabled={!selectedStudentId || addMutation.isPending}>
-              {addMutation.isPending ? <><Spinner className="mr-2 h-4 w-4" />Menambahkan...</> : 'Tambah'}
+              {importMutation.isPending ? (
+                <Spinner className="h-3 w-3 mr-1" />
+              ) : (
+                <Upload className="h-3 w-3 mr-1" />
+              )}
+              Import
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
-}
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Plus className="h-3 w-3 mr-1" />
+              Tambah
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  void handleImport(file);
+                  e.target.value = '';
+                }
+              }}
+            />
+          </>
+        )}
+      </div>
+    );
+  };
 
-// ──────────────────────────────────────────────────────────────
-// Supervisor view
-// ──────────────────────────────────────────────────────────────
-
-function SupervisorAudienceContent({ seminarId }: { seminarId: string }) {
-  const { data: audiences, isLoading } = useSeminarAudiences(seminarId);
-  const approveMutation = useApproveAudience();
-  const unapproveMutation = useUnapproveAudience();
-
-  const rows = Array.isArray(audiences) ? audiences : (audiences as any)?.audiences || [];
   const approvingStudentId = approveMutation.isPending ? approveMutation.variables?.studentId : null;
   const unapprovingStudentId = unapproveMutation.isPending ? unapproveMutation.variables?.studentId : null;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Daftar Hadir (Dosen Approval) — {rows.length} Peserta
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <Loading size="lg" text="Memuat daftar hadir dosen..." />
-          </div>
-        ) : (
-          <ThesisSeminarAudienceTable
-            rows={rows}
-            showAction
-            approvingStudentId={approvingStudentId}
-            unapprovingStudentId={unapprovingStudentId}
-            onApprove={(row) => {
-              if (!row.studentId) return;
-              approveMutation.mutate({ seminarId, studentId: row.studentId });
-            }}
-            onUnapprove={(row) => {
-              if (!row.studentId) return;
-              unapproveMutation.mutate({ seminarId, studentId: row.studentId });
-            }}
-          />
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+    <>
+      <ThesisSeminarAudienceTable
+        rows={rows}
+        loading={isRefreshing}
+        actions={renderActions()}
+        isEditable={_isAdmin}
+        onDelete={_isAdmin ? handleRemove : undefined}
+        showAction={_isSupervisor}
+        approvingStudentId={approvingStudentId}
+        unapprovingStudentId={unapprovingStudentId}
+        onApprove={
+          _isSupervisor
+            ? (row) => row.studentId && approveMutation.mutate({ seminarId, studentId: row.studentId })
+            : undefined
+        }
+        onUnapprove={
+          _isSupervisor
+            ? (row) => row.studentId && unapproveMutation.mutate({ seminarId, studentId: row.studentId })
+            : undefined
+        }
+      />
 
-function ViewerAudienceContent({ seminarId }: { seminarId: string }) {
-  const { data: audiences, isLoading } = useSeminarAudiences(seminarId);
-  const rows = Array.isArray(audiences) ? audiences : (audiences as any)?.audiences || [];
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Daftar Hadir (Viewer) — {rows.length} Peserta
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <Loading size="lg" text="Memuat daftar hadir viewer..." />
-          </div>
-        ) : (
-          <ThesisSeminarAudienceTable rows={rows} />
-        )}
-      </CardContent>
-    </Card>
+      {_isAdmin && (
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Tambah Peserta</DialogTitle>
+            </DialogHeader>
+            <div className="py-2">
+              <select
+                value={selectedStudentId}
+                onChange={(e) => setSelectedStudentId(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Pilih mahasiswa...</option>
+                {(studentOptions ?? []).map((s: any) => (
+                  <option key={s.studentId} value={s.studentId}>
+                    {s.name} ({s.nim})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAddOpen(false)}>Batal</Button>
+              <Button onClick={() => void handleAdd()} disabled={!selectedStudentId || addMutation.isPending}>
+                {addMutation.isPending ? <><Spinner className="mr-2 h-4 w-4" />Menambahkan...</> : 'Tambah'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }

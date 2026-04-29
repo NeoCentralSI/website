@@ -1,7 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarDetailAudienceTable';
 import {
   toTitleCaseName,
   formatDateOnlyId,
@@ -11,7 +10,7 @@ import {
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
 import type { DocumentSubmitStatus } from '@/types/seminar.types';
-import { BookOpen, Calendar, Eye, FileText, Users } from 'lucide-react';
+import { BookOpen, Calendar, Eye, FileText } from 'lucide-react';
 
 function extractSeminarTime(timeIso?: string | null): string {
   if (!timeIso) return '--';
@@ -267,20 +266,6 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
         </div>
       </div>
 
-      {/* Audience List */}
-      {audiences.length > 0 && (
-        <Card>
-          <CardHeader className="border-b pb-4">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              Daftar Hadir Peserta ({audiences.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <ThesisSeminarAudienceTable rows={audiences} />
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

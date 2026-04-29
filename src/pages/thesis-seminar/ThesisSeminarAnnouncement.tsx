@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   CalendarDays,
-  CalendarCheck,
   Clock,
   MapPin,
   Search,
@@ -62,12 +61,39 @@ function getLocalDateKey(iso: string | null | undefined): string {
   return local.toISOString().slice(0, 10);
 }
 
-type StatusFilter = 'all' | 'upcoming' | 'past';
+const PAGE_SIZE = 5;
 
 interface StatusConfig {
   label: string;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
   className: string;
+}
+
+type PaginationItem = number | 'ellipsis';
+
+function getPaginationItems(currentPage: number, totalPages: number): PaginationItem[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const items: PaginationItem[] = [1];
+  const left = Math.max(2, currentPage - 1);
+  const right = Math.min(totalPages - 1, currentPage + 1);
+
+  if (left > 2) {
+    items.push('ellipsis');
+  }
+
+  for (let page = left; page <= right; page += 1) {
+    items.push(page);
+  }
+
+  if (right < totalPages - 1) {
+    items.push('ellipsis');
+  }
+
+  items.push(totalPages);
+  return items;
 }
 
 const STATUS_CONFIG: Record<ThesisSeminarStatus, StatusConfig> = {
@@ -133,12 +159,37 @@ function SeminarCard({ seminar, onRegister, onCancel, isRegistering, isCancellin
   const startTime = extractTimeUTC(seminar.startTime);
   const endTime = extractTimeUTC(seminar.endTime);
   const navigate = useNavigate();
+  const isFinalizedResult = ['passed', 'passed_with_revision', 'failed'].includes(seminar.status);
 
   const pembimbing1 = seminar.supervisors.find((s) => s.role === 'Pembimbing 1');
   const isUpcoming = seminar.status === 'scheduled' && !seminar.isPast;
   const openDetail = () => navigate(`/tugas-akhir/seminar-hasil/${seminar.id}`, {
     state: { fromAnnouncement: 'seminar-hasil' },
   });
+  const audienceState = seminar.isRegistered
+    ? seminar.isPresent
+      ? {
+          label: 'Hadir',
+          className: 'bg-green-100 text-green-700',
+          icon: CheckCircle2,
+        }
+      : isFinalizedResult
+        ? {
+            label: 'Tidak Hadir',
+            className: 'bg-rose-100 text-rose-700',
+            icon: XCircle,
+          }
+        : {
+            label: 'Terdaftar',
+            className: 'bg-amber-50 text-amber-700',
+            icon: UserCheck,
+          }
+    : {
+        label: seminar.isPast ? 'Terlewat' : 'Belum daftar',
+        className: 'bg-muted/60 text-muted-foreground',
+        icon: seminar.isPast ? XCircle : UserCheck,
+      }
+  const AudienceStateIcon = audienceState.icon
 
   return (
     <div
@@ -182,6 +233,12 @@ function SeminarCard({ seminar, onRegister, onCancel, isRegistering, isCancellin
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm leading-tight">{toTitleCaseName(seminar.presenterName)}</span>
+            <Badge
+              variant={statusCfg.variant}
+              className={cn('text-xs whitespace-nowrap', statusCfg.className)}
+            >
+              {statusCfg.label}
+            </Badge>
             {seminar.isOwn && (
               <Badge variant="outline" className="text-xs border-primary text-primary shrink-0 py-0">
                 Seminar Anda
@@ -209,74 +266,61 @@ function SeminarCard({ seminar, onRegister, onCancel, isRegistering, isCancellin
         </div>
 
         {/* Status + Action column */}
-        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 sm:min-w-[120px]">
-          <Badge
-            variant={statusCfg.variant}
-            className={cn('text-xs whitespace-nowrap', statusCfg.className)}
-          >
-            {statusCfg.label}
-          </Badge>
-
-          {/* Audience registration state */}
-          {seminar.isRegistered && (
-            <div className={cn(
-              'flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full',
-              seminar.isPresent
-                ? 'bg-green-100 text-green-700'
-                : 'bg-amber-50 text-amber-700'
-            )}>
-              {seminar.isPresent ? (
-                <><CheckCircle2 className="h-3 w-3" /> Hadir</>
-              ) : (
-                <><UserCheck className="h-3 w-3" /> Terdaftar</>
-              )}
-            </div>
-          )}
+        <div className="flex flex-col items-end justify-between gap-2 shrink-0 self-stretch sm:min-w-[120px]">
+          <div className={cn(
+            'flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap',
+            audienceState.className
+          )}>
+            <AudienceStateIcon className="h-3 w-3" />
+            {audienceState.label}
+          </div>
 
           {/* Action buttons */}
-          {!seminar.isOwn && seminar.status === 'scheduled' && (
-            <>
-              {!seminar.isPast && !seminar.isRegistered && (
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="text-xs h-7 px-3"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onRegister(seminar);
-                  }}
-                  disabled={isRegistering}
-                >
-                  {isRegistering ? (
-                    <><Spinner className="h-3 w-3 mr-1" /> Mendaftar...</>
-                  ) : (
-                    'Daftar Hadir'
-                  )}
-                </Button>
-              )}
-              {!seminar.isPast && seminar.isRegistered && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs h-7 px-2 text-red-500 hover:text-red-600 hover:bg-red-50"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onCancel(seminar);
-                  }}
-                  disabled={isCancelling}
-                >
-                  {isCancelling ? (
-                    <><Spinner className="h-3 w-3 mr-1" /> Membatalkan...</>
-                  ) : (
-                    <><XCircle className="h-3.5 w-3.5 mr-1" /> Batalkan</>
-                  )}
-                </Button>
-              )}
-              {seminar.isPast && !seminar.isRegistered && (
-                <span className="text-xs text-muted-foreground/60 italic">Terlewat</span>
-              )}
-            </>
-          )}
+          <div className="flex flex-col items-end gap-2 mt-auto">
+            {!seminar.isOwn && seminar.status === 'scheduled' && (
+              <>
+                {!seminar.isPast && !seminar.isRegistered && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="text-xs h-7 px-3"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onRegister(seminar);
+                    }}
+                    disabled={isRegistering}
+                  >
+                    {isRegistering ? (
+                      <><Spinner className="h-3 w-3 mr-1" /> Mendaftar...</>
+                    ) : (
+                      'Daftar'
+                    )}
+                  </Button>
+                )}
+                {!seminar.isPast && seminar.isRegistered && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7 px-2 border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onCancel(seminar);
+                    }}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling ? (
+                      <><Spinner className="h-3 w-3 mr-1" /> Membatalkan...</>
+                    ) : (
+                      <><XCircle className="h-3.5 w-3.5 mr-1" /> Batalkan</>
+                    )}
+                  </Button>
+                )}
+                {seminar.isPast && !seminar.isRegistered && (
+                  <span className="text-xs text-muted-foreground/60 italic">Terlewat</span>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -306,11 +350,11 @@ export default function SeminarHasilAnnouncement() {
   const { mutate: cancelReg, isPending: isCancelling } = useCancelSeminarRegistration();
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const [confirmTarget, setConfirmTarget] = useState<SeminarAnnouncementItem | null>(null);
   const [cancelTarget, setCancelTarget] = useState<SeminarAnnouncementItem | null>(null);
 
-  // Filtered and grouped data
+  // Filtered, sorted, and paginated data
   const filtered = useMemo(() => {
     if (!seminars) return [];
     const q = search.toLowerCase().trim();
@@ -320,34 +364,44 @@ export default function SeminarHasilAnnouncement() {
         s.presenterName.toLowerCase().includes(q) ||
         s.thesisTitle.toLowerCase().includes(q) ||
         s.supervisors.some((sv: { name: string }) => sv.name.toLowerCase().includes(q));
-      const matchFilter =
-        statusFilter === 'all'
-          ? true
-          : statusFilter === 'upcoming'
-            ? !s.isPast
-            : s.isPast;
-      return matchSearch && matchFilter;
+      return matchSearch;
     });
-  }, [seminars, search, statusFilter]);
+  }, [seminars, search]);
+
+  const sortedSeminars = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const aDate = new Date(`${a.date}T${a.startTime}`).getTime();
+      const bDate = new Date(`${b.date}T${b.startTime}`).getTime();
+      return bDate - aDate;
+    });
+  }, [filtered]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedSeminars.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedSeminars = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return sortedSeminars.slice(start, start + PAGE_SIZE);
+  }, [currentPage, sortedSeminars]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, SeminarAnnouncementItem[]>();
-    for (const s of filtered) {
+    for (const s of paginatedSeminars) {
       const key = getLocalDateKey(s.date);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     }
     return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
-  }, [filtered]);
-
-  const counts = useMemo(() => {
-    if (!seminars) return { all: 0, upcoming: 0, past: 0 };
-    return {
-      all: seminars.length,
-      upcoming: seminars.filter((s) => !s.isPast).length,
-      past: seminars.filter((s) => s.isPast).length,
-    };
-  }, [seminars]);
+  }, [paginatedSeminars]);
 
   // Loading state
   if (isLoading && !seminars) {
@@ -368,9 +422,9 @@ export default function SeminarHasilAnnouncement() {
         </p>
       </div>
 
-      {/* Filter bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative w-full sm:w-96">
+      {/* Search + pagination bar */}
+      <div className="flex flex-col gap-3 rounded-2xl border bg-card/70 p-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:flex-1 sm:max-w-[65%]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Cari nama mahasiswa atau judul TA..."
@@ -379,26 +433,52 @@ export default function SeminarHasilAnnouncement() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {(['all', 'upcoming', 'past'] as StatusFilter[]).map((f) => {
-            const labels: Record<StatusFilter, string> = {
-              all: `Semua (${counts.all})`,
-              upcoming: `Akan Datang (${counts.upcoming})`,
-              past: `Telah Berlalu (${counts.past})`,
-            };
-            return (
-              <Button
-                key={f}
-                size="sm"
-                variant={statusFilter === f ? 'default' : 'outline'}
-                onClick={() => setStatusFilter(f)}
-                className="text-xs"
-              >
-                {labels[f]}
-              </Button>
-            );
-          })}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+            >
+              ‹
+            </Button>
+            {getPaginationItems(currentPage, totalPages).map((item, index) =>
+              item === 'ellipsis' ? (
+                <span key={`ellipsis-${index}`} className="px-1 text-sm text-muted-foreground">
+                  …
+                </span>
+              ) : (
+                <Button
+                  key={item}
+                  size="sm"
+                  variant={currentPage === item ? 'default' : 'outline'}
+                  className="h-8 min-w-8 px-2 text-xs"
+                  onClick={() => setCurrentPage(item)}
+                >
+                  {item}
+                </Button>
+              )
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage === totalPages}
+            >
+              ›
+            </Button>
+          </div>
         </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>
+          Menampilkan {sortedSeminars.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, sortedSeminars.length)} dari {sortedSeminars.length} seminar
+        </span>
+        <span>Halaman {currentPage} dari {totalPages}</span>
       </div>
 
       {/* Seminar list */}
@@ -447,12 +527,9 @@ export default function SeminarHasilAnnouncement() {
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-1">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 shrink-0">
-                <CalendarCheck className="h-5 w-5 text-primary" />
-              </div>
               <div>
-                <AlertDialogTitle className="text-base">Daftar Hadir Seminar</AlertDialogTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">Konfirmasi pendaftaran kehadiran Anda</p>
+                <AlertDialogTitle className="text-base">Daftar Seminar</AlertDialogTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Konfirmasi pendaftaran Anda</p>
               </div>
             </div>
           </AlertDialogHeader>
@@ -505,7 +582,7 @@ export default function SeminarHasilAnnouncement() {
               {isRegistering ? (
                 <><Spinner className="h-4 w-4 mr-2" /> Mendaftar...</>
               ) : (
-                'Ya, Daftar Hadir'
+                'Ya, Daftar'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

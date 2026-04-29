@@ -82,28 +82,69 @@ export default function ThesisSeminarDetailPage() {
 
   // Tab visibility based on lifecycle
   const isUserAdmin = isAdmin();
-  const isUserStudent = isStudent() && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
-  const isUserExaminer = d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
-  const isUserSupervisor = d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
+  const isUserStudent = isStudent() && !!user?.student?.id && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
+  const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
+  const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
   // Tab visibility based on lifecycle
-  const showScheduling = isUserAdmin && ['examiner_assigned', 'scheduled'].includes(d.status);
+  const showScheduling = isUserAdmin && ['examiner_assigned', 'scheduled', 'ongoing'].includes(d.status);
+
+  const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
+  const isAssessmentFinalized = allowedAssessmentStatuses.includes(d?.status);
+
+  let isAssessmentOngoing = false;
+  if (d?.status === 'ongoing') {
+    isAssessmentOngoing = true;
+  } else if (d?.status === 'scheduled' && d.date && d.startTime) {
+    const dateObj = new Date(d.date);
+    const timeObj = new Date(d.startTime);
+    const seminarStart = new Date(
+      dateObj.getUTCFullYear(),
+      dateObj.getUTCMonth(),
+      dateObj.getUTCDate(),
+      timeObj.getUTCHours(),
+      timeObj.getUTCMinutes()
+    );
+    isAssessmentOngoing = new Date() >= seminarStart;
+  }
 
   let showAssessment = false;
-  const isAllowedRoleForAssessment = isUserAdmin || isUserExaminer || isUserSupervisor || isUserStudent;
-  if (isAllowedRoleForAssessment) {
-    if (d.status === 'ongoing') {
-      showAssessment = isUserExaminer || isUserSupervisor;
-    } else if (['passed', 'passed_with_revision', 'failed'].includes(d.status)) {
+  if (isAssessmentOngoing) {
+    if (isUserExaminer || isUserSupervisor) {
+      showAssessment = true;
+    }
+  } else if (isAssessmentFinalized) {
+    if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor) {
       showAssessment = true;
     }
   }
 
+  const allowedAudienceStatuses = ['passed', 'passed_with_revision', 'failed'];
+  const isAudienceFinalized = allowedAudienceStatuses.includes(d?.status);
+
+  let isAudienceOngoing = false;
+  if (d?.status === 'ongoing') {
+    isAudienceOngoing = true;
+  } else if (d?.status === 'scheduled' && d.date && d.startTime) {
+    const dateObj = new Date(d.date);
+    const timeObj = new Date(d.startTime);
+    const seminarStart = new Date(
+      dateObj.getUTCFullYear(),
+      dateObj.getUTCMonth(),
+      dateObj.getUTCDate(),
+      timeObj.getUTCHours(),
+      timeObj.getUTCMinutes()
+    );
+    isAudienceOngoing = new Date() >= seminarStart;
+  }
+
   let showAudience = false;
-  if (isUserAdmin || isUserStudent) {
+  if (isAudienceFinalized) {
     showAudience = true;
-  } else if (isUserSupervisor) {
-    showAudience = ['ongoing', 'passed', 'passed_with_revision', 'failed'].includes(d.status);
+  } else if (isAudienceOngoing) {
+    if (isUserSupervisor) {
+      showAudience = true;
+    }
   }
 
   const showRevisions = (isUserStudent || isUserSupervisor) && d.status === 'passed_with_revision';

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
+import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { toTitleCaseName } from '@/lib/text';
-import { RotateCcw, UserPlus } from 'lucide-react';
+import { RotateCcw, Check, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 export interface ThesisSeminarAudienceTableRow {
   studentId?: string;
@@ -29,6 +31,9 @@ interface ThesisSeminarAudienceTableProps {
   onSelectionChange?: (ids: string[]) => void;
   isRowSelectable?: (row: ThesisSeminarAudienceTableRow, index: number) => boolean;
   actions?: React.ReactNode;
+  // Admin props
+  isEditable?: boolean;
+  onDelete?: (studentId: string) => void;
 }
 
 export function ThesisSeminarAudienceTable({
@@ -44,6 +49,8 @@ export function ThesisSeminarAudienceTable({
   onSelectionChange,
   isRowSelectable,
   actions,
+  isEditable = false,
+  onDelete,
 }: ThesisSeminarAudienceTableProps) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -54,10 +61,14 @@ export function ThesisSeminarAudienceTable({
     if (!query) return rows;
 
     return rows.filter((row) => {
+      const name = row.studentName || '';
+      const nim = row.nim || '';
+      const approvedBy = row.approvedByName || '';
+
       return (
-        row.studentName.toLowerCase().includes(query) ||
-        row.nim.toLowerCase().includes(query) ||
-        (row.approvedByName || '').toLowerCase().includes(query)
+        name.toLowerCase().includes(query) ||
+        nim.toLowerCase().includes(query) ||
+        approvedBy.toLowerCase().includes(query)
       );
     });
   }, [search, rows]);
@@ -81,8 +92,8 @@ export function ThesisSeminarAudienceTable({
       {
         key: 'name',
         header: 'Nama',
-        width: '40%',
-        render: (row) => <span className="font-medium">{toTitleCaseName(row.studentName)}</span>,
+        width: '30%',
+        render: (row) => <span className="font-medium">{toTitleCaseName(row.studentName || '-')}</span>,
       },
       {
         key: 'nim',
@@ -93,7 +104,7 @@ export function ThesisSeminarAudienceTable({
       {
         key: 'status',
         header: 'Status',
-        width: '20%',
+        width: '15%',
         className: 'text-center',
         render: (row) => {
           const isApproved = !!row.approvedAt;
@@ -103,6 +114,21 @@ export function ThesisSeminarAudienceTable({
             </Badge>
           );
         },
+      },
+      {
+        key: 'approvedAt',
+        header: 'Disetujui Pada',
+        width: '15%',
+        render: (row) =>
+          row.approvedAt
+            ? format(new Date(row.approvedAt), 'd MMM yyyy', { locale: idLocale })
+            : '-',
+      },
+      {
+        key: 'approvedBy',
+        header: 'Disetujui Oleh',
+        width: '15%',
+        render: (row) => row.approvedByName || '-',
       },
     ];
 
@@ -118,34 +144,36 @@ export function ThesisSeminarAudienceTable({
           const isUnapprovingThisRow = !!unapprovingStudentId && unapprovingStudentId === row.studentId;
 
           return (
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-1">
               {isApproved ? (
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
                   onClick={() => onUnapprove?.(row)}
                   disabled={!row.studentId || isUnapprovingThisRow}
+                  title="Batalkan Setujui"
                 >
                   {isUnapprovingThisRow ? (
-                    <Spinner className="mr-1 h-3 w-3" />
+                    <Spinner className="h-4 w-4" />
                   ) : (
-                    <RotateCcw className="mr-1 h-3 w-3" />
+                    <RotateCcw className="h-4 w-4" />
                   )}
-                  Batalkan Setujui
                 </Button>
               ) : (
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
                   onClick={() => onApprove?.(row)}
                   disabled={!row.studentId || isApprovingThisRow}
+                  title="Setujui"
                 >
                   {isApprovingThisRow ? (
-                    <Spinner className="mr-1 h-3 w-3" />
+                    <Spinner className="h-4 w-4" />
                   ) : (
-                    <UserPlus className="mr-1 h-3 w-3" />
+                    <Check className="h-4 w-4" />
                   )}
-                  Setujui
                 </Button>
               )}
             </div>
@@ -154,12 +182,31 @@ export function ThesisSeminarAudienceTable({
       });
     }
 
+    if (isEditable) {
+      baseColumns.push({
+        key: 'delete',
+        header: 'Aksi Hapus',
+        className: 'text-right',
+        width: 100,
+        render: (row) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => row.studentId && onDelete?.(row.studentId)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        ),
+      });
+    }
+
     return baseColumns;
-  }, [showAction, page, pageSize, approvingStudentId, unapprovingStudentId, onApprove, onUnapprove]);
+  }, [showAction, isEditable, onDelete, page, pageSize, approvingStudentId, unapprovingStudentId, onApprove, onUnapprove]);
 
   return (
-    <InternshipTable
-      columns={columns}
+    <CustomTable
+      columns={columns as any}
       data={paginatedRows}
       loading={loading}
       total={filteredRows.length}
@@ -173,12 +220,8 @@ export function ThesisSeminarAudienceTable({
         setPage(1);
       }}
       emptyText={emptyLabel}
-      rowKey={(row, index) => row.studentId || `${row.nim}-${index}`}
-      className="p-0 border-0 shadow-none"
-      selectedIds={selectedIds}
-      onSelectionChange={onSelectionChange}
-      isRowSelectable={isRowSelectable}
       actions={actions}
+      rowKey={(row, index) => row.studentId || `${row.nim}-${index}`}
     />
   );
 }

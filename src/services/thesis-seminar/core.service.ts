@@ -247,7 +247,7 @@ export async function setAdminThesisSeminarSchedule(seminarId: string, payload: 
 }
 
 export async function finalizeAdminThesisSeminarSchedule(seminarId: string): Promise<any> {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.FINALIZE(seminarId)), {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.FINALIZE_SCHEDULE(seminarId)), {
     method: 'POST',
   });
   return parseJsonResponse(response, 'Gagal menetapkan jadwal');

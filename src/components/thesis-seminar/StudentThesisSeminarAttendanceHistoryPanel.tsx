@@ -22,6 +22,13 @@ interface StudentThesisSeminarAttendanceHistoryPanelProps {
   isFetching: boolean;
 }
 
+function extractTimeUTC(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
+
 export function StudentThesisSeminarAttendanceHistoryPanel({
   attendance,
   isLoading,
@@ -60,24 +67,27 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
       return { variant: 'success' as const, text: 'Hadir' };
     }
 
-    // Logic for unverified status
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const seminarDeadline = row.date ? new Date(row.date) : null;
+    const endTime = extractTimeUTC(row.seminarEndTime);
 
-    const seminarDate = row.date ? new Date(row.date) : null;
-    if (seminarDate) {
-      seminarDate.setHours(0, 0, 0, 0);
+    if (seminarDeadline && endTime) {
+      const [hours, minutes] = endTime.split(':').map(Number);
+      seminarDeadline.setHours(hours, minutes, 0, 0);
     }
 
-    if (!seminarDate || now < seminarDate) {
+    const isFinalized =
+      ['passed', 'passed_with_revision', 'failed'].includes(row.seminarStatus || '') ||
+      Boolean(row.seminarResultFinalizedAt);
+
+    if (!seminarDeadline || now < seminarDeadline) {
       return { variant: 'warning' as const, text: 'Menunggu Verifikasi' };
     }
 
-    if (now > seminarDate) {
+    if (isFinalized && now >= seminarDeadline) {
       return { variant: 'destructive' as const, text: 'Tidak Hadir' };
     }
 
-    // On the same day but not verified yet
     return { variant: 'warning' as const, text: 'Menunggu Verifikasi' };
   };
 

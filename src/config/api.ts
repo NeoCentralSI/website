@@ -223,6 +223,7 @@ export const API_CONFIG = {
       // --- Scheduling ---
       SCHEDULING_DATA: (id: string) => `/thesis-seminars/${id}/scheduling-data`,
       SCHEDULE: (id: string) => `/thesis-seminars/${id}/schedule`,
+      FINALIZE_SCHEDULE: (id: string) => `/thesis-seminars/${id}/schedule/finalize`,
 
       // --- Documents ---
       DOCUMENT_TYPES: '/thesis-seminars/documents/types',
@@ -250,6 +251,7 @@ export const API_CONFIG = {
       // --- Audiences ---
       AUDIENCES: (id: string) => `/thesis-seminars/${id}/audiences`,
       AUDIENCE_BY_ID: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}`,
+      AUDIENCE_REGISTER: (id: string) => `/thesis-seminars/${id}/audience-register`,
       APPROVE_AUDIENCE: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}/approve`,
       UNAPPROVE_AUDIENCE: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}/unapprove`,
       TOGGLE_AUDIENCE_PRESENCE: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}/presence`,

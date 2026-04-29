@@ -112,6 +112,9 @@ export interface SeminarOverviewResponse {
 
 export interface AttendanceRecord {
   seminarId: string;
+  seminarStatus?: ThesisSeminarStatus;
+  seminarEndTime?: string | null;
+  seminarResultFinalizedAt?: string | null;
   presenterName: string;
   presenterNim?: string;
   thesisTitle: string;
@@ -481,6 +484,7 @@ export interface ExaminerAssessmentFormResponse {
 export interface SubmitExaminerAssessmentPayload {
   scores: { assessmentCriteriaId: string; score: number }[];
   revisionNotes?: string | null;
+  isDraft?: boolean;
 }
 
 export interface SubmitExaminerAssessmentResponse {

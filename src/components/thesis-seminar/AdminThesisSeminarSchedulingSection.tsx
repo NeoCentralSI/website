@@ -474,7 +474,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   }));
   const examiners = seminarDetail?.examiners || [];
 
-  const canEditSchedule = isEditable && seminarDetail?.status !== 'scheduled';
+  const canEditSchedule = isEditable && !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status);
 
   // Unique lecturers for the legend
   const legendItems = [
@@ -558,7 +558,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                       Draft Jadwal Tersimpan
                     </Badge>
                   )}
-                  {seminarDetail?.status === 'scheduled' && (
+                  {['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status) && (
                     <div className="flex items-center gap-1.5">
                       <Badge variant="success" className="flex items-center gap-1 text-xs shrink-0 px-2.5 py-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -603,7 +603,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                     <Select
                       value={selectedRoomId || schedulingData.rooms[0]?.id}
                       onValueChange={(val) => setSelectedRoomId(val)}
-                      disabled={seminarDetail?.status === 'scheduled'}
+                      disabled={['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status)}
                     >
                       <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
                         <SelectValue placeholder="Pilih ruangan..." />
@@ -908,7 +908,6 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
         <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-sm border-border/60 shadow-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-semibold">
-              <FileText className="h-5 w-5 text-primary" />
               Unduh Surat Undangan
             </DialogTitle>
           </DialogHeader>
@@ -922,11 +921,11 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
               className="bg-background text-sm"
             />
           </div>
-          <DialogFooter className="gap-2 sm:gap-0 pt-2">
-            <Button variant="outline" onClick={() => setIsInvitationDialogOpen(false)} className="text-xs">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-2 pt-2">
+            <Button variant="outline" onClick={() => setIsInvitationDialogOpen(false)} className="text-xs min-w-[88px]">
               Batal
             </Button>
-            <Button onClick={confirmDownloadInvitation} className="text-xs">
+            <Button onClick={confirmDownloadInvitation} className="text-xs min-w-[104px]">
               Unduh PDF
             </Button>
           </DialogFooter>
