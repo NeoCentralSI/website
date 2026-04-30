@@ -345,8 +345,8 @@ export async function getAdminThesisSeminarThesisOptions(): Promise<AdminThesisS
     thesisTitle: item.title ?? '-',
     studentName: item.student?.user?.fullName ?? '-',
     studentNim: item.student?.user?.identityNumber ?? '-',
-    hasSeminarResult: false,
-    seminarResultId: null,
+    hasSeminarResult: !!item.hasSeminarResult,
+    seminarResultId: item.seminarResultId || null,
     supervisorIds: (item.thesisSupervisors ?? []).map((supervisor: any) => supervisor.lecturerId),
   }));
 }

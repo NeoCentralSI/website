@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FileSpreadsheet, RefreshCw, Upload, Download } from "lucide-react";
+import { Download, FileSpreadsheet, RefreshCw, Upload } from "lucide-react";
 
 import type { AdminThesisSeminarAudienceImportResult } from "@/types/seminar.types";
 
@@ -13,16 +13,16 @@ interface AdminThesisSeminarAudienceImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (file: File) => Promise<AdminThesisSeminarAudienceImportResult>;
-  onDownloadTemplate?: () => void;
   isImporting: boolean;
+  onDownloadTemplate: () => void;
 }
 
 export function AdminThesisSeminarAudienceImportDialog({
   open,
   onOpenChange,
   onImport,
-  onDownloadTemplate,
   isImporting,
+  onDownloadTemplate,
 }: AdminThesisSeminarAudienceImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<AdminThesisSeminarAudienceImportResult | null>(null);
@@ -37,8 +37,8 @@ export function AdminThesisSeminarAudienceImportDialog({
     try {
       const importResult = await onImport(file);
       setResult(importResult);
-    } catch (_) {
-      // Error handled by parent toast
+    } catch (error) {
+      // Error handled by parent/toast
     }
   };
 
@@ -52,27 +52,27 @@ export function AdminThesisSeminarAudienceImportDialog({
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Import Audience Seminar</DialogTitle>
+          <DialogTitle>Import Peserta Seminar Hasil</DialogTitle>
           <DialogDescription>
-            Unggah file Excel untuk mengarsipkan data mahasiswa audience seminar hasil
+            Unggah file Excel untuk mengimpor data peserta seminar hasil
           </DialogDescription>
         </DialogHeader>
 
         {!result ? (
           <div className="space-y-3">
-            <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
               <div className="flex items-center gap-3">
-                <FileSpreadsheet className="h-8 w-8 text-green-600 shrink-0" />
+                <FileSpreadsheet className="h-8 w-8 text-green-600" />
                 <div>
-                  <p className="text-sm font-medium">Gunakan template standar </p>
-                  <p className="text-xs text-muted-foreground">Kolom wajib: No, Nama Mahasiswa, NIM</p>
+                  <p className="text-sm font-medium">Gunakan template standar</p>
+                  <p className="text-xs text-muted-foreground">
+                    Kolom wajib: No, Nama Mahasiswa, NIM
+                  </p>
                 </div>
               </div>
-              {onDownloadTemplate && (
-                <Button type="button" variant="outline" size="sm" onClick={onDownloadTemplate} disabled={isImporting}>
-                  <Download className="mr-2 h-4 w-4" /> Template
-                </Button>
-              )}
+              <Button type="button" variant="outline" size="sm" onClick={onDownloadTemplate}>
+                <Download className="mr-2 h-4 w-4" /> Template
+              </Button>
             </div>
             <Input
               type="file"
@@ -85,7 +85,7 @@ export function AdminThesisSeminarAudienceImportDialog({
               <Alert>
                 <Upload className="h-4 w-4 animate-bounce text-blue-600" />
                 <AlertTitle>Sedang memproses...</AlertTitle>
-                <AlertDescription>Mohon tunggu, sistem sedang memvalidasi dan menyimpan data audience.</AlertDescription>
+                <AlertDescription>Mohon tunggu, sistem sedang memvalidasi dan menyimpan data import.</AlertDescription>
               </Alert>
             )}
           </div>
@@ -108,7 +108,7 @@ export function AdminThesisSeminarAudienceImportDialog({
             {result.failedRows.length > 0 && (
               <ScrollArea className="h-44 rounded border p-3">
                 <div className="space-y-1">
-                  {result.failedRows.map((row: { row: number; error: string }, idx: number) => (
+                  {result.failedRows.map((row, idx) => (
                     <p key={idx} className="text-xs text-red-600">
                       Baris {row.row}: {row.error}
                     </p>
@@ -142,7 +142,7 @@ export function AdminThesisSeminarAudienceImportDialog({
                 Tutup
               </Button>
               <Button onClick={reset}>
-                <RefreshCw className="mr-2 h-4 w-4" /> Import Lagi
+                <RefreshCw className="mr-2 h-4 w-4" /> Reset
               </Button>
             </>
           )}

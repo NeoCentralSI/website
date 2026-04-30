@@ -33,6 +33,7 @@ interface ThesisSeminarAudienceTableProps {
   actions?: React.ReactNode;
   // Admin props
   isEditable?: boolean;
+  isArchived?: boolean;
   onDelete?: (studentId: string) => void;
 }
 
@@ -50,6 +51,7 @@ export function ThesisSeminarAudienceTable({
   isRowSelectable,
   actions,
   isEditable = false,
+  isArchived = false,
   onDelete,
 }: ThesisSeminarAudienceTableProps) {
   const [search, setSearch] = useState('');
@@ -184,9 +186,10 @@ export function ThesisSeminarAudienceTable({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-30 disabled:grayscale"
                   onClick={() => row.studentId && onDelete?.(row.studentId)}
-                  title="Hapus"
+                  disabled={!isArchived}
+                  title={isArchived ? "Hapus" : "Tidak dapat menghapus data non-arsip"}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

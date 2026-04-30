@@ -148,9 +148,9 @@ export function AdminThesisSeminarArchiveFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[720px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Seminar Hasil' : 'Tambah Seminar Hasil'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Arsip Seminar Hasil' : 'Tambah Arsip Seminar Hasil'}</DialogTitle>
           <DialogDescription>
-            Isi form berikut untuk menambah data arsip seminar hasil
+            Isi form berikut untuk mengelola data arsip seminar hasil
           </DialogDescription>
         </DialogHeader>
 
@@ -171,7 +171,7 @@ export function AdminThesisSeminarArchiveFormDialog({
                   label: `${t.studentName} (${t.studentNim}) — ${t.thesisTitle}`,
                   disabled: Boolean(t.hasSeminarResult && t.seminarResultId !== editingSeminar?.id),
                 }))}
-                placeholder="Pilih Tugas Akhir"
+                placeholder="Pilih Tugas Akhir (Mahasiswa)"
                 defaultValue={thesisId}
                 onChange={(value) => setThesisId(value)}
               />

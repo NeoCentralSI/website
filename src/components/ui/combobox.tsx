@@ -87,7 +87,10 @@ export function ComboBox({
       <PopoverContent className={`${popoverWidth} p-0`} align="start">
         <Command>
           <CommandInput placeholder="Search..." />
-          <CommandList className="max-h-[min(320px,var(--radix-popover-content-available-height))]">
+          <CommandList 
+            className="max-h-[min(320px,var(--radix-popover-content-available-height))] overflow-y-auto"
+            onWheel={(e) => e.stopPropagation()}
+          >
             <CommandEmpty>No item found.</CommandEmpty>
             <CommandGroup>
               {items.map((item) => (
