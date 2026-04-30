@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronRight, GraduationCap } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, GraduationCap, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth, useRole } from '@/hooks/shared';
 
@@ -29,6 +29,7 @@ import {
   useSubmitExaminerAssessment,
   useSupervisorFinalizationData,
   useFinalizeSeminarBySupervisor,
+  useDownloadBeritaAcara,
 } from '@/hooks/thesis-seminar';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type {
@@ -67,8 +68,8 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
   const { user } = useAuth();
   const { isKadep, isAdmin } = useRole();
   
-  const isUserExaminer = !!user?.lecturer?.id && detail.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
-  const isUserSupervisor = !!user?.lecturer?.id && detail.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
+  const isUserExaminer = !!user?.lecturer?.id && detail?.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
+  const isUserSupervisor = !!user?.lecturer?.id && detail?.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
   const _isKadep = isKadep();
   const _isAdmin = isAdmin();
 
@@ -473,6 +474,7 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
   const { data: finalData, isLoading: isFinalLoading } = useSupervisorFinalizationData(seminarId);
   const { data: form, isLoading: isFormLoading } = useExaminerAssessmentForm(seminarId);
   const finalizeMutation = useFinalizeSeminarBySupervisor();
+  const downloadBeritaAcaraMutation = useDownloadBeritaAcara();
 
   const [recommendRevision, setRecommendRevision] = useState<boolean>(false);
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
@@ -487,7 +489,7 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
 
   if (!finalData || !form) return null;
 
-  const isFinalized = !!finalData.seminar.resultFinalizedAt;
+  const isFinalized = !!finalData.seminar?.resultFinalizedAt;
   const totalMaxScore = form.criteriaGroups.reduce(
     (sum, group) => sum + group.criteria.reduce((gs, c) => gs + Number(c.maxScore || 0), 0),
     0
@@ -525,24 +527,40 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
 
   return (
     <div className="space-y-6">
-      {isFinalized && finalData.seminar.resultFinalizedAt && (
-        <div className="flex items-center justify-between flex-wrap gap-2 bg-muted/20 px-4 py-3 rounded-md border text-xs">
-          <span className="text-muted-foreground">
-            Seminar disetujui pada <span className="font-semibold text-foreground">{formatDateTimeId(finalData.seminar.resultFinalizedAt)}</span>
-          </span>
-          <div className="flex items-center gap-3">
-            <Badge variant="success">
-              {finalData.seminar.status === 'passed' 
-                ? 'Lulus' 
-                : finalData.seminar.status === 'passed_with_revision' 
-                  ? 'Lulus dengan Revisi' 
-                  : 'Tidak Lulus'}
-            </Badge>
+      {isFinalized && finalData.seminar?.resultFinalizedAt && (
+        <div className="flex gap-4 items-stretch">
+          <div className="flex-1 flex items-center justify-between flex-wrap gap-2 bg-muted/20 px-4 py-3 rounded-md border text-xs">
             <span className="text-muted-foreground">
-              Rata-rata: <span className="font-bold text-foreground">{finalData.seminar.finalScore?.toFixed(2)}</span>
+              Seminar disetujui pada <span className="font-semibold text-foreground">{formatDateTimeId(finalData.seminar?.resultFinalizedAt || '')}</span>
             </span>
-            <span className="text-[10px] text-muted-foreground">Min. lulus: 55</span>
+            <div className="flex items-center gap-3">
+              <Badge variant="success">
+                {finalData.seminar?.status === 'passed' 
+                  ? 'Lulus' 
+                  : finalData.seminar?.status === 'passed_with_revision' 
+                    ? 'Lulus dengan Revisi' 
+                    : 'Tidak Lulus'}
+              </Badge>
+              <span className="text-muted-foreground">
+                Rata-rata: <span className="font-bold text-foreground">{finalData.seminar?.finalScore?.toFixed(2)}</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground">Min. lulus: 55</span>
+            </div>
           </div>
+          
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 h-auto px-5 bg-card border-muted-foreground/20 hover:bg-muted/10 hover:text-primary transition-all text-xs"
+            onClick={() => downloadBeritaAcaraMutation.mutate(seminarId)}
+            disabled={downloadBeritaAcaraMutation.isPending}
+          >
+            {downloadBeritaAcaraMutation.isPending ? (
+              <Spinner className="h-4 w-4" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            <span className="font-medium">Download Berita Acara</span>
+          </Button>
         </div>
       )}
 
@@ -552,7 +570,7 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
             <tr className="bg-muted/40 border-b">
               <th className="px-3 py-2 text-left font-semibold text-muted-foreground w-12">No</th>
               <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Aspek Penilaian</th>
-              {finalData.examiners.map((ex) => (
+              {finalData.examiners?.map((ex) => (
                 <th key={ex.id} className="px-3 py-2 text-center font-semibold text-muted-foreground border-l w-36">
                   <div className="flex flex-col items-center leading-tight">
                     <span>Penguji {ex.order}</span>
@@ -565,27 +583,52 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
             </tr>
           </thead>
           <tbody>
-            {uniqueGroups.map((group, gIdx) => {
+            {uniqueGroups?.map((group, gIdx) => {
               const groupLetter = String.fromCharCode(65 + gIdx);
-              const groupMaxScore = group.criteria.reduce((sum, c) => sum + Number(c.maxScore || 0), 0);
+              const groupMaxScore = group.criteria?.reduce((sum, c) => sum + Number(c.maxScore || 0), 0) || 0;
               
               return (
                 <React.Fragment key={group.id}>
                   <tr className="bg-muted/10 font-semibold border-b">
                     <td className="px-3 py-2 text-foreground">{groupLetter}</td>
-                    <td colSpan={1 + finalData.examiners.length} className="px-3 py-2 text-foreground">
+                    <td colSpan={1 + (finalData.examiners?.length || 0)} className="px-3 py-2 text-foreground">
                       {group.code} <span className="text-muted-foreground font-normal">(maksimal nilai = {groupMaxScore})</span>
                     </td>
                   </tr>
-                  {group.criteria.map((criterion, cIdx) => {
+
+                  {/* Group description row - now shows the aggregate scores */}
+                  {group.description && (
+                    <tr className="border-b hover:bg-muted/5">
+                      <td className="px-3 py-2"></td>
+                      <td className="px-3 py-2 text-muted-foreground leading-relaxed">
+                        {group.description}
+                      </td>
+                      {finalData.examiners?.map((ex) => {
+                        const exGroup = ex.assessmentDetails?.find((g: any) => g.code === group.code);
+                        const groupScore = exGroup?.criteria?.reduce((sum: number, c: any) => sum + (c.score || 0), 0) ?? null;
+                        
+                        return (
+                          <td key={ex.id} className="px-3 py-2 text-center border-l font-bold">
+                            {groupScore !== null ? (
+                              <span>{groupScore}<span className="text-muted-foreground font-normal">/{groupMaxScore}</span></span>
+                            ) : (
+                              <span className="text-muted-foreground">-/{groupMaxScore}</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  )}
+
+                  {/* Render sub-criteria only if there are multiple criteria */}
+                  {group.criteria?.length > 1 && group.criteria?.map((criterion, cIdx) => {
                     const cLetter = String.fromCharCode(97 + cIdx);
-                    const isPlaceholder = !criterion.name || criterion.name.trim() === '-' || criterion.name.trim() === '';
                     
                     return (
                       <tr key={criterion.id} className="border-b last:border-b-0 hover:bg-muted/5">
-                        <td className="px-3 py-2 text-muted-foreground">{!isPlaceholder ? `(${cLetter})` : ''}</td>
-                        <td className="px-3 py-2">{!isPlaceholder ? criterion.name : group.description}</td>
-                        {finalData.examiners.map((ex) => {
+                        <td className="px-3 py-2 text-muted-foreground">({cLetter})</td>
+                        <td className="px-3 py-2">{criterion.name}</td>
+                        {finalData.examiners?.map((ex) => {
                           const exGroup = ex.assessmentDetails?.find((g: any) => g.code === group.code);
                           const exCriterion = exGroup?.criteria?.find((c: any) => c.id === criterion.id);
                           const score = exCriterion ? exCriterion.score : null;
@@ -610,7 +653,7 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
             <tr className="font-bold bg-muted/30 border-t-2 border-b">
               <td></td>
               <td className="px-3 py-2 text-foreground">Total</td>
-              {finalData.examiners.map((ex) => (
+              {finalData.examiners?.map((ex) => (
                 <td key={ex.id} className="px-3 py-2 text-center border-l font-bold">
                   {ex.assessmentScore !== null ? (
                     <span>{ex.assessmentScore}<span className="text-muted-foreground font-normal">/{totalMaxScore}</span></span>
@@ -624,12 +667,12 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
             <tr className="font-bold bg-muted/20">
               <td></td>
               <td className="px-3 py-2 text-foreground">Rata-rata</td>
-              <td colSpan={finalData.examiners.length} className="px-3 py-2 text-right border-l text-sm text-green-700">
+              <td colSpan={finalData.examiners?.length || 0} className="px-3 py-2 text-right border-l text-sm text-green-700">
                 {finalData.averageScore !== null ? (
                   <div className="flex items-center justify-end gap-2">
-                    <span>{finalData.averageScore.toFixed(2)}<span className="text-muted-foreground font-normal">/{totalMaxScore}</span></span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${finalData.averageScore >= 55 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                      {finalData.averageScore >= 55 ? '✓ Lulus' : '✕ Tidak Lulus'}
+                    <span>{finalData.averageScore?.toFixed(2)}<span className="text-muted-foreground font-normal">/{totalMaxScore}</span></span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${(finalData.averageScore || 0) >= 55 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                      {(finalData.averageScore || 0) >= 55 ? '✓ Lulus' : '✕ Tidak Lulus'}
                     </span>
                   </div>
                 ) : (
@@ -642,7 +685,7 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
       </div>
 
       {(() => {
-        const numExaminers = finalData.examiners.length;
+        const numExaminers = finalData.examiners?.length || 0;
         const gridColsClass = 
           numExaminers === 1 
             ? 'grid-cols-1' 

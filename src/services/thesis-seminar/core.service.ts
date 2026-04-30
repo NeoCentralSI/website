@@ -419,3 +419,12 @@ export async function downloadAdminThesisSeminarInvitation(seminarId: string, no
   }
   return await response.blob();
 }
+
+export async function downloadBeritaAcara(seminarId: string): Promise<Blob> {
+  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BERITA_ACARA(seminarId));
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    throw new Error('Gagal mengunduh berita acara');
+  }
+  return await response.blob();
+}

@@ -8,6 +8,7 @@ import {
   submitExaminerAssessment,
   getSupervisorFinalizationData,
   finalizeSeminarBySupervisor,
+  downloadBeritaAcara,
 } from '@/services/thesis-seminar/core.service';
 import {
   respondExaminerAssignment,
@@ -272,6 +273,26 @@ export function useUnfinalizeSeminarRevisions() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal membatalkan finalisasi revisi');
+    },
+  });
+}
+
+export function useDownloadBeritaAcara() {
+  return useMutation({
+    mutationFn: (seminarId: string) => downloadBeritaAcara(seminarId),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Berita-Acara-Seminar-Hasil.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Berita acara berhasil diunduh');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal mengunduh berita acara');
     },
   });
 }

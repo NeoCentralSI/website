@@ -201,6 +201,7 @@ export const API_CONFIG = {
       BASE: '/thesis-seminars',
       BY_ID: (id: string) => `/thesis-seminars/${id}`,
       INVITATION: (id: string) => `/thesis-seminars/${id}/invitation`,
+      BERITA_ACARA: (id: string) => `/thesis-seminars/${id}/berita-acara`,
       OPTIONS_THESES: '/thesis-seminars/options/theses',
       OPTIONS_LECTURERS: '/thesis-seminars/options/lecturers',
       OPTIONS_STUDENTS: '/thesis-seminars/options/students',

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react'; // Re-trigger compile
 import { useRole, useAuth } from '@/hooks/shared';
 import {
   ChevronDown,
@@ -57,7 +57,6 @@ import {
   useSubmitRevision,
   useDeleteRevision,
   useSeminarRevisionBoard,
-
   useApproveRevision,
   useUnapproveRevision,
   useFinalizeSeminarRevisions,
@@ -76,7 +75,7 @@ interface Props {
 export function ThesisSeminarDetailRevisionPanel({ seminarId, detail, onRefresh, isRefreshing }: Props) {
   const { user } = useAuth();
   const { isStudent } = useRole();
-  
+
   const _isStudent = isStudent() && !!user?.student?.id && (detail?.student?.id === user?.student?.id || detail?.student?.nim === user?.identityNumber);
   const _isSupervisor = !!user?.lecturer?.id && detail?.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
@@ -345,76 +344,76 @@ function RevisionBoardSection({
           );
         },
       },
-    {
-      key: 'description',
-      header: 'Catatan',
-      render: (row) => <p className="text-sm whitespace-pre-wrap break-words max-w-[200px]">{row.description}</p>,
-    },
-    {
-      key: 'revisionAction',
-      header: 'Perbaikan',
-      render: (row) => (
-        <p className="text-sm whitespace-pre-wrap break-words max-w-[200px] text-muted-foreground">
-          {row.revisionAction || '-'}
-        </p>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      width: 110,
-      render: (row) => {
-        if (row.isFinished) return <Badge variant="success" className="text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Disetujui</Badge>;
-        if (row.studentSubmittedAt) return <Badge variant="default" className="text-xs gap-1"><Send className="h-3 w-3" /> Diajukan</Badge>;
-        return <Badge variant="warning" className="text-xs gap-1"><Clock className="h-3 w-3" /> Diproses</Badge>;
+      {
+        key: 'description',
+        header: 'Catatan',
+        render: (row) => <p className="text-sm whitespace-pre-wrap break-words max-w-[200px]">{row.description}</p>,
       },
-    },
-    {
-      key: 'actions',
-      header: 'Aksi',
-      width: 130,
-      className: 'text-right',
-      render: (row) => (
-        <div className="flex items-center justify-end gap-1">
-          {/* Student Actions */}
-          {showStudentActions && !row.isFinished && (
-            <div className="flex items-center gap-1">
-              {!row.studentSubmittedAt ? (
-                <>
-                  <Button variant="ghost" size="icon" onClick={() => {
-                    setEditingId(row.id);
-                    setEditDescription(row.description);
-                    setEditRevisionAction(row.revisionAction || '');
-                    setEditOpen(true);
-                  }} className="h-8 w-8 text-muted-foreground hover:text-primary"><Pencil className="h-4 w-4" /></Button>
-                  {row.revisionAction && (
-                    <Button variant="ghost" size="icon" onClick={() => setSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Ajukan"><Send className="h-4 w-4" /></Button>
-                  )}
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(row.id)} className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Hapus"><Trash2 className="h-4 w-4" /></Button>
-                </>
-              ) : (
-                <Button variant="ghost" size="icon" onClick={() => setCancelSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Pengajuan"><RotateCcw className="h-4 w-4" /></Button>
-              )}
-            </div>
-          )}
-          {/* Supervisor Actions */}
-          {showSupervisorActions && row.studentSubmittedAt && !row.isFinished && !isRevisionFinalized && (
-            <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ seminarId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Setujui">
-              {approveMutation.isPending ? <Spinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-            </Button>
-          )}
-          {showSupervisorActions && row.isFinished && !isRevisionFinalized && (
-            <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Persetujuan">
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-          )}
-          
-          {row.isFinished && isRevisionFinalized && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-        </div>
-      ),
-    },
-  ];
-}, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, filteredData]);
+      {
+        key: 'revisionAction',
+        header: 'Perbaikan',
+        render: (row) => (
+          <p className="text-sm whitespace-pre-wrap break-words max-w-[200px] text-muted-foreground">
+            {row.revisionAction || '-'}
+          </p>
+        ),
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        width: 110,
+        render: (row) => {
+          if (row.isFinished) return <Badge variant="success" className="text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Disetujui</Badge>;
+          if (row.studentSubmittedAt) return <Badge variant="default" className="text-xs gap-1"><Send className="h-3 w-3" /> Diajukan</Badge>;
+          return <Badge variant="warning" className="text-xs gap-1"><Clock className="h-3 w-3" /> Diproses</Badge>;
+        },
+      },
+      {
+        key: 'actions',
+        header: 'Aksi',
+        width: 130,
+        className: 'text-right',
+        render: (row) => (
+          <div className="flex items-center justify-end gap-1">
+            {/* Student Actions */}
+            {showStudentActions && !row.isFinished && (
+              <div className="flex items-center gap-1">
+                {!row.studentSubmittedAt ? (
+                  <>
+                    <Button variant="ghost" size="icon" onClick={() => {
+                      setEditingId(row.id);
+                      setEditDescription(row.description);
+                      setEditRevisionAction(row.revisionAction || '');
+                      setEditOpen(true);
+                    }} className="h-8 w-8 text-muted-foreground hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+                    {row.revisionAction && (
+                      <Button variant="ghost" size="icon" onClick={() => setSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Ajukan"><Send className="h-4 w-4" /></Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(row.id)} className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Hapus"><Trash2 className="h-4 w-4" /></Button>
+                  </>
+                ) : (
+                  <Button variant="ghost" size="icon" onClick={() => setCancelSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Pengajuan"><RotateCcw className="h-4 w-4" /></Button>
+                )}
+              </div>
+            )}
+            {/* Supervisor Actions */}
+            {showSupervisorActions && row.studentSubmittedAt && !row.isFinished && !isRevisionFinalized && (
+              <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ seminarId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Setujui">
+                {approveMutation.isPending ? <Spinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+              </Button>
+            )}
+            {showSupervisorActions && row.isFinished && !isRevisionFinalized && (
+              <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Persetujuan">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            )}
+
+            {row.isFinished && isRevisionFinalized && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+          </div>
+        ),
+      },
+    ];
+  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, filteredData]);
 
   if (isLoading) return <Loading size="lg" text="Memuat board revisi..." />;
 
@@ -439,7 +438,7 @@ function RevisionBoardSection({
             {showStudentActions && (
               <Badge variant="outline" className="text-xs">{summary.finished}/{summary.total} selesai</Badge>
             )}
-            
+
             {isRevisionFinalized && (
               <Badge variant="success" className="text-xs px-2 py-1">
                 <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
@@ -447,7 +446,7 @@ function RevisionBoardSection({
             )}
 
             {showStudentActions && (
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Tambah
               </Button>
             )}
@@ -463,7 +462,7 @@ function RevisionBoardSection({
                     disabled={unfinalizeRevisionsMutation.isPending}
                   >
                     {unfinalizeRevisionsMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : <RotateCcw className="mr-2 h-4 w-4" />}
-                    Batal Finalisasi
+                    Batalkan Finalisasi
                   </Button>
                 ) : (
                   <Button
