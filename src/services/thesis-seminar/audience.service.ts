@@ -156,3 +156,19 @@ export async function exportAdminThesisSeminarAudiences(seminarId: string) {
   link.remove();
   window.URL.revokeObjectURL(url);
 }
+
+export async function exportAdminThesisSeminarAudiencesPdf(seminarId: string) {
+  const response = await apiRequest(
+    getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)}/export-pdf`)
+  );
+  if (!response.ok) throw new Error('Gagal mengekspor audience seminar ke PDF');
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `Audience_Seminar_${new Date().toISOString().split('T')[0]}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}

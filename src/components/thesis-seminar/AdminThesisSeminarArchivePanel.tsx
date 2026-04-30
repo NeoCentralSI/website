@@ -98,11 +98,11 @@ export function AdminThesisSeminarArchivePanel() {
             />
             <Button size="sm" variant="outline" onClick={() => setIsImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
-              Import
+              Import Excel
             </Button>
             <Button size="sm" variant="outline" onClick={() => exportMutation.mutate()}>
               <Download className="mr-2 h-4 w-4" />
-              Export
+              Export Excel
             </Button>
             <Button
               size="sm"
@@ -132,19 +132,19 @@ export function AdminThesisSeminarArchivePanel() {
         onSubmit={(payload) =>
           editingSeminar
             ? updateMutation.mutate({ seminarId: editingSeminar.id, payload }, {
-                onSuccess: () => {
-                  setIsFormOpen(false);
-                  setEditingSeminar(null);
-                },
-                onError: (error: Error) => toast.error(error.message || 'Gagal memperbarui arsip seminar'),
-              })
+              onSuccess: () => {
+                setIsFormOpen(false);
+                setEditingSeminar(null);
+              },
+              onError: (error: Error) => toast.error(error.message || 'Gagal memperbarui arsip seminar'),
+            })
             : createMutation.mutate(payload, {
-                onSuccess: () => {
-                  setIsFormOpen(false);
-                  setEditingSeminar(null);
-                },
-                onError: (error: Error) => toast.error(error.message || 'Gagal menambahkan arsip seminar'),
-              })
+              onSuccess: () => {
+                setIsFormOpen(false);
+                setEditingSeminar(null);
+              },
+              onError: (error: Error) => toast.error(error.message || 'Gagal menambahkan arsip seminar'),
+            })
         }
       />
 

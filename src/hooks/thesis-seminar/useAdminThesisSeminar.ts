@@ -28,6 +28,7 @@ import {
   getAdminThesisSeminarAudiences,
   importAdminThesisSeminarAudiences,
   removeAdminThesisSeminarAudience,
+  exportAdminThesisSeminarAudiencesPdf,
 } from '@/services/thesis-seminar/audience.service';
 import { validateSeminarDocument } from '@/services/thesis-seminar/doc.service';
 import type { SetSchedulePayload, ValidateDocumentPayload } from '@/types/seminar.types';
@@ -262,6 +263,12 @@ export function useImportAdminThesisSeminarAudiences() {
 export function useExportAdminThesisSeminarAudiences() {
   return useMutation({
     mutationFn: (seminarId: string) => exportAdminThesisSeminarAudiences(seminarId),
+  });
+}
+
+export function useExportAdminThesisSeminarAudiencesPdf() {
+  return useMutation({
+    mutationFn: (seminarId: string) => exportAdminThesisSeminarAudiencesPdf(seminarId),
   });
 }
 
