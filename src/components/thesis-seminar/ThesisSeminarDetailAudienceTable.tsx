@@ -132,12 +132,14 @@ export function ThesisSeminarAudienceTable({
       },
     ];
 
-    if (showAction) {
+    const hasAnyAction = showAction || isEditable;
+
+    if (hasAnyAction) {
       baseColumns.push({
         key: 'actions',
         header: 'Aksi',
         className: 'text-right',
-        width: 220,
+        width: 150,
         render: (row) => {
           const isApproved = !!row.approvedAt;
           const isApprovingThisRow = !!approvingStudentId && approvingStudentId === row.studentId;
@@ -145,59 +147,53 @@ export function ThesisSeminarAudienceTable({
 
           return (
             <div className="flex items-center justify-end gap-1">
-              {isApproved ? (
+              {showAction && (
+                isApproved ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => onUnapprove?.(row)}
+                    disabled={!row.studentId || isUnapprovingThisRow}
+                    title="Batalkan Setujui"
+                  >
+                    {isUnapprovingThisRow ? (
+                      <Spinner className="h-4 w-4" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => onApprove?.(row)}
+                    disabled={!row.studentId || isApprovingThisRow}
+                    title="Setujui"
+                  >
+                    {isApprovingThisRow ? (
+                      <Spinner className="h-4 w-4" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </Button>
+                )
+              )}
+              {isEditable && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary"
-                  onClick={() => onUnapprove?.(row)}
-                  disabled={!row.studentId || isUnapprovingThisRow}
-                  title="Batalkan Setujui"
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => row.studentId && onDelete?.(row.studentId)}
+                  title="Hapus"
                 >
-                  {isUnapprovingThisRow ? (
-                    <Spinner className="h-4 w-4" />
-                  ) : (
-                    <RotateCcw className="h-4 w-4" />
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary"
-                  onClick={() => onApprove?.(row)}
-                  disabled={!row.studentId || isApprovingThisRow}
-                  title="Setujui"
-                >
-                  {isApprovingThisRow ? (
-                    <Spinner className="h-4 w-4" />
-                  ) : (
-                    <Check className="h-4 w-4" />
-                  )}
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               )}
             </div>
           );
         },
-      });
-    }
-
-    if (isEditable) {
-      baseColumns.push({
-        key: 'delete',
-        header: 'Aksi Hapus',
-        className: 'text-right',
-        width: 100,
-        render: (row) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={() => row.studentId && onDelete?.(row.studentId)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        ),
       });
     }
 

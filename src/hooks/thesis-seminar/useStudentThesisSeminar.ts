@@ -151,10 +151,11 @@ export function useCancelSeminarRegistration() {
 // Student — Revision Hooks
 // ============================================================
 
-export function useStudentRevisions() {
+export function useStudentRevisions(seminarId: string | undefined) {
   return useQuery({
-    queryKey: seminarKeys.revisions(),
-    queryFn: () => getStudentRevisions(),
+    queryKey: [...seminarKeys.revisions(), seminarId],
+    queryFn: () => getStudentRevisions(seminarId!),
+    enabled: !!seminarId,
   });
 }
 
@@ -162,9 +163,11 @@ export function useCreateRevision() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CreateRevisionPayload) => createRevision(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
+    mutationFn: ({ seminarId, payload }: { seminarId: string; payload: CreateRevisionPayload }) =>
+      createRevision(seminarId, payload),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [...seminarKeys.revisions(), vars.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-revision-board', vars.seminarId] });
       toast.success('Item revisi berhasil ditambahkan');
     },
     onError: (error: Error) => {
@@ -177,10 +180,11 @@ export function useSubmitRevisionAction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SubmitRevisionActionPayload }) =>
-      submitRevisionAction(revisionId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
+    mutationFn: ({ seminarId, revisionId, payload }: { seminarId: string; revisionId: string; payload: SubmitRevisionActionPayload }) =>
+      submitRevisionAction(seminarId, revisionId, payload),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [...seminarKeys.revisions(), vars.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-revision-board', vars.seminarId] });
       toast.success('Perbaikan berhasil disubmit');
     },
     onError: (error: Error) => {
@@ -193,10 +197,11 @@ export function useSaveRevisionAction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ revisionId, payload }: { revisionId: string; payload: SaveRevisionActionPayload }) =>
-      saveRevisionAction(revisionId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
+    mutationFn: ({ seminarId, revisionId, payload }: { seminarId: string; revisionId: string; payload: SaveRevisionActionPayload }) =>
+      saveRevisionAction(seminarId, revisionId, payload),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [...seminarKeys.revisions(), vars.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-revision-board', vars.seminarId] });
       toast.success('Perbaikan berhasil disimpan');
     },
     onError: (error: Error) => {
@@ -209,9 +214,11 @@ export function useSubmitRevision() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (revisionId: string) => submitRevision(revisionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
+    mutationFn: ({ seminarId, revisionId }: { seminarId: string; revisionId: string }) =>
+      submitRevision(seminarId, revisionId),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [...seminarKeys.revisions(), vars.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-revision-board', vars.seminarId] });
       toast.success('Perbaikan berhasil diajukan');
     },
     onError: (error: Error) => {
@@ -224,9 +231,11 @@ export function useCancelRevisionSubmission() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (revisionId: string) => cancelRevisionSubmission(revisionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
+    mutationFn: ({ seminarId, revisionId }: { seminarId: string; revisionId: string }) =>
+      cancelRevisionSubmission(seminarId, revisionId),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [...seminarKeys.revisions(), vars.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-revision-board', vars.seminarId] });
       toast.success('Pengajuan berhasil dibatalkan');
     },
     onError: (error: Error) => {
@@ -239,9 +248,11 @@ export function useDeleteRevision() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (revisionId: string) => deleteRevision(revisionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seminarKeys.all });
+    mutationFn: ({ seminarId, revisionId }: { seminarId: string; revisionId: string }) =>
+      deleteRevision(seminarId, revisionId),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [...seminarKeys.revisions(), vars.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-revision-board', vars.seminarId] });
       toast.success('Item revisi berhasil dihapus');
     },
     onError: (error: Error) => {

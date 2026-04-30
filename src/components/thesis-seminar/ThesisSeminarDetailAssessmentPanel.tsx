@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronRight, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/shared';
+import { useAuth, useRole } from '@/hooks/shared';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -65,24 +65,29 @@ interface Props {
 
 export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props) {
   const { user } = useAuth();
+  const { isKadep, isAdmin } = useRole();
   
   const isUserExaminer = !!user?.lecturer?.id && detail.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
   const isUserSupervisor = !!user?.lecturer?.id && detail.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
+  const _isKadep = isKadep();
+  const _isAdmin = isAdmin();
 
   const isFinalized = ['passed', 'passed_with_revision', 'failed'].includes(detail?.status);
 
+  // 1. FINALIZED STATE: All authorized roles see the summary matrix
   if (isFinalized) {
     return (
       <div className="space-y-6">
         <SupervisorFinalizationSection
           seminarId={seminarId}
           detail={detail}
-          isSupervisor={isUserSupervisor}
+          isSupervisor={false} // Hide finalization controls
         />
       </div>
     );
   }
 
+  // 2. ONGOING STATE
   let isOngoing = false;
   if (detail?.status === 'ongoing') {
     isOngoing = true;
@@ -100,6 +105,9 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
   }
 
   if (isOngoing) {
+    // Only Examiner and Supervisor can see this in Ongoing state
+    if (!isUserExaminer && !isUserSupervisor) return null;
+
     return (
       <div className="space-y-6">
         {isUserExaminer && <ExaminerAssessmentSection seminarId={seminarId} />}
@@ -107,31 +115,20 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
           <SupervisorFinalizationSection
             seminarId={seminarId}
             detail={detail}
-            isSupervisor={true}
+            isSupervisor={true} // Show finalization controls for supervisor
           />
         )}
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* 1. Form Penilaian (Dosen Penguji) */}
-      <ExaminerAssessmentSection seminarId={seminarId} />
-      
-      <hr className="border-dashed" />
+  // 3. Fallback for other states (should be hidden by Tab visibility logic anyway)
+  // But if it's admin/kadep/etc. and it's not ongoing yet, we might want to show empty info
+  if (_isAdmin || _isKadep) {
+    return <AdminAssessmentInfo detail={detail} />;
+  }
 
-      {/* 2. Rekap Penilaian & Penetapan */}
-      <SupervisorFinalizationSection
-        seminarId={seminarId}
-        detail={detail}
-        isSupervisor={isUserSupervisor}
-      />
-
-      {/* 3. Info Admin */}
-      <AdminAssessmentInfo detail={detail} />
-    </div>
-  );
+  return null;
 }
 
 function AdminAssessmentInfo({ detail }: { detail: any }) {
@@ -668,14 +665,14 @@ function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { se
                   <Card className="bg-muted/10">
                     <CollapsibleTrigger asChild>
                       <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between cursor-pointer hover:bg-muted/20 transition-colors">
-                        <CardTitle className="text-xs font-bold text-foreground flex items-center gap-2">
+                        <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                           Catatan — Penguji {ex.order} ({ex.lecturerName})
                         </CardTitle>
                         {isNoteExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent className="py-3 px-4 text-xs text-muted-foreground whitespace-pre-wrap break-words">
+                      <CardContent className="py-4 px-5 text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
                         {ex.revisionNotes?.trim() || 'Tidak ada catatan.'}
                       </CardContent>
                     </CollapsibleContent>

@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
+import { useRole, useAuth } from '@/hooks/shared';
 import {
   ChevronDown,
+  ChevronRight,
+  Check,
   CheckCircle2,
   Clock,
   Send,
-  Undo2,
+  RotateCcw,
   Plus,
   MessageSquareText,
   Pencil,
@@ -20,6 +23,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -39,7 +49,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { Loading } from '@/components/ui/spinner';
+import { Spinner, Loading } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useCreateRevision,
@@ -47,10 +57,12 @@ import {
   useSubmitRevision,
   useDeleteRevision,
   useSeminarRevisionBoard,
-  useSupervisorFinalizationData,
+
   useApproveRevision,
   useUnapproveRevision,
   useFinalizeSeminarRevisions,
+  useUnfinalizeSeminarRevisions,
+  useCancelRevisionSubmission,
 } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 
@@ -62,13 +74,19 @@ interface Props {
 }
 
 export function ThesisSeminarDetailRevisionPanel({ seminarId, detail, onRefresh, isRefreshing }: Props) {
-  const showSupervisorActions = true;
-  const showStudentActions = true;
+  const { user } = useAuth();
+  const { isStudent } = useRole();
+  
+  const _isStudent = isStudent() && !!user?.student?.id && (detail?.student?.id === user?.student?.id || detail?.student?.nim === user?.identityNumber);
+  const _isSupervisor = !!user?.lecturer?.id && detail?.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
+
+  const showSupervisorActions = _isSupervisor;
+  const showStudentActions = _isStudent;
 
   return (
     <div className="space-y-6">
       {/* 1. Catatan Penguji (Dari Rekap Penilaian) */}
-      <ExaminerNotesSection seminarId={seminarId} />
+      <ExaminerNotesSection detail={detail} />
 
       {/* 2. Board Revisi (Main Table) */}
       <RevisionBoardSection
@@ -87,31 +105,46 @@ export function ThesisSeminarDetailRevisionPanel({ seminarId, detail, onRefresh,
 // Section 1: Catatan Penguji
 // ──────────────────────────────────────────────────────────────
 
-function ExaminerNotesSection({ seminarId }: { seminarId: string }) {
-  const { data: finalizationData, isLoading } = useSupervisorFinalizationData(seminarId);
+function ExaminerNotesSection({ detail }: { detail: any }) {
+  const notes = detail?.examinerNotes || [];
+  const [expandedNotes, setExpandedNotes] = useState<Record<number, boolean>>({});
 
-  const examinerNotes = useMemo(
-    () => (finalizationData?.examiners ?? []).filter((e) => e.revisionNotes),
-    [finalizationData],
-  );
-
-  if (isLoading) return <Loading size="sm" />;
-  if (examinerNotes.length === 0) return null;
+  if (notes.length === 0) return null;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <MessageSquareText className="h-4 w-4" />
-          Catatan Penguji dari Berita Acara
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {examinerNotes.map((examiner) => (
-          <ExaminerNoteCollapsible key={examiner.id} examiner={examiner} />
-        ))}
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      {notes.map((note: any, idx: number) => {
+        const isExpanded = expandedNotes[idx] ?? false;
+        return (
+          <Collapsible
+            key={idx}
+            open={isExpanded}
+            onOpenChange={(open) => setExpandedNotes(prev => ({ ...prev, [idx]: open }))}
+          >
+            <Card className="bg-muted/10">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between cursor-pointer hover:bg-muted/20 transition-colors">
+                  <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <MessageSquareText className="h-4 w-4 text-muted-foreground" />
+                    Catatan — Penguji {note.examinerOrder} ({toTitleCaseName(note.lecturerName)})
+                  </CardTitle>
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="py-4 px-5 text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                  {note.revisionNotes?.trim() || 'Tidak ada catatan.'}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        );
+      })}
+    </div>
   );
 }
 
@@ -158,9 +191,8 @@ function RevisionBoardSection({
   showSupervisorActions: boolean;
 }) {
   const { data: board, isLoading, refetch } = useSeminarRevisionBoard(seminarId);
-  const { data: finalizationData } = useSupervisorFinalizationData(seminarId);
 
-  // Mutations
+  const isRevisionFinalized = !!detail?.revisionFinalizedAt || !!(board as any)?.isFinalized;
   const createMutation = useCreateRevision();
   const saveMutation = useSaveRevisionAction();
   const submitMutation = useSubmitRevision();
@@ -168,6 +200,8 @@ function RevisionBoardSection({
   const approveMutation = useApproveRevision();
   const unapproveMutation = useUnapproveRevision();
   const finalizeRevisionsMutation = useFinalizeSeminarRevisions();
+  const unfinalizeRevisionsMutation = useUnfinalizeSeminarRevisions();
+  const cancelSubmitMutation = useCancelRevisionSubmission();
 
   // Local State
   const [createOpen, setCreateOpen] = useState(false);
@@ -176,7 +210,9 @@ function RevisionBoardSection({
   const [submitConfirmId, setSubmitConfirmId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [unapproveConfirmId, setUnapproveConfirmId] = useState<string | null>(null);
+  const [cancelSubmitConfirmId, setCancelSubmitConfirmId] = useState<string | null>(null);
   const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
+  const [unfinalizeConfirmOpen, setUnfinalizeConfirmOpen] = useState(false);
 
   const [selectedExaminerId, setSelectedExaminerId] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -189,7 +225,6 @@ function RevisionBoardSection({
   const [search, setSearch] = useState('');
 
   const revisions: any[] = Array.isArray(board) ? board : (board as any)?.revisions || [];
-  const isRevisionFinalized = !!finalizationData?.seminar?.revisionFinalizedAt;
 
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
@@ -213,20 +248,18 @@ function RevisionBoardSection({
     finished: revisions.filter((r: any) => r.isFinished).length,
   };
 
-  const canFinalizeBoard = !isRevisionFinalized && summary.total > 0 && summary.total === summary.finished;
+  const canFinalizeBoard = !isRevisionFinalized && summary.finished > 0;
 
   const handleCreate = async () => {
     if (!selectedExaminerId || !newDescription.trim()) return;
-    const created = await createMutation.mutateAsync({
-      seminarExaminerId: selectedExaminerId,
-      description: newDescription.trim(),
-    }) as { id: string };
-    if (newRevisionAction.trim()) {
-      await saveMutation.mutateAsync({
-        revisionId: created.id,
-        payload: { description: newDescription.trim(), revisionAction: newRevisionAction.trim() },
-      });
-    }
+    await createMutation.mutateAsync({
+      seminarId,
+      payload: {
+        seminarExaminerId: selectedExaminerId,
+        description: newDescription.trim(),
+        revisionAction: newRevisionAction.trim() || undefined,
+      }
+    });
     setCreateOpen(false);
     setSelectedExaminerId('');
     setNewDescription('');
@@ -238,6 +271,7 @@ function RevisionBoardSection({
   const handleSaveEdit = async () => {
     if (!editingId || !editDescription.trim()) return;
     await saveMutation.mutateAsync({
+      seminarId,
       revisionId: editingId,
       payload: { description: editDescription.trim(), revisionAction: editRevisionAction.trim() || undefined },
     });
@@ -253,18 +287,64 @@ function RevisionBoardSection({
     await onRefresh();
   };
 
-  const columns = useMemo<Column<any>[]>(() => [
-    {
-      key: 'examiner',
-      header: 'Dosen Penguji',
-      width: 140,
-      render: (row) => (
-        <div>
-          <p className="font-medium text-sm">Penguji {row.examinerOrder}</p>
-          <p className="text-xs text-muted-foreground">{toTitleCaseName(row.examinerName)}</p>
-        </div>
-      ),
-    },
+  const handleUnfinalizeRevisions = async () => {
+    await unfinalizeRevisionsMutation.mutateAsync({ seminarId });
+    setUnfinalizeConfirmOpen(false);
+    await onRefresh();
+  };
+
+  const columns = useMemo<Column<any>[]>(() => {
+    // Calculate rowSpan for examiner column
+    const examinerRowSpans = new Map<string, number>();
+    filteredData.forEach((item, idx) => {
+      const key = `${item.examinerOrder}-${item.examinerLecturerId}`;
+      if (idx > 0) {
+        const prev = filteredData[idx - 1];
+        const prevKey = `${prev.examinerOrder}-${prev.examinerLecturerId}`;
+        if (key === prevKey) return; // Skip
+      }
+      // Count subsequent matches
+      let count = 1;
+      for (let j = idx + 1; j < filteredData.length; j++) {
+        const next = filteredData[j];
+        if (`${next.examinerOrder}-${next.examinerLecturerId}` === key) {
+          count++;
+        } else {
+          break;
+        }
+      }
+      examinerRowSpans.set(`${idx}-${key}`, count);
+    });
+
+    return [
+      {
+        key: 'examiner',
+        header: 'Dosen Penguji',
+        width: 140,
+        onCell: (row, index) => {
+          const key = `${row.examinerOrder}-${row.examinerLecturerId}`;
+          const span = examinerRowSpans.get(`${index}-${key}`);
+          if (span === undefined) {
+            return { className: 'hidden' };
+          }
+          return {
+            rowSpan: span,
+            className: 'align-middle font-semibold',
+          };
+        },
+        render: (row, index) => {
+          const key = `${row.examinerOrder}-${row.examinerLecturerId}`;
+          const span = examinerRowSpans.get(`${index}-${key}`);
+          if (span === undefined) return null;
+
+          return (
+            <div className="py-1">
+              <p className="font-medium text-sm">Penguji {row.examinerOrder}</p>
+              <p className="text-xs text-muted-foreground">{toTitleCaseName(row.examinerName)}</p>
+            </div>
+          );
+        },
+      },
     {
       key: 'description',
       header: 'Catatan',
@@ -297,29 +377,35 @@ function RevisionBoardSection({
       render: (row) => (
         <div className="flex items-center justify-end gap-1">
           {/* Student Actions */}
-          {showStudentActions && !row.studentSubmittedAt && !row.isFinished && (
-            <>
-              <Button variant="ghost" size="icon" onClick={() => {
-                setEditingId(row.id);
-                setEditDescription(row.description);
-                setEditRevisionAction(row.revisionAction || '');
-                setEditOpen(true);
-              }} className="h-8 w-8"><Pencil className="h-4 w-4" /></Button>
-              {row.revisionAction && (
-                <Button variant="ghost" size="icon" onClick={() => setSubmitConfirmId(row.id)} className="h-8 w-8 text-emerald-600"><Send className="h-4 w-4" /></Button>
+          {showStudentActions && !row.isFinished && (
+            <div className="flex items-center gap-1">
+              {!row.studentSubmittedAt ? (
+                <>
+                  <Button variant="ghost" size="icon" onClick={() => {
+                    setEditingId(row.id);
+                    setEditDescription(row.description);
+                    setEditRevisionAction(row.revisionAction || '');
+                    setEditOpen(true);
+                  }} className="h-8 w-8 text-muted-foreground hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+                  {row.revisionAction && (
+                    <Button variant="ghost" size="icon" onClick={() => setSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Ajukan"><Send className="h-4 w-4" /></Button>
+                  )}
+                  <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(row.id)} className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Hapus"><Trash2 className="h-4 w-4" /></Button>
+                </>
+              ) : (
+                <Button variant="ghost" size="icon" onClick={() => setCancelSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Pengajuan"><RotateCcw className="h-4 w-4" /></Button>
               )}
-              <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(row.id)} className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-            </>
+            </div>
           )}
           {/* Supervisor Actions */}
-          {showSupervisorActions && row.studentSubmittedAt && !row.isFinished && (
-            <Button size="sm" onClick={() => approveMutation.mutate({ seminarId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-7 px-2 text-xs">
-              <CheckCircle2 className="h-3 w-3 mr-1" /> Setujui
+          {showSupervisorActions && row.studentSubmittedAt && !row.isFinished && !isRevisionFinalized && (
+            <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ seminarId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Setujui">
+              {approveMutation.isPending ? <Spinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
             </Button>
           )}
           {showSupervisorActions && row.isFinished && !isRevisionFinalized && (
-            <Button variant="outline" size="sm" onClick={() => setUnapproveConfirmId(row.id)} className="h-7 px-2 text-xs">
-              <Undo2 className="h-3 w-3 mr-1" /> Batalkan
+            <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Persetujuan">
+              <RotateCcw className="h-4 w-4" />
             </Button>
           )}
           
@@ -327,7 +413,8 @@ function RevisionBoardSection({
         </div>
       ),
     },
-  ], [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId]);
+  ];
+}, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, filteredData]);
 
   if (isLoading) return <Loading size="lg" text="Memuat board revisi..." />;
 
@@ -349,9 +436,16 @@ function RevisionBoardSection({
         rowKey={(row) => row.id}
         actions={
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">{summary.finished}/{summary.total} selesai</Badge>
-            <RefreshButton onClick={() => { refetch(); onRefresh(); }} isRefreshing={!!isRefreshing} />
+            {showStudentActions && (
+              <Badge variant="outline" className="text-xs">{summary.finished}/{summary.total} selesai</Badge>
+            )}
             
+            {isRevisionFinalized && (
+              <Badge variant="success" className="text-xs px-2 py-1">
+                <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
+              </Badge>
+            )}
+
             {showStudentActions && (
               <Button size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Tambah
@@ -359,15 +453,33 @@ function RevisionBoardSection({
             )}
 
             {showSupervisorActions && (
-              <Button
-                size="sm"
-                variant={canFinalizeBoard ? "default" : "outline"}
-                onClick={() => setFinalizeConfirmOpen(true)}
-                disabled={!canFinalizeBoard || isRevisionFinalized || finalizeRevisionsMutation.isPending}
-              >
-                {isRevisionFinalized ? 'Sudah Difinalisasi' : 'Selesaikan Revisi'}
-              </Button>
+              <>
+                {isRevisionFinalized ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                    onClick={() => setUnfinalizeConfirmOpen(true)}
+                    disabled={unfinalizeRevisionsMutation.isPending}
+                  >
+                    {unfinalizeRevisionsMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                    Batal Finalisasi
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant={canFinalizeBoard ? "default" : "outline"}
+                    onClick={() => setFinalizeConfirmOpen(true)}
+                    disabled={!canFinalizeBoard || finalizeRevisionsMutation.isPending}
+                  >
+                    {finalizeRevisionsMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                    Selesaikan Revisi
+                  </Button>
+                )}
+              </>
             )}
+
+            <RefreshButton onClick={() => { refetch(); onRefresh(); }} isRefreshing={!!isRefreshing} />
           </div>
         }
       />
@@ -379,12 +491,18 @@ function RevisionBoardSection({
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Dosen Penguji</Label>
-              <select value={selectedExaminerId} onChange={(e) => setSelectedExaminerId(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option value="">Pilih dosen penguji</option>
-                {detail.examiners?.map((ex: any) => (
-                  <option key={ex.id} value={ex.id}>Penguji {ex.order} - {toTitleCaseName(ex.lecturerName)}</option>
-                ))}
-              </select>
+              <Select value={selectedExaminerId} onValueChange={setSelectedExaminerId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih dosen penguji" />
+                </SelectTrigger>
+                <SelectContent>
+                  {detail.examiners?.map((ex: any) => (
+                    <SelectItem key={ex.id} value={ex.id}>
+                      Penguji {ex.order} - {toTitleCaseName(ex.lecturerName)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Catatan Revisi</Label>
@@ -420,14 +538,14 @@ function RevisionBoardSection({
       <AlertDialog open={!!submitConfirmId} onOpenChange={open => !open && setSubmitConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Ajukan Perbaikan?</AlertDialogTitle><AlertDialogDescription>Perbaikan akan menunggu persetujuan pembimbing.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await submitMutation.mutateAsync(submitConfirmId!); setSubmitConfirmId(null); refetch(); onRefresh(); }}>Ajukan</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await submitMutation.mutateAsync({ seminarId, revisionId: submitConfirmId! }); setSubmitConfirmId(null); refetch(); onRefresh(); }}>Ajukan</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle><AlertDialogDescription>Data akan dihapus permanen.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await deleteMutation.mutateAsync(deleteConfirmId!); setDeleteConfirmId(null); refetch(); onRefresh(); }}>Hapus</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={async () => { await deleteMutation.mutateAsync({ seminarId, revisionId: deleteConfirmId! }); setDeleteConfirmId(null); refetch(); onRefresh(); }}>Hapus</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
@@ -440,8 +558,22 @@ function RevisionBoardSection({
 
       <AlertDialog open={!!unapproveConfirmId} onOpenChange={open => !open && setUnapproveConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Batalkan Persetujuan?</AlertDialogTitle><AlertDialogDescription>Status akan kembali ke diajukan.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Batalkan Persetujuan?</AlertDialogTitle><AlertDialogDescription>Status item revisi ini akan kembali menjadi "Diajukan".</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await unapproveMutation.mutateAsync({ seminarId, revisionId: unapproveConfirmId! }); setUnapproveConfirmId(null); refetch(); onRefresh(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!cancelSubmitConfirmId} onOpenChange={open => !open && setCancelSubmitConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Batalkan Pengajuan?</AlertDialogTitle><AlertDialogDescription>Status akan kembali menjadi "Diproses" dan Anda dapat mengeditnya kembali.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await cancelSubmitMutation.mutateAsync({ seminarId, revisionId: cancelSubmitConfirmId! }); setCancelSubmitConfirmId(null); refetch(); onRefresh(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={unfinalizeConfirmOpen} onOpenChange={setUnfinalizeConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Batal Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Anda akan dapat mengubah status persetujuan item revisi kembali.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={handleUnfinalizeRevisions}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

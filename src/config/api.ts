@@ -244,9 +244,10 @@ export const API_CONFIG = {
       // --- Revisions ---
       REVISIONS: (id: string) => `/thesis-seminars/${id}/revisions`,
       REVISION_BY_ID: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}`,
-      APPROVE_REVISION: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}/approve`,
-      UNAPPROVE_REVISION: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}/unapprove`,
+      APPROVE_REVISION: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}`,
+      UNAPPROVE_REVISION: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}`,
       FINALIZE_REVISIONS: (id: string) => `/thesis-seminars/${id}/revisions/finalize`,
+      UNFINALIZE_REVISIONS: (id: string) => `/thesis-seminars/${id}/revisions/unfinalize`,
 
       // --- Audiences ---
       AUDIENCES: (id: string) => `/thesis-seminars/${id}/audiences`,

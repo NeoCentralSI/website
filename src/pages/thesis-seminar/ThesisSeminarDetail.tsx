@@ -22,10 +22,11 @@ export default function ThesisSeminarDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isStudent, isAdmin } = useRole();
+  const { isStudent, isAdmin, isKadep } = useRole();
   const { user } = useAuth();
 
   const _isStudent = isStudent();
+  const _isKadep = isKadep();
   const isArchiveRoute = location.pathname.includes('/arsip/');
   const isFromSeminarAnnouncement =
     (location.state as { fromAnnouncement?: string } | null)?.fromAnnouncement === 'seminar-hasil';
@@ -87,7 +88,7 @@ export default function ThesisSeminarDetailPage() {
   const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
   // Tab visibility based on lifecycle
-  const showScheduling = isUserAdmin && ['examiner_assigned', 'scheduled', 'ongoing'].includes(d.status);
+  const showScheduling = isUserAdmin && !['registered', 'verified'].includes(d.status);
 
   const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
   const isAssessmentFinalized = allowedAssessmentStatuses.includes(d?.status);
@@ -114,7 +115,7 @@ export default function ThesisSeminarDetailPage() {
       showAssessment = true;
     }
   } else if (isAssessmentFinalized) {
-    if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor) {
+    if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor || _isKadep) {
       showAssessment = true;
     }
   }

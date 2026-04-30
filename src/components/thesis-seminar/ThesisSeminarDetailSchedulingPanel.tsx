@@ -18,8 +18,12 @@ interface Props {
 export function ThesisSeminarDetailSchedulingPanel({ seminarId, detail }: Props) {
   const { isAdmin } = useRole();
 
+  if (!isAdmin()) {
+    return <ViewerSchedulingContent detail={detail} />;
+  }
+
   return (
-    <AdminThesisSeminarSchedulingSection seminarId={seminarId} isEditable={isAdmin()} />
+    <AdminThesisSeminarSchedulingSection seminarId={seminarId} isEditable={true} />
   );
 }
 

@@ -134,22 +134,19 @@ export function ThesisSeminarAudiencePanel({ seminarId, detail }: Props) {
   const renderActions = () => {
     return (
       <div className="flex items-center gap-2">
-        <RefreshButton onClick={() => currentQuery.refetch()} isRefreshing={isRefreshing} />
-        {(!isOngoing || _isAdmin) && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleExport}
-            disabled={exportMutation.isPending}
-          >
-            {exportMutation.isPending ? (
-              <Spinner className="h-3 w-3 mr-1" />
-            ) : (
-              <Download className="h-3 w-3 mr-1" />
-            )}
-            Export
-          </Button>
-        )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleExport}
+          disabled={exportMutation.isPending}
+        >
+          {exportMutation.isPending ? (
+            <Spinner className="h-3 w-3 mr-1" />
+          ) : (
+            <Download className="h-3 w-3 mr-1" />
+          )}
+          Export
+        </Button>
         
         {_isAdmin && (
           <>
@@ -185,6 +182,7 @@ export function ThesisSeminarAudiencePanel({ seminarId, detail }: Props) {
             />
           </>
         )}
+        <RefreshButton onClick={() => currentQuery.refetch()} isRefreshing={isRefreshing} />
       </div>
     );
   };

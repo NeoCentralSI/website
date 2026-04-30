@@ -43,6 +43,7 @@ export type Column<T> = {
 	width?: string | number;
 	accessor?: keyof T | ((row: T, index: number) => React.ReactNode);
 	render?: (row: T, index: number) => React.ReactNode;
+	onCell?: (row: T, index: number) => React.TdHTMLAttributes<HTMLTableCellElement>;
 	filter?: ColumnFilterElement | ColumnFilterControl;
 	sortable?: boolean;
 };
@@ -275,7 +276,8 @@ export function CustomTable<T extends Record<string, any>>({
 														: col.accessor
 															? (row[col.accessor as keyof T] as any)
 															: null;
-												return <TableCell key={col.key} className={col.className}>{content}</TableCell>;
+												const cellProps = col.onCell ? col.onCell(row, idx) : {};
+												return <TableCell key={col.key} {...cellProps} className={cn(col.className, cellProps.className)}>{content}</TableCell>;
 											})}
 										</TableRow>
 									);

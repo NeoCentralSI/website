@@ -644,6 +644,7 @@ export interface CreateRevisionPayload {
   seminarId?: string;
   seminarExaminerId: string;
   description: string;
+  revisionAction?: string;
 }
 
 export interface SubmitRevisionActionPayload {

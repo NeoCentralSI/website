@@ -19,6 +19,7 @@ import {
   approveRevision,
   unapproveRevision,
   finalizeSeminarRevisions,
+  unfinalizeSeminarRevisions,
 } from '@/services/thesis-seminar/revision.service';
 import {
   getSeminarAudiences,
@@ -254,6 +255,23 @@ export function useFinalizeSeminarRevisions() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal memfinalisasi revisi mahasiswa');
+    },
+  });
+}
+
+export function useUnfinalizeSeminarRevisions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ seminarId }: { seminarId: string }) => unfinalizeSeminarRevisions(seminarId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['seminar-revision-board', variables.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-supervisor-finalization', variables.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['lecturer-seminar-detail', variables.seminarId] });
+      toast.success('Finalisasi revisi berhasil dibatalkan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal membatalkan finalisasi revisi');
     },
   });
 }
