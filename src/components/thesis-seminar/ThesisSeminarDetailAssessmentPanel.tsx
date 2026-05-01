@@ -481,12 +481,6 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
     }
   }
 
-  const finalStatus: ThesisSeminarStatus = (finalData.averageScore || 0) < 55 
-    ? 'failed' 
-    : recommendRevision 
-      ? 'passed_with_revision' 
-      : 'passed';
-
   const canFinalize = isSupervisor && !!finalData.recommendationUnlocked && !isFinalized;
 
   const handleFinalize = async () => {
@@ -494,7 +488,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
     try {
       await finalizeMutation.mutateAsync({
         seminarId,
-        payload: { status: finalStatus as FinalizeSeminarPayload['status'] },
+        payload: { recommendRevision },
       });
       toast.success('Hasil seminar berhasil ditetapkan.');
     } catch (err) {
