@@ -261,47 +261,47 @@ export const API_CONFIG = {
       AUDIENCES_EXPORT: (id: string) => `/thesis-seminars/${id}/audiences/export`,
       AUDIENCES_IMPORT: (id: string) => `/thesis-seminars/${id}/audiences/import`,
     },
-    THESIS_DEFENCE_STUDENT: {
-      OVERVIEW: '/thesis-defences/student/overview',
-      DOCUMENT_TYPES: '/thesis-defences/student/documents/types',
-      DOCUMENTS: '/thesis-defences/student/documents',
-      DOCUMENT_UPLOAD: '/thesis-defences/student/documents/upload',
-      REVISIONS: '/thesis-defences/student/revisions',
-      HISTORY: '/thesis-defences/student/history',
-      DEFENCE_DETAIL: (defenceId: string) => `/thesis-defences/student/defences/${defenceId}`,
-      DEFENCE_ASSESSMENT: (defenceId: string) => `/thesis-defences/student/defences/${defenceId}/assessment`,
-      DEFENCE_REVISIONS: (defenceId: string) => `/thesis-defences/student/defences/${defenceId}/revisions`,
-      CREATE_REVISION: (defenceId: string) => `/thesis-defences/student/defences/${defenceId}/revisions`,
-      SAVE_REVISION_ACTION: (revisionId: string) => `/thesis-defences/student/revisions/${revisionId}/action`,
-      SUBMIT_REVISION_ACTION: (revisionId: string) => `/thesis-defences/student/revisions/${revisionId}/submit`,
-      CANCEL_REVISION_SUBMIT: (revisionId: string) => `/thesis-defences/student/revisions/${revisionId}/cancel-submit`,
-      DELETE_REVISION: (revisionId: string) => `/thesis-defences/student/revisions/${revisionId}`,
-    },
-    THESIS_DEFENCE_ADMIN: {
-      LIST: '/thesis-defences/admin',
-      DETAIL: (defenceId: string) => `/thesis-defences/admin/${defenceId}`,
-      VALIDATE_DOCUMENT: (defenceId: string, documentTypeId: string) =>
-        `/thesis-defences/admin/${defenceId}/documents/${documentTypeId}/validate`,
-      SCHEDULING_DATA: (defenceId: string) => `/thesis-defences/admin/${defenceId}/scheduling-data`,
-      SET_SCHEDULE: (defenceId: string) => `/thesis-defences/admin/${defenceId}/schedule`,
-    },
-    THESIS_DEFENCE_LECTURER: {
-      EXAMINER_REQUESTS: '/thesis-defences/lecturer/examiner-requests',
-      SUPERVISED_STUDENTS: '/thesis-defences/lecturer/supervised-students',
-      DEFENCE_DETAIL: (defenceId: string) => `/thesis-defences/lecturer/defences/${defenceId}`,
-      DEFENCE_ASSESSMENT: (defenceId: string) => `/thesis-defences/lecturer/defences/${defenceId}/assessment`,
-      FINALIZATION_DATA: (defenceId: string) => `/thesis-defences/lecturer/defences/${defenceId}/finalization`,
-      FINALIZE_DEFENCE: (defenceId: string) => `/thesis-defences/lecturer/defences/${defenceId}/finalize`,
-      DEFENCE_REVISIONS: (defenceId: string) => `/thesis-defences/lecturer/defences/${defenceId}/revisions`,
-      FINALIZE_REVISIONS: (defenceId: string) => `/thesis-defences/lecturer/defences/${defenceId}/revisions/finalize`,
-      APPROVE_REVISION: (defenceId: string, revisionId: string) => `/thesis-defences/lecturer/defences/${defenceId}/revisions/${revisionId}/approve`,
-      UNAPPROVE_REVISION: (defenceId: string, revisionId: string) => `/thesis-defences/lecturer/defences/${defenceId}/revisions/${revisionId}/unapprove`,
-      RESPOND: (examinerId: string) => `/thesis-defences/lecturer/defences/${examinerId}/respond`,
-      ASSIGNMENT_LIST: '/thesis-defences/lecturer/assignment',
-      ELIGIBLE_EXAMINERS: (defenceId: string) =>
-        `/thesis-defences/lecturer/assignment/${defenceId}/eligible-examiners`,
-      ASSIGN_EXAMINERS: (defenceId: string) =>
-        `/thesis-defences/lecturer/assignment/${defenceId}`,
+    THESIS_DEFENCE: {
+      // --- Shared / Global ---
+      BASE: '/thesis-defences',
+      BY_ID: (id: string) => `/thesis-defences/${id}`,
+
+      // --- Student Specific ---
+      ME_OVERVIEW: '/thesis-defences/me/overview',
+      ME_HISTORY: '/thesis-defences/me/history',
+
+      // --- Lecturer/Kadep Lists (view-based filters) ---
+      LECTURER_SUPERVISED: '/thesis-defences?view=supervised_students',
+      LECTURER_EXAMINER_REQUESTS: '/thesis-defences?view=examiner_requests',
+      LECTURER_ASSIGNMENT_LIST: '/thesis-defences?view=assignment',
+
+      // --- Scheduling ---
+      SCHEDULING_DATA: (id: string) => `/thesis-defences/${id}/scheduling-data`,
+      SCHEDULE: (id: string) => `/thesis-defences/${id}/schedule`,
+
+      // --- Documents ---
+      DOCUMENT_TYPES: '/thesis-defences/documents/types',
+      DOCUMENTS: (id: string) => `/thesis-defences/${id}/documents`,
+      DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}`,
+      VALIDATE_DOCUMENT: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}/validate`,
+
+      // --- Examiners & Assignment ---
+      ELIGIBLE_EXAMINERS: (id: string) => `/thesis-defences/${id}/eligible-examiners`,
+      EXAMINERS: (id: string) => `/thesis-defences/${id}/examiners`,
+      RESPOND_ASSIGNMENT: (id: string, examinerId: string) => `/thesis-defences/${id}/examiners/${examinerId}/respond`,
+
+      // --- Assessment & Finalization ---
+      ASSESSMENT: (id: string) => `/thesis-defences/${id}/assessment`,
+      ASSESSMENT_VIEW: (id: string) => `/thesis-defences/${id}/assessment-view`,
+      FINALIZATION_DATA: (id: string) => `/thesis-defences/${id}/finalization`,
+      FINALIZE: (id: string) => `/thesis-defences/${id}/finalize`,
+
+      // --- Revisions ---
+      REVISIONS: (id: string) => `/thesis-defences/${id}/revisions`,
+      REVISION_BY_ID: (id: string, revId: string) => `/thesis-defences/${id}/revisions/${revId}`,
+      APPROVE_REVISION: (id: string, revId: string) => `/thesis-defences/${id}/revisions/${revId}`,
+      UNAPPROVE_REVISION: (id: string, revId: string) => `/thesis-defences/${id}/revisions/${revId}`,
+      FINALIZE_REVISIONS: (id: string) => `/thesis-defences/${id}/revisions/finalize`,
     },
     LECTURER_AVAILABILITY: {
       BASE: '/lecturer-availabilities',
