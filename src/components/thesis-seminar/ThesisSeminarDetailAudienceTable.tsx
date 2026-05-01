@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -204,7 +204,7 @@ export function ThesisSeminarAudienceTable({
   }, [showAction, isEditable, onDelete, page, pageSize, approvingStudentId, unapprovingStudentId, onApprove, onUnapprove]);
 
   return (
-    <CustomTable
+    <InternshipTable
       columns={columns as any}
       data={paginatedRows}
       loading={loading}
