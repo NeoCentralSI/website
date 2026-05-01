@@ -16,8 +16,8 @@ import {
   useApproveAudience,
   useUnapproveAudience,
 } from '@/hooks/thesis-seminar';
-import { AdminThesisSeminarAudienceImportDialog } from './AdminThesisSeminarAudienceImportDialog';
-import { AdminThesisSeminarAudienceDialog } from './AdminThesisSeminarAudienceDialog';
+import { AdminThesisSeminarAudienceImportDialog } from './ThesisSeminarDetailAudienceImportDialog';
+import { AdminThesisSeminarAudienceDialog } from './ThesisSeminarDetailAudienceFormDialog';
 import { Plus, Upload, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole, useAuth } from '@/hooks/shared';

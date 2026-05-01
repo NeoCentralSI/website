@@ -1,4 +1,4 @@
-import { AdminThesisSeminarSchedulingSection } from '@/components/thesis-seminar/AdminThesisSeminarSchedulingSection';
+import { AdminThesisSeminarSchedulingSection } from '@/components/thesis-seminar/ThesisSeminarDetailSchedulingSection';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRole } from '@/hooks/shared/useRole';
 import { Calendar, MapPin, Clock, Video } from 'lucide-react';
@@ -29,10 +29,10 @@ export function ThesisSeminarDetailSchedulingPanel({ seminarId, detail }: Props)
 
 function ViewerSchedulingContent({ detail }: { detail: any }) {
   const dateStr = detail.date ? formatDateOnlyId(detail.date) : 'Belum dijadwalkan';
-  const timeStr = detail.startTime && detail.endTime 
+  const timeStr = detail.startTime && detail.endTime
     ? `${extractTime(detail.startTime)} – ${extractTime(detail.endTime)}`
     : 'Belum ditentukan';
-  
+
   return (
     <Card>
       <CardHeader>

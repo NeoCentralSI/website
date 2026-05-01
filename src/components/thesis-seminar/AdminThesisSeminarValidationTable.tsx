@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
 import type { AdminSeminarListItem } from '@/types/seminar.types';
-import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationModal';
-import { AdminThesisSeminarCancelModal } from '@/components/thesis-seminar/AdminThesisSeminarCancelModal';
+import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationFormDialog';
+import { AdminThesisSeminarCancelModal } from '@/components/thesis-seminar/AdminThesisSeminarCancelDialog';
 
-import { 
-  ThesisStudentInfoCell, 
-  ThesisTitleCell, 
-  ThesisPersonnelListCell 
+import {
+  ThesisStudentInfoCell,
+  ThesisTitleCell,
+  ThesisPersonnelListCell
 } from '@/components/shared/ThesisTableCells';
 
 
