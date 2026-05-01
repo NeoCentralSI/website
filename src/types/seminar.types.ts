@@ -265,6 +265,8 @@ export interface SeminarSchedulingData {
   rooms: RoomOption[];
   lecturerAvailabilities: LecturerAvailabilitySlot[];
   currentSchedule: SeminarCurrentSchedule | null;
+  roomBookings?: any[]; // Added to fix build error
+  participantIds?: string[]; // Added to fix build error
 }
 
 export interface SetSchedulePayload {

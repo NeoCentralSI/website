@@ -125,21 +125,6 @@ export async function importAdminThesisSeminarAudiences(
   return parseJsonResponse(response, 'Gagal mengimpor audience seminar');
 }
 
-export async function downloadAdminThesisSeminarAudienceTemplate(seminarId: string) {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_TEMPLATE(seminarId))
-  );
-  if (!response.ok) throw new Error('Gagal mengunduh template audience seminar');
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'Template_Audience_Seminar.xlsx';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-}
 
 export async function exportAdminThesisSeminarAudiences(seminarId: string) {
   const response = await apiRequest(

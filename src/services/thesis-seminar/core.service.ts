@@ -253,6 +253,14 @@ export async function finalizeAdminThesisSeminarSchedule(seminarId: string): Pro
   return parseJsonResponse(response, 'Gagal menetapkan jadwal');
 }
 
+export async function cancelAdminThesisSeminar(seminarId: string, cancelledReason?: string): Promise<any> {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.CANCEL(seminarId)), {
+    method: 'POST',
+    body: JSON.stringify({ cancelledReason }),
+  });
+  return parseJsonResponse(response, 'Gagal membatalkan seminar');
+}
+
 // ============================================================
 // Assessment & Finalization
 // ============================================================
@@ -384,19 +392,6 @@ export async function exportAdminThesisSeminarArchive() {
   window.URL.revokeObjectURL(url);
 }
 
-export async function downloadAdminThesisSeminarArchiveTemplate() {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.TEMPLATE));
-  if (!response.ok) throw new Error('Gagal mengunduh template');
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'Template_Arsip_Seminar.xlsx';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-}
 
 export async function importAdminThesisSeminarArchive(file: File): Promise<AdminThesisSeminarArchiveImportResult> {
   const formData = new FormData();

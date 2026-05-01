@@ -147,28 +147,6 @@ function ExaminerNotesSection({ detail }: { detail: any }) {
   );
 }
 
-function ExaminerNoteCollapsible({ examiner }: { examiner: any }) {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger asChild>
-        <button className="flex items-center justify-between w-full p-3 rounded-md border text-sm hover:bg-muted/50 transition-colors">
-          <div className="flex items-center gap-2">
-            <MessageSquareText className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">Penguji {examiner.order}</span>
-            <span className="text-muted-foreground">— {toTitleCaseName(examiner.lecturerName)}</span>
-          </div>
-          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="px-3 pb-3 pt-2 border-x border-b rounded-b-md text-sm whitespace-pre-wrap">
-          {examiner.revisionNotes}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
 
 // ──────────────────────────────────────────────────────────────
 // Section 2: Revision Board Section

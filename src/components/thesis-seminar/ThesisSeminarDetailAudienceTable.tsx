@@ -186,7 +186,7 @@ export function ThesisSeminarAudienceTable({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-30 disabled:grayscale"
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={() => row.studentId && onDelete?.(row.studentId)}
                   disabled={!isArchived}
                   title={isArchived ? "Hapus" : "Tidak dapat menghapus data non-arsip"}
@@ -220,6 +220,9 @@ export function ThesisSeminarAudienceTable({
       }}
       emptyText={emptyLabel}
       actions={actions}
+      selectedIds={selectedIds}
+      onSelectionChange={onSelectionChange}
+      isRowSelectable={isRowSelectable}
       rowKey={(row, index) => row.studentId || `${row.nim}-${index}`}
     />
   );

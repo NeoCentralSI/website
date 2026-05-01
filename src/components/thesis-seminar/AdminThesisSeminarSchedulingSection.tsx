@@ -27,7 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Spinner, Loading } from '@/components/ui/spinner';
-import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle, Sparkles, Lock, Ban, Video, Copy, FileText } from 'lucide-react';
+import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, AlertCircle, Sparkles, Lock, Ban, Video, Copy, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule, useFinalizeAdminThesisSeminarSchedule, useAdminThesisSeminarDetail, useDownloadAdminThesisSeminarInvitation } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
@@ -256,7 +256,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
 
     daysOfWeek.forEach((dayName) => {
       const availByLecturer: Record<string, TimeSlot[]> = {};
-      participantIds.forEach((lId) => {
+      participantIds.forEach((lId: string) => {
         const avails = schedulingData.lecturerAvailabilities.filter(
           (a: any) => a.lecturerId === lId && a.day === dayName
         );
@@ -270,7 +270,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
         }).filter(slot => slot.start < slot.end);
       });
 
-      if (participantIds.some((lId) => availByLecturer[lId].length === 0)) return;
+      if (participantIds.some((lId: string) => availByLecturer[lId].length === 0)) return;
 
       let commonSlots = availByLecturer[participantIds[0]];
 
@@ -468,13 +468,10 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const { rooms, currentSchedule: current } = schedulingData;
   const selectedRoom = rooms.find((r) => r.id === pendingSchedule?.roomId);
 
-  const supervisors = seminarDetail?.supervisors || (seminarDetail?.thesis?.supervisors || []).map((s: any) => ({
-    name: s.lecturerName || s.name || s.lecturer?.name,
-    role: s.role,
-  }));
+  const supervisors = (seminarDetail as any)?.supervisors || [];
   const examiners = seminarDetail?.examiners || [];
 
-  const canEditSchedule = isEditable && !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status);
+  const canEditSchedule = isEditable && !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status as string);
 
   // Unique lecturers for the legend
   const legendItems = [
@@ -495,7 +492,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
 
     const schedDate = current?.date ? formatDateLong(current.date) : '-';
     const schedTime = current?.startTime && current?.endTime ? `${extractTime(current.startTime)} - ${extractTime(current.endTime)}` : '-';
-    const place = current?.isOnline ? `Daring: ${current.meetingLink || 'Tautan belum diatur'}` : `Luring: ${current.room?.name || 'Ruangan belum diatur'}`;
+    const place = current?.isOnline ? `Daring: ${current.meetingLink || 'Tautan belum diatur'}` : `Luring: ${current?.room?.name || 'Ruangan belum diatur'}`;
 
     const recsText = recommendations.length > 0
       ? recommendations.map((r, idx) => `   ${idx + 1}. ${formatDateLong(r.date)} (${r.startTime} - ${r.endTime})`).join('\n')
@@ -558,7 +555,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                       Draft Jadwal Tersimpan
                     </Badge>
                   )}
-                  {['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status) && (
+                  {['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status as string) && (
                     <div className="flex items-center gap-1.5">
                       <Badge variant="success" className="flex items-center gap-1 text-xs shrink-0 px-2.5 py-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -603,7 +600,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                     <Select
                       value={selectedRoomId || schedulingData.rooms[0]?.id}
                       onValueChange={(val) => setSelectedRoomId(val)}
-                      disabled={['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status)}
+                      disabled={['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status as string)}
                     >
                       <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
                         <SelectValue placeholder="Pilih ruangan..." />
@@ -859,7 +856,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                   </div>
                   <div className="flex items-center gap-2 text-xs font-medium">
                     <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span>{extractTime(current.startTime)} - {extractTime(current.endTime)}</span>
+                    <span>{extractTime(current.startTime || '')} - {extractTime(current.endTime || '')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs font-medium">
                     {current.isOnline ? (
@@ -1045,7 +1042,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                         <SelectValue placeholder="Pilih ruangan..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {rooms.map((r) => (
+                        {rooms.map((r: any) => (
                           <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
                         ))}
                       </SelectContent>

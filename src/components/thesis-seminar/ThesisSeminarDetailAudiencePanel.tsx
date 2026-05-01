@@ -1,8 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 import { ThesisSeminarAudienceTable } from './ThesisSeminarDetailAudienceTable';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading, Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import {
@@ -13,14 +12,13 @@ import {
   useImportAdminThesisSeminarAudiences,
   useExportAdminThesisSeminarAudiences,
   useExportAdminThesisSeminarAudiencesPdf,
-  useDownloadAdminThesisSeminarAudienceTemplate,
   useSeminarAudiences,
   useApproveAudience,
   useUnapproveAudience,
 } from '@/hooks/thesis-seminar';
 import { AdminThesisSeminarAudienceImportDialog } from './AdminThesisSeminarAudienceImportDialog';
 import { AdminThesisSeminarAudienceDialog } from './AdminThesisSeminarAudienceDialog';
-import { Users, Plus, Upload, Download, FileText } from 'lucide-react';
+import { Plus, Upload, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRole, useAuth } from '@/hooks/shared';
 
@@ -67,7 +65,6 @@ export function ThesisSeminarAudiencePanel({ seminarId, detail }: Props) {
   const addMutation = useAddAdminThesisSeminarAudience();
   const removeMutation = useRemoveAdminThesisSeminarAudience();
   const importMutation = useImportAdminThesisSeminarAudiences();
-  const downloadTemplateMutation = useDownloadAdminThesisSeminarAudienceTemplate();
 
   // Public/Supervisor Data & Hooks
   const publicQuery = useSeminarAudiences(seminarId);
@@ -108,11 +105,6 @@ export function ThesisSeminarAudiencePanel({ seminarId, detail }: Props) {
     return importMutation.mutateAsync({ seminarId, file });
   };
 
-  const handleDownloadTemplate = () => {
-    downloadTemplateMutation.mutate(seminarId, {
-      onError: (err) => toast.error((err as Error).message || 'Gagal mengunduh template'),
-    });
-  };
 
   const handleExport = () => {
     exportMutation.mutate(seminarId, {
@@ -239,7 +231,6 @@ export function ThesisSeminarAudiencePanel({ seminarId, detail }: Props) {
             onOpenChange={setImportOpen}
             isImporting={importMutation.isPending}
             onImport={handleImport}
-            onDownloadTemplate={handleDownloadTemplate}
           />
         </>
       )}

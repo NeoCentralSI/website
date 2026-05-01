@@ -43,7 +43,6 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
   const examiners: any[] = detail.examiners ?? [];
   const documentTypes: any[] = detail.documentTypes ?? [];
   const documents: any[] = detail.documents ?? [];
-  const audiences: any[] = detail.audiences ?? [];
 
   const handleDownload = async (filePath: string, fileName?: string | null) => {
     try {

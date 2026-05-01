@@ -206,7 +206,6 @@ export const API_CONFIG = {
       OPTIONS_LECTURERS: '/thesis-seminars/options/lecturers',
       OPTIONS_STUDENTS: '/thesis-seminars/options/students',
       OPTIONS_ROOMS: '/thesis-seminars/options/rooms',
-      TEMPLATE: '/thesis-seminars/template',
       EXPORT: '/thesis-seminars/export',
       IMPORT: '/thesis-seminars/import',
 
@@ -225,6 +224,7 @@ export const API_CONFIG = {
       SCHEDULING_DATA: (id: string) => `/thesis-seminars/${id}/scheduling-data`,
       SCHEDULE: (id: string) => `/thesis-seminars/${id}/schedule`,
       FINALIZE_SCHEDULE: (id: string) => `/thesis-seminars/${id}/schedule/finalize`,
+      CANCEL: (id: string) => `/thesis-seminars/${id}/cancel`,
 
       // --- Documents ---
       DOCUMENT_TYPES: '/thesis-seminars/documents/types',
@@ -258,7 +258,6 @@ export const API_CONFIG = {
       UNAPPROVE_AUDIENCE: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}/unapprove`,
       TOGGLE_AUDIENCE_PRESENCE: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}/presence`,
       AUDIENCES_OPTIONS: (id: string) => `/thesis-seminars/${id}/audiences/options/students`,
-      AUDIENCES_TEMPLATE: (id: string) => `/thesis-seminars/${id}/audiences/template`,
       AUDIENCES_EXPORT: (id: string) => `/thesis-seminars/${id}/audiences/export`,
       AUDIENCES_IMPORT: (id: string) => `/thesis-seminars/${id}/audiences/import`,
     },

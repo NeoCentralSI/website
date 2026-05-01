@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { CheckSquare, Eye } from 'lucide-react';
+import { CheckSquare, Eye, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
 import type { AdminSeminarListItem } from '@/types/seminar.types';
 import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationModal';
+import { AdminThesisSeminarCancelModal } from '@/components/thesis-seminar/AdminThesisSeminarCancelModal';
 
 import { 
   ThesisStudentInfoCell, 
@@ -45,6 +46,7 @@ export function AdminThesisSeminarValidationTable({
 }: AdminThesisSeminarValidationTableProps) {
   const [selectedSeminar, setSelectedSeminar] = useState<AdminSeminarListItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const columns = useMemo(
     () => [
@@ -87,7 +89,7 @@ export function AdminThesisSeminarValidationTable({
       {
         key: 'actions',
         header: 'Aksi',
-        width: 96,
+        width: 128,
         className: 'text-center',
         render: (row: AdminSeminarListItem) => (
           <div className="flex items-center justify-center gap-1">
@@ -96,6 +98,7 @@ export function AdminThesisSeminarValidationTable({
               size="icon"
               className="h-8 w-8"
               onClick={() => onDetail(row.id)}
+              title="Lihat Detail"
             >
               <Eye className="w-4 h-4" />
             </Button>
@@ -103,13 +106,28 @@ export function AdminThesisSeminarValidationTable({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                 onClick={() => {
                   setSelectedSeminar(row);
                   setIsModalOpen(true);
                 }}
+                title="Validasi Pendaftaran"
               >
                 <CheckSquare className="w-4 h-4" />
+              </Button>
+            )}
+            {['verified', 'examiner_assigned', 'scheduled'].includes(row.status) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => {
+                  setSelectedSeminar(row);
+                  setIsCancelModalOpen(true);
+                }}
+                title="Batalkan Seminar"
+              >
+                <XCircle className="w-4 h-4" />
               </Button>
             )}
           </div>
@@ -141,6 +159,12 @@ export function AdminThesisSeminarValidationTable({
         seminar={selectedSeminar}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+      />
+
+      <AdminThesisSeminarCancelModal
+        seminar={selectedSeminar}
+        open={isCancelModalOpen}
+        onOpenChange={setIsCancelModalOpen}
       />
     </>
   );

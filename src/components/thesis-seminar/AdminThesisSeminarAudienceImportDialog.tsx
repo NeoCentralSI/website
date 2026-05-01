@@ -9,12 +9,13 @@ import { Download, FileSpreadsheet, RefreshCw, Upload } from "lucide-react";
 
 import type { AdminThesisSeminarAudienceImportResult } from "@/types/seminar.types";
 
+import * as xlsx from "xlsx";
+
 interface AdminThesisSeminarAudienceImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (file: File) => Promise<AdminThesisSeminarAudienceImportResult>;
   isImporting: boolean;
-  onDownloadTemplate: () => void;
 }
 
 export function AdminThesisSeminarAudienceImportDialog({
@@ -22,10 +23,26 @@ export function AdminThesisSeminarAudienceImportDialog({
   onOpenChange,
   onImport,
   isImporting,
-  onDownloadTemplate,
 }: AdminThesisSeminarAudienceImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<AdminThesisSeminarAudienceImportResult | null>(null);
+
+  const handleDownloadTemplate = () => {
+    const headers = ["No", "Nama Mahasiswa", "NIM"];
+    const sampleData = [
+      { "No": 1, "Nama Mahasiswa": "John Doe", "NIM": "2111521001" },
+      { "No": 2, "Nama Mahasiswa": "Jane Smith", "NIM": "2111522002" },
+    ];
+
+    const worksheet = xlsx.utils.json_to_sheet(sampleData, { header: headers });
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Template_Audience");
+
+    // Auto-width
+    worksheet["!cols"] = [{ wch: 5 }, { wch: 35 }, { wch: 18 }];
+
+    xlsx.writeFile(workbook, "Template_Audience_Seminar.xlsx");
+  };
 
   const reset = () => {
     setFile(null);
@@ -70,7 +87,7 @@ export function AdminThesisSeminarAudienceImportDialog({
                   </p>
                 </div>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={onDownloadTemplate}>
+              <Button type="button" variant="outline" size="sm" onClick={handleDownloadTemplate}>
                 <Download className="mr-2 h-4 w-4" /> Template
               </Button>
             </div>

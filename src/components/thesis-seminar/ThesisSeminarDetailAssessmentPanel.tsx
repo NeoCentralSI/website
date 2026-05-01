@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronRight, GraduationCap, Download, FileText } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth, useRole } from '@/hooks/shared';
 
@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loading, Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,26 +37,6 @@ import type {
   ThesisSeminarStatus,
 } from '@/types/seminar.types';
 
-const FINAL_RECOMMENDATIONS: { value: FinalizeSeminarPayload['status']; label: string; desc: string }[] = [
-  { value: 'passed', label: 'Lulus', desc: 'Mahasiswa menyelesaikan seminar hasil dan lulus tanpa revisi.' },
-  { value: 'passed_with_revision', label: 'Lulus dengan Revisi', desc: 'Mahasiswa lulus, namun wajib menyelesaikan revisi.' },
-  { value: 'failed', label: 'Gagal', desc: 'Mahasiswa harus mengulang seminar hasil.' },
-];
-
-function getMaxScoreFromDetails(
-  details: Array<{ criteria: Array<{ maxScore: number }> }> = [],
-): number {
-  return details.reduce(
-    (sum, group) => sum + group.criteria.reduce((gs, c) => gs + Number(c.maxScore || 0), 0),
-    0,
-  );
-}
-
-function formatScoreFraction(score: number | null, maxScore: number): string {
-  if (score === null || score === undefined || Number.isNaN(Number(score))) return `- / ${maxScore}`;
-  const n = Number(score);
-  return `${Number.isInteger(n) ? String(n) : n.toFixed(2)} / ${maxScore}`;
-}
 
 interface Props {
   seminarId: string;
@@ -81,7 +60,6 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
       <div className="space-y-6">
         <SupervisorFinalizationSection
           seminarId={seminarId}
-          detail={detail}
           isSupervisor={false} // Hide finalization controls
         />
       </div>
@@ -115,7 +93,6 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
         {isUserSupervisor && (
           <SupervisorFinalizationSection
             seminarId={seminarId}
-            detail={detail}
             isSupervisor={true} // Show finalization controls for supervisor
           />
         )}
@@ -253,7 +230,7 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
           <CardHeader className="pb-3 border-b flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base font-semibold">Penilaian Seminar Hasil</CardTitle>
             <span className="text-xs text-muted-foreground">
-              Penguji: <span className="font-semibold text-foreground">{toTitleCaseName(user?.fullName || form.examiner.lecturerName || 'Penguji')}</span>
+              Penguji: <span className="font-semibold text-foreground">{toTitleCaseName(user?.fullName || (form.examiner as any).lecturerName || 'Penguji')}</span>
             </span>
           </CardHeader>
           <CardContent className="p-0 divide-y">
@@ -470,7 +447,7 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
 // Section 2: Rekap Penilaian & Finalisasi
 // ──────────────────────────────────────────────────────────────
 
-function SupervisorFinalizationSection({ seminarId, detail, isSupervisor }: { seminarId: string; detail: any; isSupervisor: boolean }) {
+function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId: string; isSupervisor: boolean }) {
   const { data: finalData, isLoading: isFinalLoading } = useSupervisorFinalizationData(seminarId);
   const { data: form, isLoading: isFormLoading } = useExaminerAssessmentForm(seminarId);
   const finalizeMutation = useFinalizeSeminarBySupervisor();

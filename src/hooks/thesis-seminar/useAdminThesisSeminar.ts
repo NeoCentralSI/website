@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import {
   createAdminThesisSeminarArchive,
   deleteAdminThesisSeminarArchive,
-  downloadAdminThesisSeminarArchiveTemplate,
   exportAdminThesisSeminarArchive,
   getAdminThesisSeminarArchiveList,
   getAdminThesisSeminarDetail,
@@ -18,11 +17,11 @@ import {
   finalizeAdminThesisSeminarSchedule,
   updateAdminThesisSeminarArchive,
   downloadAdminThesisSeminarInvitation,
+  cancelAdminThesisSeminar,
   type AdminThesisSeminarArchivePayload,
 } from '@/services/thesis-seminar/core.service';
 import {
   addAdminThesisSeminarAudience,
-  downloadAdminThesisSeminarAudienceTemplate,
   exportAdminThesisSeminarAudiences,
   getAdminThesisSeminarAudienceStudentOptions,
   getAdminThesisSeminarAudiences,
@@ -165,6 +164,23 @@ export function useFinalizeAdminThesisSeminarSchedule() {
   });
 }
 
+export function useCancelAdminThesisSeminar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ seminarId, cancelledReason }: { seminarId: string; cancelledReason?: string }) =>
+      cancelAdminThesisSeminar(seminarId, cancelledReason),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', variables.seminarId] });
+      toast.success('Seminar berhasil dibatalkan');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Gagal membatalkan seminar');
+    },
+  });
+}
+
 export function useCreateAdminThesisSeminarArchive() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -215,11 +231,6 @@ export function useExportAdminThesisSeminarArchive() {
   });
 }
 
-export function useDownloadAdminThesisSeminarArchiveTemplate() {
-  return useMutation({
-    mutationFn: () => downloadAdminThesisSeminarArchiveTemplate(),
-  });
-}
 
 export function useAddAdminThesisSeminarAudience() {
   const queryClient = useQueryClient();
@@ -272,11 +283,6 @@ export function useExportAdminThesisSeminarAudiencesPdf() {
   });
 }
 
-export function useDownloadAdminThesisSeminarAudienceTemplate() {
-  return useMutation({
-    mutationFn: (seminarId: string) => downloadAdminThesisSeminarAudienceTemplate(seminarId),
-  });
-}
 
 export function useDownloadAdminThesisSeminarInvitation() {
   return useMutation({

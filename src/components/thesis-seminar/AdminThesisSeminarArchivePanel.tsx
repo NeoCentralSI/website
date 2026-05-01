@@ -23,7 +23,6 @@ import {
   useAdminThesisSeminarFormOptions,
   useCreateAdminThesisSeminarArchive,
   useDeleteAdminThesisSeminarArchive,
-  useDownloadAdminThesisSeminarArchiveTemplate,
   useExportAdminThesisSeminarArchive,
   useImportAdminThesisSeminarArchive,
   useUpdateAdminThesisSeminarArchive,
@@ -55,7 +54,6 @@ export function AdminThesisSeminarArchivePanel() {
   const deleteMutation = useDeleteAdminThesisSeminarArchive();
   const importMutation = useImportAdminThesisSeminarArchive();
   const exportMutation = useExportAdminThesisSeminarArchive();
-  const templateMutation = useDownloadAdminThesisSeminarArchiveTemplate();
 
   const archiveData = archiveQuery.data?.seminars ?? [];
   const meta = archiveQuery.data?.meta ?? {
@@ -153,7 +151,6 @@ export function AdminThesisSeminarArchivePanel() {
         onOpenChange={setIsImportOpen}
         onImport={(file) => importMutation.mutateAsync(file)}
         isImporting={importMutation.isPending}
-        onDownloadTemplate={() => templateMutation.mutate()}
       />
 
       <AlertDialog open={Boolean(deletingId)} onOpenChange={(open) => !open && setDeletingId(null)}>
