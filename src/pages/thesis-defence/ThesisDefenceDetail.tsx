@@ -67,26 +67,12 @@ export default function ThesisDefenceDetailPage() {
 
   const d = detail as any;
 
-  // Tab visibility logic
-  const isUserAdmin = isAdmin();
-  const isUserStudent = isStudent() && !!user?.student?.id && (d.student?.id === user?.student?.id);
-  const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
-  const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
-
-  // Show scheduling for admin if not already finalized/cancelled
-  const showScheduling = isUserAdmin && !['passed', 'passed_with_revision', 'failed', 'cancelled'].includes(d.status);
-
-  // Show assessment if it's ongoing or finalized
-  const finalizedStatuses = ['passed', 'passed_with_revision', 'failed'];
-  const showAssessment = finalizedStatuses.includes(d.status) || (d.status === 'ongoing' && (isUserExaminer || isUserSupervisor || isUserAdmin || _isKadep));
-
-  // Show revisions for student or supervisor if passed with revision
-  const showRevisions = (isUserStudent || isUserSupervisor) && d.status === 'passed_with_revision';
-
-  const tabs = [{ label: 'Identitas', value: 'identitas' }];
-  if (showScheduling) tabs.push({ label: 'Penjadwalan', value: 'penjadwalan' });
-  if (showAssessment) tabs.push({ label: 'Penilaian', value: 'penilaian' });
-  if (showRevisions) tabs.push({ label: 'Revisi', value: 'revisi' });
+  const tabs = [
+    { label: 'Identitas', value: 'identitas' },
+    { label: 'Penjadwalan', value: 'penjadwalan' },
+    { label: 'Penilaian', value: 'penilaian' },
+    { label: 'Revisi', value: 'revisi' },
+  ];
 
   // Guard active tab validity
   const validTab = tabs.find((t) => t.value === activeTab) ? activeTab : 'identitas';
@@ -119,25 +105,23 @@ export default function ThesisDefenceDetailPage() {
       </div>
 
       {/* Tabs */}
-      {tabs.length > 1 && (
-        <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
-      )}
+      <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
 
       {/* Panel content */}
       <div className="space-y-6">
         {validTab === 'identitas' && (
           <ThesisDefenceDetailIdentityPanel detail={detail} />
         )}
-        {validTab === 'penjadwalan' && showScheduling && (
-          <ThesisDefenceDetailSchedulingPanel defenceId={id!} isEditable={isUserAdmin} />
+        {validTab === 'penjadwalan' && (
+          <ThesisDefenceDetailSchedulingPanel defenceId={id!} isEditable={isAdmin()} />
         )}
-        {validTab === 'penilaian' && showAssessment && (
+        {validTab === 'penilaian' && (
           <ThesisDefenceDetailAssessmentPanel defenceId={id!} detail={detail} />
         )}
-        {validTab === 'revisi' && showRevisions && (
+        {validTab === 'revisi' && (
           <ThesisDefenceDetailRevisionPanel
             defenceId={id!}
-            examiners={d.examiners}
+            examiners={d.examiners || []}
             revisions={d.revisions || []}
             isLoading={false}
             onRefresh={refetch}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,6 +6,7 @@ import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId,
 import {
   BookOpen,
   Calendar,
+  CheckCircle2,
   Download,
   FileText,
   User,
@@ -14,6 +16,19 @@ import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/Thesi
 import type { DocumentSubmitStatus } from '@/types/defence.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
+import { useRole } from '@/hooks/shared';
+import { useValidateDefenceDocument } from '@/hooks/thesis-defence';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Spinner } from '@/components/ui/spinner';
 
 function extractTime(timeIso?: string | null): string {
   if (!timeIso) return '--';
@@ -38,8 +53,45 @@ interface Props {
 }
 
 export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
+  const { isAdmin } = useRole();
+  const validateMutation = useValidateDefenceDocument();
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [selectedDocTypeId, setSelectedDocTypeId] = useState<string | null>(null);
+  const [declineNotes, setDeclineNotes] = useState('');
+
+  const handleValidate = async (docTypeId: string, action: 'approve' | 'decline', notes?: string) => {
+    try {
+      await validateMutation.mutateAsync({
+        defenceId: detail.id,
+        documentTypeId: docTypeId,
+        payload: { action, notes },
+      });
+      toast.success(action === 'approve' ? 'Dokumen disetujui' : 'Dokumen ditolak');
+      setDeclineDialogOpen(false);
+      setDeclineNotes('');
+    } catch (error) {
+      toast.error((error as Error).message || 'Gagal memvalidasi dokumen');
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {/* Student Identity Card (Mainly for Admin/Lecturer) */}
+      {!detail.isStudentView && (
+        <Card className="bg-emerald-50/50 border-emerald-100">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg">
+              {detail.student.name.charAt(0)}
+            </div>
+            <div>
+              <div className="text-sm text-emerald-600 font-medium">Mahasiswa Terdaftar</div>
+              <div className="font-bold text-foreground text-lg">{toTitleCaseName(detail.student.name)}</div>
+              <div className="text-sm text-muted-foreground">{detail.student.nim}</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Thesis Info */}
         <Card>
@@ -156,8 +208,11 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
               const doc = detail.documents.find((d: any) => d.documentTypeId === dt.id);
               const statusDisplay = doc ? getDocStatusDisplay(doc.status) : null;
               const canDownload = !!doc?.filePath;
+              const isSubmitted = doc?.status === 'submitted';
+              const isDeclined = doc?.status === 'declined';
+
               return (
-                <div key={dt.id} className="flex items-center justify-between p-3 rounded-lg border">
+                <div key={dt.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
                     <div className="min-w-0">
@@ -170,12 +225,16 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                         <div className="text-xs text-muted-foreground">Belum diunggah</div>
                       )}
                       {doc?.notes && (
-                        <div className="text-xs text-muted-foreground mt-1 italic">Catatan: {doc.notes}</div>
+                        <div className="text-xs text-red-600 mt-1 italic bg-red-50 px-2 py-0.5 rounded inline-block">
+                          Catatan: {doc.notes}
+                        </div>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center justify-end gap-2 shrink-0">
                     {statusDisplay && <Badge variant={statusDisplay.badge}>{statusDisplay.label}</Badge>}
+                    
+                    {/* View/Download Button */}
                     {canDownload && (
                       <Button
                         variant="ghost"
@@ -191,6 +250,39 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                         <Download className="h-4 w-4" />
                       </Button>
                     )}
+
+                    {/* Admin Validation Actions */}
+                    {isAdmin() && doc && (isSubmitted || isDeclined) && (
+                      <div className="flex items-center gap-1 pl-2 border-l">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          onClick={() => handleValidate(dt.id, 'approve')}
+                          disabled={validateMutation.isPending}
+                        >
+                          {validateMutation.isPending && selectedDocTypeId === dt.id ? (
+                            <Spinner className="h-3 w-3" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                          )}
+                          Setujui
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            setSelectedDocTypeId(dt.id);
+                            setDeclineDialogOpen(true);
+                          }}
+                          disabled={validateMutation.isPending}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Tolak
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -198,6 +290,41 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Decline Dialog */}
+      <Dialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tolak Dokumen</DialogTitle>
+            <DialogDescription>
+              Berikan alasan penolakan dokumen ini agar mahasiswa dapat memperbaikinya.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="notes">Alasan Penolakan</Label>
+            <Textarea
+              id="notes"
+              placeholder="Contoh: Format file salah atau dokumen tidak lengkap..."
+              value={declineNotes}
+              onChange={(e) => setDeclineNotes(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeclineDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedDocTypeId && handleValidate(selectedDocTypeId, 'decline', declineNotes)}
+              disabled={!declineNotes.trim() || validateMutation.isPending}
+            >
+              {validateMutation.isPending ? <Spinner className="h-4 w-4 mr-2" /> : null}
+              Tolak Dokumen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
