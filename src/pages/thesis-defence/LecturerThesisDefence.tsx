@@ -30,7 +30,7 @@ export default function LecturerThesisDefence() {
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-    setTitle('Sidang');
+    setTitle('Sidang Tugas Akhir');
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   const tabs = useMemo(() => {
@@ -60,8 +60,8 @@ export default function LecturerThesisDefence() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Sidang</h1>
-        <p className="text-gray-500">Pantau mahasiswa bimbingan, respon penugasan penguji, dan kelola penilaian sidang</p>
+        <h1 className="text-2xl font-bold tracking-tight">Sidang Tugas Akhir</h1>
+        <p className="text-muted-foreground">Pantau mahasiswa bimbingan, respon penugasan penguji, dan kelola penilaian sidang</p>
       </div>
 
       <LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />

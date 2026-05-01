@@ -19,6 +19,7 @@ import type {
   SetDefenceSchedulePayload,
   SetDefenceScheduleResponse,
   AdminDefenceArchivePayload,
+  AdminDefenceArchiveListResponse,
 } from '@/types/defence.types';
 
 // ============================================================
@@ -55,14 +56,13 @@ function buildArchiveListEndpoint(params?: {
   status?: string;
 }) {
   const queryParts: string[] = [];
+  queryParts.push('view=archive');
   if (params?.page) queryParts.push(`page=${params.page}`);
   if (params?.pageSize) queryParts.push(`pageSize=${params.pageSize}`);
   if (params?.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
   if (params?.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
 
-  return queryParts.length > 0
-    ? `${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/archive?${queryParts.join('&')}`
-    : `${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/archive`;
+  return `${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}?${queryParts.join('&')}`;
 }
 
 // ============================================================
@@ -102,7 +102,7 @@ export async function getAdminDefenceArchiveList(params?: {
   pageSize?: number;
   search?: string;
   status?: string;
-}): Promise<AdminDefenceListItem[]> {
+}): Promise<AdminDefenceArchiveListResponse> {
   const res = await apiRequest(getApiUrl(buildArchiveListEndpoint(params)));
   return parseJsonResponse(res, 'Gagal memuat arsip sidang');
 }

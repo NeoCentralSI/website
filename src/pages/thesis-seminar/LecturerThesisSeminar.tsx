@@ -10,7 +10,7 @@ import { LecturerThesisSeminarAssignExaminerPanel } from '@/components/thesis-se
 export default function LecturerThesisSeminar() {
 	const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>()
 	const { isKadep } = useRole()
-  const [activeTab, setActiveTab] = useState('mahasiswa-bimbingan');
+	const [activeTab, setActiveTab] = useState('mahasiswa-bimbingan');
 
 	const activeLabel = useMemo(() => {
 		if (activeTab === 'mahasiswa-bimbingan') return 'Mahasiswa Bimbingan'
@@ -60,8 +60,8 @@ export default function LecturerThesisSeminar() {
 	return (
 		<div className="p-6 space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold">Seminar Hasil</h1>
-				<p className="text-gray-500">Pantau mahasiswa bimbingan, respon penugasan penguji, dan kelola penilaian seminar hasil</p>
+				<h1 className="text-2xl font-bold tracking-tight">Seminar Hasil</h1>
+				<p className="text-muted-foreground">Pantau mahasiswa bimbingan, respon penugasan penguji, dan kelola penilaian seminar hasil</p>
 			</div>
 
 			<LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />

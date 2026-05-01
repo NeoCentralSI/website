@@ -132,6 +132,14 @@ export interface AdminDefenceListItem {
   date: string | null;
   startTime: string | null;
   endTime: string | null;
+  room?: { id: string; name: string; location?: string | null } | null;
+  examiners?: Array<{
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    availabilityStatus: string;
+  }>;
   documentSummary: AdminDefenceDocumentSummary;
 }
 
@@ -714,6 +722,39 @@ export interface AdminDefenceArchivePayload {
   examinerLecturerIds: string[];
 }
 
+export interface AdminDefenceArchiveItem {
+  id: string;
+  thesisId: string;
+  thesisTitle: string;
+  student: {
+    id: string | null;
+    fullName: string;
+    nim: string;
+  };
+  date: string | null;
+  room: {
+    id: string;
+    name: string;
+    location: string | null;
+  } | null;
+  status: AdminDefenceArchiveStatus;
+  isEditable?: boolean;
+  examiners: Array<{
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+  }>;
+}
+
+export interface AdminDefenceArchiveImportResult {
+  success: boolean;
+  total: number;
+  successCount: number;
+  failed: number;
+  failedRows: { row: number; error: string }[];
+}
+
 export interface AdminDefenceOption {
   id: string;
   thesisTitle: string;
@@ -728,4 +769,14 @@ export interface AdminDefenceExaminerOption {
   id: string;
   fullName: string;
   nip: string;
+}
+
+export interface AdminDefenceArchiveListResponse {
+  defences: AdminDefenceArchiveItem[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 }

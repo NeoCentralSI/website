@@ -12,7 +12,7 @@ export default function AdminThesisDefence() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
+      { label: 'Sidang', href: '/tugas-akhir/sidang' },
       { label: activeTab === 'archive' ? 'Arsip' : 'Validasi' },
     ],
     [activeTab]
@@ -20,7 +20,7 @@ export default function AdminThesisDefence() {
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-    setTitle('Sidang TA');
+    setTitle('Sidang Tugas Akhir');
   }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
   const tabs = [
@@ -31,8 +31,8 @@ export default function AdminThesisDefence() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Administrasi Sidang TA</h1>
-        <p className="text-muted-foreground text-sm">Kelola validasi pendaftaran dan arsip data sidang tugas akhir</p>
+        <h1 className="text-2xl font-bold tracking-tight">Administrasi Sidang Tugas Akhir</h1>
+        <p className="text-muted-foreground">Validasi berkas pendaftaran mahasiswa dan manajemen arsip sidang tugas akhir</p>
       </div>
 
       <LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />

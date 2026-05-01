@@ -373,9 +373,8 @@ export function ThesisDefenceDetailRevisionPanel({
           );
         },
       },
-    ],
-    [_isStudent, _isSupervisor, isFinalized, filteredData, defenceId, approveMutation, unapproveMutation]
-  );
+    ];
+  }, [_isStudent, _isSupervisor, isFinalized, filteredData, defenceId, approveMutation, unapproveMutation]);
 
   if (isLoading) {
     return (

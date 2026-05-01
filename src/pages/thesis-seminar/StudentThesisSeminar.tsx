@@ -59,8 +59,8 @@ export default function StudentThesisSeminar() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Seminar Hasil</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold tracking-tight">Seminar Hasil</h1>
+          <p className="text-muted-foreground">
             Pantau status seminar, unggah dokumen, dan lihat riwayat kehadiran seminar
           </p>
         </div>

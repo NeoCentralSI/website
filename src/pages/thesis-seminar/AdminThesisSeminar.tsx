@@ -7,7 +7,7 @@ import { AdminThesisSeminarArchivePanel } from '@/components/thesis-seminar/Admi
 
 export default function AdminThesisSeminar() {
 	const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>()
-  const [activeTab, setActiveTab] = useState('validation');
+	const [activeTab, setActiveTab] = useState('validation');
 
 	const breadcrumbs = useMemo(
 		() => [
@@ -31,8 +31,8 @@ export default function AdminThesisSeminar() {
 	return (
 		<div className="p-6 space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold">Administrasi Seminar Hasil</h1>
-				<p className="text-gray-500">Validasi berkas pendaftaran mahasiswa dan manajemen arsip seminar hasil</p>
+				<h1 className="text-2xl font-bold tracking-tight">Administrasi Seminar Hasil</h1>
+				<p className="text-muted-foreground">Validasi berkas pendaftaran mahasiswa dan manajemen arsip seminar hasil</p>
 			</div>
 
 			<LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />

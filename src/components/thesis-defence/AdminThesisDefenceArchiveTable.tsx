@@ -1,31 +1,18 @@
-import { useMemo, useState } from 'react';
-import { Edit, Trash2, Eye } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Pencil, Trash2, Eye } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import { CustomTable } from '@/components/layout/CustomTable';
-import type { AdminDefenceListItem } from '@/types/defence.types';
+import type { AdminDefenceArchiveItem } from '@/types/defence.types';
 import {
-  ThesisStudentInfoCell,
-  ThesisTitleCell,
+  ThesisEventTitleCell,
   ThesisPersonnelListCell
 } from '@/components/shared/ThesisTableCells';
-import { useAdminDefenceFormOptions, useUpdateAdminDefenceArchive, useDeleteAdminDefenceArchive } from '@/hooks/thesis-defence/useAdminThesisDefence';
-import { AdminThesisDefenceArchiveFormDialog } from '@/components/thesis-defence/AdminThesisDefenceArchiveFormDialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 interface AdminThesisDefenceArchiveTableProps {
-  data: AdminDefenceListItem[];
+  data: AdminDefenceArchiveItem[];
   loading: boolean;
   isRefreshing?: boolean;
   page: number;
@@ -35,7 +22,10 @@ interface AdminThesisDefenceArchiveTableProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onSearchChange: (search: string) => void;
-  actions?: React.ReactNode;
+  onDetail: (id: string) => void;
+  onEdit: (row: AdminDefenceArchiveItem) => void;
+  onDelete: (id: string) => void;
+  actions?: ReactNode;
 }
 
 export function AdminThesisDefenceArchiveTable({
@@ -49,51 +39,65 @@ export function AdminThesisDefenceArchiveTable({
   onPageChange,
   onPageSizeChange,
   onSearchChange,
+  onDetail,
+  onEdit,
+  onDelete,
   actions,
 }: AdminThesisDefenceArchiveTableProps) {
-  const navigate = useNavigate();
-  const [editingDefence, setEditingDefence] = useState<AdminDefenceListItem | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const { thesisOptions, lecturerOptions, roomOptions } = useAdminDefenceFormOptions();
-  const updateMutation = useUpdateAdminDefenceArchive();
-  const deleteMutation = useDeleteAdminDefenceArchive();
-
   const columns = useMemo(
     () => [
       {
-        key: 'student',
+        key: 'thesis_student',
         header: 'Mahasiswa',
-        width: 200,
-        render: (row: AdminDefenceListItem) => (
-          <ThesisStudentInfoCell name={row.studentName} nim={row.studentNim} />
-        ),
-      },
-      {
-        key: 'thesis',
-        header: 'Judul TA',
         width: 300,
-        render: (row: AdminDefenceListItem) => (
-          <ThesisTitleCell title={row.thesisTitle} />
+        render: (row: AdminDefenceArchiveItem) => (
+          <ThesisEventTitleCell
+            title={row.thesisTitle}
+            studentName={row.student.fullName}
+            studentNim={row.student.nim}
+          />
         ),
       },
       {
-        key: 'supervisors',
-        header: 'Pembimbing',
-        width: 200,
-        render: (row: AdminDefenceListItem) => (
-          <ThesisPersonnelListCell people={row.supervisors} />
+        key: 'date',
+        header: 'Tanggal',
+        width: 130,
+        render: (row: AdminDefenceArchiveItem) => (
+          <div className="text-sm">
+            {row.date ? new Date(row.date).toLocaleDateString('id-ID', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }) : '-'}
+          </div>
+        ),
+      },
+      {
+        key: 'room',
+        header: 'Ruangan',
+        width: 180,
+        render: (row: AdminDefenceArchiveItem) => (
+          <div className="text-sm max-w-[20ch] whitespace-normal leading-tight">
+            {row.room?.name || '-'}
+            {row.room?.location && <div className="text-xs text-muted-foreground">({row.room.location})</div>}
+          </div>
+        ),
+      },
+      {
+        key: 'examiners',
+        header: 'Penguji',
+        width: 250,
+        render: (row: AdminDefenceArchiveItem) => (
+          <ThesisPersonnelListCell people={row.examiners.map(e => ({ ...e, name: e.lecturerName }))} />
         ),
       },
       {
         key: 'status',
         header: 'Status',
         width: 180,
-        render: (row: AdminDefenceListItem) => (
+        render: (row: AdminDefenceArchiveItem) => (
           <ThesisEventStatusBadge
-            status={row.status}
-            scheduledDate={row.date}
-            startTime={row.startTime}
+            status={row.status as any}
           />
         ),
       },
@@ -102,13 +106,13 @@ export function AdminThesisDefenceArchiveTable({
         header: 'Aksi',
         width: 150,
         className: 'text-center',
-        render: (row: AdminDefenceListItem) => (
+        render: (row: AdminDefenceArchiveItem) => (
           <div className="flex items-center justify-center gap-1">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => navigate(`/tugas-akhir/sidang/${row.id}`)}
+              onClick={() => onDetail(row.id)}
               title="Lihat Detail"
             >
               <Eye className="w-4 h-4" />
@@ -116,18 +120,20 @@ export function AdminThesisDefenceArchiveTable({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              onClick={() => setEditingDefence(row)}
-              title="Edit Arsip"
+              className="h-8 w-8"
+              onClick={() => onEdit(row)}
+              disabled={row.isEditable === false}
+              title={row.isEditable === false ? 'Sidang dari workflow utama tidak dapat diubah di sini' : 'Edit Arsip'}
             >
-              <Edit className="w-4 h-4" />
+              <Pencil className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-destructive hover:bg-destructive/10"
-              onClick={() => setDeletingId(row.id)}
-              title="Hapus Arsip"
+              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={() => onDelete(row.id)}
+              disabled={row.isEditable === false}
+              title={row.isEditable === false ? 'Sidang dari workflow utama tidak dapat dihapus di sini' : 'Hapus Arsip'}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -135,71 +141,24 @@ export function AdminThesisDefenceArchiveTable({
         ),
       },
     ],
-    [navigate]
+    [onDelete, onDetail, onEdit]
   );
 
   return (
-    <>
-      <CustomTable<AdminDefenceListItem>
-        data={data}
-        columns={columns}
-        loading={loading}
-        isRefreshing={isRefreshing}
-        emptyText="Tidak ada data arsip sidang"
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-        searchValue={searchValue}
-        onSearchChange={onSearchChange}
-        actions={actions}
-      />
-
-      <AdminThesisDefenceArchiveFormDialog
-        open={!!editingDefence}
-        onOpenChange={(open) => !open && setEditingDefence(null)}
-        editingSeminar={editingDefence as any} // Cast because of minor type differences
-        thesisOptions={thesisOptions}
-        lecturerOptions={lecturerOptions}
-        roomOptions={roomOptions}
-        isPending={updateMutation.isPending}
-        onSubmit={(payload) => {
-          if (editingDefence) {
-            updateMutation.mutate(
-              { defenceId: editingDefence.id, payload },
-              { onSuccess: () => setEditingDefence(null) }
-            );
-          }
-        }}
-      />
-
-      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Arsip Sidang?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan. Data sidang akan dihapus permanen dari sistem.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deletingId) {
-                  deleteMutation.mutate(deletingId, {
-                    onSuccess: () => setDeletingId(null),
-                  });
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    <CustomTable<AdminDefenceArchiveItem>
+      data={data}
+      columns={columns}
+      loading={loading}
+      isRefreshing={isRefreshing}
+      emptyText="Tidak ada data arsip sidang"
+      page={page}
+      pageSize={pageSize}
+      total={total}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
+      searchValue={searchValue}
+      onSearchChange={onSearchChange}
+      actions={actions}
+    />
   );
 }

@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-
 import { DatePicker } from '@/components/ui/date-picker';
 import { ComboBox } from '@/components/ui/combobox';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,19 +21,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type {
-  AdminDefenceOption,
+  AdminDefenceArchiveItem,
   AdminDefenceArchiveStatus,
   AdminDefenceExaminerOption,
+  AdminDefenceOption,
 } from '@/types/defence.types';
-import type { DefenceRoomOption } from '@/types/defence.types';
+import type { Room } from '@/services/admin.service';
 
 interface AdminThesisDefenceArchiveFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingSeminar: any | null; // Use any to match the loose typing in the table
+  editingSeminar: AdminDefenceArchiveItem | null; // Named editingSeminar to match pattern
   thesisOptions: AdminDefenceOption[];
   lecturerOptions: AdminDefenceExaminerOption[];
-  roomOptions: DefenceRoomOption[];
+  roomOptions: Room[];
   isPending: boolean;
   onSubmit: (payload: {
     thesisId: string;
@@ -76,8 +76,8 @@ export function AdminThesisDefenceArchiveFormDialog({
       setThesisId(editingSeminar.thesisId);
       setDate(editingSeminar.date ? new Date(editingSeminar.date) : undefined);
       setRoomId(editingSeminar.room?.id || '');
-      setStatus(editingSeminar.status === 'cancelled' ? 'passed' : editingSeminar.status);
-      setExaminerIds(editingSeminar.examiners?.map((e: any) => e.lecturerId) || []);
+      setStatus(editingSeminar.status === 'cancelled' ? 'passed' : editingSeminar.status as any);
+      setExaminerIds(editingSeminar.examiners.map((e) => e.lecturerId));
     } else {
       setThesisId('');
       setDate(undefined);
@@ -100,7 +100,6 @@ export function AdminThesisDefenceArchiveFormDialog({
     () =>
       lecturerOptions.filter((item) => {
         if (supervisorIds.includes(item.id)) return false;
-
         const q = examinerSearch.trim().toLowerCase();
         if (!q) return true;
         return (
@@ -110,6 +109,14 @@ export function AdminThesisDefenceArchiveFormDialog({
       }),
     [lecturerOptions, supervisorIds, examinerSearch]
   );
+
+  useEffect(() => {
+    setExaminerIds((prev) => {
+      const next = prev.filter((id) => !supervisorIds.includes(id));
+      if (next.length !== prev.length) return next;
+      return prev;
+    });
+  }, [supervisorIds]);
 
   const isValid = Boolean(thesisId && date && roomId && status && examinerIds.length >= 1);
 
@@ -181,7 +188,7 @@ export function AdminThesisDefenceArchiveFormDialog({
                 <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
                   {roomOptions.map((room) => (
                     <SelectItem key={room.id} value={room.id} className="max-w-full whitespace-normal">
-                      {room.name}
+                      {room.name}{room.location ? ` (${room.location})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -246,7 +253,7 @@ export function AdminThesisDefenceArchiveFormDialog({
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>Batal</Button>
           <Button onClick={handleSubmit} disabled={!isValid || isPending}>
-            {isPending ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Tambah Sidang'}
+            {isPending ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Tambah Arsip'}
           </Button>
         </DialogFooter>
       </DialogContent>

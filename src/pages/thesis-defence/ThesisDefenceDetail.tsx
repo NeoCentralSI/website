@@ -16,7 +16,7 @@ import { ThesisDefenceDetailSchedulingPanel } from '@/components/thesis-defence/
 import { ThesisDefenceDetailAssessmentPanel } from '@/components/thesis-defence/ThesisDefenceDetailAssessmentPanel';
 import { ThesisDefenceDetailRevisionPanel } from '@/components/thesis-defence/ThesisDefenceDetailRevisionPanel';
 import { AdminThesisDefenceCancelDialog } from '@/components/thesis-defence/AdminThesisDefenceCancelDialog';
-import { ROLES } from '@/constants/roles';
+import { ROLES } from '@/lib/roles';
 
 export default function ThesisDefenceDetailPage() {
   const { id } = useParams<{ id: string }>();

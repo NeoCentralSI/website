@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ClipboardCheck, Eye } from 'lucide-react';
+import { CheckSquare, Eye } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
@@ -110,7 +110,7 @@ export function AdminThesisDefenceValidationTable({
                 }}
                 title="Validasi Pendaftaran"
               >
-                <ClipboardCheck className="w-4 h-4" />
+                <CheckSquare className="w-4 h-4" />
               </Button>
             )}
           </div>
