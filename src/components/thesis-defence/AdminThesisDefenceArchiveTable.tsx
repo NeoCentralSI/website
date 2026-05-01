@@ -92,6 +92,26 @@ export function AdminThesisDefenceArchiveTable({
         ),
       },
       {
+        key: 'score',
+        header: 'Nilai',
+        width: 100,
+        render: (row: AdminDefenceArchiveItem) => (
+          <div className="font-medium text-sm">
+            {row.finalScore !== null && row.finalScore !== undefined ? row.finalScore : '-'}
+          </div>
+        ),
+      },
+      {
+        key: 'grade',
+        header: 'Grade',
+        width: 80,
+        render: (row: AdminDefenceArchiveItem) => (
+          <div className="font-bold text-sm">
+            {row.grade || '-'}
+          </div>
+        ),
+      },
+      {
         key: 'status',
         header: 'Status',
         width: 180,

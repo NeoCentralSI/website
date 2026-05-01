@@ -42,6 +42,8 @@ interface AdminThesisDefenceArchiveFormDialogProps {
     roomId: string;
     status: Exclude<AdminDefenceArchiveStatus, 'cancelled'>;
     examinerLecturerIds: string[];
+    finalScore?: number | null;
+    grade?: string | null;
   }) => void;
 }
 
@@ -67,6 +69,8 @@ export function AdminThesisDefenceArchiveFormDialog({
   const [roomId, setRoomId] = useState('');
   const [status, setStatus] = useState<Exclude<AdminDefenceArchiveStatus, 'cancelled'>>('passed');
   const [examinerIds, setExaminerIds] = useState<string[]>([]);
+  const [finalScore, setFinalScore] = useState<string>('');
+  const [grade, setGrade] = useState<string>('');
   const [examinerSearch, setExaminerSearch] = useState('');
 
   useEffect(() => {
@@ -78,12 +82,16 @@ export function AdminThesisDefenceArchiveFormDialog({
       setRoomId(editingSeminar.room?.id || '');
       setStatus(editingSeminar.status === 'cancelled' ? 'passed' : editingSeminar.status as any);
       setExaminerIds(editingSeminar.examiners.map((e) => e.lecturerId));
+      setFinalScore(editingSeminar.finalScore?.toString() || '');
+      setGrade(editingSeminar.grade || '');
     } else {
       setThesisId('');
       setDate(undefined);
       setRoomId('');
       setStatus('passed');
       setExaminerIds([]);
+      setFinalScore('');
+      setGrade('');
     }
     setExaminerSearch('');
   }, [open, editingSeminar]);
@@ -127,6 +135,8 @@ export function AdminThesisDefenceArchiveFormDialog({
       roomId,
       status,
       examinerLecturerIds: examinerIds,
+      finalScore: finalScore ? Number(finalScore) : null,
+      grade: grade || null,
     });
   };
 
@@ -210,6 +220,29 @@ export function AdminThesisDefenceArchiveFormDialog({
                   <SelectItem value="failed">Tidak Lulus</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Nilai Akhir (0-100)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="Contoh: 85.5"
+                value={finalScore}
+                onChange={(e) => setFinalScore(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Grade</Label>
+              <Input
+                placeholder="Contoh: A"
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+              />
             </div>
           </div>
 

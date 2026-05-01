@@ -720,6 +720,8 @@ export interface AdminDefenceArchivePayload {
   roomId: string;
   status: Exclude<AdminDefenceArchiveStatus, 'cancelled'>;
   examinerLecturerIds: string[];
+  finalScore?: number | null;
+  grade?: string | null;
 }
 
 export interface AdminDefenceArchiveItem {
@@ -738,6 +740,8 @@ export interface AdminDefenceArchiveItem {
     location: string | null;
   } | null;
   status: AdminDefenceArchiveStatus;
+  finalScore?: number | null;
+  grade?: string | null;
   isEditable?: boolean;
   examiners: Array<{
     id: string;
