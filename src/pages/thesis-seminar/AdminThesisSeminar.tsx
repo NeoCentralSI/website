@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useEffect, useMemo } from 'react'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import type { LayoutContext } from '@/components/layout/ProtectedLayout'
 import { LocalTabsNav } from '@/components/ui/tabs-nav'
 import { AdminThesisSeminarValidationPanel } from '@/components/thesis-seminar/AdminThesisSeminarValidationPanel'
@@ -7,7 +7,12 @@ import { AdminThesisSeminarArchivePanel } from '@/components/thesis-seminar/Admi
 
 export default function AdminThesisSeminar() {
 	const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>()
-	const [activeTab, setActiveTab] = useState('validation');
+	const [searchParams, setSearchParams] = useSearchParams()
+	const activeTab = searchParams.get('tab') || 'validation'
+
+	const setActiveTab = (tab: string) => {
+		setSearchParams({ tab }, { replace: true })
+	}
 
 	const breadcrumbs = useMemo(
 		() => [

@@ -2,13 +2,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSupervisedStudentDefences } from '@/hooks/thesis-defence';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
-import { Eye } from 'lucide-react';
+import { ThesisEventTitleCell } from '@/components/shared/ThesisTableCells';
+import { Eye, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SupervisedStudentDefenceItem } from '@/types/defence.types';
 
@@ -18,13 +18,7 @@ export function LecturerThesisDefenceSupervisedStudentsTable() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const queryParams = useMemo(() => {
-    const params: { search?: string } = {};
-    if (search.trim()) params.search = search.trim();
-    return params;
-  }, [search]);
-
-  const { data: defences, isLoading, isFetching, error, refetch } = useSupervisedStudentDefences(queryParams);
+  const { data: defences, isLoading, isFetching, error, refetch } = useSupervisedStudentDefences();
 
   useEffect(() => {
     if (error) {
@@ -32,7 +26,76 @@ export function LecturerThesisDefenceSupervisedStudentsTable() {
     }
   }, [error]);
 
-  const filteredData = defences || [];
+  const filteredData = useMemo(() => {
+    if (!defences) return [];
+    let result = [...defences];
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.studentName.toLowerCase().includes(q) ||
+          item.studentNim.toLowerCase().includes(q) ||
+          item.thesisTitle.toLowerCase().includes(q)
+      );
+    }
+
+    const statusOrder: Record<string, number> = {
+      ongoing: 1,
+      passed_with_revision: 2,
+      scheduled: 3,
+      examiner_assigned: 4,
+      verified: 5,
+      registered: 6,
+      passed: 7,
+      failed: 8,
+      cancelled: 9,
+    };
+
+    result.sort((a, b) => {
+      const orderA = statusOrder[a.status] || 99;
+      const orderB = statusOrder[b.status] || 99;
+      if (orderA !== orderB) return orderA - orderB;
+
+      // Tie-breakers for same status
+      const hasSchedule = ['ongoing', 'passed', 'passed_with_revision', 'failed', 'scheduled'].includes(a.status);
+      if (hasSchedule) {
+        const getScheduleTime = (item: SupervisedStudentDefenceItem) => {
+          if (!item.date) return 0;
+          const dateStr = item.date.includes('T') ? item.date.split('T')[0] : item.date;
+          let timeStr = '00:00';
+          if (item.startTime) {
+            if (item.startTime.includes('T')) {
+              const d = new Date(item.startTime);
+              timeStr = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+            } else {
+              timeStr = item.startTime.slice(0, 5);
+            }
+          }
+          return new Date(`${dateStr}T${timeStr}:00`).getTime();
+        };
+
+        const timeA = getScheduleTime(a);
+        const timeB = getScheduleTime(b);
+        if (timeA !== timeB) return timeB - timeA; // Descending
+      } else {
+        const getRegisteredTime = (item: SupervisedStudentDefenceItem) => {
+          if (!item.registeredAt) return 0;
+          return new Date(item.registeredAt).getTime();
+        };
+
+        const timeA = getRegisteredTime(a);
+        const timeB = getRegisteredTime(b);
+        if (timeA !== timeB) return timeB - timeA; // Descending
+      }
+
+      // Alphabetical by name
+      return a.studentName.localeCompare(b.studentName);
+    });
+
+    return result;
+  }, [defences, search]);
+
   const total = filteredData.length;
 
   const pagedData = useMemo(() => {
@@ -44,25 +107,19 @@ export function LecturerThesisDefenceSupervisedStudentsTable() {
     {
       key: 'student',
       header: 'Mahasiswa',
+      width: 300,
       render: (row) => (
-        <div>
-          <div className="font-medium">{toTitleCaseName(row.studentName)}</div>
-          <div className="text-xs text-muted-foreground">{row.studentNim}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'thesisTitle',
-      header: 'Judul Tugas Akhir',
-      render: (row) => (
-        <div className="max-w-xs truncate" title={row.thesisTitle}>
-          {row.thesisTitle}
-        </div>
+        <ThesisEventTitleCell
+          title={row.thesisTitle}
+          studentName={row.studentName}
+          studentNim={row.studentNim}
+        />
       ),
     },
     {
       key: 'myRole',
       header: 'Peran Saya',
+      width: 220,
       render: (row) => (
         <Badge variant="outline" className="text-xs">
           {formatRoleName(row.myRole)}
@@ -72,19 +129,30 @@ export function LecturerThesisDefenceSupervisedStudentsTable() {
     {
       key: 'examiners',
       header: 'Penguji',
+      width: 240,
       render: (row) => {
         if (row.examiners.length === 0) {
-          return <span className="text-xs text-muted-foreground italic">Belum ditetapkan</span>;
+          return <span className="text-sm text-muted-foreground italic">-</span>;
         }
         return (
-          <div className="space-y-0.5">
-            {row.examiners.map((e) => (
-              <div key={e.id} className="text-xs flex items-center gap-1">
-                <span className="text-muted-foreground">Penguji {e.order}:</span>{' '}
-                <span>{toTitleCaseName(e.lecturerName)}</span>
-                <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
-              </div>
-            ))}
+          <div className="space-y-1 text-sm leading-snug text-foreground">
+            {row.examiners.map((e, idx) => {
+              let StatusIcon = Clock;
+              let iconColor = 'text-amber-500';
+              if (e.availabilityStatus === 'available') {
+                StatusIcon = CheckCircle2;
+                iconColor = 'text-emerald-600';
+              } else if (e.availabilityStatus === 'unavailable') {
+                StatusIcon = XCircle;
+                iconColor = 'text-red-600';
+              }
+              return (
+                <div key={e.id} className="flex items-center gap-1.5 truncate" title={`${idx + 1}. ${toTitleCaseName(e.lecturerName)}`}>
+                  <span>{idx + 1}. {toTitleCaseName(e.lecturerName)}</span>
+                  <StatusIcon className={`w-3.5 h-3.5 ${iconColor} shrink-0`} />
+                </div>
+              );
+            })}
           </div>
         );
       },
@@ -92,11 +160,12 @@ export function LecturerThesisDefenceSupervisedStudentsTable() {
     {
       key: 'status',
       header: 'Status Sidang',
+      width: 160,
       render: (row) => (
-        <ThesisEventStatusBadge 
-          status={row.status} 
-          scheduledDate={row.date} 
-          startTime={row.startTime} 
+        <ThesisEventStatusBadge
+          status={row.status}
+          scheduledDate={row.date}
+          startTime={row.startTime}
         />
       ),
     },
@@ -104,12 +173,13 @@ export function LecturerThesisDefenceSupervisedStudentsTable() {
       key: 'actions',
       header: 'Aksi',
       className: 'text-center',
-      width: 80,
+      width: 100,
       render: (row) => (
         <div className="flex items-center justify-center">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
             onClick={() => navigate(`/tugas-akhir/sidang/${row.id}`)}
             title="Lihat Detail"
           >

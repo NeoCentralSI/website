@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { StudentThesisDefenceOverviewPanel } from '@/components/thesis-defence/StudentThesisDefenceOverviewPanel';
 import {
   useStudentDefenceOverview,
@@ -11,6 +12,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function StudentThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'ringkasan';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const { data: overview, isLoading: isOverviewLoading } = useStudentDefenceOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentDefenceHistory();
@@ -20,10 +27,10 @@ export default function StudentThesisDefence() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Sidang Tugas Akhir', href: '/tugas-akhir/sidang' },
-      { label: 'Status & Pendaftaran' },
+      { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
+      { label: activeTab === 'riwayat' ? 'Riwayat Sidang' : 'Status & Pendaftaran' },
     ],
-    []
+    [activeTab]
   );
 
   useEffect(() => {
@@ -33,30 +40,31 @@ export default function StudentThesisDefence() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-4 space-y-6">
         <Skeleton className="h-10 w-[250px]" />
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <Skeleton className="lg:col-span-5 h-[350px]" />
-          <Skeleton className="lg:col-span-7 h-[350px]" />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-[300px]" />
-          <Skeleton className="h-[300px]" />
-        </div>
+        <Skeleton className="h-10 w-full max-w-md" />
+        <Skeleton className="h-[200px] w-full" />
       </div>
     );
   }
 
+  const tabs = [
+    { label: 'Ringkasan', value: 'ringkasan' },
+    { label: 'Riwayat', value: 'riwayat' },
+  ];
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center text-left">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Sidang Tugas Akhir</h1>
-          <p className="text-gray-500">
-            Pantau status sidang, unggah dokumen pendaftaran, dan lihat riwayat sidang
+          <h1 className="text-2xl font-bold tracking-tight">Sidang Tugas Akhir</h1>
+          <p className="text-muted-foreground">
+            Pantau status sidang, unggah dokumen, dan lihat riwayat sidang tugas akhir
           </p>
         </div>
       </div>
+
+      <LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
       {overview ? (
         <StudentThesisDefenceOverviewPanel

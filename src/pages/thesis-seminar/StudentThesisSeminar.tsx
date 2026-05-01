@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { StudentThesisSeminarOverviewPanel } from '@/components/thesis-seminar/StudentThesisSeminarOverviewPanel';
@@ -14,7 +14,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function StudentThesisSeminar() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('ringkasan');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'ringkasan';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const { data: overview, isLoading: isOverviewLoading } = useStudentSeminarOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentSeminarHistory();

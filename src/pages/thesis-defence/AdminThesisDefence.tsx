@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { AdminThesisDefenceValidationPanel } from '@/components/thesis-defence/AdminThesisDefenceValidationPanel';
@@ -7,7 +7,12 @@ import { AdminThesisDefenceArchivePanel } from '@/components/thesis-defence/Admi
 
 export default function AdminThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const [activeTab, setActiveTab] = useState('validation');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'validation';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const breadcrumbs = useMemo(
     () => [
@@ -31,7 +36,7 @@ export default function AdminThesisDefence() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Administrasi Sidang Tugas Akhir</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Administrasi Sidang TA</h1>
         <p className="text-muted-foreground">Validasi berkas pendaftaran mahasiswa dan manajemen arsip sidang tugas akhir</p>
       </div>
 

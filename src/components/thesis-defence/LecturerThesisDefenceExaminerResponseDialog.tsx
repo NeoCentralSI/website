@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,13 +10,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { useRespondDefenceExaminerAssignment } from '@/hooks/thesis-defence';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import { toast } from 'sonner';
-import { CheckCircle2, XCircle, UserCheck, BookOpen, GraduationCap } from 'lucide-react';
+import { CheckCircle2, XCircle, BookOpen, GraduationCap } from 'lucide-react';
 import type { ExaminerDefenceRequestItem } from '@/types/defence.types';
 
-interface DefenceExaminerResponseDialogProps {
+interface LecturerThesisDefenceExaminerResponseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defence: ExaminerDefenceRequestItem | null;
@@ -27,17 +29,27 @@ export function LecturerThesisDefenceExaminerResponseDialog({
   onOpenChange,
   defence,
   onSuccess,
-}: DefenceExaminerResponseDialogProps) {
+}: LecturerThesisDefenceExaminerResponseDialogProps) {
   const respondMutation = useRespondDefenceExaminerAssignment();
+  const [unavailableReasons, setUnavailableReasons] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setUnavailableReasons('');
+    }
+  }, [open]);
 
   const handleRespond = (status: 'available' | 'unavailable') => {
-    if (!defence?.myExaminerId || !defence?.id) return;
+    if (!defence?.myExaminerId) return;
 
     respondMutation.mutate(
       {
         defenceId: defence.id,
         examinerId: defence.myExaminerId,
-        payload: { status },
+        payload: {
+          status,
+          unavailableReasons: status === 'unavailable' ? (unavailableReasons.trim() || null) : null
+        },
       },
       {
         onSuccess: (data) => {
@@ -63,16 +75,16 @@ export function LecturerThesisDefenceExaminerResponseDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
             Konfirmasi Penugasan Penguji
           </DialogTitle>
           <DialogDescription>
-            Anda ditugaskan sebagai penguji sidang.
+            Anda ditugaskan sebagai penguji sidang tugas akhir
           </DialogDescription>
         </DialogHeader>
 
         {defence && (
           <div className="space-y-4">
+            {/* Student & Thesis Info Card */}
             <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
               <div className="flex items-start gap-3">
                 <GraduationCap className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
@@ -103,14 +115,30 @@ export function LecturerThesisDefenceExaminerResponseDialog({
               )}
             </div>
 
+            {/* Role Badge */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Peran Anda:</span>
               <Badge variant="outline">Penguji {defence.myExaminerOrder}</Badge>
             </div>
 
+            {/* Confirmation Question */}
             <p className="text-sm">
               Apakah Anda bersedia menjadi penguji untuk sidang mahasiswa ini?
             </p>
+
+            {/* Optional Rejection Reason */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Alasan Tidak Bersedia (Opsional)
+              </label>
+              <Textarea
+                placeholder="Masukkan alasan jika tidak bersedia..."
+                value={unavailableReasons}
+                onChange={(e) => setUnavailableReasons(e.target.value)}
+                className="text-sm resize-none"
+                rows={3}
+              />
+            </div>
           </div>
         )}
 

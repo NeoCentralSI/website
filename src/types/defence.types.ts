@@ -302,6 +302,7 @@ export interface AssignmentDefenceItem {
   registeredAt: string | null;
   assignmentStatus: ExaminerAssignmentStatus;
   examiners: LecturerDefenceExaminer[];
+  rejectedExaminers: RejectedDefenceExaminer[];
 }
 
 export interface ExaminerDefenceRequestItem {
@@ -344,6 +345,27 @@ export interface EligibleDefenceExaminer {
   fullName: string;
   identityNumber: string;
   scienceGroup: string;
+  upcomingCount?: number;
+  availabilityRanges?: Array<{
+    day: string;
+    dayLabel: string;
+    startTime: string;
+    endTime: string;
+    validFrom: string;
+    validUntil: string;
+    label: string;
+  }>;
+  events?: Array<{
+    type: string;
+    title: string;
+    studentName: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  isPreviousExaminer?: boolean;
+  isSelectable?: boolean;
+  hasScheduleConflict?: boolean;
 }
 
 export interface LecturerDefenceDetailResponse {
@@ -534,6 +556,7 @@ export interface DefenceRevisionBoardItem {
 
 export interface RespondDefenceAssignmentPayload {
   status: 'available' | 'unavailable';
+  unavailableReasons?: string | null;
 }
 
 export interface RespondDefenceAssignmentResponse {

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useEffect, useMemo } from 'react'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import type { LayoutContext } from '@/components/layout/ProtectedLayout'
 import { LocalTabsNav } from '@/components/ui/tabs-nav'
 import { useRole } from '@/hooks/shared/useRole'
@@ -10,7 +10,12 @@ import { LecturerThesisSeminarAssignExaminerPanel } from '@/components/thesis-se
 export default function LecturerThesisSeminar() {
 	const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>()
 	const { isKadep } = useRole()
-	const [activeTab, setActiveTab] = useState('mahasiswa-bimbingan');
+	const [searchParams, setSearchParams] = useSearchParams()
+	const activeTab = searchParams.get('tab') || 'mahasiswa-bimbingan'
+
+	const setActiveTab = (tab: string) => {
+		setSearchParams({ tab }, { replace: true })
+	}
 
 	const activeLabel = useMemo(() => {
 		if (activeTab === 'mahasiswa-bimbingan') return 'Mahasiswa Bimbingan'

@@ -1,16 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { useRole } from '@/hooks/shared/useRole';
-import { LecturerThesisDefenceSupervisedStudentsTable } from '@/components/thesis-defence/LecturerThesisDefenceSupervisedStudentsTable';
-import { LecturerThesisDefenceExaminerRequestsTable } from '@/components/thesis-defence/LecturerThesisDefenceExaminerRequestsTable';
-import { LecturerThesisDefenceExaminerAssignmentTable } from '@/components/thesis-defence/LecturerThesisDefenceExaminerAssignmentTable';
+import { LecturerThesisDefenceSupervisorPanel } from '@/components/thesis-defence/LecturerThesisDefenceSupervisorPanel';
+import { LecturerThesisDefenceExaminerPanel } from '@/components/thesis-defence/LecturerThesisDefenceExaminerPanel';
+import { LecturerThesisDefenceAssignExaminerPanel } from '@/components/thesis-defence/LecturerThesisDefenceAssignExaminerPanel';
 
 export default function LecturerThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { isKadep } = useRole();
-  const [activeTab, setActiveTab] = useState('mahasiswa-bimbingan');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'mahasiswa-bimbingan';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const activeLabel = useMemo(() => {
     if (activeTab === 'mahasiswa-bimbingan') return 'Mahasiswa Bimbingan';
@@ -46,13 +51,13 @@ export default function LecturerThesisDefence() {
 
   const renderPanel = () => {
     if (activeTab === 'mahasiswa-bimbingan') {
-      return <LecturerThesisDefenceSupervisedStudentsTable />;
+      return <LecturerThesisDefenceSupervisorPanel />;
     }
     if (activeTab === 'menguji-mahasiswa') {
-      return <LecturerThesisDefenceExaminerRequestsTable />;
+      return <LecturerThesisDefenceExaminerPanel />;
     }
     if (activeTab === 'tetapkan-penguji') {
-      return isKadep() ? <LecturerThesisDefenceExaminerAssignmentTable /> : <LecturerThesisDefenceExaminerRequestsTable />;
+      return isKadep() ? <LecturerThesisDefenceAssignExaminerPanel /> : <LecturerThesisDefenceExaminerPanel />;
     }
     return null;
   };

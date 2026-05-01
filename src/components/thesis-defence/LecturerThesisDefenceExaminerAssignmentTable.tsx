@@ -2,15 +2,19 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
-import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useDefenceAssignmentList } from '@/hooks/thesis-defence';
-import { toTitleCaseName, formatRoleName } from '@/lib/text';
-import { UserPlus, Pencil, CheckCircle2, Eye } from 'lucide-react';
+import { toTitleCaseName } from '@/lib/text';
+import { ThesisEventTitleCell, ThesisPersonnelListCell } from '@/components/shared/ThesisTableCells';
+import { UserPlus, Pencil, CheckCircle2, Eye, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AssignmentDefenceItem, ExaminerAssignmentStatus } from '@/types/defence.types';
 import { LecturerThesisDefenceAssignExaminerDialog } from './LecturerThesisDefenceAssignExaminerDialog';
+
+// ============================================================
+// Assignment status badge
+// ============================================================
 
 const ASSIGNMENT_STATUS_MAP: Record<
   ExaminerAssignmentStatus,
@@ -21,6 +25,7 @@ const ASSIGNMENT_STATUS_MAP: Record<
   rejected: { label: 'Ditolak', variant: 'destructive' },
   partially_rejected: { label: 'Sebagian Ditolak', variant: 'warning' },
   confirmed: { label: 'Ditetapkan', variant: 'success' },
+  finished: { label: 'Selesai', variant: 'secondary' },
 };
 
 function AssignmentStatusBadge({ status }: { status: ExaminerAssignmentStatus }) {
@@ -28,16 +33,9 @@ function AssignmentStatusBadge({ status }: { status: ExaminerAssignmentStatus })
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
-function getAssignmentStatusFilterOptions() {
-  return [
-    { label: 'Semua', value: '' },
-    { label: 'Belum Ditetapkan', value: 'unassigned' },
-    { label: 'Menunggu Persetujuan', value: 'pending' },
-    { label: 'Sebagian Ditolak', value: 'partially_rejected' },
-    { label: 'Ditolak', value: 'rejected' },
-    { label: 'Ditetapkan', value: 'confirmed' },
-  ];
-}
+// ============================================================
+// Component
+// ============================================================
 
 export function LecturerThesisDefenceExaminerAssignmentTable() {
   const navigate = useNavigate();
@@ -46,16 +44,11 @@ export function LecturerThesisDefenceExaminerAssignmentTable() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDefence, setSelectedDefence] = useState<AssignmentDefenceItem | null>(null);
 
-  const queryParams = useMemo(() => {
-    const params: { search?: string } = {};
-    if (search.trim()) params.search = search.trim();
-    return params;
-  }, [search]);
-
-  const { data: defences, isLoading, isFetching, error, refetch } = useDefenceAssignmentList(queryParams);
+  const { data: defences, isLoading, isFetching, error, refetch } = useDefenceAssignmentList({ search });
 
   useEffect(() => {
     if (error) {
@@ -63,12 +56,14 @@ export function LecturerThesisDefenceExaminerAssignmentTable() {
     }
   }, [error]);
 
+  // Client-side assignment status & search filter
   const filteredData = useMemo(() => {
     if (!defences) return [];
+    let result = defences;
     if (statusFilter) {
-      return defences.filter((d) => d.assignmentStatus === statusFilter);
+      result = result.filter((d) => d.assignmentStatus === statusFilter);
     }
-    return defences;
+    return result;
   }, [defences, statusFilter]);
 
   const total = filteredData.length;
@@ -77,7 +72,15 @@ export function LecturerThesisDefenceExaminerAssignmentTable() {
     return filteredData.slice(start, start + pageSize);
   }, [filteredData, page, pageSize]);
 
-  const statusOptions = getAssignmentStatusFilterOptions();
+  const statusOptions = [
+    { label: 'Semua', value: '' },
+    { label: 'Belum Ditetapkan', value: 'unassigned' },
+    { label: 'Menunggu Persetujuan', value: 'pending' },
+    { label: 'Sebagian Ditolak', value: 'partially_rejected' },
+    { label: 'Ditolak', value: 'rejected' },
+    { label: 'Ditetapkan', value: 'confirmed' },
+    { label: 'Selesai', value: 'finished' },
+  ];
 
   const openAssignDialog = (defence: AssignmentDefenceItem) => {
     setSelectedDefence(defence);
@@ -88,52 +91,48 @@ export function LecturerThesisDefenceExaminerAssignmentTable() {
     {
       key: 'student',
       header: 'Mahasiswa',
+      width: 280,
       render: (row) => (
-        <div>
-          <div className="font-medium">{toTitleCaseName(row.studentName)}</div>
-          <div className="text-xs text-muted-foreground">{row.studentNim}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'thesisTitle',
-      header: 'Judul Tugas Akhir',
-      render: (row) => (
-        <div className="max-w-xs truncate" title={row.thesisTitle}>
-          {row.thesisTitle}
-        </div>
+        <ThesisEventTitleCell
+          title={row.thesisTitle}
+          studentName={row.studentName}
+          studentNim={row.studentNim}
+        />
       ),
     },
     {
       key: 'supervisors',
       header: 'Pembimbing',
-      render: (row) => (
-        <div className="space-y-0.5">
-          {row.supervisors.map((s, i) => (
-            <div key={i} className="text-xs">
-              <span className="text-muted-foreground">{formatRoleName(s.role)}:</span>{' '}
-              {toTitleCaseName(s.name)}
-            </div>
-          ))}
-        </div>
-      ),
+      width: 200,
+      render: (row) => <ThesisPersonnelListCell people={row.supervisors.map((s, i) => ({ name: s.name, order: i + 1 }))} />,
     },
     {
       key: 'examiners',
       header: 'Penguji',
+      width: 220,
       render: (row) => {
         if (row.examiners.length === 0) {
-          return <span className="text-xs text-muted-foreground italic">Belum ditetapkan</span>;
+          return <span className="text-sm text-muted-foreground italic">-</span>;
         }
         return (
-          <div className="space-y-0.5">
-            {row.examiners.map((e) => (
-              <div key={e.id} className="text-xs flex items-center gap-1">
-                <span className="text-muted-foreground">Penguji {e.order}:</span>{' '}
-                <span>{toTitleCaseName(e.lecturerName)}</span>
-                <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[10px] px-1 py-0" />
-              </div>
-            ))}
+          <div className="space-y-1 text-sm leading-snug text-foreground">
+            {row.examiners.map((e, idx) => {
+              let StatusIcon = Clock;
+              let iconColor = 'text-amber-500';
+              if (e.availabilityStatus === 'available') {
+                StatusIcon = CheckCircle2;
+                iconColor = 'text-emerald-600';
+              } else if (e.availabilityStatus === 'unavailable') {
+                StatusIcon = XCircle;
+                iconColor = 'text-red-600';
+              }
+              return (
+                <div key={e.id} className="flex items-center gap-1.5 truncate" title={`${idx + 1}. ${toTitleCaseName(e.lecturerName)}`}>
+                  <span>{idx + 1}. {toTitleCaseName(e.lecturerName)}</span>
+                  <StatusIcon className={`w-3.5 h-3.5 ${iconColor} shrink-0`} />
+                </div>
+              );
+            })}
           </div>
         );
       },
@@ -141,6 +140,7 @@ export function LecturerThesisDefenceExaminerAssignmentTable() {
     {
       key: 'assignmentStatus',
       header: 'Status',
+      width: 160,
       filter: {
         type: 'select',
         value: statusFilter,
@@ -156,17 +156,18 @@ export function LecturerThesisDefenceExaminerAssignmentTable() {
       key: 'actions',
       header: 'Aksi',
       className: 'text-center',
-      width: 180,
+      width: 100,
       render: (row) => {
         const canAssign = row.assignmentStatus === 'unassigned' || row.assignmentStatus === 'rejected';
         const canReplace = row.assignmentStatus === 'partially_rejected';
-        const canChange = row.assignmentStatus === 'pending';
+        const canChange = row.assignmentStatus === 'pending' || row.assignmentStatus === 'confirmed';
 
         return (
           <div className="flex items-center justify-center gap-1">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
               onClick={() => navigate(`/tugas-akhir/sidang/${row.id}`)}
               title="Lihat Detail"
             >
@@ -174,39 +175,47 @@ export function LecturerThesisDefenceExaminerAssignmentTable() {
             </Button>
             {canAssign && (
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
                 onClick={() => openAssignDialog(row)}
+                title="Tetapkan Penguji"
               >
-                <UserPlus className="h-4 w-4 mr-1" />
-                Tetapkan
+                <UserPlus className="h-4 w-4" />
               </Button>
             )}
             {canReplace && (
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
                 onClick={() => openAssignDialog(row)}
+                title="Ganti Penguji"
               >
-                <Pencil className="h-4 w-4 mr-1" />
-                Ganti
+                <Pencil className="h-4 w-4" />
               </Button>
             )}
             {canChange && (
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
                 onClick={() => openAssignDialog(row)}
+                title="Ubah Penguji"
               >
-                <Pencil className="h-4 w-4 mr-1" />
-                Ubah
+                <Pencil className="h-4 w-4" />
               </Button>
             )}
-            {row.assignmentStatus === 'confirmed' && (
-              <Badge variant="success" className="text-xs">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Selesai
-              </Badge>
+            {row.assignmentStatus === 'finished' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground"
+                disabled
+                title="Sidang sudah selesai"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
             )}
           </div>
         );
