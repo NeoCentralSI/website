@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
+import { useParams, useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -29,7 +29,12 @@ export default function ThesisDefenceDetailPage() {
   const _isKadep = isKadep();
 
   const { data: detail, isLoading, isFetching, refetch } = useThesisDefenceDetail(id!);
-  const [activeTab, setActiveTab] = useState('identitas');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'identitas';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
   const [cancelOpen, setCancelOpen] = useState(false);
 
   const breadcrumbs = useMemo(() => {
@@ -99,21 +104,21 @@ export default function ThesisDefenceDetailPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <ThesisEventStatusBadge
-            status={d.status}
-            scheduledDate={d.date}
-            startTime={d.startTime}
-          />
-          {isAdmin() && d.status !== 'cancelled' && (
+          {isAdmin() && ['registered', 'verified', 'examiner_assigned', 'scheduled'].includes(d.status) && (
             <Button
               variant="outline"
               size="sm"
-              className="text-destructive hover:bg-destructive/10"
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
               onClick={() => setCancelOpen(true)}
             >
               Batalkan Sidang
             </Button>
           )}
+          <ThesisEventStatusBadge
+            status={d.status}
+            scheduledDate={d.date}
+            startTime={d.startTime}
+          />
         </div>
       </div>
 

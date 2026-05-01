@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useParams, useOutletContext, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -33,7 +33,12 @@ export default function ThesisSeminarDetailPage() {
     (location.state as { fromAnnouncement?: string } | null)?.fromAnnouncement === 'seminar-hasil';
 
   const { data: detail, isLoading, isFetching, refetch } = useThesisSeminarDetail(id!);
-  const [activeTab, setActiveTab] = useState('identitas');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'identitas';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const breadcrumbs = useMemo(() => {
@@ -186,7 +191,7 @@ export default function ThesisSeminarDetailPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {isUserAdmin && ['verified', 'examiner_assigned', 'scheduled'].includes(d.status) && (
+          {isUserAdmin && ['registered', 'verified', 'examiner_assigned', 'scheduled'].includes(d.status) && (
             <Button
               variant="outline"
               size="sm"
