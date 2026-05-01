@@ -14,6 +14,8 @@ import {
   getAdminDefenceStudentOptions,
   getAdminDefenceLecturerOptions,
   getAdminDefenceRoomOptions,
+  finalizeDefenceSchedule,
+  downloadAdminThesisDefenceInvitation,
 } from '@/services/thesis-defence/core.service';
 import { validateDefenceDocument } from '@/services/thesis-defence/doc.service';
 import type {
@@ -57,6 +59,19 @@ export function useValidateDefenceDocument() {
       queryClient.invalidateQueries({
         queryKey: ['admin-defence-detail', variables.defenceId],
       });
+    },
+  });
+}
+
+export function useFinalizeDefenceSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (defenceId: string) => finalizeDefenceSchedule(defenceId),
+    onSuccess: (_data, defenceId) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-defences'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-defence-detail', defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-defence-scheduling', defenceId] });
     },
   });
 }
@@ -202,5 +217,25 @@ export function useImportAdminDefenceArchive() {
 export function useExportAdminDefenceArchive() {
   return useMutation({
     mutationFn: () => exportAdminDefenceArchive(),
+  });
+}
+
+export function useDownloadAdminThesisDefenceInvitation() {
+  return useMutation({
+    mutationFn: ({ defenceId, nomorSurat }: { defenceId: string; nomorSurat?: string }) => downloadAdminThesisDefenceInvitation(defenceId, nomorSurat),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Surat-Undangan-Sidang-TA.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Surat undangan berhasil diunduh');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Gagal mengunduh surat undangan');
+    },
   });
 }

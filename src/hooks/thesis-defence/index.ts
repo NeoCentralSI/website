@@ -23,6 +23,8 @@ export {
   useValidateDefenceDocument,
   useDefenceSchedulingData,
   useSetDefenceSchedule,
+  useFinalizeDefenceSchedule,
+  useDownloadAdminThesisDefenceInvitation,
 } from './useAdminThesisDefence';
 
 export {

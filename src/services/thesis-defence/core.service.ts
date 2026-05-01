@@ -222,6 +222,13 @@ export async function setDefenceSchedule(
   return parseJsonResponse(res, 'Gagal menyimpan jadwal sidang');
 }
 
+export async function finalizeDefenceSchedule(defenceId: string): Promise<any> {
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.SCHEDULE(defenceId)}/finalize`), {
+    method: 'POST',
+  });
+  return parseJsonResponse(res, 'Gagal menetapkan jadwal sidang secara resmi');
+}
+
 // ============================================================
 // Assessment & Finalization
 // ============================================================
@@ -264,4 +271,16 @@ export async function finalizeDefenceBySupervisor(
     body: JSON.stringify(payload),
   });
   return parseJsonResponse(res, 'Gagal menetapkan hasil sidang');
+}
+
+export async function downloadAdminThesisDefenceInvitation(defenceId: string, nomorSurat?: string): Promise<Blob> {
+  let url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.INVITATION(defenceId));
+  if (nomorSurat) {
+    url += `?nomorSurat=${encodeURIComponent(nomorSurat)}`;
+  }
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    throw new Error('Gagal mengunduh surat undangan sidang');
+  }
+  return await response.blob();
 }

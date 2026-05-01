@@ -75,12 +75,12 @@ export default function ThesisDefenceDetailPage() {
 
   const d = detail as any;
 
-  const tabs = [
-    { label: 'Identitas', value: 'identitas' },
-    { label: 'Penjadwalan', value: 'penjadwalan' },
-    { label: 'Penilaian', value: 'penilaian' },
-    { label: 'Revisi', value: 'revisi' },
-  ];
+  const showScheduling = isAdmin() && !['registered', 'verified'].includes(d.status);
+
+  const tabs = [{ label: 'Identitas', value: 'identitas' }];
+  if (showScheduling) tabs.push({ label: 'Penjadwalan', value: 'penjadwalan' });
+  tabs.push({ label: 'Penilaian', value: 'penilaian' });
+  tabs.push({ label: 'Revisi', value: 'revisi' });
 
   // Guard active tab validity
   const validTab = tabs.find((t) => t.value === activeTab) ? activeTab : 'identitas';
@@ -139,7 +139,7 @@ export default function ThesisDefenceDetailPage() {
           <ThesisDefenceDetailIdentityPanel detail={detail} />
         )}
         {validTab === 'penjadwalan' && (
-          <ThesisDefenceDetailSchedulingPanel defenceId={id!} isEditable={isAdmin()} />
+          <ThesisDefenceDetailSchedulingPanel defenceId={id!} detail={detail} />
         )}
         {validTab === 'penilaian' && (
           <ThesisDefenceDetailAssessmentPanel defenceId={id!} detail={detail} />
@@ -147,9 +147,7 @@ export default function ThesisDefenceDetailPage() {
         {validTab === 'revisi' && (
           <ThesisDefenceDetailRevisionPanel
             defenceId={id!}
-            examiners={d.examiners || []}
-            revisions={d.revisions || []}
-            isLoading={false}
+            detail={detail}
             onRefresh={refetch}
             isRefreshing={isFetching && !isLoading}
           />

@@ -265,6 +265,8 @@ export const API_CONFIG = {
       // --- Shared / Global ---
       BASE: '/thesis-defences',
       BY_ID: (id: string) => `/thesis-defences/${id}`,
+      INVITATION: (id: string) => `/thesis-defences/${id}/invitation-letter`,
+
 
       // --- Student Specific ---
       ME_OVERVIEW: '/thesis-defences/me/overview',
