@@ -699,3 +699,33 @@ export interface SaveDefenceRevisionActionPayload {
   revisionAction?: string;
   description?: string;
 }
+
+// ============================================================
+// Admin Defence Archive & Options
+// ============================================================
+
+export type AdminDefenceArchiveStatus = 'passed' | 'passed_with_revision' | 'failed' | 'cancelled';
+
+export interface AdminDefenceArchivePayload {
+  thesisId: string;
+  date: string;
+  roomId: string;
+  status: Exclude<AdminDefenceArchiveStatus, 'cancelled'>;
+  examinerLecturerIds: string[];
+}
+
+export interface AdminDefenceOption {
+  id: string;
+  thesisTitle: string;
+  studentName: string;
+  studentNim: string;
+  hasDefenceResult?: boolean;
+  defenceResultId?: string | null;
+  supervisorIds: string[];
+}
+
+export interface AdminDefenceExaminerOption {
+  id: string;
+  fullName: string;
+  nip: string;
+}

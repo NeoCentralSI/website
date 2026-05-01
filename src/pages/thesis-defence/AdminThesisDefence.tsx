@@ -1,49 +1,44 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { AdminThesisDefenceTable } from '@/components/thesis-defence/AdminThesisDefenceTable';
-import { AdminThesisDefenceValidationModal } from '@/components/thesis-defence/AdminThesisDefenceValidationModal';
-import type { AdminDefenceListItem } from '@/types/defence.types';
+import { LocalTabsNav } from '@/components/ui/tabs-nav';
+import { AdminThesisDefenceValidationPanel } from '@/components/thesis-defence/AdminThesisDefenceValidationPanel';
+import { AdminThesisDefenceArchivePanel } from '@/components/thesis-defence/AdminThesisDefenceArchivePanel';
 
 export default function AdminThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const [selectedDefence, setSelectedDefence] = useState<AdminDefenceListItem | null>(null);
-  const [validationOpen, setValidationOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('validation');
 
   const breadcrumbs = useMemo(
     () => [
-      { label: 'Tugas Akhir' },
-      { label: 'Sidang' },
+      { label: 'Tugas Akhir', href: '/tugas-akhir' },
+      { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
+      { label: activeTab === 'archive' ? 'Arsip' : 'Validasi' },
     ],
-    []
+    [activeTab]
   );
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-    setTitle('Sidang Tugas Akhir');
-  }, [setBreadcrumbs, setTitle, breadcrumbs]);
+    setTitle('Sidang TA');
+  }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
-  const handleValidate = (defence: AdminDefenceListItem) => {
-    setSelectedDefence(defence);
-    setValidationOpen(true);
-  };
+  const tabs = [
+    { label: 'Validasi', value: 'validation' },
+    { label: 'Arsip', value: 'archive' },
+  ];
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Sidang Tugas Akhir</h1>
-          <p className="text-gray-500">Validasi berkas dan manajemen sidang mahasiswa</p>
-        </div>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Administrasi Sidang TA</h1>
+        <p className="text-muted-foreground text-sm">Kelola validasi pendaftaran dan arsip data sidang tugas akhir</p>
       </div>
 
-      <AdminThesisDefenceTable onValidate={handleValidate} />
+      <LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <AdminThesisDefenceValidationModal
-        defence={selectedDefence}
-        open={validationOpen}
-        onOpenChange={setValidationOpen}
-      />
+      {activeTab === 'validation' && <AdminThesisDefenceValidationPanel />}
+      {activeTab === 'archive' && <AdminThesisDefenceArchivePanel />}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import type {
   DefenceSchedulingData,
   SetDefenceSchedulePayload,
   SetDefenceScheduleResponse,
+  AdminDefenceArchivePayload,
 } from '@/types/defence.types';
 
 // ============================================================
@@ -45,6 +46,23 @@ function buildDefenceListEndpoint(params?: {
   return queryParts.length > 0
     ? `${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}?${queryParts.join('&')}`
     : API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE;
+}
+
+function buildArchiveListEndpoint(params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+}) {
+  const queryParts: string[] = [];
+  if (params?.page) queryParts.push(`page=${params.page}`);
+  if (params?.pageSize) queryParts.push(`pageSize=${params.pageSize}`);
+  if (params?.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+  if (params?.status) queryParts.push(`status=${encodeURIComponent(params.status)}`);
+
+  return queryParts.length > 0
+    ? `${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/archive?${queryParts.join('&')}`
+    : `${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/archive`;
 }
 
 // ============================================================
@@ -77,6 +95,89 @@ export async function getAdminDefenceList(params?: {
 }): Promise<AdminDefenceListItem[]> {
   const res = await apiRequest(getApiUrl(buildDefenceListEndpoint({ ...params, view: 'admin' })));
   return parseJsonResponse(res, 'Gagal memuat data sidang');
+}
+
+export async function getAdminDefenceArchiveList(params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+}): Promise<AdminDefenceListItem[]> {
+  const res = await apiRequest(getApiUrl(buildArchiveListEndpoint(params)));
+  return parseJsonResponse(res, 'Gagal memuat arsip sidang');
+}
+
+export async function createAdminDefenceArchive(payload: AdminDefenceArchivePayload): Promise<any> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(res, 'Gagal membuat arsip sidang');
+}
+
+export async function updateAdminDefenceArchive(defenceId: string, payload: AdminDefenceArchivePayload): Promise<any> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BY_ID(defenceId)), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(res, 'Gagal memperbarui arsip sidang');
+}
+
+export async function deleteAdminDefenceArchive(defenceId: string): Promise<any> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BY_ID(defenceId)), {
+    method: 'DELETE',
+  });
+  return parseJsonResponse(res, 'Gagal menghapus arsip sidang');
+}
+
+export async function cancelAdminDefence(defenceId: string, cancelledReason?: string): Promise<any> {
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/${defenceId}/cancel`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cancelledReason }),
+  });
+  return parseJsonResponse(res, 'Gagal membatalkan sidang');
+}
+
+export async function importAdminDefenceArchive(file: File): Promise<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/import`), {
+    method: 'POST',
+    body: formData, // apiRequest will handle FormData and omit Content-Type
+  });
+  return parseJsonResponse(res, 'Gagal mengimpor arsip sidang');
+}
+
+export async function exportAdminDefenceArchive(): Promise<Blob> {
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/export`), {
+    method: 'GET',
+  });
+  if (!res.ok) throw new Error('Gagal mengekspor arsip sidang');
+  return res.blob();
+}
+
+export async function getAdminDefenceThesisOptions(): Promise<any[]> {
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/options/theses`));
+  return parseJsonResponse(res, 'Gagal memuat opsi judul TA');
+}
+
+export async function getAdminDefenceStudentOptions(): Promise<any[]> {
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/options/students`));
+  return parseJsonResponse(res, 'Gagal memuat opsi mahasiswa');
+}
+
+export async function getAdminDefenceLecturerOptions(): Promise<any[]> {
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/options/lecturers`));
+  return parseJsonResponse(res, 'Gagal memuat opsi dosen');
+}
+
+export async function getAdminDefenceRoomOptions(): Promise<any[]> {
+  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/options/rooms`));
+  return parseJsonResponse(res, 'Gagal memuat opsi ruangan');
 }
 
 export async function getDefenceExaminerRequests(params?: {

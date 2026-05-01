@@ -15,6 +15,8 @@ import { ThesisDefenceDetailIdentityPanel } from '@/components/thesis-defence/Th
 import { ThesisDefenceDetailSchedulingPanel } from '@/components/thesis-defence/ThesisDefenceDetailSchedulingPanel';
 import { ThesisDefenceDetailAssessmentPanel } from '@/components/thesis-defence/ThesisDefenceDetailAssessmentPanel';
 import { ThesisDefenceDetailRevisionPanel } from '@/components/thesis-defence/ThesisDefenceDetailRevisionPanel';
+import { AdminThesisDefenceCancelDialog } from '@/components/thesis-defence/AdminThesisDefenceCancelDialog';
+import { ROLES } from '@/constants/roles';
 
 export default function ThesisDefenceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +30,7 @@ export default function ThesisDefenceDetailPage() {
 
   const { data: detail, isLoading, isFetching, refetch } = useThesisDefenceDetail(id!);
   const [activeTab, setActiveTab] = useState('identitas');
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const breadcrumbs = useMemo(() => {
     const base = [
@@ -101,8 +104,26 @@ export default function ThesisDefenceDetailPage() {
             scheduledDate={d.date}
             startTime={d.startTime}
           />
+          {isAdmin() && d.status !== 'cancelled' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10"
+              onClick={() => setCancelOpen(true)}
+            >
+              Batalkan Sidang
+            </Button>
+          )}
         </div>
       </div>
+
+      <AdminThesisDefenceCancelDialog
+        defenceId={id!}
+        studentName={d.student?.name}
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        onSuccess={() => refetch()}
+      />
 
       {/* Tabs */}
       <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
