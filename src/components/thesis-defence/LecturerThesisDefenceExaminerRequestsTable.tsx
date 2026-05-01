@@ -119,7 +119,7 @@ export function LecturerThesisDefenceExaminerRequestsTable() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/tugas-akhir/sidang/lecturer/${row.id}`)}
+            onClick={() => navigate(`/tugas-akhir/sidang/${row.id}`)}
             title="Lihat Detail"
           >
             <Eye className="h-4 w-4" />

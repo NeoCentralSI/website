@@ -82,7 +82,7 @@ export function AdminThesisSeminarArchivePanel() {
           setSearch(value);
           setPage(1);
         }}
-        onDetail={(id) => navigate(`/tugas-akhir/seminar-hasil/arsip/${id}`)}
+        onDetail={(id) => navigate(`/tugas-akhir/seminar-hasil/${id}`)}
         onEdit={(row) => {
           setEditingSeminar(row);
           setIsFormOpen(true);

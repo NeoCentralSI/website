@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react'
-import { useOutletContext, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import type { LayoutContext } from '@/components/layout/ProtectedLayout'
-import { TabsNav } from '@/components/ui/tabs-nav'
+import { LocalTabsNav } from '@/components/ui/tabs-nav'
 import { useRole } from '@/hooks/shared/useRole'
 import { LecturerThesisSeminarSupervisorPanel } from '@/components/thesis-seminar/LecturerThesisSeminarSupervisorPanel'
 import { LecturerThesisSeminarExaminerPanel } from '@/components/thesis-seminar/LecturerThesisSeminarExaminerPanel'
@@ -10,25 +10,14 @@ import { LecturerThesisSeminarAssignExaminerPanel } from '@/components/thesis-se
 export default function LecturerThesisSeminar() {
 	const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>()
 	const { isKadep } = useRole()
-	const { pathname } = useLocation()
-	const navigate = useNavigate()
-
-	// Redirect to default tab if base lecturer path is visited
-	useEffect(() => {
-		if (
-			pathname === '/tugas-akhir/seminar-hasil' ||
-			pathname === '/tugas-akhir/seminar-hasil/'
-		) {
-			navigate('/tugas-akhir/seminar-hasil/mahasiswa-bimbingan', { replace: true })
-		}
-	}, [pathname, navigate])
+  const [activeTab, setActiveTab] = useState('mahasiswa-bimbingan');
 
 	const activeLabel = useMemo(() => {
-		if (pathname.includes('/mahasiswa-bimbingan')) return 'Mahasiswa Bimbingan'
-		if (pathname.includes('/tetapkan-penguji')) return 'Tetapkan Penguji'
-		if (pathname.includes('/menguji-mahasiswa')) return 'Menguji Mahasiswa'
+		if (activeTab === 'mahasiswa-bimbingan') return 'Mahasiswa Bimbingan'
+		if (activeTab === 'tetapkan-penguji') return 'Tetapkan Penguji'
+		if (activeTab === 'menguji-mahasiswa') return 'Menguji Mahasiswa'
 		return 'Seminar Hasil'
-	}, [pathname])
+	}, [activeTab])
 
 	const breadcrumbs = useMemo(
 		() => [
@@ -46,23 +35,23 @@ export default function LecturerThesisSeminar() {
 
 	const tabs = useMemo(() => {
 		const t = [
-			{ label: 'Mahasiswa Bimbingan', to: '/tugas-akhir/seminar-hasil/mahasiswa-bimbingan' },
-			{ label: 'Menguji Mahasiswa', to: '/tugas-akhir/seminar-hasil/menguji-mahasiswa' },
+			{ label: 'Mahasiswa Bimbingan', value: 'mahasiswa-bimbingan' },
+			{ label: 'Menguji Mahasiswa', value: 'menguji-mahasiswa' },
 		]
 		if (isKadep()) {
-			t.push({ label: 'Tetapkan Penguji', to: '/tugas-akhir/seminar-hasil/tetapkan-penguji' })
+			t.push({ label: 'Tetapkan Penguji', value: 'tetapkan-penguji' })
 		}
 		return t
 	}, [isKadep])
 
 	const renderPanel = () => {
-		if (pathname.includes('/mahasiswa-bimbingan')) {
+		if (activeTab === 'mahasiswa-bimbingan') {
 			return <LecturerThesisSeminarSupervisorPanel />
 		}
-		if (pathname.includes('/tetapkan-penguji')) {
+		if (activeTab === 'tetapkan-penguji') {
 			return isKadep() ? <LecturerThesisSeminarAssignExaminerPanel /> : <LecturerThesisSeminarExaminerPanel />
 		}
-		if (pathname.includes('/menguji-mahasiswa')) {
+		if (activeTab === 'menguji-mahasiswa') {
 			return <LecturerThesisSeminarExaminerPanel />
 		}
 		return null
@@ -75,7 +64,7 @@ export default function LecturerThesisSeminar() {
 				<p className="text-gray-500">Pantau mahasiswa bimbingan, respon penugasan penguji, dan kelola penilaian seminar hasil</p>
 			</div>
 
-			<TabsNav tabs={tabs} />
+			<LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 			{renderPanel()}
 		</div>
 	)

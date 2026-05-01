@@ -116,7 +116,7 @@ export function AdminThesisDefenceTable({ onValidate }: AdminDefenceTableProps) 
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/tugas-akhir/sidang/admin/${row.id}`)}
+            onClick={() => navigate(`/tugas-akhir/sidang/${row.id}`)}
             title="Detail"
           >
             <Eye className="h-4 w-4" />

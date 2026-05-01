@@ -185,7 +185,7 @@ export default function StudentThesisDefence() {
           {data.defence && showInfoCard && (
             <StudentThesisDefenceInfoCard
               defence={data.defence}
-              onClick={() => navigate(`/tugas-akhir/sidang/student/history/${data.defence!.id}`)}
+              onClick={() => navigate(`/tugas-akhir/sidang/${data.defence!.id}`)}
             />
           )}
 
@@ -242,7 +242,7 @@ export default function StudentThesisDefence() {
                     <HistoryCard
                       key={item.id}
                       item={item}
-                      onClick={() => navigate(`/tugas-akhir/sidang/student/history/${item.id}`)}
+                      onClick={() => navigate(`/tugas-akhir/sidang/${item.id}`)}
                     />
                   ))}
                 </div>
