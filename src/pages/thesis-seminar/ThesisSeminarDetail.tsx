@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useParams, useOutletContext, useNavigate } from 'react-router-dom'; // Re-trigger compile and verify back button navigation
+import { useLocation, useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -16,6 +16,7 @@ import { ThesisSeminarDetailSchedulingPanel } from '@/components/thesis-seminar/
 import { ThesisSeminarDetailAssessmentPanel } from '@/components/thesis-seminar/ThesisSeminarDetailAssessmentPanel';
 import { ThesisSeminarAudiencePanel } from '@/components/thesis-seminar/ThesisSeminarDetailAudiencePanel';
 import { ThesisSeminarDetailRevisionPanel } from '@/components/thesis-seminar/ThesisSeminarDetailRevisionPanel';
+import { AdminThesisSeminarCancelModal } from '@/components/thesis-seminar/AdminThesisSeminarCancelDialog';
 
 export default function ThesisSeminarDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ export default function ThesisSeminarDetailPage() {
 
   const { data: detail, isLoading, isFetching, refetch } = useThesisSeminarDetail(id!);
   const [activeTab, setActiveTab] = useState('identitas');
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const breadcrumbs = useMemo(() => {
     if (isFromSeminarAnnouncement) {
@@ -43,7 +45,6 @@ export default function ThesisSeminarDetailPage() {
       ];
     }
 
-    // Shared breadcrumbs for all roles
     const base = [
       { label: 'Tugas Akhir', href: _isStudent ? '/tugas-akhir' : undefined },
       { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
@@ -81,13 +82,20 @@ export default function ThesisSeminarDetailPage() {
 
   const d = detail as any;
 
-  // Tab visibility based on lifecycle
+  // Map detail to AdminSeminarListItem format for the cancel modal
+  const adminSeminarItem = {
+    id: d.id,
+    studentName: d.student?.name || '',
+    studentNim: d.student?.nim || '',
+    thesisTitle: d.thesis?.title || '',
+    status: d.status,
+  } as any;
+
   const isUserAdmin = isAdmin();
   const isUserStudent = isStudent() && !!user?.student?.id && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
   const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
   const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
-  // Tab visibility based on lifecycle
   const showScheduling = isUserAdmin && !['registered', 'verified'].includes(d.status);
 
   const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
@@ -156,12 +164,10 @@ export default function ThesisSeminarDetailPage() {
   if (showAudience) tabs.push({ label: 'Peserta', value: 'peserta' });
   if (showRevisions) tabs.push({ label: 'Revisi', value: 'revisi' });
 
-  // Guard active tab validity after detail loads
   const validTab = tabs.find((t) => t.value === activeTab) ? activeTab : 'identitas';
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="shrink-0">
@@ -180,6 +186,16 @@ export default function ThesisSeminarDetailPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {isUserAdmin && ['verified', 'examiner_assigned', 'scheduled'].includes(d.status) && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+              onClick={() => setIsCancelModalOpen(true)}
+            >
+              Batalkan Seminar
+            </Button>
+          )}
           <ThesisEventStatusBadge
             status={d.status}
             scheduledDate={d.date}
@@ -188,12 +204,10 @@ export default function ThesisSeminarDetailPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       {tabs.length > 1 && (
         <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
       )}
 
-      {/* Panel content */}
       <div className="space-y-6">
         {validTab === 'identitas' && (
           <ThesisSeminarDetailIdentityPanel detail={detail} />
@@ -216,6 +230,12 @@ export default function ThesisSeminarDetailPage() {
           />
         )}
       </div>
+
+      <AdminThesisSeminarCancelModal
+        seminar={adminSeminarItem}
+        open={isCancelModalOpen}
+        onOpenChange={setIsCancelModalOpen}
+      />
     </div>
   );
 }

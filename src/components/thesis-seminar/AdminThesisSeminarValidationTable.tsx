@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
-import { CheckSquare, Eye, XCircle } from 'lucide-react';
+import { CheckSquare, Eye } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
 import type { AdminSeminarListItem } from '@/types/seminar.types';
 import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationFormDialog';
-import { AdminThesisSeminarCancelModal } from '@/components/thesis-seminar/AdminThesisSeminarCancelDialog';
 
 import {
   ThesisStudentInfoCell,
@@ -46,7 +45,6 @@ export function AdminThesisSeminarValidationTable({
 }: AdminThesisSeminarValidationTableProps) {
   const [selectedSeminar, setSelectedSeminar] = useState<AdminSeminarListItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const columns = useMemo(
     () => [
@@ -116,20 +114,6 @@ export function AdminThesisSeminarValidationTable({
                 <CheckSquare className="w-4 h-4" />
               </Button>
             )}
-            {['verified', 'examiner_assigned', 'scheduled'].includes(row.status) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={() => {
-                  setSelectedSeminar(row);
-                  setIsCancelModalOpen(true);
-                }}
-                title="Batalkan Seminar"
-              >
-                <XCircle className="w-4 h-4" />
-              </Button>
-            )}
           </div>
         ),
       },
@@ -159,12 +143,6 @@ export function AdminThesisSeminarValidationTable({
         seminar={selectedSeminar}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
-      />
-
-      <AdminThesisSeminarCancelModal
-        seminar={selectedSeminar}
-        open={isCancelModalOpen}
-        onOpenChange={setIsCancelModalOpen}
       />
     </>
   );
