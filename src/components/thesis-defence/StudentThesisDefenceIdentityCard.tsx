@@ -20,7 +20,6 @@ const CARD_VISIBLE_STATUSES: ThesisDefenceStatus[] = [
   'ongoing',
   'passed',
   'passed_with_revision',
-  'registered', // Defence differs slightly as it might show during registration
 ];
 
 function formatTimeRange(startTime: string | null, endTime: string | null): string {
@@ -43,6 +42,8 @@ interface DefenceInfoCardProps {
 }
 
 export function StudentThesisDefenceIdentityCard({ defence, onClick }: DefenceInfoCardProps) {
+  if (!CARD_VISIBLE_STATUSES.includes(defence.status)) return null;
+
   const showSchedule = SCHEDULED_STATUSES.includes(defence.status);
   const showScore = FINALIZED_STATUSES.includes(defence.status) && defence.finalScore !== null;
   const isOnline = !defence.room && !!defence.meetingLink;
