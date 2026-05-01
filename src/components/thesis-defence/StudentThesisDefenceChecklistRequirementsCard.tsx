@@ -1,80 +1,86 @@
-import { CheckCircle2, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Check, Clock } from 'lucide-react';
 import type { DefenceChecklist } from '@/types/defence.types';
+import { cn } from '@/lib/utils';
 
-interface ChecklistItemProps {
-  label: string;
-  met: boolean;
-  status: 'completed' | 'pending';
+interface ChecklistPersyaratanProps {
+  checklist: DefenceChecklist;
 }
 
-function ChecklistItem({ label, met, status }: ChecklistItemProps) {
+function ChecklistRow({
+  label,
+  met,
+  current,
+  required,
+}: {
+  label: string;
+  met: boolean;
+  current?: number;
+  required?: number;
+}) {
+  const hasProgress = current !== undefined && required !== undefined;
+  const isInProgress = !met && hasProgress && current > 0;
+
+  const statusText = met
+    ? 'Terpenuhi'
+    : isInProgress
+      ? `${current}/${required}`
+      : 'Menunggu';
+
   return (
     <div
       className={cn(
-        'rounded-lg border p-4',
-        status === 'completed' && 'bg-green-50 border-green-200',
-        status === 'pending' && 'bg-muted/30 border-muted'
+        "flex items-center gap-[10px] p-[8px_12px] rounded-[7px] border transition-all duration-200",
+        met ? "bg-emerald-50/50 border-emerald-200" : "bg-card border border-gray-200"
       )}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-            status === 'completed' && 'bg-green-100 text-green-600',
-            status === 'pending' && 'bg-muted text-muted-foreground'
-          )}
-        >
-          {status === 'completed' ? (
-            <CheckCircle2 className="h-5 w-5" />
-          ) : (
-            <Clock className="h-5 w-5" />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">{label}</p>
-          <p
-            className={cn(
-              'text-xs mt-1',
-              status === 'completed' && 'text-green-600',
-              status === 'pending' && 'text-muted-foreground'
-            )}
-          >
-            {met ? 'Terpenuhi' : 'Menunggu'}
-          </p>
-        </div>
+      <div
+        className={cn(
+          "w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0",
+          met ? "bg-[#16A34A] text-white" : "bg-muted border-[1.5px] border-border text-muted-foreground"
+        )}
+      >
+        {met ? <Check size={11} strokeWidth={2.5} /> : <Clock size={11} strokeWidth={2} />}
+      </div>
+
+      <div>
+        <strong className="text-sm font-medium text-foreground block leading-tight">
+          {label}
+        </strong>
+        <span className={cn("text-xs font-medium", met ? "text-[#16A34A]" : "text-muted-foreground")}>
+          {statusText}
+        </span>
       </div>
     </div>
   );
 }
 
-interface ChecklistPersyaratanSidangProps {
-  checklist: DefenceChecklist;
-}
-
-export function StudentThesisDefenceChecklistRequirementsCard({ checklist }: ChecklistPersyaratanSidangProps) {
-  // Don't show revision card if seminar status is 'passed' (no revision needed)
-  const showRevisiCard = checklist.revisiSeminar.seminarStatus !== 'passed';
-
-  const items: { label: string; met: boolean; visible: boolean }[] = [
-    { label: checklist.lulusSeminar.label, met: checklist.lulusSeminar.met, visible: true },
-    { label: checklist.sks.label, met: checklist.sks.met, visible: true },
-    { label: checklist.revisiSeminar.label, met: checklist.revisiSeminar.met, visible: showRevisiCard },
-    { label: checklist.pembimbing.label, met: checklist.pembimbing.met, visible: true },
-  ];
-
+export function StudentThesisDefenceChecklistRequirementsCard({ checklist }: ChecklistPersyaratanProps) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-card p-6">
-      <h3 className="text-lg font-semibold mb-4">Checklist Persyaratan</h3>
-      <div className="space-y-3">
-        {items.filter((i) => i.visible).map((item) => (
-          <ChecklistItem
-            key={item.label}
-            label={item.label}
-            met={item.met}
-            status={item.met ? 'completed' : 'pending'}
-          />
-        ))}
+    <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
+      <div className="text-base font-semibold text-foreground mb-[14px]">
+        Checklist Persyaratan
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <ChecklistRow
+          label={checklist.lulusSeminar.label}
+          met={checklist.lulusSeminar.met}
+        />
+        <ChecklistRow
+          label={checklist.sks.label}
+          met={checklist.sks.met}
+          current={checklist.sks.current}
+          required={checklist.sks.required}
+        />
+        <ChecklistRow
+          label={checklist.revisiSeminar.label}
+          met={checklist.revisiSeminar.met}
+          current={checklist.revisiSeminar.finished}
+          required={checklist.revisiSeminar.total}
+        />
+        <ChecklistRow
+          label={checklist.pembimbing.label}
+          met={checklist.pembimbing.met}
+        />
       </div>
     </div>
   );

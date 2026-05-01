@@ -100,9 +100,6 @@ export function useUploadDefenceDocument() {
 
   return useMutation({
     mutationFn: ({ file, documentTypeName }: { file: File; documentTypeName: string }) => {
-      if (!defenceId) {
-        return Promise.reject(new Error('Sidang aktif tidak ditemukan'));
-      }
       return uploadDefenceDocument(file, documentTypeName, defenceId);
     },
     onSuccess: () => {

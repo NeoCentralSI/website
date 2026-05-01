@@ -38,7 +38,7 @@ export const getStudentDefenceDocuments = async (defenceId: string): Promise<Def
 export const uploadDefenceDocument = async (
   file: File,
   documentTypeName: string,
-  defenceId: string
+  defenceId: string = 'active'
 ): Promise<DefenceDocumentUploadResponse> => {
   const formData = new FormData();
   formData.append('file', file);
