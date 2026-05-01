@@ -68,7 +68,11 @@ export function AdminThesisSeminarArchiveTable({
       key: 'room',
       header: 'Ruangan',
       width: 180,
-      render: (row: AdminThesisSeminarArchiveItem) => <ThesisSeminarRoomCell room={row.room} />,
+      render: (row: AdminThesisSeminarArchiveItem) => (
+        <div className="max-w-[25ch] whitespace-normal break-words leading-tight">
+          <ThesisSeminarRoomCell room={row.room} />
+        </div>
+      ),
     },
     {
       key: 'examiners',
