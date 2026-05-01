@@ -8,6 +8,7 @@ import {
   submitExaminerAssessment,
   getSupervisorFinalizationData,
   finalizeSeminarBySupervisor,
+  downloadBeritaAcara,
 } from '@/services/thesis-seminar/core.service';
 import {
   respondExaminerAssignment,
@@ -19,6 +20,7 @@ import {
   approveRevision,
   unapproveRevision,
   finalizeSeminarRevisions,
+  unfinalizeSeminarRevisions,
 } from '@/services/thesis-seminar/revision.service';
 import {
   getSeminarAudiences,
@@ -254,6 +256,43 @@ export function useFinalizeSeminarRevisions() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal memfinalisasi revisi mahasiswa');
+    },
+  });
+}
+
+export function useUnfinalizeSeminarRevisions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ seminarId }: { seminarId: string }) => unfinalizeSeminarRevisions(seminarId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['seminar-revision-board', variables.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['seminar-supervisor-finalization', variables.seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['lecturer-seminar-detail', variables.seminarId] });
+      toast.success('Finalisasi revisi berhasil dibatalkan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal membatalkan finalisasi revisi');
+    },
+  });
+}
+
+export function useDownloadBeritaAcara() {
+  return useMutation({
+    mutationFn: (seminarId: string) => downloadBeritaAcara(seminarId),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Berita-Acara-Seminar-Hasil.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Berita acara berhasil diunduh');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal mengunduh berita acara');
     },
   });
 }

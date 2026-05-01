@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useParams, useOutletContext, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useOutletContext, useNavigate } from 'react-router-dom'; // Re-trigger compile and verify back button navigation
 import { ArrowLeft } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import { useRole } from '@/hooks/shared/useRole';
+import { useRole, useAuth } from '@/hooks/shared';
 import { useThesisSeminarDetail } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 
@@ -22,15 +22,27 @@ export default function ThesisSeminarDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isStudent } = useRole();
+  const { isStudent, isAdmin, isKadep } = useRole();
+  const { user } = useAuth();
 
   const _isStudent = isStudent();
+  const _isKadep = isKadep();
   const isArchiveRoute = location.pathname.includes('/arsip/');
+  const isFromSeminarAnnouncement =
+    (location.state as { fromAnnouncement?: string } | null)?.fromAnnouncement === 'seminar-hasil';
 
   const { data: detail, isLoading, isFetching, refetch } = useThesisSeminarDetail(id!);
   const [activeTab, setActiveTab] = useState('identitas');
 
   const breadcrumbs = useMemo(() => {
+    if (isFromSeminarAnnouncement) {
+      return [
+        { label: 'Pengumuman', href: '/pengumuman/seminar-hasil' },
+        { label: 'Seminar Hasil', href: '/pengumuman/seminar-hasil' },
+        { label: 'Detail' },
+      ];
+    }
+
     // Shared breadcrumbs for all roles
     const base = [
       { label: 'Tugas Akhir', href: _isStudent ? '/tugas-akhir' : undefined },
@@ -41,7 +53,7 @@ export default function ThesisSeminarDetailPage() {
       ...base,
       { label: 'Detail' },
     ];
-  }, [_isStudent]);
+  }, [_isStudent, isFromSeminarAnnouncement]);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
@@ -70,10 +82,73 @@ export default function ThesisSeminarDetailPage() {
   const d = detail as any;
 
   // Tab visibility based on lifecycle
-  const showScheduling = true;
-  const showAssessment = true;
-  const showAudience = true;
-  const showRevisions = true;
+  const isUserAdmin = isAdmin();
+  const isUserStudent = isStudent() && !!user?.student?.id && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
+  const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
+  const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
+
+  // Tab visibility based on lifecycle
+  const showScheduling = isUserAdmin && !['registered', 'verified'].includes(d.status);
+
+  const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
+  const isAssessmentFinalized = allowedAssessmentStatuses.includes(d?.status);
+
+  let isAssessmentOngoing = false;
+  if (d?.status === 'ongoing') {
+    isAssessmentOngoing = true;
+  } else if (d?.status === 'scheduled' && d.date && d.startTime) {
+    const dateObj = new Date(d.date);
+    const timeObj = new Date(d.startTime);
+    const seminarStart = new Date(
+      dateObj.getUTCFullYear(),
+      dateObj.getUTCMonth(),
+      dateObj.getUTCDate(),
+      timeObj.getUTCHours(),
+      timeObj.getUTCMinutes()
+    );
+    isAssessmentOngoing = new Date() >= seminarStart;
+  }
+
+  let showAssessment = false;
+  if (isAssessmentOngoing) {
+    if (isUserExaminer || isUserSupervisor) {
+      showAssessment = true;
+    }
+  } else if (isAssessmentFinalized) {
+    if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor || _isKadep) {
+      showAssessment = true;
+    }
+  }
+
+  const allowedAudienceStatuses = ['passed', 'passed_with_revision', 'failed'];
+  const isAudienceFinalized = allowedAudienceStatuses.includes(d?.status);
+
+  let isAudienceOngoing = false;
+  if (d?.status === 'ongoing') {
+    isAudienceOngoing = true;
+  } else if (d?.status === 'scheduled' && d.date && d.startTime) {
+    const dateObj = new Date(d.date);
+    const timeObj = new Date(d.startTime);
+    const seminarStart = new Date(
+      dateObj.getUTCFullYear(),
+      dateObj.getUTCMonth(),
+      dateObj.getUTCDate(),
+      timeObj.getUTCHours(),
+      timeObj.getUTCMinutes()
+    );
+    isAudienceOngoing = new Date() >= seminarStart;
+  }
+
+  let showAudience = false;
+  if (isAudienceFinalized) {
+    showAudience = true;
+  } else if (isAudienceOngoing) {
+    if (isUserSupervisor) {
+      showAudience = true;
+    }
+  }
+
+  const showRevisions = (isUserStudent || isUserSupervisor) && d.status === 'passed_with_revision';
 
   const tabs = [{ label: 'Identitas', value: 'identitas' }];
   if (showScheduling) tabs.push({ label: 'Penjadwalan', value: 'penjadwalan' });
@@ -114,7 +189,9 @@ export default function ThesisSeminarDetailPage() {
       </div>
 
       {/* Tabs */}
-      <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
+      {tabs.length > 1 && (
+        <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
+      )}
 
       {/* Panel content */}
       <div className="space-y-6">

@@ -32,10 +32,10 @@ export const StudentThesisSeminarHistoryCard = ({
   return (
     <div
       onClick={onClick}
-      className="grid grid-cols-[40px_1.5fr_1fr_1fr_1fr_1fr_auto] gap-2 items-center p-[10px] bg-[#fafaf8] border border-[#eeece8] rounded-[8px] cursor-pointer hover:bg-[#f4f4f2] hover:border-[#d8d8d0] hover:shadow-sm transition-all duration-200"
+      className="grid grid-cols-[40px_1.5fr_1fr_1fr_1fr_1fr_auto] gap-2 items-center p-[10px] bg-card border border-gray-200 rounded-[8px] cursor-pointer hover:bg-accent/50 hover:shadow-sm transition-all duration-200"
     >
       {/* # */}
-      <span className="text-[12px] font-semibold text-[#bbb]">{index}</span>
+      <span className="text-xs font-semibold text-muted-foreground">{index}</span>
 
       {/* Examiners */}
       <div className="min-w-0 flex flex-col">
@@ -43,13 +43,13 @@ export const StudentThesisSeminarHistoryCard = ({
           item.examiners.map((e) => (
             <div
               key={e.order}
-              className="truncate text-[11.5px] font-medium text-[#333]"
+              className="truncate text-sm font-medium text-foreground"
             >
               {toTitleCaseName(e.lecturerName)}
             </div>
           ))
         ) : (
-          <span className="text-[11.5px] text-[#bbb]">—</span>
+          <span className="text-sm text-muted-foreground">—</span>
         )}
       </div>
 
@@ -57,18 +57,18 @@ export const StudentThesisSeminarHistoryCard = ({
       <div className="flex flex-col">
         {item.date ? (
           <>
-            <div className="text-[11.5px] text-[#555] font-medium">{formatDateOnlyId(item.date)}</div>
+            <div className="text-sm text-foreground font-medium">{formatDateOnlyId(item.date)}</div>
             {timeRange && (
-              <div className="text-[10.5px] text-[#aaa] font-medium">{timeRange}</div>
+              <div className="text-xs text-muted-foreground font-medium">{timeRange}</div>
             )}
           </>
         ) : (
-          <span className="text-[11.5px] text-[#bbb]">—</span>
+          <span className="text-sm text-muted-foreground">—</span>
         )}
       </div>
 
       {/* Room */}
-      <div className="text-[11.5px] text-[#555] font-medium truncate">
+      <div className="text-sm text-foreground font-medium truncate">
         {item.room ? (
           item.room.name
         ) : isOnline ? (
@@ -83,11 +83,11 @@ export const StudentThesisSeminarHistoryCard = ({
       {/* Score */}
       <div>
         {item.finalScore !== null ? (
-          <span className="text-[15px] font-bold text-[#111]">
+          <span className="text-base font-bold text-foreground">
             {item.finalScore.toFixed(2)}
           </span>
         ) : (
-          <span className="text-[11.5px] text-[#bbb]">—</span>
+          <span className="text-sm text-muted-foreground">—</span>
         )}
       </div>
 

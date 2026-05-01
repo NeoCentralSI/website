@@ -112,6 +112,9 @@ export interface SeminarOverviewResponse {
 
 export interface AttendanceRecord {
   seminarId: string;
+  seminarStatus?: ThesisSeminarStatus;
+  seminarEndTime?: string | null;
+  seminarResultFinalizedAt?: string | null;
   presenterName: string;
   presenterNim?: string;
   thesisTitle: string;
@@ -262,6 +265,8 @@ export interface SeminarSchedulingData {
   rooms: RoomOption[];
   lecturerAvailabilities: LecturerAvailabilitySlot[];
   currentSchedule: SeminarCurrentSchedule | null;
+  roomBookings?: any[]; // Added to fix build error
+  participantIds?: string[]; // Added to fix build error
 }
 
 export interface SetSchedulePayload {
@@ -481,6 +486,7 @@ export interface ExaminerAssessmentFormResponse {
 export interface SubmitExaminerAssessmentPayload {
   scores: { assessmentCriteriaId: string; score: number }[];
   revisionNotes?: string | null;
+  isDraft?: boolean;
 }
 
 export interface SubmitExaminerAssessmentResponse {
@@ -640,6 +646,7 @@ export interface CreateRevisionPayload {
   seminarId?: string;
   seminarExaminerId: string;
   description: string;
+  revisionAction?: string;
 }
 
 export interface SubmitRevisionActionPayload {

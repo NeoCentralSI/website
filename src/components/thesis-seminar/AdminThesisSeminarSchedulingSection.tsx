@@ -27,10 +27,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Spinner, Loading } from '@/components/ui/spinner';
-import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, PencilLine, AlertCircle } from 'lucide-react';
+import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, AlertCircle, Sparkles, Lock, Ban, Video, Copy, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
-import { toTitleCaseName } from '@/lib/text';
+import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule, useFinalizeAdminThesisSeminarSchedule, useAdminThesisSeminarDetail, useDownloadAdminThesisSeminarInvitation } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
+import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/seminar.types';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -106,10 +106,27 @@ interface PendingSchedule {
 
 export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: Props) {
   const { data: schedulingData, isLoading } = useAdminThesisSeminarSchedulingData(seminarId);
+  const { data: seminarDetail } = useAdminThesisSeminarDetail(seminarId);
   const { mutate: doSetSchedule, isPending: isSaving } = useSetAdminThesisSeminarSchedule();
+  const { mutate: doFinalizeSchedule, isPending: isFinalizing } = useFinalizeAdminThesisSeminarSchedule();
+  const { mutate: doDownloadInvitation, isPending: isDownloadingInvitation } = useDownloadAdminThesisSeminarInvitation();
+  
+  const [isInvitationDialogOpen, setIsInvitationDialogOpen] = useState<boolean>(false);
+  const [inputNomorSurat, setInputNomorSurat] = useState<string>('');
+
+  const handleDownloadInvitation = () => {
+    setIsInvitationDialogOpen(true);
+  };
+
+  const confirmDownloadInvitation = () => {
+    doDownloadInvitation({ seminarId, nomorSurat: inputNomorSurat });
+    setIsInvitationDialogOpen(false);
+  };
 
   const [pendingSchedule, setPendingSchedule] = useState<PendingSchedule | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState<boolean>(false);
 
   // ── Stable color assignment per lecturer ──────────────────────────────────
   const lecturerColorMap = useMemo(() => {
@@ -167,6 +184,30 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
     return events;
   }, [schedulingData, lecturerColorMap]);
 
+  const effectiveRoomId = selectedRoomId || schedulingData?.rooms[0]?.id;
+
+  // ── Blocked events for chosen room (red) ──────────────────────────────────
+  const blockedEvents = useMemo((): EventInput[] => {
+    if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
+    return schedulingData.roomBookings
+      .filter((b: any) => b.roomId === effectiveRoomId)
+      .map((b: any) => {
+        const dateStr = b.date.slice(0, 10);
+        return {
+          id: `blocked-${b.id}`,
+          title: `🔒 ${b.title}`,
+          start: `${dateStr}T${extractTime(b.startTime)}:00`,
+          end: `${dateStr}T${extractTime(b.endTime)}:00`,
+          backgroundColor: b.id === `seminar-${seminarId}` ? '#0ea5e9' : '#ef4444',
+          borderColor: b.id === `seminar-${seminarId}` ? '#0284c7' : '#dc2626',
+          textColor: '#ffffff',
+          display: 'block',
+          classNames: ['blocked-event'],
+          extendedProps: { type: 'blocked', ...b },
+        };
+      });
+  }, [schedulingData, effectiveRoomId]);
+
   // ── Already-scheduled seminar event (green) ───────────────────────────────
   const scheduleEvent = useMemo((): EventInput[] => {
     const cs = schedulingData?.currentSchedule;
@@ -189,9 +230,156 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   }, [schedulingData]);
 
   const allEvents = useMemo(
-    () => [...availabilityEvents, ...scheduleEvent],
-    [availabilityEvents, scheduleEvent]
+    () => [...availabilityEvents, ...scheduleEvent, ...blockedEvents],
+    [availabilityEvents, scheduleEvent, blockedEvents]
   );
+
+  const recommendations = useMemo(() => {
+    if (!schedulingData) return [];
+    const participantIds = schedulingData.participantIds || [];
+    if (!participantIds.length || !effectiveRoomId) return [];
+    if (!schedulingData.lecturerAvailabilities) return [];
+
+    const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+    interface TimeSlot {
+      start: number; // minutes from midnight
+      end: number;
+    }
+
+    const recommendationsList: Array<{
+      date: string;
+      startTime: string;
+      endTime: string;
+      roomId: string;
+    }> = [];
+
+    daysOfWeek.forEach((dayName) => {
+      const availByLecturer: Record<string, TimeSlot[]> = {};
+      participantIds.forEach((lId: string) => {
+        const avails = schedulingData.lecturerAvailabilities.filter(
+          (a: any) => a.lecturerId === lId && a.day === dayName
+        );
+        availByLecturer[lId] = avails.map((a: any) => {
+          const s = extractTime(a.startTime);
+          const e = extractTime(a.endTime);
+          if (s === '--:--' || e === '--:--') return { start: 0, end: 0 };
+          const [sH, sM] = s.split(':').map(Number);
+          const [eH, eM] = e.split(':').map(Number);
+          return { start: sH * 60 + sM, end: eH * 60 + eM };
+        }).filter(slot => slot.start < slot.end);
+      });
+
+      if (participantIds.some((lId: string) => availByLecturer[lId].length === 0)) return;
+
+      let commonSlots = availByLecturer[participantIds[0]];
+
+      for (let i = 1; i < participantIds.length; i++) {
+        const nextSlots = availByLecturer[participantIds[i]];
+        const newCommon: TimeSlot[] = [];
+
+        commonSlots.forEach((c) => {
+          nextSlots.forEach((n) => {
+            const start = Math.max(c.start, n.start);
+            const end = Math.min(c.end, n.end);
+            if (start < end) {
+              newCommon.push({ start, end });
+            }
+          });
+        });
+        commonSlots = newCommon;
+      }
+
+      const twoHourSlots: TimeSlot[] = [];
+      commonSlots.forEach((slot) => {
+        let currentStart = slot.start;
+        while (currentStart + 120 <= slot.end) {
+          twoHourSlots.push({ start: currentStart, end: currentStart + 120 });
+          currentStart += 60;
+        }
+      });
+
+      if (twoHourSlots.length === 0) return;
+
+      const dayIndexMap: Record<string, number> = {
+        monday: 1,
+        tuesday: 2,
+        wednesday: 3,
+        thursday: 4,
+        friday: 5,
+      };
+      const targetDay = dayIndexMap[dayName];
+
+      const now = new Date();
+      for (let d = 0; d < 30; d++) {
+        const testDate = new Date(now.getTime() + d * 24 * 60 * 60 * 1000);
+        if (testDate.getDay() === targetDay) {
+          const dateStr = testDate.toISOString().slice(0, 10);
+
+          twoHourSlots.forEach((timeSlot) => {
+            const sH = Math.floor(timeSlot.start / 60);
+            const sM = timeSlot.start % 60;
+            const eH = Math.floor(timeSlot.end / 60);
+            const eM = timeSlot.end % 60;
+
+            const startTimeStr = `${String(sH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`;
+            const endTimeStr = `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`;
+
+            const hasConflict = (schedulingData.roomBookings || []).some((b: any) => {
+              if (b.roomId !== effectiveRoomId) return false;
+              if (b.date.slice(0, 10) !== dateStr) return false;
+
+              const [bSH, bSM] = extractTime(b.startTime).split(':').map(Number);
+              const [bEH, bEM] = extractTime(b.endTime).split(':').map(Number);
+              const bStart = bSH * 60 + bSM;
+              const bEnd = bEH * 60 + bEM;
+
+              return timeSlot.start < bEnd && timeSlot.end > bStart;
+            });
+
+            if (!hasConflict) {
+              recommendationsList.push({
+                date: dateStr,
+                startTime: startTimeStr,
+                endTime: endTimeStr,
+                roomId: effectiveRoomId,
+              });
+            }
+          });
+        }
+      }
+    });
+
+    return recommendationsList.sort((a, b) => {
+      const dateCompare = a.date.localeCompare(b.date);
+      if (dateCompare !== 0) return dateCompare;
+      return a.startTime.localeCompare(b.startTime);
+    });
+  }, [schedulingData, effectiveRoomId]);
+
+  const roomConflicts = useMemo(() => {
+    if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
+    return schedulingData.roomBookings.filter((b: any) => b.roomId === effectiveRoomId);
+  }, [schedulingData, effectiveRoomId]);
+
+  const handleSelectAllow = (selectInfo: any) => {
+    if (!schedulingData?.roomBookings || !effectiveRoomId) return true;
+    const start = selectInfo.start.getTime();
+    const end = selectInfo.end.getTime();
+
+    const activeRoomBookings = schedulingData.roomBookings.filter(
+      (b: any) => b.roomId === effectiveRoomId
+    );
+
+    const hasOverlap = activeRoomBookings.some((b: any) => {
+      const bDate = b.date.slice(0, 10);
+      const bStart = new Date(`${bDate}T${extractTime(b.startTime)}:00`).getTime();
+      const bEnd = new Date(`${bDate}T${extractTime(b.endTime)}:00`).getTime();
+      return start < bEnd && end > bStart;
+    });
+
+    return !hasOverlap;
+  };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleDateSelect = (info: DateSelectArg) => {
@@ -201,7 +389,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
       date: info.startStr.slice(0, 10),
       startTime: info.startStr.slice(11, 16) || '08:00',
       endTime: info.endStr?.slice(11, 16) || '10:00',
-      roomId: schedulingData?.rooms[0]?.id || null,
+      roomId: selectedRoomId || schedulingData?.rooms[0]?.id || null,
       isOnline: false,
       meetingLink: '',
     });
@@ -280,6 +468,11 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const { rooms, currentSchedule: current } = schedulingData;
   const selectedRoom = rooms.find((r) => r.id === pendingSchedule?.roomId);
 
+  const supervisors = (seminarDetail as any)?.supervisors || [];
+  const examiners = seminarDetail?.examiners || [];
+
+  const canEditSchedule = isEditable && !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status as string);
+
   // Unique lecturers for the legend
   const legendItems = [
     ...new Set(schedulingData.lecturerAvailabilities.map((a) => a.lecturerId)),
@@ -289,142 +482,461 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
     color: lecturerColorMap[id] || '#94a3b8',
   }));
 
+  const handleCopyMessage = () => {
+    const studentName = toTitleCaseName(seminarDetail?.student?.name) || '-';
+    const studentNim = seminarDetail?.student?.nim || '-';
+    const title = seminarDetail?.thesis?.title || '-';
+
+    const formattedSupervisors = supervisors.map((s: any) => `• ${toTitleCaseName(s.name)} ${s.role ? `(${formatRoleName(s.role)})` : ''}`).join('\n');
+    const formattedExaminers = examiners.map((e: any) => `• ${toTitleCaseName(e.lecturerName || e.lecturer?.name || '-')}`).join('\n');
+
+    const schedDate = current?.date ? formatDateLong(current.date) : '-';
+    const schedTime = current?.startTime && current?.endTime ? `${extractTime(current.startTime)} - ${extractTime(current.endTime)}` : '-';
+    const place = current?.isOnline ? `Daring: ${current.meetingLink || 'Tautan belum diatur'}` : `Luring: ${current?.room?.name || 'Ruangan belum diatur'}`;
+
+    const recsText = recommendations.length > 0
+      ? recommendations.map((r, idx) => `   ${idx + 1}. ${formatDateLong(r.date)} (${r.startTime} - ${r.endTime})`).join('\n')
+      : '   (Tidak ada rekomendasi alternatif)';
+
+    const message = `Berikut ini adalah informasi dan jadwal Seminar Hasil Tugas Akhir yang akan ditetapkan:
+• Mahasiswa: ${studentName} (${studentNim})
+• Judul TA: ${title}
+• Dosen Pembimbing:
+${formattedSupervisors}
+• Dosen Penguji:
+${formattedExaminers}
+• Waktu: ${schedDate}, ${schedTime}
+• Tempat: ${place}
+
+Berikut ini adalah beberapa jadwal rekomendasi tambahan jika tidak bisa mengikuti jadwal di atas:
+${recsText}
+
+Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir mahasiswa kita tersebut.`;
+
+    navigator.clipboard.writeText(message);
+    toast.success('Pesan jadwal seminar berhasil disalin.');
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      <Card>
-        {/* ── Card header ── */}
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Penjadwalan Seminar Hasil
-            </CardTitle>
-            {current && (
-              <Badge variant="success" className="flex items-center gap-1 text-xs">
-                <CheckCircle2 className="h-3 w-3" />
-                Terjadwal
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .fc-timegrid-event-harness:has(.blocked-event) {
+          left: 0px !important;
+          right: 0px !important;
+          width: 100% !important;
+          z-index: 50 !important;
+        }
+        .blocked-event {
+          opacity: 1 !important;
+          border-radius: 6px !important;
+        }
+        .blocked-event .fc-event-main {
+          font-weight: 700 !important;
+          font-size: 11px !important;
+          padding: 6px !important;
+        }
+      `}} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        {/* Left: Calendar card */}
+        <div className="lg:col-span-2 flex flex-col">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="pb-3 shrink-0">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Penjadwalan Seminar Hasil
+                </CardTitle>
+                <div className="flex items-center gap-3">
+                  {seminarDetail?.status === 'examiner_assigned' && current?.date && (
+                    <Badge variant="secondary" className="flex items-center gap-1 text-xs shrink-0 px-2.5 py-1">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground/80 mt-0.5" />
+                      Draft Jadwal Tersimpan
+                    </Badge>
+                  )}
+                  {['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status as string) && (
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="success" className="flex items-center gap-1 text-xs shrink-0 px-2.5 py-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Terjadwal
+                      </Badge>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        disabled={isDownloadingInvitation}
+                        onClick={handleDownloadInvitation}
+                        className="h-8 w-8 shadow-sm border-border/80 hover:bg-accent text-muted-foreground hover:text-foreground"
+                        title="Unduh Surat Undangan"
+                      >
+                        {isDownloadingInvitation ? <Spinner className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  )}
+                  {seminarDetail?.status === 'examiner_assigned' && current?.date && (
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="icon"
+                        disabled={isFinalizing}
+                        onClick={() => setShowFinalizeConfirm(true)}
+                        className="h-8 w-8 shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+                        title="Tetapkan Jadwal"
+                      >
+                        {isFinalizing ? <Spinner className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      </Button>
 
-        <CardContent className="space-y-5">
-          {/* ── Current schedule banner ── */}
-          {current && (
-            <div className="flex flex-col sm:flex-row gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
-              <div className="flex-1 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
-                  Jadwal Ditetapkan
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={handleCopyMessage}
+                        className="h-8 w-8 shadow-sm border-border/80 hover:bg-accent text-muted-foreground hover:text-foreground"
+                        title="Salin Pesan Jadwal"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                  {schedulingData?.rooms?.length > 0 && (
+                    <Select
+                      value={selectedRoomId || schedulingData.rooms[0]?.id}
+                      onValueChange={(val) => setSelectedRoomId(val)}
+                      disabled={['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status as string)}
+                    >
+                      <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
+                        <SelectValue placeholder="Pilih ruangan..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {schedulingData.rooms.map((r: any) => (
+                          <SelectItem key={r.id} value={r.id} className="text-xs">
+                            {r.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col min-h-0 justify-between space-y-4">
+              {/* Legend Items mapped on top */}
+              {legendItems.length > 0 && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pb-2 border-b">
+                  <span className="font-medium">Ketersediaan dosen:</span>
+                  {legendItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-1.5">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-sm border"
+                        style={{ backgroundColor: item.color + '33', borderColor: item.color }}
+                      />
+                      <span className="text-foreground font-medium">{toTitleCaseName(item.name)}</span>
+                    </div>
+                  ))}
+                  {current && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-600" />
+                      <span className="text-foreground font-medium">Jadwal Seminar</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden flex-1 flex flex-col min-h-[520px]">
+                <FullCalendar
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                  initialView="timeGridWeek"
+                  locale={idLocale}
+                  firstDay={1}
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridWeek,timeGridDay',
+                  }}
+                  height="100%"
+                  slotMinTime="06:00:00"
+                  slotMaxTime="22:00:00"
+                  nowIndicator
+                  allDaySlot={false}
+                  weekends={false}
+                  selectable={canEditSchedule}
+                  selectMirror={canEditSchedule}
+                  select={handleDateSelect}
+                  events={allEvents}
+                  selectAllow={handleSelectAllow}
+                  eventClick={(info) => info.jsEvent.preventDefault()}
+                  slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                  eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                  dayHeaderContent={(args) => {
+                    const day = args.date.toLocaleDateString('id-ID', { weekday: 'short' });
+                    return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+                  }}
+                />
+              </div>
+              {canEditSchedule && (
+                <p className="text-xs text-muted-foreground text-center shrink-0">
+                  Klik dan seret pada kalender untuk memilih slot waktu seminar.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-green-800">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-green-600 shrink-0" />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: Recommendations & Blocked Slots */}
+        <div className="lg:col-span-1 flex flex-col gap-4 min-h-full">
+          {/* 1. Rekomendasi Jadwal */}
+          <Card className="flex flex-col flex-1 shadow-sm min-h-0">
+            <CardHeader className="pb-3 border-b shrink-0">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Rekomendasi Jadwal
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto space-y-2 text-xs">
+              {recommendations.length > 0 ? (
+                <div className="flex flex-col gap-2 w-full">
+                  {recommendations.map((rec, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        if (!canEditSchedule) return;
+                        setFormError(null);
+                        setPendingSchedule({
+                          date: rec.date,
+                          startTime: rec.startTime,
+                          endTime: rec.endTime,
+                          roomId: rec.roomId,
+                          isOnline: false,
+                          meetingLink: '',
+                        });
+                      }}
+                      className={`p-2.5 rounded-lg border-2 bg-card transition-all flex flex-col gap-1 text-left ${
+                        canEditSchedule
+                          ? 'hover:bg-accent/50 cursor-pointer border-primary/20 hover:border-primary/40'
+                          : 'opacity-60 border-border/50 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-semibold text-primary text-[13px]">
+                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary/80" />
+                        <span>Rekomendasi Jadwal #{idx + 1}</span>
+                      </div>
+                      <div className="flex flex-col text-muted-foreground text-[11px] pl-5 space-y-0.5">
+                        <div className="flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+                          <span>{formatDateLong(rec.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+                          <span>{rec.startTime} - {rec.endTime}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-2 my-auto w-full">
+                  <AlertCircle className="h-6 w-6 text-muted-foreground/40" />
+                  <p className="text-xs font-semibold text-foreground">Tidak Ada Rekomendasi</p>
+                  <p className="text-[11px] max-w-[200px] mx-auto">
+                    Tidak ditemukan slot waktu 2 jam yang sesuai untuk seluruh peserta seminar.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 2. Slot Terblokir */}
+          <Card className="flex flex-col flex-1 shadow-sm min-h-0">
+            <CardHeader className="pb-3 border-b shrink-0">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                Slot Terblokir
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto space-y-2 text-xs">
+              {roomConflicts.length > 0 ? (
+                <div className="flex flex-col gap-2 w-full">
+                  {roomConflicts.map((c: any) => {
+                    const isCurrent = c.id === `seminar-${seminarId}`;
+                    return (
+                      <div
+                        key={c.id}
+                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${
+                          isCurrent
+                            ? 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm'
+                            : 'bg-destructive/5 border-destructive/20 text-destructive'
+                        }`}
+                      >
+                        <div className={`flex items-center gap-1.5 font-semibold text-[13px] ${isCurrent ? 'text-sky-600 dark:text-sky-400' : 'text-destructive'}`}>
+                          {isCurrent ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
+                          <span className="truncate">{c.title}</span>
+                        </div>
+                        <div className="flex flex-col text-muted-foreground text-[11px] pl-5 space-y-0.5">
+                          <div className="flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span>{formatDateLong(c.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span>{extractTime(c.startTime)} - {extractTime(c.endTime)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-2 my-auto w-full">
+                  <Ban className="h-6 w-6 text-muted-foreground/40" />
+                  <p className="text-xs font-semibold text-foreground">Tidak Ada Slot Terblokir</p>
+                  <p className="text-[11px] max-w-[200px] mx-auto">
+                    Seluruh waktu ketersediaan terpilih saat ini berstatus aman dari konflik.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* ── Finalize confirmation modal ── */}
+      <Dialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              Jadwalkan Seminar Hasil Secara Resmi
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2 text-xs sm:text-sm text-muted-foreground">
+            <p>Anda akan menjadwalkan Seminar Hasil TA berikut:</p>
+
+            <div className="space-y-3 bg-muted/40 rounded-lg border p-4 font-medium text-foreground">
+              <div>
+                <span className="text-xs text-muted-foreground block font-normal">Mahasiswa</span>
+                <span className="block mt-0.5 text-xs sm:text-sm font-semibold">
+                  {toTitleCaseName(seminarDetail?.student?.name)} ({seminarDetail?.student?.nim})
+                </span>
+              </div>
+
+              <div>
+                <span className="text-xs text-muted-foreground block font-normal">Judul TA</span>
+                <span className="block mt-0.5 text-xs sm:text-sm leading-snug font-medium">{seminarDetail?.thesis?.title || '-'}</span>
+              </div>
+
+              {supervisors.length > 0 && (
+                <div>
+                  <span className="text-xs text-muted-foreground block font-normal">Dosen Pembimbing</span>
+                  <div className="space-y-0.5 mt-0.5">
+                    {supervisors.map((s: any, idx: number) => (
+                      <span key={idx} className="block text-xs font-medium">
+                        • {toTitleCaseName(s.name)} {s.role ? `(${formatRoleName(s.role)})` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {examiners.length > 0 && (
+                <div>
+                  <span className="text-xs text-muted-foreground block font-normal">Dosen Penguji</span>
+                  <div className="space-y-0.5 mt-0.5">
+                    {examiners.map((e: any, idx: number) => (
+                      <span key={idx} className="block text-xs font-medium">
+                        • {toTitleCaseName(e.lecturerName || e.lecturer?.name || '-')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {current && (
+                <div className="border-t pt-3 mt-2 space-y-1.5">
+                  <span className="text-xs text-muted-foreground block font-normal">Informasi Jadwal</span>
+                  <div className="flex items-center gap-2 text-xs font-medium">
+                    <CalendarDays className="h-3.5 w-3.5 text-primary shrink-0" />
                     <span>{formatDateLong(current.date)}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-green-600 shrink-0" />
-                    <span>
-                      {extractTime(current.startTime || '')} – {extractTime(current.endTime || '')}
-                    </span>
+                  <div className="flex items-center gap-2 text-xs font-medium">
+                    <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span>{extractTime(current.startTime || '')} - {extractTime(current.endTime || '')}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-green-600 shrink-0" />
-                    <span>{current.isOnline ? 'Seminar Daring' : (current.room?.name || '-')}</span>
+                  <div className="flex items-center gap-2 text-xs font-medium">
+                    {current.isOnline ? (
+                      <>
+                        <Video className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="truncate text-blue-600 underline max-w-[300px]">{current.meetingLink || 'Tautan belum diatur'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span>{current.room?.name || 'Ruangan belum diatur'}</span>
+                      </>
+                    )}
                   </div>
-                </div>
-                {current.isOnline && current.meetingLink && (
-                  <a
-                    href={current.meetingLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-green-700 underline break-all"
-                  >
-                    {current.meetingLink}
-                  </a>
-                )}
-              </div>
-              {isEditable && (
-                <p className="text-xs text-green-600 flex items-center gap-1 self-center">
-                  <PencilLine className="h-3 w-3" />
-                  Pilih slot baru untuk ubah jadwal
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* ── Legend ── */}
-          {legendItems.length > 0 && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-              <span className="font-medium">Ketersediaan dosen:</span>
-              {legendItems.map((item) => (
-                <div key={item.id} className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block h-2.5 w-2.5 rounded-sm border"
-                    style={{ backgroundColor: item.color + '33', borderColor: item.color }}
-                  />
-                  <span className="text-foreground">{toTitleCaseName(item.name)}</span>
-                </div>
-              ))}
-              {current && (
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-600" />
-                  <span className="text-foreground">Jadwal Seminar</span>
                 </div>
               )}
             </div>
-          )}
-
-          {/* ── FullCalendar ── */}
-          <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden">
-            <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="timeGridWeek"
-              locale={idLocale}
-              firstDay={1}
-              headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'timeGridWeek,timeGridDay',
-              }}
-              height={520}
-              slotMinTime="06:00:00"
-              slotMaxTime="22:00:00"
-              nowIndicator
-              allDaySlot={false}
-              weekends={false}
-              selectable={isEditable}
-              selectMirror={isEditable}
-              select={handleDateSelect}
-              events={allEvents}
-              eventClick={(info) => info.jsEvent.preventDefault()}
-              slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-              eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-              dayHeaderContent={(args) => {
-                const day = args.date.toLocaleDateString('id-ID', { weekday: 'short' });
-                return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
-              }}
-            />
           </div>
 
-          {/* ── Hint text ── */}
-          {isEditable && (
-            <p className="text-xs text-muted-foreground text-center">
-              Klik dan seret pada kalender untuk memilih slot waktu seminar.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          <div className="flex items-center justify-end gap-3 pt-2 border-t">
+            <Button variant="outline" onClick={() => setShowFinalizeConfirm(false)} disabled={isFinalizing} className="px-4">
+              Batal
+            </Button>
+            <Button
+              disabled={isFinalizing}
+              onClick={() => {
+                doFinalizeSchedule(seminarId, {
+                  onSuccess: () => {
+                    toast.success('Jadwal seminar berhasil ditetapkan.');
+                    setShowFinalizeConfirm(false);
+                  },
+                  onError: () => toast.error('Gagal menetapkan jadwal seminar.'),
+                });
+              }}
+              className="px-4 font-semibold"
+            >
+              {isFinalizing ? <Spinner className="h-4 w-4 animate-spin mr-2" /> : null}
+              Jadwalkan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Download Invitation Modal ── */}
+      <Dialog open={isInvitationDialogOpen} onOpenChange={setIsInvitationDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-sm border-border/60 shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              Unduh Surat Undangan
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="nomorSurat" className="text-xs text-muted-foreground">Nomor Surat (Opsional)</Label>
+            <Input
+              id="nomorSurat"
+              placeholder="Contoh: 0123/UN16.15/TA/2026"
+              value={inputNomorSurat}
+              onChange={(e) => setInputNomorSurat(e.target.value)}
+              className="bg-background text-sm"
+            />
+          </div>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-2 pt-2">
+            <Button variant="outline" onClick={() => setIsInvitationDialogOpen(false)} className="text-xs min-w-[88px]">
+              Batal
+            </Button>
+            <Button onClick={confirmDownloadInvitation} className="text-xs min-w-[104px]">
+              Unduh PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Schedule form modal ── */}
       <Dialog
         open={pendingSchedule !== null && isEditable}
         onOpenChange={(open) => { if (!open) { setPendingSchedule(null); setFormError(null); } }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <PencilLine className="h-4 w-4 text-primary" />
               Atur Jadwal Seminar
             </DialogTitle>
           </DialogHeader>
@@ -530,7 +1042,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
                         <SelectValue placeholder="Pilih ruangan..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {rooms.map((r) => (
+                        {rooms.map((r: any) => (
                           <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
                         ))}
                       </SelectContent>

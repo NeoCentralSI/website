@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import {
   createAdminThesisSeminarArchive,
   deleteAdminThesisSeminarArchive,
-  downloadAdminThesisSeminarArchiveTemplate,
   exportAdminThesisSeminarArchive,
   getAdminThesisSeminarArchiveList,
   getAdminThesisSeminarDetail,
@@ -15,17 +14,20 @@ import {
   getAdminThesisSeminarValidationList,
   importAdminThesisSeminarArchive,
   setAdminThesisSeminarSchedule,
+  finalizeAdminThesisSeminarSchedule,
   updateAdminThesisSeminarArchive,
+  downloadAdminThesisSeminarInvitation,
+  cancelAdminThesisSeminar,
   type AdminThesisSeminarArchivePayload,
 } from '@/services/thesis-seminar/core.service';
 import {
   addAdminThesisSeminarAudience,
-  downloadAdminThesisSeminarAudienceTemplate,
   exportAdminThesisSeminarAudiences,
   getAdminThesisSeminarAudienceStudentOptions,
   getAdminThesisSeminarAudiences,
   importAdminThesisSeminarAudiences,
   removeAdminThesisSeminarAudience,
+  exportAdminThesisSeminarAudiencesPdf,
 } from '@/services/thesis-seminar/audience.service';
 import { validateSeminarDocument } from '@/services/thesis-seminar/doc.service';
 import type { SetSchedulePayload, ValidateDocumentPayload } from '@/types/seminar.types';
@@ -149,6 +151,36 @@ export function useSetAdminThesisSeminarSchedule() {
   });
 }
 
+export function useFinalizeAdminThesisSeminarSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (seminarId: string) => finalizeAdminThesisSeminarSchedule(seminarId),
+    onSuccess: (_data, seminarId) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', seminarId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'scheduling', seminarId] });
+    },
+  });
+}
+
+export function useCancelAdminThesisSeminar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ seminarId, cancelledReason }: { seminarId: string; cancelledReason?: string }) =>
+      cancelAdminThesisSeminar(seminarId, cancelledReason),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', variables.seminarId] });
+      toast.success('Seminar berhasil dibatalkan');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Gagal membatalkan seminar');
+    },
+  });
+}
+
 export function useCreateAdminThesisSeminarArchive() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -199,11 +231,6 @@ export function useExportAdminThesisSeminarArchive() {
   });
 }
 
-export function useDownloadAdminThesisSeminarArchiveTemplate() {
-  return useMutation({
-    mutationFn: () => downloadAdminThesisSeminarArchiveTemplate(),
-  });
-}
 
 export function useAddAdminThesisSeminarAudience() {
   const queryClient = useQueryClient();
@@ -250,8 +277,29 @@ export function useExportAdminThesisSeminarAudiences() {
   });
 }
 
-export function useDownloadAdminThesisSeminarAudienceTemplate() {
+export function useExportAdminThesisSeminarAudiencesPdf() {
   return useMutation({
-    mutationFn: (seminarId: string) => downloadAdminThesisSeminarAudienceTemplate(seminarId),
+    mutationFn: (seminarId: string) => exportAdminThesisSeminarAudiencesPdf(seminarId),
+  });
+}
+
+
+export function useDownloadAdminThesisSeminarInvitation() {
+  return useMutation({
+    mutationFn: ({ seminarId, nomorSurat }: { seminarId: string; nomorSurat?: string }) => downloadAdminThesisSeminarInvitation(seminarId, nomorSurat),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Surat-Undangan-Seminar-Hasil.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Surat undangan berhasil diunduh');
+    },
+    onError: () => {
+      toast.error('Gagal mengunduh surat undangan');
+    }
   });
 }

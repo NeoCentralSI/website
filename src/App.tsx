@@ -134,9 +134,8 @@ const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
 const KuotaBimbinganPage = lazy(() => import('./pages/master-data/KuotaBimbingan'))
 
 // Pengumuman
-const SeminarHasilAnnouncementPage = lazy(() => import('./pages/pengumuman/SeminarHasilAnnouncement'))
-const YudisiumAnnouncementPage = lazy(() => import('./pages/pengumuman/YudisiumAnnouncement'))
-const PengumumanOverviewPage = lazy(() => import('./pages/pengumuman/Overview'))
+const ThesisSeminarAnnouncementPage = lazy(() => import('./pages/thesis-seminar/ThesisSeminarAnnouncement'))
+const YudisiumAnnouncementPage = lazy(() => import('./pages/yudisium/YudisiumAnnouncement'))
 
 // Field Assessment Portal
 const FieldAssessmentPortal = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentPortal'))
@@ -272,8 +271,8 @@ function App() {
                   </Route>
 
                   {/* Pengumuman routes */}
-                  <Route path="/pengumuman" element={<PengumumanOverviewPage />} />
-                  <Route path="/pengumuman/seminar-hasil" element={<SeminarHasilAnnouncementPage />} />
+                  <Route path="/pengumuman" element={<Navigate to="/pengumuman/seminar-hasil" replace />} />
+                  <Route path="/pengumuman/seminar-hasil" element={<ThesisSeminarAnnouncementPage />} />
                   <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
                 </Route>
 

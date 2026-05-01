@@ -19,14 +19,14 @@ async function parseJsonResponse<T>(response: Response, fallbackMessage: string)
 // ============================================================
 
 export const registerToSeminar = async (seminarId: string) => {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)), {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCE_REGISTER(seminarId)), {
     method: 'POST',
   });
   return parseJsonResponse(response, 'Gagal mendaftar seminar');
 };
 
 export const cancelSeminarRegistration = async (seminarId: string) => {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCE_BY_ID(seminarId, 'me')), {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCE_REGISTER(seminarId)), {
     method: 'DELETE',
   });
   return parseJsonResponse(response, 'Gagal membatalkan pendaftaran');
@@ -38,21 +38,34 @@ export const cancelSeminarRegistration = async (seminarId: string) => {
 
 export async function getSeminarAudiences(seminarId: string): Promise<LecturerAudienceItem[]> {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)));
-  return parseJsonResponse(res, 'Gagal memuat daftar hadir');
+  const data = await parseJsonResponse<any[]>(res, 'Gagal memuat daftar hadir');
+  return data.map((item) => ({
+    studentId: item.studentId,
+    studentName: item.fullName || item.studentName || '-',
+    nim: item.nim || '-',
+    registeredAt: item.registeredAt,
+    isPresent: !!item.approvedAt,
+    approvedAt: item.approvedAt,
+    approvedByName: item.approvedByName,
+  }));
 }
 
 export const getAdminThesisSeminarAudiences = getSeminarAudiences;
 
 export async function approveAudience(seminarId: string, studentId: string): Promise<void> {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.APPROVE_AUDIENCE(seminarId, studentId)), {
-    method: 'PUT',
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCE_BY_ID(seminarId, studentId)), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'approve' }),
   });
   return parseJsonResponse(res, 'Gagal menyetujui kehadiran');
 }
 
 export async function unapproveAudience(seminarId: string, studentId: string): Promise<void> {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.UNAPPROVE_AUDIENCE(seminarId, studentId)), {
-    method: 'PUT',
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCE_BY_ID(seminarId, studentId)), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'unapprove' }),
   });
   return parseJsonResponse(res, 'Gagal membatalkan persetujuan');
 }
@@ -112,21 +125,6 @@ export async function importAdminThesisSeminarAudiences(
   return parseJsonResponse(response, 'Gagal mengimpor audience seminar');
 }
 
-export async function downloadAdminThesisSeminarAudienceTemplate(seminarId: string) {
-  const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_TEMPLATE(seminarId))
-  );
-  if (!response.ok) throw new Error('Gagal mengunduh template audience seminar');
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'Template_Audience_Seminar.xlsx';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-}
 
 export async function exportAdminThesisSeminarAudiences(seminarId: string) {
   const response = await apiRequest(
@@ -138,6 +136,22 @@ export async function exportAdminThesisSeminarAudiences(seminarId: string) {
   const link = document.createElement('a');
   link.href = url;
   link.download = `Audience_Seminar_${new Date().toISOString().split('T')[0]}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function exportAdminThesisSeminarAudiencesPdf(seminarId: string) {
+  const response = await apiRequest(
+    getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)}/export-pdf`)
+  );
+  if (!response.ok) throw new Error('Gagal mengekspor audience seminar ke PDF');
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `Audience_Seminar_${new Date().toISOString().split('T')[0]}.pdf`;
   document.body.appendChild(link);
   link.click();
   link.remove();

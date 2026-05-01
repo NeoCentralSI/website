@@ -9,12 +9,13 @@ import { Download, FileSpreadsheet, RefreshCw, Upload } from "lucide-react";
 
 import type { AdminThesisSeminarArchiveImportResult } from "@/services/thesis-seminar/core.service";
 
+import * as xlsx from "xlsx";
+
 interface AdminThesisSeminarArchiveImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (file: File) => Promise<AdminThesisSeminarArchiveImportResult>;
   isImporting: boolean;
-  onDownloadTemplate: () => void;
 }
 
 export function AdminThesisSeminarArchiveImportDialog({
@@ -22,10 +23,48 @@ export function AdminThesisSeminarArchiveImportDialog({
   onOpenChange,
   onImport,
   isImporting,
-  onDownloadTemplate,
 }: AdminThesisSeminarArchiveImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<AdminThesisSeminarArchiveImportResult | null>(null);
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      "No",
+      "Nama",
+      "NIM",
+      "Judul TA",
+      "Tanggal",
+      "Ruangan",
+      "Hasil",
+      "Dosen Penguji 1",
+      "Dosen Penguji 2",
+      "Dosen Penguji 3"
+    ];
+
+    const sampleData = [
+      {
+        "No": 1,
+        "Nama": "Mahasiswa Contoh",
+        "NIM": "12345678",
+        "Judul TA": "Judul TA",
+        "Tanggal": "2026-04-30",
+        "Ruangan": "Ruang 1",
+        "Hasil": "Lulus / Lulus dengan Revisi / Gagal",
+        "Dosen Penguji 1": "Dosen 1",
+        "Dosen Penguji 2": "Dosen 2",
+        "Dosen Penguji 3": "(Opsional)"
+      }
+    ];
+
+    const worksheet = xlsx.utils.json_to_sheet(sampleData, { header: headers });
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Template Import");
+
+    // Auto-width
+    worksheet["!cols"] = headers.map(() => ({ wch: 20 }));
+
+    xlsx.writeFile(workbook, "Template_Import_Seminar.xlsx");
+  };
 
   const reset = () => {
     setFile(null);
@@ -73,7 +112,7 @@ export function AdminThesisSeminarArchiveImportDialog({
                   </p> */}
                 </div>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={onDownloadTemplate}>
+              <Button type="button" variant="outline" size="sm" onClick={handleDownloadTemplate}>
                 <Download className="mr-2 h-4 w-4" /> Template
               </Button>
             </div>

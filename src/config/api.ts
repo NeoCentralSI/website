@@ -200,11 +200,12 @@ export const API_CONFIG = {
       // --- Shared / Global ---
       BASE: '/thesis-seminars',
       BY_ID: (id: string) => `/thesis-seminars/${id}`,
+      INVITATION: (id: string) => `/thesis-seminars/${id}/invitation`,
+      BERITA_ACARA: (id: string) => `/thesis-seminars/${id}/berita-acara`,
       OPTIONS_THESES: '/thesis-seminars/options/theses',
       OPTIONS_LECTURERS: '/thesis-seminars/options/lecturers',
       OPTIONS_STUDENTS: '/thesis-seminars/options/students',
       OPTIONS_ROOMS: '/thesis-seminars/options/rooms',
-      TEMPLATE: '/thesis-seminars/template',
       EXPORT: '/thesis-seminars/export',
       IMPORT: '/thesis-seminars/import',
 
@@ -222,6 +223,8 @@ export const API_CONFIG = {
       // --- Scheduling ---
       SCHEDULING_DATA: (id: string) => `/thesis-seminars/${id}/scheduling-data`,
       SCHEDULE: (id: string) => `/thesis-seminars/${id}/schedule`,
+      FINALIZE_SCHEDULE: (id: string) => `/thesis-seminars/${id}/schedule/finalize`,
+      CANCEL: (id: string) => `/thesis-seminars/${id}/cancel`,
 
       // --- Documents ---
       DOCUMENT_TYPES: '/thesis-seminars/documents/types',
@@ -242,18 +245,19 @@ export const API_CONFIG = {
       // --- Revisions ---
       REVISIONS: (id: string) => `/thesis-seminars/${id}/revisions`,
       REVISION_BY_ID: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}`,
-      APPROVE_REVISION: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}/approve`,
-      UNAPPROVE_REVISION: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}/unapprove`,
+      APPROVE_REVISION: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}`,
+      UNAPPROVE_REVISION: (id: string, revId: string) => `/thesis-seminars/${id}/revisions/${revId}`,
       FINALIZE_REVISIONS: (id: string) => `/thesis-seminars/${id}/revisions/finalize`,
+      UNFINALIZE_REVISIONS: (id: string) => `/thesis-seminars/${id}/revisions/unfinalize`,
 
       // --- Audiences ---
       AUDIENCES: (id: string) => `/thesis-seminars/${id}/audiences`,
       AUDIENCE_BY_ID: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}`,
+      AUDIENCE_REGISTER: (id: string) => `/thesis-seminars/${id}/audience-register`,
       APPROVE_AUDIENCE: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}/approve`,
       UNAPPROVE_AUDIENCE: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}/unapprove`,
       TOGGLE_AUDIENCE_PRESENCE: (id: string, studentId: string) => `/thesis-seminars/${id}/audiences/${studentId}/presence`,
       AUDIENCES_OPTIONS: (id: string) => `/thesis-seminars/${id}/audiences/options/students`,
-      AUDIENCES_TEMPLATE: (id: string) => `/thesis-seminars/${id}/audiences/template`,
       AUDIENCES_EXPORT: (id: string) => `/thesis-seminars/${id}/audiences/export`,
       AUDIENCES_IMPORT: (id: string) => `/thesis-seminars/${id}/audiences/import`,
     },

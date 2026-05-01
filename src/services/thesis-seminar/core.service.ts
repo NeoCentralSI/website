@@ -246,6 +246,21 @@ export async function setAdminThesisSeminarSchedule(seminarId: string, payload: 
   return parseJsonResponse(response, 'Gagal menyimpan jadwal');
 }
 
+export async function finalizeAdminThesisSeminarSchedule(seminarId: string): Promise<any> {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.FINALIZE_SCHEDULE(seminarId)), {
+    method: 'POST',
+  });
+  return parseJsonResponse(response, 'Gagal menetapkan jadwal');
+}
+
+export async function cancelAdminThesisSeminar(seminarId: string, cancelledReason?: string): Promise<any> {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.CANCEL(seminarId)), {
+    method: 'POST',
+    body: JSON.stringify({ cancelledReason }),
+  });
+  return parseJsonResponse(response, 'Gagal membatalkan seminar');
+}
+
 // ============================================================
 // Assessment & Finalization
 // ============================================================
@@ -338,8 +353,8 @@ export async function getAdminThesisSeminarThesisOptions(): Promise<AdminThesisS
     thesisTitle: item.title ?? '-',
     studentName: item.student?.user?.fullName ?? '-',
     studentNim: item.student?.user?.identityNumber ?? '-',
-    hasSeminarResult: false,
-    seminarResultId: null,
+    hasSeminarResult: !!item.hasSeminarResult,
+    seminarResultId: item.seminarResultId || null,
     supervisorIds: (item.thesisSupervisors ?? []).map((supervisor: any) => supervisor.lecturerId),
   }));
 }
@@ -377,19 +392,6 @@ export async function exportAdminThesisSeminarArchive() {
   window.URL.revokeObjectURL(url);
 }
 
-export async function downloadAdminThesisSeminarArchiveTemplate() {
-  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.TEMPLATE));
-  if (!response.ok) throw new Error('Gagal mengunduh template');
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'Template_Arsip_Seminar.xlsx';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-}
 
 export async function importAdminThesisSeminarArchive(file: File): Promise<AdminThesisSeminarArchiveImportResult> {
   const formData = new FormData();
@@ -399,4 +401,25 @@ export async function importAdminThesisSeminarArchive(file: File): Promise<Admin
     body: formData,
   });
   return parseJsonResponse(response, 'Gagal mengimpor arsip');
+}
+
+export async function downloadAdminThesisSeminarInvitation(seminarId: string, nomorSurat?: string): Promise<Blob> {
+  let url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.INVITATION(seminarId));
+  if (nomorSurat) {
+    url += `?nomorSurat=${encodeURIComponent(nomorSurat)}`;
+  }
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    throw new Error('Gagal mengunduh surat undangan');
+  }
+  return await response.blob();
+}
+
+export async function downloadBeritaAcara(seminarId: string): Promise<Blob> {
+  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BERITA_ACARA(seminarId));
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    throw new Error('Gagal mengunduh berita acara');
+  }
+  return await response.blob();
 }

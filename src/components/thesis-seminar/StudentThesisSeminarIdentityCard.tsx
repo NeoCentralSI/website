@@ -59,17 +59,14 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
   if (activeExaminers.length > 0) {
     blocks.push(
       <div key="examiners" className="flex flex-col gap-0.5">
-        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+        <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
           <Users size={12} className="opacity-50" />
           Dosen Penguji
         </div>
-        {activeExaminers.map((e, idx) => (
+        {activeExaminers.map((e) => (
           <div
             key={e.id}
-            className={cn(
-              "font-medium truncate",
-              idx === 0 ? "text-[12.5px] text-foreground" : "text-[11px] text-muted-foreground"
-            )}
+            className="text-sm font-medium text-foreground truncate"
           >
             {toTitleCaseName(e.lecturerName)}
           </div>
@@ -81,15 +78,15 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
   if (showSchedule && seminar.date) {
     blocks.push(
       <div key="schedule" className="flex flex-col gap-0.5">
-        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+        <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
           <Calendar size={12} className="opacity-50" />
           Jadwal
         </div>
-        <div className="text-[12.5px] text-foreground font-medium">
+        <div className="text-sm text-foreground font-medium">
           {formatDateOnlyId(seminar.date)}
         </div>
         {timeRange && (
-          <div className="text-[11px] text-muted-foreground">{timeRange}</div>
+          <div className="text-xs text-muted-foreground">{timeRange}</div>
         )}
       </div>
     );
@@ -98,7 +95,7 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
   if (showSchedule && (seminar.room || isOnline)) {
     blocks.push(
       <div key="location" className="flex flex-col gap-0.5">
-        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+        <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
           {isOnline ? (
             <Video size={12} className="opacity-50" />
           ) : (
@@ -116,7 +113,7 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
                 href={seminar.meetingLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[11px] text-emerald-600 font-medium hover:underline"
+                className="text-xs text-emerald-600 font-medium hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
                 Buka Link
@@ -124,7 +121,7 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
             )}
           </div>
         ) : (
-          <div className="text-[12.5px] text-foreground font-medium truncate">
+          <div className="text-sm text-foreground font-medium truncate">
             {seminar.room?.name}
           </div>
         )}
@@ -135,15 +132,15 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
   if (showScore) {
     blocks.push(
       <div key="score" className="flex flex-col gap-0.5">
-        <div className="text-[10.5px] text-muted-foreground font-medium flex items-center gap-1">
+        <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
           <Trophy size={12} className="opacity-50" />
           Nilai Akhir
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-[16px] font-bold text-foreground">
+          <span className="text-lg font-bold text-foreground">
             {seminar.finalScore?.toFixed(2)}
           </span>
-          <span className="text-[11px] text-muted-foreground">/ {seminar.maxWeight || 100}</span>
+          <span className="text-xs text-muted-foreground">/ {seminar.maxWeight || 100}</span>
         </div>
       </div>
     );
@@ -156,13 +153,13 @@ export function StudentThesisSeminarIdentityCard({ seminar, onClick }: SeminarIn
     <div
       onClick={onClick}
       className={cn(
-        "bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px] transition-all duration-200",
+        "bg-card border border-gray-200 rounded-[10px] p-[16px_18px] transition-all duration-200",
         onClick && "cursor-pointer hover:bg-gray-50/80 hover:border-gray-300/80 hover:shadow-sm"
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-[14px]">
-        <div className="text-[13px] font-bold text-foreground">Informasi Seminar</div>
+        <div className="text-base font-semibold text-foreground">Informasi Seminar</div>
         <div className="flex items-center gap-2">
           <ThesisEventStatusBadge
             status={seminar.status}

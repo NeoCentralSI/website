@@ -51,11 +51,11 @@ export const StudentThesisSeminarOverviewPanel = ({
 
       {/* Riwayat percobaan — single card with table rows */}
       {historyItems.length > 0 && (
-        <div className="bg-white border border-[#e8e8e4] rounded-[10px] p-[16px_18px]">
+        <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
           {/* Card header */}
           <div className="flex items-center justify-between mb-[14px]">
-            <div className="text-[13px] font-bold text-[#111]">Riwayat Percobaan</div>
-            <span className="text-[11px] text-[#aaa] font-medium">
+            <div className="text-base font-semibold text-foreground">Riwayat Percobaan</div>
+            <span className="text-xs text-muted-foreground font-medium">
               {historyItems.length} percobaan sebelumnya
             </span>
           </div>
@@ -65,7 +65,7 @@ export const StudentThesisSeminarOverviewPanel = ({
             {['#', 'Dosen Penguji', 'Tanggal', 'Ruangan', 'Nilai', 'Status', ''].map((col, i) => (
               <span
                 key={i}
-                className="text-[10px] font-semibold text-[#bbb] uppercase tracking-[0.4px]"
+                className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
               >
                 {col}
               </span>

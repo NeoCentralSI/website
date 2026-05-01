@@ -4,7 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { toTitleCaseName } from '@/lib/text';
-import { RotateCcw, UserPlus } from 'lucide-react';
+import { RotateCcw, Check, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
 export interface ThesisSeminarAudienceTableRow {
   studentId?: string;
@@ -29,6 +31,10 @@ interface ThesisSeminarAudienceTableProps {
   onSelectionChange?: (ids: string[]) => void;
   isRowSelectable?: (row: ThesisSeminarAudienceTableRow, index: number) => boolean;
   actions?: React.ReactNode;
+  // Admin props
+  isEditable?: boolean;
+  isArchived?: boolean;
+  onDelete?: (studentId: string) => void;
 }
 
 export function ThesisSeminarAudienceTable({
@@ -44,6 +50,9 @@ export function ThesisSeminarAudienceTable({
   onSelectionChange,
   isRowSelectable,
   actions,
+  isEditable = false,
+  isArchived = false,
+  onDelete,
 }: ThesisSeminarAudienceTableProps) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -54,10 +63,14 @@ export function ThesisSeminarAudienceTable({
     if (!query) return rows;
 
     return rows.filter((row) => {
+      const name = row.studentName || '';
+      const nim = row.nim || '';
+      const approvedBy = row.approvedByName || '';
+
       return (
-        row.studentName.toLowerCase().includes(query) ||
-        row.nim.toLowerCase().includes(query) ||
-        (row.approvedByName || '').toLowerCase().includes(query)
+        name.toLowerCase().includes(query) ||
+        nim.toLowerCase().includes(query) ||
+        approvedBy.toLowerCase().includes(query)
       );
     });
   }, [search, rows]);
@@ -81,8 +94,8 @@ export function ThesisSeminarAudienceTable({
       {
         key: 'name',
         header: 'Nama',
-        width: '40%',
-        render: (row) => <span className="font-medium">{toTitleCaseName(row.studentName)}</span>,
+        width: '30%',
+        render: (row) => <span className="font-medium">{toTitleCaseName(row.studentName || '-')}</span>,
       },
       {
         key: 'nim',
@@ -93,7 +106,7 @@ export function ThesisSeminarAudienceTable({
       {
         key: 'status',
         header: 'Status',
-        width: '20%',
+        width: '15%',
         className: 'text-center',
         render: (row) => {
           const isApproved = !!row.approvedAt;
@@ -104,48 +117,81 @@ export function ThesisSeminarAudienceTable({
           );
         },
       },
+      {
+        key: 'approvedAt',
+        header: 'Disetujui Pada',
+        width: '15%',
+        render: (row) =>
+          row.approvedAt
+            ? format(new Date(row.approvedAt), 'd MMM yyyy', { locale: idLocale })
+            : '-',
+      },
+      {
+        key: 'approvedBy',
+        header: 'Disetujui Oleh',
+        width: '15%',
+        render: (row) => row.approvedByName || '-',
+      },
     ];
 
-    if (showAction) {
+    const hasAnyAction = showAction || isEditable;
+
+    if (hasAnyAction) {
       baseColumns.push({
         key: 'actions',
         header: 'Aksi',
         className: 'text-right',
-        width: 220,
+        width: 150,
         render: (row) => {
           const isApproved = !!row.approvedAt;
           const isApprovingThisRow = !!approvingStudentId && approvingStudentId === row.studentId;
           const isUnapprovingThisRow = !!unapprovingStudentId && unapprovingStudentId === row.studentId;
 
           return (
-            <div className="flex items-center justify-end gap-2">
-              {isApproved ? (
+            <div className="flex items-center justify-end gap-1">
+              {showAction && (
+                isApproved ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => onUnapprove?.(row)}
+                    disabled={!row.studentId || isUnapprovingThisRow}
+                    title="Batalkan Setujui"
+                  >
+                    {isUnapprovingThisRow ? (
+                      <Spinner className="h-4 w-4" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => onApprove?.(row)}
+                    disabled={!row.studentId || isApprovingThisRow}
+                    title="Setujui"
+                  >
+                    {isApprovingThisRow ? (
+                      <Spinner className="h-4 w-4" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </Button>
+                )
+              )}
+              {isEditable && (
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onUnapprove?.(row)}
-                  disabled={!row.studentId || isUnapprovingThisRow}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => row.studentId && onDelete?.(row.studentId)}
+                  disabled={!isArchived}
+                  title={isArchived ? "Hapus" : "Tidak dapat menghapus data non-arsip"}
                 >
-                  {isUnapprovingThisRow ? (
-                    <Spinner className="mr-1 h-3 w-3" />
-                  ) : (
-                    <RotateCcw className="mr-1 h-3 w-3" />
-                  )}
-                  Batalkan Setujui
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onApprove?.(row)}
-                  disabled={!row.studentId || isApprovingThisRow}
-                >
-                  {isApprovingThisRow ? (
-                    <Spinner className="mr-1 h-3 w-3" />
-                  ) : (
-                    <UserPlus className="mr-1 h-3 w-3" />
-                  )}
-                  Setujui
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               )}
             </div>
@@ -155,11 +201,11 @@ export function ThesisSeminarAudienceTable({
     }
 
     return baseColumns;
-  }, [showAction, page, pageSize, approvingStudentId, unapprovingStudentId, onApprove, onUnapprove]);
+  }, [showAction, isEditable, onDelete, page, pageSize, approvingStudentId, unapprovingStudentId, onApprove, onUnapprove]);
 
   return (
     <InternshipTable
-      columns={columns}
+      columns={columns as any}
       data={paginatedRows}
       loading={loading}
       total={filteredRows.length}
@@ -173,12 +219,11 @@ export function ThesisSeminarAudienceTable({
         setPage(1);
       }}
       emptyText={emptyLabel}
-      rowKey={(row, index) => row.studentId || `${row.nim}-${index}`}
-      className="p-0 border-0 shadow-none"
+      actions={actions}
       selectedIds={selectedIds}
       onSelectionChange={onSelectionChange}
       isRowSelectable={isRowSelectable}
-      actions={actions}
+      rowKey={(row, index) => row.studentId || `${row.nim}-${index}`}
     />
   );
 }

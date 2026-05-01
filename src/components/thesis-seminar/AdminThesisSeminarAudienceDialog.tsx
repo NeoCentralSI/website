@@ -19,6 +19,7 @@ interface AdminThesisSeminarAudienceDialogProps {
   studentOptions: AdminThesisSeminarAudienceStudentOption[];
   isPending: boolean;
   onSubmit: (studentId: string) => void;
+  seminarOwnerStudentId?: string | null;
 }
 
 export function AdminThesisSeminarAudienceDialog({
@@ -27,6 +28,7 @@ export function AdminThesisSeminarAudienceDialog({
   studentOptions,
   isPending,
   onSubmit,
+  seminarOwnerStudentId,
 }: AdminThesisSeminarAudienceDialogProps) {
   const [selectedStudentId, setSelectedStudentId] = useState('');
 
@@ -46,10 +48,10 @@ export function AdminThesisSeminarAudienceDialog({
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Tambah Mahasiswa Audience
+            Tambah Peserta Seminar Hasil
           </DialogTitle>
           <DialogDescription>
-            Pilih mahasiswa yang akan ditambahkan sebagai audience seminar ini
+            Pilih mahasiswa yang akan ditambahkan sebagai peserta seminar hasil ini
           </DialogDescription>
         </DialogHeader>
 
@@ -58,10 +60,12 @@ export function AdminThesisSeminarAudienceDialog({
             <Label htmlFor="student-select">Mahasiswa</Label>
             <ComboBox
               width="w-full"
-              items={studentOptions.map((s) => ({
-                value: s.id,
-                label: `${s.fullName || s.name} (${s.nim})`,
-              }))}
+              items={studentOptions
+                .filter((s) => s.id !== seminarOwnerStudentId)
+                .map((s) => ({
+                  value: s.id,
+                  label: `${s.fullName || s.name} (${s.nim})`,
+                }))}
               placeholder="Pilih mahasiswa..."
               defaultValue={selectedStudentId}
               onChange={(value) => setSelectedStudentId(value)}

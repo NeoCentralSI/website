@@ -18,18 +18,12 @@ interface Props {
 export function ThesisSeminarDetailSchedulingPanel({ seminarId, detail }: Props) {
   const { isAdmin } = useRole();
 
-  return (
-    <div className="space-y-6">
-      {/* 1. View Only Content (For everyone) */}
-      <ViewerSchedulingContent detail={detail} />
+  if (!isAdmin()) {
+    return <ViewerSchedulingContent detail={detail} />;
+  }
 
-      {/* 2. Admin Scheduling Management (Always visible for now, or just for Admin if you prefer, but the user said "biarkan saja komponen itu saling menimpa") */}
-      {/* Based on "biarkan saja komponen itu saling menimpa", I will show both if Admin or Dosen or anyone can see it */}
-      <div className="pt-6 border-t border-dashed">
-        <h3 className="text-lg font-semibold mb-4 px-1">Manajemen Penjadwalan (Admin View)</h3>
-        <AdminThesisSeminarSchedulingSection seminarId={seminarId} isEditable={isAdmin()} />
-      </div>
-    </div>
+  return (
+    <AdminThesisSeminarSchedulingSection seminarId={seminarId} isEditable={true} />
   );
 }
 
