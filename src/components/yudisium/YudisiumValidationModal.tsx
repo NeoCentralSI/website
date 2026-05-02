@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { useAdminYudisiumParticipantDetail, useValidateYudisiumDocument } from '@/hooks/yudisium/useAdminYudisium';
+import { useYudisiumParticipantDetail, useValidateYudisiumDocument } from '@/hooks/yudisium/useYudisiumParticipants';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
 import { apiRequest } from '@/services/auth.service';
 import { ENV } from '@/config/env';
@@ -43,7 +43,8 @@ export function YudisiumValidationModal({
   open,
   onOpenChange,
 }: YudisiumValidationModalProps) {
-  const { data: detail, isLoading } = useAdminYudisiumParticipantDetail(
+  const { data: detail, isLoading } = useYudisiumParticipantDetail(
+    yudisiumId,
     open && participant ? participant.id : ''
   );
   const validateMutation = useValidateYudisiumDocument(yudisiumId);

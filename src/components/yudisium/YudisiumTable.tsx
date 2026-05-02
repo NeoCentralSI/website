@@ -18,7 +18,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { formatDateOnlyId } from '@/lib/text';
 import type { YudisiumEvent, UpdateYudisiumPayload } from '@/services/yudisium/yudisium.service';
-import { YudisiumFormDialog } from '@/components/yudisium/event/YudisiumFormDialog';
+import { YudisiumFormDialog } from '@/components/yudisium/YudisiumFormDialog';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline'; className: string }> = {
     draft: { label: 'Draft', variant: 'secondary', className: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' },

@@ -20,8 +20,8 @@ import { Label } from '@/components/ui/label';
 import { Loading } from '@/components/ui/spinner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { useStudentExitSurveyDetail, useSubmitStudentExitSurvey } from '@/hooks/yudisium/useStudentExitSurvey';
-import type { StudentExitSurveyDetailResponse } from '@/services/studentExitSurvey.service';
+import { useStudentExitSurvey, useSubmitStudentExitSurvey } from '@/hooks/yudisium/useYudisiumExitSurvey';
+import type { StudentExitSurveyDetailResponse } from '@/services/yudisium/yudisium-exit-survey.service';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -61,7 +61,7 @@ const mapInitialAnswersFromResponse = (
 export default function StudentExitSurvey() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const { data, isLoading, isError, error } = useStudentExitSurveyDetail();
+  const { data, isLoading, isError, error } = useStudentExitSurvey();
   const submitMutation = useSubmitStudentExitSurvey();
 
   const initialAnswers = useMemo(() => mapInitialAnswersFromResponse(data), [data]);
@@ -70,7 +70,7 @@ export default function StudentExitSurvey() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: 'Yudisium', href: '/yudisium/student' },
+      { label: 'Yudisium', href: '/yudisium' },
       { label: 'Exit Survey' },
     ]);
     setTitle(undefined);
@@ -163,7 +163,7 @@ export default function StudentExitSurvey() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/yudisium/student')}
+          onClick={() => navigate('/yudisium')}
           className="shrink-0"
         >
           <ArrowLeft className="h-5 w-5" />

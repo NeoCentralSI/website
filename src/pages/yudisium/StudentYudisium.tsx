@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/spinner';
 import { CheckCircle2, Circle, Clock, CalendarRange, BookOpenText, Download, PartyPopper } from 'lucide-react';
-import { useStudentYudisiumOverview } from '@/hooks/yudisium/useStudentYudisium';
+import { useStudentYudisiumOverview } from '@/hooks/yudisium/useYudisiumStudent';
 import type { StudentYudisiumChecklistItem } from '@/types/student-yudisium.types';
 import { UploadDokumenYudisium } from '@/components/yudisium/UploadDokumenYudisium';
 import emptyAnimation from '@/assets/lottie/empty.json';
@@ -327,7 +327,7 @@ export default function StudentYudisium() {
                   <ChecklistItem
                     key={item.key}
                     item={item}
-                    onExitSurveyClick={() => navigate('/yudisium/student/exit-survey')}
+                    onExitSurveyClick={() => navigate('/yudisium/exit-survey')}
                   />
                 ))}
               </div>

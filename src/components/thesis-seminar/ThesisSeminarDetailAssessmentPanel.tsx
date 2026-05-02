@@ -131,6 +131,7 @@ function AdminAssessmentInfo({ detail }: { detail: any }) {
 // ──────────────────────────────────────────────────────────────
 
 function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
+  const { user } = useAuth();
   const { data: form, isLoading } = useExaminerAssessmentForm(seminarId);
   const submitMutation = useSubmitExaminerAssessment();
 
@@ -222,7 +223,6 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
     }
   };
 
-  const { user } = useAuth();
   const totalMaxScore = allCriteria.reduce((sum, c) => sum + Number(c.maxScore || 0), 0);
 
   return (

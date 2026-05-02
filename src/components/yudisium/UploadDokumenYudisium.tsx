@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   useStudentYudisiumRequirements,
   useUploadYudisiumDocument,
-} from '@/hooks/yudisium/useStudentYudisium';
+} from '@/hooks/yudisium/useYudisiumStudent';
 import type { YudisiumRequirementUploadStatus } from '@/types/student-yudisium.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';

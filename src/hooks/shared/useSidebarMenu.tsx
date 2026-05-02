@@ -123,6 +123,13 @@ export const useSidebarMenu = () => {
           icon: GraduationCap,
           items: [],
         },
+        // Repositori — student only
+        {
+          title: "Repositori",
+          url: "/repositori",
+          icon: Database,
+          items: [],
+        },
 
       ];
 
