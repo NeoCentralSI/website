@@ -57,22 +57,6 @@ export function AdminThesisDefenceArchivePanel() {
   const importMutation = useImportAdminDefenceArchive();
   const exportMutation = useExportAdminDefenceArchive();
 
-  const handleExport = async () => {
-    try {
-      const blob = await exportMutation.mutateAsync();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `arsip-sidang-ta-${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      toast.error('Gagal mengekspor data');
-    }
-  };
-
   return (
     <>
       <AdminThesisDefenceArchiveTable
@@ -108,7 +92,12 @@ export function AdminThesisDefenceArchivePanel() {
               <Upload className="mr-2 h-4 w-4" />
               Import Excel
             </Button>
-            <Button size="sm" variant="outline" onClick={handleExport} disabled={exportMutation.isPending}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportMutation.mutate()}
+              disabled={exportMutation.isPending}
+            >
               <Download className="mr-2 h-4 w-4" />
               Export Excel
             </Button>

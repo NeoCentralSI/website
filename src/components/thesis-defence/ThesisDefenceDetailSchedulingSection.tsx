@@ -22,6 +22,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -708,11 +709,10 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                           meetingLink: '',
                         });
                       }}
-                      className={`p-2.5 rounded-lg border-2 bg-card transition-all flex flex-col gap-1 text-left ${
-                        canEditSchedule
-                          ? 'hover:bg-accent/50 cursor-pointer border-primary/20 hover:border-primary/40'
-                          : 'opacity-60 border-border/50 cursor-not-allowed'
-                      }`}
+                      className={`p-2.5 rounded-lg border-2 bg-card transition-all flex flex-col gap-1 text-left ${canEditSchedule
+                        ? 'hover:bg-accent/50 cursor-pointer border-primary/20 hover:border-primary/40'
+                        : 'opacity-60 border-border/50 cursor-not-allowed'
+                        }`}
                     >
                       <div className="flex items-center gap-1.5 font-semibold text-primary text-[13px]">
                         <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary/80" />
@@ -759,11 +759,10 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                     return (
                       <div
                         key={c.id}
-                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${
-                          isCurrent
-                            ? 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm'
-                            : 'bg-destructive/5 border-destructive/20 text-destructive'
-                        }`}
+                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${isCurrent
+                          ? 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm'
+                          : 'bg-destructive/5 border-destructive/20 text-destructive'
+                          }`}
                       >
                         <div className={`flex items-center gap-1.5 font-semibold text-[13px] ${isCurrent ? 'text-sky-600 dark:text-sky-400' : 'text-destructive'}`}>
                           {isCurrent ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
@@ -1063,14 +1062,18 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
       <Dialog open={isInvitationDialogOpen} onOpenChange={setIsInvitationDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Unduh Surat Undangan</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              Unduh Surat Undangan
+            </DialogTitle>
+            <DialogDescription>
+              Masukkan nomor surat untuk disertakan dalam dokumen PDF undangan.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <label htmlFor="nomorSurat" className="text-sm font-medium">Nomor Surat (Opsional)</label>
-              <input
+              <Label htmlFor="nomorSurat">Nomor Surat (Opsional)</Label>
+              <Input
                 id="nomorSurat"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Contoh: 123/UN16.15.3.2/PP/2026"
                 value={inputNomorSurat}
                 onChange={(e) => setInputNomorSurat(e.target.value)}
@@ -1079,8 +1082,12 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsInvitationDialogOpen(false)}>Batal</Button>
-            <Button onClick={confirmDownloadInvitation}>
-              {isDownloadingInvitation ? <Spinner className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+            <Button onClick={confirmDownloadInvitation} disabled={isDownloadingInvitation}>
+              {isDownloadingInvitation ? (
+                <Spinner className="h-4 w-4 mr-2" />
+              ) : (
+                <FileText className="h-4 w-4 mr-2" />
+              )}
               Unduh PDF
             </Button>
           </DialogFooter>

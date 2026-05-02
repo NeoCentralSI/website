@@ -2,101 +2,99 @@ import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Spinner } from '@/components/ui/spinner';
+import { Label } from '@/components/ui/label';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useCancelAdminThesisSeminar } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
-import type { AdminSeminarListItem } from '@/types/seminar.types';
-import { toTitleCaseName } from '@/lib/text';
 
 interface AdminThesisSeminarCancelModalProps {
-  seminar: AdminSeminarListItem | null;
+  seminarId: string | null;
+  studentName?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 export function AdminThesisSeminarCancelModal({
-  seminar,
+  seminarId,
+  studentName,
   open,
   onOpenChange,
+  onSuccess,
 }: AdminThesisSeminarCancelModalProps) {
   const [reason, setReason] = useState('');
   const cancelMutation = useCancelAdminThesisSeminar();
 
   const handleCancel = () => {
-    if (!seminar) return;
+    if (!seminarId) return;
 
     cancelMutation.mutate(
       {
-        seminarId: seminar.id,
+        seminarId,
         cancelledReason: reason.trim() || undefined,
       },
       {
         onSuccess: () => {
-          onOpenChange(false);
           setReason('');
+          onOpenChange(false);
+          onSuccess?.();
         },
       }
     );
   };
 
   return (
-    <Dialog open={open} onOpenChange={(val) => {
-      onOpenChange(val);
-      if (!val) setReason('');
-    }}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-destructive">Batalkan Seminar Hasil</DialogTitle>
+          <DialogTitle className="text-destructive flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            Batalkan Seminar Hasil
+          </DialogTitle>
           <DialogDescription>
-            Apakah Anda yakin ingin membatalkan pendaftaran seminar hasil mahasiswa berikut?
+            Apakah Anda yakin ingin membatalkan pendaftaran seminar hasil untuk{' '}
+            <span className="font-semibold text-foreground">{studentName || 'mahasiswa ini'}</span>?
           </DialogDescription>
         </DialogHeader>
 
-        {seminar && (
-          <div className="py-2 space-y-1">
-            <div className="text-sm font-medium">{toTitleCaseName(seminar.studentName)}</div>
-            <div className="text-xs text-muted-foreground">{seminar.studentNim}</div>
-            <div className="text-xs italic mt-1 line-clamp-2">{seminar.thesisTitle}</div>
-          </div>
-        )}
+        <div className="space-y-4 py-2">
+          <Alert variant="destructive" className="bg-destructive/5 border-destructive/20">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <AlertTitle className="text-destructive">Peringatan</AlertTitle>
+            <AlertDescription className="text-destructive/80 text-xs">
+              Tindakan ini akan mengubah status seminar menjadi "Dibatalkan". Mahasiswa harus mendaftar ulang jika ingin menjadwalkan kembali.
+            </AlertDescription>
+          </Alert>
 
-        <div className="space-y-2 mt-2">
-          <label className="text-sm font-medium">Alasan Pembatalan (Opsional)</label>
-          <Textarea
-            placeholder="Masukkan alasan mengapa seminar ini dibatalkan..."
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="reason">Alasan Pembatalan (opsional)</Label>
+            <Textarea
+              id="reason"
+              placeholder="Masukkan alasan mengapa seminar ini dibatalkan..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+            />
+          </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 mt-4">
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={cancelMutation.isPending}
-          >
-            Batal
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={cancelMutation.isPending}>
+            Kembali
           </Button>
           <Button
             variant="destructive"
             onClick={handleCancel}
             disabled={cancelMutation.isPending}
           >
-            {cancelMutation.isPending ? (
-              <>
-                <Spinner className="mr-2 h-4 w-4" />
-                Memproses...
-              </>
-            ) : (
-              'Ya, Batalkan Seminar'
-            )}
+            {cancelMutation.isPending ? 'Memproses...' : 'Ya, Batalkan Seminar'}
           </Button>
         </DialogFooter>
       </DialogContent>

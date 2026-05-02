@@ -237,9 +237,11 @@ export default function ThesisSeminarDetailPage() {
       </div>
 
       <AdminThesisSeminarCancelModal
-        seminar={adminSeminarItem}
+        seminarId={id!}
+        studentName={d.student?.name}
         open={isCancelModalOpen}
         onOpenChange={setIsCancelModalOpen}
+        onSuccess={refetch}
       />
     </div>
   );

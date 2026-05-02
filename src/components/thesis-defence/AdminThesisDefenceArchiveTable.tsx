@@ -79,7 +79,6 @@ export function AdminThesisDefenceArchiveTable({
         render: (row: AdminDefenceArchiveItem) => (
           <div className="text-sm max-w-[20ch] whitespace-normal leading-tight">
             {row.room?.name || '-'}
-            {row.room?.location && <div className="text-xs text-muted-foreground">({row.room.location})</div>}
           </div>
         ),
       },
@@ -97,7 +96,9 @@ export function AdminThesisDefenceArchiveTable({
         width: 100,
         render: (row: AdminDefenceArchiveItem) => (
           <div className="font-medium text-sm">
-            {row.finalScore !== null && row.finalScore !== undefined ? row.finalScore : '-'}
+            {row.finalScore !== null && row.finalScore !== undefined 
+              ? Math.round((Number(row.finalScore) + Number.EPSILON) * 100) / 100 
+              : '-'}
           </div>
         ),
       },

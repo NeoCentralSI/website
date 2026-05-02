@@ -152,12 +152,21 @@ export async function importAdminDefenceArchive(file: File): Promise<any> {
   return parseJsonResponse(res, 'Gagal mengimpor arsip sidang');
 }
 
-export async function exportAdminDefenceArchive(): Promise<Blob> {
+export async function exportAdminDefenceArchive() {
   const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_DEFENCE.BASE}/export`), {
     method: 'GET',
   });
   if (!res.ok) throw new Error('Gagal mengekspor arsip sidang');
-  return res.blob();
+  
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `arsip-sidang-ta-${new Date().toISOString().split('T')[0]}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
 }
 
 export async function getAdminDefenceThesisOptions(): Promise<any[]> {

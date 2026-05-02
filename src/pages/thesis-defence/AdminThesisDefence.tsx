@@ -36,7 +36,7 @@ export default function AdminThesisDefence() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Administrasi Sidang TA</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Administrasi Sidang Tugas Akhir</h1>
         <p className="text-muted-foreground">Validasi berkas pendaftaran mahasiswa dan manajemen arsip sidang tugas akhir</p>
       </div>
 
