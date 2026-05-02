@@ -267,7 +267,6 @@ export function useUnfinalizeDefenceRevisions() {
 }
 
 export function useDownloadAssessmentResult() {
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (defenceId: string) => downloadAssessmentResult(defenceId),

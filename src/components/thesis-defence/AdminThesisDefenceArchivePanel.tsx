@@ -26,7 +26,6 @@ import { AdminThesisDefenceArchiveTable } from '@/components/thesis-defence/Admi
 import { AdminThesisDefenceArchiveFormDialog } from '@/components/thesis-defence/AdminThesisDefenceArchiveFormDialog';
 import { AdminThesisDefenceArchiveImportDialog } from '@/components/thesis-defence/AdminThesisDefenceArchiveImportDialog';
 import type { AdminDefenceArchiveItem } from '@/types/defence.types';
-import { toast } from 'sonner';
 
 const ARCHIVE_STATUSES = ['passed', 'passed_with_revision', 'failed', 'cancelled'].join(',');
 

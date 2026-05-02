@@ -50,7 +50,7 @@ export function StudentThesisDefenceIdentityCard({ defence, onClick }: DefenceIn
   const timeRange = formatTimeRange(defence.startTime, defence.endTime);
 
   const activeExaminers = (defence.examiners || []).filter(
-    (e) => e.availabilityStatus === 'available' || !e.availabilityStatus
+    (e: any) => e.availabilityStatus === 'available' || !e.availabilityStatus
   );
 
   // Build visible info blocks for dynamic column count
@@ -63,7 +63,7 @@ export function StudentThesisDefenceIdentityCard({ defence, onClick }: DefenceIn
           <Users size={12} className="opacity-50" />
           Dosen Penguji
         </div>
-        {activeExaminers.map((e) => (
+        {activeExaminers.map((e: any) => (
           <div
             key={`${e.id}-${e.order}`}
             className="text-sm font-medium text-foreground truncate"

@@ -34,12 +34,8 @@ export function AdminThesisSeminarCancelModal({
 
   const handleCancel = () => {
     if (!seminarId) return;
-
     cancelMutation.mutate(
-      {
-        seminarId,
-        cancelledReason: reason.trim() || undefined,
-      },
+      { seminarId, cancelledReason: reason.trim() || undefined },
       {
         onSuccess: () => {
           setReason('');
@@ -59,7 +55,7 @@ export function AdminThesisSeminarCancelModal({
             Batalkan Seminar Hasil
           </DialogTitle>
           <DialogDescription>
-            Apakah Anda yakin ingin membatalkan pendaftaran seminar hasil untuk{' '}
+            Apakah Anda yakin ingin membatalkan pendaftaran seminar untuk{' '}
             <span className="font-semibold text-foreground">{studentName || 'mahasiswa ini'}</span>?
           </DialogDescription>
         </DialogHeader>

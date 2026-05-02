@@ -19,27 +19,6 @@ import { toast } from 'sonner';
 import { SearchIcon, Lock } from 'lucide-react';
 import type { AssignmentDefenceItem } from '@/types/defence.types';
 
-const DAY_ORDER: Record<string, number> = {
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-};
-
-const toMinutes = (time?: string | null) => {
-  if (!time) return null;
-  const [h, m] = String(time).split(':').map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  return h * 60 + m;
-};
-
-const toHHMM = (minutes: number) => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-};
-
 interface LecturerThesisDefenceAssignExaminerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

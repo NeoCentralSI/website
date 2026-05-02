@@ -39,7 +39,7 @@ export const StudentThesisDefenceHistoryCard = ({
       {/* Examiners */}
       <div className="min-w-0 flex flex-col">
         {item.examiners.length > 0 ? (
-          item.examiners.map((e) => (
+          item.examiners.map((e: { lecturerName: string; order: number }) => (
             <div
               key={e.order}
               className="truncate text-sm font-medium text-foreground"

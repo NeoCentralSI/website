@@ -33,6 +33,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { useDefenceSchedulingData, useSetDefenceSchedule, useFinalizeDefenceSchedule, useAdminDefenceDetail, useDownloadInvitationLetter } from '@/hooks/thesis-defence';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/seminar.types';
+import type { DefenceRoomBooking } from '@/types/defence.types';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -191,8 +192,8 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   const blockedEvents = useMemo((): EventInput[] => {
     if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
     return schedulingData.roomBookings
-      .filter((b: any) => b.roomId === effectiveRoomId)
-      .map((b: any) => {
+      .filter((b: DefenceRoomBooking) => b.roomId === effectiveRoomId)
+      .map((b: DefenceRoomBooking) => {
         const dateStr = b.date.slice(0, 10);
         return {
           id: `blocked-${b.id}`,

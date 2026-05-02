@@ -87,15 +87,6 @@ export default function ThesisSeminarDetailPage() {
 
   const d = detail as any;
 
-  // Map detail to AdminSeminarListItem format for the cancel modal
-  const adminSeminarItem = {
-    id: d.id,
-    studentName: d.student?.name || '',
-    studentNim: d.student?.nim || '',
-    thesisTitle: d.thesis?.title || '',
-    status: d.status,
-  } as any;
-
   const isUserAdmin = isAdmin();
   const isUserStudent = isStudent() && !!user?.student?.id && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
   const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);

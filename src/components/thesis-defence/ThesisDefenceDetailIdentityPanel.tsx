@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatDateTimeId, formatRoleName } from '@/lib/text';
+import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatRoleName } from '@/lib/text';
 import {
   BookOpen,
   Calendar,
   CheckCircle2,
-  Download,
   FileText,
-  User,
   XCircle,
   Eye,
 } from 'lucide-react';

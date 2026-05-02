@@ -95,9 +95,13 @@ export interface DefenceOverviewResponse {
   defence: DefenceInfo | null;
 }
 
+export type StudentDefenceOverview = DefenceOverviewResponse;
+
 export interface DefenceDocumentType {
   id: string;
   name: string;
+  label: string;
+  accept: string[];
 }
 
 export interface DefenceDocumentsResponse {
@@ -197,6 +201,7 @@ export interface AdminDefenceDetailResponse {
 
 export interface RejectedDefenceExaminer {
   id: string;
+  lecturerId: string;
   lecturerName: string;
   order: number;
   availabilityStatus: string;
@@ -247,10 +252,21 @@ export interface DefenceCurrentSchedule {
   room: DefenceRoomOption | null;
 }
 
+export interface DefenceRoomBooking {
+  id: string;
+  roomId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
 export interface DefenceSchedulingData {
   rooms: DefenceRoomOption[];
   lecturerAvailabilities: DefenceLecturerAvailabilitySlot[];
   currentSchedule: DefenceCurrentSchedule | null;
+  roomBookings?: DefenceRoomBooking[];
+  participantIds?: string[];
 }
 
 export interface SetDefenceSchedulePayload {
@@ -280,7 +296,7 @@ export interface DefenceDocumentUploadResponse {
 
 export type ExaminerAvailabilityStatus = 'pending' | 'available' | 'unavailable';
 
-export type ExaminerAssignmentStatus = 'unassigned' | 'pending' | 'rejected' | 'partially_rejected' | 'confirmed';
+export type ExaminerAssignmentStatus = 'unassigned' | 'pending' | 'rejected' | 'partially_rejected' | 'confirmed' | 'finished';
 
 export interface LecturerDefenceExaminer {
   id: string;

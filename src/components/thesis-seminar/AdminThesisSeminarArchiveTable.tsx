@@ -79,7 +79,7 @@ export function AdminThesisSeminarArchiveTable({
       header: 'Penguji',
       width: 280,
       render: (row: AdminThesisSeminarArchiveItem) => (
-        <ThesisPersonnelListCell people={row.examiners.map(e => ({ ...e, name: e.lecturerName }))} />
+        <ThesisPersonnelListCell people={row.examiners.map((e: { lecturerName: string }) => ({ ...e, name: e.lecturerName }))} />
       ),
     },
     {

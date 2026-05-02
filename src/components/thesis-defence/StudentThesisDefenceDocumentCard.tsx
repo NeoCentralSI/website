@@ -107,8 +107,8 @@ function DocumentRow({ docType, doc, isLocked, isUploading, onUpload }: Document
     }
   };
 
-  const acceptStr = docType.accept
-    .map((ext) => (ext.startsWith('.') ? ext : `.${ext}`))
+  const acceptStr = (docType.accept || [])
+    .map((ext: string) => (ext.startsWith('.') ? ext : `.${ext}`))
     .join(',');
 
   const fileStatusColor = isApproved ? 'text-[#16A34A]' : isDeclined ? 'text-[#dc2626]' : 'text-muted-foreground';

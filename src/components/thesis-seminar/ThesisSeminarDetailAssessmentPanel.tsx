@@ -32,9 +32,7 @@ import {
 } from '@/hooks/thesis-seminar';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type {
-  FinalizeSeminarPayload,
   SubmitExaminerAssessmentPayload,
-  ThesisSeminarStatus,
 } from '@/types/seminar.types';
 
 

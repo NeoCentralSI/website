@@ -87,7 +87,7 @@ export function AdminThesisDefenceArchiveTable({
         header: 'Penguji',
         width: 250,
         render: (row: AdminDefenceArchiveItem) => (
-          <ThesisPersonnelListCell people={row.examiners.map(e => ({ ...e, name: e.lecturerName }))} />
+          <ThesisPersonnelListCell people={row.examiners.map((e: { lecturerName: string }) => ({ ...e, name: e.lecturerName }))} />
         ),
       },
       {

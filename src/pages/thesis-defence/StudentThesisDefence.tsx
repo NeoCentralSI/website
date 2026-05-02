@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { LocalTabsNav } from '@/components/ui/tabs-nav';
+
 import { StudentThesisDefenceOverviewPanel } from '@/components/thesis-defence/StudentThesisDefenceOverviewPanel';
 import {
   useStudentDefenceOverview,

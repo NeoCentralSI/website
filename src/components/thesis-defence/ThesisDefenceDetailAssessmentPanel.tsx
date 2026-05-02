@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, CheckCircle2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth, useRole } from '@/hooks/shared';
@@ -11,7 +11,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loading, Spinner } from '@/components/ui/spinner';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
@@ -455,7 +454,6 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
 
   const examinerMaxScore = getMaxScoreFromDetails(data.examiners?.[0]?.assessmentDetails || []) || 70; // fallback to 70
   const supervisorMaxScore = getMaxScoreFromDetails(data.supervisorAssessment?.assessmentDetails || []) || 30; // fallback to 30
-  const finalMaxScore = examinerMaxScore + supervisorMaxScore;
 
   const supervisorGroups = data.supervisorAssessment?.assessmentDetails || [];
 
@@ -472,7 +470,6 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
         defenceId,
         payload: { 
           status, // Still send for type compatibility, but backend will recalculate
-          recommendRevision: needsRevision 
         },
       });
       toast.success('Hasil sidang berhasil ditetapkan.');

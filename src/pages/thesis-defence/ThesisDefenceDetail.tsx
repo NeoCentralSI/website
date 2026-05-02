@@ -16,13 +16,12 @@ import { ThesisDefenceDetailSchedulingPanel } from '@/components/thesis-defence/
 import { ThesisDefenceDetailAssessmentPanel } from '@/components/thesis-defence/ThesisDefenceDetailAssessmentPanel';
 import { ThesisDefenceDetailRevisionPanel } from '@/components/thesis-defence/ThesisDefenceDetailRevisionPanel';
 import { AdminThesisDefenceCancelDialog } from '@/components/thesis-defence/AdminThesisDefenceCancelDialog';
-import { ROLES } from '@/lib/roles';
 
 export default function ThesisDefenceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isStudent, isAdmin, isKadep, isDosen } = useRole();
+  const { isStudent, isAdmin, isKadep } = useRole();
   const { user } = useAuth();
 
   const _isStudent = isStudent();

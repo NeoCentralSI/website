@@ -10,7 +10,6 @@ import {
   RotateCcw,
   Send,
   Trash2,
-  Undo2,
   ChevronRight,
 } from 'lucide-react';
 
