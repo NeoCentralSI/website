@@ -725,6 +725,7 @@ export interface StudentDefenceRevisionResponse {
 export interface CreateDefenceRevisionPayload {
   defenceExaminerId: string;
   description: string;
+  revisionAction?: string;
 }
 
 export interface SaveDefenceRevisionActionPayload {

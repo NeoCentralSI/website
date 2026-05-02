@@ -305,6 +305,7 @@ export const API_CONFIG = {
       APPROVE_REVISION: (id: string, revId: string) => `/thesis-defences/${id}/revisions/${revId}`,
       UNAPPROVE_REVISION: (id: string, revId: string) => `/thesis-defences/${id}/revisions/${revId}`,
       FINALIZE_REVISIONS: (id: string) => `/thesis-defences/${id}/revisions/finalize`,
+      UNFINALIZE_REVISIONS: (id: string) => `/thesis-defences/${id}/revisions/unfinalize`,
     },
     LECTURER_AVAILABILITY: {
       BASE: '/lecturer-availabilities',

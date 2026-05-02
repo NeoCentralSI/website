@@ -17,6 +17,7 @@ import {
   getStudentDefenceRevisions,
   createDefenceRevision,
   saveDefenceRevisionAction,
+  submitDefenceRevision,
   submitDefenceRevisionAction,
   cancelDefenceRevisionSubmit,
   deleteDefenceRevision,
@@ -159,6 +160,25 @@ export function useSaveDefenceRevisionAction(defenceId?: string) {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal menyimpan perbaikan');
+    },
+  });
+}
+
+export function useSubmitDefenceRevision(defenceId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (revisionId: string) => {
+      if (!defenceId) throw new Error('ID sidang tidak valid');
+      return submitDefenceRevision(defenceId, revisionId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: defenceKeys.revisions(defenceId) });
+      queryClient.invalidateQueries({ queryKey: ['defence-revision-board', defenceId] });
+      toast.success('Perbaikan berhasil diajukan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal mengajukan perbaikan');
     },
   });
 }

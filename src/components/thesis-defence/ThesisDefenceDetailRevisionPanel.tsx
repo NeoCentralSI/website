@@ -11,6 +11,7 @@ import {
   Send,
   Trash2,
   Undo2,
+  ChevronRight,
 } from 'lucide-react';
 
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
@@ -44,10 +45,11 @@ import {
   useCreateDefenceRevision,
   useDeleteDefenceRevision,
   useSaveDefenceRevisionAction,
-  useSubmitDefenceRevisionAction,
+  useSubmitDefenceRevision,
   useApproveDefenceRevision,
   useUnapproveDefenceRevision,
   useFinalizeDefenceRevisions,
+  useUnfinalizeDefenceRevisions,
   useDefenceRevisionBoard,
 } from '@/hooks/thesis-defence';
 import { useAuth, useRole } from '@/hooks/shared';
@@ -60,73 +62,140 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface ThesisDefenceDetailRevisionPanelProps {
+interface Props {
   defenceId: string;
   detail: any;
   onRefresh: () => Promise<unknown> | unknown;
   isRefreshing?: boolean;
 }
 
-type RevisionStatus = 'diproses' | 'diajukan' | 'disetujui';
-
-function getRevisionStatus(revision: any): RevisionStatus {
-  if (revision.isFinished) return 'disetujui';
-  if (revision.studentSubmittedAt) return 'diajukan';
-  return 'diproses';
-}
-
-function StatusBadge({ status }: { status: RevisionStatus }) {
-  switch (status) {
-    case 'disetujui':
-      return (
-        <Badge variant="success" className="text-xs gap-1">
-          <CheckCircle2 className="h-3 w-3" /> Disetujui
-        </Badge>
-      );
-    case 'diajukan':
-      return (
-        <Badge variant="default" className="text-xs gap-1">
-          <Send className="h-3 w-3" /> Diajukan
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="warning" className="text-xs gap-1">
-          <Clock className="h-3 w-3" /> Diproses
-        </Badge>
-      );
-  }
-}
-
 export function ThesisDefenceDetailRevisionPanel({
   defenceId,
   detail,
   onRefresh,
-  isRefreshing: isParentRefreshing,
-}: ThesisDefenceDetailRevisionPanelProps) {
+  isRefreshing,
+}: Props) {
   const { user } = useAuth();
   const { isStudent } = useRole();
 
-  // Role detection
   const _isStudent = isStudent() && (detail.student?.id === user?.student?.id || detail.student?.nim === user?.identityNumber);
   const _isSupervisor = !!user?.lecturer?.id && detail.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
-  // Data fetching
-  const { data: board, isLoading, isFetching, refetch } = useDefenceRevisionBoard(defenceId);
-  const isRefreshing = isParentRefreshing || isFetching;
+  const showSupervisorActions = _isSupervisor;
+  const showStudentActions = _isStudent;
 
+  return (
+    <div className="space-y-6">
+      {/* 1. Catatan Penguji (Dari Rekap Penilaian) */}
+      <ExaminerNotesSection detail={detail} />
+
+      {/* 2. Board Revisi (Main Table) */}
+      <RevisionBoardSection
+        defenceId={defenceId}
+        detail={detail}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
+        showStudentActions={showStudentActions}
+        showSupervisorActions={showSupervisorActions}
+      />
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Section 1: Catatan Penguji
+// ──────────────────────────────────────────────────────────────
+
+function ExaminerNotesSection({ detail }: { detail: any }) {
+  const notes = detail?.examinerNotes || [];
+  const [expandedNotes, setExpandedNotes] = useState<Record<number, boolean>>({});
+
+  if (notes.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {notes.map((note: any, idx: number) => {
+        const isExpanded = expandedNotes[idx] ?? false;
+        return (
+          <Collapsible
+            key={idx}
+            open={isExpanded}
+            onOpenChange={(open) => setExpandedNotes(prev => ({ ...prev, [idx]: open }))}
+          >
+            <Card className="bg-muted/10">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between cursor-pointer hover:bg-muted/20 transition-colors">
+                  <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <MessageSquareText className="h-4 w-4 text-muted-foreground" />
+                    Catatan — Penguji {note.examinerOrder} ({toTitleCaseName(note.lecturerName)})
+                  </CardTitle>
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="py-4 px-5 text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                  {note.revisionNotes?.trim() || 'Tidak ada catatan.'}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        );
+      })}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Section 2: Revision Board Section
+// ──────────────────────────────────────────────────────────────
+
+function RevisionBoardSection({
+  defenceId,
+  detail,
+  onRefresh,
+  isRefreshing,
+  showStudentActions,
+  showSupervisorActions,
+}: {
+  defenceId: string;
+  detail: any;
+  onRefresh: () => Promise<unknown> | unknown;
+  isRefreshing?: boolean;
+  showStudentActions: boolean;
+  showSupervisorActions: boolean;
+}) {
+  const { data: board, isLoading, refetch, isFetching } = useDefenceRevisionBoard(defenceId);
+
+  const isRevisionFinalized = !!detail?.revisionFinalizedAt || !!(board as any)?.isFinalized;
+  
+  const createMutation = useCreateDefenceRevision(defenceId);
+  const saveMutation = useSaveDefenceRevisionAction(defenceId);
+  const submitMutation = useSubmitDefenceRevision(defenceId);
+  const deleteMutation = useDeleteDefenceRevision(defenceId);
+  const approveMutation = useApproveDefenceRevision();
+  const unapproveMutation = useUnapproveDefenceRevision();
+  const finalizeMutation = useFinalizeDefenceRevisions();
+  const unfinalizeMutation = useUnfinalizeDefenceRevisions();
+  const cancelSubmitMutation = useCancelDefenceRevisionSubmit(defenceId);
+
+  // Local State
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitConfirmId, setSubmitConfirmId] = useState<string | null>(null);
-  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [unapproveConfirmId, setUnapproveConfirmId] = useState<string | null>(null);
+  const [cancelSubmitConfirmId, setCancelSubmitConfirmId] = useState<string | null>(null);
   const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
+  const [unfinalizeConfirmOpen, setUnfinalizeConfirmOpen] = useState(false);
 
   const [selectedExaminerId, setSelectedExaminerId] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newRevisionAction, setNewRevisionAction] = useState('');
-
   const [editDescription, setEditDescription] = useState('');
   const [editRevisionAction, setEditRevisionAction] = useState('');
 
@@ -134,52 +203,39 @@ export function ThesisDefenceDetailRevisionPanel({
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
 
-  const createMutation = useCreateDefenceRevision(defenceId);
-  const saveMutation = useSaveDefenceRevisionAction(defenceId);
-  const submitMutation = useSubmitDefenceRevisionAction(defenceId);
-  const cancelMutation = useCancelDefenceRevisionSubmit(defenceId);
-  const deleteMutation = useDeleteDefenceRevision(defenceId);
-  const approveMutation = useApproveDefenceRevision();
-  const unapproveMutation = useUnapproveDefenceRevision();
-  const finalizeMutation = useFinalizeDefenceRevisions();
-
-  const revisions = (board as any)?.revisions || [];
-  const isFinalized = (board as any)?.isFinalized || !!detail.revisionFinalizedAt;
-
-  const summary = useMemo(() => {
-    const total = revisions.length;
-    const finished = revisions.filter((item: any) => item.isFinished).length;
-    return { total, finished };
-  }, [revisions]);
+  const revisions: any[] = (board as any)?.revisions || [];
 
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
-    const visibleItems = _isStudent ? revisions : revisions.filter((r: any) => r.studentSubmittedAt || r.isFinished);
-    
+    const visibleItems = showStudentActions ? revisions : revisions.filter(r => r.studentSubmittedAt || r.isFinished);
     if (!term) return visibleItems;
-
     return visibleItems.filter(
-      (r: any) =>
+      (r) =>
         r.description.toLowerCase().includes(term) ||
-        (r.examinerName || '').toLowerCase().includes(term) ||
-        (r.revisionAction || '').toLowerCase().includes(term)
+        (r.revisionAction || '').toLowerCase().includes(term) ||
+        (r.examinerName || '').toLowerCase().includes(term)
     );
-  }, [revisions, search, _isStudent]);
+  }, [revisions, search, showStudentActions]);
 
   const paginatedData = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredData.slice(start, start + pageSize);
   }, [filteredData, page, pageSize]);
 
+  const summary = (board as any)?.summary || {
+    total: revisions.length,
+    finished: revisions.filter((r: any) => r.isFinished).length,
+  };
+
+  const canFinalizeBoard = !isRevisionFinalized && summary.finished > 0;
+
   const handleCreate = async () => {
     if (!selectedExaminerId || !newDescription.trim()) return;
-
     await createMutation.mutateAsync({
       defenceExaminerId: selectedExaminerId,
       description: newDescription.trim(),
       revisionAction: newRevisionAction.trim() || undefined,
     });
-
     setCreateOpen(false);
     setSelectedExaminerId('');
     setNewDescription('');
@@ -190,15 +246,10 @@ export function ThesisDefenceDetailRevisionPanel({
 
   const handleSaveEdit = async () => {
     if (!editingId || !editDescription.trim()) return;
-
     await saveMutation.mutateAsync({
       revisionId: editingId,
-      payload: {
-        description: editDescription.trim(),
-        revisionAction: editRevisionAction.trim() || undefined,
-      },
+      payload: { description: editDescription.trim(), revisionAction: editRevisionAction.trim() || undefined },
     });
-
     setEditOpen(false);
     setEditingId(null);
     refetch();
@@ -208,12 +259,16 @@ export function ThesisDefenceDetailRevisionPanel({
   const handleFinalize = async () => {
     await finalizeMutation.mutateAsync({ defenceId });
     setFinalizeConfirmOpen(false);
-    refetch();
+    await onRefresh();
+  };
+
+  const handleUnfinalize = async () => {
+    await unfinalizeMutation.mutateAsync({ defenceId });
+    setUnfinalizeConfirmOpen(false);
     await onRefresh();
   };
 
   const columns = useMemo<Column<any>[]>(() => {
-    // RowSpan calculation for examiner
     const examinerRowSpans = new Map<string, number>();
     filteredData.forEach((item, idx) => {
       const key = `${item.examinerOrder}-${item.examinerId}`;
@@ -246,9 +301,9 @@ export function ThesisDefenceDetailRevisionPanel({
           const span = examinerRowSpans.get(`${index}-${key}`);
           if (span === undefined) return null;
           return (
-            <div>
+            <div className="py-1">
               <p className="font-medium text-sm">Penguji {row.examinerOrder}</p>
-              <p className="text-xs text-muted-foreground">{toTitleCaseName(row.examinerName || '-')}</p>
+              <p className="text-xs text-muted-foreground">{toTitleCaseName(row.examinerName)}</p>
             </div>
           );
         },
@@ -256,9 +311,7 @@ export function ThesisDefenceDetailRevisionPanel({
       {
         key: 'description',
         header: 'Catatan',
-        render: (row) => (
-          <p className="text-sm whitespace-pre-wrap break-words max-w-[200px]">{row.description}</p>
-        ),
+        render: (row) => <p className="text-sm whitespace-pre-wrap break-words max-w-[200px]">{row.description}</p>,
       },
       {
         key: 'revisionAction',
@@ -273,133 +326,92 @@ export function ThesisDefenceDetailRevisionPanel({
         key: 'status',
         header: 'Status',
         width: 110,
-        render: (row) => <StatusBadge status={getRevisionStatus(row)} />,
+        render: (row) => {
+          if (row.isFinished) return <Badge variant="success" className="text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Disetujui</Badge>;
+          if (row.studentSubmittedAt) return <Badge variant="default" className="text-xs gap-1"><Send className="h-3 w-3" /> Diajukan</Badge>;
+          return <Badge variant="warning" className="text-xs gap-1"><Clock className="h-3 w-3" /> Diproses</Badge>;
+        },
       },
       {
         key: 'actions',
         header: 'Aksi',
         width: 130,
         className: 'text-right',
-        render: (row) => {
-          const status = getRevisionStatus(row);
-
-          return (
-            <div className="flex items-center justify-end gap-1">
-              {/* Student Actions */}
-              {_isStudent && !row.isFinished && (
-                <div className="flex items-center gap-1">
-                  {status === 'diproses' && (
-                    <>
+        render: (row) => (
+          <div className="flex items-center justify-end gap-1">
+            {showStudentActions && !row.isFinished && (
+              <div className="flex items-center gap-1">
+                {!row.studentSubmittedAt ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditingId(row.id);
+                        setEditDescription(row.description);
+                        setEditRevisionAction(row.revisionAction || '');
+                        setEditOpen(true);
+                      }}
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      title="Edit"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    {row.revisionAction && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                          setEditingId(row.id);
-                          setEditDescription(row.description);
-                          setEditRevisionAction(row.revisionAction || '');
-                          setEditOpen(true);
-                        }}
+                        onClick={() => setSubmitConfirmId(row.id)}
                         className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        title="Ajukan"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Send className="h-4 w-4" />
                       </Button>
-                      {row.revisionAction && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setSubmitConfirmId(row.id)}
-                          className="h-8 w-8 text-muted-foreground hover:text-emerald-600"
-                          title="Ajukan"
-                        >
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteConfirmId(row.id)}
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                  {status === 'diajukan' && (
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setCancelConfirmId(row.id)}
-                      className="h-8 w-8 text-muted-foreground hover:text-amber-600"
-                      title="Batalkan Pengajuan"
+                      onClick={() => setDeleteConfirmId(row.id)}
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title="Hapus"
                     >
-                      <Undo2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
-                </div>
-              )}
+                  </>
+                ) : (
+                  <Button variant="ghost" size="icon" onClick={() => setCancelSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Pengajuan"><RotateCcw className="h-4 w-4" /></Button>
+                )}
+              </div>
+            )}
+            {showSupervisorActions && row.studentSubmittedAt && !row.isFinished && !isRevisionFinalized && (
+              <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ defenceId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Setujui">
+                {approveMutation.isPending ? <Spinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+              </Button>
+            )}
+            {showSupervisorActions && row.isFinished && !isRevisionFinalized && (
+              <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Persetujuan">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            )}
 
-              {/* Supervisor Actions */}
-              {_isSupervisor && !isFinalized && (
-                <div className="flex items-center gap-1">
-                  {status === 'diajukan' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => approveMutation.mutate({ defenceId, revisionId: row.id })}
-                      disabled={approveMutation.isPending}
-                      className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
-                      title="Setujui"
-                    >
-                      {approveMutation.isPending ? <Spinner className="h-3 w-3" /> : <Check className="h-4 w-4" />}
-                    </Button>
-                  )}
-                  {status === 'disetujui' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => unapproveMutation.mutate({ defenceId, revisionId: row.id })}
-                      disabled={unapproveMutation.isPending}
-                      className="h-8 w-8 text-amber-600 hover:bg-amber-50"
-                      title="Batalkan Persetujuan"
-                    >
-                      {unapproveMutation.isPending ? <Spinner className="h-3 w-3" /> : <RotateCcw className="h-4 w-4" />}
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {row.isFinished && isFinalized && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-            </div>
-          );
-        },
+            {row.isFinished && (isRevisionFinalized || showStudentActions) && (
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            )}
+          </div>
+        ),
       },
     ];
-  }, [_isStudent, _isSupervisor, isFinalized, filteredData, defenceId, approveMutation, unapproveMutation]);
+  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, defenceId, filteredData]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-52 items-center justify-center">
-        <Loading size="lg" text="Memuat data revisi..." />
-      </div>
-    );
-  }
+  if (isLoading) return <Loading size="lg" text="Memuat board revisi..." />;
 
   return (
     <div className="space-y-4">
-      {/* Catatan Penguji Collapsibles */}
-      {detail.examinerNotes && detail.examinerNotes.length > 0 && (
-        <div className="space-y-2">
-          {detail.examinerNotes.map((note: any) => (
-            <ExaminerNoteCollapsible key={note.examinerOrder} note={note} />
-          ))}
-        </div>
-      )}
-
       <CustomTable
         columns={columns}
         data={paginatedData}
         loading={isRefreshing && revisions.length === 0}
-        isRefreshing={isRefreshing && revisions.length > 0}
+        isRefreshing={isFetching}
         total={filteredData.length}
         page={page}
         pageSize={pageSize}
@@ -411,46 +423,58 @@ export function ThesisDefenceDetailRevisionPanel({
         rowKey={(row) => row.id}
         actions={
           <div className="flex items-center gap-2">
-            {_isStudent && (
-              <Badge variant="outline" className="text-xs">
-                {summary.finished}/{summary.total} selesai
+            {showStudentActions && (
+              <Badge variant="outline" className="text-xs">{summary.finished}/{summary.total} selesai</Badge>
+            )}
+
+            {isRevisionFinalized && (
+              <Badge variant="success" className="text-xs px-2 py-1">
+                <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
               </Badge>
             )}
 
-            {isFinalized && (
-              <Badge variant="success" className="text-xs">
-                <CheckCircle2 className="h-3 w-3 mr-1" /> Revisi Selesai
-              </Badge>
-            )}
-
-            <RefreshButton onClick={() => refetch()} isRefreshing={isFetching} />
-
-            {_isStudent && !isFinalized && (
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
+            {showStudentActions && !isRevisionFinalized && (
+              <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Tambah
               </Button>
             )}
 
-            {_isSupervisor && !isFinalized && summary.finished > 0 && (
-              <Button
-                size="sm"
-                onClick={() => setFinalizeConfirmOpen(true)}
-                disabled={finalizeMutation.isPending}
-              >
-                {finalizeMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                Finalisasi Revisi
-              </Button>
+            {showSupervisorActions && (
+              <>
+                {isRevisionFinalized ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                    onClick={() => setUnfinalizeConfirmOpen(true)}
+                    disabled={unfinalizeMutation.isPending}
+                  >
+                    {unfinalizeMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                    Batalkan Finalisasi
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant={canFinalizeBoard ? "default" : "outline"}
+                    onClick={() => setFinalizeConfirmOpen(true)}
+                    disabled={!canFinalizeBoard || finalizeMutation.isPending}
+                  >
+                    {finalizeMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                    Selesaikan Revisi
+                  </Button>
+                )}
+              </>
             )}
+
+            <RefreshButton onClick={() => { refetch(); onRefresh(); }} isRefreshing={!!isRefreshing} />
           </div>
         }
       />
 
-      {/* Student Create/Edit Dialogs */}
+      {/* Create/Edit Dialogs */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Tambah Item Revisi</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Tambah Item Revisi</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Dosen Penguji</Label>
@@ -469,21 +493,11 @@ export function ThesisDefenceDetailRevisionPanel({
             </div>
             <div className="space-y-2">
               <Label>Catatan Revisi</Label>
-              <Textarea
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Tuliskan catatan revisi dari penguji..."
-                rows={3}
-              />
+              <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Tuliskan catatan revisi..." rows={3} />
             </div>
             <div className="space-y-2">
               <Label>Perbaikan Yang Dilakukan</Label>
-              <Textarea
-                value={newRevisionAction}
-                onChange={(e) => setNewRevisionAction(e.target.value)}
-                placeholder="Isi perbaikan yang sudah Anda lakukan..."
-                rows={3}
-              />
+              <Textarea value={newRevisionAction} onChange={(e) => setNewRevisionAction(e.target.value)} placeholder="Isi perbaikan yang sudah dilakukan (opsional)..." rows={3} />
             </div>
           </div>
           <DialogFooter>
@@ -508,70 +522,52 @@ export function ThesisDefenceDetailRevisionPanel({
       </Dialog>
 
       {/* Confirmation Modals */}
-      <AlertDialog open={!!submitConfirmId} onOpenChange={(open) => !open && setSubmitConfirmId(null)}>
+      <AlertDialog open={!!submitConfirmId} onOpenChange={open => !open && setSubmitConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Ajukan Perbaikan?</AlertDialogTitle>
-            <AlertDialogDescription>Setelah diajukan, perbaikan akan menunggu persetujuan pembimbing.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => { await submitMutation.mutateAsync({ revisionId: submitConfirmId!, payload: { description: revisions.find((r:any) => r.id === submitConfirmId).description, revisionAction: revisions.find((r:any) => r.id === submitConfirmId).revisionAction } }); setSubmitConfirmId(null); refetch(); }}>Ajukan</AlertDialogAction>
-          </AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle>Ajukan Perbaikan?</AlertDialogTitle><AlertDialogDescription>Perbaikan akan menunggu persetujuan pembimbing.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { 
+            await submitMutation.mutateAsync(submitConfirmId!);
+            setSubmitConfirmId(null); 
+            refetch(); 
+            onRefresh(); 
+          }}>Ajukan</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={open => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle><AlertDialogDescription>Data akan dihapus permanen.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={async () => { await deleteMutation.mutateAsync(deleteConfirmId!); setDeleteConfirmId(null); refetch(); onRefresh(); }}>Hapus</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Finalisasi Revisi?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tindakan ini akan menandai seluruh revisi selesai. Mahasiswa akan dapat melanjutkan ke tahap berikutnya.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleFinalize}>Ya, Finalisasi</AlertDialogAction>
-          </AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle>Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Menandai seluruh revisi selesai dan siap untuk yudisium.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={handleFinalize}>Ya, Finalisasi</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+      <AlertDialog open={!!unapproveConfirmId} onOpenChange={open => !open && setUnapproveConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle><AlertDialogDescription>Data akan dihapus permanen.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={async () => { await deleteMutation.mutateAsync(deleteConfirmId!); setDeleteConfirmId(null); refetch(); }}>Hapus</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle>Batalkan Persetujuan?</AlertDialogTitle><AlertDialogDescription>Status item revisi ini akan kembali menjadi "Diajukan".</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await unapproveMutation.mutateAsync({ defenceId, revisionId: unapproveConfirmId! }); setUnapproveConfirmId(null); refetch(); onRefresh(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!cancelConfirmId} onOpenChange={(open) => !open && setCancelConfirmId(null)}>
+      <AlertDialog open={!!cancelSubmitConfirmId} onOpenChange={open => !open && setCancelSubmitConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Batalkan Pengajuan?</AlertDialogTitle><AlertDialogDescription>Status akan kembali menjadi "Diproses".</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await cancelMutation.mutateAsync(cancelConfirmId!); setCancelConfirmId(null); refetch(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle>Batalkan Pengajuan?</AlertDialogTitle><AlertDialogDescription>Status akan kembali menjadi "Diproses" dan Anda dapat mengeditnya kembali.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await cancelSubmitMutation.mutateAsync(cancelSubmitConfirmId!); setCancelSubmitConfirmId(null); refetch(); onRefresh(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={unfinalizeConfirmOpen} onOpenChange={setUnfinalizeConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Batal Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Anda akan dapat mengubah status persetujuan item revisi kembali.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={handleUnfinalize}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-function ExaminerNoteCollapsible({ note }: { note: any }) {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger asChild>
-        <button className="flex items-center justify-between w-full p-3 rounded-md border text-sm hover:bg-muted/50 transition-colors">
-          <div className="flex items-center gap-2">
-            <MessageSquareText className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">Catatan Penguji {note.examinerOrder}</span>
-            <span className="text-muted-foreground">- {toTitleCaseName(note.lecturerName)}</span>
-          </div>
-          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="px-3 pb-3 pt-2 border-x border-b rounded-b-md text-sm whitespace-pre-wrap leading-relaxed bg-muted/10">
-          {note.revisionNotes || 'Tidak ada catatan khusus.'}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
   );
 }

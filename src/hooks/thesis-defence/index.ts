@@ -11,6 +11,7 @@ export {
   useCreateDefenceRevision,
   useCreateCurrentDefenceRevision,
   useSaveDefenceRevisionAction,
+  useSubmitDefenceRevision,
   useSubmitDefenceRevisionAction,
   useSubmitCurrentDefenceRevisionAction,
   useCancelDefenceRevisionSubmit,
@@ -43,6 +44,7 @@ export {
   useApproveDefenceRevision,
   useUnapproveDefenceRevision,
   useFinalizeDefenceRevisions,
+  useUnfinalizeDefenceRevisions,
   useDownloadAssessmentResult,
 } from './useLecturerThesisDefence';
 

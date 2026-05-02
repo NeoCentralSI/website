@@ -158,3 +158,15 @@ export async function finalizeDefenceRevisions(
   );
   return parseJsonResponse(res, 'Gagal memfinalisasi revisi sidang');
 }
+
+export async function unfinalizeDefenceRevisions(
+  defenceId: string
+): Promise<{ defenceId: string; revisionFinalizedAt: string | null; revisionFinalizedBy: string | null }> {
+  const res = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.UNFINALIZE_REVISIONS(defenceId)),
+    {
+      method: 'POST',
+    }
+  );
+  return parseJsonResponse(res, 'Gagal membatalkan finalisasi revisi sidang');
+}

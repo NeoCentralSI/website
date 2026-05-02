@@ -12,13 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function StudentThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'ringkasan';
-
-  const setActiveTab = (tab: string) => {
-    setSearchParams({ tab }, { replace: true });
-  };
-
   const { data: overview, isLoading: isOverviewLoading } = useStudentDefenceOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentDefenceHistory();
 
@@ -28,9 +21,9 @@ export default function StudentThesisDefence() {
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
       { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
-      { label: activeTab === 'riwayat' ? 'Riwayat Sidang' : 'Status & Pendaftaran' },
+      { label: 'Status & Pendaftaran' },
     ],
-    [activeTab]
+    []
   );
 
   useEffect(() => {
@@ -48,11 +41,6 @@ export default function StudentThesisDefence() {
     );
   }
 
-  const tabs = [
-    { label: 'Ringkasan', value: 'ringkasan' },
-    { label: 'Riwayat', value: 'riwayat' },
-  ];
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -63,8 +51,6 @@ export default function StudentThesisDefence() {
           </p>
         </div>
       </div>
-
-      <LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
       {overview ? (
         <StudentThesisDefenceOverviewPanel

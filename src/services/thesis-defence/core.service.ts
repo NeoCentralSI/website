@@ -293,3 +293,59 @@ export async function downloadAssessmentResult(defenceId: string): Promise<Blob>
   }
   return await response.blob();
 }
+
+// ============================================================
+// Revisions
+// ============================================================
+
+export async function getDefenceRevisions(defenceId: string): Promise<StudentDefenceRevisionResponse> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.REVISIONS(defenceId)));
+  return parseJsonResponse(res, 'Gagal memuat data revisi sidang');
+}
+
+export async function createDefenceRevision(
+  defenceId: string,
+  payload: CreateDefenceRevisionPayload
+): Promise<any> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.REVISIONS(defenceId)), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(res, 'Gagal menambahkan butir revisi');
+}
+
+export async function updateDefenceRevision(
+  defenceId: string,
+  revisionId: string,
+  action: 'save_action' | 'submit' | 'cancel_submit' | 'approve' | 'unapprove',
+  payload?: SaveDefenceRevisionActionPayload
+): Promise<any> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.REVISION_BY_ID(defenceId, revisionId)), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, action }),
+  });
+  return parseJsonResponse(res, 'Gagal memperbarui data revisi');
+}
+
+export async function deleteDefenceRevision(defenceId: string, revisionId: string): Promise<any> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.REVISION_BY_ID(defenceId, revisionId)), {
+    method: 'DELETE',
+  });
+  return parseJsonResponse(res, 'Gagal menghapus butir revisi');
+}
+
+export async function finalizeDefenceRevisions(defenceId: string): Promise<any> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.FINALIZE_REVISIONS(defenceId)), {
+    method: 'POST',
+  });
+  return parseJsonResponse(res, 'Gagal memfinalisasi seluruh revisi');
+}
+
+export async function unfinalizeDefenceRevisions(defenceId: string): Promise<any> {
+  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.UNFINALIZE_REVISIONS(defenceId)), {
+    method: 'POST',
+  });
+  return parseJsonResponse(res, 'Gagal membatalkan finalisasi revisi');
+}

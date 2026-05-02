@@ -21,6 +21,7 @@ import {
   approveDefenceRevision,
   unapproveDefenceRevision,
   finalizeDefenceRevisions,
+  unfinalizeDefenceRevisions,
 } from '@/services/thesis-defence/revision.service';
 import type {
   RespondDefenceAssignmentPayload,
@@ -231,16 +232,40 @@ export function useUnapproveDefenceRevision() {
 
 export function useFinalizeDefenceRevisions() {
   const queryClient = useQueryClient();
+  const queryKey = (defenceId: string) => ['defence-revision-board', defenceId];
 
   return useMutation({
     mutationFn: ({ defenceId }: { defenceId: string }) => finalizeDefenceRevisions(defenceId),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['defence-revision-board', variables.defenceId] });
+      queryClient.invalidateQueries({ queryKey: queryKey(variables.defenceId) });
       queryClient.invalidateQueries({ queryKey: ['defence-finalization', variables.defenceId] });
       queryClient.invalidateQueries({ queryKey: ['lecturer-defence-detail', variables.defenceId] });
+      toast.success('Revisi sidang berhasil difinalisasi');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal memfinalisasi revisi sidang');
     },
   });
 }
+
+export function useUnfinalizeDefenceRevisions() {
+  const queryClient = useQueryClient();
+  const queryKey = (defenceId: string) => ['defence-revision-board', defenceId];
+
+  return useMutation({
+    mutationFn: ({ defenceId }: { defenceId: string }) => unfinalizeDefenceRevisions(defenceId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKey(variables.defenceId) });
+      queryClient.invalidateQueries({ queryKey: ['defence-finalization', variables.defenceId] });
+      queryClient.invalidateQueries({ queryKey: ['lecturer-defence-detail', variables.defenceId] });
+      toast.success('Finalisasi revisi berhasil dibatalkan');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal membatalkan finalisasi revisi sidang');
+    },
+  });
+}
+
 export function useDownloadAssessmentResult() {
   const queryClient = useQueryClient();
 
