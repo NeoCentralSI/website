@@ -124,7 +124,7 @@ export default function ThesisSeminarDetailPage() {
 
   let showAssessment = false;
   if (isAssessmentOngoing) {
-    if (isUserExaminer || isUserSupervisor) {
+    if (isUserExaminer || isUserSupervisor || isUserAdmin || _isKadep) {
       showAssessment = true;
     }
   } else if (isAssessmentFinalized) {

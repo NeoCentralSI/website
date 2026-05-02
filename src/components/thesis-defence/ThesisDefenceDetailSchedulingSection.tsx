@@ -1053,7 +1053,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
               {isSaving ? (
                 <><Spinner className="mr-2 h-4 w-4" />Menyimpan...</>
               ) : (
-                'Tetapkan Jadwal'
+                'Simpan Jadwal'
               )}
             </Button>
           </DialogFooter>

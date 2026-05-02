@@ -75,12 +75,34 @@ export default function ThesisDefenceDetailPage() {
 
   const d = detail as any;
 
-  const showScheduling = isAdmin() && !['registered', 'verified'].includes(d.status);
+  const isUserAdmin = isAdmin();
+  const isUserStudent = isStudent() && !!user?.student?.id && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
+  const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
+  const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
+
+  const showScheduling = isUserAdmin && !['registered', 'verified'].includes(d.status);
+
+  const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
+  const isAssessmentFinalized = allowedAssessmentStatuses.includes(d.status);
+  const isAssessmentOngoing = d.status === 'ongoing';
+
+  let showAssessment = false;
+  if (isAssessmentOngoing) {
+    if (isUserExaminer || isUserSupervisor || isUserAdmin || _isKadep) {
+      showAssessment = true;
+    }
+  } else if (isAssessmentFinalized) {
+    if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor || _isKadep) {
+      showAssessment = true;
+    }
+  }
+
+  const showRevisions = (isUserStudent || isUserSupervisor || isUserAdmin || _isKadep) && d.status === 'passed_with_revision';
 
   const tabs = [{ label: 'Identitas', value: 'identitas' }];
   if (showScheduling) tabs.push({ label: 'Penjadwalan', value: 'penjadwalan' });
-  tabs.push({ label: 'Penilaian', value: 'penilaian' });
-  tabs.push({ label: 'Revisi', value: 'revisi' });
+  if (showAssessment) tabs.push({ label: 'Penilaian', value: 'penilaian' });
+  if (showRevisions) tabs.push({ label: 'Revisi', value: 'revisi' });
 
   // Guard active tab validity
   const validTab = tabs.find((t) => t.value === activeTab) ? activeTab : 'identitas';
@@ -130,8 +152,10 @@ export default function ThesisDefenceDetailPage() {
         onSuccess={() => refetch()}
       />
 
-      {/* Tabs */}
-      <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
+      {/* Tabs - Only show if more than 1 tab exists */}
+      {tabs.length > 1 && (
+        <LocalTabsNav tabs={tabs} activeTab={validTab} onTabChange={setActiveTab} />
+      )}
 
       {/* Panel content */}
       <div className="space-y-6">

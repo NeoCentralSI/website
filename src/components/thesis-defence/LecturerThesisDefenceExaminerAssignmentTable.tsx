@@ -63,8 +63,17 @@ export function LecturerThesisDefenceExaminerAssignmentTable() {
     if (statusFilter) {
       result = result.filter((d) => d.assignmentStatus === statusFilter);
     }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (d) =>
+          d.studentName.toLowerCase().includes(q) ||
+          d.studentNim.toLowerCase().includes(q) ||
+          d.thesisTitle.toLowerCase().includes(q)
+      );
+    }
     return result;
-  }, [defences, statusFilter]);
+  }, [defences, statusFilter, search]);
 
   const total = filteredData.length;
   const pagedData = useMemo(() => {

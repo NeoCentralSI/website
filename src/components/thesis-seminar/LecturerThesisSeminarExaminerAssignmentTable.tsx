@@ -51,7 +51,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
 
 
 
-  const { data: seminars, isLoading, isFetching, error, refetch } = useAssignmentSeminars();
+  const { data: seminars, isLoading, isFetching, error, refetch } = useAssignmentSeminars({ search });
 
   useEffect(() => {
     if (error) {

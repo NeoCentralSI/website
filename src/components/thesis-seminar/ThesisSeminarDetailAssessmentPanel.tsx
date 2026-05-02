@@ -84,8 +84,7 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
   }
 
   if (isOngoing) {
-    // Only Examiner and Supervisor can see this in Ongoing state
-    if (!isUserExaminer && !isUserSupervisor) return null;
+    if (!isUserExaminer && !isUserSupervisor && !_isAdmin && !_isKadep) return null;
 
     return (
       <div className="space-y-6">
@@ -93,7 +92,13 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
         {isUserSupervisor && (
           <SupervisorFinalizationSection
             seminarId={seminarId}
-            isSupervisor={true} // Show finalization controls for supervisor
+            isSupervisor={true}
+          />
+        )}
+        {!isUserExaminer && !isUserSupervisor && (_isAdmin || _isKadep) && (
+          <SupervisorFinalizationSection
+            seminarId={seminarId}
+            isSupervisor={false}
           />
         )}
       </div>

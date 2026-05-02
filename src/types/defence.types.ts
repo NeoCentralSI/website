@@ -453,6 +453,7 @@ export interface SubmitDefenceAssessmentPayload {
   scores: { assessmentCriteriaId: string; score: number }[];
   revisionNotes?: string | null;
   supervisorNotes?: string | null;
+  isDraft?: boolean;
 }
 
 export interface SubmitDefenceAssessmentResponse {
