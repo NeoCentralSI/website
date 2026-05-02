@@ -16,7 +16,7 @@ import {
   setAdminThesisSeminarSchedule,
   finalizeAdminThesisSeminarSchedule,
   updateAdminThesisSeminarArchive,
-  downloadAdminThesisSeminarInvitation,
+  downloadInvitationLetter,
   cancelAdminThesisSeminar,
   type AdminThesisSeminarArchivePayload,
 } from '@/services/thesis-seminar/core.service';
@@ -284,14 +284,14 @@ export function useExportAdminThesisSeminarAudiencesPdf() {
 }
 
 
-export function useDownloadAdminThesisSeminarInvitation() {
+export function useDownloadInvitationLetter() {
   return useMutation({
-    mutationFn: ({ seminarId, nomorSurat }: { seminarId: string; nomorSurat?: string }) => downloadAdminThesisSeminarInvitation(seminarId, nomorSurat),
+    mutationFn: ({ seminarId, nomorSurat }: { seminarId: string; nomorSurat?: string }) => downloadInvitationLetter(seminarId, nomorSurat),
     onSuccess: (blob) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'Surat-Undangan-Seminar-Hasil.pdf';
+      link.download = 'Undangan-Seminar-Hasil.pdf';
       document.body.appendChild(link);
       link.click();
       link.remove();

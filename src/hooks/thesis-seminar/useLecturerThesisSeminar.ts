@@ -8,7 +8,7 @@ import {
   submitExaminerAssessment,
   getSupervisorFinalizationData,
   finalizeSeminarBySupervisor,
-  downloadBeritaAcara,
+  downloadAssessmentResult,
 } from '@/services/thesis-seminar/core.service';
 import {
   respondExaminerAssignment,
@@ -277,22 +277,22 @@ export function useUnfinalizeSeminarRevisions() {
   });
 }
 
-export function useDownloadBeritaAcara() {
+export function useDownloadAssessmentResult() {
   return useMutation({
-    mutationFn: (seminarId: string) => downloadBeritaAcara(seminarId),
+    mutationFn: (seminarId: string) => downloadAssessmentResult(seminarId),
     onSuccess: (blob) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'Berita-Acara-Seminar-Hasil.pdf';
+      link.download = 'Hasil-Penilaian-Seminar-Hasil.pdf';
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success('Berita acara berhasil diunduh');
+      toast.success('Hasil penilaian berhasil diunduh');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Gagal mengunduh berita acara');
+      toast.error(error.message || 'Gagal mengunduh hasil penilaian');
     },
   });
 }

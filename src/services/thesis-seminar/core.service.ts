@@ -403,8 +403,8 @@ export async function importAdminThesisSeminarArchive(file: File): Promise<Admin
   return parseJsonResponse(response, 'Gagal mengimpor arsip');
 }
 
-export async function downloadAdminThesisSeminarInvitation(seminarId: string, nomorSurat?: string): Promise<Blob> {
-  let url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.INVITATION(seminarId));
+export async function downloadInvitationLetter(seminarId: string, nomorSurat?: string): Promise<Blob> {
+  let url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.INVITATION_LETTER(seminarId));
   if (nomorSurat) {
     url += `?nomorSurat=${encodeURIComponent(nomorSurat)}`;
   }
@@ -415,11 +415,11 @@ export async function downloadAdminThesisSeminarInvitation(seminarId: string, no
   return await response.blob();
 }
 
-export async function downloadBeritaAcara(seminarId: string): Promise<Blob> {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BERITA_ACARA(seminarId));
+export async function downloadAssessmentResult(seminarId: string): Promise<Blob> {
+  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ASSESSMENT_RESULT(seminarId));
   const response = await apiRequest(url);
   if (!response.ok) {
-    throw new Error('Gagal mengunduh berita acara');
+    throw new Error('Gagal mengunduh hasil penilaian');
   }
   return await response.blob();
 }

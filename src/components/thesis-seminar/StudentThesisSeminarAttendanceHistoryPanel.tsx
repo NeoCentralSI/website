@@ -168,14 +168,17 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
       width: 64,
       className: 'text-center',
       render: (row) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 hover:bg-muted"
-          onClick={() => navigate(`/tugas-akhir/seminar-hasil/${row.seminarId}`)}
-        >
-          <Eye className="w-4 h-4 text-muted-foreground" />
-        </Button>
+        <div className="flex items-center justify-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => navigate(`/tugas-akhir/seminar-hasil/${row.seminarId}`)}
+            title="Lihat Detail"
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+        </div>
       ),
     },
   ];

@@ -68,14 +68,18 @@ export function AdminThesisSeminarArchiveTable({
       key: 'room',
       header: 'Ruangan',
       width: 180,
-      render: (row: AdminThesisSeminarArchiveItem) => <ThesisSeminarRoomCell room={row.room} />,
+      render: (row: AdminThesisSeminarArchiveItem) => (
+        <div className="max-w-[25ch] whitespace-normal break-words leading-tight">
+          <ThesisSeminarRoomCell room={row.room} />
+        </div>
+      ),
     },
     {
       key: 'examiners',
       header: 'Penguji',
       width: 280,
       render: (row: AdminThesisSeminarArchiveItem) => (
-        <ThesisPersonnelListCell people={row.examiners.map(e => ({ ...e, name: e.lecturerName }))} />
+        <ThesisPersonnelListCell people={row.examiners.map((e: { lecturerName: string }) => ({ ...e, name: e.lecturerName }))} />
       ),
     },
     {

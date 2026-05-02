@@ -539,7 +539,7 @@ export interface SupervisorFinalizationDataResponse {
 }
 
 export interface FinalizeSeminarPayload {
-  status: 'passed' | 'passed_with_revision' | 'failed';
+  recommendRevision: boolean;
 }
 
 export interface FinalizeSeminarResponse {

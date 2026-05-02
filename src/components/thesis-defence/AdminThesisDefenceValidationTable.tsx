@@ -3,9 +3,9 @@ import { CheckSquare, Eye } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import CustomTable from '@/components/layout/CustomTable';
-import type { AdminSeminarListItem } from '@/types/seminar.types';
-import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationFormDialog';
+import { CustomTable } from '@/components/layout/CustomTable';
+import type { AdminDefenceListItem } from '@/types/defence.types';
+import { AdminThesisDefenceValidationFormDialog } from '@/components/thesis-defence/AdminThesisDefenceValidationFormDialog';
 
 import {
   ThesisStudentInfoCell,
@@ -13,9 +13,8 @@ import {
   ThesisPersonnelListCell
 } from '@/components/shared/ThesisTableCells';
 
-
-interface AdminThesisSeminarValidationTableProps {
-  data: AdminSeminarListItem[];
+interface AdminThesisDefenceValidationTableProps {
+  data: AdminDefenceListItem[];
   loading: boolean;
   isRefreshing?: boolean;
   page: number;
@@ -29,7 +28,7 @@ interface AdminThesisSeminarValidationTableProps {
   actions?: React.ReactNode;
 }
 
-export function AdminThesisSeminarValidationTable({
+export function AdminThesisDefenceValidationTable({
   data,
   loading,
   isRefreshing,
@@ -42,8 +41,8 @@ export function AdminThesisSeminarValidationTable({
   onSearchChange,
   onDetail,
   actions,
-}: AdminThesisSeminarValidationTableProps) {
-  const [selectedSeminar, setSelectedSeminar] = useState<AdminSeminarListItem | null>(null);
+}: AdminThesisDefenceValidationTableProps) {
+  const [selectedDefence, setSelectedDefence] = useState<AdminDefenceListItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const columns = useMemo(
@@ -52,7 +51,7 @@ export function AdminThesisSeminarValidationTable({
         key: 'student',
         header: 'Mahasiswa',
         width: 200,
-        render: (row: AdminSeminarListItem) => (
+        render: (row: AdminDefenceListItem) => (
           <ThesisStudentInfoCell name={row.studentName} nim={row.studentNim} />
         ),
       },
@@ -60,7 +59,7 @@ export function AdminThesisSeminarValidationTable({
         key: 'thesis',
         header: 'Judul TA',
         width: 300,
-        render: (row: AdminSeminarListItem) => (
+        render: (row: AdminDefenceListItem) => (
           <ThesisTitleCell title={row.thesisTitle} />
         ),
       },
@@ -68,7 +67,7 @@ export function AdminThesisSeminarValidationTable({
         key: 'supervisors',
         header: 'Pembimbing',
         width: 200,
-        render: (row: AdminSeminarListItem) => (
+        render: (row: AdminDefenceListItem) => (
           <ThesisPersonnelListCell people={row.supervisors} />
         ),
       },
@@ -76,7 +75,7 @@ export function AdminThesisSeminarValidationTable({
         key: 'status',
         header: 'Status',
         width: 180,
-        render: (row: AdminSeminarListItem) => (
+        render: (row: AdminDefenceListItem) => (
           <ThesisEventStatusBadge
             status={row.status}
             scheduledDate={row.date}
@@ -89,7 +88,7 @@ export function AdminThesisSeminarValidationTable({
         header: 'Aksi',
         width: 128,
         className: 'text-center',
-        render: (row: AdminSeminarListItem) => (
+        render: (row: AdminDefenceListItem) => (
           <div className="flex items-center justify-center gap-1">
             <Button
               variant="ghost"
@@ -106,7 +105,7 @@ export function AdminThesisSeminarValidationTable({
                 size="icon"
                 className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                 onClick={() => {
-                  setSelectedSeminar(row);
+                  setSelectedDefence(row);
                   setIsModalOpen(true);
                 }}
                 title="Validasi Pendaftaran"
@@ -123,7 +122,7 @@ export function AdminThesisSeminarValidationTable({
 
   return (
     <>
-      <CustomTable<AdminSeminarListItem>
+      <CustomTable<AdminDefenceListItem>
         data={data}
         columns={columns}
         loading={loading}
@@ -139,8 +138,8 @@ export function AdminThesisSeminarValidationTable({
         actions={actions}
       />
 
-      <AdminThesisSeminarValidationModal
-        seminar={selectedSeminar}
+      <AdminThesisDefenceValidationFormDialog
+        defence={selectedDefence}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
       />

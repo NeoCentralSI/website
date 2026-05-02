@@ -1,8 +1,6 @@
 import { useState } from 'react';
+import { Plus, Download, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Plus, Upload } from 'lucide-react';
-import { toast } from 'sonner';
-
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import {
@@ -15,57 +13,52 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { AdminThesisSeminarArchiveTable } from '@/components/thesis-seminar/AdminThesisSeminarArchiveTable';
-import { AdminThesisSeminarArchiveFormDialog } from '@/components/thesis-seminar/AdminThesisSeminarArchiveFormDialog';
-import { AdminThesisSeminarArchiveImportDialog } from '@/components/thesis-seminar/AdminThesisSeminarArchiveImportDialog';
 import {
-  useAdminThesisSeminarArchive,
-  useAdminThesisSeminarFormOptions,
-  useCreateAdminThesisSeminarArchive,
-  useDeleteAdminThesisSeminarArchive,
-  useExportAdminThesisSeminarArchive,
-  useImportAdminThesisSeminarArchive,
-  useUpdateAdminThesisSeminarArchive,
-} from '@/hooks/thesis-seminar/useAdminThesisSeminar';
-import type { AdminThesisSeminarArchiveItem } from '@/services/thesis-seminar/core.service';
+  useAdminDefenceArchive,
+  useAdminDefenceFormOptions,
+  useCreateAdminDefenceArchive,
+  useDeleteAdminDefenceArchive,
+  useExportAdminDefenceArchive,
+  useImportAdminDefenceArchive,
+  useUpdateAdminDefenceArchive,
+} from '@/hooks/thesis-defence/useAdminThesisDefence';
+import { AdminThesisDefenceArchiveTable } from '@/components/thesis-defence/AdminThesisDefenceArchiveTable';
+import { AdminThesisDefenceArchiveFormDialog } from '@/components/thesis-defence/AdminThesisDefenceArchiveFormDialog';
+import { AdminThesisDefenceArchiveImportDialog } from '@/components/thesis-defence/AdminThesisDefenceArchiveImportDialog';
+import type { AdminDefenceArchiveItem } from '@/types/defence.types';
 
 const ARCHIVE_STATUSES = ['passed', 'passed_with_revision', 'failed', 'cancelled'].join(',');
 
-export function AdminThesisSeminarArchivePanel() {
+export function AdminThesisDefenceArchivePanel() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [editingSeminar, setEditingSeminar] = useState<AdminThesisSeminarArchiveItem | null>(null);
+  const [editingDefence, setEditingDefence] = useState<AdminDefenceArchiveItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const archiveQuery = useAdminThesisSeminarArchive({
+  const archiveQuery = useAdminDefenceArchive({
     page,
     pageSize,
     search: search.trim() || undefined,
     status: ARCHIVE_STATUSES,
   });
 
-  const { thesisOptions, lecturerOptions, roomOptions } = useAdminThesisSeminarFormOptions();
-  const createMutation = useCreateAdminThesisSeminarArchive();
-  const updateMutation = useUpdateAdminThesisSeminarArchive();
-  const deleteMutation = useDeleteAdminThesisSeminarArchive();
-  const importMutation = useImportAdminThesisSeminarArchive();
-  const exportMutation = useExportAdminThesisSeminarArchive();
+  const archiveData = archiveQuery.data?.defences ?? [];
+  const meta = archiveQuery.data?.meta ?? { page, pageSize, total: 0, totalPages: 0 };
 
-  const archiveData = archiveQuery.data?.seminars ?? [];
-  const meta = archiveQuery.data?.meta ?? {
-    page,
-    pageSize,
-    total: 0,
-    totalPages: 0,
-  };
+  const { thesisOptions, lecturerOptions, roomOptions } = useAdminDefenceFormOptions();
+  const createMutation = useCreateAdminDefenceArchive();
+  const updateMutation = useUpdateAdminDefenceArchive();
+  const deleteMutation = useDeleteAdminDefenceArchive();
+  const importMutation = useImportAdminDefenceArchive();
+  const exportMutation = useExportAdminDefenceArchive();
 
   return (
     <>
-      <AdminThesisSeminarArchiveTable
+      <AdminThesisDefenceArchiveTable
         data={archiveData}
         loading={archiveQuery.isLoading}
         isRefreshing={archiveQuery.isFetching && !archiveQuery.isLoading}
@@ -78,18 +71,18 @@ export function AdminThesisSeminarArchivePanel() {
           setPageSize(size);
           setPage(1);
         }}
-        onSearchChange={(value) => {
-          setSearch(value);
+        onSearchChange={(val) => {
+          setSearch(val);
           setPage(1);
         }}
-        onDetail={(id) => navigate(`/tugas-akhir/seminar-hasil/${id}`)}
+        onDetail={(id) => navigate(`/tugas-akhir/sidang/${id}`)}
         onEdit={(row) => {
-          setEditingSeminar(row);
+          setEditingDefence(row);
           setIsFormOpen(true);
         }}
         onDelete={(id) => setDeletingId(id)}
         actions={
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap gap-2">
             <RefreshButton
               onClick={() => archiveQuery.refetch()}
               isRefreshing={archiveQuery.isFetching && !archiveQuery.isLoading}
@@ -98,82 +91,91 @@ export function AdminThesisSeminarArchivePanel() {
               <Upload className="mr-2 h-4 w-4" />
               Import Excel
             </Button>
-            <Button size="sm" variant="outline" onClick={() => exportMutation.mutate()}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportMutation.mutate()}
+              disabled={exportMutation.isPending}
+            >
               <Download className="mr-2 h-4 w-4" />
               Export Excel
             </Button>
             <Button
               size="sm"
               onClick={() => {
-                setEditingSeminar(null);
+                setEditingDefence(null);
                 setIsFormOpen(true);
               }}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="w-4 h-4 mr-2" />
               Tambah Arsip
             </Button>
           </div>
         }
       />
 
-      <AdminThesisSeminarArchiveFormDialog
+      <AdminThesisDefenceArchiveFormDialog
         open={isFormOpen}
         onOpenChange={(open) => {
           setIsFormOpen(open);
-          if (!open) setEditingSeminar(null);
+          if (!open) setEditingDefence(null);
         }}
-        editingSeminar={editingSeminar}
+        editingSeminar={editingDefence}
         thesisOptions={thesisOptions}
         lecturerOptions={lecturerOptions}
         roomOptions={roomOptions}
         isPending={createMutation.isPending || updateMutation.isPending}
-        onSubmit={(payload) =>
-          editingSeminar
-            ? updateMutation.mutate({ seminarId: editingSeminar.id, payload }, {
-              onSuccess: () => {
-                setIsFormOpen(false);
-                setEditingSeminar(null);
-              },
-              onError: (error: Error) => toast.error(error.message || 'Gagal memperbarui arsip seminar'),
-            })
-            : createMutation.mutate(payload, {
-              onSuccess: () => {
-                setIsFormOpen(false);
-                setEditingSeminar(null);
-              },
-              onError: (error: Error) => toast.error(error.message || 'Gagal menambahkan arsip seminar'),
-            })
-        }
+        onSubmit={(payload) => {
+          if (editingDefence) {
+            updateMutation.mutate(
+              { defenceId: editingDefence.id, payload },
+              {
+                onSuccess: () => {
+                  setIsFormOpen(false);
+                  setEditingDefence(null);
+                },
+              }
+            );
+            return;
+          }
+
+          createMutation.mutate(payload, {
+            onSuccess: () => {
+              setIsFormOpen(false);
+              setEditingDefence(null);
+            },
+          });
+        }}
       />
 
-      <AdminThesisSeminarArchiveImportDialog
+      <AdminThesisDefenceArchiveImportDialog
         open={isImportOpen}
         onOpenChange={setIsImportOpen}
+        isPending={importMutation.isPending}
         onImport={(file) => importMutation.mutateAsync(file)}
-        isImporting={importMutation.isPending}
       />
 
       <AlertDialog open={Boolean(deletingId)} onOpenChange={(open) => !open && setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Arsip Seminar</AlertDialogTitle>
+            <AlertDialogTitle>Hapus Arsip Sidang</AlertDialogTitle>
             <AlertDialogDescription>
-              Data arsip seminar yang dihapus tidak dapat dikembalikan.
+              Data arsip sidang yang dihapus tidak dapat dikembalikan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Batal</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
                 deletingId &&
                 deleteMutation.mutate(deletingId, {
                   onSuccess: () => setDeletingId(null),
-                  onError: (error: Error) => toast.error(error.message || 'Gagal menghapus arsip seminar'),
                 })
               }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
             >
-              Hapus
+              {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

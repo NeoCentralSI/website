@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
+import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { StudentThesisSeminarOverviewPanel } from '@/components/thesis-seminar/StudentThesisSeminarOverviewPanel';
 import { StudentThesisSeminarAttendanceHistoryPanel } from '@/components/thesis-seminar/StudentThesisSeminarAttendanceHistoryPanel';
 import {
@@ -11,16 +11,15 @@ import {
 } from '@/hooks/thesis-seminar';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const TAB_ITEMS: TabItem[] = [
-  { label: 'Ringkasan', to: '/tugas-akhir/seminar-hasil/ringkasan' },
-  { label: 'Riwayat Kehadiran', to: '/tugas-akhir/seminar-hasil/riwayat-kehadiran' },
-];
-
 export default function StudentThesisSeminar() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const activeTab = pathname.includes('riwayat-kehadiran') ? 'attendance' : 'overview';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'ringkasan';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const { data: overview, isLoading: isOverviewLoading } = useStudentSeminarOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentSeminarHistory();
@@ -32,18 +31,15 @@ export default function StudentThesisSeminar() {
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
       { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-      { label: activeTab === 'attendance' ? 'Riwayat Kehadiran' : 'Status & Pendaftaran' },
+      { label: activeTab === 'riwayat-kehadiran' ? 'Riwayat Kehadiran' : 'Status & Pendaftaran' },
     ],
     [activeTab]
   );
 
   useEffect(() => {
-    if (pathname === '/tugas-akhir/seminar-hasil' || pathname === '/tugas-akhir/seminar-hasil/') {
-      navigate('/tugas-akhir/seminar-hasil/ringkasan', { replace: true });
-    }
     setBreadcrumbs(breadcrumbs);
     setTitle('Seminar Hasil');
-  }, [pathname, navigate, setBreadcrumbs, setTitle, breadcrumbs]);
+  }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   if (isLoading) {
     return (
@@ -59,20 +55,25 @@ export default function StudentThesisSeminar() {
     );
   }
 
+  const tabs = [
+    { label: 'Ringkasan', value: 'ringkasan' },
+    { label: 'Riwayat Kehadiran', value: 'riwayat-kehadiran' },
+  ];
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Seminar Hasil</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold tracking-tight">Seminar Hasil</h1>
+          <p className="text-muted-foreground">
             Pantau status seminar, unggah dokumen, dan lihat riwayat kehadiran seminar
           </p>
         </div>
       </div>
 
-      <TabsNav tabs={TAB_ITEMS} />
+      <LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {activeTab === 'attendance' ? (
+      {activeTab === 'riwayat-kehadiran' ? (
         <StudentThesisSeminarAttendanceHistoryPanel
           attendance={attendance}
           isLoading={isAttendanceLoading}

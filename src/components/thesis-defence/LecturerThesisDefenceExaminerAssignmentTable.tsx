@@ -2,16 +2,15 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
-
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useAssignmentSeminars } from '@/hooks/thesis-seminar';
+import { useDefenceAssignmentList } from '@/hooks/thesis-defence';
 import { toTitleCaseName } from '@/lib/text';
 import { ThesisEventTitleCell, ThesisPersonnelListCell } from '@/components/shared/ThesisTableCells';
 import { UserPlus, Pencil, CheckCircle2, Eye, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import type { AssignmentSeminarItem, ExaminerAssignmentStatus } from '@/types/seminar.types';
-import { LecturerThesisSeminarAssignExaminerDialog } from './LecturerThesisSeminarAssignExaminerDialog';
+import type { AssignmentDefenceItem, ExaminerAssignmentStatus } from '@/types/defence.types';
+import { LecturerThesisDefenceAssignExaminerDialog } from './LecturerThesisDefenceAssignExaminerDialog';
 
 // ============================================================
 // Assignment status badge
@@ -38,7 +37,7 @@ function AssignmentStatusBadge({ status }: { status: ExaminerAssignmentStatus })
 // Component
 // ============================================================
 
-export function LecturerThesisSeminarExaminerAssignmentTable() {
+export function LecturerThesisDefenceExaminerAssignmentTable() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -47,11 +46,9 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedSeminar, setSelectedSeminar] = useState<AssignmentSeminarItem | null>(null);
+  const [selectedDefence, setSelectedDefence] = useState<AssignmentDefenceItem | null>(null);
 
-
-
-  const { data: seminars, isLoading, isFetching, error, refetch } = useAssignmentSeminars({ search });
+  const { data: defences, isLoading, isFetching, error, refetch } = useDefenceAssignmentList({ search });
 
   useEffect(() => {
     if (error) {
@@ -61,22 +58,22 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
 
   // Client-side assignment status & search filter
   const filteredData = useMemo(() => {
-    if (!seminars) return [];
-    let result = seminars;
+    if (!defences) return [];
+    let result = defences;
     if (statusFilter) {
-      result = result.filter((s) => s.assignmentStatus === statusFilter);
+      result = result.filter((d) => d.assignmentStatus === statusFilter);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (s) =>
-          s.studentName.toLowerCase().includes(q) ||
-          s.studentNim.toLowerCase().includes(q) ||
-          s.thesisTitle.toLowerCase().includes(q)
+        (d) =>
+          d.studentName.toLowerCase().includes(q) ||
+          d.studentNim.toLowerCase().includes(q) ||
+          d.thesisTitle.toLowerCase().includes(q)
       );
     }
     return result;
-  }, [seminars, statusFilter, search]);
+  }, [defences, statusFilter, search]);
 
   const total = filteredData.length;
   const pagedData = useMemo(() => {
@@ -94,12 +91,12 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
     { label: 'Selesai', value: 'finished' },
   ];
 
-  const openAssignDialog = (seminar: AssignmentSeminarItem) => {
-    setSelectedSeminar(seminar);
+  const openAssignDialog = (defence: AssignmentDefenceItem) => {
+    setSelectedDefence(defence);
     setDialogOpen(true);
   };
 
-  const columns: Column<AssignmentSeminarItem>[] = [
+  const columns: Column<AssignmentDefenceItem>[] = [
     {
       key: 'student',
       header: 'Mahasiswa',
@@ -180,7 +177,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-primary"
-              onClick={() => navigate(`/tugas-akhir/seminar-hasil/${row.id}`)}
+              onClick={() => navigate(`/tugas-akhir/sidang/${row.id}`)}
               title="Lihat Detail"
             >
               <Eye className="h-4 w-4" />
@@ -224,7 +221,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
                 size="icon"
                 className="h-8 w-8 text-muted-foreground"
                 disabled
-                title="Seminar sudah selesai"
+                title="Sidang sudah selesai"
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -237,7 +234,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
 
   return (
     <>
-      <CustomTable<AssignmentSeminarItem>
+      <CustomTable<AssignmentDefenceItem>
         columns={columns}
         data={pagedData}
         loading={isLoading}
@@ -252,7 +249,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
           setPage(1);
         }}
         enableColumnFilters
-        emptyText="Belum ada seminar yang perlu ditetapkan penguji."
+        emptyText="Belum ada sidang yang perlu ditetapkan penguji."
         rowKey={(row) => row.id}
         actions={
           <RefreshButton
@@ -262,10 +259,10 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
         }
       />
 
-      <LecturerThesisSeminarAssignExaminerDialog
+      <LecturerThesisDefenceAssignExaminerDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        seminar={selectedSeminar}
+        defence={selectedDefence}
         onSuccess={() => {
           refetch();
           setDialogOpen(false);

@@ -1,4 +1,4 @@
-import { AdminThesisSeminarSchedulingSection } from '@/components/thesis-seminar/ThesisSeminarDetailSchedulingSection';
+import { AdminThesisDefenceSchedulingSection } from '@/components/thesis-defence/ThesisDefenceDetailSchedulingSection';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRole } from '@/hooks/shared/useRole';
 import { Calendar, MapPin, Clock, Video } from 'lucide-react';
@@ -11,11 +11,11 @@ function extractTime(iso: string | null): string {
 }
 
 interface Props {
-  seminarId: string;
+  defenceId: string;
   detail: any;
 }
 
-export function ThesisSeminarDetailSchedulingPanel({ seminarId, detail }: Props) {
+export function ThesisDefenceDetailSchedulingPanel({ defenceId, detail }: Props) {
   const { isAdmin } = useRole();
 
   if (!isAdmin()) {
@@ -23,7 +23,7 @@ export function ThesisSeminarDetailSchedulingPanel({ seminarId, detail }: Props)
   }
 
   return (
-    <AdminThesisSeminarSchedulingSection seminarId={seminarId} isEditable={true} />
+    <AdminThesisDefenceSchedulingSection defenceId={defenceId} isEditable={true} />
   );
 }
 
@@ -38,7 +38,7 @@ function ViewerSchedulingContent({ detail }: { detail: any }) {
       <CardHeader>
         <CardTitle className="text-sm flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          Informasi Jadwal Seminar (Viewer View)
+          Informasi Jadwal Sidang (Viewer View)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -67,7 +67,7 @@ function ViewerSchedulingContent({ detail }: { detail: any }) {
               <p className="text-xs text-muted-foreground uppercase font-semibold">Lokasi</p>
               {detail.isOnline ? (
                 <div className="space-y-1">
-                  <p className="font-medium text-green-600">Seminar Daring</p>
+                  <p className="font-medium text-green-600">Sidang Daring</p>
                   {detail.meetingLink ? (
                     <a href={detail.meetingLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">
                       {detail.meetingLink}

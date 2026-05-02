@@ -28,13 +28,11 @@ import {
   useSubmitExaminerAssessment,
   useSupervisorFinalizationData,
   useFinalizeSeminarBySupervisor,
-  useDownloadBeritaAcara,
+  useDownloadAssessmentResult,
 } from '@/hooks/thesis-seminar';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type {
-  FinalizeSeminarPayload,
   SubmitExaminerAssessmentPayload,
-  ThesisSeminarStatus,
 } from '@/types/seminar.types';
 
 
@@ -84,8 +82,7 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
   }
 
   if (isOngoing) {
-    // Only Examiner and Supervisor can see this in Ongoing state
-    if (!isUserExaminer && !isUserSupervisor) return null;
+    if (!isUserExaminer && !isUserSupervisor && !_isAdmin && !_isKadep) return null;
 
     return (
       <div className="space-y-6">
@@ -93,7 +90,13 @@ export function ThesisSeminarDetailAssessmentPanel({ seminarId, detail }: Props)
         {isUserSupervisor && (
           <SupervisorFinalizationSection
             seminarId={seminarId}
-            isSupervisor={true} // Show finalization controls for supervisor
+            isSupervisor={true}
+          />
+        )}
+        {!isUserExaminer && !isUserSupervisor && (_isAdmin || _isKadep) && (
+          <SupervisorFinalizationSection
+            seminarId={seminarId}
+            isSupervisor={false}
           />
         )}
       </div>
@@ -451,7 +454,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
   const { data: finalData, isLoading: isFinalLoading } = useSupervisorFinalizationData(seminarId);
   const { data: form, isLoading: isFormLoading } = useExaminerAssessmentForm(seminarId);
   const finalizeMutation = useFinalizeSeminarBySupervisor();
-  const downloadBeritaAcaraMutation = useDownloadBeritaAcara();
+  const downloadAssessmentResultMutation = useDownloadAssessmentResult();
 
   const [recommendRevision, setRecommendRevision] = useState<boolean>(false);
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
@@ -481,12 +484,6 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
     }
   }
 
-  const finalStatus: ThesisSeminarStatus = (finalData.averageScore || 0) < 55 
-    ? 'failed' 
-    : recommendRevision 
-      ? 'passed_with_revision' 
-      : 'passed';
-
   const canFinalize = isSupervisor && !!finalData.recommendationUnlocked && !isFinalized;
 
   const handleFinalize = async () => {
@@ -494,7 +491,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
     try {
       await finalizeMutation.mutateAsync({
         seminarId,
-        payload: { status: finalStatus as FinalizeSeminarPayload['status'] },
+        payload: { recommendRevision },
       });
       toast.success('Hasil seminar berhasil ditetapkan.');
     } catch (err) {
@@ -528,15 +525,15 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
           <Button 
             variant="outline" 
             className="flex items-center gap-2 h-auto px-5 bg-card border-muted-foreground/20 hover:bg-muted/10 hover:text-primary transition-all text-xs"
-            onClick={() => downloadBeritaAcaraMutation.mutate(seminarId)}
-            disabled={downloadBeritaAcaraMutation.isPending}
+            onClick={() => downloadAssessmentResultMutation.mutate(seminarId)}
+            disabled={downloadAssessmentResultMutation.isPending}
           >
-            {downloadBeritaAcaraMutation.isPending ? (
+            {downloadAssessmentResultMutation.isPending ? (
               <Spinner className="h-4 w-4" />
             ) : (
               <Download className="h-4 w-4" />
             )}
-            <span className="font-medium">Download Berita Acara</span>
+            <span className="font-medium">Download Hasil Penilaian</span>
           </Button>
         </div>
       )}
