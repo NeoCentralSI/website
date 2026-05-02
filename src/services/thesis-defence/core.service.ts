@@ -273,14 +273,23 @@ export async function finalizeDefenceBySupervisor(
   return parseJsonResponse(res, 'Gagal menetapkan hasil sidang');
 }
 
-export async function downloadAdminThesisDefenceInvitation(defenceId: string, nomorSurat?: string): Promise<Blob> {
-  let url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.INVITATION(defenceId));
+export async function downloadInvitationLetter(defenceId: string, nomorSurat?: string): Promise<Blob> {
+  let url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.INVITATION_LETTER(defenceId));
   if (nomorSurat) {
     url += `?nomorSurat=${encodeURIComponent(nomorSurat)}`;
   }
   const response = await apiRequest(url);
   if (!response.ok) {
     throw new Error('Gagal mengunduh surat undangan sidang');
+  }
+  return await response.blob();
+}
+
+export async function downloadAssessmentResult(defenceId: string): Promise<Blob> {
+  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.ASSESSMENT_RESULT(defenceId));
+  const response = await apiRequest(url);
+  if (!response.ok) {
+    throw new Error('Gagal mengunduh hasil penilaian sidang');
   }
   return await response.blob();
 }

@@ -28,7 +28,7 @@ import {
   useSubmitExaminerAssessment,
   useSupervisorFinalizationData,
   useFinalizeSeminarBySupervisor,
-  useDownloadBeritaAcara,
+  useDownloadAssessmentResult,
 } from '@/hooks/thesis-seminar';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type {
@@ -456,7 +456,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
   const { data: finalData, isLoading: isFinalLoading } = useSupervisorFinalizationData(seminarId);
   const { data: form, isLoading: isFormLoading } = useExaminerAssessmentForm(seminarId);
   const finalizeMutation = useFinalizeSeminarBySupervisor();
-  const downloadBeritaAcaraMutation = useDownloadBeritaAcara();
+  const downloadAssessmentResultMutation = useDownloadAssessmentResult();
 
   const [recommendRevision, setRecommendRevision] = useState<boolean>(false);
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
@@ -527,15 +527,15 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
           <Button 
             variant="outline" 
             className="flex items-center gap-2 h-auto px-5 bg-card border-muted-foreground/20 hover:bg-muted/10 hover:text-primary transition-all text-xs"
-            onClick={() => downloadBeritaAcaraMutation.mutate(seminarId)}
-            disabled={downloadBeritaAcaraMutation.isPending}
+            onClick={() => downloadAssessmentResultMutation.mutate(seminarId)}
+            disabled={downloadAssessmentResultMutation.isPending}
           >
-            {downloadBeritaAcaraMutation.isPending ? (
+            {downloadAssessmentResultMutation.isPending ? (
               <Spinner className="h-4 w-4" />
             ) : (
               <Download className="h-4 w-4" />
             )}
-            <span className="font-medium">Download Berita Acara</span>
+            <span className="font-medium">Download Hasil Penilaian</span>
           </Button>
         </div>
       )}

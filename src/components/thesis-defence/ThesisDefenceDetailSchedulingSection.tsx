@@ -29,7 +29,7 @@ import {
 import { Spinner, Loading } from '@/components/ui/spinner';
 import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, AlertCircle, Sparkles, Lock, Ban, Video, Copy, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import { useDefenceSchedulingData, useSetDefenceSchedule, useFinalizeDefenceSchedule, useAdminDefenceDetail, useDownloadAdminThesisDefenceInvitation } from '@/hooks/thesis-defence';
+import { useDefenceSchedulingData, useSetDefenceSchedule, useFinalizeDefenceSchedule, useAdminDefenceDetail, useDownloadInvitationLetter } from '@/hooks/thesis-defence';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/seminar.types';
 
@@ -109,7 +109,7 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   const { data: defenceDetail } = useAdminDefenceDetail(defenceId);
   const { mutate: doSetSchedule, isPending: isSaving } = useSetDefenceSchedule();
   const { mutate: doFinalizeSchedule, isPending: isFinalizing } = useFinalizeDefenceSchedule();
-  const { mutate: doDownloadInvitation, isPending: isDownloadingInvitation } = useDownloadAdminThesisDefenceInvitation();
+  const { mutate: doDownloadInvitation, isPending: isDownloadingInvitation } = useDownloadInvitationLetter();
 
   const [isInvitationDialogOpen, setIsInvitationDialogOpen] = useState<boolean>(false);
   const [inputNomorSurat, setInputNomorSurat] = useState<string>('');

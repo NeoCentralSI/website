@@ -15,7 +15,7 @@ import {
   getAdminDefenceLecturerOptions,
   getAdminDefenceRoomOptions,
   finalizeDefenceSchedule,
-  downloadAdminThesisDefenceInvitation,
+  downloadInvitationLetter,
 } from '@/services/thesis-defence/core.service';
 import { validateDefenceDocument } from '@/services/thesis-defence/doc.service';
 import type {
@@ -220,14 +220,14 @@ export function useExportAdminDefenceArchive() {
   });
 }
 
-export function useDownloadAdminThesisDefenceInvitation() {
+export function useDownloadInvitationLetter() {
   return useMutation({
-    mutationFn: ({ defenceId, nomorSurat }: { defenceId: string; nomorSurat?: string }) => downloadAdminThesisDefenceInvitation(defenceId, nomorSurat),
+    mutationFn: ({ defenceId, nomorSurat }: { defenceId: string; nomorSurat?: string }) => downloadInvitationLetter(defenceId, nomorSurat),
     onSuccess: (blob) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'Surat-Undangan-Sidang-TA.pdf';
+      link.download = 'Undangan-Sidang-TA.pdf';
       document.body.appendChild(link);
       link.click();
       link.remove();

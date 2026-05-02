@@ -29,7 +29,7 @@ import {
 import { Spinner, Loading } from '@/components/ui/spinner';
 import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, AlertCircle, Sparkles, Lock, Ban, Video, Copy, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule, useFinalizeAdminThesisSeminarSchedule, useAdminThesisSeminarDetail, useDownloadAdminThesisSeminarInvitation } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
+import { useAdminThesisSeminarSchedulingData, useSetAdminThesisSeminarSchedule, useFinalizeAdminThesisSeminarSchedule, useAdminThesisSeminarDetail, useDownloadInvitationLetter } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
 import type { DayOfWeek } from '@/types/seminar.types';
 
@@ -109,7 +109,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const { data: seminarDetail } = useAdminThesisSeminarDetail(seminarId);
   const { mutate: doSetSchedule, isPending: isSaving } = useSetAdminThesisSeminarSchedule();
   const { mutate: doFinalizeSchedule, isPending: isFinalizing } = useFinalizeAdminThesisSeminarSchedule();
-  const { mutate: doDownloadInvitation, isPending: isDownloadingInvitation } = useDownloadAdminThesisSeminarInvitation();
+  const { mutate: doDownloadInvitation, isPending: isDownloadingInvitation } = useDownloadInvitationLetter();
   
   const [isInvitationDialogOpen, setIsInvitationDialogOpen] = useState<boolean>(false);
   const [inputNomorSurat, setInputNomorSurat] = useState<string>('');

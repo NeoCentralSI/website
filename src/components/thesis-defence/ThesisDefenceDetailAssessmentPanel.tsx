@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, CheckCircle2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth, useRole } from '@/hooks/shared';
 
@@ -29,6 +29,7 @@ import {
   useSubmitDefenceAssessment,
   useDefenceFinalizationData,
   useFinalizeDefenceBySupervisor,
+  useDownloadAssessmentResult,
 } from '@/hooks/thesis-defence';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type { FinalizeDefencePayload } from '@/types/defence.types';
@@ -408,6 +409,7 @@ function AssessmentFormSection({ defenceId }: { defenceId: string }) {
 function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId: string; isSupervisor: boolean }) {
   const { data, isLoading } = useDefenceFinalizationData(defenceId);
   const finalizeMutation = useFinalizeDefenceBySupervisor();
+  const downloadAssessmentResultMutation = useDownloadAssessmentResult();
   const [needsRevision, setNeedsRevision] = useState(true);
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
@@ -501,6 +503,20 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
               <Badge className="bg-primary">{finalGrade}</Badge>
             </div>
           </div>
+
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 h-auto px-5 bg-card border-muted-foreground/20 hover:bg-muted/10 hover:text-primary transition-all text-xs"
+            onClick={() => downloadAssessmentResultMutation.mutate(defenceId)}
+            disabled={downloadAssessmentResultMutation.isPending}
+          >
+            {downloadAssessmentResultMutation.isPending ? (
+              <Spinner className="h-4 w-4" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            <span className="font-medium">Download Hasil Penilaian</span>
+          </Button>
         </div>
       )}
 

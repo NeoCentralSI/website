@@ -200,8 +200,8 @@ export const API_CONFIG = {
       // --- Shared / Global ---
       BASE: '/thesis-seminars',
       BY_ID: (id: string) => `/thesis-seminars/${id}`,
-      INVITATION: (id: string) => `/thesis-seminars/${id}/invitation`,
-      BERITA_ACARA: (id: string) => `/thesis-seminars/${id}/berita-acara`,
+      INVITATION_LETTER: (id: string) => `/thesis-seminars/${id}/invitation-letter`,
+      ASSESSMENT_RESULT: (id: string) => `/thesis-seminars/${id}/assessment-result`,
       OPTIONS_THESES: '/thesis-seminars/options/theses',
       OPTIONS_LECTURERS: '/thesis-seminars/options/lecturers',
       OPTIONS_STUDENTS: '/thesis-seminars/options/students',
@@ -265,7 +265,8 @@ export const API_CONFIG = {
       // --- Shared / Global ---
       BASE: '/thesis-defences',
       BY_ID: (id: string) => `/thesis-defences/${id}`,
-      INVITATION: (id: string) => `/thesis-defences/${id}/invitation-letter`,
+      INVITATION_LETTER: (id: string) => `/thesis-defences/${id}/invitation-letter`,
+      ASSESSMENT_RESULT: (id: string) => `/thesis-defences/${id}/assessment-result`,
 
 
       // --- Student Specific ---

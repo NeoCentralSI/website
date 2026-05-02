@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   getDefenceExaminerRequests,
   getSupervisedStudentDefences,
@@ -8,6 +9,7 @@ import {
   submitDefenceAssessment,
   getDefenceFinalizationData,
   finalizeDefenceBySupervisor,
+  downloadAssessmentResult,
 } from '@/services/thesis-defence/core.service';
 import {
   respondDefenceExaminerAssignment,
@@ -236,6 +238,27 @@ export function useFinalizeDefenceRevisions() {
       queryClient.invalidateQueries({ queryKey: ['defence-revision-board', variables.defenceId] });
       queryClient.invalidateQueries({ queryKey: ['defence-finalization', variables.defenceId] });
       queryClient.invalidateQueries({ queryKey: ['lecturer-defence-detail', variables.defenceId] });
+    },
+  });
+}
+export function useDownloadAssessmentResult() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (defenceId: string) => downloadAssessmentResult(defenceId),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Hasil-Penilaian-Sidang-TA.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Hasil penilaian sidang berhasil diunduh');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal mengunduh hasil penilaian sidang');
     },
   });
 }

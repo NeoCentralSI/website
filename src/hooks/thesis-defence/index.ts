@@ -24,7 +24,7 @@ export {
   useDefenceSchedulingData,
   useSetDefenceSchedule,
   useFinalizeDefenceSchedule,
-  useDownloadAdminThesisDefenceInvitation,
+  useDownloadInvitationLetter,
 } from './useAdminThesisDefence';
 
 export {
@@ -43,6 +43,7 @@ export {
   useApproveDefenceRevision,
   useUnapproveDefenceRevision,
   useFinalizeDefenceRevisions,
+  useDownloadAssessmentResult,
 } from './useLecturerThesisDefence';
 
 import { useRole } from '@/hooks/shared/useRole';
