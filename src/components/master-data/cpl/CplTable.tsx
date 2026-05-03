@@ -129,7 +129,7 @@ export function CplTable({
                 options: [
                     { label: 'Aktif', value: 'active' },
                     { label: 'Tidak Aktif', value: 'inactive' },
-                    { label: 'Semua', value: 'all' },
+                    { label: 'Semua', value: '' },
                 ],
             },
             render: (item) => (

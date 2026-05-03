@@ -54,7 +54,8 @@ export function YudisiumRequirementTable({
     data = [],
 }: YudisiumRequirementTableProps) {
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+    const [statusFilter, setStatusFilter] = useState<string>('');
+    const [isPublicFilter, setIsPublicFilter] = useState<string>('');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -71,13 +72,18 @@ export function YudisiumRequirementTable({
                 (item.notes ?? '').toLowerCase().includes(term);
 
             const matchedStatus =
-                statusFilter === 'all' ||
+                statusFilter === '' ||
                 (statusFilter === 'active' && item.isActive) ||
                 (statusFilter === 'inactive' && !item.isActive);
 
-            return matchedSearch && matchedStatus;
+            const matchedPublic =
+                isPublicFilter === '' ||
+                (isPublicFilter === 'true' && item.isPublic) ||
+                (isPublicFilter === 'false' && !item.isPublic);
+
+            return matchedSearch && matchedStatus && matchedPublic;
         });
-    }, [data, search, statusFilter]);
+    }, [data, search, statusFilter, isPublicFilter]);
 
     const paginatedData = useMemo(() => {
         const start = (page - 1) * pageSize;
@@ -112,7 +118,20 @@ export function YudisiumRequirementTable({
         {
             key: 'status',
             header: 'Status',
-            width: 120,
+            width: 100,
+            filter: {
+                type: 'select',
+                value: statusFilter,
+                onChange: (value: string) => {
+                    setStatusFilter(value);
+                    setPage(1);
+                },
+                options: [
+                    { label: 'Aktif', value: 'active' },
+                    { label: 'Tidak Aktif', value: 'inactive' },
+                    { label: 'Semua', value: '' },
+                ],
+            },
             render: (item) => (
                 <Badge
                     variant={item.isActive ? 'default' : 'secondary'}
@@ -123,6 +142,36 @@ export function YudisiumRequirementTable({
                     }
                 >
                     {item.isActive ? 'Aktif' : 'Tidak Aktif'}
+                </Badge>
+            ),
+        },
+        {
+            key: 'isPublic',
+            header: 'Publik',
+            width: 100,
+            filter: {
+                type: 'select',
+                value: isPublicFilter,
+                onChange: (value: string) => {
+                    setIsPublicFilter(value);
+                    setPage(1);
+                },
+                options: [
+                    { label: 'Ya', value: 'true' },
+                    { label: 'Tidak', value: 'false' },
+                    { label: 'Semua', value: '' },
+                ],
+            },
+            render: (item) => (
+                <Badge
+                    variant={item.isPublic ? 'outline' : 'secondary'}
+                    className={
+                        item.isPublic
+                            ? 'text-blue-600 border-blue-200 bg-blue-50'
+                            : 'text-muted-foreground bg-gray-50 border-gray-100'
+                    }
+                >
+                    {item.isPublic ? 'Ya' : 'Tidak'}
                 </Badge>
             ),
         },
@@ -183,7 +232,7 @@ export function YudisiumRequirementTable({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                         onClick={() => setDeleteId(item.id)}
                         disabled={isDeleting}
                         title="Hapus"
@@ -193,7 +242,7 @@ export function YudisiumRequirementTable({
                 </div>
             ),
         },
-    ], [data, firstId, isDeleting, isMoving, isToggling, lastId, onMoveBottom, onMoveTop, onToggle, page, pageSize]);
+    ], [data, firstId, isDeleting, isMoving, isToggling, lastId, onMoveBottom, onMoveTop, onToggle, page, pageSize, statusFilter]);
 
     const handleConfirmDelete = () => {
         if (!deleteId) return;
@@ -216,31 +265,14 @@ export function YudisiumRequirementTable({
                 onPageSizeChange={setPageSize}
                 searchValue={search}
                 onSearchChange={setSearch}
+                enableColumnFilters
                 emptyText="Belum ada persyaratan yudisium"
                 actions={
                     <div className="flex items-center gap-2">
-                        <Select
-                            value={statusFilter}
-                            onValueChange={(value: 'all' | 'active' | 'inactive') => {
-                                setStatusFilter(value);
-                                setPage(1);
-                            }}
-                        >
-                            <SelectTrigger className="w-[150px] h-9">
-                                <SelectValue placeholder="Semua status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Status</SelectItem>
-                                <SelectItem value="active">Aktif</SelectItem>
-                                <SelectItem value="inactive">Tidak Aktif</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <RefreshButton onClick={onRefresh} isRefreshing={isFetching && !isLoading} />
-
-                        <Button onClick={onCreate} size="sm">
-                            <Plus className="mr-2 h-4 w-4" /> Tambah Persyaratan
+                        <Button variant="outline" size="sm" onClick={onCreate}>
+                            <Plus className="mr-2 h-4 w-4" /> Tambah
                         </Button>
+                        <RefreshButton onClick={onRefresh} isRefreshing={isFetching && !isLoading} />
                     </div>
                 }
             />
@@ -259,7 +291,7 @@ export function YudisiumRequirementTable({
                         <AlertDialogAction
                             onClick={handleConfirmDelete}
                             disabled={isDeleting}
-                            className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-red-600 hover:bg-red-700"
                         >
                             {isDeleting ? (
                                 <>

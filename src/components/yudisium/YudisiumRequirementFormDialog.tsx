@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -35,6 +36,7 @@ export function YudisiumRequirementFormDialog({
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [notes, setNotes] = useState('');
+    const [isPublic, setIsPublic] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
@@ -44,10 +46,12 @@ export function YudisiumRequirementFormDialog({
             setName(editData.name ?? '');
             setDescription(editData.description ?? '');
             setNotes(editData.notes ?? '');
+            setIsPublic(editData.isPublic ?? false);
         } else {
             setName('');
             setDescription('');
             setNotes('');
+            setIsPublic(false);
         }
     }, [editData, open]);
 
@@ -63,6 +67,7 @@ export function YudisiumRequirementFormDialog({
                 name: name.trim(),
                 description: description.trim() || null,
                 notes: notes.trim() || null,
+                isPublic,
             };
 
             if (isEdit && editData) {
@@ -129,6 +134,20 @@ export function YudisiumRequirementFormDialog({
                             rows={3}
                             maxLength={2000}
                         />
+                    </div>
+
+                    <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <Checkbox
+                            id="isPublic"
+                            checked={isPublic}
+                            onCheckedChange={(checked) => setIsPublic(checked === true)}
+                        />
+                        <div className="space-y-1 leading-none">
+                            <Label htmlFor="isPublic">Publik</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Jika dicentang, persyaratan ini akan terlihat oleh mahasiswa sebelum pendaftaran.
+                            </p>
+                        </div>
                     </div>
 
                     <DialogFooter>

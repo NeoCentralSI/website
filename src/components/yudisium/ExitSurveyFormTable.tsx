@@ -53,6 +53,7 @@ export function ExitSurveyFormTable({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<ExitSurveyForm | null>(null);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -65,13 +66,20 @@ export function ExitSurveyFormTable({
 
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
-    if (!term) return data;
-    return data.filter(
-      (item) =>
+    
+    return data.filter((item) => {
+      const matchedSearch = !term || (
         item.name.toLowerCase().includes(term) ||
         (item.description ?? '').toLowerCase().includes(term)
-    );
-  }, [data, search]);
+      );
+
+      const matchedStatus = statusFilter === '' || (
+        statusFilter === 'active' ? item.isActive : !item.isActive
+      );
+
+      return matchedSearch && matchedStatus;
+    });
+  }, [data, search, statusFilter]);
 
   const paginatedData = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -121,6 +129,19 @@ export function ExitSurveyFormTable({
         key: 'status',
         header: 'Status',
         width: 90,
+        filter: {
+          type: 'select',
+          value: statusFilter,
+          onChange: (value: string) => {
+            setStatusFilter(value);
+            setPage(1);
+          },
+          options: [
+            { label: 'Aktif', value: 'active' },
+            { label: 'Arsip', value: 'inactive' },
+            { label: 'Semua', value: '' },
+          ],
+        },
         render: (item) => (
           <Badge
             variant={item.isActive ? 'default' : 'secondary'}
@@ -186,7 +207,7 @@ export function ExitSurveyFormTable({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
               onClick={() => setDeleteId(item.id)}
               disabled={isDeleting}
               title="Hapus"
@@ -214,14 +235,14 @@ export function ExitSurveyFormTable({
         onPageSizeChange={setPageSize}
         searchValue={search}
         onSearchChange={setSearch}
+        enableColumnFilters
         emptyText="Belum ada form exit survey"
         actions={
           <div className="flex items-center gap-2">
-            <RefreshButton onClick={onRefresh} isRefreshing={isFetching && !isLoading} />
-            <Button onClick={onCreate} size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Template
+            <Button variant="outline" size="sm" onClick={onCreate}>
+              <Plus className="mr-2 h-4 w-4" /> Tambah
             </Button>
+            <RefreshButton onClick={onRefresh} isRefreshing={isFetching && !isLoading} />
           </div>
         }
       />
@@ -238,7 +259,7 @@ export function ExitSurveyFormTable({
             <AlertDialogAction
               onClick={handleConfirmDelete}
               disabled={isDeleting}
-              className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 hover:bg-red-700"
             >
               {isDeleting ? (
                 <>

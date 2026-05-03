@@ -8,6 +8,7 @@ export interface YudisiumRequirement {
     notes: string | null;
     order: number;
     isActive: boolean;
+    isPublic: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -18,6 +19,7 @@ export interface CreateYudisiumRequirementPayload {
     notes?: string | null;
     order?: number;
     isActive?: boolean;
+    isPublic?: boolean;
 }
 
 export type UpdateYudisiumRequirementPayload = Partial<CreateYudisiumRequirementPayload>;
