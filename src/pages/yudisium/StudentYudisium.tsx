@@ -37,9 +37,15 @@ import { toast } from 'sonner';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const formatDateTime = (date: string | null | undefined) => {
+const formatDateTime = (date: any) => {
   if (!date) return '-';
-  return new Date(date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (!(d instanceof Date) || isNaN(d.getTime())) return '-';
+    return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch (err) {
+    return '-';
+  }
 };
 
 const formatDateOnly = (date: string | null | undefined) => {
@@ -518,6 +524,11 @@ function DocumentRow({
         <div className="text-sm font-medium text-foreground truncate">
           {requirement.name} (PDF)
         </div>
+        {typeof requirement.description === 'string' && requirement.description && (
+          <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+            {requirement.description}
+          </div>
+        )}
         {isUploaded && (
           <>
             <div className={cn("text-[10px] font-medium mt-0.5", fileStatusColor)}>
@@ -637,7 +648,7 @@ function RequirementsPreviewCard({ requirements }: { requirements: { id: string;
               <div className="text-sm font-medium text-foreground truncate">
                 {req.name} (PDF)
               </div>
-              {req.description && (
+              {typeof req.description === 'string' && req.description && (
                 <div className="text-[10px] text-muted-foreground truncate">
                   {req.description}
                 </div>

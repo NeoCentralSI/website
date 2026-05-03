@@ -25,11 +25,10 @@ const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondar
     draft:     { label: 'Draft',                  variant: 'secondary', className: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' },
     open:      { label: 'Pendaftaran Dibuka',      variant: 'default',   className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
     closed:    { label: 'Pendaftaran Ditutup',     variant: 'secondary', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
-    // Action-based stored statuses
-    scheduled: { label: 'Acara Terjadwalkan',     variant: 'outline',   className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
-    // Derived from scheduled + eventDate = today
+    in_review: { label: 'Dalam Review',           variant: 'outline',   className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
+    scheduled: { label: 'Acara Terjadwalkan',     variant: 'outline',   className: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' },
     ongoing:   { label: 'Sedang Berlangsung',     variant: 'default',   className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
-    // Final state
+    finalized: { label: 'Finalized',              variant: 'outline',   className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' },
     completed: { label: 'Selesai',                variant: 'default',   className: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' },
 };
 
@@ -86,7 +85,7 @@ export function YudisiumTable({
                 (item.name ?? '').toLowerCase().includes(term) ||
                 formatDateOnlyId(item.registrationOpenDate).toLowerCase().includes(term) ||
                 formatDateOnlyId(item.registrationCloseDate).toLowerCase().includes(term) ||
-                (STATUS_MAP[item.status]?.label.toLowerCase() ?? item.status).includes(term) ||
+                (STATUS_MAP[item.status || '']?.label.toLowerCase() ?? String(item.status || '')).includes(term) ||
                 (item.participantCount?.toString() ?? '').includes(term)
             );
 

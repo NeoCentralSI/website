@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileDown, Eye, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Upload, FileDown, Eye, CheckSquare } from 'lucide-react';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { YudisiumValidationModal } from '@/components/yudisium/YudisiumValidationModal';
+import { YudisiumValidationFormDialog } from '@/components/yudisium/YudisiumValidationFormDialog';
 
 import { useRole, useAuth } from '@/hooks/shared';
 import { useYudisiumEvent } from '@/hooks/yudisium/useYudisium';
@@ -36,8 +36,10 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-gray-100 text-gray-600 border-gray-200' },
   open: { label: 'Pendaftaran Dibuka', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   closed: { label: 'Pendaftaran Ditutup', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  scheduled: { label: 'Acara Terjadwalkan', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  in_review: { label: 'Dalam Review', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  scheduled: { label: 'Acara Terjadwalkan', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   ongoing: { label: 'Sedang Berlangsung', className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  finalized: { label: 'Finalized', className: 'bg-slate-50 text-slate-700 border-slate-200' },
   completed: { label: 'Selesai', className: 'bg-slate-100 text-slate-600 border-slate-200' },
 };
 
@@ -190,13 +192,13 @@ export default function YudisiumDetailPage() {
         <div className="flex justify-end gap-1">
           {isAdmin() && row.status === 'registered' && (
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
               onClick={() => setSelectedParticipant(row)}
-              title="Validasi dokumen"
+              title="Validasi Pendaftaran"
             >
-              <ShieldCheck className="h-4 w-4 mr-1.5" />
-              Validasi Berkas
+              <CheckSquare className="h-4 w-4" />
             </Button>
           )}
           {canValidateCpl && row.status === 'verified' && (
@@ -206,7 +208,7 @@ export default function YudisiumDetailPage() {
               onClick={() => navigate(`/yudisium/${id}/peserta/${row.id}`)}
               title="Validasi CPL"
             >
-              <ShieldCheck className="h-4 w-4 mr-1.5" />
+              <CheckSquare className="h-4 w-4 mr-1.5" />
               Validasi CPL
             </Button>
           )}
@@ -445,7 +447,7 @@ export default function YudisiumDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <YudisiumValidationModal
+      <YudisiumValidationFormDialog
         participant={selectedParticipant}
         yudisiumId={id!}
         open={!!selectedParticipant}

@@ -1,6 +1,6 @@
 import { useYudisiumEvents, useDeleteYudisiumEvent, useUpdateYudisiumEvent, useCreateYudisiumEvent } from '@/hooks/yudisium/useYudisium';
 import { YudisiumTable } from './YudisiumTable';
-import { useRole } from '@/hooks/shared/useRole';
+import { useRole } from '@/hooks/shared';
 
 export function YudisiumPanel() {
   const { isKoordinatorYudisium } = useRole();
