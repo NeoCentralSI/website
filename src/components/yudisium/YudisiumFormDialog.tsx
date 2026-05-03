@@ -153,8 +153,8 @@ export function YudisiumFormDialog({
 		? 'Tanggal pembukaan pendaftaran tidak boleh sebelum hari ini'
 		: null;
 
-	// Validate close date: can't be before today, and can't be before open date
-	const closeDateBeforeToday = closeDateObj && closeDateObj < today
+	// Validate close date: can't be before today (if editable), and can't be before open date
+	const closeDateBeforeToday = !isFullyLocked && closeDateObj && closeDateObj < today
 		? 'Tanggal penutupan pendaftaran tidak boleh sebelum hari ini'
 		: null;
 	const closeDateBeforeOpen  = openDateObj && closeDateObj && closeDateObj < openDateObj
@@ -187,14 +187,25 @@ export function YudisiumFormDialog({
 					name: name.trim(),
 				};
 
-				// Only include fields that are NOT locked
+				// Only include fields that are NOT locked and have CHANGED
 				if (!isFullyLocked) {
-					updatePayload.registrationCloseDate = dateInputToISO(registrationCloseDate);
-					if (!openDateLocked) {
-						updatePayload.registrationOpenDate = dateInputToISO(registrationOpenDate);
+					const isoClose = dateInputToISO(registrationCloseDate);
+					if (isoClose !== editData.registrationCloseDate) {
+						updatePayload.registrationCloseDate = isoClose;
 					}
+					
+					if (!openDateLocked) {
+						const isoOpen = dateInputToISO(registrationOpenDate);
+						if (isoOpen !== editData.registrationOpenDate) {
+							updatePayload.registrationOpenDate = isoOpen;
+						}
+					}
+
 					if (!surveyLocked) {
-						updatePayload.exitSurveyFormId = exitSurveyFormId === 'none' ? null : exitSurveyFormId;
+						const nextSurveyId = exitSurveyFormId === 'none' ? null : exitSurveyFormId;
+						if (nextSurveyId !== (editData.exitSurveyForm?.id ?? null)) {
+							updatePayload.exitSurveyFormId = nextSurveyId;
+						}
 					}
 				}
 
