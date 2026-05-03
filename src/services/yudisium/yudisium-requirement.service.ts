@@ -5,10 +5,10 @@ export interface YudisiumRequirement {
     id: string;
     name: string;
     description: string | null;
-    notes: string | null;
     order: number;
     isActive: boolean;
     isPublic: boolean;
+    relationCount: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -16,7 +16,6 @@ export interface YudisiumRequirement {
 export interface CreateYudisiumRequirementPayload {
     name: string;
     description?: string | null;
-    notes?: string | null;
     order?: number;
     isActive?: boolean;
     isPublic?: boolean;

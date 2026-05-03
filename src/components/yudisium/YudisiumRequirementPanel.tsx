@@ -13,10 +13,9 @@ export function YudisiumRequirementPanel() {
     update,
     moveTop,
     moveBottom,
-    toggle,
     remove,
     isMoving,
-    isToggling,
+    isUpdating,
     isDeleting,
   } = useYudisiumRequirements();
 
@@ -33,10 +32,9 @@ export function YudisiumRequirementPanel() {
         onUpdate={update}
         onMoveTop={moveTop}
         onMoveBottom={moveBottom}
-        onToggle={toggle}
         onDelete={remove}
         isMoving={isMoving}
-        isToggling={isToggling}
+        isUpdating={isUpdating}
         isDeleting={isDeleting}
       />
 
