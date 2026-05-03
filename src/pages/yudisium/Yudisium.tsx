@@ -19,18 +19,18 @@ export default function Yudisium() {
     setSearchParams({ tab }, { replace: true });
   };
 
-  const canManageEvent = isAdmin() || isDosen();
+  const canViewEvent = isAdmin() || isDosen();
   const canManageGlobal = isKoordinatorYudisium();
 
   const tabs = useMemo(() => {
     const t = [];
-    if (canManageEvent) t.push({ label: 'Kelola Yudisium', value: 'acara' });
+    if (canViewEvent) t.push({ label: 'Kelola Yudisium', value: 'acara' });
     if (canManageGlobal) {
       t.push({ label: 'Kelola Persyaratan', value: 'persyaratan' });
       t.push({ label: 'Kelola Exit Survey', value: 'exit-survey' });
     }
     return t;
-  }, [canManageEvent, canManageGlobal]);
+  }, [canViewEvent, canManageGlobal]);
 
   const breadcrumbs = useMemo(() => {
     const b = [{ label: 'Yudisium' }];
@@ -65,7 +65,7 @@ export default function Yudisium() {
       )}
 
       <div className="space-y-6">
-        {activeTab === 'acara' && canManageEvent && <YudisiumPanel />}
+        {activeTab === 'acara' && canViewEvent && <YudisiumPanel />}
         {activeTab === 'persyaratan' && canManageGlobal && <YudisiumRequirementPanel />}
         {activeTab === 'exit-survey' && canManageGlobal && <ExitSurveyPanel />}
       </div>

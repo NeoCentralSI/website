@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Eye, Pencil, Trash2, Plus } from 'lucide-react';
+import { Eye, Pencil, Trash2, Plus, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
@@ -21,11 +21,16 @@ import type { YudisiumEvent, UpdateYudisiumPayload } from '@/services/yudisium/y
 import { YudisiumFormDialog } from '@/components/yudisium/YudisiumFormDialog';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline'; className: string }> = {
-    draft: { label: 'Draft', variant: 'secondary', className: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' },
-    open: { label: 'Pendaftaran Dibuka', variant: 'default', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
-    closed: { label: 'Pendaftaran Ditutup', variant: 'secondary', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
-    in_review: { label: 'Dalam Ulasan', variant: 'outline', className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
-    finalized: { label: 'Selesai', variant: 'default', className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
+    // Time-derived statuses
+    draft:     { label: 'Draft',                  variant: 'secondary', className: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' },
+    open:      { label: 'Pendaftaran Dibuka',      variant: 'default',   className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
+    closed:    { label: 'Pendaftaran Ditutup',     variant: 'secondary', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
+    // Action-based stored statuses
+    scheduled: { label: 'Acara Terjadwalkan',     variant: 'outline',   className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
+    // Derived from scheduled + eventDate = today
+    ongoing:   { label: 'Sedang Berlangsung',     variant: 'default',   className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
+    // Final state
+    completed: { label: 'Selesai',                variant: 'default',   className: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' },
 };
 
 interface YudisiumTableProps {
@@ -75,13 +80,14 @@ export function YudisiumTable({
         );
 
         const term = search.toLowerCase();
-        
+
         return latestFirst.filter((item) => {
             const matchedSearch = !term || (
                 (item.name ?? '').toLowerCase().includes(term) ||
                 formatDateOnlyId(item.registrationOpenDate).toLowerCase().includes(term) ||
                 formatDateOnlyId(item.registrationCloseDate).toLowerCase().includes(term) ||
-                (STATUS_MAP[item.status]?.label.toLowerCase() ?? item.status).includes(term)
+                (STATUS_MAP[item.status]?.label.toLowerCase() ?? item.status).includes(term) ||
+                (item.participantCount?.toString() ?? '').includes(term)
             );
 
             const matchedStatus = statusFilter === '' || item.status === statusFilter;
@@ -119,6 +125,21 @@ export function YudisiumTable({
                 ),
             },
             {
+                key: 'participantCount',
+                header: 'Peserta',
+                width: 110,
+                render: (item) => (
+                    item.participantCount > 0
+                        ? (
+                            <Badge variant="outline" className="gap-1 px-2 font-medium border-gray-200 text-gray-600">
+                                <Users className="h-3 w-3" />
+                                {item.participantCount}
+                            </Badge>
+                        )
+                        : <span className="text-muted-foreground text-sm">-</span>
+                ),
+            },
+            {
                 key: 'status',
                 header: 'Status',
                 width: 160,
@@ -130,12 +151,13 @@ export function YudisiumTable({
                         setPage(1);
                     },
                     options: [
+                        { label: 'Semua', value: '' },
                         { label: 'Draft', value: 'draft' },
                         { label: 'Pendaftaran Dibuka', value: 'open' },
                         { label: 'Pendaftaran Ditutup', value: 'closed' },
-                        { label: 'Dalam Ulasan', value: 'in_review' },
-                        { label: 'Selesai', value: 'finalized' },
-                        { label: 'Semua', value: '' },
+                        { label: 'Acara Terjadwalkan', value: 'scheduled' },
+                        { label: 'Sedang Berlangsung', value: 'ongoing' },
+                        { label: 'Selesai', value: 'completed' },
                     ],
                 },
                 render: (item) => {
@@ -163,7 +185,7 @@ export function YudisiumTable({
                                 size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:text-primary"
                                 title="Detail"
-                                onClick={() => navigate(`/yudisium/lecturer/event/${item.id}`)}
+                                onClick={() => navigate(`/yudisium/${item.id}`)}
                             >
                                 <Eye className="h-4 w-4" />
                             </Button>

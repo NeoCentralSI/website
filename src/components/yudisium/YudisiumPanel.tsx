@@ -1,7 +1,9 @@
 import { useYudisiumEvents, useDeleteYudisiumEvent, useUpdateYudisiumEvent, useCreateYudisiumEvent } from '@/hooks/yudisium/useYudisium';
 import { YudisiumTable } from './YudisiumTable';
+import { useRole } from '@/hooks/shared/useRole';
 
 export function YudisiumPanel() {
+  const { isKoordinatorYudisium } = useRole();
   const { data: events = [], isLoading, isFetching, refetch } = useYudisiumEvents();
   const deleteMutation = useDeleteYudisiumEvent();
   const updateMutation = useUpdateYudisiumEvent();
@@ -18,7 +20,7 @@ export function YudisiumPanel() {
         onCreate={(data) => createMutation.mutateAsync(data)}
         onRefresh={() => refetch()}
         isDeleting={deleteMutation.isPending}
-        canManage={true}
+        canManage={isKoordinatorYudisium()}
         canViewDetail={true}
       />
     </div>
