@@ -268,7 +268,7 @@ function App() {
                 <Route path="/yudisium/:id" element={<YudisiumDetailPage />} />
                 <Route path="/yudisium/:id/peserta/:yudisiumParticipantId" element={<YudisiumParticipantDetailPage />} />
                 <Route path="/yudisium/exit-survey" element={<StudentExitSurveyPage />} />
-                <Route path="/exit-survey" element={<ExitSurveyFormPage />} />
+                <Route path="/yudisium/exit-survey/:id" element={<ExitSurveyFormPage />} />
                 <Route path="/repositori" element={<RepositoryPage />} />
                 <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
 

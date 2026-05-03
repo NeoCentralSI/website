@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Pencil, Trash2, Plus, Copy, Settings, Calendar, HelpCircle } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ export function ExitSurveyFormTable({
   isDuplicating,
   data = [],
 }: ExitSurveyFormTableProps) {
+  const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<ExitSurveyForm | null>(null);
   const [search, setSearch] = useState('');
@@ -103,7 +105,7 @@ export function ExitSurveyFormTable({
         header: 'Deskripsi',
         className: 'whitespace-normal min-w-[300px]',
         render: (item) => (
-          <span className="text-sm">
+          <span className="text-sm text-muted-foreground">
             {item.description ?? '-'}
           </span>
         ),
@@ -162,7 +164,7 @@ export function ExitSurveyFormTable({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-primary"
-              onClick={() => onManageQuestions(item)}
+              onClick={() => navigate(`/yudisium/exit-survey/${item.id}`)}
               title="Kelola pertanyaan"
             >
               <Settings className="h-4 w-4" />

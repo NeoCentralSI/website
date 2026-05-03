@@ -3,8 +3,11 @@ import { apiRequest } from '../auth.service';
 import type {
   ExitSurveyForm,
   ExitSurveyQuestion,
+  ExitSurveySession,
   CreateExitSurveyFormPayload,
   UpdateExitSurveyFormPayload,
+  CreateExitSurveySessionPayload,
+  UpdateExitSurveySessionPayload,
   CreateExitSurveyQuestionPayload,
   UpdateExitSurveyQuestionPayload,
 } from '@/types/exit-survey.types';
@@ -67,6 +70,46 @@ export const deleteExitSurveyForm = async (id: string): Promise<void> => {
 export const duplicateExitSurveyForm = async (id: string): Promise<ExitSurveyForm> => {
   const response = await apiRequest(getApiUrl(E.DUPLICATE(id)), { method: 'POST' });
   return handleResponse(response, 'Gagal menduplikasi form');
+};
+
+// ============================================================
+// SESSIONS
+// ============================================================
+
+export const createExitSurveySession = async (
+  formId: string,
+  payload: CreateExitSurveySessionPayload
+): Promise<ExitSurveySession> => {
+  const response = await apiRequest(getApiUrl(`${E.BASE}/${formId}/sessions`), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response, 'Gagal menambah sesi');
+};
+
+export const updateExitSurveySession = async (
+  formId: string,
+  sessionId: string,
+  payload: UpdateExitSurveySessionPayload
+): Promise<ExitSurveySession> => {
+  const response = await apiRequest(getApiUrl(`${E.BASE}/${formId}/sessions/${sessionId}`), {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response, 'Gagal mengubah sesi');
+};
+
+export const deleteExitSurveySession = async (
+  formId: string,
+  sessionId: string
+): Promise<void> => {
+  const response = await apiRequest(getApiUrl(`${E.BASE}/${formId}/sessions/${sessionId}`), {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Gagal menghapus sesi');
+  }
 };
 
 export const getExitSurveyQuestions = async (

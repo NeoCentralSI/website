@@ -18,6 +18,15 @@ export interface ExitSurveyQuestion {
   updatedAt?: string;
 }
 
+export interface ExitSurveySession {
+  id: string;
+  exitSurveyFormId: string;
+  name: string;
+  description: string | null;
+  order: number;
+  questions: ExitSurveyQuestion[];
+}
+
 export interface ExitSurveyForm {
   id: string;
   name: string;
@@ -25,6 +34,7 @@ export interface ExitSurveyForm {
   isActive: boolean;
   totalQuestions: number;
   usedCount: number;
+  sessions?: ExitSurveySession[];
   createdAt: string;
   updatedAt: string;
 }
@@ -37,7 +47,16 @@ export interface CreateExitSurveyFormPayload {
 
 export type UpdateExitSurveyFormPayload = Partial<CreateExitSurveyFormPayload>;
 
+export interface CreateExitSurveySessionPayload {
+  name: string;
+  description?: string | null;
+  order?: number;
+}
+
+export type UpdateExitSurveySessionPayload = Partial<CreateExitSurveySessionPayload>;
+
 export interface CreateExitSurveyQuestionPayload {
+  exitSurveySessionId?: string; // Optional if created within a session context
   question: string;
   questionType: ExitSurveyQuestionType;
   isRequired?: boolean;
