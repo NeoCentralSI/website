@@ -222,6 +222,11 @@ export default function StudentExitSurvey() {
                     {idx + 1}. {q.question}
                     {q.isRequired && <span className="text-destructive">*</span>}
                   </CardTitle>
+                  {q.description && (
+                    <CardDescription className="text-sm whitespace-pre-wrap leading-relaxed mt-1">
+                      {q.description}
+                    </CardDescription>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {q.questionType === 'single_choice' && (

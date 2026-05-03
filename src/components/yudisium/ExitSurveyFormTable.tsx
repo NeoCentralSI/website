@@ -103,11 +103,11 @@ export function ExitSurveyFormTable({
       {
         key: 'description',
         header: 'Deskripsi',
-        className: 'whitespace-normal min-w-[300px]',
+        className: 'whitespace-normal min-w-[300px] max-w-[400px]',
         render: (item) => (
-          <span className="text-sm text-muted-foreground">
-            {item.description ?? '-'}
-          </span>
+          <div className="text-sm text-muted-foreground line-clamp-2 leading-relaxed" title={item.description ?? ''}>
+            {item.description || '-'}
+          </div>
         ),
       },
       {
@@ -192,8 +192,8 @@ export function ExitSurveyFormTable({
               variant="ghost"
               size="icon"
               className={`h-8 w-8 ${item.usedCount > 0
-                  ? 'text-red-300 cursor-not-allowed'
-                  : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                ? 'text-red-300 cursor-not-allowed'
+                : 'text-red-600 hover:text-red-700 hover:bg-red-50'
                 }`}
               onClick={() => setDeleteId(item.id)}
               disabled={isDeleting || item.usedCount > 0}
@@ -238,7 +238,7 @@ export function ExitSurveyFormTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Form Exit Survey</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus form ini? Lanjutkan.
+              Apakah Anda yakin ingin menghapus form ini? Semua deskripsi, bagian, dan pertanyaan dari exit survey form akan terhapus secara permanen. Tekan Hapus jika anda yakin.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

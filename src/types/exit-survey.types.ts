@@ -1,4 +1,4 @@
-export type ExitSurveyQuestionType = 'single_choice' | 'multiple_choice' | 'text' | 'textarea';
+export type ExitSurveyQuestionType = 'short_answer' | 'paragraph' | 'single_choice' | 'multiple_choice' | 'date';
 
 export interface ExitSurveyOption {
   id: string;
@@ -10,6 +10,7 @@ export interface ExitSurveyQuestion {
   id: string;
   exitSurveyFormId: string;
   question: string;
+  description: string | null;
   questionType: ExitSurveyQuestionType;
   isRequired: boolean;
   orderNumber: number;
@@ -58,6 +59,7 @@ export type UpdateExitSurveySessionPayload = Partial<CreateExitSurveySessionPayl
 export interface CreateExitSurveyQuestionPayload {
   exitSurveySessionId?: string; // Optional if created within a session context
   question: string;
+  description?: string | null;
   questionType: ExitSurveyQuestionType;
   isRequired?: boolean;
   orderNumber?: number;
