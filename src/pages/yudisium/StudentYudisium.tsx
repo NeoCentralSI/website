@@ -870,7 +870,7 @@ export default function StudentYudisium() {
                   </thead>
                   <tbody>
                     {data?.cplScores.map((cpl: any, idx: number) => {
-                      const isVerified = !!(cpl.verifiedBy && cpl.verifiedAt);
+                      const isVerified = cpl.status === 'verified' || !!(cpl.verifiedBy && cpl.verifiedAt);
                       return (
                         <tr key={idx} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
                           <td className="px-3 py-2 text-xs font-semibold text-foreground">{cpl.code ?? '-'}</td>
@@ -880,11 +880,11 @@ export default function StudentYudisium() {
                           <td className="px-3 py-2 text-center">
                             <span className={cn(
                               "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                              cpl.status === 'verified' || cpl.passed
+                              cpl.passed
                                 ? "bg-emerald-50 text-emerald-600"
                                 : "bg-red-50 text-red-600"
                             )}>
-                              {cpl.status === 'verified' ? 'VALID' : cpl.passed ? 'LULUS' : 'TIDAK LULUS'}
+                              {cpl.passed ? 'LULUS' : 'TIDAK LULUS'}
                             </span>
                           </td>
                           <td className="px-3 py-2 text-right">

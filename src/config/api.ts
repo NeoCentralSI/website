@@ -101,10 +101,8 @@ export const API_CONFIG = {
       CPL_SCORES: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-scores`,
       VERIFY_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/verify`,
-      CREATE_CPL_RECOMMENDATION: (yudisiumId: string, participantId: string) =>
-        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-recommendation`,
-      UPDATE_CPL_RECOMMENDATION_STATUS: (recommendationId: string) =>
-        `/yudisiums/cpl-recommendation/${recommendationId}/status`,
+      REPAIR_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/repair`,
 
       // SK (Decree)
       DRAFT_SK: (yudisiumId: string) => `/yudisiums/${yudisiumId}/draft-sk`,

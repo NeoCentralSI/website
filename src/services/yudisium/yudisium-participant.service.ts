@@ -81,32 +81,24 @@ export async function verifyCplScore(
   return json.data;
 }
 
-export async function createCplRecommendation(
+export async function repairCplScore(
   yudisiumId: string,
   participantId: string,
-  payload: { cplId: string; recommendation: string; description: string }
-): Promise<{ id: string; status: string }> {
-  const res = await apiRequest(getApiUrl(EP.CREATE_CPL_RECOMMENDATION(yudisiumId, participantId)), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal membuat rekomendasi CPL');
-  return json.data;
-}
+  cplId: string,
+  payload: { newScore: number; oldScore: number; recommendation: File | null; settlement: File | null }
+): Promise<{ cplId: string; status: string; allCplVerified: boolean }> {
+  const formData = new FormData();
+  formData.append('newScore', payload.newScore.toString());
+  formData.append('oldScore', payload.oldScore.toString());
+  if (payload.recommendation) formData.append('recommendation', payload.recommendation);
+  if (payload.settlement) formData.append('settlement', payload.settlement);
 
-export async function updateCplRecommendationStatus(
-  recommendationId: string,
-  action: 'resolve' | 'unresolve'
-): Promise<{ id: string; status: string }> {
-  const res = await apiRequest(getApiUrl(EP.UPDATE_CPL_RECOMMENDATION_STATUS(recommendationId)), {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action }),
+  const res = await apiRequest(getApiUrl(EP.REPAIR_CPL(yudisiumId, participantId, cplId)), {
+    method: 'POST',
+    body: formData,
   });
   const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal mengubah status rekomendasi');
+  if (!json.success) throw new Error(json.message || 'Gagal menyimpan perbaikan CPL');
   return json.data;
 }
 

@@ -120,7 +120,6 @@ export default function YudisiumDetailPage() {
 
   const { user } = useAuth();
   const canManageSkActions = user?.roles?.some(r => r.name === ROLES.KOORDINATOR_YUDISIUM && r.status === 'active') ?? false;
-  const canValidateCpl = hasAnyRole([ROLES.GKM]);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -201,17 +200,6 @@ export default function YudisiumDetailPage() {
               <CheckSquare className="h-4 w-4" />
             </Button>
           )}
-          {canValidateCpl && row.status === 'verified' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/yudisium/${id}/peserta/${row.id}`)}
-              title="Validasi CPL"
-            >
-              <CheckSquare className="h-4 w-4 mr-1.5" />
-              Validasi CPL
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"
@@ -257,7 +245,7 @@ export default function YudisiumDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{detail.name}</h1>
-            <p className="text-muted-foreground text-sm">Detail Periode Yudisium</p>
+            <p className="text-muted-foreground">Detail Periode Yudisium</p>
           </div>
         </div>
 

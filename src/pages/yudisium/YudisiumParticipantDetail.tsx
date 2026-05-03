@@ -1,69 +1,79 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loading } from '@/components/ui/spinner';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loading, Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { 
-  ArrowLeft, FileText, CheckCircle, XCircle, Clock, 
-  ShieldCheck, FilePlus, Undo2 
+import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import {
+  ArrowLeft, FileText, CheckCircle,
+  Undo2, Eye,
+  Check, Plus, CheckCircle2,
 } from 'lucide-react';
-import { 
+import {
   useYudisiumParticipantDetail,
   useParticipantCplScores,
   useVerifyCplScore,
-  useCreateCplRecommendation,
-  useUpdateCplRecommendationStatus,
+  useRepairCplScore,
 } from '@/hooks/yudisium/useYudisiumParticipants';
+import { useRole } from '@/hooks/shared';
 import { openProtectedFile } from '@/lib/protected-file';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
-import { toast } from 'sonner';
-import CustomTable, { type Column } from '@/components/layout/CustomTable';
-import type { CplScoreItem, CplRecommendationItem } from '@/types/admin-yudisium.types';
+import type { CplScoreItem } from '@/types/admin-yudisium.types';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  registered: { label: 'Menunggu Validasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  under_review: { label: 'Menunggu Validasi CPL', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  approved: { label: 'Lulus', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  rejected: { label: 'Ditolak', className: 'bg-red-50 text-red-700 border-red-200' },
-  finalized: { label: 'Selesai', className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  registered:    { label: 'Menunggu Validasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  verified:      { label: 'Menunggu Validasi CPL',     className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  cpl_validated: { label: 'Calon Peserta Yudisium',   className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  appointed:     { label: 'Peserta Yudisium',          className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  finalized:     { label: 'Lulus',                     className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  rejected:      { label: 'Belum Lulus',               className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
-const REC_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  open: { label: 'Open', className: 'bg-gray-100 text-gray-700 border-gray-200' },
-  in_progress: { label: 'In Progress', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  resolved: { label: 'Selesai', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  dismissed: { label: 'Dibatalkan', className: 'bg-red-50 text-red-700 border-red-200' },
-};
+
 
 export default function YudisiumParticipantDetail() {
   const { id: yudisiumId, yudisiumParticipantId } = useParams<{ id: string; yudisiumParticipantId: string }>();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
+  const { isGkm } = useRole();
+  const canPerformActions = isGkm();
 
   const { data, isLoading } = useYudisiumParticipantDetail(yudisiumId!, yudisiumParticipantId!);
   const { data: cplData, isLoading: loadingCpl, isFetching, refetch } = useParticipantCplScores(yudisiumId!, yudisiumParticipantId!);
-  
-  const verifyMutation = useVerifyCplScore(yudisiumId!, yudisiumParticipantId!);
-  const createRecMutation = useCreateCplRecommendation(yudisiumId!, yudisiumParticipantId!);
-  const updateRecStatusMutation = useUpdateCplRecommendationStatus(yudisiumId!, yudisiumParticipantId!);
 
-  const [recModalOpen, setRecModalOpen] = useState(false);
-  const [selectedCpl, setSelectedCpl] = useState<{ id: string; code: string } | null>(null);
-  const [recRecommendation, setRecRecommendation] = useState('');
-  const [recDescription, setRecDescription] = useState('');
+  const verifyMutation = useVerifyCplScore(yudisiumId!, yudisiumParticipantId!);
+  const repairMutation = useRepairCplScore(yudisiumId!, yudisiumParticipantId!);
+
+  const [repairModalOpen, setRepairModalOpen] = useState(false);
+  const [viewModalOpen,   setViewModalOpen]   = useState(false);
+  const [selectedCpl,     setSelectedCpl]     = useState<CplScoreItem | null>(null);
+  
+  const [newScore,      setNewScore]      = useState<number>(0);
+  const [recFile,       setRecFile]       = useState<File | null>(null);
+  const [setFile,       setSetFile]       = useState<File | null>(null);
+  
+  const [verifyConfirmId, setVerifyConfirmId] = useState<string | null>(null);
+  const [cplSearch,       setCplSearch]       = useState('');
 
   const baseDetailPath = `/yudisium/${yudisiumId}`;
 
@@ -74,7 +84,139 @@ export default function YudisiumParticipantDetail() {
       { label: data?.studentName ?? 'Detail Peserta' },
     ]);
     setTitle(data?.studentName ?? 'Detail Peserta');
-  }, [setBreadcrumbs, setTitle, data, yudisiumId, baseDetailPath]);
+  }, [setBreadcrumbs, setTitle, data, baseDetailPath]);
+
+  const cplScores = useMemo(() => {
+    const scores = cplData?.cplScores ?? [];
+    if (!cplSearch) return scores;
+    return scores.filter(s => 
+      (s.code?.toLowerCase().includes(cplSearch.toLowerCase())) || 
+      (s.description?.toLowerCase().includes(cplSearch.toLowerCase()))
+    );
+  }, [cplData?.cplScores, cplSearch]);
+
+
+
+  const cplColumns = useMemo<Column<CplScoreItem>[]>(() => {
+    const cols: Column<CplScoreItem>[] = [
+      {
+        key: 'no',
+        header: 'No',
+        width: 50,
+        className: 'text-center',
+        render: (_, idx) => <span className="text-sm text-muted-foreground">{idx + 1}</span>
+      },
+      {
+        key: 'code',
+        header: 'Kode CPL',
+        width: 100,
+        render: (row) => <span className="font-medium">{row.code ?? '-'}</span>
+      },
+      {
+        key: 'description',
+        header: 'Deskripsi',
+        className: 'whitespace-normal',
+        render: (row) => <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{row.description}</p>
+      },
+      {
+        key: 'score',
+        header: 'Nilai',
+        width: 80,
+        className: 'text-center',
+        render: (row) => <span className="font-semibold">{row.score ?? '-'}</span>
+      },
+      {
+        key: 'minimalScore',
+        header: 'Minimal',
+        width: 80,
+        className: 'text-center',
+        accessor: 'minimalScore'
+      },
+      {
+        key: 'status',
+        header: 'Status',
+        width: 130,
+        className: 'text-center',
+        render: (row) => (
+          <Badge variant="outline" className={row.passed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}>
+            {row.passed ? 'Lulus' : 'Tidak Lulus'}
+          </Badge>
+        )
+      },
+    ];
+
+    cols.push({
+      key: 'actions',
+      header: 'Aksi',
+      width: 140,
+      className: 'text-right',
+      render: (row) => (
+        <div className="flex justify-end items-center gap-1">
+          {/* Eye (view repair detail) — visible to ALL roles */}
+          {(row.oldScore !== null || row.recommendationDocument) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={() => {
+                setSelectedCpl(row);
+                setViewModalOpen(true);
+              }}
+              title="Lihat Detail Perbaikan"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+
+          {/* Verified badge — visible to ALL roles */}
+          {row.status === 'verified' && (
+            <div className="flex items-center justify-center h-8 w-8" title={`Tervalidasi oleh ${row.verifiedBy ?? '-'}`}>
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            </div>
+          )}
+
+          {/* Verify / Repair actions — GKM only */}
+          {canPerformActions && row.status !== 'verified' && (
+            <>
+              {row.passed && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  onClick={() => setVerifyConfirmId(row.cplId)}
+                  disabled={verifyMutation.isPending}
+                  title="Validasi CPL"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+              )}
+              {!row.passed && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  onClick={() => {
+                    setSelectedCpl(row);
+                    setNewScore(row.minimalScore);
+                    setRecFile(null);
+                    setSetFile(null);
+                    setRepairModalOpen(true);
+                  }}
+                  title="Remedial / Perbaikan"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )
+    });
+
+    return cols;
+  }, [verifyMutation.isPending, canPerformActions]);
+
+
 
   if (isLoading || loadingCpl) {
     return (
@@ -86,7 +228,7 @@ export default function YudisiumParticipantDetail() {
 
   if (!data) {
     return (
-      <div className="p-4">
+      <div className="p-6">
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
             Data peserta tidak ditemukan.
@@ -98,227 +240,305 @@ export default function YudisiumParticipantDetail() {
 
   const statusInfo = PARTICIPANT_STATUS_MAP[data.status] || PARTICIPANT_STATUS_MAP.registered;
 
-  const cplColumns: Column<CplScoreItem>[] = [
-    { key: 'code', header: 'Kode CPL', render: (row) => row.code ?? '-' },
-    {
-      key: 'description',
-      header: 'Deskripsi',
-      width: 400,
-      render: (row) => <span className="line-clamp-2">{row.description}</span>,
-    },
-    { key: 'score', header: 'Nilai', render: (row) => row.score ?? '-' },
-    { key: 'minimalScore', header: 'Minimal', accessor: 'minimalScore' },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (row) => {
-        if (row.status === 'verified') {
-          return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Tervalidasi</Badge>;
-        }
-        return (
-          <Badge variant="outline" className={row.passed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}>
-            {row.passed ? 'Lulus' : 'Tidak Lulus'}
-          </Badge>
-        );
-      },
-    },
-    {
-      key: 'actions',
-      header: 'Aksi',
-      render: (row) => (
-        <div className="flex gap-1">
-          {row.status !== 'verified' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => verifyMutation.mutate(row.cplId)}
-              disabled={verifyMutation.isPending}
-            >
-              <ShieldCheck className="mr-1 h-3 w-3" />
-              Validasi
-            </Button>
-          )}
-          {!row.passed && row.status !== 'verified' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedCpl({ id: row.cplId, code: row.code ?? '-' });
-                setRecRecommendation('');
-                setRecDescription('');
-                setRecModalOpen(true);
-              }}
-            >
-              <FilePlus className="mr-1 h-3 w-3" />
-              Rekomendasi
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ];
-
-  const recColumns: Column<CplRecommendationItem>[] = [
-    {
-      key: 'cplCode',
-      header: 'CPL',
-      render: (row) => cplData?.cplScores.find(c => c.cplId === row.cplId)?.code ?? '-'
-    },
-    { key: 'recommendation', header: 'Rekomendasi' },
-    { key: 'status', header: 'Status', render: (row) => {
-      const s = REC_STATUS_MAP[row.status] || REC_STATUS_MAP.open;
-      return <Badge variant="outline" className={s.className}>{s.label}</Badge>;
-    }},
-    {
-      key: 'actions',
-      header: 'Aksi',
-      render: (row) => (
-        <div className="flex gap-1">
-          {row.status !== 'resolved' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateRecStatusMutation.mutate({ recommendationId: row.id, action: 'resolve' })}
-            >
-              <CheckCircle className="mr-1 h-3 w-3" />
-              Selesai
-            </Button>
-          )}
-          {row.status === 'resolved' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => updateRecStatusMutation.mutate({ recommendationId: row.id, action: 'unresolve' })}
-            >
-              <Undo2 className="mr-1 h-3 w-3" />
-            </Button>
-          )}
-        </div>
-      )
-    }
-  ];
-
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(baseDetailPath)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{toTitleCaseName(data.studentName)}</h1>
-            <p className="text-muted-foreground">{data.studentNim}</p>
+    <div className="p-6 space-y-12 max-w-full overflow-x-hidden">
+
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => navigate(baseDetailPath)} className="shrink-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight truncate">{toTitleCaseName(data.studentName)}</h1>
+            <p className="text-muted-foreground truncate">{data.studentNim}</p>
           </div>
-          <Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge>
+        </div>
+        <Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge>
+      </div>
+
+      {/* ── Identity + Documents ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Informasi Mahasiswa Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold px-1">
+            Informasi Mahasiswa
+          </h2>
+          <Card className="h-full flex flex-col overflow-hidden">
+            <CardContent className="pt-6 space-y-4 flex-1">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Nama Mahasiswa</p>
+                  <p className="text-sm font-medium mt-0.5 leading-snug">{toTitleCaseName(data.studentName)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">NIM</p>
+                  <p className="text-sm font-medium mt-0.5">{data.studentNim}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Judul Tugas Akhir</p>
+                  <p className="text-sm font-medium mt-0.5 leading-snug">{data.thesisTitle || '-'}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {data.supervisors.map((s: any, i: number) => (
+                    <div key={i}>
+                      <p className="text-xs text-muted-foreground">{s.role}</p>
+                      <p className="text-sm font-medium mt-0.5">{toTitleCaseName(s.name)}</p>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Tanggal Daftar Yudisium</p>
+                  <p className="text-sm font-medium mt-0.5">{data.registeredAt ? formatDateId(data.registeredAt) : '-'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Dokumen Persyaratan Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold px-1">
+            Dokumen Persyaratan
+          </h2>
+          <Card className="h-full flex flex-col overflow-hidden">
+            <CardContent className="pt-6 space-y-3 flex-1">
+              {data.documents.map((doc: any) => (
+                <div
+                  key={doc.requirementId}
+                  className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl shadow-sm hover:border-border transition-colors gap-4"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className={`p-2.5 rounded-lg shrink-0 ${doc.document ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-medium text-sm text-foreground block truncate">{doc.requirementName}</span>
+                      <span className="text-xs text-muted-foreground block mt-0.5 truncate">
+                        {doc.document ? `${doc.document.fileName || 'File'} • ${formatDateId(doc.document.createdAt)}` : 'Belum diunggah'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge
+                      variant={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'destructive' : 'warning'}
+                      className="rounded-md font-medium px-2.5 py-0.5 whitespace-nowrap"
+                    >
+                      {doc.status === 'approved' ? 'Disetujui' : doc.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                    </Badge>
+                    {doc.document?.filePath && (
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-9 w-9 border rounded-lg hover:bg-accent shrink-0"
+                        onClick={() => openProtectedFile(doc.document.filePath, doc.document.fileName)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Informasi Mahasiswa</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="grid grid-cols-[140px_1fr] gap-y-2">
-              <span className="text-muted-foreground">Judul TA</span>
-              <span className="font-medium">{data.thesisTitle}</span>
-              {data.supervisors.map((s: any, i: number) => (
-                <div key={i} className="contents">
-                  <span className="text-muted-foreground">{s.role}</span>
-                  <span className="font-medium">{toTitleCaseName(s.name)}</span>
-                </div>
-              ))}
-              <span className="text-muted-foreground">Tanggal Daftar</span>
-              <span className="font-medium">{data.registeredAt ? formatDateId(data.registeredAt) : '-'}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-base">Dokumen Persyaratan</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {data.documents.map((doc: any) => (
-                <div key={doc.requirementId} className="flex items-center justify-between p-2 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {doc.status === 'approved' ? <CheckCircle className="text-green-600 h-4 w-4" /> : <Clock className="text-amber-600 h-4 w-4" />}
-                    <span className="text-sm font-medium">{doc.requirementName}</span>
-                  </div>
-                  {doc.document?.filePath && (
-                    <Button variant="ghost" size="sm" onClick={() => openProtectedFile(doc.document.filePath, doc.document.fileName)}>
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── CPL Table Section ── */}
+      <div className="space-y-4 pt-4">
+        <h2 className="text-lg font-semibold px-1">
+          Capaian Pembelajaran Lulusan (CPL)
+        </h2>
+        <CustomTable
+          columns={cplColumns}
+          data={cplScores}
+          loading={loadingCpl}
+          isRefreshing={isFetching && !loadingCpl}
+          total={cplScores.length}
+          page={1}
+          pageSize={100}
+          onPageChange={() => {}}
+          searchValue={cplSearch}
+          onSearchChange={setCplSearch}
+          emptyText="Tidak ada data CPL"
+          actions={
+            <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !loadingCpl} />
+          }
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Capaian Pembelajaran Lulusan (CPL)</CardTitle>
-            <RefreshButton onClick={() => refetch()} isRefreshing={isFetching} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <CustomTable
-            columns={cplColumns}
-            data={cplData?.cplScores ?? []}
-            loading={loadingCpl}
-            emptyText="Tidak ada data CPL"
-          />
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Rekomendasi CPL</CardTitle></CardHeader>
-        <CardContent>
-          <CustomTable
-            columns={recColumns}
-            data={cplData?.recommendations ?? []}
-            loading={loadingCpl}
-            emptyText="Tidak ada rekomendasi"
-          />
-        </CardContent>
-      </Card>
 
-      <Dialog open={recModalOpen} onOpenChange={setRecModalOpen}>
-        <DialogContent>
+      {/* ── Modals ── */}
+      
+      {/* Repair Modal */}
+      <Dialog open={repairModalOpen} onOpenChange={setRepairModalOpen}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Buat Rekomendasi CPL</DialogTitle>
-            <DialogDescription>Rekomendasi untuk CPL {selectedCpl?.code}</DialogDescription>
+            <DialogTitle>Perbaikan / Remedial CPL</DialogTitle>
+            <DialogDescription>Masukkan nilai baru dan unggah dokumen pendukung untuk {selectedCpl?.code}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Rekomendasi</Label>
-              <Input value={recRecommendation} onChange={(e) => setRecRecommendation(e.target.value)} placeholder="Contoh: Remedial" />
+          <div className="space-y-5 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Skor Lama</Label>
+                <Input value={selectedCpl?.score ?? '-'} disabled className="bg-muted" />
+              </div>
+              <div className="space-y-2">
+                <Label>Skor Baru</Label>
+                <Input
+                  type="number"
+                  min={selectedCpl?.minimalScore ?? 0}
+                  max={100}
+                  value={newScore}
+                  onChange={(e) => setNewScore(parseInt(e.target.value))}
+                />
+              </div>
             </div>
+            
             <div className="space-y-2">
-              <Label>Deskripsi</Label>
-              <Textarea value={recDescription} onChange={(e) => setRecDescription(e.target.value)} placeholder="Detail rekomendasi..." />
+              <Label>Dokumen Rekomendasi (PDF)</Label>
+              <Input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setRecFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-[10px] text-muted-foreground italic">* Dokumen yang berisi detail perbaikan/quiz</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Dokumen Penyelesaian (PDF)</Label>
+              <Input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setSetFile(e.target.files?.[0] || null)}
+              />
+              <p className="text-[10px] text-muted-foreground italic">* Jawaban atau bukti perbaikan dari mahasiswa</p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRecModalOpen(false)}>Batal</Button>
-            <Button 
+            <Button variant="outline" onClick={() => setRepairModalOpen(false)}>Batal</Button>
+            <Button
               onClick={() => {
                 if (selectedCpl) {
-                  createRecMutation.mutate({ 
-                    cplId: selectedCpl.id, 
-                    recommendation: recRecommendation, 
-                    description: recDescription 
-                  }, { onSuccess: () => setRecModalOpen(false) });
+                  repairMutation.mutate(
+                    { 
+                      cplId: selectedCpl.cplId, 
+                      payload: {
+                        newScore,
+                        oldScore: selectedCpl.score ?? 0,
+                        recommendation: recFile,
+                        settlement: setFile
+                      }
+                    },
+                    { onSuccess: () => setRepairModalOpen(false) },
+                  );
                 }
               }}
-              disabled={createRecMutation.isPending}
+              disabled={repairMutation.isPending || !recFile || !setFile}
             >
-              Simpan
+              {repairMutation.isPending && <Spinner className="mr-2 h-4 w-4" />}
+              Simpan Perbaikan
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* View Detail Modal */}
+      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detail Perbaikan CPL</DialogTitle>
+            <DialogDescription>{selectedCpl?.code} - {selectedCpl?.description}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="text-center flex-1 border-r">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Skor Lama</p>
+                <p className="text-lg font-bold text-red-600">{selectedCpl?.oldScore ?? '-'}</p>
+              </div>
+              <div className="text-center flex-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Skor Baru</p>
+                <p className="text-lg font-bold text-emerald-600">{selectedCpl?.score ?? '-'}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Dokumen Pendukung</p>
+              {selectedCpl?.recommendationDocument && (
+                <div className="flex items-center justify-between p-3 border rounded-lg group hover:border-primary transition-colors">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium">Rekomendasi</p>
+                      <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">{selectedCpl.recommendationDocument.fileName}</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost" size="icon"
+                    onClick={() => openProtectedFile(selectedCpl.recommendationDocument!.filePath, selectedCpl.recommendationDocument!.fileName)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              {selectedCpl?.settlementDocument && (
+                <div className="flex items-center justify-between p-3 border rounded-lg group hover:border-primary transition-colors">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    <div>
+                      <p className="text-sm font-medium">Penyelesaian</p>
+                      <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">{selectedCpl.settlementDocument.fileName}</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost" size="icon"
+                    onClick={() => openProtectedFile(selectedCpl.settlementDocument!.filePath, selectedCpl.settlementDocument!.fileName)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t">
+              <p className="text-[10px] text-muted-foreground">Tervalidasi oleh:</p>
+              <p className="text-sm font-medium">{selectedCpl?.verifiedBy ?? '-'}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{selectedCpl?.verifiedAt ? formatDateId(selectedCpl.verifiedAt) : '-'}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setViewModalOpen(false)}>Tutup</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Verify Confirmation Dialog */}
+      <AlertDialog open={!!verifyConfirmId} onOpenChange={(open) => !open && setVerifyConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Validasi Nilai CPL?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini akan memvalidasi nilai CPL mahasiswa ini. Pastikan nilai sudah sesuai.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (verifyConfirmId) {
+                  verifyMutation.mutate(verifyConfirmId, {
+                    onSuccess: () => setVerifyConfirmId(null)
+                  });
+                }
+              }}
+              disabled={verifyMutation.isPending}
+            >
+              {verifyMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
+              Validasi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
-import { Input } from '@/components/ui/input';

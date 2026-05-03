@@ -5,8 +5,7 @@ import {
   validateYudisiumDocument,
   getParticipantCplScores,
   verifyCplScore,
-  createCplRecommendation,
-  updateCplRecommendationStatus,
+  repairCplScore,
   downloadDraftSk,
   uploadSkResmi,
 } from '@/services/yudisium/yudisium-participant.service';
@@ -81,28 +80,18 @@ export function useVerifyCplScore(yudisiumId: string, participantId: string) {
   });
 }
 
-export function useCreateCplRecommendation(yudisiumId: string, participantId: string) {
+export function useRepairCplScore(yudisiumId: string, participantId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { cplId: string; recommendation: string; description: string }) =>
-      createCplRecommendation(yudisiumId, participantId, payload),
+    mutationFn: ({
+      cplId,
+      payload,
+    }: {
+      cplId: string;
+      payload: { newScore: number; oldScore: number; recommendation: File | null; settlement: File | null };
+    }) => repairCplScore(yudisiumId, participantId, cplId, payload),
     onSuccess: () => {
-      toast.success('Rekomendasi CPL berhasil dibuat');
-      void queryClient.invalidateQueries({ queryKey: participantKeys.cplScores(participantId) });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
-  });
-}
-
-export function useUpdateCplRecommendationStatus(yudisiumId: string, participantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ recommendationId, action }: { recommendationId: string; action: 'resolve' | 'unresolve' }) =>
-      updateCplRecommendationStatus(recommendationId, action),
-    onSuccess: (_data, variables) => {
-      toast.success(variables.action === 'resolve' ? 'Rekomendasi diselesaikan' : 'Rekomendasi dibatalkan');
+      toast.success('Perbaikan CPL berhasil disimpan');
       void queryClient.invalidateQueries({ queryKey: participantKeys.cplScores(participantId) });
     },
     onError: (err: Error) => {
