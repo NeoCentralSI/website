@@ -9,6 +9,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loading } from '@/components/ui/spinner';
 import {
@@ -380,7 +381,15 @@ export default function ExitSurveyFormPage() {
              onClick={() => setActivePanel('responses')}
            >
               <MessageSquare className="h-4 w-4" />
-              Respons
+              <span>Respons</span>
+              <Badge 
+                className={cn(
+                  "ml-1 px-1.5 py-0 min-w-[20px] h-5 justify-center text-[10px] font-bold border-none",
+                  activePanel === 'responses' ? "bg-white text-primary" : "bg-primary text-white"
+                )}
+              >
+                {form.usedCount || 0}
+              </Badge>
            </Button>
         </div>
       </div>
