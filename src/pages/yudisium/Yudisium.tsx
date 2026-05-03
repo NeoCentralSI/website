@@ -6,40 +6,43 @@ import { useRole } from '@/hooks/shared/useRole';
 
 import { YudisiumPanel } from '@/components/yudisium/YudisiumPanel';
 import { YudisiumRequirementPanel } from '@/components/yudisium/YudisiumRequirementPanel';
-import { YudisiumExitSurveyPanel } from '@/components/yudisium/YudisiumExitSurveyPanel';
+import { ExitSurveyPanel } from '@/components/yudisium/ExitSurveyPanel';
 
 export default function Yudisium() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isKoordinatorYudisium, isAdmin, isSekdep } = useRole();
+  const { isKoordinatorYudisium, isAdmin, isDosen } = useRole();
 
-  const activeTab = searchParams.get('tab') || 'event';
+  const activeTab = searchParams.get('tab') || 'acara';
 
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true });
   };
 
-  const isManagementAllowed = isAdmin() || isSekdep() || isKoordinatorYudisium();
+  const canManageEvent = isAdmin() || isDosen();
+  const canManageGlobal = isKoordinatorYudisium();
 
   const tabs = useMemo(() => {
-    const t = [{ label: 'Event Yudisium', value: 'event' }];
-    
-    if (isManagementAllowed) {
-      t.push({ label: 'Persyaratan Global', value: 'persyaratan' });
-      t.push({ label: 'Exit Survey', value: 'exit-survey' });
+    const t = [];
+    if (canManageEvent) t.push({ label: 'Kelola Yudisium', value: 'acara' });
+    if (canManageGlobal) {
+      t.push({ label: 'Kelola Persyaratan', value: 'persyaratan' });
+      t.push({ label: 'Kelola Exit Survey', value: 'exit-survey' });
     }
-    
     return t;
-  }, [isManagementAllowed]);
+  }, [canManageEvent, canManageGlobal]);
 
   const breadcrumbs = useMemo(() => {
     const b = [{ label: 'Yudisium' }];
-    const currentTab = tabs.find(t => t.value === activeTab);
-    if (currentTab && activeTab !== 'event') {
-      b.push({ label: currentTab.label });
+    
+    if (isKoordinatorYudisium()) {
+      if (activeTab === 'acara') b.push({ label: 'Kelola Acara' });
+      else if (activeTab === 'persyaratan') b.push({ label: 'Kelola Persyaratan' });
+      else if (activeTab === 'exit-survey') b.push({ label: 'Kelola Exit Survey' });
     }
+    
     return b;
-  }, [activeTab, tabs]);
+  }, [activeTab, isKoordinatorYudisium]);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
@@ -50,7 +53,11 @@ export default function Yudisium() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Yudisium</h1>
-        <p className="text-muted-foreground">Kelola data yudisium</p>
+        <p className="text-muted-foreground">
+          {isKoordinatorYudisium() 
+            ? "Kelola acara yudisium, persyaratan yudisium, dan exit survey" 
+            : "Kelola data yudisium"}
+        </p>
       </div>
 
       {tabs.length > 1 && (
@@ -58,9 +65,9 @@ export default function Yudisium() {
       )}
 
       <div className="space-y-6">
-        {activeTab === 'event' && <YudisiumPanel />}
-        {activeTab === 'persyaratan' && isManagementAllowed && <YudisiumRequirementPanel />}
-        {activeTab === 'exit-survey' && isManagementAllowed && <YudisiumExitSurveyPanel />}
+        {activeTab === 'acara' && canManageEvent && <YudisiumPanel />}
+        {activeTab === 'persyaratan' && canManageGlobal && <YudisiumRequirementPanel />}
+        {activeTab === 'exit-survey' && canManageGlobal && <ExitSurveyPanel />}
       </div>
     </div>
   );

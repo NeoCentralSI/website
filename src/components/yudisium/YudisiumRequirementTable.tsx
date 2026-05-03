@@ -39,7 +39,6 @@ interface YudisiumRequirementTableProps {
 }
 
 export function YudisiumRequirementTable({
-    data,
     isLoading,
     isFetching,
     onRefresh,
@@ -52,6 +51,7 @@ export function YudisiumRequirementTable({
     isMoving,
     isToggling,
     isDeleting,
+    data = [],
 }: YudisiumRequirementTableProps) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');

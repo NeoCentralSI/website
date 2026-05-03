@@ -15,7 +15,7 @@ import {
   createExitSurveyQuestion,
   updateExitSurveyQuestion,
   deleteExitSurveyQuestion,
-} from '@/services/yudisium/exit-survey.service';
+} from '@/services/yudisium/yudisium-exit-survey.service';
 import type { ExitSurveyForm, ExitSurveyQuestion } from '@/types/exit-survey.types';
 import type {
   CreateExitSurveyFormPayload,
@@ -31,7 +31,7 @@ const FORMS_QUERY_KEY = ['exit-survey', 'forms'] as const;
 const FORM_DETAIL_QUERY_KEY = (id: string) => ['exit-survey', 'form', id] as const;
 const QUESTIONS_QUERY_KEY = (formId: string) => ['exit-survey', 'questions', formId] as const;
 
-export function ExitSurveyManagementPanel() {
+export function ExitSurveyPanel() {
   const queryClient = useQueryClient();
   const [selectedForm, setSelectedForm] = useState<ExitSurveyForm | null>(null);
   const [formDialogOpen, setFormDialogOpen] = useState(false);

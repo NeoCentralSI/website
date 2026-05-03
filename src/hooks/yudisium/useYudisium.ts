@@ -45,11 +45,11 @@ export function useCreateYudisiumEvent() {
   });
 }
 
-export function useUpdateYudisiumEvent(id: string) {
+export function useUpdateYudisiumEvent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: UpdateYudisiumPayload) => updateYudisiumEvent(id, payload),
-    onSuccess: () => {
+    mutationFn: ({ id, data }: { id: string; data: UpdateYudisiumPayload }) => updateYudisiumEvent(id, data),
+    onSuccess: (_, { id }) => {
       toast.success('Data yudisium berhasil diperbarui');
       void queryClient.invalidateQueries({ queryKey: yudisiumKeys.all });
       void queryClient.invalidateQueries({ queryKey: yudisiumKeys.detail(id) });

@@ -36,7 +36,6 @@ interface ExitSurveyFormTableProps {
 }
 
 export function ExitSurveyFormTable({
-  data,
   isLoading,
   isFetching,
   onToggle,
@@ -49,6 +48,7 @@ export function ExitSurveyFormTable({
   isToggling,
   isDeleting,
   isDuplicating,
+  data = [],
 }: ExitSurveyFormTableProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<ExitSurveyForm | null>(null);

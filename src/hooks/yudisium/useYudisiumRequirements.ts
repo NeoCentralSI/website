@@ -18,23 +18,14 @@ export const requirementKeys = {
 };
 
 export function useYudisiumRequirements() {
-  return useQuery({
+  const queryClient = useQueryClient();
+  
+  const query = useQuery({
     queryKey: requirementKeys.lists(),
     queryFn: getYudisiumRequirements,
   });
-}
 
-export function useYudisiumRequirementDetail(id: string) {
-  return useQuery({
-    queryKey: requirementKeys.detail(id),
-    queryFn: () => getYudisiumRequirementById(id),
-    enabled: !!id,
-  });
-}
-
-export function useCreateYudisiumRequirement() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  const createMutation = useMutation({
     mutationFn: createYudisiumRequirement,
     onSuccess: () => {
       toast.success('Persyaratan berhasil ditambahkan');
@@ -42,24 +33,18 @@ export function useCreateYudisiumRequirement() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
-}
 
-export function useUpdateYudisiumRequirement(id: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: any) => updateYudisiumRequirement(id, payload),
-    onSuccess: () => {
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => updateYudisiumRequirement(id, payload),
+    onSuccess: (_, { id }) => {
       toast.success('Persyaratan berhasil diperbarui');
       void queryClient.invalidateQueries({ queryKey: requirementKeys.all });
       void queryClient.invalidateQueries({ queryKey: requirementKeys.detail(id) });
     },
     onError: (err: Error) => toast.error(err.message),
   });
-}
 
-export function useToggleYudisiumRequirement() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  const toggleMutation = useMutation({
     mutationFn: (id: string) => toggleYudisiumRequirement(id),
     onSuccess: () => {
       toast.success('Status persyaratan berhasil diubah');
@@ -67,11 +52,8 @@ export function useToggleYudisiumRequirement() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
-}
 
-export function useDeleteYudisiumRequirement() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteYudisiumRequirement(id),
     onSuccess: () => {
       toast.success('Persyaratan berhasil dihapus');
@@ -79,11 +61,8 @@ export function useDeleteYudisiumRequirement() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
-}
 
-export function useMoveRequirementToTop() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  const moveTopMutation = useMutation({
     mutationFn: (id: string) => moveYudisiumRequirementToTop(id),
     onSuccess: () => {
       toast.success('Berhasil memindahkan persyaratan ke urutan teratas');
@@ -91,11 +70,8 @@ export function useMoveRequirementToTop() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
-}
 
-export function useMoveRequirementToBottom() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  const moveBottomMutation = useMutation({
     mutationFn: (id: string) => moveYudisiumRequirementToBottom(id),
     onSuccess: () => {
       toast.success('Berhasil memindahkan persyaratan ke urutan terbawah');
@@ -103,4 +79,22 @@ export function useMoveRequirementToBottom() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  return {
+    requirements: query.data ?? [],
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    refetch: query.refetch,
+    create: createMutation.mutateAsync,
+    update: (id: string, payload: any) => updateMutation.mutateAsync({ id, payload }),
+    toggle: toggleMutation.mutate,
+    remove: deleteMutation.mutate,
+    moveTop: moveTopMutation.mutate,
+    moveBottom: moveBottomMutation.mutate,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isToggling: toggleMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+    isMoving: moveTopMutation.isPending || moveBottomMutation.isPending,
+  };
 }

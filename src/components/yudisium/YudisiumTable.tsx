@@ -42,7 +42,6 @@ interface YudisiumTableProps {
 }
 
 export function YudisiumTable({
-    data,
     isLoading,
     isFetching,
     onDelete,
@@ -52,6 +51,7 @@ export function YudisiumTable({
     isDeleting,
     canManage,
     canViewDetail = true,
+    data = [],
 }: YudisiumTableProps) {
     const navigate = useNavigate();
     const [deleteId, setDeleteId] = useState<string | null>(null);
