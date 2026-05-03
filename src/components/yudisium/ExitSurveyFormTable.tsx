@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Pencil, Power, Trash2, Plus, Copy, List } from 'lucide-react';
+import { Pencil, Trash2, Plus, Copy, Settings, Calendar, HelpCircle } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { Switch } from '@/components/ui/switch';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import type { UpdateExitSurveyFormPayload } from '@/types/exit-survey.types';
 import { ExitSurveyFormDialog } from './ExitSurveyFormDialog';
@@ -23,14 +24,13 @@ interface ExitSurveyFormTableProps {
   data: ExitSurveyForm[];
   isLoading: boolean;
   isFetching: boolean;
-  onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, data: UpdateExitSurveyFormPayload) => Promise<unknown>;
   onDuplicate: (id: string) => void;
   onManageQuestions: (form: ExitSurveyForm) => void;
   onCreate: () => void;
   onRefresh: () => void;
-  isToggling: boolean;
+  isUpdating: boolean;
   isDeleting: boolean;
   isDuplicating: boolean;
 }
@@ -38,14 +38,13 @@ interface ExitSurveyFormTableProps {
 export function ExitSurveyFormTable({
   isLoading,
   isFetching,
-  onToggle,
   onDelete,
   onUpdate,
   onDuplicate,
   onManageQuestions,
   onCreate,
   onRefresh,
-  isToggling,
+  isUpdating,
   isDeleting,
   isDuplicating,
   data = [],
@@ -53,7 +52,6 @@ export function ExitSurveyFormTable({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<ExitSurveyForm | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -66,20 +64,14 @@ export function ExitSurveyFormTable({
 
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
-    
+
     return data.filter((item) => {
-      const matchedSearch = !term || (
+      return !term || (
         item.name.toLowerCase().includes(term) ||
         (item.description ?? '').toLowerCase().includes(term)
       );
-
-      const matchedStatus = statusFilter === '' || (
-        statusFilter === 'active' ? item.isActive : !item.isActive
-      );
-
-      return matchedSearch && matchedStatus;
     });
-  }, [data, search, statusFilter]);
+  }, [data, search]);
 
   const paginatedData = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -102,63 +94,67 @@ export function ExitSurveyFormTable({
       {
         key: 'name',
         header: 'Nama',
+        width: 220,
+        className: 'whitespace-normal',
         render: (item) => <span className="font-medium">{item.name}</span>,
       },
       {
         key: 'description',
         header: 'Deskripsi',
-        className: 'max-w-md whitespace-normal',
+        className: 'whitespace-normal min-w-[300px]',
         render: (item) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm">
             {item.description ?? '-'}
           </span>
         ),
       },
       {
-        key: 'totalQuestions',
-        header: 'Total Pertanyaan',
-        width: 120,
+        key: 'usedCount',
+        header: 'Terpakai',
+        width: 100,
         className: 'text-center',
         render: (item) => (
-          <span className="text-sm">
-            {item.totalQuestions ?? item.questions?.length ?? 0}
-          </span>
+          <div className="flex justify-center">
+            <Badge variant="outline" className="flex items-center gap-1 font-normal">
+              <Calendar className="h-3 w-3" />
+              <span className="font-bold">{item.usedCount}</span>
+            </Badge>
+          </div>
         ),
       },
       {
-        key: 'status',
-        header: 'Status',
-        width: 90,
-        filter: {
-          type: 'select',
-          value: statusFilter,
-          onChange: (value: string) => {
-            setStatusFilter(value);
-            setPage(1);
-          },
-          options: [
-            { label: 'Aktif', value: 'active' },
-            { label: 'Arsip', value: 'inactive' },
-            { label: 'Semua', value: '' },
-          ],
-        },
+        key: 'totalQuestions',
+        header: 'Pertanyaan',
+        width: 110,
+        className: 'text-center',
         render: (item) => (
-          <Badge
-            variant={item.isActive ? 'default' : 'secondary'}
-            className={
-              item.isActive
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : 'bg-gray-100 text-gray-500 border-gray-200'
-            }
-          >
-            {item.isActive ? 'Aktif' : 'Arsip'}
-          </Badge>
+          <div className="flex justify-center">
+            <Badge variant="outline" className="flex items-center gap-1 font-normal">
+              <HelpCircle className="h-3 w-3" />
+              <span className="font-bold">{item.totalQuestions}</span>
+            </Badge>
+          </div>
+        ),
+      },
+      {
+        key: 'isActive',
+        header: 'Aktif',
+        width: 80,
+        className: 'text-center',
+        render: (item) => (
+          <div className="flex justify-center">
+            <Switch
+              checked={item.isActive}
+              onCheckedChange={() => onUpdate(item.id, { isActive: !item.isActive })}
+              disabled={isUpdating}
+            />
+          </div>
         ),
       },
       {
         key: 'actions',
         header: 'Aksi',
-        width: 240,
+        width: 180,
         className: 'text-right',
         render: (item) => (
           <div className="flex items-center justify-end gap-1 flex-wrap">
@@ -169,16 +165,7 @@ export function ExitSurveyFormTable({
               onClick={() => onManageQuestions(item)}
               title="Kelola pertanyaan"
             >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-primary"
-              onClick={() => setEditItem(item)}
-              title="Edit"
-            >
-              <Pencil className="h-4 w-4" />
+              <Settings className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
@@ -193,24 +180,22 @@ export function ExitSurveyFormTable({
             <Button
               variant="ghost"
               size="icon"
-              className={`h-8 w-8 ${
-                item.isActive
-                  ? 'text-muted-foreground hover:text-amber-600'
-                  : 'text-muted-foreground hover:text-emerald-600'
-              }`}
-              onClick={() => onToggle(item.id)}
-              disabled={isToggling}
-              title={item.isActive ? 'Arsipkan' : 'Aktifkan'}
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={() => setEditItem(item)}
+              title="Edit"
             >
-              <Power className="h-4 w-4" />
+              <Pencil className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+              className={`h-8 w-8 ${item.usedCount > 0
+                  ? 'text-red-300 cursor-not-allowed'
+                  : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                }`}
               onClick={() => setDeleteId(item.id)}
-              disabled={isDeleting}
-              title="Hapus"
+              disabled={isDeleting || item.usedCount > 0}
+              title={item.usedCount > 0 ? 'Tidak dapat dihapus karena sudah digunakan oleh acara yudisium' : 'Hapus'}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -218,7 +203,7 @@ export function ExitSurveyFormTable({
         ),
       },
     ],
-    [page, pageSize, onToggle, onManageQuestions, onDuplicate, isToggling, isDeleting, isDuplicating]
+    [page, pageSize, onManageQuestions, onDuplicate, onUpdate, isUpdating, isDeleting, isDuplicating]
   );
 
   return (
@@ -251,7 +236,7 @@ export function ExitSurveyFormTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Form Exit Survey</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus form ini? Form yang sudah digunakan oleh acara yudisium tidak dapat dihapus.
+              Apakah Anda yakin ingin menghapus form ini? Lanjutkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -107,9 +107,9 @@ export function YudisiumRequirementTable({
             className: 'text-center',
             render: (item) => (
                 <div className="flex justify-center">
-                    <Badge variant="secondary" className="flex items-center gap-1 font-normal bg-gray-50 text-muted-foreground border-gray-200">
+                    <Badge variant="outline" className="flex items-center gap-1 font-normal">
                         <FileText className="h-3 w-3" />
-                        <span>{item.relationCount}</span>
+                        <span className="font-bold">{item.relationCount}</span>
                     </Badge>
                 </div>
             ),

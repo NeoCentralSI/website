@@ -23,8 +23,8 @@ export interface ExitSurveyForm {
   name: string;
   description: string | null;
   isActive: boolean;
-  totalQuestions?: number;
-  questions?: ExitSurveyQuestion[];
+  totalQuestions: number;
+  usedCount: number;
   createdAt: string;
   updatedAt: string;
 }

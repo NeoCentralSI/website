@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import type { CreateExitSurveyFormPayload, UpdateExitSurveyFormPayload } from '@/types/exit-survey.types';
 
@@ -19,8 +20,8 @@ interface ExitSurveyFormDialogProps {
   onOpenChange: (open: boolean) => void;
   editData?: ExitSurveyForm | null;
   onSubmit:
-    | ((data: CreateExitSurveyFormPayload) => Promise<unknown>)
-    | ((id: string, data: UpdateExitSurveyFormPayload) => Promise<unknown>);
+  | ((data: CreateExitSurveyFormPayload) => Promise<unknown>)
+  | ((id: string, data: UpdateExitSurveyFormPayload) => Promise<unknown>);
 }
 
 export function ExitSurveyFormDialog({
@@ -31,6 +32,7 @@ export function ExitSurveyFormDialog({
 }: ExitSurveyFormDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [isActive, setIsActive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEdit = !!editData;
@@ -39,9 +41,11 @@ export function ExitSurveyFormDialog({
     if (editData) {
       setName(editData.name);
       setDescription(editData.description ?? '');
+      setIsActive(editData.isActive);
     } else {
       setName('');
       setDescription('');
+      setIsActive(true);
     }
   }, [editData, open]);
 
@@ -49,7 +53,11 @@ export function ExitSurveyFormDialog({
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const payload = { name: name.trim(), description: description.trim() || null };
+      const payload = {
+        name: name.trim(),
+        description: description.trim() || null,
+        isActive,
+      };
       if (isEdit && editData) {
         await (onSubmit as (id: string, data: UpdateExitSurveyFormPayload) => Promise<unknown>)(
           editData.id,
@@ -88,7 +96,7 @@ export function ExitSurveyFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="exit-survey-form-desc">Deskripsi (opsional)</Label>
+            <Label htmlFor="exit-survey-form-desc">Deskripsi</Label>
             <Textarea
               id="exit-survey-form-desc"
               placeholder="Deskripsi form..."
@@ -97,6 +105,23 @@ export function ExitSurveyFormDialog({
               rows={3}
             />
           </div>
+
+          <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+            <Switch
+              id="exit-survey-is-active"
+              checked={isActive}
+              onCheckedChange={setIsActive}
+            />
+            <div className="space-y-1 leading-none">
+              <Label htmlFor="exit-survey-is-active" className="cursor-pointer">
+                Aktif
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Form exit survey yang tidak aktif akan terkategorikan sebagai arsip dan tidak akan muncul sebagai pilihan ketika membuat periode yudisium
+              </p>
+            </div>
+          </div>
+
           <DialogFooter>
             <Button
               type="button"
