@@ -33,6 +33,11 @@ export const getExitSurveyFormById = async (id: string): Promise<ExitSurveyForm>
   return handleResponse(response, 'Gagal mengambil detail form');
 };
 
+export const getExitSurveyFormResponses = async (id: string): Promise<any[]> => {
+  const response = await apiRequest(getApiUrl(E.RESPONSES(id)));
+  return handleResponse(response, 'Gagal mengambil respons form');
+};
+
 export const createExitSurveyForm = async (
   payload: CreateExitSurveyFormPayload
 ): Promise<ExitSurveyForm> => {

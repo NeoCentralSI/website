@@ -388,7 +388,7 @@ export default function ExitSurveyFormPage() {
                   activePanel === 'responses' ? "bg-white text-primary" : "bg-primary text-white"
                 )}
               >
-                {form.usedCount || 0}
+                {form.totalResponses || 0}
               </Badge>
            </Button>
         </div>

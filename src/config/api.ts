@@ -70,6 +70,7 @@ export const API_CONFIG = {
       BY_ID: (id: string) => `/exit-surveys/${id}`,
       TOGGLE: (id: string) => `/exit-surveys/${id}/toggle`,
       DUPLICATE: (id: string) => `/exit-surveys/${id}/duplicate`,
+      RESPONSES: (id: string) => `/exit-surveys/${id}/responses`,
       QUESTIONS: (formId: string) => `/exit-surveys/${formId}/questions`,
       QUESTION_BY_ID: (formId: string, questionId: string) => `/exit-surveys/${formId}/questions/${questionId}`,
     },
