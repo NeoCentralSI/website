@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import {
 	Dialog,
 	DialogContent,
@@ -9,7 +9,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
 	Select,
 	SelectContent,
@@ -18,18 +20,36 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
+import { FileUp, X } from 'lucide-react';
 import { getExitSurveyForms } from '@/services/yudisium/yudisium-exit-survey.service';
+import { getYudisiumRequirements } from '@/services/yudisium/yudisium-requirement.service';
 import { toast } from 'sonner';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
+import type { YudisiumRequirement } from '@/services/yudisium/yudisium-requirement.service';
 import type {
 	CreateYudisiumPayload,
 	UpdateYudisiumPayload,
 	YudisiumEvent,
 } from '@/services/yudisium/yudisium.service';
+import { apiRequest } from '@/services/auth.service';
+import { API_CONFIG, getApiUrl } from '@/config/api';
 
-/** Calendar day in local timezone as YYYY-MM-DD (avoids UTC shift from toISOString()). */
+interface Room {
+	id: string;
+	name: string;
+}
+
+interface YudisiumFormDialogProps {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	editData?: YudisiumEvent | null;
+	onSubmit:
+		| ((payload: CreateYudisiumPayload) => Promise<unknown>)
+		| ((id: string, payload: UpdateYudisiumPayload) => Promise<unknown>);
+}
+
+/** Calendar day in local timezone as YYYY-MM-DD */
 function toDateOnlyLocalString(d: Date): string {
 	const y = d.getFullYear();
 	const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -46,23 +66,15 @@ function parseDateOnlyLocal(ymd: string): Date | undefined {
 	return new Date(y, m - 1, d, 12, 0, 0, 0);
 }
 
-interface YudisiumFormDialogProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	editData?: YudisiumEvent | null;
-	onSubmit:
-		| ((payload: CreateYudisiumPayload) => Promise<unknown>)
-		| ((id: string, payload: UpdateYudisiumPayload) => Promise<unknown>);
-}
-
 function formatDateForInput(dateStr: string | null | undefined): string {
-    if (!dateStr) return '';
-    return dateStr.split('T')[0];
+	if (!dateStr) return '';
+	return dateStr.split('T')[0];
 }
 
+/** Convert date-only YYYY-MM-DD to ISO (midnight UTC) */
 function dateInputToISO(value: string): string {
-    if (!value) return '';
-    return new Date(value + 'T00:00:00.000Z').toISOString();
+	if (!value) return '';
+	return new Date(value + 'T00:00:00.000Z').toISOString();
 }
 
 export function YudisiumFormDialog({
@@ -72,72 +84,84 @@ export function YudisiumFormDialog({
 	onSubmit,
 }: YudisiumFormDialogProps) {
 	const [name, setName] = useState('');
+	const [eventDate, setEventDate] = useState<Date | null>(null);
 	const [registrationOpenDate, setRegistrationOpenDate] = useState('');
 	const [registrationCloseDate, setRegistrationCloseDate] = useState('');
+	const [notes, setNotes] = useState('');
 	const [exitSurveyFormId, setExitSurveyFormId] = useState<string>('none');
+	const [roomId, setRoomId] = useState<string>('none');
+	const [selectedRequirementIds, setSelectedRequirementIds] = useState<string[]>([]);
+	const [decreeFile, setDecreeFile] = useState<File | null>(null);
+
 	const [forms, setForms] = useState<ExitSurveyForm[]>([]);
-	const [isLoadingForms, setIsLoadingForms] = useState(false);
+	const [rooms, setRooms] = useState<Room[]>([]);
+	const [requirements, setRequirements] = useState<YudisiumRequirement[]>([]);
+	const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
 	const isEdit = !!editData;
-	const derivedStatus = editData?.status ?? 'draft'; // derived display status from API
-	const hasParticipants = (editData?.participantCount ?? 0) > 0;
-	const hasResponse = (editData?.responseCount ?? 0) > 0;
 
-	// === Field lock rules ===
-	// scheduled / completed / ongoing: only name
-	const isFullyLocked = isEdit && (derivedStatus === 'scheduled' || derivedStatus === 'completed' || derivedStatus === 'ongoing');
-	
-	// open / closed (with participants): open date and survey are locked
-	// Basically, once it's no longer in the "draft" time-window, we lock the start date and survey
-	const isPostDraft = isEdit && derivedStatus !== 'draft';
-	
-	const openDateLocked  = isFullyLocked || isPostDraft;
-	const surveyLocked    = isFullyLocked || isPostDraft || hasResponse;
-
+	// Load rooms, forms, requirements on open
 	useEffect(() => {
 		let isMounted = true;
+		if (!open) return;
 
-		const loadForms = async () => {
-			setIsLoadingForms(true);
+		const load = async () => {
+			setIsLoadingOptions(true);
 			try {
-				const result = await getExitSurveyForms();
+				const roomsUrl = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.OPTIONS_ROOMS);
+				const [formsRes, reqsRes, roomsRes] = await Promise.all([
+					getExitSurveyForms(),
+					getYudisiumRequirements(),
+					apiRequest(roomsUrl).then((r) => r.json()),
+				]);
 				if (isMounted) {
-					setForms(result.filter((form) => form.isActive));
+					setForms(formsRes.filter((f) => f.isActive));
+					setRequirements(reqsRes.filter((r) => r.isActive));
+					// Ensure roomsRes.data is an array. Some endpoints might return it directly.
+					const roomsData = Array.isArray(roomsRes) ? roomsRes : (roomsRes.data ?? []);
+					setRooms(roomsData);
 				}
-			} catch {
-				if (isMounted) {
-					setForms([]);
-				}
+			} catch (err) {
+				console.error('Failed to load yudisium form options:', err);
+				toast.error('Gagal memuat beberapa pilihan data');
 			} finally {
-				if (isMounted) {
-					setIsLoadingForms(false);
-				}
+				if (isMounted) setIsLoadingOptions(false);
 			}
 		};
 
-		if (open) {
-			loadForms();
-		}
-
-		return () => {
-			isMounted = false;
-		};
+		load();
+		return () => { isMounted = false; };
 	}, [open]);
 
+	// Populate form when editing
 	useEffect(() => {
 		if (editData) {
 			setName(editData.name ?? '');
+			setEventDate(editData.eventDate ? new Date(editData.eventDate) : null);
 			setRegistrationOpenDate(formatDateForInput(editData.registrationOpenDate));
 			setRegistrationCloseDate(formatDateForInput(editData.registrationCloseDate));
+			setNotes(editData.notes ?? '');
 			setExitSurveyFormId(editData.exitSurveyForm?.id ?? 'none');
+			setRoomId(editData.room?.id ?? 'none');
+			setSelectedRequirementIds(editData.requirementItems?.map((ri) => ri.requirement.id) ?? []);
+			setDecreeFile(null);
 		} else {
 			setName('');
+			setEventDate(null);
 			setRegistrationOpenDate('');
 			setRegistrationCloseDate('');
+			setNotes('');
 			setExitSurveyFormId('none');
+			setRoomId('none');
+			setSelectedRequirementIds([]);
+			setDecreeFile(null);
 		}
 	}, [editData, open]);
+
+	const hasRegParticipants = !!editData?.hasRegisteredParticipants;
 
 	const today = useMemo(() => {
 		const d = new Date();
@@ -145,87 +169,92 @@ export function YudisiumFormDialog({
 		return d;
 	}, []);
 
-	const openDateObj  = registrationOpenDate  ? parseDateOnlyLocal(registrationOpenDate)  : null;
+	const openDateObj = registrationOpenDate ? parseDateOnlyLocal(registrationOpenDate) : null;
 	const closeDateObj = registrationCloseDate ? parseDateOnlyLocal(registrationCloseDate) : null;
 
-	// Validate open date: can't be before today (only matters when field is editable)
-	const openDateError = !openDateLocked && openDateObj && openDateObj < today
-		? 'Tanggal pembukaan pendaftaran tidak boleh sebelum hari ini'
+	const hasRegDates = !!(registrationOpenDate || registrationCloseDate);
+
+	// Validation errors
+	const openDateError =
+		openDateObj && openDateObj < today
+			? 'Tanggal pembukaan pendaftaran tidak boleh sebelum hari ini'
+			: null;
+
+	const closeDateError = closeDateObj
+		? closeDateObj < today
+			? 'Tanggal penutupan pendaftaran tidak boleh sebelum hari ini'
+			: openDateObj && closeDateObj < openDateObj
+			? 'Tanggal penutupan tidak boleh lebih awal dari tanggal pembukaan'
+			: null
 		: null;
 
-	// Validate close date: can't be before today (if editable), and can't be before open date
-	const closeDateBeforeToday = !isFullyLocked && closeDateObj && closeDateObj < today
-		? 'Tanggal penutupan pendaftaran tidak boleh sebelum hari ini'
-		: null;
-	const closeDateBeforeOpen  = openDateObj && closeDateObj && closeDateObj < openDateObj
-		? 'Tanggal penutupan tidak boleh lebih awal dari tanggal pembukaan'
-		: null;
-	const closeDateError = closeDateBeforeToday ?? closeDateBeforeOpen;
-	const dateRangeError = closeDateError; // alias for template
+	const eventDateError = eventDate && hasRegDates && closeDateObj && eventDate < closeDateObj
+			? 'Tanggal pelaksanaan tidak boleh sebelum tanggal penutupan pendaftaran'
+			: null;
 
 	const isValid =
 		name.trim().length > 0 &&
-		(isFullyLocked || (registrationOpenDate.length > 0 && registrationCloseDate.length > 0)) &&
+		eventDate !== null &&
 		!openDateError &&
-		!closeDateError;
+		!closeDateError &&
+		!eventDateError;
+
+	const toggleRequirement = (id: string) => {
+		setSelectedRequirementIds((prev) =>
+			prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+		);
+	};
+
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.files && e.target.files[0]) {
+			const file = e.target.files[0];
+			if (file.type !== 'application/pdf') {
+				toast.error('File harus berformat PDF');
+				return;
+			}
+			if (file.size > 5 * 1024 * 1024) {
+				toast.error('Ukuran file maksimal 5MB');
+				return;
+			}
+			setDecreeFile(file);
+		}
+	};
 
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
 		if (!isValid) {
-			if (openDateError || closeDateError) {
-				toast.error(openDateError || closeDateError);
-			} else if (name.trim().length === 0) {
-				toast.error('Nama yudisium wajib diisi');
-			}
+			const err = openDateError || closeDateError || eventDateError;
+			if (err) toast.error(err);
+			else toast.error('Harap lengkapi data yang wajib diisi');
 			return;
 		}
 
 		setIsSubmitting(true);
 		try {
+			const base: CreateYudisiumPayload = {
+				name: name.trim(),
+				eventDate: eventDate!.toISOString(),
+				registrationOpenDate: registrationOpenDate ? dateInputToISO(registrationOpenDate) : null,
+				registrationCloseDate: registrationCloseDate ? dateInputToISO(registrationCloseDate) : null,
+				notes: notes.trim() || null,
+				exitSurveyFormId: exitSurveyFormId === 'none' ? null : exitSurveyFormId,
+				roomId: roomId === 'none' ? null : roomId,
+				requirementIds: selectedRequirementIds,
+				decreeFile: decreeFile,
+			};
+
 			if (isEdit && editData) {
-				const updatePayload: UpdateYudisiumPayload = {
-					name: name.trim(),
-				};
-
-				// Only include fields that are NOT locked and have CHANGED
-				if (!isFullyLocked) {
-					const isoClose = dateInputToISO(registrationCloseDate);
-					if (isoClose !== editData.registrationCloseDate) {
-						updatePayload.registrationCloseDate = isoClose;
-					}
-					
-					if (!openDateLocked) {
-						const isoOpen = dateInputToISO(registrationOpenDate);
-						if (isoOpen !== editData.registrationOpenDate) {
-							updatePayload.registrationOpenDate = isoOpen;
-						}
-					}
-
-					if (!surveyLocked) {
-						const nextSurveyId = exitSurveyFormId === 'none' ? null : exitSurveyFormId;
-						if (nextSurveyId !== (editData.exitSurveyForm?.id ?? null)) {
-							updatePayload.exitSurveyFormId = nextSurveyId;
-						}
-					}
-				}
-
 				await (onSubmit as (id: string, p: UpdateYudisiumPayload) => Promise<unknown>)(
 					editData.id,
-					updatePayload,
+					base,
 				);
 			} else {
-				const createPayload: CreateYudisiumPayload = {
-					name: name.trim(),
-					registrationOpenDate: dateInputToISO(registrationOpenDate),
-					registrationCloseDate: dateInputToISO(registrationCloseDate),
-					exitSurveyFormId: exitSurveyFormId === 'none' ? null : exitSurveyFormId,
-				};
-				await (onSubmit as (p: CreateYudisiumPayload) => Promise<unknown>)(createPayload);
+				await (onSubmit as (p: CreateYudisiumPayload) => Promise<unknown>)(base);
 			}
 
 			onOpenChange(false);
-		} catch {
-			// error handled in hook toast
+		} catch (err: any) {
+			toast.error(err.message || 'Terjadi kesalahan saat menyimpan data');
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -233,32 +262,21 @@ export function YudisiumFormDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
+			<DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>
 						{isEdit ? 'Edit Data Yudisium' : 'Tambah Data Yudisium'}
 					</DialogTitle>
 				</DialogHeader>
-				<form onSubmit={handleSubmit} className="space-y-4">
-					{isEdit && (isFullyLocked || isPostDraft || hasResponse) && (
-						<Alert variant="warning" className="bg-amber-50/50 border-amber-200/50">
-							<Info className="h-4 w-4 text-amber-600" />
-							<AlertDescription className="text-amber-700 text-xs leading-relaxed">
-								{isFullyLocked ? (
-									'Data yudisium ini sudah dijadwalkan atau selesai. Hanya nama yang dapat diubah.'
-								) : (isPostDraft && hasParticipants) ? (
-									'Pendaftaran sudah berjalan/berakhir. Hanya nama dan tanggal penutupan yang dapat diubah.'
-								) : hasResponse ? (
-									'Sudah ada mahasiswa yang mengisi exit survey. Template tidak dapat diubah.'
-								) : 'Beberapa kolom dikunci karena status pendaftaran sudah melewati masa persiapan.'}
-							</AlertDescription>
-						</Alert>
-					)}
+				<form onSubmit={handleSubmit} className="space-y-5">
 
+					{/* Name */}
 					<div className="space-y-2">
-						<Label htmlFor="name">Nama Yudisium</Label>
+						<Label htmlFor="yud-name">
+							Nama Yudisium <span className="text-red-500">*</span>
+						</Label>
 						<Input
-							id="name"
+							id="yud-name"
 							placeholder="Contoh: Yudisium Periode 1 2026"
 							value={name}
 							onChange={(e) => setName(e.target.value)}
@@ -266,36 +284,78 @@ export function YudisiumFormDialog({
 						/>
 					</div>
 
+					{/* Event Date + Time */}
+					<div className="space-y-2">
+						<Label htmlFor="yud-eventDate">
+							Tanggal & Waktu Pelaksanaan <span className="text-red-500">*</span>
+						</Label>
+						<DateTimePicker
+							value={eventDate}
+							onChange={setEventDate}
+							placeholder="Pilih tanggal & waktu pelaksanaan"
+						/>
+						{eventDateError && (
+							<p className="text-xs text-red-500">{eventDateError}</p>
+						)}
+					</div>
+
+					{/* Registration dates */}
 					<div className="grid grid-cols-2 gap-4">
 						<div className="space-y-2">
-							<Label htmlFor="registrationOpenDate">Pembukaan Pendaftaran</Label>
+							<Label>Pembukaan Pendaftaran</Label>
 							<DatePicker
 								value={parseDateOnlyLocal(registrationOpenDate)}
 								onChange={(date) => setRegistrationOpenDate(date ? toDateOnlyLocalString(date) : '')}
-								showPastDates={isEdit}
-								disabled={openDateLocked}
+								showPastDates={false}
+								disabled={hasRegParticipants}
 							/>
+							{openDateError && (
+								<p className="text-xs text-red-500">{openDateError}</p>
+							)}
+							{hasRegParticipants && (
+								<p className="text-[10px] text-amber-600 font-medium">Sudah ada peserta terdaftar</p>
+							)}
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="registrationCloseDate">Penutupan Pendaftaran</Label>
+							<Label>Penutupan Pendaftaran</Label>
 							<DatePicker
 								value={parseDateOnlyLocal(registrationCloseDate)}
 								onChange={(date) => setRegistrationCloseDate(date ? toDateOnlyLocalString(date) : '')}
 								showPastDates={true}
-								disabled={isFullyLocked}
 							/>
+							{closeDateError && (
+								<p className="text-xs text-red-500">{closeDateError}</p>
+							)}
 						</div>
 					</div>
 
+					{/* Room */}
+					<div className="space-y-2">
+						<Label>Ruangan</Label>
+						<Select value={roomId} onValueChange={setRoomId} disabled={isLoadingOptions}>
+							<SelectTrigger id="yud-room">
+								<SelectValue placeholder="Pilih ruangan" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="none">Tidak ada / Belum ditentukan</SelectItem>
+								{rooms.map((room) => (
+									<SelectItem key={room.id} value={room.id}>
+										{room.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
 
+					{/* Exit Survey Form */}
 					<div className="space-y-2">
 						<Label>Template Exit Survey</Label>
 						<Select
 							value={exitSurveyFormId}
 							onValueChange={setExitSurveyFormId}
-							disabled={isLoadingForms || surveyLocked}
+							disabled={isLoadingOptions || hasRegParticipants}
 						>
-							<SelectTrigger>
+							<SelectTrigger id="yud-survey">
 								<SelectValue placeholder="Pilih template exit survey" />
 							</SelectTrigger>
 							<SelectContent>
@@ -307,8 +367,99 @@ export function YudisiumFormDialog({
 								))}
 							</SelectContent>
 						</Select>
+						{hasRegParticipants && (
+							<p className="text-[10px] text-amber-600 font-medium">Sudah ada peserta terdaftar</p>
+						)}
 					</div>
 
+					{/* Requirements */}
+					<div className="space-y-2">
+						<Label>Persyaratan Yudisium</Label>
+						{isLoadingOptions ? (
+							<p className="text-xs text-muted-foreground">Memuat persyaratan...</p>
+						) : requirements.length === 0 ? (
+							<p className="text-xs text-muted-foreground">Belum ada persyaratan yang tersedia.</p>
+						) : (
+							<div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+								{requirements.map((req) => (
+									<label
+										key={req.id}
+										className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/40 transition-colors"
+									>
+										<Checkbox
+											id={`req-${req.id}`}
+											checked={selectedRequirementIds.includes(req.id)}
+											onCheckedChange={() => toggleRequirement(req.id)}
+											className="mt-0.5"
+											disabled={hasRegParticipants}
+										/>
+										<div className="space-y-0.5">
+											<p className="text-sm font-medium leading-none">{req.name}</p>
+											{req.description && (
+												<p className="text-xs text-muted-foreground">{req.description}</p>
+											)}
+										</div>
+									</label>
+								))}
+							</div>
+						)}
+						{hasRegParticipants && (
+							<p className="text-[10px] text-amber-600 font-medium">Sudah ada peserta terdaftar</p>
+						)}
+						{selectedRequirementIds.length > 0 && (
+							<p className="text-xs text-muted-foreground">
+								{selectedRequirementIds.length} persyaratan dipilih
+							</p>
+						)}
+					</div>
+
+					{/* Upload SK (Decree) */}
+					<div className="space-y-2">
+						<Label>Unggah SK Yudisium</Label>
+						<div className="flex items-center gap-2">
+							<Input
+								type="file"
+								accept=".pdf"
+								className="hidden"
+								ref={fileInputRef}
+								onChange={handleFileChange}
+							/>
+							<Button
+								type="button"
+								variant="outline"
+								className="w-full justify-start text-muted-foreground font-normal"
+								onClick={() => fileInputRef.current?.click()}
+							>
+								<FileUp className="mr-2 h-4 w-4" />
+								{decreeFile ? decreeFile.name : 'Pilih file SK (PDF, max 5MB)'}
+							</Button>
+							{decreeFile && (
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									onClick={() => setDecreeFile(null)}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							)}
+						</div>
+						<p className="text-[10px] text-muted-foreground">
+							Mengunggah SK akan memfinalisasi status pendaftaran dan nilai CPL seluruh peserta.
+						</p>
+					</div>
+
+					{/* Notes */}
+					<div className="space-y-2">
+						<Label htmlFor="yud-notes">Catatan</Label>
+						<Textarea
+							id="yud-notes"
+							value={notes}
+							onChange={(e) => setNotes(e.target.value)}
+							placeholder="Catatan tambahan (opsional)"
+							rows={3}
+						/>
+					</div>
 
 					<DialogFooter>
 						<Button
@@ -319,7 +470,7 @@ export function YudisiumFormDialog({
 						>
 							Batal
 						</Button>
-						<Button type="submit" disabled={isSubmitting}>
+						<Button type="submit" disabled={isSubmitting || !isValid}>
 							{isSubmitting ? (
 								<>
 									<Spinner className="mr-2 h-4 w-4" />

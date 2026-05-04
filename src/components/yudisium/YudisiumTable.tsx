@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { formatDateOnlyId } from '@/lib/text';
+import { formatDateOnlyId, formatDateTimeId } from '@/lib/text';
 import type { YudisiumEvent, UpdateYudisiumPayload } from '@/services/yudisium/yudisium.service';
 import { YudisiumFormDialog } from '@/components/yudisium/YudisiumFormDialog';
 
@@ -110,23 +110,39 @@ export function YudisiumTable({
                 ),
             },
             {
-                key: 'registrationOpenDate',
-                header: 'Pembukaan Pendaftaran',
+                key: 'eventDate',
+                header: 'Tanggal',
                 render: (item) => (
-                    <span className="text-sm">{formatDateOnlyId(item.registrationOpenDate)}</span>
+                    <span className="text-sm">{formatDateTimeId(item.eventDate)}</span>
                 ),
             },
             {
-                key: 'registrationCloseDate',
-                header: 'Penutupan Pendaftaran',
+                key: 'room',
+                header: 'Ruangan',
                 render: (item) => (
-                    <span className="text-sm">{formatDateOnlyId(item.registrationCloseDate)}</span>
+                    <span className="text-sm">{item.room?.name || '-'}</span>
+                ),
+            },
+            {
+                key: 'registrationRange',
+                header: 'Rentang Pendaftaran',
+                render: (item) => (
+                    <div className="text-xs space-y-0.5">
+                        <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground w-10">Buka:</span>
+                            <span>{formatDateOnlyId(item.registrationOpenDate)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground w-10">Tutup:</span>
+                            <span>{formatDateOnlyId(item.registrationCloseDate)}</span>
+                        </div>
+                    </div>
                 ),
             },
             {
                 key: 'participantCount',
                 header: 'Peserta',
-                width: 110,
+                width: 90,
                 render: (item) => (
                     item.participantCount > 0
                         ? (
@@ -141,7 +157,7 @@ export function YudisiumTable({
             {
                 key: 'status',
                 header: 'Status',
-                width: 160,
+                width: 150,
                 filter: {
                     type: 'select',
                     value: statusFilter,

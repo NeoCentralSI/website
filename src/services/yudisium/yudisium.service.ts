@@ -1,7 +1,18 @@
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from '../auth.service';
 
-export type YudisiumStatus = 'draft' | 'open' | 'closed' | 'in_review' | 'finalized';
+export type YudisiumStatus = 'draft' | 'open' | 'closed' | 'ongoing' | 'completed';
+
+export interface YudisiumRequirementItem {
+  id: string;
+  order: number;
+  requirement: {
+    id: string;
+    name: string;
+    description: string | null;
+    isPublic: boolean;
+  };
+}
 
 export interface YudisiumEvent {
   id: string;
@@ -13,8 +24,10 @@ export interface YudisiumEvent {
   status: YudisiumStatus;
   exitSurveyForm: { id: string; name: string } | null;
   room: { id: string; name: string } | null;
+  requirementItems: YudisiumRequirementItem[];
   participantCount: number;
   responseCount: number;
+  hasRegisteredParticipants: boolean;
   canDelete: boolean;
   createdAt: string;
   updatedAt: string;
@@ -22,15 +35,17 @@ export interface YudisiumEvent {
 
 export interface CreateYudisiumPayload {
   name: string;
-  registrationOpenDate: string;
-  registrationCloseDate: string;
-  eventDate?: string | null;
+  eventDate: string;
+  registrationOpenDate?: string | null;
+  registrationCloseDate?: string | null;
   notes?: string | null;
   exitSurveyFormId?: string | null;
   roomId?: string | null;
+  requirementIds?: string[];
+  decreeFile?: File | null;
 }
 
-export type UpdateYudisiumPayload = CreateYudisiumPayload;
+export type UpdateYudisiumPayload = Partial<CreateYudisiumPayload>;
 
 const E = API_CONFIG.ENDPOINTS.YUDISIUM;
 
@@ -57,10 +72,28 @@ export const getYudisiumEventById = async (id: string): Promise<YudisiumEvent> =
   return result.data;
 };
 
+const createFormData = (payload: CreateYudisiumPayload | UpdateYudisiumPayload) => {
+  const formData = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === undefined) return;
+    if (key === 'requirementIds' && Array.isArray(value)) {
+      formData.append(key, value.join(','));
+    } else if (key === 'decreeFile' && value instanceof File) {
+      formData.append('file', value);
+    } else if (value === null) {
+      formData.append(key, '');
+    } else {
+      formData.append(key, value as string);
+    }
+  });
+  return formData;
+};
+
 export const createYudisiumEvent = async (payload: CreateYudisiumPayload): Promise<YudisiumEvent> => {
+  const formData = createFormData(payload);
   const response = await apiRequest(getApiUrl(E.BASE), {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: formData,
   });
   if (!response.ok) {
     await parseError(response, 'Gagal menambah data yudisium');
@@ -73,9 +106,10 @@ export const updateYudisiumEvent = async (
   id: string,
   payload: UpdateYudisiumPayload,
 ): Promise<YudisiumEvent> => {
+  const formData = createFormData(payload);
   const response = await apiRequest(getApiUrl(E.BY_ID(id)), {
     method: 'PATCH',
-    body: JSON.stringify(payload),
+    body: formData,
   });
   if (!response.ok) {
     await parseError(response, 'Gagal mengubah data yudisium');

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pencil, Plus, Trash2, FileText } from 'lucide-react';
+import { Pencil, Plus, Trash2, FileText, Users } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -95,15 +95,29 @@ export function YudisiumRequirementTable({
             render: (item) => <span className="text-sm">{item.description || '-'}</span>,
         },
         {
-            key: 'relationCount',
-            header: 'Terkait',
+            key: 'eventCount',
+            header: 'Yudisium',
             width: 100,
             className: 'text-center',
             render: (item) => (
                 <div className="flex justify-center">
-                    <Badge variant="outline" className="flex items-center gap-1 font-normal">
+                    <Badge variant="outline" className="flex items-center gap-1 font-normal border-gray-200 bg-white text-gray-900">
                         <FileText className="h-3 w-3" />
-                        <span className="font-bold">{item.relationCount}</span>
+                        <span className="font-bold">{item.eventCount}</span>
+                    </Badge>
+                </div>
+            ),
+        },
+        {
+            key: 'studentCount',
+            header: 'Mahasiswa',
+            width: 100,
+            className: 'text-center',
+            render: (item) => (
+                <div className="flex justify-center">
+                    <Badge variant="outline" className="flex items-center gap-1 font-normal border-gray-200 bg-white text-gray-900">
+                        <Users className="h-3 w-3" />
+                        <span className="font-bold">{item.studentCount}</span>
                     </Badge>
                 </div>
             ),
@@ -160,13 +174,17 @@ export function YudisiumRequirementTable({
                         variant="ghost"
                         size="icon"
                         className={`h-8 w-8 ${
-                            item.relationCount > 0
+                            item.eventCount > 0 || item.studentCount > 0
                                 ? 'text-red-300 cursor-not-allowed'
                                 : 'text-red-600 hover:text-red-700 hover:bg-red-50'
                         }`}
                         onClick={() => setDeleteId(item.id)}
-                        disabled={isDeleting || item.relationCount > 0}
-                        title={item.relationCount > 0 ? 'Tidak dapat dihapus karena sudah memiliki data terkait' : 'Hapus'}
+                        disabled={isDeleting || item.eventCount > 0 || item.studentCount > 0}
+                        title={
+                            item.eventCount > 0 || item.studentCount > 0
+                                ? 'Tidak dapat dihapus karena sudah memiliki data terkait (Yudisium/Mahasiswa)'
+                                : 'Hapus'
+                        }
                     >
                         <Trash2 className="h-4 w-4" />
                     </Button>

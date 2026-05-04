@@ -7,7 +7,8 @@ export interface YudisiumRequirement {
     description: string | null;
     isActive: boolean;
     isPublic: boolean;
-    relationCount: number;
+    eventCount: number;
+    studentCount: number;
     createdAt: string;
     updatedAt: string;
 }
