@@ -102,9 +102,9 @@ export async function repairCplScore(
   return json.data;
 }
 
-export async function downloadDraftSk(yudisiumId: string): Promise<Blob> {
-  const res = await apiRequest(getApiUrl(EP.DRAFT_SK(yudisiumId)));
-  if (!res.ok) throw new Error('Gagal mengunduh draft SK');
+export async function exportParticipants(yudisiumId: string): Promise<Blob> {
+  const res = await apiRequest(getApiUrl(EP.EXPORT_PARTICIPANTS(yudisiumId)));
+  if (!res.ok) throw new Error('Gagal mengunduh data peserta yudisium');
   return res.blob();
 }
 

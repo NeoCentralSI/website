@@ -105,7 +105,7 @@ export const API_CONFIG = {
         `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/repair`,
 
       // SK (Decree)
-      DRAFT_SK: (yudisiumId: string) => `/yudisiums/${yudisiumId}/draft-sk`,
+      EXPORT_PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/export-participants`,
       UPLOAD_SK: (yudisiumId: string) => `/yudisiums/${yudisiumId}/sk`,
     },
     NOTIFICATION: {

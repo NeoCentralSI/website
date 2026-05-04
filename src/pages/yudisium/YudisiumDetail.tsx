@@ -26,7 +26,7 @@ import { YudisiumValidationFormDialog } from '@/components/yudisium/YudisiumVali
 import { useRole, useAuth } from '@/hooks/shared';
 import { useYudisiumEvent } from '@/hooks/yudisium/useYudisium';
 import { useYudisiumParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
-import { useDownloadDraftSk, useUploadSkResmi } from '@/hooks/yudisium/useYudisiumParticipants';
+import { useExportParticipants, useUploadSkResmi } from '@/hooks/yudisium/useYudisiumParticipants';
 
 import { ROLES } from '@/lib/roles';
 import { formatDateOnlyId } from '@/lib/text';
@@ -96,12 +96,13 @@ export default function YudisiumDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isAdmin, isKadep, isSekdep, isKoordinatorYudisium, hasAnyRole } = useRole();
+  const { isAdmin, isKadep, isSekdep, isKoordinatorYudisium, isDosen } = useRole();
+  const { user } = useAuth();
 
   // Queries & Mutations
   const { data: detail, isLoading: isLoadingDetail, refetch: refetchDetail } = useYudisiumEvent(id!);
   const { data: participantData, isLoading: isLoadingParticipants, isFetching: isFetchingParticipants, refetch: refetchParticipants } = useYudisiumParticipants(id!);
-  const draftSkMutation = useDownloadDraftSk();
+  const exportParticipantsMutation = useExportParticipants();
   const uploadSkMutation = useUploadSkResmi(id!);
 
   // SK Modal State
@@ -118,8 +119,11 @@ export default function YudisiumDetailPage() {
   const [pageSize, setPageSize] = useState(10);
   const [selectedParticipant, setSelectedParticipant] = useState<AdminYudisiumParticipant | null>(null);
 
-  const { user } = useAuth();
-  const canManageSkActions = user?.roles?.some(r => r.name === ROLES.KOORDINATOR_YUDISIUM && r.status === 'active') ?? false;
+  const canManageSkActions = useMemo(() => {
+    const isKoordinator = user?.roles?.some(r => r.name === ROLES.KOORDINATOR_YUDISIUM && r.status === 'active') ?? false;
+    const isClosedOrBeyond = detail?.status && !['draft', 'open'].includes(detail.status);
+    return isKoordinator && !!isClosedOrBeyond;
+  }, [user, detail?.status]);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -309,21 +313,7 @@ export default function YudisiumDetailPage() {
                     }}
                   >
                     <Upload className="mr-2 h-4 w-4" />
-                    Upload SK Resmi
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9"
-                    onClick={() => draftSkMutation.mutate(detail.id)}
-                    disabled={draftSkMutation.isPending}
-                  >
-                    {draftSkMutation.isPending ? (
-                      <Spinner className="mr-2 h-4 w-4" />
-                    ) : (
-                      <FileDown className="mr-2 h-4 w-4" />
-                    )}
-                    Generate Draft SK
+                    Jadwalkan Yudisium
                   </Button>
                 </div>
               )}
@@ -354,10 +344,28 @@ export default function YudisiumDetailPage() {
             }}
             emptyText="Belum ada peserta yudisium"
             actions={
-              <RefreshButton
-                onClick={() => void refetchParticipants()}
-                isRefreshing={isFetchingParticipants && !isLoadingParticipants}
-              />
+              <div className="flex items-center gap-2">
+                {(isAdmin() || isDosen()) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => exportParticipantsMutation.mutate(detail.id)}
+                    disabled={exportParticipantsMutation.isPending}
+                  >
+                    {exportParticipantsMutation.isPending ? (
+                      <Spinner className="mr-2 h-4 w-4" />
+                    ) : (
+                      <FileDown className="mr-2 h-4 w-4" />
+                    )}
+                    Export Peserta
+                  </Button>
+                )}
+                <RefreshButton
+                  onClick={() => void refetchParticipants()}
+                  isRefreshing={isFetchingParticipants && !isLoadingParticipants}
+                />
+              </div>
             }
           />
         </div>
@@ -367,7 +375,7 @@ export default function YudisiumDetailPage() {
       <Dialog open={skModalOpen} onOpenChange={setSkModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upload SK Resmi</DialogTitle>
+            <DialogTitle>Jadwalkan Yudisium</DialogTitle>
             <DialogDescription>
               Unggah file SK resmi beserta informasi terkait pelaksanaan yudisium.
             </DialogDescription>
@@ -428,7 +436,7 @@ export default function YudisiumDetailPage() {
                   Mengunggah...
                 </>
               ) : (
-                'Upload SK'
+                'Jadwalkan Yudisium'
               )}
             </Button>
           </DialogFooter>

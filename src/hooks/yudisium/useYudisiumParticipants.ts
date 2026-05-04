@@ -6,7 +6,7 @@ import {
   getParticipantCplScores,
   verifyCplScore,
   repairCplScore,
-  downloadDraftSk,
+  exportParticipants,
   uploadSkResmi,
 } from '@/services/yudisium/yudisium-participant.service';
 import { toast } from 'sonner';
@@ -100,19 +100,19 @@ export function useRepairCplScore(yudisiumId: string, participantId: string) {
   });
 }
 
-export function useDownloadDraftSk() {
+export function useExportParticipants() {
   return useMutation({
-    mutationFn: (yudisiumId: string) => downloadDraftSk(yudisiumId),
+    mutationFn: (yudisiumId: string) => exportParticipants(yudisiumId),
     onSuccess: (blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'draft-sk-yudisium.pdf';
+      a.download = 'data-peserta-yudisium.pdf';
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success('Draft SK berhasil diunduh');
+      toast.success('Data peserta yudisium berhasil diunduh');
     },
     onError: (err: Error) => {
       toast.error(err.message);
