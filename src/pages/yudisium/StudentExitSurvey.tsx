@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import {
@@ -20,6 +21,7 @@ import { Loading } from '@/components/ui/spinner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { useStudentExitSurvey, useSubmitStudentExitSurvey } from '@/hooks/yudisium/useYudisiumExitSurvey';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -67,8 +69,6 @@ const mapInitialAnswersFromResponse = (
   return result;
 };
 
-// ─── Question Card ───────────────────────────────────────────────────────────
-
 function QuestionCard({ 
   question, 
   globalIndex, 
@@ -82,6 +82,12 @@ function QuestionCard({
   onUpdate: (val: any) => void;
   disabled?: boolean;
 }) {
+  const parseLocalDate = (dateStr: string) => {
+    if (!dateStr) return undefined;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   return (
     <div className="bg-white rounded-xl border border-border/60 shadow-sm p-6 space-y-4">
       <div className="space-y-1">
@@ -119,18 +125,14 @@ function QuestionCard({
         )}
 
         {question.questionType === 'date' && (
-          <div className="relative inline-flex items-center gap-2 border border-border/50 rounded-lg bg-muted/20 w-full overflow-hidden">
-             <div className="pl-3 py-2">
-               <CalendarIcon className="h-4 w-4 text-muted-foreground/50" />
-             </div>
-             <Input
-                type="date"
-                value={answer.answerText ?? ''}
-                onChange={(e) => onUpdate({ answerText: e.target.value })}
-                disabled={disabled}
-                className="border-0 bg-transparent text-sm h-10 focus-visible:ring-0"
-             />
-          </div>
+          <DatePicker
+            value={parseLocalDate(answer.answerText)}
+            onChange={(date) => onUpdate({ answerText: date ? format(date, 'yyyy-MM-dd') : '' })}
+            disabled={disabled}
+            showPastDates={true}
+            className="w-full"
+            placeholder="Pilih tanggal"
+          />
         )}
 
         {question.questionType === 'single_choice' && (
@@ -348,14 +350,32 @@ export default function StudentExitSurvey() {
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground">{data.form.name}</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto w-full space-y-0">
+      <div className="max-w-2xl mx-auto w-full space-y-4">
+        {/* Form Header Card - Only shown on first step */}
+        {currentStep === 0 && (
+          <div className="bg-white rounded-2xl border-t-[10px] border-t-primary border-x border-b border-border/60 shadow-sm overflow-hidden">
+            <div className="p-7 space-y-3">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                {data.form.name}
+              </h1>
+              {data.form.description && (
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {data.form.description}
+                </p>
+              )}
+              <div className="pt-2 flex items-center gap-2 text-[10px] font-bold text-destructive uppercase tracking-wider">
+                <span>* Wajib diisi</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Progress bar */}
-        <div className="space-y-2 mb-8">
+        <div className="space-y-2 py-4">
           <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
             <span>Bagian {currentStep + 1} dari {totalSteps}</span>
             <span>{Math.round(progress)}% selesai</span>

@@ -119,7 +119,7 @@ export function YudisiumFormDialog({
 				]);
 				if (isMounted) {
 					setForms(formsRes.filter((f) => f.isActive));
-					setRequirements(reqsRes.filter((r) => r.isActive));
+					setRequirements(reqsRes);
 					// Ensure roomsRes.data is an array. Some endpoints might return it directly.
 					const roomsData = Array.isArray(roomsRes) ? roomsRes : (roomsRes.data ?? []);
 					setRooms(roomsData);
@@ -162,6 +162,12 @@ export function YudisiumFormDialog({
 	}, [editData, open]);
 
 	const hasRegParticipants = !!editData?.hasRegisteredParticipants;
+	const isRegistrationStarted = useMemo(() => {
+		if (!editData?.registrationOpenDate) return false;
+		return new Date(editData.registrationOpenDate) <= new Date();
+	}, [editData]);
+
+	const isLocked = isRegistrationStarted || hasRegParticipants;
 
 	const today = useMemo(() => {
 		const d = new Date();
@@ -307,7 +313,7 @@ export function YudisiumFormDialog({
 								value={parseDateOnlyLocal(registrationOpenDate)}
 								onChange={(date) => setRegistrationOpenDate(date ? toDateOnlyLocalString(date) : '')}
 								showPastDates={false}
-								disabled={hasRegParticipants}
+								disabled={isLocked}
 							/>
 							{openDateError && (
 								<p className="text-xs text-red-500">{openDateError}</p>
@@ -353,7 +359,7 @@ export function YudisiumFormDialog({
 						<Select
 							value={exitSurveyFormId}
 							onValueChange={setExitSurveyFormId}
-							disabled={isLoadingOptions || hasRegParticipants}
+							disabled={isLoadingOptions || isLocked}
 						>
 							<SelectTrigger id="yud-survey">
 								<SelectValue placeholder="Pilih template exit survey" />
@@ -367,8 +373,10 @@ export function YudisiumFormDialog({
 								))}
 							</SelectContent>
 						</Select>
-						{hasRegParticipants && (
-							<p className="text-[10px] text-amber-600 font-medium">Sudah ada peserta terdaftar</p>
+						{isLocked && (
+							<p className="text-[10px] text-amber-600 font-medium">
+								{isRegistrationStarted ? 'Pendaftaran sedang dibuka' : 'Sudah ada peserta terdaftar'}
+							</p>
 						)}
 					</div>
 
@@ -381,7 +389,9 @@ export function YudisiumFormDialog({
 							<p className="text-xs text-muted-foreground">Belum ada persyaratan yang tersedia.</p>
 						) : (
 							<div className="border rounded-md divide-y max-h-48 overflow-y-auto">
-								{requirements.map((req) => (
+								{requirements
+									.filter(req => req.isActive || selectedRequirementIds.includes(req.id))
+									.map((req) => (
 									<label
 										key={req.id}
 										className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/40 transition-colors"
@@ -391,7 +401,7 @@ export function YudisiumFormDialog({
 											checked={selectedRequirementIds.includes(req.id)}
 											onCheckedChange={() => toggleRequirement(req.id)}
 											className="mt-0.5"
-											disabled={hasRegParticipants}
+											disabled={isLocked}
 										/>
 										<div className="space-y-0.5">
 											<p className="text-sm font-medium leading-none">{req.name}</p>
@@ -403,8 +413,10 @@ export function YudisiumFormDialog({
 								))}
 							</div>
 						)}
-						{hasRegParticipants && (
-							<p className="text-[10px] text-amber-600 font-medium">Sudah ada peserta terdaftar</p>
+						{isLocked && (
+							<p className="text-[10px] text-amber-600 font-medium">
+								{isRegistrationStarted ? 'Pendaftaran sedang dibuka' : 'Sudah ada peserta terdaftar'}
+							</p>
 						)}
 						{selectedRequirementIds.length > 0 && (
 							<p className="text-xs text-muted-foreground">

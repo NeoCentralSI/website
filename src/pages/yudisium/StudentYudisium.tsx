@@ -67,8 +67,8 @@ const STEPS = [
   { key: 'checklist', label: 'Checklist Persyaratan' },
   { key: 'documents', label: 'Dokumen Yudisium Lengkap' },
   { key: 'cpl', label: 'Nilai CPL Tervalidasi' },
-  { key: 'schedule', label: 'Penetapan Jadwal Yudisium' },
-  { key: 'yudisium', label: 'Pelaksanaan Yudisium' },
+  { key: 'appointed', label: 'Ditetapkan sebagai Peserta Yudisium' },
+  { key: 'finalized', label: 'Yudisium Selesai' },
 ] as const;
 
 const STATUS_BADGE_MAP: Record<YudisiumDisplayStatus, { label: string; className: string }> = {
@@ -117,21 +117,15 @@ function deriveDisplayStatus(
 }
 
 function getActiveStepIndex(
-  displayStatus: YudisiumDisplayStatus,
   participantStatus: ParticipantStatus,
   allChecklistMet: boolean,
-  allDocumentsUploaded: boolean,
-  allCplVerified: boolean,
-  hasDecree: boolean,
 ): number {
-  // Only show as completed if the student was actually part of the yudisium (has a status)
-  if (participantStatus === 'finalized' || (displayStatus === 'completed' && participantStatus)) return 4;
-  if (!allChecklistMet) return -1;
-  const isPastDocumentValidation = ['verified', 'cpl_validated', 'appointed', 'finalized'].includes(participantStatus ?? '');
-  if (!allDocumentsUploaded && !isPastDocumentValidation) return 0;
-  if (!allCplVerified) return 1;
-  if (!hasDecree) return 2;
-  return 3;
+  if (participantStatus === 'finalized') return 4;
+  if (participantStatus === 'appointed') return 3;
+  if (participantStatus === 'cpl_validated') return 2;
+  if (participantStatus === 'verified') return 1;
+  if (allChecklistMet) return 0;
+  return -1;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -403,7 +397,7 @@ function ChecklistRow({
 
       {isExitSurvey && (
         <button
-          onClick={isYudisiumOpen ? onExitSurveyClick : undefined}
+          onClick={(isYudisiumOpen || met) ? onExitSurveyClick : undefined}
           disabled={!isYudisiumOpen && !met}
           className={cn(
             "shrink-0 px-[9px] py-[4px] text-[10px] font-semibold rounded-[5px] transition-all duration-200 border",
@@ -430,6 +424,7 @@ function StudentYudisiumChecklistCard({
   isYudisiumOpen: boolean;
   onExitSurveyClick: () => void;
 }) {
+  if (!checklist) return null;
   const items = checklistEntries(checklist);
   return (
     <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
@@ -589,8 +584,16 @@ function DocumentRow({
   );
 }
 
-function YudisiumRequirementCard({ allChecklistMet }: { allChecklistMet: boolean }) {
+function YudisiumRequirementCard({ 
+  allChecklistMet, 
+  participantStatus 
+}: { 
+  allChecklistMet: boolean;
+  participantStatus: ParticipantStatus;
+}) {
   const isLocked = !allChecklistMet;
+  const isBeyondVerification = ['verified', 'cpl_validated', 'appointed', 'finalized'].includes(participantStatus ?? '');
+  
   const { data: reqData } = useStudentYudisiumRequirements();
   const uploadMutation = useUploadYudisiumDocument();
   const requirements = reqData?.requirements ?? [];
@@ -611,7 +614,7 @@ function YudisiumRequirementCard({ allChecklistMet }: { allChecklistMet: boolean
           <DocumentRow
             key={req.id}
             requirement={req}
-            isLocked={isLocked}
+            isLocked={isLocked || isBeyondVerification}
             isUploading={
               uploadMutation.isPending &&
               uploadMutation.variables?.requirementId === req.id
@@ -746,12 +749,8 @@ export default function StudentYudisium() {
   const hasDecree          = !!(data?.yudisium?.decreeDocument);
 
   const currentStep = getActiveStepIndex(
-    displayStatus ?? 'draft',
     (data?.participantStatus as ParticipantStatus) ?? null,
     data?.allChecklistMet ?? false,
-    allDocumentsUploaded,
-    data?.allCplVerified ?? false,
-    hasDecree,
   );
   const isFinalized = currentStep >= 4;
   const statusBadge = displayStatus ? STATUS_BADGE_MAP[displayStatus] : STATUS_BADGE_MAP.draft;
@@ -804,12 +803,14 @@ export default function StudentYudisium() {
           </button>
         </div>
       ) : (
-        <StudentYudisiumIdentityCard 
-          yudisium={data.yudisium} 
-          displayStatus={displayStatus!} 
-          statusBadge={statusBadge}
-          decreeDocument={data.yudisium.decreeDocument}
-        />
+        data?.yudisium && (
+          <StudentYudisiumIdentityCard 
+            yudisium={data.yudisium} 
+            displayStatus={displayStatus!} 
+            statusBadge={statusBadge}
+            decreeDocument={data.yudisium.decreeDocument}
+          />
+        )
       )}
 
       {/* Main Grid Layout */}
@@ -822,15 +823,20 @@ export default function StudentYudisium() {
         {/* Right Column Stack */}
         <div className="flex flex-col gap-[14px]">
           {/* Checklist Card */}
-          <StudentYudisiumChecklistCard 
-            checklist={data.checklist} 
-            isYudisiumOpen={isRegistrationOpen}
-            onExitSurveyClick={() => navigate('/yudisium/exit-survey')}
-          />
+          {data?.checklist && (
+            <StudentYudisiumChecklistCard 
+              checklist={data.checklist} 
+              isYudisiumOpen={isRegistrationOpen}
+              onExitSurveyClick={() => navigate('/yudisium/exit-survey')}
+            />
+          )}
 
           {/* Document Upload/Preview Card */}
           {isRegistrationOpen ? (
-            <YudisiumRequirementCard allChecklistMet={data?.allChecklistMet ?? false} />
+            <YudisiumRequirementCard 
+              allChecklistMet={data?.allChecklistMet ?? false} 
+              participantStatus={data?.participantStatus as ParticipantStatus}
+            />
           ) : (
             <RequirementsPreviewCard requirements={data?.requirements ?? []} />
           )}

@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { DatePicker } from '@/components/ui/date-picker';
 import type { ExitSurveyForm, ExitSurveySession } from '@/types/exit-survey.types';
 
 interface ExitSurveyFormPreviewPanelProps {
@@ -53,10 +54,12 @@ const QuestionPreview = ({ question, globalIndex }: { question: any; globalIndex
         )}
 
         {question.questionType === 'date' && (
-          <div className="relative inline-flex items-center gap-2 border border-border/50 rounded-lg px-3 py-2 bg-muted/20 w-auto">
-            <CalendarIcon className="h-4 w-4 text-muted-foreground/50" />
-            <span className="text-sm text-muted-foreground/50">gg/bb/tttt</span>
-          </div>
+          <DatePicker
+            disabled
+            showPastDates={true}
+            placeholder="gg/bb/tttt"
+            className="w-full sm:w-auto"
+          />
         )}
 
         {question.questionType === 'single_choice' && (
@@ -153,9 +156,28 @@ const ExitSurveyFormPreviewPanel = ({ form }: ExitSurveyFormPreviewPanelProps) =
   }
 
   return (
-    <div className="max-w-2xl mx-auto w-full space-y-0 select-none">
+    <div className="max-w-2xl mx-auto w-full space-y-4 select-none">
+      {/* Form Header Card - Only shown on first step */}
+      {currentStep === 0 && (
+        <div className="bg-white rounded-2xl border-t-[10px] border-t-primary border-x border-b border-border/60 shadow-sm overflow-hidden">
+          <div className="p-7 space-y-3">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              {form.name}
+            </h1>
+            {form.description && (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {form.description}
+              </p>
+            )}
+            <div className="pt-2 flex items-center gap-2 text-[10px] font-bold text-destructive uppercase tracking-wider">
+              <span>* Wajib diisi</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Progress bar + step indicator */}
-      <div className="space-y-2 mb-6">
+      <div className="space-y-2 py-4">
         <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
           <span>Bagian {currentStep + 1} dari {totalSteps}</span>
           <span>{Math.round(progress)}% selesai</span>
