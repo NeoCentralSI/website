@@ -11,7 +11,10 @@ import {
   ArrowLeft, FileText, CheckCircle,
   Undo2, Eye,
   Check, Plus, CheckCircle2,
+  Download, Printer
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   useYudisiumParticipantDetail,
   useParticipantCplScores,
@@ -74,6 +77,106 @@ export default function YudisiumParticipantDetail() {
   
   const [verifyConfirmId, setVerifyConfirmId] = useState<string | null>(null);
   const [cplSearch,       setCplSearch]       = useState('');
+
+  const handleDownloadCplReport = () => {
+    if (!cplData?.cplScores || cplData.cplScores.length === 0) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+
+    // Header
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('KEMENTERIAN PENDIDIKAN TINGGI, SAINS DAN TEKNOLOGI', pageWidth / 2, 15, { align: 'center' });
+    doc.text('UNIVERSITAS ANDALAS', pageWidth / 2, 20, { align: 'center' });
+    doc.text('FAKULTAS TEKNOLOGI INFORMASI', pageWidth / 2, 25, { align: 'center' });
+    doc.text('DEPARTEMEN SISTEM INFORMASI', pageWidth / 2, 30, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Kampus Universitas Andalas, Limau Manis, Padang, Kode Pos 25163', pageWidth / 2, 35, { align: 'center' });
+    doc.text('Email: jurusan_si@fti.unand.ac.id dan website: http://si.fti.unand.ac.id', pageWidth / 2, 40, { align: 'center' });
+    
+    doc.setLineWidth(0.5);
+    doc.line(margin, 43, pageWidth - margin, 43);
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FORMULIR PENILAIAN CAPAIAN PEMBELAJARAN LULUSAN (CPL)', pageWidth / 2, 52, { align: 'center' });
+
+    // A. Student Data
+    doc.setFontSize(10);
+    doc.text('A. DATA MAHASISWA', margin, 62);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Nama Lengkap', margin, 69);
+    doc.text(`: ${data?.studentName || '-'}`, margin + 40, 69);
+    doc.text('NIM', margin, 75);
+    doc.text(`: ${data?.studentNim || '-'}`, margin + 40, 75);
+
+    // B. CPL Assessment Table
+    doc.setFont('helvetica', 'bold');
+    doc.text('B. PENILAIAN CAPAIAN PEMBELAJARAN LULUSAN (CPL)', margin, 85);
+
+    const tableData = cplData.cplScores.map((sc) => [
+      sc.code,
+      sc.description,
+      sc.score ?? '-',
+      sc.passed ? 'Tercapai' : 'Tidak Tercapai'
+    ]);
+
+    autoTable(doc, {
+      startY: 92,
+      head: [['Kode CPL', 'Deskripsi CPL', 'Nilai', 'Status Capaian']],
+      body: tableData,
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+      headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 30, halign: 'center' },
+      }
+    });
+
+    // C. Conclusion
+    const finalY = (doc as any).lastAutoTable.finalY + 12;
+    doc.setFont('helvetica', 'bold');
+    doc.text('C. KESIMPULAN ASESMEN', margin, finalY);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const allPassed = cplData.cplScores.every(sc => sc.passed);
+    doc.rect(margin, finalY + 4, 3, 3);
+    if (allPassed) doc.text('x', margin + 0.8, finalY + 6.5);
+    doc.text('Seluruh CPL telah dicapai sesuai standar minimum kelulusan', margin + 6, finalY + 7);
+    
+    doc.rect(margin, finalY + 11, 3, 3);
+    if (!allPassed) doc.text('x', margin + 0.8, finalY + 13.5);
+    doc.text(`Ada CPL yang belum tercapai (sebutkan): ${allPassed ? '-' : '...' }`, margin + 6, finalY + 14);
+    
+    doc.rect(margin, finalY + 18, 3, 3);
+    doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
+
+    // D. Signature
+    const verifier = cplData.cplScores.find(sc => sc.verifiedBy);
+    const verifierName = verifier?.verifiedBy || '...';
+    const verifierNip = verifier?.verifiedByNip || '...';
+    const verifiedDate = verifier?.verifiedAt ? new Date(verifier.verifiedAt) : new Date();
+
+    const signY = finalY + 40;
+    doc.setFontSize(10);
+    doc.text(`Padang, ${formatDateId(verifiedDate)}`, pageWidth - margin - 65, signY);
+    doc.text('Koordinator Asesmen CPL', pageWidth - margin - 65, signY + 6);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text(verifierName, pageWidth - margin - 65, signY + 28);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`NIP: ${verifierNip}`, pageWidth - margin - 65, signY + 33);
+
+    doc.save(`Form_Penilaian_CPL_${data?.studentNim || 'Mhs'}.pdf`);
+  };
 
   const baseDetailPath = `/yudisium/${yudisiumId}`;
 
@@ -361,7 +464,20 @@ export default function YudisiumParticipantDetail() {
           onSearchChange={setCplSearch}
           emptyText="Tidak ada data CPL"
           actions={
-            <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !loadingCpl} />
+            <div className="flex items-center gap-2">
+              {['cpl_validated', 'appointed', 'finalized'].includes(data?.status || '') && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-semibold"
+                  onClick={handleDownloadCplReport}
+                >
+                  <Download className="h-4 w-4" />
+                  Download Hasil
+                </Button>
+              )}
+              <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !loadingCpl} />
+            </div>
           }
         />
       </div>

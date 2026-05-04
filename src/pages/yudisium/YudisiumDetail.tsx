@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileDown, Eye, CheckSquare } from 'lucide-react';
+import { ArrowLeft, Upload, FileDown, Eye, CheckSquare, FileText } from 'lucide-react';
+import { openProtectedFile } from '@/lib/protected-file';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
@@ -296,20 +297,33 @@ export default function YudisiumDetailPage() {
                 </Button>
               )}
               {(isAdmin() || isDosen()) && isFinalized && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9"
-                  onClick={() => exportParticipantsMutation.mutate(detail.id)}
-                  disabled={exportParticipantsMutation.isPending}
-                >
-                  {exportParticipantsMutation.isPending ? (
-                    <Spinner className="mr-2 h-4 w-4" />
-                  ) : (
-                    <FileDown className="mr-2 h-4 w-4" />
+                <div className="flex items-center gap-2">
+                  {detail.decreeDocument && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => openProtectedFile(detail.decreeDocument!.filePath)}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Lihat SK
+                    </Button>
                   )}
-                  Export Peserta
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => exportParticipantsMutation.mutate(detail.id)}
+                    disabled={exportParticipantsMutation.isPending}
+                  >
+                    {exportParticipantsMutation.isPending ? (
+                      <Spinner className="mr-2 h-4 w-4" />
+                    ) : (
+                      <FileDown className="mr-2 h-4 w-4" />
+                    )}
+                    Export Peserta
+                  </Button>
+                </div>
               )}
               <RefreshButton
                 onClick={() => void refetchParticipants()}
