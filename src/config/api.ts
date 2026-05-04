@@ -66,51 +66,50 @@ export const API_CONFIG = {
       WEIGHT_SUMMARY: (role: string) => `/defence-rubrics/weight-summary?role=${role}`,
     },
     EXIT_SURVEY: {
-      BASE: '/yudisiums/exit-survey',
-      BY_ID: (id: string) => `/yudisiums/exit-survey/${id}`,
-      TOGGLE: (id: string) => `/yudisiums/exit-survey/${id}/toggle`,
-      DUPLICATE: (id: string) => `/yudisiums/exit-survey/${id}/duplicate`,
-      QUESTIONS: (formId: string) => `/yudisiums/exit-survey/${formId}/questions`,
-      QUESTION_BY_ID: (formId: string, questionId: string) => `/yudisiums/exit-survey/${formId}/questions/${questionId}`,
+      BASE: '/exit-surveys',
+      BY_ID: (id: string) => `/exit-surveys/${id}`,
+      TOGGLE: (id: string) => `/exit-surveys/${id}/toggle`,
+      DUPLICATE: (id: string) => `/exit-surveys/${id}/duplicate`,
+      RESPONSES: (id: string) => `/exit-surveys/${id}/responses`,
+      QUESTIONS: (formId: string) => `/exit-surveys/${formId}/questions`,
+      QUESTION_BY_ID: (formId: string, questionId: string) => `/exit-surveys/${formId}/questions/${questionId}`,
     },
     YUDISIUM_REQUIREMENTS: {
-      BASE: '/yudisiums/yudisium-requirements',
-      BY_ID: (id: string) => `/yudisiums/yudisium-requirements/${id}`,
-      TOGGLE: (id: string) => `/yudisiums/yudisium-requirements/${id}/toggle`,
-      MOVE_TOP: (id: string) => `/yudisiums/yudisium-requirements/${id}/move-top`,
-      MOVE_BOTTOM: (id: string) => `/yudisiums/yudisium-requirements/${id}/move-bottom`,
+      BASE: '/yudisium-requirements',
+      BY_ID: (id: string) => `/yudisium-requirements/${id}`,
+      TOGGLE: (id: string) => `/yudisium-requirements/${id}/toggle`,
+      MOVE_TOP: (id: string) => `/yudisium-requirements/${id}/move-top`,
+      MOVE_BOTTOM: (id: string) => `/yudisium-requirements/${id}/move-bottom`,
     },
-    YUDISIUM_EVENT: {
-      BASE: '/yudisiums/event',
-      BY_ID: (id: string) => `/yudisiums/event/${id}`,
-    },
-    YUDISIUM_STUDENT: {
-      OVERVIEW: '/yudisiums/student/overview',
-      EXIT_SURVEY: '/yudisiums/student/exit-survey',
-      EXIT_SURVEY_SUBMIT: '/yudisiums/student/exit-survey/submit',
-      REQUIREMENTS: '/yudisiums/student/requirements',
-      REQUIREMENTS_UPLOAD: '/yudisiums/student/requirements/upload',
-    },
-    YUDISIUM_ADMIN: {
-      EVENTS: '/yudisiums/admin/events',
-      PARTICIPANTS: (yudisiumId: string) => `/yudisiums/admin/${yudisiumId}/participants`,
-      PARTICIPANT_DETAIL: (participantId: string) => `/yudisiums/admin/participants/${participantId}`,
-      VALIDATE_DOCUMENT: (participantId: string, requirementId: string) =>
-        `/yudisiums/admin/participants/${participantId}/requirements/${requirementId}/validate`,
-    },
-    YUDISIUM_LECTURER: {
-      EVENTS: '/yudisiums/lecturer/events',
-      PARTICIPANTS: (yudisiumId: string) => `/yudisiums/lecturer/${yudisiumId}/participants`,
-      PARTICIPANT_DETAIL: (participantId: string) => `/yudisiums/lecturer/participants/${participantId}`,
-      CPL_SCORES: (participantId: string) => `/yudisiums/lecturer/participants/${participantId}/cpl-scores`,
-      VERIFY_CPL: (participantId: string, cplId: string) =>
-        `/yudisiums/lecturer/participants/${participantId}/cpl/${cplId}/verify`,
-      CREATE_CPL_RECOMMENDATION: (participantId: string) =>
-        `/yudisiums/lecturer/participants/${participantId}/cpl-recommendation`,
-      UPDATE_CPL_RECOMMENDATION_STATUS: (recommendationId: string) =>
-        `/yudisiums/lecturer/cpl-recommendation/${recommendationId}/status`,
-      DRAFT_SK: (yudisiumId: string) => `/yudisiums/lecturer/${yudisiumId}/draft-sk`,
-      UPLOAD_SK: (yudisiumId: string) => `/yudisiums/lecturer/${yudisiumId}/upload-sk`,
+    YUDISIUM: {
+      BASE: '/yudisiums',
+      ANNOUNCEMENTS: '/yudisiums/announcements',
+      REPOSITORY: '/yudisiums/repository',
+      BY_ID: (id: string) => `/yudisiums/${id}`,
+      
+      // Student (/me)
+      ME_OVERVIEW: '/yudisiums/me/overview',
+      ME_EXIT_SURVEY: '/yudisiums/me/exit-survey',
+      ME_REQUIREMENTS: '/yudisiums/me/requirements',
+      ME_REQUIREMENTS_UPLOAD: '/yudisiums/me/requirements/upload',
+
+      // Participants & Validation
+      PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants`,
+      PARTICIPANT_DETAIL: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
+      PARTICIPANT_REQUIREMENTS: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/requirements`,
+      VALIDATE_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/validate`,
+
+      // CPL (Lecturer / GKM)
+      CPL_SCORES: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-scores`,
+      VERIFY_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/verify`,
+      REPAIR_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/repair`,
+
+      // Actions
+      EXPORT_PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/export-participants`,
+      FINALIZE: (yudisiumId: string) => `/yudisiums/${yudisiumId}/finalize`,
     },
     NOTIFICATION: {
       BASE: '/notification',

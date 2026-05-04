@@ -5,9 +5,10 @@ export interface YudisiumRequirement {
     id: string;
     name: string;
     description: string | null;
-    notes: string | null;
-    order: number;
     isActive: boolean;
+    isPublic: boolean;
+    eventCount: number;
+    studentCount: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -15,9 +16,8 @@ export interface YudisiumRequirement {
 export interface CreateYudisiumRequirementPayload {
     name: string;
     description?: string | null;
-    notes?: string | null;
-    order?: number;
     isActive?: boolean;
+    isPublic?: boolean;
 }
 
 export type UpdateYudisiumRequirementPayload = Partial<CreateYudisiumRequirementPayload>;
@@ -101,26 +101,3 @@ export const deleteYudisiumRequirement = async (id: string): Promise<void> => {
     }
 };
 
-export const moveYudisiumRequirementToTop = async (id: string): Promise<YudisiumRequirement> => {
-    const response = await apiRequest(getApiUrl(E.MOVE_TOP(id)), {
-        method: 'PATCH',
-    });
-    if (!response.ok) {
-        await parseError(response, 'Gagal memindahkan persyaratan ke urutan teratas');
-    }
-
-    const result = await response.json();
-    return result.data;
-};
-
-export const moveYudisiumRequirementToBottom = async (id: string): Promise<YudisiumRequirement> => {
-    const response = await apiRequest(getApiUrl(E.MOVE_BOTTOM(id)), {
-        method: 'PATCH',
-    });
-    if (!response.ok) {
-        await parseError(response, 'Gagal memindahkan persyaratan ke urutan terbawah');
-    }
-
-    const result = await response.json();
-    return result.data;
-};

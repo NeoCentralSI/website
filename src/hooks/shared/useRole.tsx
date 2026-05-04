@@ -88,6 +88,11 @@ export const useRole = () => {
     return hasRole(ROLES.DOSEN_METOPEN);
   }, [hasRole]);
 
+  // Helper function untuk mengecek apakah user adalah koordinator yudisium
+  const isKoordinatorYudisium = useCallback((): boolean => {
+    return hasRole(ROLES.KOORDINATOR_YUDISIUM);
+  }, [hasRole]);
+
   // Helper function untuk mengecek apakah user adalah pembimbing (pembimbing1 atau pembimbing2)
   const isPembimbing = useCallback((): boolean => {
     return hasAnyRole([...SUPERVISOR_ROLES]);
@@ -124,6 +129,7 @@ export const useRole = () => {
     isPenguji,
     isGkm,
     isDosenPengampuMetopel,
+    isKoordinatorYudisium,
 
     // Combined role checking functions
     isPembimbing,

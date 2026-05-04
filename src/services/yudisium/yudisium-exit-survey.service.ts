@@ -3,8 +3,11 @@ import { apiRequest } from '../auth.service';
 import type {
   ExitSurveyForm,
   ExitSurveyQuestion,
+  ExitSurveySession,
   CreateExitSurveyFormPayload,
   UpdateExitSurveyFormPayload,
+  CreateExitSurveySessionPayload,
+  UpdateExitSurveySessionPayload,
   CreateExitSurveyQuestionPayload,
   UpdateExitSurveyQuestionPayload,
 } from '@/types/exit-survey.types';
@@ -28,6 +31,11 @@ export const getExitSurveyForms = async (): Promise<ExitSurveyForm[]> => {
 export const getExitSurveyFormById = async (id: string): Promise<ExitSurveyForm> => {
   const response = await apiRequest(getApiUrl(E.BY_ID(id)));
   return handleResponse(response, 'Gagal mengambil detail form');
+};
+
+export const getExitSurveyFormResponses = async (id: string): Promise<any[]> => {
+  const response = await apiRequest(getApiUrl(E.RESPONSES(id)));
+  return handleResponse(response, 'Gagal mengambil respons form');
 };
 
 export const createExitSurveyForm = async (
@@ -69,6 +77,46 @@ export const duplicateExitSurveyForm = async (id: string): Promise<ExitSurveyFor
   return handleResponse(response, 'Gagal menduplikasi form');
 };
 
+// ============================================================
+// SESSIONS
+// ============================================================
+
+export const createExitSurveySession = async (
+  formId: string,
+  payload: CreateExitSurveySessionPayload
+): Promise<ExitSurveySession> => {
+  const response = await apiRequest(getApiUrl(`${E.BASE}/${formId}/sessions`), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response, 'Gagal menambah sesi');
+};
+
+export const updateExitSurveySession = async (
+  formId: string,
+  sessionId: string,
+  payload: UpdateExitSurveySessionPayload
+): Promise<ExitSurveySession> => {
+  const response = await apiRequest(getApiUrl(`${E.BASE}/${formId}/sessions/${sessionId}`), {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response, 'Gagal mengubah sesi');
+};
+
+export const deleteExitSurveySession = async (
+  formId: string,
+  sessionId: string
+): Promise<void> => {
+  const response = await apiRequest(getApiUrl(`${E.BASE}/${formId}/sessions/${sessionId}`), {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Gagal menghapus sesi');
+  }
+};
+
 export const getExitSurveyQuestions = async (
   formId: string
 ): Promise<ExitSurveyQuestion[]> => {
@@ -99,6 +147,14 @@ export const updateExitSurveyQuestion = async (
   return handleResponse(response, 'Gagal mengubah pertanyaan');
 };
 
+export const getExitSurveyQuestionById = async (
+  formId: string,
+  questionId: string
+): Promise<ExitSurveyQuestion> => {
+  const response = await apiRequest(getApiUrl(E.QUESTION_BY_ID(formId, questionId)));
+  return handleResponse(response, 'Gagal mengambil detail pertanyaan');
+};
+
 export const deleteExitSurveyQuestion = async (
   formId: string,
   questionId: string
@@ -109,5 +165,21 @@ export const deleteExitSurveyQuestion = async (
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message || 'Gagal menghapus pertanyaan');
+  }
+};
+
+export const getStudentExitSurvey = async (): Promise<any> => {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.YUDISIUM.ME_EXIT_SURVEY));
+  return handleResponse(response, 'Gagal mengambil data exit survey mahasiswa');
+};
+
+export const submitStudentExitSurvey = async (payload: any): Promise<void> => {
+  const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.YUDISIUM.ME_EXIT_SURVEY), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Gagal mengirim exit survey');
   }
 };

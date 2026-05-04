@@ -70,18 +70,6 @@ export function RoomTable({
       {
         key: 'usage',
         header: 'Terpakai',
-        filter: {
-          type: 'select',
-          value: params.status ?? 'all',
-          onChange: (value: string) => {
-            onParamsChange({ ...params, status: value as GetRoomsParams['status'], page: 1 });
-          },
-          options: [
-            { label: 'Semua', value: 'all' },
-            { label: 'Belum terpakai', value: 'available' },
-            { label: 'Terpakai', value: 'in_use' },
-          ],
-        },
         render: (row) =>
           row.relationCount > 0 ? (
             <Badge variant="outline" className="gap-1">
@@ -142,7 +130,6 @@ export function RoomTable({
       onPageSizeChange={(s) => onParamsChange({ ...params, limit: s, page: 1 })}
       searchValue={params.search ?? ''}
       onSearchChange={(s) => onParamsChange({ ...params, search: s, page: 1 })}
-      enableColumnFilters
       actions={
         <div className="flex items-center gap-2">
           {actions}

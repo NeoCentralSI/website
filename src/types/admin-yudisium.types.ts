@@ -90,26 +90,19 @@ export type CplScoreItem = {
   code: string | null;
   description: string;
   score: number | null;
+  oldScore: number | null;
   minimalScore: number;
   status: 'calculated' | 'verified' | 'finalized';
   passed: boolean;
-};
-
-export type CplRecommendationItem = {
-  id: string;
-  cplId: string;
-  recommendation: string | null;
-  description: string | null;
-  status: 'open' | 'in_progress' | 'resolved' | 'dismissed';
-  resolvedAt: string | null;
-  createdAt: string;
-  createdBy: string | null;
-  resolvedBy: string | null;
+  recommendationDocument: { fileName: string; filePath: string } | null;
+  settlementDocument: { fileName: string; filePath: string } | null;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
+  verifiedByNip?: string | null;
 };
 
 export type ParticipantCplResponse = {
   participantId: string;
   participantStatus: string;
   cplScores: CplScoreItem[];
-  recommendations: CplRecommendationItem[];
 };

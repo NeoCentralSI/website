@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 import type {
     CreateYudisiumRequirementPayload,
     UpdateYudisiumRequirementPayload,
@@ -34,7 +35,8 @@ export function YudisiumRequirementFormDialog({
 }: YudisiumRequirementFormDialogProps) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [notes, setNotes] = useState('');
+    const [isActive, setIsActive] = useState(true);
+    const [isPublic, setIsPublic] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
@@ -43,15 +45,17 @@ export function YudisiumRequirementFormDialog({
         if (editData) {
             setName(editData.name ?? '');
             setDescription(editData.description ?? '');
-            setNotes(editData.notes ?? '');
+            setIsActive(editData.isActive ?? true);
+            setIsPublic(editData.isPublic ?? false);
         } else {
             setName('');
             setDescription('');
-            setNotes('');
+            setIsActive(true);
+            setIsPublic(false);
         }
     }, [editData, open]);
 
-    const isValid = name.trim().length > 0 && name.trim().length <= 255;
+    const isValid = name.trim().length > 0;
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -62,7 +66,8 @@ export function YudisiumRequirementFormDialog({
             const payload: CreateYudisiumRequirementPayload = {
                 name: name.trim(),
                 description: description.trim() || null,
-                notes: notes.trim() || null,
+                isActive,
+                isPublic,
             };
 
             if (isEdit && editData) {
@@ -94,17 +99,15 @@ export function YudisiumRequirementFormDialog({
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="reqName">
-                            Nama Persyaratan <span className="text-destructive">*</span>
+                            Nama Persyaratan
                         </Label>
                         <Input
                             id="reqName"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Contoh: Bukti Bebas Pustaka"
-                            maxLength={255}
                             required
                         />
-                        <p className="text-xs text-muted-foreground text-right">{name.length}/255 karakter</p>
                     </div>
 
                     <div className="space-y-2">
@@ -115,20 +118,38 @@ export function YudisiumRequirementFormDialog({
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Deskripsi singkat persyaratan"
                             rows={3}
-                            maxLength={2000}
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="reqNotes">Catatan</Label>
-                        <Textarea
-                            id="reqNotes"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Catatan tambahan (opsional)"
-                            rows={3}
-                            maxLength={2000}
-                        />
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <Switch
+                                id="isActive"
+                                checked={isActive}
+                                onCheckedChange={setIsActive}
+                            />
+                            <div className="space-y-1 leading-none">
+                                <Label htmlFor="isActive" className="cursor-pointer">Aktif</Label>
+                                <p className="text-xs text-muted-foreground">
+                                    Status keaktifan data.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <Switch
+                                id="isPublic"
+                                checked={isPublic}
+                                onCheckedChange={setIsPublic}
+                            />
+                            <div className="space-y-1 leading-none">
+                                <Label htmlFor="isPublic" className="cursor-pointer">Publik</Label>
+                                <p className="text-xs text-muted-foreground">
+                                    Terlihat oleh mahasiswa.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <DialogFooter>

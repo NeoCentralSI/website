@@ -1,5 +1,6 @@
-import { Check, Clock } from 'lucide-react';
+import { Check, Clock, PartyPopper } from 'lucide-react';
 import type { ThesisDefenceStatus } from '@/types/defence.types';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
@@ -32,10 +33,18 @@ export function StudentThesisDefenceStatusCard({ status, allChecklistMet }: Defe
   const spinePct = activeIndex === -1 ? 0 : (activeIndex + 1) * 20;
   const completedCount = activeIndex + 1;
 
+  const isFinalized = status === 'passed' || status === 'passed_with_revision';
+
   return (
     <div className="bg-card border border-gray-200 rounded-[10px] p-[18px_18px_14px] h-full flex flex-col box-border">
-      <div className="text-base font-semibold text-foreground mb-1.5">
+      <div className="text-base font-semibold text-foreground mb-1.5 flex items-center justify-between">
         Status Sidang
+        {isFinalized && (
+          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 h-5 px-1.5 text-[10px]">
+            <PartyPopper className="mr-1 h-2.5 w-2.5" />
+            Selesai
+          </Badge>
+        )}
       </div>
       <div className="text-xs text-muted-foreground mb-[18px]">
         Progres pengajuan sidang tugas akhir

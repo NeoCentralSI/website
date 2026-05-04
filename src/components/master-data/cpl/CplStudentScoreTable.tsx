@@ -122,14 +122,14 @@ export function CplStudentScoreTable({
                 width: 110,
                 filter: {
                     type: 'select',
-                    value: filters.source ?? 'ALL',
+                    value: filters.source ?? '',
                     onChange: (value: string) =>
                         onFiltersChange({
                             ...filters,
-                            source: value === 'ALL' ? undefined : (value as 'SIA' | 'MANUAL'),
+                            source: value === '' ? undefined : (value as 'SIA' | 'MANUAL'),
                         }),
                     options: [
-                        { label: 'Semua', value: 'ALL' },
+                        { label: 'Semua', value: '' },
                         { label: 'SIA', value: 'SIA' },
                         { label: 'Manual', value: 'MANUAL' },
                     ],
@@ -153,14 +153,14 @@ export function CplStudentScoreTable({
                 width: 120,
                 filter: {
                     type: 'select',
-                    value: filters.status ?? 'ALL',
+                    value: filters.status ?? '',
                     onChange: (value: string) =>
                         onFiltersChange({
                             ...filters,
-                            status: value === 'ALL' ? undefined : (value as CplStudentScoreStatus),
+                            status: value === '' ? undefined : (value as CplStudentScoreStatus),
                         }),
                     options: [
-                        { label: 'Semua', value: 'ALL' },
+                        { label: 'Semua', value: '' },
                         { label: 'Dihitung', value: 'calculated' },
                         { label: 'Diverifikasi', value: 'verified' },
                         { label: 'Final', value: 'finalized' },

@@ -1,4 +1,4 @@
-export type ExitSurveyQuestionType = 'single_choice' | 'multiple_choice' | 'text' | 'textarea';
+export type ExitSurveyQuestionType = 'short_answer' | 'paragraph' | 'single_choice' | 'multiple_choice' | 'date';
 
 export interface ExitSurveyOption {
   id: string;
@@ -10,6 +10,7 @@ export interface ExitSurveyQuestion {
   id: string;
   exitSurveyFormId: string;
   question: string;
+  description: string | null;
   questionType: ExitSurveyQuestionType;
   isRequired: boolean;
   orderNumber: number;
@@ -18,13 +19,23 @@ export interface ExitSurveyQuestion {
   updatedAt?: string;
 }
 
+export interface ExitSurveySession {
+  id: string;
+  exitSurveyFormId: string;
+  name: string;
+  description: string | null;
+  order: number;
+  questions: ExitSurveyQuestion[];
+}
+
 export interface ExitSurveyForm {
   id: string;
   name: string;
   description: string | null;
   isActive: boolean;
-  totalQuestions?: number;
-  questions?: ExitSurveyQuestion[];
+  totalQuestions: number;
+  usedCount: number;
+  sessions?: ExitSurveySession[];
   createdAt: string;
   updatedAt: string;
 }
@@ -37,8 +48,18 @@ export interface CreateExitSurveyFormPayload {
 
 export type UpdateExitSurveyFormPayload = Partial<CreateExitSurveyFormPayload>;
 
+export interface CreateExitSurveySessionPayload {
+  name: string;
+  description?: string | null;
+  order?: number;
+}
+
+export type UpdateExitSurveySessionPayload = Partial<CreateExitSurveySessionPayload>;
+
 export interface CreateExitSurveyQuestionPayload {
+  exitSurveySessionId?: string; // Optional if created within a session context
   question: string;
+  description?: string | null;
   questionType: ExitSurveyQuestionType;
   isRequired?: boolean;
   orderNumber?: number;
