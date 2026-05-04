@@ -7,8 +7,6 @@ import {
   updateYudisiumRequirement,
   toggleYudisiumRequirement,
   deleteYudisiumRequirement,
-  moveYudisiumRequirementToTop,
-  moveYudisiumRequirementToBottom,
 } from '@/services/yudisium/yudisium-requirement.service';
 
 export const requirementKeys = {
@@ -62,23 +60,6 @@ export function useYudisiumRequirements() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const moveTopMutation = useMutation({
-    mutationFn: (id: string) => moveYudisiumRequirementToTop(id),
-    onSuccess: () => {
-      toast.success('Berhasil memindahkan persyaratan ke urutan teratas');
-      void queryClient.invalidateQueries({ queryKey: requirementKeys.all });
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
-  const moveBottomMutation = useMutation({
-    mutationFn: (id: string) => moveYudisiumRequirementToBottom(id),
-    onSuccess: () => {
-      toast.success('Berhasil memindahkan persyaratan ke urutan terbawah');
-      void queryClient.invalidateQueries({ queryKey: requirementKeys.all });
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
 
   return {
     requirements: query.data ?? [],
@@ -89,12 +70,9 @@ export function useYudisiumRequirements() {
     update: (id: string, payload: any) => updateMutation.mutateAsync({ id, payload }),
     toggle: toggleMutation.mutate,
     remove: deleteMutation.mutate,
-    moveTop: moveTopMutation.mutate,
-    moveBottom: moveBottomMutation.mutate,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isToggling: toggleMutation.isPending,
     isDeleting: deleteMutation.isPending,
-    isMoving: moveTopMutation.isPending || moveBottomMutation.isPending,
   };
 }

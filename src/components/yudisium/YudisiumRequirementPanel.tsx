@@ -11,10 +11,7 @@ export function YudisiumRequirementPanel() {
     refetch,
     create,
     update,
-    moveTop,
-    moveBottom,
     remove,
-    isMoving,
     isUpdating,
     isDeleting,
   } = useYudisiumRequirements();
@@ -30,10 +27,7 @@ export function YudisiumRequirementPanel() {
         onRefresh={() => refetch()}
         onCreate={() => setCreateDialogOpen(true)}
         onUpdate={update}
-        onMoveTop={moveTop}
-        onMoveBottom={moveBottom}
         onDelete={remove}
-        isMoving={isMoving}
         isUpdating={isUpdating}
         isDeleting={isDeleting}
       />

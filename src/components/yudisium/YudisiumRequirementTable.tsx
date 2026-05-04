@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, FileText } from 'lucide-react';
+import { Pencil, Plus, Trash2, FileText } from 'lucide-react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,10 +29,7 @@ interface YudisiumRequirementTableProps {
     onRefresh: () => void;
     onCreate: () => void;
     onUpdate: (id: string, payload: UpdateYudisiumRequirementPayload) => Promise<unknown>;
-    onMoveTop: (id: string) => void;
-    onMoveBottom: (id: string) => void;
     onDelete: (id: string) => void;
-    isMoving: boolean;
     isUpdating?: boolean;
     isDeleting: boolean;
 }
@@ -43,10 +40,7 @@ export function YudisiumRequirementTable({
     onRefresh,
     onCreate,
     onUpdate,
-    onMoveTop,
-    onMoveBottom,
     onDelete,
-    isMoving,
     isUpdating,
     isDeleting,
     data = [],
@@ -151,27 +145,6 @@ export function YudisiumRequirementTable({
             className: 'text-right',
             render: (item) => (
                 <div className="flex items-center justify-end gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        onClick={() => onMoveTop(item.id)}
-                        disabled={isMoving || item.id === firstId}
-                        title="Pindahkan ke paling atas"
-                    >
-                        <ArrowUp className="h-3 w-3" />
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                        onClick={() => onMoveBottom(item.id)}
-                        disabled={isMoving || item.id === lastId}
-                        title="Pindahkan ke paling bawah"
-                    >
-                        <ArrowDown className="h-3 w-3" />
-                    </Button>
 
                     <Button
                         variant="ghost"
@@ -200,7 +173,7 @@ export function YudisiumRequirementTable({
                 </div>
             ),
         },
-    ], [data, firstId, isDeleting, isMoving, isUpdating, lastId, onMoveBottom, onMoveTop, onUpdate, page, pageSize]);
+    ], [data, isDeleting, isUpdating, onUpdate, page, pageSize]);
 
     const handleConfirmDelete = () => {
         if (!deleteId) return;
