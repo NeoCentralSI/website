@@ -26,7 +26,7 @@ import { YudisiumValidationFormDialog } from '@/components/yudisium/YudisiumVali
 import { useRole, useAuth } from '@/hooks/shared';
 import { useYudisiumEvent } from '@/hooks/yudisium/useYudisium';
 import { useYudisiumParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
-import { useExportParticipants, useUploadSkResmi } from '@/hooks/yudisium/useYudisiumParticipants';
+import { useExportParticipants, useFinalizeParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
 
 import { ROLES } from '@/lib/roles';
 import { formatDateOnlyId } from '@/lib/text';
@@ -101,17 +101,17 @@ export default function YudisiumDetailPage() {
 
   // Queries & Mutations
   const { data: detail, isLoading: isLoadingDetail, refetch: refetchDetail } = useYudisiumEvent(id!);
-  const { data: participantData, isLoading: isLoadingParticipants, isFetching: isFetchingParticipants, refetch: refetchParticipants } = useYudisiumParticipants(id!);
-  const exportParticipantsMutation = useExportParticipants();
-  const uploadSkMutation = useUploadSkResmi(id!);
+  const { 
+    data: participantData, 
+    isLoading: isLoadingParticipants, 
+    isFetching: isFetchingParticipants, 
+    refetch: refetchParticipants,
+    error: participantsError
+  } = useYudisiumParticipants(id!);
 
-  // SK Modal State
-  const [skModalOpen, setSkModalOpen] = useState(false);
-  const [skFile, setSkFile] = useState<File | null>(null);
-  const [skEventDate, setSkEventDate] = useState('');
-  const [skDecreeNumber, setSkDecreeNumber] = useState('');
-  const [skDecreeIssuedAt, setSkDecreeIssuedAt] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const exportParticipantsMutation = useExportParticipants();
+  const finalizeMutation = useFinalizeParticipants(id!);
+  const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
 
   // Participant Table State
   const [search, setSearch] = useState('');
@@ -119,11 +119,13 @@ export default function YudisiumDetailPage() {
   const [pageSize, setPageSize] = useState(10);
   const [selectedParticipant, setSelectedParticipant] = useState<AdminYudisiumParticipant | null>(null);
 
-  const canManageSkActions = useMemo(() => {
-    const isKoordinator = user?.roles?.some(r => r.name === ROLES.KOORDINATOR_YUDISIUM && r.status === 'active') ?? false;
-    const isClosedOrBeyond = detail?.status && !['draft', 'open'].includes(detail.status);
-    return isKoordinator && !!isClosedOrBeyond;
-  }, [user, detail?.status]);
+  const canFinalize = useMemo(() => {
+    return isKoordinatorYudisium() && detail?.status === 'closed';
+  }, [isKoordinatorYudisium, detail?.status]);
+
+  const isFinalized = useMemo(() => {
+    return (participantData?.participants ?? []).some(p => ['appointed', 'rejected'].includes(p.status));
+  }, [participantData?.participants]);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -134,6 +136,7 @@ export default function YudisiumDetailPage() {
   }, [setBreadcrumbs, setTitle]);
 
   const participants = participantData?.participants ?? [];
+
   const filteredParticipants = useMemo(() => {
     const term = search.toLowerCase();
     if (!term) return participants;
@@ -147,17 +150,12 @@ export default function YudisiumDetailPage() {
 
   const paginatedParticipants = filteredParticipants.slice((page - 1) * pageSize, page * pageSize);
 
-  const handleUploadSk = async () => {
-    if (!skFile) return;
+  const handleFinalize = async () => {
     try {
-      await uploadSkMutation.mutateAsync({
-        file: skFile,
-        eventDate: dateInputToISO(skEventDate),
-        decreeNumber: skDecreeNumber,
-        decreeIssuedAt: dateInputToISO(skDecreeIssuedAt),
-      });
-      setSkModalOpen(false);
+      await finalizeMutation.mutateAsync();
+      setFinalizeConfirmOpen(false);
       void refetchDetail();
+      void refetchParticipants();
     } catch {
       // Handled by toast
     }
@@ -258,190 +256,70 @@ export default function YudisiumDetailPage() {
         </Badge>
       </div>
 
-      <div className="space-y-10">
-        {/* Identitas Section */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold px-1">Identitas Yudisium</h2>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Nama Periode</p>
-                    <p className="text-base">{detail.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Rentang Pendaftaran</p>
-                    <p className="text-base">
-                      {formatDateOnlyId(detail.registrationOpenDate)} — {formatDateOnlyId(detail.registrationCloseDate)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Tanggal Yudisium</p>
-                    <p className="text-base">{formatDateOnlyId(detail.eventDate) || '-'}</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Ruangan</p>
-                    <p className="text-base">{detail.room?.name || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Form Exit Survey</p>
-                    <p className="text-base">{detail.exitSurveyForm?.name || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Catatan</p>
-                    <p className="text-base">{detail.notes || '-'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {canManageSkActions && (
-                <div className="flex items-center gap-3 mt-8 pt-6 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-primary"
-                    onClick={() => {
-                      setSkFile(null);
-                      setSkEventDate(detail.eventDate?.split('T')[0] ?? '');
-                      setSkDecreeNumber('');
-                      setSkDecreeIssuedAt('');
-                      setSkModalOpen(true);
-                    }}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Jadwalkan Yudisium
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="space-y-6">
         {/* Peserta Section */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold px-1">Daftar Peserta Yudisium</h2>
-          <CustomTable
-            columns={columns}
-            data={paginatedParticipants}
-            loading={isLoadingParticipants}
-            isRefreshing={isFetchingParticipants && !isLoadingParticipants}
-            total={filteredParticipants.length}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size);
-              setPage(1);
-            }}
-            searchValue={search}
-            onSearchChange={(val) => {
-              setSearch(val);
-              setPage(1);
-            }}
-            emptyText="Belum ada peserta yudisium"
-            actions={
-              <div className="flex items-center gap-2">
-                {(isAdmin() || isDosen()) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9"
-                    onClick={() => exportParticipantsMutation.mutate(detail.id)}
-                    disabled={exportParticipantsMutation.isPending}
-                  >
-                    {exportParticipantsMutation.isPending ? (
-                      <Spinner className="mr-2 h-4 w-4" />
-                    ) : (
-                      <FileDown className="mr-2 h-4 w-4" />
-                    )}
-                    Export Peserta
-                  </Button>
-                )}
-                <RefreshButton
-                  onClick={() => void refetchParticipants()}
-                  isRefreshing={isFetchingParticipants && !isLoadingParticipants}
-                />
-              </div>
-            }
-          />
-        </div>
+        <CustomTable
+          columns={columns}
+          data={paginatedParticipants}
+          loading={isLoadingParticipants}
+          isRefreshing={isFetchingParticipants && !isLoadingParticipants}
+          total={filteredParticipants.length}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          searchValue={search}
+          onSearchChange={(val) => {
+            setSearch(val);
+            setPage(1);
+          }}
+          emptyText="Belum ada peserta yudisium"
+          actions={
+            <div className="flex items-center gap-2">
+              {canFinalize && !isFinalized && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  onClick={() => setFinalizeConfirmOpen(true)}
+                  disabled={finalizeMutation.isPending}
+                >
+                  {finalizeMutation.isPending ? (
+                    <Spinner className="mr-2 h-4 w-4" />
+                  ) : (
+                    <CheckSquare className="mr-2 h-4 w-4" />
+                  )}
+                  Finalisasi Peserta
+                </Button>
+              )}
+              {(isAdmin() || isDosen()) && isFinalized && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => exportParticipantsMutation.mutate(detail.id)}
+                  disabled={exportParticipantsMutation.isPending}
+                >
+                  {exportParticipantsMutation.isPending ? (
+                    <Spinner className="mr-2 h-4 w-4" />
+                  ) : (
+                    <FileDown className="mr-2 h-4 w-4" />
+                  )}
+                  Export Peserta
+                </Button>
+              )}
+              <RefreshButton
+                onClick={() => void refetchParticipants()}
+                isRefreshing={isFetchingParticipants && !isLoadingParticipants}
+              />
+            </div>
+          }
+        />
       </div>
 
-      {/* Modals */}
-      <Dialog open={skModalOpen} onOpenChange={setSkModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Jadwalkan Yudisium</DialogTitle>
-            <DialogDescription>
-              Unggah file SK resmi beserta informasi terkait pelaksanaan yudisium.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>File SK (PDF)</Label>
-              <Input
-                ref={fileInputRef}
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setSkFile(e.target.files?.[0] ?? null)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Tanggal Pelaksanaan Yudisium</Label>
-              <DatePicker
-                value={parseDateOnlyLocal(skEventDate)}
-                onChange={(date) => setSkEventDate(date ? toDateOnlyLocalString(date) : '')}
-                showPastDates={true}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Nomor SK</Label>
-              <Input
-                type="text"
-                placeholder="Contoh: SK/001/2026"
-                value={skDecreeNumber}
-                onChange={(e) => setSkDecreeNumber(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Tanggal SK Ditetapkan</Label>
-              <DatePicker
-                value={parseDateOnlyLocal(skDecreeIssuedAt)}
-                onChange={(date) => setSkDecreeIssuedAt(date ? toDateOnlyLocalString(date) : '')}
-                showPastDates={true}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSkModalOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              onClick={handleUploadSk}
-              disabled={
-                uploadSkMutation.isPending || 
-                !skFile || 
-                !skEventDate || 
-                !skDecreeNumber || 
-                !skDecreeIssuedAt
-              }
-            >
-              {uploadSkMutation.isPending ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" />
-                  Mengunggah...
-                </>
-              ) : (
-                'Jadwalkan Yudisium'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <YudisiumValidationFormDialog
         participant={selectedParticipant}
@@ -451,6 +329,51 @@ export default function YudisiumDetailPage() {
           if (!open) setSelectedParticipant(null);
         }}
       />
+
+      <Dialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Finalisasi Peserta</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin memfinalisasi data peserta? Tindakan ini akan secara otomatis:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-3">
+            <div className="flex gap-3 items-start p-3 rounded-lg bg-indigo-50/50 border border-indigo-100">
+              <div className="h-2 w-2 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+              <p className="text-sm text-indigo-900">
+                Mahasiswa dengan status <strong>Calon Peserta Yudisium</strong> akan diubah menjadi <strong>Peserta Yudisium</strong>.
+              </p>
+            </div>
+            <div className="flex gap-3 items-start p-3 rounded-lg bg-amber-50/50 border border-amber-100">
+              <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+              <p className="text-sm text-amber-900">
+                Mahasiswa yang belum lengkap atau belum divalidasi CPL-nya akan diubah statusnya menjadi <strong>Belum Lulus</strong>.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinalizeConfirmOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              variant="default"
+              className="bg-primary hover:bg-primary/90"
+              onClick={handleFinalize}
+              disabled={finalizeMutation.isPending}
+            >
+              {finalizeMutation.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Memproses...
+                </>
+              ) : (
+                'Ya, Finalisasi Sekarang'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

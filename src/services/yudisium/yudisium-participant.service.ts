@@ -108,21 +108,11 @@ export async function exportParticipants(yudisiumId: string): Promise<Blob> {
   return res.blob();
 }
 
-export async function uploadSkResmi(
-  yudisiumId: string,
-  payload: { file: File; eventDate: string; decreeNumber: string; decreeIssuedAt: string }
-): Promise<{ documentId: string; fileName: string }> {
-  const formData = new FormData();
-  formData.append('file', payload.file);
-  formData.append('eventDate', payload.eventDate);
-  formData.append('decreeNumber', payload.decreeNumber);
-  formData.append('decreeIssuedAt', payload.decreeIssuedAt);
-
-  const res = await apiRequest(getApiUrl(EP.UPLOAD_SK(yudisiumId)), {
+export async function finalizeParticipants(yudisiumId: string): Promise<any> {
+  const res = await apiRequest(getApiUrl(EP.FINALIZE(yudisiumId)), {
     method: 'POST',
-    body: formData,
   });
   const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal mengunggah SK');
+  if (!json.success) throw new Error(json.message || 'Gagal memfinalisasi peserta');
   return json.data;
 }

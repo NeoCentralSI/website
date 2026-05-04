@@ -500,7 +500,7 @@ function DocumentRow({
     <div
       className={cn(
         "flex items-center gap-[10px] p-[7px_10px] rounded-[7px] bg-card border border-gray-200 transition-all duration-200",
-        isLocked && "opacity-[0.55]"
+        (isLocked && !isApproved) && "opacity-[0.55]"
       )}
     >
       <div
@@ -517,20 +517,20 @@ function DocumentRow({
 
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-foreground truncate">
-          {requirement.name} (PDF)
+          {requirement.name}
         </div>
         {typeof requirement.description === 'string' && requirement.description && (
-          <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+          <div className="text-xs text-muted-foreground leading-tight mt-0.5">
             {requirement.description}
           </div>
         )}
         {isUploaded && (
           <>
-            <div className={cn("text-[10px] font-medium mt-0.5", fileStatusColor)}>
+            <div className={cn("text-xs font-medium mt-0.5", fileStatusColor)}>
               {fileStatusText}
             </div>
             {requirement.document?.fileName && (
-              <div className="text-[10px] text-muted-foreground truncate">
+              <div className="text-xs text-muted-foreground truncate">
                 {requirement.document.fileName}
               </div>
             )}
@@ -547,11 +547,11 @@ function DocumentRow({
           onChange={handleFileChange}
         />
 
-        {isUploaded && requirement.requirementId && (
+        {isUploaded && requirement.id && (
           <button
             onClick={handleViewClick}
             title="Lihat dokumen"
-            className="px-[9px] py-[4px] rounded-[5px] bg-transparent border border-gray-200 flex items-center gap-1 shrink-0 text-foreground hover:bg-accent transition-all duration-200 cursor-pointer text-[10px] font-semibold"
+            className="px-[9px] py-[4px] rounded-[5px] bg-transparent border border-gray-200 flex items-center gap-1 shrink-0 text-foreground hover:bg-accent transition-all duration-200 cursor-pointer text-xs font-semibold"
           >
             <Eye size={12} />
             <span>Lihat</span>
@@ -559,7 +559,7 @@ function DocumentRow({
         )}
 
         {isUploading ? (
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Spinner className="h-3 w-3" />
             Upload...
           </div>
@@ -568,7 +568,7 @@ function DocumentRow({
             disabled={!canUpload}
             onClick={handleUploadClick}
             className={cn(
-              "shrink-0 px-[9px] py-[4px] text-[10px] font-semibold rounded-[5px] transition-all duration-200 cursor-pointer border",
+              "shrink-0 px-[9px] py-[4px] text-xs font-semibold rounded-[5px] transition-all duration-200 cursor-pointer border",
               isDeclined 
                 ? "border-destructive text-destructive bg-transparent hover:bg-destructive/10" 
                 : canUpload 
@@ -586,12 +586,14 @@ function DocumentRow({
 
 function YudisiumRequirementCard({ 
   allChecklistMet, 
-  participantStatus 
+  participantStatus,
+  isRegistrationOpen
 }: { 
   allChecklistMet: boolean;
   participantStatus: ParticipantStatus;
+  isRegistrationOpen: boolean;
 }) {
-  const isLocked = !allChecklistMet;
+  const isLocked = !allChecklistMet || !isRegistrationOpen;
   const isBeyondVerification = ['verified', 'cpl_validated', 'appointed', 'finalized'].includes(participantStatus ?? '');
   
   const { data: reqData } = useStudentYudisiumRequirements();
@@ -603,9 +605,9 @@ function YudisiumRequirementCard({
       <div className="text-base font-semibold text-foreground mb-[14px]">
         Upload Dokumen Yudisium
       </div>
-      {isLocked && (
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-3 p-[8px_12px] bg-muted border border-gray-200 rounded-[7px]">
-          <Info size={14} className="shrink-0 text-muted-foreground" />
+      {(!allChecklistMet && !isBeyondVerification) && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 p-[8px_12px] bg-muted border border-gray-200 rounded-[7px]">
+          <AlertCircle size={14} className="shrink-0 text-muted-foreground" />
           <span>Lengkapi checklist persyaratan untuk mengakses fitur upload.</span>
         </div>
       )}
@@ -832,10 +834,11 @@ export default function StudentYudisium() {
           )}
 
           {/* Document Upload/Preview Card */}
-          {isRegistrationOpen ? (
+          {(isRegistrationOpen || data?.participantStatus) ? (
             <YudisiumRequirementCard 
               allChecklistMet={data?.allChecklistMet ?? false} 
               participantStatus={data?.participantStatus as ParticipantStatus}
+              isRegistrationOpen={isRegistrationOpen}
             />
           ) : (
             <RequirementsPreviewCard requirements={data?.requirements ?? []} />

@@ -7,7 +7,7 @@ import {
   verifyCplScore,
   repairCplScore,
   exportParticipants,
-  uploadSkResmi,
+  finalizeParticipants,
 } from '@/services/yudisium/yudisium-participant.service';
 import { toast } from 'sonner';
 import type { ValidateDocumentPayload } from '@/types/admin-yudisium.types';
@@ -120,13 +120,12 @@ export function useExportParticipants() {
   });
 }
 
-export function useUploadSkResmi(yudisiumId: string) {
+export function useFinalizeParticipants(yudisiumId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { file: File; eventDate: string; decreeNumber: string; decreeIssuedAt: string }) =>
-      uploadSkResmi(yudisiumId, payload),
+    mutationFn: () => finalizeParticipants(yudisiumId),
     onSuccess: () => {
-      toast.success('SK resmi berhasil diunggah');
+      toast.success('Peserta yudisium berhasil difinalisasi');
       void queryClient.invalidateQueries({ queryKey: participantKeys.all });
       void queryClient.invalidateQueries({ queryKey: ['yudisium-events'] });
     },

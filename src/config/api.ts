@@ -104,9 +104,9 @@ export const API_CONFIG = {
       REPAIR_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/repair`,
 
-      // SK (Decree)
+      // Actions
       EXPORT_PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/export-participants`,
-      UPLOAD_SK: (yudisiumId: string) => `/yudisiums/${yudisiumId}/sk`,
+      FINALIZE: (yudisiumId: string) => `/yudisiums/${yudisiumId}/finalize`,
     },
     NOTIFICATION: {
       BASE: '/notification',
