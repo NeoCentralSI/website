@@ -83,6 +83,8 @@ export const API_CONFIG = {
     },
     YUDISIUM: {
       BASE: '/yudisiums',
+      ANNOUNCEMENTS: '/yudisiums/announcements',
+      REPOSITORY: '/yudisiums/repository',
       BY_ID: (id: string) => `/yudisiums/${id}`,
       
       // Student (/me)

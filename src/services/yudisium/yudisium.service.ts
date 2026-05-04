@@ -54,6 +54,18 @@ const parseError = async (response: Response, fallbackMessage: string) => {
   throw new Error((error as { message?: string }).message || fallbackMessage);
 };
 
+export interface YudisiumAnnouncementParticipant {
+  id: string;
+  studentName: string;
+  studentNim: string;
+  thesisTitle: string;
+  status: string;
+}
+
+export interface YudisiumAnnouncement extends YudisiumEvent {
+  participants: YudisiumAnnouncementParticipant[];
+}
+
 export const getYudisiumEvents = async (): Promise<YudisiumEvent[]> => {
   const response = await apiRequest(getApiUrl(E.BASE));
   if (!response.ok) {
@@ -63,10 +75,44 @@ export const getYudisiumEvents = async (): Promise<YudisiumEvent[]> => {
   return result.data;
 };
 
+export const getYudisiumAnnouncements = async (): Promise<YudisiumAnnouncement[]> => {
+  const response = await apiRequest(getApiUrl(E.ANNOUNCEMENTS));
+  if (!response.ok) {
+    await parseError(response, 'Gagal mengambil pengumuman yudisium');
+  }
+  const result = await response.json();
+  return result.data;
+};
+
+export interface YudisiumRepositoryItem {
+  id: string;
+  thesisTitle: string;
+  studentName: string;
+  studentNim: string;
+  topicName: string;
+  filePath: string | null;
+  fileName: string | null;
+}
+
+export interface YudisiumRepositoryPanel {
+  id: string;
+  name: string;
+  documents: YudisiumRepositoryItem[];
+}
+
 export const getYudisiumEventById = async (id: string): Promise<YudisiumEvent> => {
   const response = await apiRequest(getApiUrl(E.BY_ID(id)));
   if (!response.ok) {
     await parseError(response, 'Gagal mengambil detail yudisium');
+  }
+  const result = await response.json();
+  return result.data;
+};
+
+export const getYudisiumRepository = async (): Promise<YudisiumRepositoryPanel[]> => {
+  const response = await apiRequest(getApiUrl(E.REPOSITORY));
+  if (!response.ok) {
+    await parseError(response, 'Gagal mengambil repositori yudisium');
   }
   const result = await response.json();
   return result.data;

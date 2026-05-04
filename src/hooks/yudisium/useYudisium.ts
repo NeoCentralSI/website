@@ -5,6 +5,8 @@ import {
   createYudisiumEvent,
   updateYudisiumEvent,
   deleteYudisiumEvent,
+  getYudisiumAnnouncements,
+  getYudisiumRepository,
   type CreateYudisiumPayload,
   type UpdateYudisiumPayload,
 } from '@/services/yudisium/yudisium.service';
@@ -20,6 +22,21 @@ export function useYudisiumEvents() {
   return useQuery({
     queryKey: yudisiumKeys.lists(),
     queryFn: getYudisiumEvents,
+  });
+}
+
+export function useYudisiumAnnouncements() {
+  return useQuery({
+    queryKey: [...yudisiumKeys.all, 'announcements'],
+    queryFn: getYudisiumAnnouncements,
+  });
+}
+
+export function useYudisiumRepository() {
+  return useQuery({
+    queryKey: [...yudisiumKeys.all, 'repository'],
+    queryFn: () => getYudisiumRepository(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes — data doesn't change often
   });
 }
 
