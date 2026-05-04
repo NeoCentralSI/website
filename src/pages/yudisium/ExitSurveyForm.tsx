@@ -86,7 +86,7 @@ export default function ExitSurveyFormPage() {
     if (form) {
       if (reorderMode === 'none') {
         // Sort sessions by order
-        const sortedSessions = [...form.sessions].sort((a, b) => (a.order || 0) - (b.order || 0));
+        const sortedSessions = [...(form.sessions ?? [])].sort((a, b) => (a.order || 0) - (b.order || 0));
         
         // For each session, sort questions by orderNumber immutably
         const processed = sortedSessions.map(session => ({
@@ -388,7 +388,7 @@ export default function ExitSurveyFormPage() {
                   activePanel === 'responses' ? "bg-white text-primary" : "bg-primary text-white"
                 )}
               >
-                {form.totalResponses || 0}
+                {form.usedCount || 0}
               </Badge>
            </Button>
         </div>
@@ -411,7 +411,6 @@ export default function ExitSurveyFormPage() {
             isSavingOrder={isSavingOrder}
             handleSaveOrder={handleSaveOrder}
             activeSessionId={activeSessionId}
-            setActiveSessionId={setActiveSessionId}
             localFormName={localFormName}
             setLocalFormName={setLocalFormName}
             localFormDesc={localFormDesc}
@@ -422,10 +421,8 @@ export default function ExitSurveyFormPage() {
             updateFormMutation={updateFormMutation}
             createSessionMutation={createSessionMutation}
             updateSessionMutation={updateSessionMutation}
-            deleteSessionMutation={deleteSessionMutation}
             createQuestionMutation={createQuestionMutation}
             updateQuestionMutation={updateQuestionMutation}
-            deleteQuestionMutation={deleteQuestionMutation}
             setSessionToDelete={setSessionToDelete}
             setQuestionToDelete={setQuestionToDelete}
             setActivePanel={setActivePanel}

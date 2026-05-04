@@ -9,9 +9,9 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import {
   ArrowLeft, FileText, CheckCircle,
-  Undo2, Eye,
+  Eye,
   Check, Plus, CheckCircle2,
-  Download, Printer
+  Download
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -40,7 +40,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {

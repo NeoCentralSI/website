@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
@@ -13,13 +13,10 @@ import {
   Download,
   PartyPopper,
   FileText,
-  Upload,
   Info,
   CalendarX2,
   AlertCircle,
   Eye,
-  RefreshCw,
-  ChevronRight,
   X,
 } from 'lucide-react';
 import {
@@ -853,8 +850,6 @@ export default function StudentYudisium() {
 
   const isRegistrationOpen = displayStatus === 'open';
   const hasActiveYudisium  = !!data?.yudisium;
-  const allDocumentsUploaded = (data?.requirements ?? []).every((r) => r.isUploaded);
-  const hasDecree          = !!(data?.yudisium?.decreeDocument);
 
   const currentStep = getActiveStepIndex(
     (data?.participantStatus as ParticipantStatus) ?? null,
@@ -1046,7 +1041,7 @@ export default function StudentYudisium() {
           <div className="flex items-center justify-between mb-[14px]">
             <div className="text-base font-semibold text-foreground">Riwayat Percobaan</div>
             <span className="text-xs text-muted-foreground font-medium">
-              {data.history.length} pendaftaran sebelumnya
+              {(data?.history?.length ?? 0)} pendaftaran sebelumnya
             </span>
           </div>
 
@@ -1064,7 +1059,7 @@ export default function StudentYudisium() {
 
           {/* Rows */}
           <div className="flex flex-col gap-2">
-            {data.history.map((item: any, idx: number) => (
+            {(data?.history ?? []).map((item: any, idx: number) => (
               <StudentYudisiumHistoryCard
                 key={item.id}
                 index={idx + 1}

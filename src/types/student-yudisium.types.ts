@@ -71,7 +71,18 @@ export type StudentYudisiumOverviewResponse = {
       name: string;
     } | null;
   } | null;
-  participantStatus: 'registered' | 'under_review' | 'approved' | 'rejected' | 'finalized' | null;
+  participantStatus:
+    | 'registered'
+    | 'under_review'
+    | 'approved'
+    | 'verified'
+    | 'cpl_validated'
+    | 'appointed'
+    | 'rejected'
+    | 'finalized'
+    | null;
+  studentName?: string | null;
+  studentNim?: string | null;
   thesis: {
     id: string;
     title: string;
@@ -86,6 +97,13 @@ export type StudentYudisiumOverviewResponse = {
     minimalScore: number;
     status: string;
     passed: boolean;
+    verifiedBy?: string | null;
+    verifiedByNip?: string | null;
+    verifiedAt?: string | null;
   }[];
   requirements: StudentYudisiumRequirement[];
+  history?: Array<{
+    id: string;
+    [key: string]: unknown;
+  }>;
 };

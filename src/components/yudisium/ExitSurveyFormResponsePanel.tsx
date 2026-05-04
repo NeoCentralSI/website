@@ -1,9 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { 
-  Star, 
   Download, 
   Eye,
-  Search
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,16 +27,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
-import { Filter, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Filter } from 'lucide-react';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import { useQuery } from '@tanstack/react-query';
 import { getExitSurveyFormResponses } from '@/services/yudisium/yudisium-exit-survey.service';
@@ -248,14 +238,6 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
     return responses.filter(r => r.yudisiumId === selectedYudisiumId);
   }, [responses, selectedYudisiumId]);
 
-  const stats = useMemo(() => ({
-    total: filteredByYudisium.length,
-    completed: filteredByYudisium.length,
-    incomplete: 0,
-    avgRating: 0,
-    avgTime: '-'
-  }), [filteredByYudisium]);
-
   const chartQuestions = useMemo(() => {
     const questions: any[] = [];
     
@@ -293,7 +275,7 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
       });
     });
     return questions;
-  }, [form, responses]);
+  }, [form, filteredByYudisium]);
 
   const filteredResponses = useMemo(() => {
     if (!search) return filteredByYudisium;

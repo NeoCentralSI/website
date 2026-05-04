@@ -11,14 +11,10 @@ import {
   MoveVertical,
   Loader2,
   Eye,
-  ArrowLeft,
   Copy,
   AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -450,21 +446,18 @@ interface ExitSurveyFormEditorPanelProps {
   isSavingOrder: boolean;
   handleSaveOrder: () => void;
   activeSessionId: string | null;
-  setActiveSessionId: (id: string | null) => void;
   localFormName: string;
   setLocalFormName: (val: string) => void;
   localFormDesc: string;
   setLocalFormDesc: (val: string) => void;
   isIdentityDirty: boolean;
   setIsIdentityDirty: (val: boolean) => void;
-  formDescRef: React.RefObject<HTMLTextAreaElement>;
+  formDescRef: React.RefObject<HTMLTextAreaElement | null>;
   updateFormMutation: any;
   createSessionMutation: any;
   updateSessionMutation: any;
-  deleteSessionMutation: any;
   createQuestionMutation: any;
   updateQuestionMutation: any;
-  deleteQuestionMutation: any;
   setSessionToDelete: (val: any) => void;
   setQuestionToDelete: (val: any) => void;
   setActivePanel: (val: 'editor' | 'preview' | 'responses') => void;
@@ -489,7 +482,6 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
     isSavingOrder,
     handleSaveOrder,
     activeSessionId,
-    setActiveSessionId,
     localFormName,
     setLocalFormName,
     localFormDesc,
@@ -500,10 +492,8 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
     updateFormMutation,
     createSessionMutation,
     updateSessionMutation,
-    deleteSessionMutation,
     createQuestionMutation,
     updateQuestionMutation,
-    deleteQuestionMutation,
     setSessionToDelete,
     setQuestionToDelete,
     setActivePanel,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { Link, useNavigate, useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import {
   AlertDialog,
@@ -26,7 +26,6 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
   PartyPopper,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -248,18 +247,6 @@ export default function StudentExitSurvey() {
       setIsAnimating(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 200);
-  };
-
-  const getRequiredMissingInCurrentSession = () => {
-    if (!currentSession) return [];
-    return currentSession.questions.filter((q: any) => {
-      if (!q.isRequired) return false;
-      const a = answers[q.id];
-      if (!a) return true;
-      if (q.questionType === 'single_choice') return !a.optionId;
-      if (q.questionType === 'multiple_choice') return !(a.optionIds && a.optionIds.length > 0);
-      return !(a.answerText && a.answerText.trim().length > 0);
-    });
   };
 
   const handleSubmit = () => {

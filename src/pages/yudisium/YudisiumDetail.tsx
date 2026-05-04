@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileDown, Eye, CheckSquare, FileText } from 'lucide-react';
+import { ArrowLeft, FileDown, Eye, CheckSquare, FileText } from 'lucide-react';
 import { openProtectedFile } from '@/lib/protected-file';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Dialog,
@@ -19,18 +16,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { DatePicker } from '@/components/ui/date-picker';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { YudisiumValidationFormDialog } from '@/components/yudisium/YudisiumValidationFormDialog';
 
-import { useRole, useAuth } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared';
 import { useYudisiumEvent } from '@/hooks/yudisium/useYudisium';
 import { useYudisiumParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
 import { useExportParticipants, useFinalizeParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
 
-import { ROLES } from '@/lib/roles';
-import { formatDateOnlyId } from '@/lib/text';
 import type { AdminYudisiumParticipant } from '@/types/admin-yudisium.types';
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
@@ -71,34 +65,11 @@ const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string 
   },
 };
 
-/** Calendar day in local timezone as YYYY-MM-DD (avoids UTC shift from toISOString()). */
-function toDateOnlyLocalString(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-/** Parse YYYY-MM-DD for DatePicker display at local noon (stable across DST). */
-function parseDateOnlyLocal(ymd: string): Date | undefined {
-  if (!ymd) return undefined;
-  const base = ymd.split('T')[0];
-  const [y, m, d] = base.split('-').map(Number);
-  if (!y || !m || !d) return undefined;
-  return new Date(y, m - 1, d, 12, 0, 0, 0);
-}
-
-function dateInputToISO(value: string): string {
-  if (!value) return '';
-  return new Date(value + 'T00:00:00.000Z').toISOString();
-}
-
 export default function YudisiumDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isAdmin, isKadep, isSekdep, isKoordinatorYudisium, isDosen } = useRole();
-  const { user } = useAuth();
+  const { isAdmin, isKoordinatorYudisium, isDosen } = useRole();
 
   // Queries & Mutations
   const { data: detail, isLoading: isLoadingDetail, refetch: refetchDetail } = useYudisiumEvent(id!);
@@ -106,8 +77,7 @@ export default function YudisiumDetailPage() {
     data: participantData, 
     isLoading: isLoadingParticipants, 
     isFetching: isFetchingParticipants, 
-    refetch: refetchParticipants,
-    error: participantsError
+    refetch: refetchParticipants
   } = useYudisiumParticipants(id!);
 
   const exportParticipantsMutation = useExportParticipants();
@@ -298,12 +268,17 @@ export default function YudisiumDetailPage() {
               )}
               {(isAdmin() || isDosen()) && isFinalized && (
                 <div className="flex items-center gap-2">
-                  {detail.decreeDocument && (
+                  {detail.decreeDocument?.filePath && (
                     <Button
                       variant="outline"
                       size="sm"
                       className="h-9"
-                      onClick={() => openProtectedFile(detail.decreeDocument!.filePath)}
+                      onClick={() => {
+                        const decreeFilePath = detail.decreeDocument?.filePath;
+                        if (decreeFilePath) {
+                          openProtectedFile(decreeFilePath);
+                        }
+                      }}
                     >
                       <FileText className="mr-2 h-4 w-4" />
                       Lihat SK

@@ -98,6 +98,7 @@ export type CplScoreItem = {
   settlementDocument: { fileName: string; filePath: string } | null;
   verifiedAt: string | null;
   verifiedBy: string | null;
+  verifiedByNip?: string | null;
 };
 
 export type ParticipantCplResponse = {

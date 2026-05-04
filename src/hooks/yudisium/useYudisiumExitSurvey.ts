@@ -114,11 +114,11 @@ export function useExitSurveyQuestions(formId: string) {
   });
 }
 
-export function useExitSurveyQuestionDetail(id: string) {
+export function useExitSurveyQuestionDetail(formId: string, id: string) {
   return useQuery({
-    queryKey: exitSurveyKeys.questionDetail(id),
-    queryFn: () => getExitSurveyQuestionById(id),
-    enabled: !!id,
+    queryKey: [...exitSurveyKeys.questionDetail(id), formId],
+    queryFn: () => getExitSurveyQuestionById(formId, id),
+    enabled: !!formId && !!id,
   });
 }
 

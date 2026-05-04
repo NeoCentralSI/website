@@ -23,6 +23,11 @@ export interface YudisiumEvent {
   notes: string | null;
   status: YudisiumStatus;
   exitSurveyForm: { id: string; name: string } | null;
+  decreeDocument?: {
+    id: string;
+    fileName: string | null;
+    filePath: string | null;
+  } | null;
   room: { id: string; name: string } | null;
   requirementItems: YudisiumRequirementItem[];
   participantCount: number;

@@ -68,9 +68,6 @@ export function YudisiumRequirementTable({
         return filteredData.slice(start, start + pageSize);
     }, [filteredData, page, pageSize]);
 
-    const firstId = data[0]?.id;
-    const lastId = data[data.length - 1]?.id;
-
     const columns = useMemo<Column<YudisiumRequirement>[]>(() => [
         {
             key: 'no',
