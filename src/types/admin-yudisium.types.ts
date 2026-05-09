@@ -5,6 +5,7 @@ export type AdminYudisiumEvent = {
   registrationOpenDate: string | null;
   registrationCloseDate: string | null;
   eventDate: string | null;
+  appointedAt: string | null;
   createdAt: string;
   participantCount: number;
 };
@@ -20,7 +21,6 @@ export type AdminYudisiumParticipant = {
   id: string;
   status: string;
   registeredAt: string | null;
-  appointedAt: string | null;
   notes: string | null;
   studentName: string;
   studentNim: string;
@@ -34,6 +34,7 @@ export type AdminYudisiumParticipantsResponse = {
     id: string;
     name: string;
     status: string;
+    appointedAt: string | null;
   };
   participants: AdminYudisiumParticipant[];
 };
@@ -59,12 +60,12 @@ export type AdminYudisiumParticipantDetailResponse = {
   id: string;
   status: string;
   registeredAt: string | null;
-  appointedAt: string | null;
   notes: string | null;
   yudisium: {
     id: string;
     name: string;
     status: string;
+    appointedAt: string | null;
   };
   studentName: string;
   studentNim: string;

@@ -95,8 +95,8 @@ export default function YudisiumDetailPage() {
   }, [isKoordinatorYudisium, detail?.status]);
 
   const isFinalized = useMemo(() => {
-    return (participantData?.participants ?? []).some(p => ['appointed', 'rejected'].includes(p.status));
-  }, [participantData?.participants]);
+    return !!participantData?.yudisium?.appointedAt;
+  }, [participantData?.yudisium?.appointedAt]);
 
   useEffect(() => {
     setBreadcrumbs([
