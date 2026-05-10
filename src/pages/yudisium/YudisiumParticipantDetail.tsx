@@ -159,20 +159,20 @@ export default function YudisiumParticipantDetail() {
     doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
 
     // D. Signature
-    const verifier = cplData.cplScores.find(sc => sc.verifiedBy);
-    const verifierName = verifier?.verifiedBy || '...';
-    const verifierNip = verifier?.verifiedByNip || '...';
-    const verifiedDate = verifier?.verifiedAt ? new Date(verifier.verifiedAt) : new Date();
+    const validator = cplData.cplScores.find(sc => sc.validatedBy);
+    const validatorName = validator?.validatedBy || '...';
+    const validatorNip = validator?.validatedByNip || '...';
+    const validatedDate = validator?.validatedAt ? new Date(validator.validatedAt) : new Date();
 
     const signY = finalY + 40;
     doc.setFontSize(10);
-    doc.text(`Padang, ${formatDateId(verifiedDate)}`, pageWidth - margin - 65, signY);
+    doc.text(`Padang, ${formatDateId(validatedDate)}`, pageWidth - margin - 65, signY);
     doc.text('Koordinator Asesmen CPL', pageWidth - margin - 65, signY + 6);
     
     doc.setFont('helvetica', 'bold');
-    doc.text(verifierName, pageWidth - margin - 65, signY + 28);
+    doc.text(validatorName, pageWidth - margin - 65, signY + 28);
     doc.setFont('helvetica', 'normal');
-    doc.text(`NIP: ${verifierNip}`, pageWidth - margin - 65, signY + 33);
+    doc.text(`NIP: ${validatorNip}`, pageWidth - margin - 65, signY + 33);
 
     doc.save(`Form_Penilaian_CPL_${data?.studentNim || 'Mhs'}.pdf`);
   };
@@ -617,8 +617,8 @@ export default function YudisiumParticipantDetail() {
 
             <div className="pt-2 border-t">
               <p className="text-[10px] text-muted-foreground">Tervalidasi oleh:</p>
-              <p className="text-sm font-medium">{selectedCpl?.verifiedBy ?? '-'}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{selectedCpl?.verifiedAt ? formatDateId(selectedCpl.verifiedAt) : '-'}</p>
+              <p className="text-sm font-medium">{selectedCpl?.validatedBy ?? '-'}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{selectedCpl?.validatedAt ? formatDateId(selectedCpl.validatedAt) : '-'}</p>
             </div>
           </div>
           <DialogFooter>

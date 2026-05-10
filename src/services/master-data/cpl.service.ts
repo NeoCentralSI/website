@@ -30,7 +30,7 @@ export interface GetCplsParams {
 }
 
 export type CplStudentScoreSource = 'SIA' | 'manual' | 'MANUAL';
-export type CplStudentScoreStatus = 'draft' | 'pending' | 'finalized' | 'failed';
+export type CplStudentScoreStatus = 'calculated' | 'validated' | 'finalized';
 
 export interface CplStudentScore {
     cplId: string;
@@ -54,7 +54,7 @@ export interface CplStudentScore {
         isActive: boolean;
     } | null;
     finalizedAt: string | null;
-    verifiedAt: string | null;
+    validatedAt: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -75,10 +75,12 @@ export interface GetCplStudentsParams {
 export interface CreateCplStudentScorePayload {
     studentId: string;
     score: number;
+    status?: CplStudentScoreStatus;
 }
 
 export interface UpdateCplStudentScorePayload {
     score: number;
+    status?: CplStudentScoreStatus;
 }
 
 export interface CplStudentImportResult {

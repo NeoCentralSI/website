@@ -62,7 +62,7 @@ export function CplStudentScoreTable({
 
     const statusLabel: Record<string, string> = {
         calculated: 'Dihitung',
-        verified: 'Diverifikasi',
+        validated: 'Tervalidasi',
         finalized: 'Final',
     };
 
@@ -162,7 +162,7 @@ export function CplStudentScoreTable({
                     options: [
                         { label: 'Semua', value: '' },
                         { label: 'Dihitung', value: 'calculated' },
-                        { label: 'Diverifikasi', value: 'verified' },
+                        { label: 'Tervalidasi', value: 'validated' },
                         { label: 'Final', value: 'finalized' },
                     ],
                 },

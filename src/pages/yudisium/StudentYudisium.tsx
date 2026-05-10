@@ -819,20 +819,20 @@ export default function StudentYudisium() {
     doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
 
     // D. Signature
-    const verifier = data.cplScores.find(sc => sc.verifiedBy);
-    const verifierName = verifier?.verifiedBy || '...';
-    const verifierNip = verifier?.verifiedByNip || '...';
-    const verifiedDate = verifier?.verifiedAt ? new Date(verifier.verifiedAt) : new Date();
+    const validator = data.cplScores.find(sc => sc.validatedBy);
+    const validatorName = validator?.validatedBy || '...';
+    const validatorNip = validator?.validatedByNip || '...';
+    const validatedDate = validator?.validatedAt ? new Date(validator.validatedAt) : new Date();
 
     const signY = finalY + 40;
     doc.setFontSize(10);
-    doc.text(`Padang, ${formatDateId(verifiedDate)}`, pageWidth - margin - 65, signY);
+    doc.text(`Padang, ${formatDateId(validatedDate)}`, pageWidth - margin - 65, signY);
     doc.text('Koordinator Asesmen CPL', pageWidth - margin - 65, signY + 6);
     
     doc.setFont('helvetica', 'bold');
-    doc.text(verifierName, pageWidth - margin - 65, signY + 28);
+    doc.text(validatorName, pageWidth - margin - 65, signY + 28);
     doc.setFont('helvetica', 'normal');
-    doc.text(`NIP: ${verifierNip}`, pageWidth - margin - 65, signY + 33);
+    doc.text(`NIP: ${validatorNip}`, pageWidth - margin - 65, signY + 33);
 
     doc.save(`Form_Penilaian_CPL_${data.studentNim || 'Mhs'}.pdf`);
   };
@@ -993,7 +993,7 @@ export default function StudentYudisium() {
                   </thead>
                   <tbody>
                     {data?.cplScores.map((cpl: any, idx: number) => {
-                      const isVerified = cpl.status === 'verified' || !!(cpl.verifiedBy && cpl.verifiedAt);
+                      const isValidated = cpl.status === 'validated' || !!(cpl.validatedBy && cpl.validatedAt);
                       return (
                         <tr key={idx} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
                           <td className="px-3 py-2 text-xs font-semibold text-foreground">{cpl.code ?? '-'}</td>
@@ -1012,8 +1012,8 @@ export default function StudentYudisium() {
                           </td>
                           <td className="px-3 py-2 text-right">
                             <div className="flex justify-end">
-                              {isVerified ? (
-                                <div className="bg-emerald-100 text-emerald-600 p-0.5 rounded-full" title={`Diverifikasi pada ${formatDateTime(cpl.verifiedAt)}`}>
+                              {isValidated ? (
+                                <div className="bg-emerald-100 text-emerald-600 p-0.5 rounded-full" title={`Validasi pada ${formatDateTime(cpl.validatedAt)}`}>
                                   <Check size={10} strokeWidth={3} />
                                 </div>
                               ) : (

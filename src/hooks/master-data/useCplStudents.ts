@@ -50,8 +50,8 @@ export function useCplStudents(cplId: string) {
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ studentId, score }: { studentId: string; score: number; status?: string }) =>
-            updateCplStudentScore(cplId, studentId, { score }),
+        mutationFn: ({ studentId, score, status }: { studentId: string; score: number; status?: CplStudentScoreStatus }) =>
+            updateCplStudentScore(cplId, studentId, { score, status }),
         onSuccess: () => {
             invalidate();
             toast.success('Nilai CPL mahasiswa berhasil diubah');

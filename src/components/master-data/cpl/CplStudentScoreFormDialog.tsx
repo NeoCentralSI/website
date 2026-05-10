@@ -111,7 +111,7 @@ export function CplStudentScoreFormDialog({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="calculated">Dihitung</SelectItem>
-                                <SelectItem value="verified">Diverifikasi</SelectItem>
+                                <SelectItem value="validated">Tervalidasi</SelectItem>
                                 <SelectItem value="finalized">Final</SelectItem>
                             </SelectContent>
                         </Select>

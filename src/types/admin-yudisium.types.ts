@@ -93,13 +93,13 @@ export type CplScoreItem = {
   score: number | null;
   oldScore: number | null;
   minimalScore: number;
-  status: 'calculated' | 'verified' | 'finalized';
+  status: 'calculated' | 'validated' | 'finalized';
   passed: boolean;
   recommendationDocument: { fileName: string; filePath: string } | null;
   settlementDocument: { fileName: string; filePath: string } | null;
-  verifiedAt: string | null;
-  verifiedBy: string | null;
-  verifiedByNip?: string | null;
+  validatedAt: string | null;
+  validatedBy: string | null;
+  validatedByNip?: string | null;
 };
 
 export type ParticipantCplResponse = {
