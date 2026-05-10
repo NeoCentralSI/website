@@ -69,9 +69,15 @@ export function CplStudentScoreTable({
     };
 
     const pagedData = useMemo(() => {
+        const sortedData = [...data].sort((a, b) => {
+            const nimA = a.student?.identityNumber ?? '';
+            const nimB = b.student?.identityNumber ?? '';
+            return nimA.localeCompare(nimB);
+        });
         const start = (page - 1) * pageSize;
-        return data.slice(start, start + pageSize);
+        return sortedData.slice(start, start + pageSize);
     }, [data, page, pageSize]);
+
 
     const columns = useMemo<Column<CplStudentScore>[]>(
         () => {
