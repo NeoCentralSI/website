@@ -22,6 +22,7 @@ export interface User {
   phoneNumber?: string;
   isVerified: boolean;
   avatarUrl?: string | null;
+  gender?: boolean | null;
   roles: Role[];
   student?: {
     id: string;
@@ -370,6 +371,7 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
 
 export interface UpdateProfileRequest {
   phoneNumber?: string;
+  gender?: boolean;
 }
 
 export const updateProfileAPI = async (data: UpdateProfileRequest): Promise<User> => {

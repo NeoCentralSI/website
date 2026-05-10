@@ -42,6 +42,7 @@ export default function UserManagementPage() {
     roles: [],
     identityNumber: '',
     identityType: 'NIM',
+    gender: null,
   });
 
   const breadcrumbs = useMemo(() => [
@@ -285,7 +286,8 @@ export default function UserManagementPage() {
               roles: row.roles.map((r: any) => r.name),
               identityNumber: row.identityNumber,
               identityType: row.identityType,
-              isVerified: row.isVerified
+              isVerified: row.isVerified,
+              gender: row.gender ?? null,
             } as any);
             setIsFormOpen(true);
           }}
@@ -323,7 +325,7 @@ export default function UserManagementPage() {
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => {
               setEditingUser(null);
-              setFormData({ fullName: '', email: '', roles: ['Mahasiswa'], identityNumber: '', identityType: 'NIM' });
+              setFormData({ fullName: '', email: '', roles: ['Mahasiswa'], identityNumber: '', identityType: 'NIM', gender: null });
               setIsFormOpen(true);
             }}>
               <Plus className="w-4 h-4 mr-2" /> Tambah User

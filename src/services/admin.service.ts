@@ -7,6 +7,7 @@ export interface User {
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
   isVerified: boolean;
+  gender: boolean | null;
   roles: Array<{
     id: string;
     name: string;
@@ -44,6 +45,7 @@ export interface CreateUserRequest {
   roles?: string[];
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
+  gender?: boolean | null;
 }
 
 export interface UpdateUserRequest {
@@ -53,6 +55,7 @@ export interface UpdateUserRequest {
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
   isVerified?: boolean;
+  gender?: boolean | null;
 }
 
 export interface CreateAcademicYearRequest {
