@@ -108,7 +108,7 @@ const downloadResponseAsFile = async (response: Response, fallbackFileName: stri
 
 export const getCpls = async (params: GetCplsParams = {}): Promise<{ data: Cpl[]; total: number }> => {
     const queryParams = new URLSearchParams();
-    if (params.status) queryParams.append('status', params.status);
+    if (params.status !== undefined) queryParams.append('status', params.status);
     if (params.search) queryParams.append('search', params.search);
     if (params.page) queryParams.append('page', params.page.toString());
     if (params.limit) queryParams.append('limit', params.limit.toString());

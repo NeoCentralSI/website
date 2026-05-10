@@ -39,6 +39,7 @@ interface CplStudentScoreTableProps {
     onImportClick: () => void;
     onExport: () => void;
     isExporting: boolean;
+    isManagement?: boolean;
 }
 
 export function CplStudentScoreTable({
@@ -55,14 +56,15 @@ export function CplStudentScoreTable({
     onImportClick,
     onExport,
     isExporting,
+    isManagement = false,
 }: CplStudentScoreTableProps) {
     const [deleteTarget, setDeleteTarget] = useState<CplStudentScore | null>(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
     const statusLabel: Record<string, string> = {
-        calculated: 'Dihitung',
-        validated: 'Tervalidasi',
+        calculated: 'Sedang Dihitung',
+        validated: 'Valid',
         finalized: 'Final',
     };
 
@@ -72,137 +74,146 @@ export function CplStudentScoreTable({
     }, [data, page, pageSize]);
 
     const columns = useMemo<Column<CplStudentScore>[]>(
-        () => [
-            {
-                key: 'no',
-                header: 'No',
-                width: 60,
-                className: 'text-center',
-                render: (_item, index) => <span>{(page - 1) * pageSize + index + 1}</span>,
-            },
-            {
-                key: 'student',
-                header: 'Nama Mahasiswa',
-                width: 200,
-                render: (item) => <div className="font-medium">{item.student?.fullName ?? '-'}</div>,
-            },
-            {
-                key: 'nim',
-                header: 'NIM',
-                width: 140,
-                render: (item) => <div className="text-muted-foreground">{item.student?.identityNumber ?? '-'}</div>,
-            },
-            {
-                key: 'score',
-                header: 'Skor',
-                width: 90,
-                className: 'text-center',
-                render: (item) => item.score,
-            },
-            {
-                key: 'result',
-                header: 'Hasil',
-                width: 120,
-                render: (item) => (
-                    <Badge
-                        variant="outline"
-                        className={
-                            item.result === 'Lulus'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-red-50 text-red-700 border-red-200'
-                        }
-                    >
-                        {item.result}
-                    </Badge>
-                ),
-            },
-            {
-                key: 'source',
-                header: 'Sumber',
-                width: 110,
-                filter: {
-                    type: 'select',
-                    value: filters.source ?? '',
-                    onChange: (value: string) =>
-                        onFiltersChange({
-                            ...filters,
-                            source: value === '' ? undefined : (value as 'SIA' | 'MANUAL'),
-                        }),
-                    options: [
-                        { label: 'Semua', value: '' },
-                        { label: 'SIA', value: 'SIA' },
-                        { label: 'Manual', value: 'MANUAL' },
-                    ],
+        () => {
+            const baseColumns: Column<CplStudentScore>[] = [
+                {
+                    key: 'no',
+                    header: 'No',
+                    width: 60,
+                    className: 'text-center',
+                    render: (_item, index) => <span>{(page - 1) * pageSize + index + 1}</span>,
                 },
-                render: (item) => (
-                    <Badge
-                        variant="outline"
-                        className={
-                            String(item.source).toUpperCase() === 'SIA'
-                                ? 'bg-amber-100 text-amber-700 border-amber-200'
-                                : 'bg-blue-100 text-blue-700 border-blue-200'
-                        }
-                    >
-                        {item.sourceLabel}
-                    </Badge>
-                ),
-            },
-            {
-                key: 'status',
-                header: 'Status',
-                width: 120,
-                filter: {
-                    type: 'select',
-                    value: filters.status ?? '',
-                    onChange: (value: string) =>
-                        onFiltersChange({
-                            ...filters,
-                            status: value === '' ? undefined : (value as CplStudentScoreStatus),
-                        }),
-                    options: [
-                        { label: 'Semua', value: '' },
-                        { label: 'Dihitung', value: 'calculated' },
-                        { label: 'Tervalidasi', value: 'validated' },
-                        { label: 'Final', value: 'finalized' },
-                    ],
+                {
+                    key: 'student',
+                    header: 'Nama Mahasiswa',
+                    width: 200,
+                    render: (item) => <div className="font-medium">{item.student?.fullName ?? '-'}</div>,
                 },
-                render: (item) => <Badge variant="secondary">{statusLabel[item.status] ?? item.status}</Badge>,
-            },
-            {
-                key: 'actions',
-                header: 'Aksi',
-                width: 100,
-                className: 'text-right',
-                render: (item) => {
-                    const isManual = String(item.source).toUpperCase() === 'MANUAL';
-                    return (
-                        <div className="flex justify-end gap-1">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => onEdit(item)}
-                                disabled={!isManual}
-                                title={isManual ? 'Ubah' : 'Data SIA tidak dapat diubah'}
-                            >
-                                <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => setDeleteTarget(item)}
-                                disabled={!isManual || isDeleting}
-                                title={isManual ? 'Hapus' : 'Data SIA tidak dapat dihapus'}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    );
+                {
+                    key: 'nim',
+                    header: 'NIM',
+                    width: 140,
+                    render: (item) => <div className="text-muted-foreground">{item.student?.identityNumber ?? '-'}</div>,
                 },
-            },
-        ],
-        [filters, isDeleting, onEdit, onFiltersChange, page, pageSize]
+                {
+                    key: 'score',
+                    header: 'Skor',
+                    width: 90,
+                    className: 'text-center',
+                    render: (item) => item.score,
+                },
+                {
+                    key: 'result',
+                    header: 'Hasil',
+                    width: 120,
+                    render: (item) => (
+                        <Badge
+                            variant="outline"
+                            className={
+                                item.result === 'Lulus'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                            }
+                        >
+                            {item.result}
+                        </Badge>
+                    ),
+                },
+                {
+                    key: 'source',
+                    header: 'Sumber',
+                    width: 110,
+                    filter: {
+                        type: 'select',
+                        value: filters.source ?? '',
+                        onChange: (value: string) =>
+                            onFiltersChange({
+                                ...filters,
+                                source: value === '' ? undefined : (value as 'SIA' | 'MANUAL'),
+                            }),
+                        options: [
+                            { label: 'Semua', value: '' },
+                            { label: 'SIA', value: 'SIA' },
+                            { label: 'Manual', value: 'MANUAL' },
+                        ],
+                    },
+                    render: (item) => (
+                        <Badge
+                            variant="outline"
+                            className={
+                                String(item.source).toUpperCase() === 'SIA'
+                                    ? 'bg-amber-100 text-amber-700 border-amber-200'
+                                    : 'bg-blue-100 text-blue-700 border-blue-200'
+                            }
+                        >
+                            {item.sourceLabel}
+                        </Badge>
+                    ),
+                },
+                {
+                    key: 'status',
+                    header: 'Status',
+                    width: 120,
+                    filter: {
+                        type: 'select',
+                        value: filters.status ?? '',
+                        onChange: (value: string) =>
+                            onFiltersChange({
+                                ...filters,
+                                status: value === '' ? undefined : (value as CplStudentScoreStatus),
+                            }),
+                        options: [
+                            { label: 'Semua', value: '' },
+                            { label: 'Sedang Dihitung', value: 'calculated' },
+                            { label: 'Valid', value: 'validated' },
+                            { label: 'Final', value: 'finalized' },
+                        ],
+                    },
+                    render: (item) => <Badge variant="secondary">{statusLabel[item.status] ?? item.status}</Badge>,
+                },
+            ];
+
+            if (isManagement) {
+                baseColumns.push({
+                    key: 'actions',
+                    header: 'Aksi',
+                    width: 100,
+                    className: 'text-right',
+                    render: (item) => {
+                        const isManual = String(item.source).toUpperCase() === 'MANUAL';
+                        const isFinalized = item.status === 'finalized';
+
+                        return (
+                            <div className="flex justify-end gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => onEdit(item)}
+                                    disabled={!isManual}
+                                    title={isManual ? 'Ubah' : 'Data SIA tidak dapat diubah'}
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => setDeleteTarget(item)}
+                                    disabled={!isManual || isDeleting}
+                                    title={isManual ? 'Hapus' : 'Data SIA tidak dapat dihapus'}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        );
+                    },
+                });
+            }
+
+            return baseColumns;
+        },
+        [filters, isDeleting, onEdit, onFiltersChange, page, pageSize, isManagement, statusLabel]
     );
 
     return (
@@ -227,15 +238,21 @@ export function CplStudentScoreTable({
                 rowKey={(item) => `${item.cplId}-${item.studentId}`}
                 actions={
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={onImportClick}>
-                            <Upload className="mr-2 h-4 w-4" /> Import Excel
-                        </Button>
+                        {isManagement && (
+                            <>
+                                <Button variant="outline" size="sm" onClick={onImportClick}>
+                                    <Upload className="mr-2 h-4 w-4" /> Import Excel
+                                </Button>
+                            </>
+                        )}
                         <Button variant="outline" size="sm" onClick={onExport} disabled={isExporting}>
                             {isExporting ? <Spinner className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />} Export Excel
                         </Button>
-                        <Button size="sm" onClick={onCreate}>
-                            <Plus className="mr-2 h-4 w-4" /> Tambah
-                        </Button>
+                        {isManagement && (
+                            <Button size="sm" onClick={onCreate}>
+                                <Plus className="mr-2 h-4 w-4" /> Tambah
+                            </Button>
+                        )}
                         <RefreshButton onClick={onRefresh} isRefreshing={isFetching && !isLoading} />
                     </div>
                 }

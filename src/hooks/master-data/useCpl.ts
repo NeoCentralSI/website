@@ -77,7 +77,7 @@ export function useCpl() {
     const exportAllMutation = useMutation({
         mutationFn: exportAllCplStudentScores,
         onSuccess: () => {
-            toast.success('Export semua nilai CPL berhasil diunduh');
+            toast.success('Berhasil mengekspor semua data CPL dan nilai mahasiswa terkait');
         },
         onError: (error: Error) => {
             toast.error(error.message);

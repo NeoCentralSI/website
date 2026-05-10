@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { FileSpreadsheet, Download, Upload, RefreshCw } from 'lucide-react';
+import { FileSpreadsheet, Download, Upload, RefreshCw, X, FileUp } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import type { CplStudentImportResult } from '@/services/master-data/cpl.service';
 
@@ -24,6 +24,7 @@ export function CplStudentScoreImportDialog({
 }: CplStudentScoreImportDialogProps) {
     const [file, setFile] = useState<File | null>(null);
     const [result, setResult] = useState<CplStudentImportResult | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const reset = () => {
         setFile(null);
@@ -74,13 +75,39 @@ export function CplStudentScoreImportDialog({
                                 Template
                             </Button>
                         </div>
-                        <Input
-                            type="file"
-                            accept=".xlsx,.xls"
-                            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                            disabled={isImporting}
-                        />
-                        {file && <p className="text-xs text-muted-foreground">File: {file.name}</p>}
+                        <div className="flex items-center gap-2">
+                            <Input
+                                type="file"
+                                accept=".xlsx,.xls"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                                disabled={isImporting}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full justify-start text-muted-foreground font-normal"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isImporting}
+                            >
+                                <FileUp className="mr-2 h-4 w-4" />
+                                {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
+                            </Button>
+                            {file && !isImporting && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                        setFile(null);
+                                        if (fileInputRef.current) fileInputRef.current.value = '';
+                                    }}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
                         {isImporting && (
                             <Alert>
                                 <Upload className="h-4 w-4 animate-bounce" />

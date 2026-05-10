@@ -32,17 +32,17 @@ export function CplStudentScoreFormDialog({
 
     const [studentId, setStudentId] = useState('');
     const [score, setScore] = useState<number | ''>('');
-    const [status, setStatus] = useState<string>('finalized');
+    const [status, setStatus] = useState<string>('calculated');
 
     useEffect(() => {
         if (editData) {
             setStudentId(editData.studentId);
             setScore(editData.score);
-            setStatus(editData.status || 'finalized');
+            setStatus(editData.status || 'calculated');
         } else {
             setStudentId('');
             setScore('');
-            setStatus('finalized');
+            setStatus('calculated');
         }
     }, [editData, open]);
 
@@ -110,8 +110,8 @@ export function CplStudentScoreFormDialog({
                                 <SelectValue placeholder="Pilih status" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="calculated">Dihitung</SelectItem>
-                                <SelectItem value="validated">Tervalidasi</SelectItem>
+                                <SelectItem value="calculated">Sedang Dihitung</SelectItem>
+                                <SelectItem value="validated">Valid</SelectItem>
                                 <SelectItem value="finalized">Final</SelectItem>
                             </SelectContent>
                         </Select>

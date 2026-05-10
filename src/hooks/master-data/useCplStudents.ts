@@ -73,7 +73,7 @@ export function useCplStudents(cplId: string) {
         onSuccess: (result: CplStudentImportResult) => {
             invalidate();
             if (result.failedCount === 0) {
-                toast.success(`Import berhasil (${result.successCount}/${result.totalRows})`);
+                toast.success('Import nilai CPL mahasiswa berhasil');
             } else {
                 toast.warning(
                     `Import selesai: ${result.successCount} sukses, ${result.failedCount} gagal`

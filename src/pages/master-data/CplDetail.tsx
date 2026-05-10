@@ -8,6 +8,7 @@ import { CplStudentScoreTable } from '@/components/master-data/cpl/CplStudentSco
 import { CplStudentScoreFormDialog } from '@/components/master-data/cpl/CplStudentScoreFormDialog';
 import { CplStudentScoreImportDialog } from '@/components/master-data/cpl/CplStudentScoreImportDialog';
 import type { CplStudentScore } from '@/services/master-data/cpl.service';
+import { useRole } from '@/hooks/shared';
 
 export default function CplDetailPage() {
     const { id = '' } = useParams();
@@ -15,6 +16,9 @@ export default function CplDetailPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
     const [editData, setEditData] = useState<CplStudentScore | null>(null);
+
+    const { isGkm } = useRole();
+    const isManagement = isGkm();
 
     const {
         cpl,
@@ -41,9 +45,9 @@ export default function CplDetailPage() {
         () => [
             { label: 'Master Data' },
             { label: 'CPL', href: '/kelola/cpl' },
-            { label: cpl?.code ? `Detail ${cpl.code}` : 'Detail CPL' },
+            { label: 'Detail CPL' },
         ],
-        [cpl?.code]
+        []
     );
 
     useEffect(() => {
@@ -93,6 +97,7 @@ export default function CplDetailPage() {
                 onImportClick={() => setImportOpen(true)}
                 onExport={exportScores}
                 isExporting={isExporting}
+                isManagement={isManagement}
             />
 
             <CplStudentScoreFormDialog

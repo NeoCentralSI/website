@@ -129,7 +129,7 @@ export function CplTable({
                 options: [
                     { label: 'Aktif', value: 'active' },
                     { label: 'Tidak Aktif', value: 'inactive' },
-                    { label: 'Semua', value: '' },
+                    { label: 'Semua', value: 'all' },
                 ],
             },
             render: (item) => (
@@ -173,19 +173,21 @@ export function CplTable({
                             <Pencil className="h-4 w-4" />
                         </Button>
                     )}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-8 w-8 ${item.isActive
-                            ? 'text-muted-foreground hover:text-amber-600'
-                            : 'text-muted-foreground hover:text-emerald-600'
-                            }`}
-                        onClick={() => onToggle(item.id)}
-                        disabled={isToggling}
-                        title={item.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                    >
-                        <Power className="h-4 w-4" />
-                    </Button>
+                    {isManagement && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-8 w-8 ${item.isActive
+                                ? 'text-muted-foreground hover:text-amber-600'
+                                : 'text-muted-foreground hover:text-emerald-600'
+                                }`}
+                            onClick={() => onToggle(item.id)}
+                            disabled={isToggling}
+                            title={item.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                        >
+                            <Power className="h-4 w-4" />
+                        </Button>
+                    )}
                     {isManagement && (
                         <Button
                             variant="ghost"
