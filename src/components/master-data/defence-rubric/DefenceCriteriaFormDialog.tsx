@@ -59,7 +59,7 @@ export function DefenceCriteriaFormDialog({
             setName('');
             setMaxScore('');
         }
-    }, [editData, open]);
+    }, [editData, open, role]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -67,13 +67,13 @@ export function DefenceCriteriaFormDialog({
         try {
             if (isEdit) {
                 const payload: UpdateCriteriaPayload = {
-                    ...(name.trim() ? { name: name.trim() } : {}),
+                    name: name.trim(),
                     ...(isMaxScoreLocked ? {} : { maxScore: parseInt(maxScore, 10) }),
                 };
                 await (onSubmit as (data: UpdateCriteriaPayload) => Promise<unknown>)(payload);
             } else {
                 const payload = {
-                    ...(name.trim() ? { name: name.trim() } : {}),
+                    name: name.trim(),
                     maxScore: parseInt(maxScore, 10),
                 };
                 await (onSubmit as (data: CreateCriteriaPayload) => Promise<unknown>)({

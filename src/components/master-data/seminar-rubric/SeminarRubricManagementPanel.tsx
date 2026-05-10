@@ -5,6 +5,13 @@ import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { getActiveAcademicYearAPI } from '@/services/admin.service';
 import { CriteriaTable } from '@/components/master-data/seminar-rubric/CriteriaTable';
 import { CriteriaFormDialog } from '@/components/master-data/seminar-rubric/CriteriaFormDialog';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import type {
     AssessmentCriteria,
     CpmkWithRubrics,
@@ -86,58 +93,55 @@ export function SeminarRubricManagementPanel() {
     };
 
     return (
-        <div className="space-y-4">
-            <div>
-                <div>
-                    <h2 className="text-xl font-semibold">Rubrik Seminar</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                        Kelola kriteria dan rubrik penilaian seminar berdasarkan CPMK
-                    </p>
-                </div>
-            </div>
-
-            {weightSummary && (
-                <div className={`sticky top-2 z-10 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${weightSummary.totalScore === 100
-                    ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                    : weightSummary.totalScore > 100
-                        ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
-                        : 'bg-muted/30'
-                    }`}>
-                    <span className="text-muted-foreground">Total Skor Kriteria Aktif:</span>
-                    <span className={`text-lg font-bold ${weightSummary.totalScore === 100
-                        ? 'text-green-600 dark:text-green-400'
-                        : weightSummary.totalScore > 100
-                            ? 'text-red-600 dark:text-red-400'
-                            : ''
-                        }`}>
-                        {weightSummary.totalScore} / 100
-                    </span>
-                    {weightSummary.totalScore < 100 && (
-                        <span className="text-xs text-muted-foreground">
-                            (sisa: {100 - weightSummary.totalScore})
-                        </span>
+        <Card className="shadow-sm">
+            <CardHeader>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <CardTitle>Rubrik Seminar Hasil</CardTitle>
+                        <CardDescription>
+                            Kelola kriteria dan rubrik penilaian seminar hasil tugas akhir berdasarkan CPMK.
+                        </CardDescription>
+                    </div>
+                    {weightSummary && (
+                        <div className={`flex items-center gap-3 rounded-lg border px-4 py-2 text-sm h-fit ${weightSummary.totalScore === 100
+                            ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                            : weightSummary.totalScore > 100
+                                ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+                                : 'bg-muted/30'
+                            }`}>
+                            <span className="text-muted-foreground font-medium">Total Skor:</span>
+                            <span className={`text-lg font-bold ${weightSummary.totalScore === 100
+                                ? 'text-green-600 dark:text-green-400'
+                                : weightSummary.totalScore > 100
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : ''
+                                }`}>
+                                {weightSummary.totalScore} / 100
+                            </span>
+                        </div>
                     )}
                 </div>
-            )}
-
-            <CriteriaTable
-                data={mergedCpmks}
-                isLoading={isLoading}
-                isFetching={isFetching}
-                onRefresh={() => refetch()}
-                onAddCriteria={handleOpenAddCriteria}
-                onEditCriteria={handleEditCriteria}
-                onDeleteCriteria={deleteCriteria}
-                onCreateRubric={createRubric}
-                onUpdateRubric={updateRubric}
-                onDeleteRubric={deleteRubric}
-                onRemoveCpmkConfig={removeCpmkConfig}
-                onReorderCriteria={reorderCriteria}
-                onReorderRubrics={reorderRubrics}
-                isDeletingCriteria={isDeletingCriteria}
-                isDeletingRubric={isDeletingRubric}
-                isRemovingCpmkConfig={isRemovingCpmkConfig}
-            />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <CriteriaTable
+                    data={mergedCpmks}
+                    isLoading={isLoading}
+                    isFetching={isFetching}
+                    onRefresh={() => refetch()}
+                    onAddCriteria={handleOpenAddCriteria}
+                    onEditCriteria={handleEditCriteria}
+                    onDeleteCriteria={deleteCriteria}
+                    onCreateRubric={createRubric}
+                    onUpdateRubric={updateRubric}
+                    onDeleteRubric={deleteRubric}
+                    onRemoveCpmkConfig={removeCpmkConfig}
+                    onReorderCriteria={reorderCriteria}
+                    onReorderRubrics={reorderRubrics}
+                    isDeletingCriteria={isDeletingCriteria}
+                    isDeletingRubric={isDeletingRubric}
+                    isRemovingCpmkConfig={isRemovingCpmkConfig}
+                />
+            </CardContent>
 
             <CriteriaFormDialog
                 open={criteriaDialogOpen}
@@ -155,6 +159,6 @@ export function SeminarRubricManagementPanel() {
                     : createCriteria
                 }
             />
-        </div>
+        </Card>
     );
 }
