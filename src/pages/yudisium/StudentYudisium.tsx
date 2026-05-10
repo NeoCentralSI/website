@@ -819,10 +819,10 @@ export default function StudentYudisium() {
     doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
 
     // D. Signature
-    const validator = data.cplScores.find(sc => sc.validatedBy);
-    const validatorName = validator?.validatedBy || '...';
-    const validatorNip = validator?.validatedByNip || '...';
-    const validatedDate = validator?.validatedAt ? new Date(validator.validatedAt) : new Date();
+    const validator = data.cplScores.find(sc => sc.verifiedBy);
+    const validatorName = validator?.verifiedBy || '...';
+    const validatorNip = validator?.verifiedByNip || '...';
+    const validatedDate = validator?.verifiedAt ? new Date(validator.verifiedAt) : new Date();
 
     const signY = finalY + 40;
     doc.setFontSize(10);
@@ -993,7 +993,7 @@ export default function StudentYudisium() {
                   </thead>
                   <tbody>
                     {data?.cplScores.map((cpl: any, idx: number) => {
-                      const isValidated = cpl.status === 'validated' || !!(cpl.validatedBy && cpl.validatedAt);
+                      const isValidated = cpl.status === 'validated' || !!(cpl.verifiedBy && cpl.verifiedAt);
                       return (
                         <tr key={idx} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
                           <td className="px-3 py-2 text-xs font-semibold text-foreground">{cpl.code ?? '-'}</td>
@@ -1013,7 +1013,7 @@ export default function StudentYudisium() {
                           <td className="px-3 py-2 text-right">
                             <div className="flex justify-end">
                               {isValidated ? (
-                                <div className="bg-emerald-100 text-emerald-600 p-0.5 rounded-full" title={`Validasi pada ${formatDateTime(cpl.validatedAt)}`}>
+                                <div className="bg-emerald-100 text-emerald-600 p-0.5 rounded-full" title={`Validasi pada ${formatDateTime(cpl.verifiedAt)}`}>
                                   <Check size={10} strokeWidth={3} />
                                 </div>
                               ) : (

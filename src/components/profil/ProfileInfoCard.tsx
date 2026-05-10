@@ -4,13 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/hooks/shared';
 import { useProfileUpdate } from '@/hooks/profile';
 

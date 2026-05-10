@@ -41,7 +41,7 @@ export function useCplStudents(cplId: string) {
     const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
     const createMutation = useMutation({
-        mutationFn: (payload: { studentId: string; score: number; status?: string }) => createCplStudentScore(cplId, payload),
+        mutationFn: (payload: { studentId: string; score: number; status?: CplStudentScoreStatus }) => createCplStudentScore(cplId, payload),
         onSuccess: () => {
             invalidate();
             toast.success('Nilai CPL mahasiswa berhasil ditambahkan');
@@ -108,8 +108,8 @@ export function useCplStudents(cplId: string) {
         optionSearch,
         setOptionSearch,
         studentOptions,
-        createScore: (payload: { studentId: string; score: number; status?: string }) => createMutation.mutateAsync(payload),
-        updateScore: (studentId: string, score: number, status?: string) => updateMutation.mutateAsync({ studentId, score, status }),
+        createScore: (payload: { studentId: string; score: number; status?: CplStudentScoreStatus }) => createMutation.mutateAsync(payload),
+        updateScore: (studentId: string, score: number, status?: CplStudentScoreStatus) => updateMutation.mutateAsync({ studentId, score, status }),
         deleteScore: (studentId: string) => deleteMutation.mutate(studentId),
         importScores: (file: File) => importMutation.mutateAsync(file),
         exportScores: () => exportMutation.mutateAsync(),

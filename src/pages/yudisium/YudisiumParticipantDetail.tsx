@@ -270,15 +270,15 @@ export default function YudisiumParticipantDetail() {
             </Button>
           )}
 
-          {/* Verified badge — visible to ALL roles */}
-          {row.status === 'verified' && (
-            <div className="flex items-center justify-center h-8 w-8" title={`Tervalidasi oleh ${row.verifiedBy ?? '-'}`}>
+          {/* Validated badge — visible to ALL roles */}
+          {row.status === 'validated' && (
+            <div className="flex items-center justify-center h-8 w-8" title={`Tervalidasi oleh ${row.validatedBy ?? '-'}`}>
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
           )}
 
           {/* Verify / Repair actions — GKM only */}
-          {canPerformActions && row.status !== 'verified' && (
+          {canPerformActions && row.status !== 'validated' && (
             <>
               {row.passed && (
                 <Button

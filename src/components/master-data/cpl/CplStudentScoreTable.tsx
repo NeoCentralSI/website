@@ -187,8 +187,6 @@ export function CplStudentScoreTable({
                     className: 'text-right',
                     render: (item) => {
                         const isManual = String(item.source).toUpperCase() === 'MANUAL';
-                        const isFinalized = item.status === 'finalized';
-
                         return (
                             <div className="flex justify-end gap-1">
                                 <Button
