@@ -8,7 +8,7 @@ import { AdminThesisSeminarArchivePanel } from '@/components/thesis-seminar/Admi
 export default function AdminThesisSeminar() {
 	const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>()
 	const [searchParams, setSearchParams] = useSearchParams()
-	const activeTab = searchParams.get('tab') || 'verification'
+	const activeTab = searchParams.get('tab') || 'verifikasi'
 
 	const setActiveTab = (tab: string) => {
 		setSearchParams({ tab }, { replace: true })
@@ -18,7 +18,7 @@ export default function AdminThesisSeminar() {
 		() => [
 			{ label: 'Tugas Akhir', href: '/tugas-akhir' },
 			{ label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-			{ label: activeTab === 'archive' ? 'Arsip' : 'Verifikasi' },
+			{ label: activeTab === 'arsip' ? 'Arsip' : 'Verifikasi' },
 		],
 		[activeTab]
 	)
@@ -29,8 +29,8 @@ export default function AdminThesisSeminar() {
 	}, [breadcrumbs, setBreadcrumbs, setTitle])
 
 	const tabs = [
-		{ label: 'Verifikasi', value: 'verification' },
-		{ label: 'Arsip', value: 'archive' },
+		{ label: 'Verifikasi', value: 'verifikasi' },
+		{ label: 'Arsip', value: 'arsip' },
 	]
 
 	return (
@@ -42,8 +42,8 @@ export default function AdminThesisSeminar() {
 
 			<LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-			{activeTab === 'verification' && <AdminThesisSeminarVerificationPanel />}
-			{activeTab === 'archive' && <AdminThesisSeminarArchivePanel />}
+			{activeTab === 'verifikasi' && <AdminThesisSeminarVerificationPanel />}
+			{activeTab === 'arsip' && <AdminThesisSeminarArchivePanel />}
 		</div>
 	)
 }

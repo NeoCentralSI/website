@@ -8,7 +8,7 @@ import { AdminThesisDefenceArchivePanel } from '@/components/thesis-defence/Admi
 export default function AdminThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'verification';
+  const activeTab = searchParams.get('tab') || 'verifikasi';
 
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true });
@@ -18,7 +18,7 @@ export default function AdminThesisDefence() {
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
       { label: 'Sidang', href: '/tugas-akhir/sidang' },
-      { label: activeTab === 'archive' ? 'Arsip' : 'Verifikasi' },
+      { label: activeTab === 'arsip' ? 'Arsip' : 'Verifikasi' },
     ],
     [activeTab]
   );
@@ -29,8 +29,8 @@ export default function AdminThesisDefence() {
   }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
   const tabs = [
-    { label: 'Verifikasi', value: 'verification' },
-    { label: 'Arsip', value: 'archive' },
+    { label: 'Verifikasi', value: 'verifikasi' },
+    { label: 'Arsip', value: 'arsip' },
   ];
 
   return (
@@ -42,8 +42,8 @@ export default function AdminThesisDefence() {
 
       <LocalTabsNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {activeTab === 'verification' && <AdminThesisDefenceVerificationPanel />}
-      {activeTab === 'archive' && <AdminThesisDefenceArchivePanel />}
+      {activeTab === 'verifikasi' && <AdminThesisDefenceVerificationPanel />}
+      {activeTab === 'arsip' && <AdminThesisDefenceArchivePanel />}
     </div>
   );
 }
