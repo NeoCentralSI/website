@@ -22,11 +22,11 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { FileUp, X } from 'lucide-react';
-import { getExitSurveyForms } from '@/services/yudisium/yudisium-exit-survey.service';
-import { getYudisiumRequirements } from '@/services/yudisium/yudisium-requirement.service';
+import { getExitSurveyForms } from '@/services/yudisium/exit-survey.service';
+import { getYudisiumRequirements } from '@/services/yudisium/requirement.service';
 import { toast } from 'sonner';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
-import type { YudisiumRequirement } from '@/services/yudisium/yudisium-requirement.service';
+import type { YudisiumRequirement } from '@/services/yudisium/requirement.service';
 import type {
 	CreateYudisiumPayload,
 	UpdateYudisiumPayload,

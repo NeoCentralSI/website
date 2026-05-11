@@ -31,7 +31,7 @@ import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Filter } from 'lucide-react';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import { useQuery } from '@tanstack/react-query';
-import { getExitSurveyFormResponses } from '@/services/yudisium/yudisium-exit-survey.service';
+import { getExitSurveyFormResponses } from '@/services/yudisium/exit-survey.service';
 import { Spinner } from '@/components/ui/spinner';
 import { formatDateId } from '@/lib/text';
 import * as XLSX from 'xlsx';

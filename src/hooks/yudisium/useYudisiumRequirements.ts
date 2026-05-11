@@ -6,7 +6,7 @@ import {
   updateYudisiumRequirement,
   toggleYudisiumRequirement,
   deleteYudisiumRequirement,
-} from '@/services/yudisium/yudisium-requirement.service';
+} from '@/services/yudisium/requirement.service';
 
 export const requirementKeys = {
   all: ['yudisium-requirements'] as const,

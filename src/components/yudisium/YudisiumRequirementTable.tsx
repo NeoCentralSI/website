@@ -19,7 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import type {
     UpdateYudisiumRequirementPayload,
     YudisiumRequirement,
-} from '@/services/yudisium/yudisium-requirement.service';
+} from '@/services/yudisium/requirement.service';
 import { YudisiumRequirementFormDialog } from './YudisiumRequirementFormDialog';
 
 interface YudisiumRequirementTableProps {

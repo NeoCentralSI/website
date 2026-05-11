@@ -8,7 +8,7 @@ import {
   repairCplScore,
   exportParticipants,
   finalizeParticipants,
-} from '@/services/yudisium/yudisium-participant.service';
+} from '@/services/yudisium/participant.service';
 import { toast } from 'sonner';
 import type { VerifyDocumentPayload } from '@/types/admin-yudisium.types';
 

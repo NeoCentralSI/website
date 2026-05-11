@@ -20,7 +20,6 @@ import {
   useParticipantCplScores,
   useValidateCplScore,
   useRepairCplScore,
-  useFinalizeParticipants,
 } from '@/hooks/yudisium/useYudisiumParticipants';
 import { useRole } from '@/hooks/shared';
 import { openProtectedFile } from '@/lib/protected-file';
@@ -160,10 +159,10 @@ export default function YudisiumParticipantDetail() {
     doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
 
     // D. Signature
-    const validator = cplData.cplScores.find(sc => sc.verifiedBy);
-    const validatorName = validator?.verifiedBy || '...';
-    const validatorNip = validator?.verifiedByNip || '...';
-    const validatedDate = validator?.verifiedAt ? new Date(validator.verifiedAt) : new Date();
+    const validator = cplData.cplScores.find(sc => sc.validatedBy);
+    const validatorName = validator?.validatedBy || '...';
+    const validatorNip = validator?.validatedByNip || '...';
+    const validatedDate = validator?.validatedAt ? new Date(validator.validatedAt) : new Date();
 
     const signY = finalY + 40;
     doc.setFontSize(10);
@@ -317,7 +316,7 @@ export default function YudisiumParticipantDetail() {
     });
 
     return cols;
-  }, [verifyMutation.isPending, canPerformActions]);
+  }, [validateMutation.isPending, canPerformActions]);
 
 
 
