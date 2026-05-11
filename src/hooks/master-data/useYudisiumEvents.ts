@@ -7,7 +7,7 @@ import {
     updateYudisiumEvent,
     type CreateYudisiumPayload,
     type UpdateYudisiumPayload,
-} from '@/services/yudisium/yudisium.service';
+} from '@/services/yudisium/core.service';
 
 const QUERY_KEY = ['yudisium-events'];
 

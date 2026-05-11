@@ -31,7 +31,7 @@ import type {
 	CreateYudisiumPayload,
 	UpdateYudisiumPayload,
 	YudisiumEvent,
-} from '@/services/yudisium/yudisium.service';
+} from '@/services/yudisium/core.service';
 import { apiRequest } from '@/services/auth.service';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 

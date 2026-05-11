@@ -17,7 +17,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { formatDateOnlyId, formatDateTimeId } from '@/lib/text';
-import type { YudisiumEvent, UpdateYudisiumPayload } from '@/services/yudisium/yudisium.service';
+import type { YudisiumEvent, UpdateYudisiumPayload } from '@/services/yudisium/core.service';
 import { YudisiumFormDialog } from '@/components/yudisium/YudisiumFormDialog';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline'; className: string }> = {
@@ -38,7 +38,7 @@ interface YudisiumTableProps {
     isFetching: boolean;
     onDelete: (id: string) => void;
     onUpdate: (id: string, data: UpdateYudisiumPayload) => Promise<unknown>;
-    onCreate: (payload: import('@/services/yudisium/yudisium.service').CreateYudisiumPayload) => Promise<unknown>;
+    onCreate: (payload: import('@/services/yudisium/core.service').CreateYudisiumPayload) => Promise<unknown>;
     onRefresh: () => void;
     isDeleting: boolean;
     canManage: boolean;
