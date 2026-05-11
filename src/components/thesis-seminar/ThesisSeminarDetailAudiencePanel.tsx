@@ -53,21 +53,20 @@ export function ThesisSeminarAudiencePanel({ seminarId, detail }: Props) {
     isOngoing = new Date() >= seminarStart;
   }
 
-  if (!isFinalized && !isOngoing) {
-    return null;
-  }
+  const shouldShow = isFinalized || isOngoing;
 
-  const isArchived = !detail.registeredAt;
+  const isArchived = !detail?.registeredAt;
+  const activeSeminarId = shouldShow ? seminarId : undefined;
 
   // Admin Data & Hooks
-  const adminQuery = useAdminThesisSeminarAudiences(seminarId);
-  const { data: studentOptions } = useAdminThesisSeminarAudienceStudentOptions(seminarId, isArchived);
+  const adminQuery = useAdminThesisSeminarAudiences(activeSeminarId);
+  const { data: studentOptions } = useAdminThesisSeminarAudienceStudentOptions(activeSeminarId, isArchived);
   const addMutation = useAddAdminThesisSeminarAudience();
   const removeMutation = useRemoveAdminThesisSeminarAudience();
   const importMutation = useImportAdminThesisSeminarAudiences();
 
   // Public/Supervisor Data & Hooks
-  const publicQuery = useSeminarAudiences(seminarId);
+  const publicQuery = useSeminarAudiences(activeSeminarId);
   const approveMutation = useApproveAudience();
   const unapproveMutation = useUnapproveAudience();
   const exportMutation = useExportAdminThesisSeminarAudiences();
@@ -75,6 +74,10 @@ export function ThesisSeminarAudiencePanel({ seminarId, detail }: Props) {
 
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  if (!shouldShow) {
+    return null;
+  }
 
   const currentQuery = _isAdmin ? adminQuery : publicQuery;
   const rows = Array.isArray(currentQuery.data)

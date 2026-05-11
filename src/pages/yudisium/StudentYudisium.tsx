@@ -46,7 +46,7 @@ const formatDateTime = (date: any) => {
     const d = typeof date === 'string' ? new Date(date) : date;
     if (!(d instanceof Date) || isNaN(d.getTime())) return '-';
     return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
-  } catch (err) {
+  } catch {
     return '-';
   }
 };

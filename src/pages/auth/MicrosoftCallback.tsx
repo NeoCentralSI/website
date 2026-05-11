@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { exchangeMicrosoftCodeAPI, saveAuthTokens } from '@/services/auth.service';
+import { exchangeMicrosoftCodeAPI } from '@/services/auth.service';
 import { useAuth } from '@/hooks/shared';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { toTitleCaseName } from '@/lib/text';
+
+const processedMicrosoftCodes = new Set<string>();
 
 /**
  * Microsoft OAuth callback handler (frontend).
@@ -15,7 +17,7 @@ import { toTitleCaseName } from '@/lib/text';
  */
 export default function MicrosoftCallback() {
   const navigate = useNavigate();
-  const { setUserDirectly } = useAuth();
+  const { completeLoginSession } = useAuth();
 
   // Guard: cegah effect dijalankan lebih dari sekali (StrictMode + re-render).
   const processedRef = useRef(false);
@@ -33,14 +35,18 @@ export default function MicrosoftCallback() {
           return;
         }
 
+        if (processedMicrosoftCodes.has(exchangeCode)) {
+          return;
+        }
+
         processedRef.current = true;
+        processedMicrosoftCodes.add(exchangeCode);
 
         const { accessToken, refreshToken, user, hasCalendarAccess } =
           await exchangeMicrosoftCodeAPI(exchangeCode);
 
-        saveAuthTokens(accessToken, refreshToken);
+        await completeLoginSession({ accessToken, refreshToken, user });
         localStorage.setItem('hasCalendarAccess', JSON.stringify(hasCalendarAccess ?? false));
-        setUserDirectly(user);
 
         toast.success('Login berhasil', {
           description: `Selamat datang, ${toTitleCaseName(user.fullName)}`,
@@ -50,6 +56,9 @@ export default function MicrosoftCallback() {
       } catch (error) {
         console.error('[MicrosoftCallback] exchange failed:', error);
         processedRef.current = true;
+        if (exchangeCode) {
+          processedMicrosoftCodes.delete(exchangeCode);
+        }
         const message =
           error instanceof Error ? error.message : 'Login Microsoft gagal';
         toast.error('Login Microsoft gagal', { description: message });
@@ -58,7 +67,7 @@ export default function MicrosoftCallback() {
     };
 
     handleCallback();
-  }, [navigate, setUserDirectly]);
+  }, [completeLoginSession, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
