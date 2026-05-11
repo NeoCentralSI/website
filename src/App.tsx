@@ -25,7 +25,7 @@ import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
-import { ROLES, LECTURER_ROLES, SUPERVISOR_ROLES } from './lib/roles'
+import { ROLES, LECTURER_ROLES } from './lib/roles'
 
 // Lazy-loaded pages
 const Dashboard = lazy(() => import('./pages/Dashboard'))

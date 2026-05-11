@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-function academicYearLabel(semester?: string, year?: string | null) {
+function academicYearLabel(semester?: string, year?: string | number | null) {
     const semesterLabel = semester === 'ganjil' ? 'Ganjil' : 'Genap';
     return `${semesterLabel} ${year || ''}`.trim();
 }

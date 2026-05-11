@@ -41,7 +41,7 @@ export default function Mahasiswa() {
   const [searchValue, setSearchValue] = useState('');
   const [programFilter, setProgramFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [enrollmentYearFilter, setEnrollmentYearFilter] = useState('');
+  const [enrollmentYearFilter] = useState(''); // TODO: wire UI filter when ready
   const [academicYearFilter, setAcademicYearFilter] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -115,6 +115,7 @@ export default function Mahasiswa() {
       mkwuCompleted?: boolean;
       internshipCompleted?: boolean;
       kknCompleted?: boolean;
+      researchMethodCompleted?: boolean;
     }) => adminUpdateStudentAPI(selectedStudent!.id, data),
     onSuccess: () => {
       toast.success('Data mahasiswa berhasil diperbarui');

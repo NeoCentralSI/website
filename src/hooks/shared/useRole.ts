@@ -39,6 +39,8 @@ export function useRole() {
   const isPembimbing2 = (): boolean => hasRole(ROLES.PEMBIMBING_2);
   const isPenguji = (): boolean => hasRole(ROLES.PENGUJI);
   const isGkm = (): boolean => hasRole(ROLES.GKM);
+  const isKoordinatorYudisium = (): boolean => hasRole(ROLES.KOORDINATOR_YUDISIUM);
+  const isTimPengelolaCpl = (): boolean => hasRole(ROLES.TIM_PENGELOLA_CPL);
   const isKoordinatorMetopen = (): boolean => hasRole(ROLES.KOORDINATOR_METOPEN);
   const isDosenPengampuMetopel = (): boolean => isKoordinatorMetopen();
   const isDosenPengampuMetopen = (): boolean => isKoordinatorMetopen();
@@ -60,6 +62,8 @@ export function useRole() {
     isPembimbing2,
     isPenguji,
     isGkm,
+    isKoordinatorYudisium,
+    isTimPengelolaCpl,
     isKoordinatorMetopen,
     isDosenPengampuMetopel,
     isDosenPengampuMetopen,
