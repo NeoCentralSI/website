@@ -5,13 +5,17 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, Eye, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MapPin } from "lucide-react";
 
 interface LecturerColumnProps {
     onViewDetail: (item: LecturerSupervisedStudent) => void;
+    onApproveSeminar?: (item: LecturerSupervisedStudent) => void;
 }
 
 export const getLecturerSupervisedStudentsColumns = ({
     onViewDetail,
+    onApproveSeminar,
 }: LecturerColumnProps): Column<LecturerSupervisedStudent>[] => [
     {
         key: "student",
@@ -25,27 +29,27 @@ export const getLecturerSupervisedStudentsColumns = ({
         sortable: true,
     },
     {
-        key: "companyName",
-        header: "Perusahaan",
-        accessor: "companyName",
-        sortable: true,
+        key: "implementation",
+        header: "Tempat & Waktu KP",
+        render: (item) => (
+            <div className="flex flex-col gap-1 pt-1 pb-1">
+                <span className="font-medium text-sm leading-tight max-w-[150px] truncate" title={item.companyName}>
+                    {item.companyName}
+                </span>
+                <div className="text-[11px] text-muted-foreground flex flex-col">
+                    <span>{item.startDate ? format(new Date(item.startDate), 'dd MMM yyyy', { locale: idLocale }) : '-'} s.d.</span>
+                    <span>{item.endDate ? format(new Date(item.endDate), 'dd MMM yyyy', { locale: idLocale }) : '-'}</span>
+                </div>
+            </div>
+        ),
+        sortable: false,
     },
-    {
+     {
         key: "academicYearName",
         header: "Tahun Ajaran",
         accessor: "academicYearName",
         sortable: true,
         className: "text-center",
-    },
-    {
-        key: "period",
-        header: "Periode Pelaksanaan",
-        render: (item) => (
-            <div className="text-xs">
-                {item.startDate ? format(new Date(item.startDate), 'dd MMM yyyy', { locale: idLocale }) : '-'} s/d <br/>
-                {item.endDate ? format(new Date(item.endDate), 'dd MMM yyyy', { locale: idLocale }) : '-'}
-            </div>
-        ),
     },
     {
         key: "progress",
@@ -69,6 +73,95 @@ export const getLecturerSupervisedStudentsColumns = ({
                 </div>
             );
         },
+    },
+    {
+        key: "seminar",
+        header: "Seminar",
+        render: (item) => {
+            const seminar = item.seminar;
+            if (!seminar) {
+                return (
+                    <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
+                         <span className="text-xs">Belum Ada</span>
+                    </div>
+                );
+            }
+
+            const status = seminar.status;
+            let statusConfig: { label: string; color: string; icon: React.ReactNode } = {
+                label: status,
+                color: 'text-muted-foreground',
+                icon: <AlertCircle className="w-4 h-4" />
+            };
+
+            if (status === 'REQUESTED') {
+                statusConfig = { label: 'Menunggu ACC', color: 'text-amber-600', icon: <Clock className="w-4 h-4" /> };
+            } else if (status === 'APPROVED') {
+                statusConfig = { label: 'Disetujui', color: 'text-green-600', icon: <CheckCircle2 className="w-4 h-4" /> };
+            } else if (status === 'COMPLETED') {
+                statusConfig = { label: 'Selesai', color: 'text-emerald-500', icon: <CheckCircle2 className="w-4 h-4" /> };
+            } else if (status === 'REJECTED') {
+                statusConfig = { label: 'Ditolak', color: 'text-red-500', icon: <XCircle className="w-4 h-4" /> };
+            }
+
+            return (
+                <div className="flex flex-col items-center gap-1.5">
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="flex items-center justify-center gap-1.5 cursor-help group">
+                                    {statusConfig.icon}
+                                    <span className={`text-xs font-medium ${statusConfig.color} underline decoration-dotted underline-offset-2 opacity-80 group-hover:opacity-100`}>
+                                        {statusConfig.label}
+                                    </span>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="p-3 w-56 flex flex-col gap-2 bg-white text-popover-foreground border shadow-md">
+                                <p className="text-xs font-semibold border-b pb-1">Detail Jadwal Seminar</p>
+                                <div className="space-y-1.5">
+                                    <div className="flex items-start gap-2">
+                                        <Clock className="w-3.5 h-3.5 mt-0.5 text-muted-foreground" />
+                                        <div className="flex flex-col">
+                                            <span className="text-[11px] font-medium">
+                                                {format(new Date(seminar.seminarDate), 'eeee, dd MMMM yyyy', { locale: idLocale })}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground">
+                                                {format(new Date(seminar.startTime), 'HH:mm')} - {format(new Date(seminar.endTime), 'HH:mm')} WIB
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <MapPin className="w-3.5 h-3.5 mt-0.5 text-muted-foreground" />
+                                        <div className="flex flex-col">
+                                            <span className="text-[11px] font-medium">{seminar.room?.name || 'Ruangan belum ditentukan'}</span>
+                                            {seminar.room?.location && (
+                                                <span className="text-[10px] text-muted-foreground">{seminar.room.location}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    {status === 'REQUESTED' && onApproveSeminar && (
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-[10px] px-2 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:text-amber-800"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onApproveSeminar(item);
+                            }}
+                        >
+                            ACC Sekarang
+                        </Button>
+                    )}
+                </div>
+            );
+        },
+        className: "text-center",
+        sortable: true,
     },
     {
         key: "report",

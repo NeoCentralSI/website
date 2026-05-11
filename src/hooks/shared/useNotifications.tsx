@@ -162,9 +162,9 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     }
   }, [queryClient]);
 
-  // NOTE: FCM listener is handled by useGuidanceRealtime hook in DashboardLayout
-  // to avoid duplicate listeners and ensure proper event routing based on notification type
-  // The query ['notification-unread'] will be invalidated by useGuidanceRealtime when FCM arrives
+  // NOTE: FCM listener is handled by useThesisRealtime / useRealtimeNotifications hooks
+  // (origin/main refactor) to avoid duplicate listeners and route events by notification type.
+  // The query ['notification-unread'] will be invalidated by those hooks when FCM arrives.
 
   const value: NotificationContextType = {
     notifications,

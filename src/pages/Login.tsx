@@ -4,6 +4,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { ActivateAccountForm } from '@/components/auth/ActivateAccountForm';
 import { useLoginRedirect } from '@/hooks/auth';
+import { LoginSeo } from '@/components/seo';
 
 const Login = () => {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -29,6 +30,7 @@ const Login = () => {
 
   return (
     <div className="w-full h-screen lg:grid lg:grid-cols-2 bg-white">
+      <LoginSeo />
       <LoginCarousel />
 
       <div className="flex items-center justify-center py-12 px-6 bg-white">

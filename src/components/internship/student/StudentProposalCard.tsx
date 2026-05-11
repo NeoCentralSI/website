@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Upload, Edit, Trash2, Check, X, ChevronDown, ChevronRight, CheckCircle2, Clock, XCircle, AlertCircle, Users, User } from 'lucide-react';
-import type { InternshipProposalItem } from '@/services/internship.service';
+import type { InternshipProposalItem } from '@/services/internship';
 import { cn } from '@/lib/utils';
 import { getInternshipStatusBadge } from '@/lib/internship/status';
 
@@ -202,7 +202,7 @@ export function StudentProposalCard({
 
             {/* Timeline Body */}
             {isExpanded && (
-                <CardContent className="p-5 sm:p-6 bg-background -mt-12">
+                <CardContent className="p-5 sm:p-6 pt-0 sm:pt-0 bg-background">
                     {proposal.members && proposal.members.filter(m => m.nim !== proposal.nim).length > 0 && (
                         <div className="mb-6">
                             <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -427,13 +427,13 @@ export function StudentProposalCard({
                                         {step5Status === 'completed' ? 'Diterima' : step5Status === 'rejected' ? 'Ditolak' : step5Status === 'processing' ? 'Menunggu' : 'Belum Mulai'}
                                     </Badge>
                                 </div>
-                                {step5Status === 'rejected' && !!proposal.companyResponseSekdepNotes && (
+                                {step5Status === 'rejected' && !!proposal.companyResponseNotes && (
                                     <div className="bg-red-50 border border-red-100 rounded-md p-3 mt-1">
                                         <div className="flex gap-2">
                                             <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
                                             <div className="text-xs text-red-800">
                                                 <span className="font-semibold block mb-0.5">Catatan Penolakan:</span>
-                                                {proposal.companyResponseSekdepNotes}
+                                                {proposal.companyResponseNotes}
                                             </div>
                                         </div>
                                     </div>

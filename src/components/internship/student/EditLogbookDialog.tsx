@@ -21,7 +21,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { updateLogbookEntry, type InternshipLogbookItem } from '@/services/internship.service';
+import { updateLogbookEntry, type InternshipLogbookItem } from '@/services/internship';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 

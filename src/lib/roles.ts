@@ -46,10 +46,13 @@ export const LECTURER_ROLES = [
 ] as const;
 
 // Staff roles (admin + management)
+// Extended from origin/main: includes KOORDINATOR_YUDISIUM and GKM for staff-level access
 export const STAFF_ROLES = [
   ROLES.ADMIN,
   ROLES.KETUA_DEPARTEMEN,
   ROLES.SEKRETARIS_DEPARTEMEN,
+  ROLES.KOORDINATOR_YUDISIUM,
+  ROLES.GKM,
 ] as const;
 
 // Display name mapping (untuk tampilan UI yang lebih singkat jika diperlukan)

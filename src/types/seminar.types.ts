@@ -28,6 +28,7 @@ export interface SeminarChecklistItem {
 export interface SeminarChecklist {
   bimbingan: SeminarChecklistItem;
   kehadiran: SeminarChecklistItem;
+  metopen: SeminarChecklistItem;
   pembimbing: SeminarChecklistItem;
 }
 
@@ -42,6 +43,13 @@ export interface SeminarDocument {
   verifiedBy?: string | null;
   fileName?: string | null;
   filePath?: string | null;
+}
+
+export interface AdminSeminarDocumentSummary {
+  total: number;
+  submitted: number;
+  approved: number;
+  declined: number;
 }
 
 export interface SeminarDocumentType {
@@ -85,6 +93,7 @@ export interface SeminarInfo {
   endTime: string | null;
   meetingLink: string | null;
   finalScore: number | null;
+  maxWeight?: number;
   grade: string | null;
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
@@ -103,7 +112,11 @@ export interface SeminarOverviewResponse {
 
 export interface AttendanceRecord {
   seminarId: string;
+  seminarStatus?: ThesisSeminarStatus;
+  seminarEndTime?: string | null;
+  seminarResultFinalizedAt?: string | null;
   presenterName: string;
+  presenterNim?: string;
   thesisTitle: string;
   date: string | null;
   isPresent: boolean;
@@ -123,17 +136,6 @@ export interface AttendanceHistoryResponse {
   records: AttendanceRecord[];
 }
 
-// ============================================================
-// Admin Seminar Management Types
-// ============================================================
-
-export interface AdminSeminarDocumentSummary {
-  total: number;
-  submitted: number;
-  approved: number;
-  declined: number;
-}
-
 export interface AdminSeminarSupervisor {
   name: string;
   role: string;
@@ -151,6 +153,15 @@ export interface AdminSeminarListItem {
   date: string | null;
   startTime: string | null;
   endTime: string | null;
+  room?: { id: string; name: string } | null;
+  examiners?: Array<{
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    availabilityStatus: ExaminerAvailabilityStatus;
+  }>;
+  audienceCount?: number;
   documentSummary: AdminSeminarDocumentSummary;
 }
 
@@ -254,6 +265,8 @@ export interface SeminarSchedulingData {
   rooms: RoomOption[];
   lecturerAvailabilities: LecturerAvailabilitySlot[];
   currentSchedule: SeminarCurrentSchedule | null;
+  roomBookings?: any[]; // Added to fix build error
+  participantIds?: string[]; // Added to fix build error
 }
 
 export interface SetSchedulePayload {
@@ -274,7 +287,7 @@ export interface SetScheduleResponse {
 // Lecturer Seminar Types
 // ============================================================
 
-export type ExaminerAssignmentStatus = 'unassigned' | 'pending' | 'rejected' | 'partially_rejected' | 'confirmed';
+export type ExaminerAssignmentStatus = 'unassigned' | 'pending' | 'rejected' | 'partially_rejected' | 'confirmed' | 'finished';
 
 /** Rejected examiner historical log entry */
 export interface RejectedExaminer {
@@ -308,6 +321,7 @@ export interface AssignmentSeminarItem {
   registeredAt: string | null;
   assignmentStatus: ExaminerAssignmentStatus;
   examiners: LecturerSeminarExaminer[];
+  rejectedExaminers?: RejectedExaminer[];
 }
 
 /** Combined seminar list item for lecturer views */
@@ -373,6 +387,25 @@ export interface EligibleExaminer {
   fullName: string;
   identityNumber: string;
   scienceGroup: string;
+  upcomingCount?: number;
+  workloadIndex?: number;
+  workloadLevel?: 'Ringan' | 'Sedang' | 'Berat';
+  availabilityRanges?: Array<{
+    day: string;
+    dayLabel: string;
+    startTime: string | null;
+    endTime: string | null;
+    validFrom: string;
+    validUntil: string;
+    label: string;
+  }>;
+  hasScheduleConflict?: boolean;
+  scheduleConflicts?: Array<{
+    type: 'seminar' | 'defence';
+    refId: string;
+  }>;
+  recommendation?: string;
+  isSelectable?: boolean;
 }
 
 /** Lecturer seminar detail response */
@@ -453,6 +486,7 @@ export interface ExaminerAssessmentFormResponse {
 export interface SubmitExaminerAssessmentPayload {
   scores: { assessmentCriteriaId: string; score: number }[];
   revisionNotes?: string | null;
+  isDraft?: boolean;
 }
 
 export interface SubmitExaminerAssessmentResponse {
@@ -505,7 +539,7 @@ export interface SupervisorFinalizationDataResponse {
 }
 
 export interface FinalizeSeminarPayload {
-  status: 'passed' | 'passed_with_revision' | 'failed';
+  recommendRevision: boolean;
 }
 
 export interface FinalizeSeminarResponse {
@@ -531,6 +565,7 @@ export interface SeminarRevisionBoardItem {
 
 export interface RespondAssignmentPayload {
   status: 'available' | 'unavailable';
+  unavailableReasons?: string | null;
 }
 
 export interface RespondAssignmentResponse {
@@ -608,8 +643,10 @@ export interface StudentRevisionResponse {
 }
 
 export interface CreateRevisionPayload {
+  seminarId?: string;
   seminarExaminerId: string;
   description: string;
+  revisionAction?: string;
 }
 
 export interface SubmitRevisionActionPayload {
@@ -635,6 +672,7 @@ export interface SeminarHistoryItem {
   endTime: string | null;
   meetingLink: string | null;
   finalScore: number | null;
+  maxWeight?: number;
   grade: string | null;
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
@@ -719,6 +757,22 @@ export interface LecturerAudienceItem {
   isPresent: boolean;
   approvedAt: string | null;
   approvedByName: string | null;
+}
+
+export type AdminThesisSeminarAudience = LecturerAudienceItem;
+
+export interface AdminThesisSeminarAudienceStudentOption {
+  id: string;
+  fullName: string;
+  name?: string;
+  nim: string;
+}
+
+export interface AdminThesisSeminarAudienceImportResult {
+  total: number;
+  successCount: number;
+  failed: number;
+  failedRows: { row: number; error: string }[];
 }
 
 // ============================================================

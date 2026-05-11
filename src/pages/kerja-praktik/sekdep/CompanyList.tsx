@@ -27,7 +27,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
-import { createSekdepCompany, updateSekdepCompany, deleteSekdepCompany, type CompanyStatsItem } from '@/services/internship.service';
+import { createSekdepCompany, updateSekdepCompany, deleteSekdepCompany, type CompanyStatsItem } from '@/services/internship';
 import { Badge } from '@/components/ui/badge';
 
 export default function SekdepCompanyListPage() {

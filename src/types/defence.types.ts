@@ -95,9 +95,13 @@ export interface DefenceOverviewResponse {
   defence: DefenceInfo | null;
 }
 
+export type StudentDefenceOverview = DefenceOverviewResponse;
+
 export interface DefenceDocumentType {
   id: string;
   name: string;
+  label: string;
+  accept: string[];
 }
 
 export interface DefenceDocumentsResponse {
@@ -132,6 +136,14 @@ export interface AdminDefenceListItem {
   date: string | null;
   startTime: string | null;
   endTime: string | null;
+  room?: { id: string; name: string; location?: string | null } | null;
+  examiners?: Array<{
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+    availabilityStatus: string;
+  }>;
   documentSummary: AdminDefenceDocumentSummary;
 }
 
@@ -189,6 +201,7 @@ export interface AdminDefenceDetailResponse {
 
 export interface RejectedDefenceExaminer {
   id: string;
+  lecturerId: string;
   lecturerName: string;
   order: number;
   availabilityStatus: string;
@@ -239,10 +252,21 @@ export interface DefenceCurrentSchedule {
   room: DefenceRoomOption | null;
 }
 
+export interface DefenceRoomBooking {
+  id: string;
+  roomId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
 export interface DefenceSchedulingData {
   rooms: DefenceRoomOption[];
   lecturerAvailabilities: DefenceLecturerAvailabilitySlot[];
   currentSchedule: DefenceCurrentSchedule | null;
+  roomBookings?: DefenceRoomBooking[];
+  participantIds?: string[];
 }
 
 export interface SetDefenceSchedulePayload {
@@ -272,7 +296,7 @@ export interface DefenceDocumentUploadResponse {
 
 export type ExaminerAvailabilityStatus = 'pending' | 'available' | 'unavailable';
 
-export type ExaminerAssignmentStatus = 'unassigned' | 'pending' | 'rejected' | 'partially_rejected' | 'confirmed';
+export type ExaminerAssignmentStatus = 'unassigned' | 'pending' | 'rejected' | 'partially_rejected' | 'confirmed' | 'finished';
 
 export interface LecturerDefenceExaminer {
   id: string;
@@ -294,6 +318,7 @@ export interface AssignmentDefenceItem {
   registeredAt: string | null;
   assignmentStatus: ExaminerAssignmentStatus;
   examiners: LecturerDefenceExaminer[];
+  rejectedExaminers: RejectedDefenceExaminer[];
 }
 
 export interface ExaminerDefenceRequestItem {
@@ -336,6 +361,27 @@ export interface EligibleDefenceExaminer {
   fullName: string;
   identityNumber: string;
   scienceGroup: string;
+  upcomingCount?: number;
+  availabilityRanges?: Array<{
+    day: string;
+    dayLabel: string;
+    startTime: string;
+    endTime: string;
+    validFrom: string;
+    validUntil: string;
+    label: string;
+  }>;
+  events?: Array<{
+    type: string;
+    title: string;
+    studentName: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  isPreviousExaminer?: boolean;
+  isSelectable?: boolean;
+  hasScheduleConflict?: boolean;
 }
 
 export interface LecturerDefenceDetailResponse {
@@ -423,6 +469,7 @@ export interface SubmitDefenceAssessmentPayload {
   scores: { assessmentCriteriaId: string; score: number }[];
   revisionNotes?: string | null;
   supervisorNotes?: string | null;
+  isDraft?: boolean;
 }
 
 export interface SubmitDefenceAssessmentResponse {
@@ -526,6 +573,7 @@ export interface DefenceRevisionBoardItem {
 
 export interface RespondDefenceAssignmentPayload {
   status: 'available' | 'unavailable';
+  unavailableReasons?: string | null;
 }
 
 export interface RespondDefenceAssignmentResponse {
@@ -693,9 +741,87 @@ export interface StudentDefenceRevisionResponse {
 export interface CreateDefenceRevisionPayload {
   defenceExaminerId: string;
   description: string;
+  revisionAction?: string;
 }
 
 export interface SaveDefenceRevisionActionPayload {
   revisionAction?: string;
   description?: string;
+}
+
+// ============================================================
+// Admin Defence Archive & Options
+// ============================================================
+
+export type AdminDefenceArchiveStatus = 'passed' | 'passed_with_revision' | 'failed' | 'cancelled';
+
+export interface AdminDefenceArchivePayload {
+  thesisId: string;
+  date: string;
+  roomId: string;
+  status: Exclude<AdminDefenceArchiveStatus, 'cancelled'>;
+  examinerLecturerIds: string[];
+  finalScore?: number | null;
+  grade?: string | null;
+}
+
+export interface AdminDefenceArchiveItem {
+  id: string;
+  thesisId: string;
+  thesisTitle: string;
+  student: {
+    id: string | null;
+    fullName: string;
+    nim: string;
+  };
+  date: string | null;
+  room: {
+    id: string;
+    name: string;
+    location: string | null;
+  } | null;
+  status: AdminDefenceArchiveStatus;
+  finalScore?: number | null;
+  grade?: string | null;
+  isEditable?: boolean;
+  examiners: Array<{
+    id: string;
+    lecturerId: string;
+    lecturerName: string;
+    order: number;
+  }>;
+}
+
+export interface AdminDefenceArchiveImportResult {
+  success: boolean;
+  total: number;
+  successCount: number;
+  failed: number;
+  failedRows: { row: number; error: string }[];
+}
+
+export interface AdminDefenceOption {
+  id: string;
+  thesisTitle: string;
+  studentName: string;
+  studentNim: string;
+  hasDefenceResult?: boolean;
+  defenceResultId?: string | null;
+  supervisorIds: string[];
+}
+
+export interface AdminDefenceExaminerOption {
+  id: string;
+  fullName: string;
+  nip: string;
+}
+
+export interface AdminDefenceArchiveListResponse {
+  defences: AdminDefenceArchiveItem[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 }

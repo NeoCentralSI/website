@@ -18,9 +18,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useSidebarMenu, useAuth } from "@/hooks/shared";
+import { useSidebarMenu, useAuth, useRealtimeNotifications } from "@/hooks/shared";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { useGuidanceRealtime } from "@/hooks/guidance";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -33,7 +32,7 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
   const navigate = useNavigate();
   const sidebarData = useSidebarMenu();
   // Mount global realtime listener once user is present
-  useGuidanceRealtime();
+  useRealtimeNotifications();
 
   // Redirect ke login jika tidak ada user setelah loading selesai
   useEffect(() => {

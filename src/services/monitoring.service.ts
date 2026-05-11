@@ -549,3 +549,5 @@ export async function sendBatchWarnings(thesisIds: string[], warningType: Warnin
   return response.json();
 }
 
+// KADEP TRANSFER APPROVAL block removed per SIMPTA canon v2.1 refactor.
+// Pergantian dosen pembimbing is replaced by Path C escalation flow (BR-26).

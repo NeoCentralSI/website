@@ -73,13 +73,19 @@ export async function uploadSop(params: { type: SopType; file: File; title?: str
   };
 }
 
-export async function updateSop(id: string, payload: { type: SopType; title?: string }): Promise<SopFile> {
+export async function updateSop(id: string, payload: { type: SopType; title?: string; file?: File | null }): Promise<SopFile> {
+  const formData = new FormData();
+  formData.append("type", payload.type);
+  if (payload.title) {
+    formData.append("title", payload.title);
+  }
+  if (payload.file) {
+    formData.append("file", payload.file);
+  }
+
   const response = await apiRequest(getApiUrl(`/sop/${id}`), {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: formData,
   });
 
   if (!response.ok) {

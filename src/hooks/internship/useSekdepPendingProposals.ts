@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSekdepPendingProposals } from '@/services/internship.service';
+import { getSekdepPendingProposals } from '@/services/internship';
 import { useSearchParams } from 'react-router-dom';
 
 export function useSekdepPendingProposals() {

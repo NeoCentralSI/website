@@ -37,6 +37,10 @@ export function NavMain({
 }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const hasExplicitActive = React.useMemo(
+    () => items.some((item) => item.items?.some((subItem) => subItem.isActive)),
+    [items]
+  )
 
   const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({})
 
@@ -45,18 +49,21 @@ export function NavMain({
     setOpenMenus((prev) => {
       const next = { ...prev }
       items.forEach((item) => {
+        const explicitMatch = item.isActive || item.items?.some((subItem) => subItem.isActive)
         const parentMatch =
           item.url && item.url !== "#" && (pathname === item.url || pathname.startsWith(item.url + "/"))
         const childMatch = item.items?.some(
           (s) => pathname === s.url || pathname.startsWith(s.url + "/")
         )
-        if (parentMatch || childMatch) {
+        if (hasExplicitActive) {
+          next[item.title] = Boolean(explicitMatch)
+        } else if (parentMatch || childMatch) {
           next[item.title] = true
         }
       })
       return next
     })
-  }, [pathname, items])
+  }, [pathname, items, hasExplicitActive])
 
   return (
     <SidebarGroup>
@@ -66,16 +73,26 @@ export function NavMain({
 
           // Check if any child route is active
           const isAnyChildActive = hasChildren
-            ? item.items!.some((s) => pathname === s.url || pathname.startsWith(s.url + "/"))
+            ? item.items!.some((s) =>
+                hasExplicitActive
+                  ? s.isActive
+                  : pathname === s.url || pathname.startsWith(s.url + "/")
+              )
             : false
 
           // Leaf items (no children): active when current route matches
-          const isLeafActive = !hasChildren && (pathname === item.url || pathname.startsWith(item.url + "/"))
+          const isLeafActive = !hasChildren && (
+            hasExplicitActive
+              ? item.isActive
+              : pathname === item.url || pathname.startsWith(item.url + "/")
+          )
 
           if (hasChildren) {
             const isOpen = openMenus[item.title] ?? false
             const isParentActive =
-              item.url !== "#" && (pathname === item.url || pathname.startsWith(item.url + "/"))
+              hasExplicitActive
+                ? item.isActive
+                : item.url !== "#" && (pathname === item.url || pathname.startsWith(item.url + "/"))
 
             return (
               <Collapsible
@@ -120,11 +137,15 @@ export function NavMain({
                         // Only the most specific matching sub-item should be active.
                         // E.g. /metopel/tugas must not highlight Overview (/metopel).
                         const matches =
-                          pathname === subItem.url || pathname.startsWith(subItem.url + "/")
+                          hasExplicitActive
+                            ? subItem.isActive
+                            : pathname === subItem.url || pathname.startsWith(subItem.url + "/")
                         const moreSpecificMatch = item.items!.some(
                           (other) =>
                             other !== subItem &&
-                            (pathname === other.url || pathname.startsWith(other.url + "/")) &&
+                            (hasExplicitActive
+                              ? other.isActive
+                              : pathname === other.url || pathname.startsWith(other.url + "/")) &&
                             other.url.length > subItem.url.length
                         )
                         const isSubActive = matches && !moreSpecificMatch

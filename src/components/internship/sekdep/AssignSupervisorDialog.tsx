@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { InternshipTable } from '@/components/internship/InternshipTable';
 import { useQuery } from '@tanstack/react-query';
-import { getSekdepLecturerWorkload, bulkAssignSupervisor } from '@/services/internship.service';
+import { getSekdepLecturerWorkload, bulkAssignSupervisor } from '@/services/internship';
 import { getSekdepLecturerWorkloadColumns } from '@/lib/internship/sekdepColumns';
 import { toast } from 'sonner';
 import { Users, CheckCircle2 } from 'lucide-react';

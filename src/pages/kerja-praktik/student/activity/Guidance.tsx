@@ -3,7 +3,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStudentGuidance } from '@/services/internship.service';
+import { getStudentGuidance } from '@/services/internship';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { Loader2, AlertCircle, CheckCircle2, Clock, Calendar, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import EmptyState from '@/components/ui/empty-state';
 
 export default function GuidancePage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -66,6 +67,22 @@ export default function GuidancePage() {
                 <AlertCircle className="h-12 w-12 text-destructive" />
                 <p className="text-lg font-medium">Gagal memuat data bimbingan</p>
                 <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['studentGuidance'] })}>Coba Lagi</Button>
+            </div>
+        );
+    }
+
+    if (!guidanceData || !guidanceData.internshipId) {
+        return (
+            <div className="flex flex-col gap-6 p-6">
+                <div className="flex flex-col gap-2">
+                    <h2 className="text-2xl font-bold tracking-tight">Kegiatan Kerja Praktik</h2>
+                    <p className="text-muted-foreground">Kelola logbook dan bimbingan mingguan Anda.</p>
+                </div>
+                <TabsNav tabs={tabs} preserveSearch />
+                <EmptyState
+                    title="Belum Ada Kerja Praktik"
+                    description="Anda belum memiliki kegiatan Kerja Praktik yang sedang berjalan."
+                />
             </div>
         );
     }

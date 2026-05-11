@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -150,6 +151,24 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .font-display {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
   }
 }
 
@@ -183,5 +202,27 @@
 
 .no-border-quill .ql-container.ql-snow {
   border: none;
+}
+
+/* Editorial landing utilities */
+@layer utilities {
+  .text-shadow-sm {
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  }
+  .text-shadow-md {
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  }
+  .img-zoom {
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .group:hover .img-zoom {
+    transform: scale(1.03);
+  }
+  .gradient-overlay-bottom {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 55%);
+  }
+  .gradient-overlay-left {
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.65) 0%, transparent 55%);
+  }
 }
 /* (animations handled via Tailwind transitions on elements) */

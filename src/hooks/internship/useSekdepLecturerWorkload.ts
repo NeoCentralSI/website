@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSekdepLecturerWorkload } from '@/services/internship.service';
+import { getSekdepLecturerWorkload } from '@/services/internship';
 import { useSearchParams } from 'react-router-dom';
 
 export function useSekdepLecturerWorkload() {
@@ -10,6 +10,7 @@ export function useSekdepLecturerWorkload() {
     const pageSize = parseInt(searchParams.get('pageSize') || '10');
     const sortBy = searchParams.get('sortBy') || '';
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
+    const academicYearId = searchParams.get('academicYearId') || '';
 
     const updateParams = (updates: Record<string, string | number | undefined>) => {
         const newParams = new URLSearchParams(searchParams);
@@ -21,15 +22,15 @@ export function useSekdepLecturerWorkload() {
             }
         });
 
-        if (updates.q !== undefined || updates.sortBy !== undefined) {
+        if (updates.q !== undefined || updates.sortBy !== undefined || updates.academicYearId !== undefined) {
             newParams.set('page', '1');
         }
         setSearchParams(newParams);
     };
 
     const { data, isLoading, isFetching, refetch, error } = useQuery({
-        queryKey: ['sekdep-lecturer-workload', { q, page, pageSize, sortBy, sortOrder }],
-        queryFn: () => getSekdepLecturerWorkload(q, page, pageSize, sortBy, sortOrder),
+        queryKey: ['sekdep-lecturer-workload', { q, page, pageSize, sortBy, sortOrder, academicYearId }],
+        queryFn: () => getSekdepLecturerWorkload(q, page, pageSize, sortBy, sortOrder, academicYearId),
         placeholderData: (previousData) => previousData,
     });
 
@@ -50,6 +51,8 @@ export function useSekdepLecturerWorkload() {
         sortBy,
         sortOrder,
         setSort: (field: string, order: 'asc' | 'desc') => updateParams({ sortBy: field, sortOrder: order }),
+        academicYearId,
+        setAcademicYearId: (id: string) => updateParams({ academicYearId: id }),
         refetch,
         error,
     };

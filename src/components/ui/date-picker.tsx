@@ -18,9 +18,21 @@ interface DatePickerProps {
     className?: string
     disabled?: boolean
     showPastDates?: boolean
+    minDate?: Date
 }
 
-export function DatePicker({ value, onChange, placeholder = "Pilih tanggal", className, disabled, showPastDates = false }: DatePickerProps) {
+export function DatePicker({
+    value,
+    onChange,
+    placeholder = "Pilih tanggal",
+    className,
+    disabled,
+    showPastDates = false,
+    minDate
+}: DatePickerProps) {
+    const today = new Date(new Date().setHours(0, 0, 0, 0))
+    const normalizedMinDate = minDate ? new Date(new Date(minDate).setHours(0, 0, 0, 0)) : undefined
+
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -42,7 +54,11 @@ export function DatePicker({ value, onChange, placeholder = "Pilih tanggal", cla
                     mode="single"
                     selected={value}
                     onSelect={onChange}
-                    disabled={(date) => !showPastDates && date < new Date(new Date().setHours(0, 0, 0, 0))}
+                    disabled={(date) => {
+                        if (!showPastDates && date < today) return true
+                        if (normalizedMinDate && date < normalizedMinDate) return true
+                        return false
+                    }}
                 />
             </PopoverContent>
         </Popover>

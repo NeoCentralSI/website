@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -6,18 +7,26 @@ import {
     updateCpl,
     toggleCpl,
     deleteCpl,
+    exportAllCplStudentScores,
     type CreateCplPayload,
     type UpdateCplPayload,
-} from '@/services/cpl.service';
+    type GetCplsParams,
+} from '@/services/master-data/cpl.service';
 
 const QUERY_KEY = ['cpls'];
 
 export function useCpl() {
     const queryClient = useQueryClient();
+    const [params, setParams] = useState<GetCplsParams>({
+        status: 'active',
+        search: '',
+        page: 1,
+        limit: 10,
+    });
 
     const { data: cpls, isLoading, isFetching, refetch } = useQuery({
-        queryKey: QUERY_KEY,
-        queryFn: getCpls,
+        queryKey: [...QUERY_KEY, params],
+        queryFn: () => getCpls(params),
     });
 
     const createMutation = useMutation({
@@ -65,18 +74,33 @@ export function useCpl() {
         },
     });
 
+    const exportAllMutation = useMutation({
+        mutationFn: exportAllCplStudentScores,
+        onSuccess: () => {
+            toast.success('Export semua nilai CPL berhasil diunduh');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
     return {
-        cpls: cpls ?? [],
+        cpls: cpls?.data ?? [],
+        total: cpls?.total ?? 0,
         isLoading,
         isFetching,
         refetch,
+        params,
+        setParams,
         create: (data: CreateCplPayload) => createMutation.mutateAsync(data),
         update: (id: string, data: UpdateCplPayload) => updateMutation.mutateAsync({ id, data }),
         toggle: toggleMutation.mutate,
         remove: deleteMutation.mutate,
+        exportAllScores: () => exportAllMutation.mutateAsync(),
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
         isToggling: toggleMutation.isPending,
         isDeleting: deleteMutation.isPending,
+        isExportingAllScores: exportAllMutation.isPending,
     };
 }

@@ -1,7 +1,7 @@
-import type { AdminApprovedProposalItem, AdminAssignmentProposalItem } from '@/services/internship.service';
-import type { Column } from '@/components/layout/CustomTable';
+import type { AdminApprovedProposalItem, AdminAssignmentProposalItem } from '@/services/internship';
+import type { Column } from '@/components/internship/InternshipTable';
 import { Button } from '@/components/ui/button';
-import { FileText, Edit } from 'lucide-react';
+import { FileText, Edit, FileCheck, Upload } from 'lucide-react';
 
 interface AdminApprovedProposalColumnProps {
     onViewLetterDoc: (item: AdminApprovedProposalItem) => void;
@@ -30,6 +30,12 @@ export const getAdminApprovedProposalColumns = ({
             header: 'Perusahaan',
             accessor: 'companyName',
             className: 'text-sm',
+        },
+        {
+            key: 'tahunAjaran',
+            header: 'Thn Ajaran',
+            accessor: 'academicYearName',
+            className: 'text-sm text-center',
         },
         {
             key: 'members',
@@ -68,7 +74,7 @@ export const getAdminApprovedProposalColumns = ({
             header: 'No. Surat Pengantar',
             render: (item) => (
                 <div className="flex justify-center">
-                    <code className="text-[10px] font-mono px-1.5 py-0.5">
+                    <code className="text-[12px] font-mono px-1.5 py-0.5">
                         {item.letterNumber}
                     </code>
                 </div>
@@ -120,6 +126,9 @@ export const getAdminApprovedProposalColumns = ({
 
 interface AdminAssignmentProposalColumnProps {
     onViewLetterDoc: (item: AdminAssignmentProposalItem) => void;
+    onViewResponseDoc: (item: AdminAssignmentProposalItem) => void;
+    onVerifyResponse: (item: AdminAssignmentProposalItem, status: 'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | 'REJECTED_BY_COMPANY') => void;
+    onUploadResponse: (item: AdminAssignmentProposalItem) => void;
     onAction: (item: AdminAssignmentProposalItem) => void;
 }
 
@@ -128,6 +137,9 @@ interface AdminAssignmentProposalColumnProps {
  */
 export const getAdminAssignmentProposalColumns = ({
     onViewLetterDoc,
+    onViewResponseDoc,
+    onVerifyResponse,
+    onUploadResponse,
     onAction,
 }: AdminAssignmentProposalColumnProps): Column<AdminAssignmentProposalItem>[] => [
         {
@@ -145,6 +157,12 @@ export const getAdminAssignmentProposalColumns = ({
             header: 'Perusahaan',
             accessor: 'companyName',
             className: 'text-sm',
+        },
+        {
+            key: 'tahunAjaran',
+            header: 'Thn Ajaran',
+            accessor: 'academicYearName',
+            className: 'text-sm text-center',
         },
         {
             key: 'members',
@@ -179,12 +197,44 @@ export const getAdminAssignmentProposalColumns = ({
             className: 'text-center min-w-[120px]',
         },
         {
+            key: 'suratBalasan',
+            header: 'Surat Balasan',
+            render: (item) => (
+                <div className="flex flex-col items-center gap-1">
+                    {item.companyResponseFile ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            title="Lihat Surat Balasan"
+                            onClick={() => onViewResponseDoc(item)}
+                        >
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs">Lihat</span>
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            title="Upload Surat Balasan"
+                            onClick={() => onUploadResponse(item)}
+                        >
+                            <Upload className="h-4 w-4" />
+                            <span className="text-xs">Upload</span>
+                        </Button>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
+        },
+        {
             key: 'letterNumber',
             header: 'No. Surat Tugas',
             render: (item) => (
                 <div className="flex justify-center">
                     {item.letterNumber !== "—" ? (
-                        <code className="text-[10px] font-mono px-1.5 py-0.5">
+                        <code className="text-[12px] font-mono px-1.5 py-0.5">
                             {item.letterNumber}
                         </code>
                     ) : (
@@ -221,16 +271,28 @@ export const getAdminAssignmentProposalColumns = ({
             key: 'actions',
             header: 'Aksi',
             render: (item) => (
-                <div className="flex items-center justify-center">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-2 px-2 text-primary hover:bg-primary/5"
-                        onClick={() => onAction(item)}
-                    >
-                        <Edit className="h-4 w-4" />
-                        <span className="text-xs">Kelola ST</span>
-                    </Button>
+                <div className="flex items-center justify-center gap-2">
+                    {item.status === 'WAITING_FOR_VERIFICATION' ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-2 px-2 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 shadow-sm"
+                            onClick={() => onVerifyResponse(item, 'APPROVED_PROPOSAL')}
+                        >
+                            <FileCheck className="h-4 w-4" />
+                            <span className="text-xs font-semibold">Verifikasi</span>
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-primary hover:bg-primary/5"
+                            onClick={() => onAction(item)}
+                        >
+                            <Edit className="h-4 w-4" />
+                            <span className="text-xs">Kelola ST</span>
+                        </Button>
+                    )}
                 </div>
             ),
             className: 'text-center',

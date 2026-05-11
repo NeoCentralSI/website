@@ -6,7 +6,7 @@ import {
     getInternshipCpmkById,
     bulkUpdateInternshipRubrics, 
     type InternshipAssessmentRubric 
-} from '@/services/internship.service';
+} from '@/services/internship';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

@@ -1,8 +1,9 @@
-import type { InternshipPendingLetter } from '@/services/internship.service';
-import type { Column } from '@/components/layout/CustomTable';
+import type { InternshipPendingLetter } from '@/services/internship';
+import type { Column } from '@/components/internship/InternshipTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Check, Signature } from 'lucide-react';
+import { formatDateShortId } from '@/lib/text';
 
 export interface KadepLetterColumnProps {
     onViewDoc: (item: InternshipPendingLetter) => void;
@@ -18,19 +19,38 @@ export const getKadepInternshipLetterColumns = ({
 }: KadepLetterColumnProps): Column<InternshipPendingLetter>[] => [
         {
             key: 'nama',
-            header: 'Nama Koordinator',
-            render: (item) => (
-                <div className="flex flex-col py-1">
-                    <span className="font-medium text-sm leading-tight">{item.coordinatorName}</span>
-                    <span className="text-xs text-muted-foreground">{item.coordinatorNim}</span>
-                </div>
-            ),
+            header: 'Nama Dosen',
+            render: (item) => {
+                const isLecturer = item.type === 'LECTURER_ASSIGNMENT';
+                return (
+                    <div className="flex flex-col py-1 text-left">
+                        <span className="font-medium text-sm leading-tight">{isLecturer ? item.lecturerName : item.coordinatorName}</span>
+                        <span className="text-xs text-muted-foreground">{isLecturer ? item.lecturerNip : item.coordinatorNim}</span>
+                    </div>
+                );
+            },
         },
         {
-            key: 'companyName',
-            header: 'Perusahaan',
-            accessor: 'companyName',
-            className: 'text-sm',
+            key: 'period',
+            header: 'Periode',
+            render: (item) => (
+                <div className="flex flex-col py-1 text-center min-w-[120px]">
+                    {item.period ? (
+                        <>
+                            <span className="text-xs font-medium">
+                                {formatDateShortId(item.period.start)}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground italic">s/d</span>
+                            <span className="text-xs font-medium">
+                                {formatDateShortId(item.period.end)}
+                            </span>
+                        </>
+                    ) : (
+                        <span className="text-xs text-muted-foreground italic">Belum Diatur</span>
+                    )}
+                </div>
+            ),
+            className: 'text-center',
         },
         {
             key: 'documentNumber',
@@ -46,17 +66,16 @@ export const getKadepInternshipLetterColumns = ({
         },
         {
             key: 'members',
-            header: 'Anggota',
+            header: 'Jumlah Mahasiswa',
             render: (item) => {
                 let totalMahasiswa = 0;
 
                 if (item.type === 'APPLICATION') {
-                    // For Application, we count all members + coordinator (assuming they are all active)
-                    const members = item.members || [];
-                    totalMahasiswa = members.length + 1;
-                } else {
-                    // For Assignment, we use the pre-calculated acceptedMemberCount from backend
-                    totalMahasiswa = item.acceptedMemberCount;
+                    totalMahasiswa = (item.members?.length || 0) + 1;
+                } else if (item.type === 'ASSIGNMENT') {
+                    totalMahasiswa = item.acceptedMemberCount || 0;
+                } else if (item.type === 'LECTURER_ASSIGNMENT') {
+                    totalMahasiswa = item.memberCount || 0;
                 }
 
                 return (

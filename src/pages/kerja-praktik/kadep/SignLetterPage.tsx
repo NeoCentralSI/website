@@ -4,12 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Check, MousePointer2, FileText, Info, Building2, User, ChevronUp } from 'lucide-react';
-import { getKadepPendingLetters, approveKadepLetter } from '@/services/internship.service';
+import { Loader2, ArrowLeft, Check, MousePointer2, FileText, Info, Building2, User, ChevronUp, Calendar } from 'lucide-react';
+import { getKadepPendingLetters, approveKadepLetter } from '@/services/internship';
 import { API_CONFIG } from '@/config/api';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { formatDateShortId } from '@/lib/text';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Set worker for react-pdf
@@ -22,7 +23,7 @@ interface SignaturePos {
 }
 
 const SignLetterPage = () => {
-    const { type, id } = useParams<{ type: 'APPLICATION' | 'ASSIGNMENT'; id: string }>();
+    const { type, id } = useParams<{ type: 'APPLICATION' | 'ASSIGNMENT' | 'LECTURER_ASSIGNMENT'; id: string }>();
     const navigate = useNavigate();
 
     const [numPages, setNumPages] = useState<number>(0);
@@ -55,7 +56,13 @@ const SignLetterPage = () => {
 
     const queryClient = useQueryClient();
 
-    const letter = (type === 'APPLICATION' ? letters?.applicationLetters : letters?.assignmentLetters)?.find(l => l.id === id);
+    const letter = (
+        type === 'APPLICATION' 
+            ? letters?.applicationLetters 
+            : type === 'ASSIGNMENT' 
+                ? letters?.assignmentLetters 
+                : letters?.supervisorLetters
+    )?.find(l => l.id === id);
 
     const approveMutation = useMutation({
         mutationFn: (positions: SignaturePos[]) => {
@@ -65,7 +72,13 @@ const SignLetterPage = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['kadep-pending-letters'] });
             toast.success("Dokumen berhasil ditandatangani");
-            navigate('/kelola/kerja-praktik/kadep/persetujuan');
+            
+            // Redirect back to the specific tab
+            const basePath = '/kelola/kerja-praktik/kadep/persetujuan';
+            const redirectPath = type === 'APPLICATION' ? `${basePath}/permohonan` : 
+                                 type === 'ASSIGNMENT' ? `${basePath}/penugasan` : 
+                                 `${basePath}/dosen`;
+            navigate(redirectPath);
         },
         onError: (err: any) => {
             toast.error(err.message || "Gagal menandatangani dokumen");
@@ -260,12 +273,24 @@ const SignLetterPage = () => {
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-muted-foreground lowercase first-letter:uppercase">
                                     <User className="h-4 w-4 shrink-0" />
-                                    <span className="truncate" title={letter.coordinatorName}>{letter.coordinatorName}</span>
+                                    <span className="truncate" title={type === 'LECTURER_ASSIGNMENT' ? letter.lecturerName : letter.coordinatorName}>
+                                        {type === 'LECTURER_ASSIGNMENT' ? letter.lecturerName : letter.coordinatorName}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-muted-foreground lowercase first-letter:uppercase">
                                     <Building2 className="h-4 w-4 shrink-0" />
-                                    <span className="truncate" title={letter.companyName}>{letter.companyName}</span>
+                                    <span className="truncate" title={type === 'LECTURER_ASSIGNMENT' ? "Departemen Sistem Informasi" : letter.companyName}>
+                                        {type === 'LECTURER_ASSIGNMENT' ? "Departemen Sistem Informasi" : letter.companyName}
+                                    </span>
                                 </div>
+                                {letter.period && (
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <Calendar className="h-4 w-4 shrink-0" />
+                                        <span className="text-xs">
+                                            {formatDateShortId(letter.period.start)} - {formatDateShortId(letter.period.end)}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             <Separator />
@@ -273,7 +298,9 @@ const SignLetterPage = () => {
                             <div className="space-y-1.5 text-xs">
                                 <p className="font-medium text-muted-foreground">Tipe Dokumen</p>
                                 <Badge variant="secondary" className="px-2 py-0.5 text-[10px] font-bold">
-                                    {type === 'APPLICATION' ? 'SURAT PERMOHONAN' : 'SURAT TUGAS'}
+                                    {type === 'APPLICATION' ? 'SURAT PERMOHONAN' : 
+                                     type === 'ASSIGNMENT' ? 'SURAT TUGAS' : 
+                                     'SURAT TUGAS DOSEN'}
                                 </Badge>
                             </div>
                         </CardContent>
@@ -416,7 +443,7 @@ const SignLetterPage = () => {
                                                     return (
                                                         <div
                                                             key={`sig_${globalIndex}`}
-                                                            className={`absolute border-2 border-green-500 bg-green-500/20 flex items-center justify-center transition-all duration-75 ring-4 ring-green-500/10 ${dragState?.index === globalIndex ? 'cursor-grabbing scale-105 z-50' : 'cursor-grab hover:scale-110 z-10'}`}
+                                                            className={`absolute border-2 border-green-500 bg-green-500/20 flex items-center justify-center transition-all duration-75 ring-4 ring-green-500/10 ${dragState?.index === globalIndex ? 'cursor-grabbing z-50' : 'cursor-grab z-10'}`}
                                                             style={{
                                                                 left: `${(pos.x / (pageDim?.width || 595)) * 100}%`,
                                                                 top: `${(pos.y / (pageDim?.height || 842)) * 100}%`,

@@ -22,11 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Calendar, FileDown } from "lucide-react";
+import { RefreshCw, Calendar, FileDown, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
 import { Loading } from "@/components/ui/spinner";
-import { DownloadReportDialog } from "@/components/monitoring/DownloadReportDialog";
+import { downloadProgressReportPdf } from "@/services/monitoring.service";
+import { toast } from "sonner";
 
 export default function MonitoringDashboard() {
   const [searchParams] = useSearchParams();
@@ -34,7 +35,7 @@ export default function MonitoringDashboard() {
 
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const queryClient = useQueryClient();
 
   // Pass academicYear filter to hooks
@@ -66,6 +67,32 @@ export default function MonitoringDashboard() {
       console.error('[Monitoring] Refresh failed:', error);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      setIsDownloadingPDF(true);
+      const options = {
+        academicYearId: academicYearFilter,
+      };
+
+      const blob = await downloadProgressReportPdf(options);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Laporan_Monitoring_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success("Laporan berhasil diunduh");
+    } catch (error: any) {
+      toast.error(error.message || "Gagal mengunduh laporan");
+    } finally {
+      setIsDownloadingPDF(false);
     }
   };
 
@@ -114,19 +141,19 @@ export default function MonitoringDashboard() {
           <Button
             variant="outline"
             className="flex items-center gap-2"
-            onClick={() => setIsDownloadDialogOpen(true)}
+            onClick={handleDownloadPDF}
+            disabled={isDownloadingPDF || isLoadingAny}
           >
-            <FileDown className="h-4 w-4" />
-            Download Laporan
+            {isDownloadingPDF ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4" />
+            )}
+            {isDownloadingPDF ? "Mengunduh..." : "Download Laporan"}
           </Button>
         </div>
       </div>
 
-      <DownloadReportDialog
-        open={isDownloadDialogOpen}
-        onOpenChange={setIsDownloadDialogOpen}
-        defaultAcademicYear={selectedAcademicYear}
-      />
 
       {/* Summary Cards */}
       <MonitoringSummaryCards summary={data?.summary} isLoading={isLoadingAny} />

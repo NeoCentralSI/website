@@ -46,6 +46,7 @@ export type Column<T> = {
     render?: (row: T, index: number) => React.ReactNode;
     filter?: ColumnFilterElement | ColumnFilterControl;
     sortable?: boolean;
+    rowSpan?: (row: T, index: number) => number;
 };
 
 export type InternshipTableProps<T> = {
@@ -79,6 +80,7 @@ export type InternshipTableProps<T> = {
     onRowClick?: (row: T, index: number) => void;
     hidePagination?: boolean;
     appendRow?: React.ReactNode;
+    isRowSelectable?: (row: T, index: number) => boolean;
 };
 
 function buildPages(current: number, total: number): (number | "ellipsis")[] {
@@ -126,6 +128,7 @@ export function InternshipTable<T extends Record<string, any>>({
     onRowClick,
     hidePagination = false,
     appendRow,
+    isRowSelectable,
 }: InternshipTableProps<T>) {
     const [localSearch, setLocalSearch] = useState(searchValue || "");
 
@@ -154,22 +157,23 @@ export function InternshipTable<T extends Record<string, any>>({
 
     const pages = useMemo(() => buildPages(page, totalPages), [page, totalPages]);
 
-    const handleSort = (key: string) => {
-        if (!onSortChange) return;
-        const isAsc = sortBy === key && sortOrder === "asc";
-        onSortChange(key, isAsc ? "desc" : "asc");
+    const getRowKey = (row: T, index: number) => {
+        if (rowKey) return rowKey(row, index);
+        return (row.id as string) ?? String(index);
     };
 
-    const isAllSelected = data.length > 0 && data.every(row => selectedIds.includes(row.id));
-    const isSomeSelected = data.some(row => selectedIds.includes(row.id)) && !isAllSelected;
+    const selectableData = data.filter((row, idx) => isRowSelectable ? isRowSelectable(row, idx) : true);
+
+    const isAllSelected = selectableData.length > 0 && selectableData.every((row, idx) => selectedIds.includes(getRowKey(row, idx)));
+    const isSomeSelected = selectableData.some((row, idx) => selectedIds.includes(getRowKey(row, idx))) && !isAllSelected;
 
     const handleSelectAll = (checked: boolean) => {
         if (!onSelectionChange) return;
         if (checked) {
-            const newIds = Array.from(new Set([...selectedIds, ...data.map(row => row.id)]));
+            const newIds = Array.from(new Set([...selectedIds, ...selectableData.map((row, idx) => getRowKey(row, idx))]));
             onSelectionChange(newIds);
         } else {
-            const currentIds = data.map(row => row.id);
+            const currentIds = selectableData.map((row, idx) => getRowKey(row, idx));
             const newIds = selectedIds.filter(id => !currentIds.includes(id));
             onSelectionChange(newIds);
         }
@@ -182,6 +186,12 @@ export function InternshipTable<T extends Record<string, any>>({
         } else {
             onSelectionChange(selectedIds.filter(i => i !== id));
         }
+    };
+
+    const handleSort = (key: string) => {
+        if (!onSortChange) return;
+        const isAsc = sortBy === key && sortOrder === "asc";
+        onSortChange(key, isAsc ? "desc" : "asc");
     };
 
     return (
@@ -374,8 +384,8 @@ export function InternshipTable<T extends Record<string, any>>({
                                 </TableRow>
                             ) : (
                                 data.map((row, idx) => {
-                                    const key = rowKey?.(row, idx) ?? (row.id as string) ?? String(idx);
-                                    const isSelected = selectedIds.includes(row.id);
+                                    const key = getRowKey(row, idx);
+                                    const isSelected = selectedIds.includes(key);
                                     const customProps = rowProps?.(row, idx) || {};
                                     const expanded = isRowExpanded?.(row, idx);
                                     
@@ -394,8 +404,9 @@ export function InternshipTable<T extends Record<string, any>>({
                                                     <TableCell className="px-4">
                                                         <Checkbox
                                                             checked={isSelected}
-                                                            onCheckedChange={(checked) => handleSelectRow(row.id, !!checked)}
+                                                            onCheckedChange={(checked) => handleSelectRow(key, !!checked)}
                                                             aria-label={`Select row ${idx + 1}`}
+                                                            disabled={isRowSelectable ? !isRowSelectable(row, idx) : false}
                                                         />
                                                     </TableCell>
                                                 )}
@@ -407,7 +418,19 @@ export function InternshipTable<T extends Record<string, any>>({
                                                             : col.accessor
                                                                 ? (row[col.accessor as keyof T] as any)
                                                                 : null;
-                                                    return <TableCell key={col.key} className={col.className}>{content}</TableCell>;
+                                                    
+                                                    const rs = col.rowSpan ? col.rowSpan(row, idx) : 1;
+                                                    if (rs === 0) return null;
+
+                                                    return (
+                                                        <TableCell 
+                                                            key={col.key} 
+                                                            className={col.className}
+                                                            rowSpan={rs > 1 ? rs : undefined}
+                                                        >
+                                                            {content}
+                                                        </TableCell>
+                                                    );
                                                 })}
                                             </TableRow>
                                             {expanded && expandedRowRender && (

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   getRoomsAPI,
@@ -13,90 +13,78 @@ import type {
   UpdateRoomRequest,
 } from '@/services/admin.service';
 
-type RoomsQueryResult = Awaited<ReturnType<typeof getRoomsAPI>>;
+const QUERY_KEY = ['rooms'];
 
-interface UseRoomsOptions {
-  page?: number;
-  pageSize?: number;
+export type GetRoomsParams = {
+  status?: 'all' | 'available' | 'in_use';
   search?: string;
-}
+  page?: number;
+  limit?: number;
+};
 
-export function useRooms(options: UseRoomsOptions = {}) {
-  const { page = 1, pageSize = 10, search = '' } = options;
+export function useRooms() {
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['rooms', { page, pageSize, search }],
-    queryFn: () => getRoomsAPI({ page, pageSize, search }),
-    placeholderData: (previousData: RoomsQueryResult | undefined) => previousData,
-    staleTime: 5 * 60 * 1000,
+  const [params, setParams] = useState<GetRoomsParams>({
+    status: 'all',
+    search: '',
+    page: 1,
+    limit: 10,
   });
 
-  const invalidateRooms = () => {
-    queryClient.invalidateQueries({ queryKey: ['rooms'] });
-  };
+  const { data, isLoading, isFetching, refetch } = useQuery({
+    queryKey: [...QUERY_KEY, params],
+    queryFn: () => getRoomsAPI(params),
+  });
 
-  const createRoom = async (formData: CreateRoomRequest) => {
-    setIsSubmitting(true);
-    try {
-      await createRoomAPI(formData);
+  const createMutation = useMutation({
+    mutationFn: (body: CreateRoomRequest) => createRoomAPI(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       toast.success('Ruangan berhasil ditambahkan');
-      invalidateRooms();
-      return true;
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal menambahkan ruangan');
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
 
-  const updateRoom = async (id: string, formData: UpdateRoomRequest) => {
-    setIsSubmitting(true);
-    try {
-      await updateRoomAPI(id, formData);
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateRoomRequest }) =>
+      updateRoomAPI(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       toast.success('Ruangan berhasil diperbarui');
-      invalidateRooms();
-      return true;
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal memperbarui ruangan');
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
 
-  const deleteRoom = async (room: Room) => {
-    if (!room.canDelete) {
-      toast.warning('Data ruangan tidak dapat dihapus karena sudah memiliki relasi');
-      return false;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await deleteRoomAPI(room.id);
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteRoomAPI(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       toast.success('Ruangan berhasil dihapus');
-      invalidateRooms();
-      return true;
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal menghapus ruangan');
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
 
   return {
-    rooms: data?.rooms || [],
-    meta: data?.meta,
-    total: data?.meta?.total || 0,
+    rooms: data?.data ?? [],
+    total: data?.total ?? 0,
     isLoading,
-    isSubmitting,
-    error,
-    createRoom,
-    updateRoom,
-    deleteRoom,
+    isFetching,
+    refetch,
+    params,
+    setParams,
+    create: (body: CreateRoomRequest) => createMutation.mutateAsync(body),
+    update: (id: string, body: UpdateRoomRequest) =>
+      updateMutation.mutateAsync({ id, body }),
+    remove: (id: string) => deleteMutation.mutateAsync(id),
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
   };
 }
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileText, Upload, Clock, MessageSquare, CheckCircle2, XCircle, AlertCircle, X, Save, Edit, Eye } from 'lucide-react';
-import { Loading } from '@/components/ui/spinner';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 
@@ -12,24 +12,37 @@ interface FinalReportTabProps {
     internship: any;
     isUploading: string | null;
     onFinalReportSubmit?: (title: string, file: File) => void;
+    onFinalFixReportSubmit?: (title: string, file: File) => void;
 }
 
 export const FinalReportTab: React.FC<FinalReportTabProps> = ({
     internship,
     isUploading,
-    onFinalReportSubmit
+    onFinalReportSubmit,
+    onFinalFixReportSubmit
 }) => {
     const [reportTitle, setReportTitle] = useState<string>(internship?.reportTitle || '');
+    const [finalReportTitle, setFinalReportTitle] = useState<string>(internship?.reportFinalTitle || internship?.reportTitle || '');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [previewOpen, setPreviewOpen] = useState<boolean>(false);
     const [feedbackPreviewOpen, setFeedbackPreviewOpen] = useState<boolean>(false);
+    
+    // Final Fix states
+    const [selectedFinalFixFile, setSelectedFinalFixFile] = useState<File | null>(null);
+    const [isFinalFixEditMode, setIsFinalFixEditMode] = useState<boolean>(false);
+    const [previewFinalFixOpen, setPreviewFinalFixOpen] = useState<boolean>(false);
+    
+
 
     useEffect(() => {
         if (internship?.reportTitle) {
             setReportTitle(internship.reportTitle);
         }
-    }, [internship?.reportTitle]);
+        if (internship?.reportFinalTitle) {
+            setFinalReportTitle(internship.reportFinalTitle);
+        }
+    }, [internship?.reportTitle, internship?.reportFinalTitle]);
 
     // Reset edit mode when status changes to APPROVED
     useEffect(() => {
@@ -50,6 +63,16 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
             }
         }
     }, [isUploading, internship?.reportDocumentId, selectedFile]);
+
+    useEffect(() => {
+        if (isUploading !== 'FINAL_FIX_REPORT' && selectedFinalFixFile && internship?.reportFinalDocId) {
+            setSelectedFinalFixFile(null);
+            const fileInput = document.getElementById('upload-final-fix-internal') as HTMLInputElement;
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        }
+    }, [isUploading, internship?.reportFinalDocId, selectedFinalFixFile]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -104,9 +127,61 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
         }
     };
 
+    const handleFinalFixFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error("Ukuran file maksimal 5MB");
+                return;
+            }
+            if (file.type !== 'application/pdf') {
+                toast.error("File harus berformat PDF");
+                return;
+            }
+            setSelectedFinalFixFile(file);
+        }
+    };
+
+    const handleRemoveFinalFixFile = () => {
+        setSelectedFinalFixFile(null);
+        const fileInput = document.getElementById('upload-final-fix-internal') as HTMLInputElement;
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    };
+
+    const handleFinalFixSubmit = () => {
+        if (!finalReportTitle.trim()) {
+            toast.error("Judul laporan akhir final wajib diisi");
+            return;
+        }
+        if (!selectedFinalFixFile && !internship?.reportFinalDocId) {
+            toast.error("File laporan akhir final wajib diunggah");
+            return;
+        }
+        if (onFinalFixReportSubmit) {
+            if (selectedFinalFixFile) {
+                onFinalFixReportSubmit(finalReportTitle.trim(), selectedFinalFixFile);
+            } else if (internship?.reportFinalDocId) {
+                onFinalFixReportSubmit(finalReportTitle.trim(), new File([], 'dummy.pdf'));
+            }
+            setSelectedFinalFixFile(null);
+            setIsFinalFixEditMode(false);
+            const fileInput = document.getElementById('upload-final-fix-internal') as HTMLInputElement;
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        }
+    };
+
     const canEdit = internship?.reportStatus === 'SUBMITTED' || internship?.reportStatus === 'REVISION_NEEDED';
     const isApproved = internship?.reportStatus === 'APPROVED';
     const hasDocument = !!internship?.reportDocumentId;
+
+    const isSeminarCompleted = internship?.seminars?.length > 0 && internship.seminars[0].status === 'COMPLETED';
+    const hasFinalFixDocument = !!internship?.reportFinalDocId;
+    const canEditFinalFix = internship?.reportFinalStatus === 'REVISION_NEEDED';
+    const isApprovedFinalFix = internship?.reportFinalStatus === 'APPROVED';
     const getStatusIcon = (status: string | null | undefined, hasDoc: boolean) => {
         if (!hasDoc) {
             return <Clock className="h-5 w-5 text-orange-500" />;
@@ -300,7 +375,7 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                                         >
                                             {isUploading === 'FINAL_REPORT' ? (
                                                 <>
-                                                    <Loading size="sm" />
+                                                    <Spinner className="text-current" />
                                                     Mengunggah...
                                                 </>
                                             ) : (
@@ -372,6 +447,217 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                 </CardContent>
             </Card>
 
+            {isSeminarCompleted && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Laporan Final & Lembar Pengesahan</CardTitle>
+                        <CardDescription>
+                            Setelah menyelesaikan seminar, unggah versi final laporan beserta lembar pengesahan.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-6">
+                        <div className="flex flex-col md:flex-row gap-6 items-start">
+                            <div className="flex flex-col p-6 rounded-2xl border bg-muted/30 gap-4 flex-1 w-full relative">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-background rounded-lg border">
+                                            <FileText className="h-8 w-8 text-primary" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold">Laporan Final Fix</span>
+                                            <span className="text-xs text-muted-foreground">Format: PDF (Max 5MB)</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {getStatusIcon(internship?.reportFinalStatus, !!internship?.reportFinalDocId)}
+                                        {canEditFinalFix && hasFinalFixDocument && !isFinalFixEditMode && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => setIsFinalFixEditMode(true)}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    {hasFinalFixDocument && !isFinalFixEditMode && !selectedFinalFixFile && (
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex flex-col gap-2 p-4 rounded-xl bg-background border">
+                                                <div className="flex flex-col gap-1 text-sm">
+                                                    <span className="font-semibold text-primary">Judul Laporan Final:</span>
+                                                    <span className="leading-relaxed">{internship.reportFinalTitle || internship.reportTitle}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-xs pt-2 border-t mt-1">
+                                                    <span className="font-medium">Status Pengiriman:</span>
+                                                    <span className="text-muted-foreground">{internship.reportFinalUploadedAt ? new Date(internship.reportFinalUploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            {internship?.reportFinalDoc && (
+                                                <div className="flex items-center justify-between p-4 rounded-xl bg-background border">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <FileText className="h-5 w-5 text-primary shrink-0" />
+                                                        <div className="flex flex-col min-w-0 flex-1">
+                                                            <span className="text-sm font-medium truncate">{internship.reportFinalDoc.fileName || 'Laporan Final.pdf'}</span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {internship.reportFinalDoc.fileSize ? `${(internship.reportFinalDoc.fileSize / 1024 / 1024).toFixed(2)} MB` : 'PDF'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setPreviewFinalFixOpen(true)}
+                                                        className="shrink-0"
+                                                    >
+                                                        <Eye className="h-4 w-4 mr-2" />
+                                                        Preview
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {(isFinalFixEditMode || !hasFinalFixDocument) && (
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="final-report-title" className="text-sm font-medium">
+                                                    Judul Laporan Akhir Final <span className="text-destructive">*</span>
+                                                </Label>
+                                                <Input
+                                                    id="final-report-title"
+                                                    placeholder="Masukkan judul laporan akhir resmi..."
+                                                    value={finalReportTitle}
+                                                    onChange={(e) => setFinalReportTitle(e.target.value)}
+                                                    disabled={isUploading === 'FINAL_FIX_REPORT' || isApprovedFinalFix}
+                                                    className="bg-background"
+                                                />
+                                            </div>
+
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="upload-final-fix-internal" className="text-sm font-medium">
+                                                    File Laporan Final Fix {!hasFinalFixDocument && <span className="text-destructive">*</span>}
+                                                </Label>
+                                                <input 
+                                                    type="file" 
+                                                    id="upload-final-fix-internal" 
+                                                    className="hidden" 
+                                                    accept=".pdf"
+                                                    onChange={handleFinalFixFileSelect}
+                                                    disabled={isUploading === 'FINAL_FIX_REPORT' || isApprovedFinalFix}
+                                                />
+                                                
+                                                {selectedFinalFixFile ? (
+                                                    <div className="flex items-center justify-between p-4 rounded-xl bg-background border">
+                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                            <FileText className="h-5 w-5 text-primary shrink-0" />
+                                                            <div className="flex flex-col min-w-0 flex-1">
+                                                                <span className="text-sm font-medium truncate">{selectedFinalFixFile.name}</span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {(selectedFinalFixFile.size / 1024 / 1024).toFixed(2)} MB
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={handleRemoveFinalFixFile}
+                                                            disabled={isUploading === 'FINAL_FIX_REPORT'}
+                                                            className="shrink-0"
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="w-full gap-2"
+                                                        onClick={() => document.getElementById('upload-final-fix-internal')?.click()}
+                                                        disabled={isUploading === 'FINAL_FIX_REPORT' || isApprovedFinalFix}
+                                                    >
+                                                        <Upload className="h-4 w-4" />
+                                                        {hasFinalFixDocument ? "Ganti File PDF" : "Pilih File PDF"}
+                                                    </Button>
+                                                )}
+
+                                                <div className="pt-2 flex gap-2">
+                                                    {isFinalFixEditMode && (
+                                                        <Button 
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="flex-1 gap-2"
+                                                            onClick={() => {
+                                                                setIsFinalFixEditMode(false);
+                                                                handleRemoveFinalFixFile();
+                                                            }}
+                                                            disabled={isUploading === 'FINAL_FIX_REPORT'}
+                                                        >
+                                                            Batal
+                                                        </Button>
+                                                    )}
+                                                    <Button 
+                                                        className={`${isFinalFixEditMode ? 'flex-1' : 'w-full'} gap-2`}
+                                                        onClick={handleFinalFixSubmit}
+                                                        disabled={isUploading === 'FINAL_FIX_REPORT' || (!selectedFinalFixFile && !hasFinalFixDocument)}
+                                                    >
+                                                        {isUploading === 'FINAL_FIX_REPORT' ? (
+                                                            <>
+                                                                <Spinner className="text-current" />
+                                                                Mengunggah...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Save className="h-4 w-4" />
+                                                                {hasFinalFixDocument ? "Simpan Perubahan" : "Simpan Laporan Akhir Final"}
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <Card className="flex-1 w-full bg-blue-50/20 border-blue-100">
+                                <CardHeader>
+                                    <CardTitle className="text-sm flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4 text-blue-600" />
+                                        Catatan Sekretaris Departemen
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {internship?.reportFinalNotes ? (
+                                        <div className="p-4 rounded-xl bg-background border border-blue-200">
+                                            <p className="text-sm text-blue-900 leading-relaxed italic">
+                                                "{internship.reportFinalNotes}"
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
+                                            <Clock className="h-8 w-8 mb-2 opacity-20" />
+                                            <span className="text-xs">
+                                                {!hasFinalFixDocument ? 'Silakan unggah laporan final fix Anda.' : 'Menunggu review dari Sekretaris Departemen.'}
+                                            </span>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+
+
             {hasDocument && internship?.reportDocument && (
                 <DocumentPreviewDialog
                     open={previewOpen}
@@ -389,6 +675,16 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                     filePath={internship.reportFeedbackDocument.filePath || undefined}
                 />
             )}
+
+            {hasFinalFixDocument && internship?.reportFinalDoc && (
+                <DocumentPreviewDialog
+                    open={previewFinalFixOpen}
+                    onOpenChange={setPreviewFinalFixOpen}
+                    fileName={internship.reportFinalDoc.fileName || 'Laporan Final.pdf'}
+                    filePath={internship.reportFinalDoc.filePath || undefined}
+                />
+            )}
+
         </div>
     );
 };

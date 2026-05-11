@@ -19,7 +19,7 @@ export interface User {
 export interface AcademicYear {
   id: string;
   semester: 'ganjil' | 'genap';
-  year: string | number;
+  year: string;
   startDate?: string;
   endDate?: string;
   isActive: boolean;
@@ -32,6 +32,7 @@ export interface Room {
   name: string;
   location: string | null;
   capacity: number | null;
+  relationCount: number;
   canDelete: boolean;
   createdAt: string;
   updatedAt: string;
@@ -81,106 +82,10 @@ export interface UpdateRoomRequest {
   capacity?: number | null;
 }
 
-export type SeminarResultStatus = 'passed' | 'passed_with_revision' | 'failed';
 
-export interface SeminarResult {
-  id: string;
-  thesisId: string;
-  thesisTitle: string;
-  student: {
-    id: string | null;
-    fullName: string;
-    nim: string;
-  };
-  date: string | null;
-  room: {
-    id: string;
-    name: string;
-    location: string | null;
-  } | null;
-  status: SeminarResultStatus;
-  audienceCount: number;
-  examiners: Array<{
-    id: string;
-    lecturerId: string;
-    lecturerName: string;
-    order: number;
-  }>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SeminarResultThesisOption {
-  id: string;
-  title: string;
-  studentName: string;
-  studentNim: string;
-  hasSeminarResult: boolean;
-  seminarResultId: string | null;
-}
-
-export interface SeminarResultLecturerOption {
-  id: string;
-  fullName: string;
-  nip: string;
-}
-
-export interface SeminarResultStudentOption {
-  id: string;
-  fullName: string;
-  nim: string;
-}
-
-export interface SeminarResultAudienceLink {
-  seminarId: string;
-  studentId: string;
-  createdAt: string;
-  student: {
-    id: string;
-    fullName: string;
-    nim: string;
-  };
-  seminar: {
-    id: string;
-    date: string | null;
-    thesisTitle: string;
-    ownerName: string;
-    ownerNim: string;
-  };
-}
-
-export interface MetopenEligibilityView {
-  eligibleMetopen: boolean | null;
-  hasExternalStatus: boolean;
-  source: 'sia' | 'devtools' | null;
-  updatedAt: string | null;
-  readOnly: boolean;
-  canAccess: boolean;
-  canSubmit: boolean;
-  thesisId: string | null;
-  thesisTitle: string | null;
-  thesisStatus: string | null;
-}
-
-export interface CreateSeminarResultRequest {
-  thesisId: string;
-  date: string;
-  roomId: string;
-  status: SeminarResultStatus;
-  examinerLecturerIds: string[];
-}
-
-export type UpdateSeminarResultRequest = CreateSeminarResultRequest;
-
-export interface ImportStudentsSummary {
-  created: number;
-  updated?: number;
-  skipped?: number;
-  failed?: number;
-}
 
 // Import students from CSV
-export const importStudentsCsvAPI = async (file: File): Promise<{ summary: ImportStudentsSummary }> => {
+export const importStudentsCsvAPI = async (file: File): Promise<{ summary: any }> => {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -329,24 +234,34 @@ export const getActiveAcademicYearAPI = async (): Promise<{
   return response.json();
 };
 
-// Get all rooms
-export const getRoomsAPI = async (params?: {
+export type GetRoomsAPIParams = {
   page?: number;
+  /** Page size (preferred; mirrors CPL `limit`) */
+  limit?: number;
+  /** @deprecated use `limit` */
   pageSize?: number;
   search?: string;
-}): Promise<{
-  rooms: Room[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+  /** all | available (no relations) | in_use */
+  status?: 'all' | 'available' | 'in_use';
+};
+
+// Get rooms (server-side pagination; response matches CPL list shape: data + total)
+export const getRoomsAPI = async (
+  params?: GetRoomsAPIParams
+): Promise<{
+  success: boolean;
+  message?: string;
+  data: Room[];
+  total: number;
 }> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  const limit = params?.limit ?? params?.pageSize;
+  if (limit) queryParams.append('limit', String(limit));
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.status && params.status !== 'all') {
+    queryParams.append('status', params.status);
+  }
 
   const response = await fetch(getApiUrl(`/adminfeatures/rooms?${queryParams}`), {
     method: 'GET',
@@ -415,215 +330,6 @@ export const deleteRoomAPI = async (id: string): Promise<{ success: boolean; mes
   return response.json();
 };
 
-export const getSeminarResultThesisOptionsAPI = async (): Promise<{ data: SeminarResultThesisOption[] }> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/theses'), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat opsi thesis');
-  }
-
-  return response.json();
-};
-
-export const getSeminarResultLecturerOptionsAPI = async (): Promise<{ data: SeminarResultLecturerOption[] }> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/lecturers'), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat opsi dosen');
-  }
-
-  return response.json();
-};
-
-export const getSeminarResultStudentOptionsAPI = async (): Promise<{ data: SeminarResultStudentOption[] }> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/options/students'), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat opsi mahasiswa');
-  }
-
-  return response.json();
-};
-
-export const getSeminarResultsAPI = async (params?: {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-}): Promise<{
-  seminars: SeminarResult[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
-}> => {
-  const queryParams = new URLSearchParams();
-  if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
-  if (params?.search) queryParams.append('search', params.search);
-
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results?${queryParams}`), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat data seminar hasil');
-  }
-
-  return response.json();
-};
-
-export const createSeminarResultAPI = async (data: CreateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal menambahkan seminar hasil');
-  }
-
-  return response.json();
-};
-
-export const updateSeminarResultAPI = async (id: string, data: UpdateSeminarResultRequest): Promise<{ data: SeminarResult }> => {
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/${id}`), {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memperbarui seminar hasil');
-  }
-
-  return response.json();
-};
-
-export const deleteSeminarResultAPI = async (id: string): Promise<{ success: boolean; message: string }> => {
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/${id}`), {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal menghapus seminar hasil');
-  }
-
-  return response.json();
-};
-
-export const getSeminarResultAudienceLinksAPI = async (params?: {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-}): Promise<{
-  links: SeminarResultAudienceLink[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
-}> => {
-  const queryParams = new URLSearchParams();
-  if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
-  if (params?.search) queryParams.append('search', params.search);
-
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/audiences?${queryParams}`), {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat relasi audience seminar');
-  }
-
-  return response.json();
-};
-
-export const assignSeminarResultAudiencesAPI = async (payload: {
-  studentId: string;
-  seminarIds: string[];
-}): Promise<{
-  data: {
-    created: number;
-    skippedOwnSeminarIds: string[];
-    skippedDuplicate: number;
-  };
-}> => {
-  const response = await fetch(getApiUrl('/adminfeatures/seminar-results/audiences/assign'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal mengaitkan audience seminar');
-  }
-
-  return response.json();
-};
-
-export const removeSeminarResultAudienceLinkAPI = async (seminarId: string, studentId: string): Promise<{ success: boolean; message: string }> => {
-  const response = await fetch(getApiUrl(`/adminfeatures/seminar-results/audiences/${seminarId}/${studentId}`), {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal menghapus relasi audience seminar');
-  }
-
-  return response.json();
-};
-
 // Get all users
 export const getUsersAPI = async (params?: {
   page?: number;
@@ -677,26 +383,15 @@ export interface Student {
   student?: {
     enrollmentYear: number | null;
     sksCompleted: number;
-    currentSemester?: number | null;
+    currentSemester: number | null;
     status: string | null;
-    mandatoryCoursesCompleted?: boolean;
-    mkwuCompleted?: boolean;
-    internshipCompleted?: boolean;
-    kknCompleted?: boolean;
-    metopenEligibility?: MetopenEligibilityView;
-    visibleAcademicYear?: {
-      id: string;
-      year: string | number;
-      semester: 'ganjil' | 'genap';
-      label: string;
-      isActive: boolean;
-      sources?: string[];
-    } | null;
-    isInMetopen?: boolean;
-    hasActiveThesis?: boolean;
+    mandatoryCoursesCompleted: boolean;
+    mkwuCompleted: boolean;
+    internshipCompleted: boolean;
+    kknCompleted: boolean;
+    researchMethodCompleted?: boolean;
     activeTheses: Array<{
       title: string;
-      status?: string | null;
       supervisors: Array<{
         role: string;
         fullName: string;
@@ -727,12 +422,6 @@ export const getStudentsAPI = async (params?: {
   page?: number;
   pageSize?: number;
   search?: string;
-  programFilter?: string;
-  statusFilter?: string;
-  enrollmentYearFilter?: string;
-  academicYearFilter?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
 }): Promise<{
   students: Student[];
   meta: {
@@ -741,24 +430,11 @@ export const getStudentsAPI = async (params?: {
     total: number;
     totalPages: number;
   };
-  academicYearContext?: {
-    id: string;
-    year: string | number;
-    semester: 'ganjil' | 'genap';
-    label: string;
-    isActive?: boolean;
-  } | null;
 }> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
-  if (params?.programFilter) queryParams.append('programFilter', params.programFilter);
-  if (params?.statusFilter) queryParams.append('statusFilter', params.statusFilter);
-  if (params?.enrollmentYearFilter) queryParams.append('enrollmentYearFilter', params.enrollmentYearFilter);
-  if (params?.academicYearFilter) queryParams.append('academicYearFilter', params.academicYearFilter);
-  if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
-  if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
   const response = await fetch(getApiUrl(`/adminfeatures/students?${queryParams}`), {
     method: 'GET',
@@ -776,7 +452,16 @@ export const getStudentsAPI = async (params?: {
 };
 
 // Trigger SIA sync (fetch from SIA service and cache)
-export const triggerSiaSyncAPI = async (): Promise<{ success: boolean; message?: string }> => {
+export const triggerSiaSyncAPI = async (): Promise<{
+  success: boolean;
+  message?: string;
+  summary?: {
+    cplCreated?: number;
+    cplUpdated?: number;
+    cplSkippedProtected?: number;
+    cplUnmatchedCodes?: number;
+  };
+}> => {
   const response = await fetch(getApiUrl('/sia/sync'), {
     method: 'POST',
     headers: {
@@ -838,7 +523,6 @@ export interface StudentDetail {
   phoneNumber?: string;
   isVerified: boolean;
   createdAt: string;
-  metopenEligibility: MetopenEligibilityView;
   student: {
     enrollmentYear: number;
     sksCompleted: number;
@@ -848,6 +532,7 @@ export interface StudentDetail {
     mkwuCompleted?: boolean | null;
     internshipCompleted?: boolean | null;
     kknCompleted?: boolean | null;
+    researchMethodCompleted?: boolean | null;
   };
   cplScores?: Array<{
     cplId: string;
@@ -1025,6 +710,7 @@ export const getLecturerDetailAPI = async (id: string): Promise<{ data: Lecturer
 
 export interface KadepQuickActionsStats {
   failedThesesCount: number;
+  pendingChangeRequestsCount: number;
 }
 
 export interface FailedThesis {
@@ -1041,7 +727,7 @@ export interface FailedThesis {
 }
 
 /**
- * Get Kadep quick actions stats
+ * Get Kadep quick actions stats (failed thesis count, pending change requests count)
  */
 export const getKadepQuickActionsStats = async (): Promise<KadepQuickActionsStats> => {
   const response = await fetch(getApiUrl('/adminfeatures/kadep/quick-actions'), {
@@ -1079,7 +765,7 @@ export const getFailedThesesList = async (): Promise<{ data: FailedThesis[]; tot
   return response.json();
 };
 
-export const updateLecturerByAdminAPI = async (id: string, data: { scienceGroupId: string | null }): Promise<{ data: unknown }> => {
+export const updateLecturerByAdminAPI = async (id: string, data: { scienceGroupId: string | null }): Promise<{ data: any }> => {
   const response = await fetch(getApiUrl(`/adminfeatures/lecturers/${id}`), {
     method: 'PATCH',
     headers: {
@@ -1104,7 +790,8 @@ export const adminUpdateStudentAPI = async (id: string, data: {
   mkwuCompleted?: boolean;
   internshipCompleted?: boolean;
   kknCompleted?: boolean;
-}): Promise<{ data: unknown }> => {
+  researchMethodCompleted?: boolean;
+}): Promise<{ data: any }> => {
   const response = await fetch(getApiUrl(`/adminfeatures/students/${id}`), {
     method: 'PATCH',
     headers: {
@@ -1119,7 +806,8 @@ export const adminUpdateStudentAPI = async (id: string, data: {
       mandatoryCoursesCompleted: data.mandatoryCoursesCompleted,
       mkwuCompleted: data.mkwuCompleted,
       internshipCompleted: data.internshipCompleted,
-      kknCompleted: data.kknCompleted
+      kknCompleted: data.kknCompleted,
+      researchMethodCompleted: data.researchMethodCompleted
     }),
   });
   if (!response.ok) {
@@ -1193,3 +881,67 @@ export const deleteScienceGroupAPI = async (id: string): Promise<{ message: stri
   return response.json();
 };
 
+// Excel Import APIs (Bulk JSON upload)
+export const importStudentsExcelAPI = async (data: any[]): Promise<any> => {
+  const response = await fetch(getApiUrl('/adminfeatures/students/import-excel'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal import mahasiswa');
+  }
+  return response.json();
+};
+
+export const importLecturersExcelAPI = async (data: any[]): Promise<any> => {
+  const response = await fetch(getApiUrl('/adminfeatures/lecturers/import-excel'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal import dosen');
+  }
+  return response.json();
+};
+
+export const importUsersExcelAPI = async (data: any[]): Promise<any> => {
+  const response = await fetch(getApiUrl('/adminfeatures/users/import-excel'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal import user');
+  }
+  return response.json();
+};
+
+export const importAcademicYearsExcelAPI = async (data: any[]): Promise<any> => {
+  const response = await fetch(getApiUrl('/adminfeatures/academic-years/import-excel'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal import tahun ajaran');
+  }
+  return response.json();
+};

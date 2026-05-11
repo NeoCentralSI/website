@@ -1,26 +1,54 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import Lottie from 'lottie-react';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loading } from '@/components/ui/spinner';
-import { CheckCircle2, Circle, Clock, CalendarRange, BookOpenText, Download, PartyPopper } from 'lucide-react';
-import { useStudentYudisiumOverview } from '@/hooks/yudisium/useStudentYudisium';
-import type { StudentYudisiumChecklistItem } from '@/types/studentYudisium.types';
-import { UploadDokumenYudisium } from '@/components/yudisium/UploadDokumenYudisium';
-import emptyAnimation from '@/assets/lottie/empty.json';
-import { formatDateOnlyId } from '@/lib/text';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
+import {
+  Check,
+  Clock,
+  Calendar,
+  BookOpen,
+  Download,
+  PartyPopper,
+  FileText,
+  Info,
+  CalendarX2,
+  AlertCircle,
+  Eye,
+  X,
+} from 'lucide-react';
+import {
+  useStudentYudisiumOverview,
+  useStudentYudisiumRequirements,
+  useUploadYudisiumDocument,
+} from '@/hooks/yudisium/useYudisiumStudent';
+import type {
+  StudentYudisiumChecklistItem,
+  YudisiumRequirementUploadStatus,
+} from '@/types/student-yudisium.types';
+import {
+  formatDateId,
+  formatDateOnlyId
+} from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Button } from '@/components/ui/button';
 
-const formatDateTime = (date: string | null | undefined) => {
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+const formatDateTime = (date: any) => {
   if (!date) return '-';
-  return new Date(date).toLocaleString('id-ID', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (!(d instanceof Date) || isNaN(d.getTime())) return '-';
+    return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch (err) {
+    return '-';
+  }
 };
 
 const formatDateOnly = (date: string | null | undefined) => {
@@ -31,416 +59,1014 @@ const formatDateOnly = (date: string | null | undefined) => {
 const checklistEntries = (checklist: Record<string, StudentYudisiumChecklistItem>) =>
   Object.entries(checklist).map(([key, value]) => ({ key, ...value }));
 
-type YudisiumStatus = 'draft' | 'open' | 'closed' | 'under_review' | 'in_review' | 'finalized';
-type ParticipantStatus = 'registered' | 'under_review' | 'approved' | 'rejected' | 'finalized' | null;
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type YudisiumDisplayStatus = 'draft' | 'open' | 'closed' | 'scheduled' | 'ongoing' | 'completed';
+type ParticipantStatus = 'registered' | 'verified' | 'cpl_validated' | 'appointed' | 'finalized' | 'rejected' | null;
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const STEPS = [
   { key: 'checklist', label: 'Checklist Persyaratan' },
   { key: 'documents', label: 'Dokumen Yudisium Lengkap' },
   { key: 'cpl', label: 'Nilai CPL Tervalidasi' },
-  { key: 'schedule', label: 'Penetapan Jadwal Yudisium' },
-  { key: 'yudisium', label: 'Pelaksanaan Yudisium' },
+  { key: 'appointed', label: 'Ditetapkan sebagai Peserta Yudisium' },
+  { key: 'finalized', label: 'Yudisium Selesai' },
 ] as const;
 
-const STATUS_BADGE_MAP: Record<YudisiumStatus, { label: string; className: string }> = {
-  draft: {
-    label: 'Draft',
-    className: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-100',
-  },
-  open: {
-    label: 'Pendaftaran Dibuka',
-    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50',
-  },
-  closed: {
-    label: 'Pendaftaran Ditutup',
-    className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50',
-  },
-  in_review: {
-    label: 'Dalam Review',
-    className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50',
-  },
-  under_review: {
-    label: 'Dalam Review',
-    className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50',
-  },
-  finalized: {
-    label: 'Final',
-    className: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100',
-  },
+const STATUS_BADGE_MAP: Record<YudisiumDisplayStatus, { label: string; className: string }> = {
+  draft:     { label: 'Belum Dibuka',          className: 'bg-gray-100 text-gray-600 border-gray-200' },
+  open:      { label: 'Pendaftaran Dibuka',     className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  closed:    { label: 'Pendaftaran Ditutup',    className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  scheduled: { label: 'Terjadwalkan',           className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  ongoing:   { label: 'Sedang Berlangsung',     className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  completed: { label: 'Selesai',               className: 'bg-slate-100 text-slate-600 border-slate-200' },
 };
 
-function getActiveStepIndex(
-  status: YudisiumStatus,
-  participantStatus: ParticipantStatus,
-  allChecklistMet: boolean,
-  allDocumentsUploaded: boolean,
-  allCplVerified: boolean,
-  hasDecree: boolean,
+const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
+  registered:    { label: 'Terdaftar',           className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  verified:      { label: 'Terverifikasi',       className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  cpl_validated: { label: 'CPL Tervalidasi',     className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  appointed:     { label: 'Terjadwalkan',        className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  finalized:     { label: 'Selesai',             className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  rejected:      { label: 'Tidak Memenuhi Persyaratan', className: 'bg-red-50 text-red-700 border-red-200' },
+};
+
+// ─── Status Derivation ───────────────────────────────────────────────────────
+
+function deriveDisplayStatus(
+  storedStatus: string,
+  registrationOpenDate: string | null,
+  registrationCloseDate: string | null,
   eventDate: string | null,
-): number {
-  // Finalized = everything complete (all steps green)
-  if (status === 'finalized' || participantStatus === 'finalized') return 5;
-
-  if (!allChecklistMet) return 0;
-
-  const isPastDocumentValidation = ['under_review', 'approved', 'finalized'].includes(participantStatus ?? 'registered');
-  const documentsCompleted = allDocumentsUploaded || isPastDocumentValidation;
-  if (!documentsCompleted) return 1;
-
-  // CPL step
-  if (!allCplVerified) return 2;
-
-  // Decree/schedule step
-  if (!hasDecree) return 3;
-
-  // Check if event date has passed or is today
-  if (eventDate) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const event = new Date(eventDate);
-    event.setHours(0, 0, 0, 0);
-    if (today >= event) return 4; // On or past event date
+): YudisiumDisplayStatus {
+  const now = new Date();
+  if (storedStatus === 'completed') return 'completed';
+  if (storedStatus === 'scheduled') {
+    if (eventDate) {
+      const ed = new Date(eventDate);
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(todayStart.getTime() + 86400000 - 1);
+      if (ed >= todayStart && ed <= todayEnd) return 'ongoing';
+      if (ed < todayStart) return 'completed';
+    }
+    return 'scheduled';
   }
-
-  // Decree exists but event not yet
-  return 4;
+  const openDate = registrationOpenDate ? new Date(registrationOpenDate) : null;
+  const closeDate = registrationCloseDate ? new Date(registrationCloseDate) : null;
+  if (!openDate || now < openDate) return 'draft';
+  if (closeDate && now > closeDate) return 'closed';
+  return 'open';
 }
 
-function YudisiumStatusStepper({ currentStep, isFinalized }: { currentStep: number; isFinalized: boolean }) {
+function getActiveStepIndex(
+  participantStatus: ParticipantStatus,
+  allChecklistMet: boolean,
+): number {
+  if (participantStatus === 'finalized') return 4;
+  if (participantStatus === 'appointed') return 3;
+  if (participantStatus === 'cpl_validated') return 2;
+  if (participantStatus === 'verified') return 1;
+  if (allChecklistMet) return 0;
+  return -1;
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function StudentYudisiumStatusCard({ currentStep, isFinalized }: { currentStep: number; isFinalized: boolean }) {
+  const spinePct = currentStep === -1 ? 0 : (currentStep + 1) * 20;
+  const completedCount = currentStep + 1;
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-card p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold">Status Yudisium</h3>
+    <div className="bg-card border border-gray-200 rounded-[10px] p-[18px_18px_14px] h-full flex flex-col box-border">
+      <div className="text-base font-semibold text-foreground mb-1.5 flex items-center justify-between">
+        Status Yudisium
         {isFinalized && (
-          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-            <PartyPopper className="mr-1 h-3 w-3" />
+          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 h-5 px-1.5 text-[10px]">
+            <PartyPopper className="mr-1 h-2.5 w-2.5" />
             Selesai
           </Badge>
         )}
       </div>
-      <div className="flex items-center">
-        {STEPS.map((step, index) => {
-          const isCompleted = index < currentStep;
-          const isCurrent = index === currentStep;
-          const completedColor = isFinalized ? 'bg-emerald-500 border-emerald-500' : 'border-primary bg-primary';
-          const completedLineColor = isFinalized ? 'bg-emerald-500' : 'bg-primary';
+      <div className="text-xs text-muted-foreground mb-[18px]">
+        Progres pengajuan yudisium Anda
+      </div>
+
+      <div className="relative pl-8 flex-1 flex flex-col">
+        {STEPS.map((step, i) => {
+          const isActive = i <= currentStep;
 
           return (
-            <div key={step.key} className="flex flex-1 flex-col items-center">
-              <div className="flex w-full items-center">
+            <div
+              key={step.key}
+              className={cn(
+                "relative",
+                i < STEPS.length - 1 ? "pb-[22px]" : "pb-0"
+              )}
+            >
+              {/* Segment to next node */}
+              {i < STEPS.length - 1 && (
                 <div
-                  className={`h-0.5 flex-1 ${
-                    index === 0 ? 'bg-transparent' : isCompleted ? completedLineColor : 'bg-muted'
-                  }`}
+                  className={cn(
+                    "absolute top-[13px] bottom-[-13px] w-[2px] z-[0]",
+                    i < currentStep ? "bg-[#16A34A]" : "bg-muted"
+                  )}
+                  style={{ left: '-21px' }}
                 />
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                    isCurrent
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : isCompleted
-                        ? `${completedColor} text-primary-foreground`
-                        : 'border-muted bg-muted/30 text-muted-foreground'
-                  }`}
-                >
-                  {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
-                </div>
-                <div
-                  className={`h-0.5 flex-1 ${
-                    index === STEPS.length - 1 ? 'bg-transparent' : isCompleted ? completedLineColor : 'bg-muted'
-                  }`}
-                />
+              )}
+              {/* Node */}
+              <div
+                className={cn(
+                  "absolute -left-8 top-[2px] w-[22px] h-[22px] rounded-full flex items-center justify-center z-[1] border-[2.5px]",
+                  isActive
+                    ? "bg-[#16A34A] border-[#16A34A] text-white shadow-[0_0_0_3px_#dcfce7]"
+                    : "bg-white border-[#d1d5db] text-[#bbb] shadow-[0_0_0_3px_#f3f4f6]"
+                )}
+              >
+                {isActive ? (
+                  <Check size={10} strokeWidth={2.5} />
+                ) : (
+                  <Clock size={10} strokeWidth={2} />
+                )}
               </div>
-              <span
-                className={`mt-2 max-w-[100px] text-center text-xs ${
-                  isCompleted || isCurrent
-                    ? isFinalized ? 'text-emerald-600 font-medium' : 'text-primary font-medium'
-                    : 'text-muted-foreground'
-                }`}
+
+              {/* Step name */}
+              <div
+                className={cn(
+                  "text-sm font-semibold leading-[1.3] mb-0.5",
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                )}
               >
                 {step.label}
-              </span>
+              </div>
+
+              {/* Step status */}
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1 text-xs font-medium",
+                  isActive ? "text-[#16A34A]" : "text-muted-foreground"
+                )}
+              >
+                {isActive ? 'Terpenuhi' : 'Menunggu'}
+              </div>
             </div>
           );
         })}
+      </div>
+
+      {/* Progress summary */}
+      <div className="mt-[18px] pt-[14px] border-t border-gray-200">
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-xs text-muted-foreground font-medium">Progres Keseluruhan</span>
+          <span className="text-xs font-bold text-[#16A34A]">{spinePct}%</span>
+        </div>
+        <div className="bg-muted rounded-full h-[6px] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 transition-all duration-300"
+            style={{ width: `${spinePct}%` }}
+          />
+        </div>
+        <div className="text-xs text-muted-foreground mt-1.5 font-medium">
+          {completedCount > 0 ? `${completedCount} dari ${STEPS.length} tahap selesai` : 'Checklist Persyaratan Belum Terpenuhi'}
+        </div>
       </div>
     </div>
   );
 }
 
-function ChecklistItem({
-  item,
+function StudentYudisiumIdentityCard({
+  yudisium,
+  displayStatus,
+  statusBadge,
+  decreeDocument,
+}: {
+  yudisium: any;
+  displayStatus: YudisiumDisplayStatus;
+  statusBadge: any;
+  decreeDocument: any;
+}) {
+  return (
+    <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px] transition-all duration-200">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-[14px]">
+        <div className="text-base font-semibold text-foreground">Informasi Yudisium</div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", statusBadge.className)}>
+            {statusBadge.label}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Info grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-4">
+        <div className="flex flex-col gap-0.5">
+          <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <BookOpen size={12} className="opacity-50" />
+            Periode
+          </div>
+          <div className="text-sm font-medium text-foreground truncate">
+            {yudisium.name}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+          <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <Calendar size={12} className="opacity-50" />
+            Rentang Pendaftaran
+          </div>
+          <div className="text-sm text-foreground font-medium">
+            {formatDateOnly(yudisium.registrationOpenDate)} – {formatDateOnly(yudisium.registrationCloseDate)}
+          </div>
+        </div>
+
+        {yudisium.eventDate && (
+          <div className="flex flex-col gap-0.5">
+            <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+              <Calendar size={12} className="opacity-50" />
+              Tanggal Pelaksanaan
+            </div>
+            <div className="text-sm text-foreground font-medium">
+              {formatDateOnly(yudisium.eventDate)}
+            </div>
+          </div>
+        )}
+
+        {decreeDocument?.filePath && (
+          <div className="flex flex-col gap-0.5">
+            <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+              <FileText size={12} className="opacity-50" />
+              SK Yudisium
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  await openProtectedFile(decreeDocument.filePath, decreeDocument.fileName || 'SK-Yudisium.pdf');
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : 'Gagal mengunduh SK');
+                }
+              }}
+              className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:underline cursor-pointer text-left p-0 bg-transparent border-0"
+            >
+              <Download size={12} />
+              Unduh SK
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Alerts */}
+      {displayStatus === 'draft' && (
+        <div className="mt-4 flex items-start gap-2 text-xs text-amber-600 bg-amber-50/50 border border-amber-200 p-2 rounded-md">
+          <Info size={14} className="shrink-0 mt-0.5" />
+          <span>Periode yudisium ini belum dibuka untuk pendaftaran. Upload dokumen akan diaktifkan saat pendaftaran dibuka.</span>
+        </div>
+      )}
+      {displayStatus === 'closed' && (
+        <div className="mt-4 flex items-start gap-2 text-xs text-muted-foreground bg-muted border border-gray-200 p-2 rounded-md">
+          <Info size={14} className="shrink-0 mt-0.5" />
+          <span>Pendaftaran sudah ditutup. Jika Anda belum terdaftar, silakan hubungi Koordinator Yudisium.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChecklistRow({
+  label,
+  met,
+  current,
+  required,
+  submittedAt,
+  revisionFinalizedAt,
+  isExitSurvey,
+  isYudisiumOpen,
   onExitSurveyClick,
 }: {
-  item: StudentYudisiumChecklistItem & { key: string };
-  onExitSurveyClick: () => void;
+  label: string;
+  met: boolean;
+  current?: number;
+  required?: number;
+  submittedAt?: string | null;
+  revisionFinalizedAt?: string | null;
+  isExitSurvey?: boolean;
+  isYudisiumOpen?: boolean;
+  onExitSurveyClick?: () => void;
 }) {
-  const isCompleted = item.met;
-  const isExitSurvey = item.key === 'exitSurvey';
-  const isRevision = item.key === 'revisiSidang';
-  const progressText =
-    typeof item.current === 'number' && typeof item.required === 'number'
-      ? `Progress SKS: ${item.current}/${item.required}`
-      : null;
+  const hasProgress = current !== undefined && required !== undefined;
+  const isInProgress = !met && hasProgress && current > 0;
+
+  const statusText = met
+    ? 'Terpenuhi'
+    : isInProgress
+      ? `${current}/${required}`
+      : 'Menunggu';
 
   return (
-    <div className={`rounded-lg border p-4 ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-muted'}`}>
-      <div className="flex items-start gap-3">
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-            isCompleted ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'
-          }`}
-        >
-          {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
-        </div>
+    <div
+      className={cn(
+        "flex items-center gap-[10px] p-[8px_12px] rounded-[7px] border transition-all duration-200",
+        met ? "bg-emerald-50/50 border-emerald-200" : "bg-card border border-gray-200"
+      )}
+    >
+      <div
+        className={cn(
+          "w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0",
+          met ? "bg-[#16A34A] text-white" : "bg-muted border-[1.5px] border-border text-muted-foreground"
+        )}
+      >
+        {met ? <Check size={11} strokeWidth={2.5} /> : <Clock size={11} strokeWidth={2} />}
+      </div>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">{item.label}</p>
-          {progressText && <p className="mt-1 text-xs text-muted-foreground">{progressText}</p>}
-          {item.submittedAt && <p className="mt-1 text-xs text-muted-foreground">Dikirim: {formatDateTime(item.submittedAt)}</p>}
-          {isRevision && item.revisionFinalizedAt && (
-            <p className="mt-1 text-xs text-muted-foreground">Revisi disahkan: {formatDateTime(item.revisionFinalizedAt)}</p>
+      <div className="flex-1 min-w-0">
+        <strong className="text-sm font-medium text-foreground block leading-tight truncate">
+          {label}
+        </strong>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className={cn("text-[10px] font-medium", met ? "text-[#16A34A]" : "text-muted-foreground")}>
+            {statusText}
+          </span>
+          {submittedAt && (
+            <span className="text-[10px] text-muted-foreground">
+              • {formatDateTime(submittedAt)}
+            </span>
           )}
-          <p className={`mt-1 text-xs ${isCompleted ? 'text-green-600' : 'text-muted-foreground'}`}>
-            {isCompleted ? 'Terpenuhi' : 'Menunggu'}
-          </p>
+          {revisionFinalizedAt && (
+            <span className="text-[10px] text-muted-foreground">
+              • {formatDateTime(revisionFinalizedAt)}
+            </span>
+          )}
         </div>
+      </div>
 
-        {isExitSurvey && (
-          <Button size="sm" variant={isCompleted ? 'outline' : 'default'} onClick={onExitSurveyClick}>
-            {isCompleted ? 'Lihat Exit Survey' : 'Isi Exit Survey'}
-          </Button>
+      {isExitSurvey && (
+        <button
+          onClick={(isYudisiumOpen || met) ? onExitSurveyClick : undefined}
+          disabled={!isYudisiumOpen && !met}
+          className={cn(
+            "shrink-0 px-[9px] py-[4px] text-[10px] font-semibold rounded-[5px] transition-all duration-200 border",
+            met 
+              ? "border-gray-200 text-foreground bg-transparent hover:bg-accent cursor-pointer" 
+              : isYudisiumOpen 
+                ? "border-primary text-primary bg-transparent hover:bg-primary/5 cursor-pointer" 
+                : "border-gray-200 text-muted-foreground bg-transparent cursor-default opacity-50"
+          )}
+        >
+          {met ? 'Lihat Response' : 'Isi Survey'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function StudentYudisiumChecklistCard({
+  checklist,
+  isYudisiumOpen,
+  onExitSurveyClick,
+}: {
+  checklist: any;
+  isYudisiumOpen: boolean;
+  onExitSurveyClick: () => void;
+}) {
+  if (!checklist) return null;
+  const items = checklistEntries(checklist);
+  return (
+    <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
+      <div className="text-base font-semibold text-foreground mb-[14px]">
+        Checklist Persyaratan
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {items.map((item: any) => (
+          <ChecklistRow
+            key={item.key}
+            label={item.label}
+            met={item.met}
+            current={item.current}
+            required={item.required}
+            submittedAt={item.submittedAt}
+            revisionFinalizedAt={item.revisionFinalizedAt}
+            isExitSurvey={item.key === 'exitSurvey'}
+            isYudisiumOpen={isYudisiumOpen}
+            onExitSurveyClick={onExitSurveyClick}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DocumentRow({
+  requirement,
+  isLocked,
+  isUploading,
+  onUpload,
+}: {
+  requirement: YudisiumRequirementUploadStatus;
+  isLocked: boolean;
+  isUploading: boolean;
+  onUpload: (file: File) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isUploaded = !!requirement.document;
+  const isApproved = requirement.status === 'approved';
+  const isDeclined = requirement.status === 'declined';
+  const canUpload = !isLocked && !isApproved && !isUploading;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onUpload(file);
+    e.target.value = '';
+  };
+
+  const handleUploadClick = () => {
+    if (canUpload) fileInputRef.current?.click();
+  };
+
+  const handleViewClick = async () => {
+    if (requirement.document?.filePath) {
+      try {
+        await openProtectedFile(requirement.document.filePath, requirement.document.fileName || undefined);
+      } catch (error) {
+        toast.error((error as Error).message || 'Gagal membuka dokumen');
+      }
+    }
+  };
+
+  const fileStatusColor = isApproved ? 'text-[#16A34A]' : isDeclined ? 'text-[#dc2626]' : 'text-muted-foreground';
+  const fileStatusText = isApproved
+    ? '✓ Terverifikasi'
+    : isDeclined
+      ? `Ditolak${requirement.validationNotes ? `: ${requirement.validationNotes}` : ''}`
+      : 'Menunggu verifikasi';
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-[10px] p-[7px_10px] rounded-[7px] bg-card border border-gray-200 transition-all duration-200",
+        (isLocked && !isApproved) && "opacity-[0.55]"
+      )}
+    >
+      <div
+        className={cn(
+          "w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0",
+          isApproved ? "bg-[#dcfce7] text-[#16A34A]" : 
+          isDeclined ? "bg-[#fef2f2] text-[#dc2626]" : 
+          isUploaded ? "bg-[#dbeafe] text-[#2563eb]" : 
+          "bg-muted text-muted-foreground"
+        )}
+      >
+        <FileText size={14} />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-foreground truncate">
+          {requirement.name}
+        </div>
+        {typeof requirement.description === 'string' && requirement.description && (
+          <div className="text-xs text-muted-foreground leading-tight mt-0.5">
+            {requirement.description}
+          </div>
+        )}
+        {isUploaded && (
+          <>
+            <div className={cn("text-xs font-medium mt-0.5", fileStatusColor)}>
+              {fileStatusText}
+            </div>
+            {requirement.document?.fileName && (
+              <div className="text-xs text-muted-foreground truncate">
+                {requirement.document.fileName}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        {isUploaded && requirement.id && (
+          <button
+            onClick={handleViewClick}
+            title="Lihat dokumen"
+            className="px-[9px] py-[4px] rounded-[5px] bg-transparent border border-gray-200 flex items-center gap-1 shrink-0 text-foreground hover:bg-accent transition-all duration-200 cursor-pointer text-xs font-semibold"
+          >
+            <Eye size={12} />
+            <span>Lihat</span>
+          </button>
+        )}
+
+        {isUploading ? (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Spinner className="h-3 w-3" />
+            Upload...
+          </div>
+        ) : (
+          <button
+            disabled={!canUpload}
+            onClick={handleUploadClick}
+            className={cn(
+              "shrink-0 px-[9px] py-[4px] text-xs font-semibold rounded-[5px] transition-all duration-200 cursor-pointer border",
+              isDeclined 
+                ? "border-destructive text-destructive bg-transparent hover:bg-destructive/10" 
+                : canUpload 
+                  ? "border-gray-200 text-foreground bg-transparent hover:bg-accent" 
+                  : "border-gray-200 text-muted-foreground cursor-default"
+            )}
+          >
+            {isUploaded ? (isDeclined ? 'Upload Ulang' : 'Ganti File') : 'Upload'}
+          </button>
         )}
       </div>
     </div>
   );
 }
 
+function YudisiumRequirementCard({ 
+  allChecklistMet, 
+  participantStatus,
+  isRegistrationOpen
+}: { 
+  allChecklistMet: boolean;
+  participantStatus: ParticipantStatus;
+  isRegistrationOpen: boolean;
+}) {
+  const isLocked = !allChecklistMet || !isRegistrationOpen;
+  const isBeyondVerification = ['verified', 'cpl_validated', 'appointed', 'finalized'].includes(participantStatus ?? '');
+  
+  const { data: reqData } = useStudentYudisiumRequirements();
+  const uploadMutation = useUploadYudisiumDocument();
+  const requirements = reqData?.requirements ?? [];
+
+  return (
+    <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
+      <div className="text-base font-semibold text-foreground mb-[14px]">
+        Upload Dokumen Yudisium
+      </div>
+      {(!allChecklistMet && !isBeyondVerification) && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 p-[8px_12px] bg-muted border border-gray-200 rounded-[7px]">
+          <AlertCircle size={14} className="shrink-0 text-muted-foreground" />
+          <span>Lengkapi checklist persyaratan untuk mengakses fitur upload.</span>
+        </div>
+      )}
+      <div className="flex flex-col gap-1.5">
+        {requirements.map((req) => (
+          <DocumentRow
+            key={req.id}
+            requirement={req}
+            isLocked={isLocked || isBeyondVerification}
+            isUploading={
+              uploadMutation.isPending &&
+              uploadMutation.variables?.requirementId === req.id
+            }
+            onUpload={(file) =>
+              uploadMutation.mutate({ file, requirementId: req.id })
+            }
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RequirementsPreviewCard({ requirements }: { requirements: { id: string; name: string; description?: string | null }[] }) {
+  return (
+    <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
+      <div className="text-base font-semibold text-foreground mb-[6px]">
+        Upload Dokumen Yudisium
+      </div>
+      <div className="text-xs text-muted-foreground mb-[14px]">
+        Dokumen-dokumen berikut perlu disiapkan saat pendaftaran dibuka.
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {requirements.map((req) => (
+          <div
+            key={req.id}
+            className="flex items-center gap-[10px] p-[7px_10px] rounded-[7px] bg-card border border-dashed border-gray-200 opacity-[0.55]"
+          >
+            <div className="w-7 h-7 rounded-[6px] bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+              <FileText size={14} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-foreground truncate">
+                {req.name} (PDF)
+              </div>
+              {typeof req.description === 'string' && req.description && (
+                <div className="text-[10px] text-muted-foreground truncate">
+                  {req.description}
+                </div>
+              )}
+            </div>
+            <button
+              disabled
+              className="shrink-0 px-[9px] py-[4px] text-[10px] font-semibold rounded-[5px] border border-gray-200 text-muted-foreground cursor-default"
+            >
+              Upload
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StudentYudisiumHistoryCard({
+  index,
+  item,
+}: {
+  index: number;
+  item: any;
+}) {
+  const statusInfo = PARTICIPANT_STATUS_MAP[item.status] || { label: item.status, className: '' };
+
+  return (
+    <div className="grid grid-cols-[40px_1.5fr_1.5fr_1fr_1fr_1fr] gap-2 items-center p-[10px] bg-card border border-gray-200 rounded-[8px] transition-all duration-200">
+      {/* # */}
+      <span className="text-xs font-semibold text-muted-foreground">{index}</span>
+
+      {/* Yudisium Name */}
+      <div className="min-w-0 flex flex-col">
+        <div className="truncate text-sm font-medium text-foreground">
+          {item.yudisiumName}
+        </div>
+      </div>
+
+      {/* Rentang Pendaftaran */}
+      <div className="text-sm text-foreground font-medium">
+        {formatDateOnly(item.registrationOpenDate)} – {formatDateOnly(item.registrationCloseDate)}
+      </div>
+
+      {/* Tanggal Pelaksanaan */}
+      <div className="text-sm text-foreground font-medium">
+        {formatDateOnly(item.eventDate)}
+      </div>
+
+      {/* Date Submitted */}
+      <div className="text-sm text-foreground font-medium">
+        {formatDateOnly(item.createdAt)}
+      </div>
+
+      {/* Status */}
+      <div className="flex justify-start">
+        <Badge variant="outline" className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", statusInfo.className)}>
+          {statusInfo.label}
+        </Badge>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export default function StudentYudisium() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const { data, isLoading, isError, error, refetch, isFetching } = useStudentYudisiumOverview();
+  const { data, isLoading, refetch } = useStudentYudisiumOverview();
 
-  const breadcrumbs = useMemo(() => [{ label: 'Yudisium' }], []);
+  const breadcrumbs = useMemo(() => [
+    { label: 'Yudisium' }
+  ], []);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-    setTitle(undefined);
+    setTitle('Yudisium Mahasiswa');
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
-  const checklistItems = data ? checklistEntries(data.checklist) : [];
-  const allDocumentsUploaded = (data?.requirements ?? []).every((item) => item.isUploaded);
-  const hasDecree = !!(data?.yudisium?.decreeDocument);
-  const currentStep = data?.yudisium
-    ? getActiveStepIndex(
-      data.yudisium.status as YudisiumStatus,
-      data.participantStatus ?? null,
-      data.allChecklistMet,
-      allDocumentsUploaded,
-      data.allCplVerified,
-      hasDecree,
-      data.yudisium.eventDate,
-    )
-    : 0;
-  const isFinalized = currentStep >= 5;
+  const handleDownloadCplReport = () => {
+    if (!data?.cplScores || data.cplScores.length === 0) return;
 
-  const statusBadge = data?.yudisium
-    ? STATUS_BADGE_MAP[data.yudisium.status as YudisiumStatus] || STATUS_BADGE_MAP.draft
-    : STATUS_BADGE_MAP.draft;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+
+    // Header
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('KEMENTERIAN PENDIDIKAN TINGGI, SAINS DAN TEKNOLOGI', pageWidth / 2, 15, { align: 'center' });
+    doc.text('UNIVERSITAS ANDALAS', pageWidth / 2, 20, { align: 'center' });
+    doc.text('FAKULTAS TEKNOLOGI INFORMASI', pageWidth / 2, 25, { align: 'center' });
+    doc.text('DEPARTEMEN SISTEM INFORMASI', pageWidth / 2, 30, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Kampus Universitas Andalas, Limau Manis, Padang, Kode Pos 25163', pageWidth / 2, 35, { align: 'center' });
+    doc.text('Email: jurusan_si@fti.unand.ac.id dan website: http://si.fti.unand.ac.id', pageWidth / 2, 40, { align: 'center' });
+    
+    doc.setLineWidth(0.5);
+    doc.line(margin, 43, pageWidth - margin, 43);
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FORMULIR PENILAIAN CAPAIAN PEMBELAJARAN LULUSAN (CPL)', pageWidth / 2, 52, { align: 'center' });
+
+    // A. Student Data
+    doc.setFontSize(10);
+    doc.text('A. DATA MAHASISWA', margin, 62);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Nama Lengkap', margin, 69);
+    doc.text(`: ${data.studentName || '-'}`, margin + 40, 69);
+    doc.text('NIM', margin, 75);
+    doc.text(`: ${data.studentNim || '-'}`, margin + 40, 75);
+
+    // B. CPL Assessment Table
+    doc.setFont('helvetica', 'bold');
+    doc.text('B. PENILAIAN CAPAIAN PEMBELAJARAN LULUSAN (CPL)', margin, 85);
+
+    const tableData = data.cplScores.map((sc) => [
+      sc.code,
+      sc.description,
+      sc.score ?? '-',
+      sc.passed ? 'Tercapai' : 'Tidak Tercapai'
+    ]);
+
+    autoTable(doc, {
+      startY: 92,
+      head: [['Kode CPL', 'Deskripsi CPL', 'Nilai', 'Status Capaian']],
+      body: tableData,
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+      headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 30, halign: 'center' },
+      }
+    });
+
+    // C. Conclusion
+    const finalY = (doc as any).lastAutoTable.finalY + 12;
+    doc.setFont('helvetica', 'bold');
+    doc.text('C. KESIMPULAN ASESMEN', margin, finalY);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const allPassed = data.cplScores.every(sc => sc.passed);
+    doc.rect(margin, finalY + 4, 3, 3);
+    if (allPassed) doc.text('x', margin + 0.8, finalY + 6.5);
+    doc.text('Seluruh CPL telah dicapai sesuai standar minimum kelulusan', margin + 6, finalY + 7);
+    
+    doc.rect(margin, finalY + 11, 3, 3);
+    if (!allPassed) doc.text('x', margin + 0.8, finalY + 13.5);
+    doc.text(`Ada CPL yang belum tercapai (sebutkan): ${allPassed ? '-' : '...' }`, margin + 6, finalY + 14);
+    
+    doc.rect(margin, finalY + 18, 3, 3);
+    doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
+
+    // D. Signature
+    const verifier = data.cplScores.find(sc => sc.verifiedBy);
+    const verifierName = verifier?.verifiedBy || '...';
+    const verifierNip = verifier?.verifiedByNip || '...';
+    const verifiedDate = verifier?.verifiedAt ? new Date(verifier.verifiedAt) : new Date();
+
+    const signY = finalY + 40;
+    doc.setFontSize(10);
+    doc.text(`Padang, ${formatDateId(verifiedDate)}`, pageWidth - margin - 65, signY);
+    doc.text('Koordinator Asesmen CPL', pageWidth - margin - 65, signY + 6);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text(verifierName, pageWidth - margin - 65, signY + 28);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`NIP: ${verifierNip}`, pageWidth - margin - 65, signY + 33);
+
+    doc.save(`Form_Penilaian_CPL_${data.studentNim || 'Mhs'}.pdf`);
+  };
+
+  // ── Derived state ───────────────────────────────────────────────────────
+
+  const displayStatus = data?.yudisium
+    ? deriveDisplayStatus(
+        data.yudisium.status,
+        data.yudisium.registrationOpenDate ?? null,
+        data.yudisium.registrationCloseDate ?? null,
+        data.yudisium.eventDate ?? null,
+      )
+    : null;
+
+  const isRegistrationOpen = displayStatus === 'open';
+  const hasActiveYudisium  = !!data?.yudisium;
+
+  const currentStep = getActiveStepIndex(
+    (data?.participantStatus as ParticipantStatus) ?? null,
+    data?.allChecklistMet ?? false,
+  );
+  const isFinalized = currentStep >= 4;
+  const statusBadge = displayStatus ? STATUS_BADGE_MAP[displayStatus] : STATUS_BADGE_MAP.draft;
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-[14px]">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-32 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-[14px]">
+          <Skeleton className="h-96" />
+          <div className="space-y-[14px]">
+            <Skeleton className="h-48" />
+            <Skeleton className="h-48" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Yudisium Mahasiswa</h1>
-        <p className="text-muted-foreground">Pantau kesiapan checklist yudisium dan dokumen persyaratan Anda.</p>
+    <div className="p-6 space-y-6">
+      {/* Page Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Yudisium Mahasiswa</h1>
+          <p className="text-muted-foreground">
+            Pantau kesiapan checklist yudisium dan dokumen persyaratan Anda.
+          </p>
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex h-[calc(100vh-280px)] items-center justify-center">
-          <Loading size="lg" text="Memuat data yudisium..." />
-        </div>
-      ) : isError ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Gagal Memuat Data Yudisium</CardTitle>
-            <CardDescription>
-              Permintaan ke server gagal. Ini berbeda dengan kondisi tidak ada periode yudisium.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : 'Terjadi kesalahan tidak diketahui.'}</p>
-            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-              Coba Muat Ulang
-            </Button>
-          </CardContent>
-        </Card>
-      ) : !data?.yudisium ? (
-        <Card>
-          <CardContent className="py-8">
-            <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-              <Lottie animationData={emptyAnimation} loop className="h-64 w-64" />
-              <h2 className="text-xl font-semibold">Belum Ada Periode Yudisium yang Berlangsung</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Saat ini belum ada periode yudisium berstatus terbuka. Silakan cek kembali saat periode sudah dibuka.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          <YudisiumStatusStepper currentStep={currentStep} isFinalized={isFinalized} />
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold">Informasi Yudisium</CardTitle>
-                <Badge variant="outline" className={statusBadge.className}>{statusBadge.label}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex gap-2.5">
-                  <BookOpenText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-muted-foreground">Periode Yudisium</p>
-                    <p className="text-sm font-medium">{data.yudisium.name ?? 'Periode Yudisium Berjalan'}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2.5">
-                  <CalendarRange className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-muted-foreground">Rentang Pendaftaran</p>
-                    <p className="text-sm font-medium">
-                      {formatDateOnly(data.yudisium.registrationOpenDate)} - {formatDateOnly(data.yudisium.registrationCloseDate)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-lg border border-gray-200 bg-card p-6">
-              <h3 className="text-lg font-semibold mb-4">Checklist Persyaratan</h3>
-              <div className="space-y-3">
-                {checklistItems.map((item) => (
-                  <ChecklistItem
-                    key={item.key}
-                    item={item}
-                    onExitSurveyClick={() => navigate('/yudisium/student/exit-survey')}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <UploadDokumenYudisium allChecklistMet={data.allChecklistMet} />
+      {/* Header Info Banner / Glass Card */}
+      {!hasActiveYudisium ? (
+        <div className="rounded-xl border border-dashed border-muted-foreground/30 bg-muted/20 backdrop-blur-sm px-6 py-5 flex items-center gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <CalendarX2 className="h-5 w-5" />
           </div>
+          <div>
+            <p className="text-sm font-medium">Belum ada periode yudisium yang dibuka</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Persiapkan persyaratan di bawah ini. Upload dokumen dan exit survey akan aktif saat periode dibuka.
+            </p>
+          </div>
+          <button 
+            onClick={() => refetch()}
+            className="ml-auto shrink-0 px-3 py-1.5 text-xs font-semibold rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-all cursor-pointer"
+          >
+            Muat Ulang
+          </button>
+        </div>
+      ) : (
+        data?.yudisium && (
+          <StudentYudisiumIdentityCard 
+            yudisium={data.yudisium} 
+            displayStatus={displayStatus!} 
+            statusBadge={statusBadge}
+            decreeDocument={data.yudisium.decreeDocument}
+          />
+        )
+      )}
 
-          {/* CPL Scores Section */}
-          {data.cplScores.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold">Validasi Capaian Pembelajaran Lulusan</CardTitle>
-                  {data.allCplVerified && (
-                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                      <CheckCircle2 className="mr-1 h-3 w-3" />
-                      Semua CPL Tervalidasi
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-[14px] items-start">
+        {/* Left: Vertical Roadmap */}
+        <div className="self-stretch">
+          <StudentYudisiumStatusCard currentStep={currentStep} isFinalized={isFinalized} />
+        </div>
+
+        {/* Right Column Stack */}
+        <div className="flex flex-col gap-[14px]">
+          {/* Checklist Card */}
+          {data?.checklist && (
+            <StudentYudisiumChecklistCard 
+              checklist={data.checklist} 
+              isYudisiumOpen={isRegistrationOpen}
+              onExitSurveyClick={() => navigate('/yudisium/exit-survey')}
+            />
+          )}
+
+          {/* Document Upload/Preview Card */}
+          {(isRegistrationOpen || data?.participantStatus) ? (
+            <YudisiumRequirementCard 
+              allChecklistMet={data?.allChecklistMet ?? false} 
+              participantStatus={data?.participantStatus as ParticipantStatus}
+              isRegistrationOpen={isRegistrationOpen}
+            />
+          ) : (
+            <RequirementsPreviewCard requirements={data?.requirements ?? []} />
+          )}
+
+          {/* CPL Scores Card — show whenever scores exist, regardless of active period */}
+          {(data?.cplScores.length ?? 0) > 0 && (
+            <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
+              <div className="flex items-center justify-between mb-[14px]">
+                <div className="text-base font-semibold text-foreground">Validasi CPL</div>
+                <div className="flex items-center gap-2">
+                  {['cpl_validated', 'appointed', 'finalized'].includes(data?.participantStatus || '') && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-[10px] font-bold"
+                      onClick={handleDownloadCplReport}
+                    >
+                      <Download className="h-3 w-3" />
+                      Hasil CPL
+                    </Button>
+                  )}
+                  {data?.allCplVerified && (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 h-5 px-1.5 text-[10px]">
+                      <Check className="mr-1 h-2.5 w-2.5" strokeWidth={3} />
+                      Tervalidasi
                     </Badge>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent>
-                {data.allCplVerified && (
-                  <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                    <p className="text-sm font-medium text-emerald-700">
-                      Selamat! Anda telah menjadi <strong>Calon Peserta Yudisium</strong>.
-                    </p>
-                  </div>
-                )}
-                <div className="overflow-x-auto rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/40">
-                      <tr className="border-b">
-                        <th className="px-3 py-2 text-left">Kode CPL</th>
-                        <th className="px-3 py-2 text-left">Deskripsi</th>
-                        <th className="px-3 py-2 text-left">Nilai</th>
-                        <th className="px-3 py-2 text-left">Skor Minimal</th>
-                        <th className="px-3 py-2 text-left">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.cplScores.map((cpl, idx) => (
-                        <tr key={idx} className="border-b">
-                          <td className="px-3 py-2">{cpl.code ?? '-'}</td>
-                          <td className="px-3 py-2">{cpl.description}</td>
-                          <td className="px-3 py-2">{cpl.score ?? '-'}</td>
-                          <td className="px-3 py-2">{cpl.minimalScore}</td>
-                          <td className="px-3 py-2">
-                            <Badge variant="outline" className={
-                              cpl.status === 'verified'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : cpl.passed
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-red-50 text-red-700 border-red-200'
-                            }>
-                              {cpl.status === 'verified' ? 'Tervalidasi' : cpl.passed ? 'Lulus' : 'Tidak Lulus'}
-                            </Badge>
+              </div>
+              
+              {data?.allCplVerified && (
+                <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5">
+                  <p className="text-[11px] font-medium text-emerald-700">
+                    Selamat! Anda telah menjadi <strong>Calon Peserta Yudisium</strong>.
+                  </p>
+                </div>
+              )}
+
+              <div className="overflow-x-auto rounded-[8px] border border-gray-100">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-muted/30">
+                    <tr>
+                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Kode</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Deskripsi</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nilai</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Minimal Skor</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-center">Status</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">Diverifikasi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data?.cplScores.map((cpl: any, idx: number) => {
+                      const isVerified = cpl.status === 'verified' || !!(cpl.verifiedBy && cpl.verifiedAt);
+                      return (
+                        <tr key={idx} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
+                          <td className="px-3 py-2 text-xs font-semibold text-foreground">{cpl.code ?? '-'}</td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground max-w-[45ch] whitespace-normal leading-relaxed py-3">{cpl.description}</td>
+                          <td className="px-3 py-2 text-xs font-bold text-foreground">{cpl.score ?? '-'}</td>
+                          <td className="px-3 py-2 text-xs font-medium text-muted-foreground">{cpl.minimalScore}</td>
+                          <td className="px-3 py-2 text-center">
+                            <span className={cn(
+                              "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                              cpl.passed
+                                ? "bg-emerald-50 text-emerald-600"
+                                : "bg-red-50 text-red-600"
+                            )}>
+                              {cpl.passed ? 'LULUS' : 'TIDAK LULUS'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <div className="flex justify-end">
+                              {isVerified ? (
+                                <div className="bg-emerald-100 text-emerald-600 p-0.5 rounded-full" title={`Diverifikasi pada ${formatDateTime(cpl.verifiedAt)}`}>
+                                  <Check size={10} strokeWidth={3} />
+                                </div>
+                              ) : (
+                                <div className="bg-gray-100 text-gray-400 p-0.5 rounded-full">
+                                  <X size={10} strokeWidth={3} />
+                                </div>
+                              )}
+                            </div>
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
+        </div>
+      </div>
 
-          {/* Decree / SK Section */}
-          {hasDecree && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Surat Keputusan Yudisium</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Nomor SK</p>
-                    <p className="font-medium">{data.yudisium.decreeNumber ?? '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Tanggal Ditetapkan</p>
-                    <p className="font-medium">{formatDateOnly(data.yudisium.decreeIssuedAt)}</p>
-                  </div>
-                  {data.yudisium.eventDate && (
-                    <div>
-                      <p className="text-muted-foreground">Tanggal Yudisium</p>
-                      <p className="font-medium">{formatDateOnly(data.yudisium.eventDate)}</p>
-                    </div>
-                  )}
-                </div>
-                {data.yudisium.decreeDocument?.filePath && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        await openProtectedFile(
-                          data.yudisium!.decreeDocument!.filePath!,
-                          data.yudisium!.decreeDocument!.fileName ?? 'SK-Yudisium.pdf'
-                        );
-                      } catch (err) {
-                        toast.error(err instanceof Error ? err.message : 'Gagal mengunduh SK');
-                      }
-                    }}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Unduh SK Yudisium
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
+      {/* Riwayat Percobaan — matching Thesis Defence layout */}
+      {(data?.history?.length ?? 0) > 0 && (
+        <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
+          {/* Card header */}
+          <div className="flex items-center justify-between mb-[14px]">
+            <div className="text-base font-semibold text-foreground">Riwayat Percobaan</div>
+            <span className="text-xs text-muted-foreground font-medium">
+              {(data?.history?.length ?? 0)} pendaftaran sebelumnya
+            </span>
+          </div>
+
+          {/* Column headers */}
+          <div className="grid grid-cols-[40px_1.5fr_1.5fr_1fr_1fr_1fr] gap-2 px-[10px] py-[6px] mb-[6px]">
+            {['#', 'Periode', 'Pendaftaran', 'Pelaksanaan', 'Tgl. Daftar', 'Status'].map((col, i) => (
+              <span
+                key={i}
+                className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
+                {col}
+              </span>
+            ))}
+          </div>
+
+          {/* Rows */}
+          <div className="flex flex-col gap-2">
+            {(data?.history ?? []).map((item: any, idx: number) => (
+              <StudentYudisiumHistoryCard
+                key={item.id}
+                index={idx + 1}
+                item={item}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

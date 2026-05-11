@@ -1,22 +1,32 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useRole } from '@/hooks/shared';
+import { lazy, Suspense } from 'react';
+import { useRole } from '@/hooks/shared/useRole';
+import { Loading } from '@/components/ui/spinner';
+
+const StudentYudisiumPage = lazy(() => import('./StudentYudisium'));
+const YudisiumPage = lazy(() => import('./Yudisium'));
 
 export default function YudisiumEntry() {
-  const navigate = useNavigate();
   const { isStudent, isAdmin, isDosen } = useRole();
 
-  useEffect(() => {
-    if (isStudent()) {
-      navigate('/yudisium/student', { replace: true });
-    } else if (isAdmin()) {
-      navigate('/yudisium/admin', { replace: true });
-    } else if (isDosen()) {
-      navigate('/yudisium/lecturer', { replace: true });
-    } else {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isStudent, isAdmin, isDosen, navigate]);
-
-  return null;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <Loading size="lg" text="Memuat..." />
+        </div>
+      }
+    >
+      {isStudent() ? (
+        <StudentYudisiumPage />
+      ) : (isAdmin() || isDosen()) ? (
+        <YudisiumPage />
+      ) : (
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <p className="text-muted-foreground text-sm">
+            Anda tidak memiliki akses ke halaman ini.
+          </p>
+        </div>
+      )}
+    </Suspense>
+  );
 }

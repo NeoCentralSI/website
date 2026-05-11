@@ -43,6 +43,7 @@ export type Column<T> = {
 	width?: string | number;
 	accessor?: keyof T | ((row: T, index: number) => React.ReactNode);
 	render?: (row: T, index: number) => React.ReactNode;
+	onCell?: (row: T, index: number) => React.TdHTMLAttributes<HTMLTableCellElement>;
 	filter?: ColumnFilterElement | ColumnFilterControl;
 	sortable?: boolean;
 };
@@ -113,24 +114,24 @@ export function CustomTable<T extends Record<string, any>>({
 			<div className="flex flex-col gap-3">
 				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
 					<div className="flex-1 flex items-center gap-2">
-						{loading ? (
-							<div className="flex items-center gap-2 text-sm text-muted-foreground">
-								<Spinner className="size-4" />
-								<span>Memuat...</span>
-							</div>
-						) : onSearchChange !== undefined ? (
+						{onSearchChange !== undefined && (
 							<div className="relative w-full sm:max-w-md">
 								<SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 								<Input
 									placeholder="Cari..."
-									className="pl-8"
-									value={searchValue ?? ""}
-									onChange={(e) => onSearchChange(e.target.value)}
+									className="pl-8 pr-8"
+									value={searchValue ?? ''}
+									onChange={(e) => onSearchChange?.(e.target.value)}
 								/>
+								{loading && (
+									<div className="absolute right-2 top-1/2 -translate-y-1/2">
+										<Spinner className="size-4 text-muted-foreground animate-spin" />
+									</div>
+								)}
 							</div>
-						) : null}
+						)}
 					</div>
-					{!loading && actions && (
+					{actions && (
 						<div className="flex items-center gap-2">
 							{actions}
 						</div>
@@ -275,7 +276,8 @@ export function CustomTable<T extends Record<string, any>>({
 														: col.accessor
 															? (row[col.accessor as keyof T] as any)
 															: null;
-												return <TableCell key={col.key} className={col.className}>{content}</TableCell>;
+												const cellProps = col.onCell ? col.onCell(row, idx) : {};
+												return <TableCell key={col.key} {...cellProps} className={cn(col.className, cellProps.className)}>{content}</TableCell>;
 											})}
 										</TableRow>
 									);
