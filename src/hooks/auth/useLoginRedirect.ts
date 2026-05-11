@@ -1,16 +1,18 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/shared';
 
 export const useLoginRedirect = () => {
   const { isLoading, isLoggedIn, user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to dashboard if already logged in
+    // Redirect to dashboard if already logged in (SPA navigation, tanpa page reload)
     if (!isLoading && isLoggedIn && user) {
-      window.location.href = '/dashboard';
+      navigate('/dashboard', { replace: true });
     }
-  }, [isLoading, isLoggedIn, user]);
+  }, [isLoading, isLoggedIn, user, navigate]);
 
   useEffect(() => {
     // Handle query params dari redirect aktivasi akun dan reset password

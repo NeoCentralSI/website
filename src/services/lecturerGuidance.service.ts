@@ -1,581 +1,432 @@
-import { API_CONFIG, getApiUrl } from "@/config/api";
-import { apiRequest } from "./auth.service";
+import { getApiUrl, API_CONFIG } from '@/config/api';
+import { apiRequest } from './auth.service';
 
-// Types (align with backend contracts as needed)
-export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending";
+const EP = API_CONFIG.ENDPOINTS.THESIS_LECTURER;
+
+// ============================================
+// Types
+// ============================================
+
+export interface GuidanceItem {
+  id: string;
+  thesisId: string;
+  supervisorId: string | null;
+  studentId?: string;
+  studentName?: string;
+  studentNim?: string;
+  studentEmail?: string | null;
+  status: string;
+  phase?: string;
+  location?: string | null;
+  requestedDate: string | null;
+  approvedDate: string | null;
+  requestedDateFormatted?: string;
+  approvedDateFormatted?: string;
+  summarySubmittedAtFormatted?: string | null;
+  duration: number;
+  notes: string | null;
+  studentNotes: string | null;
+  supervisorFeedback: string | null;
+  rejectionReason: string | null;
+  sessionSummary: string | null;
+  actionItems: string | null;
+  summarySubmittedAt: string | null;
+  completedAt: string | null;
+  document: { id: string; fileName: string | null; filePath: string | null } | null;
+  documentUrl: string | null;
+  milestoneIds?: string[];
+  milestoneTitles?: string[];
+  milestoneName?: string | null;
+  thesisTitle?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  thesis?: {
+    id: string;
+    title: string | null;
+    student?: { user?: { fullName?: string; identityNumber?: string } };
+  };
+  supervisor?: { user?: { fullName?: string } };
+}
+
+// ============================================
+// Response helper
+// ============================================
+
+async function handleJson<T = unknown>(response: Response): Promise<T> {
+  const json = await response.json().catch(() => ({ message: 'Request gagal' }));
+  if (!response.ok) {
+    throw new Error(json.message || `Request gagal (${response.status})`);
+  }
+  return json as T;
+}
+
+// ============================================
+// Lecturer Guidance API
+// ============================================
+
+/** Backend returns { data: { total, rows, page, pageSize } } for paginated endpoints */
+function extractItems<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object' && 'rows' in data && Array.isArray((data as { rows: unknown }).rows)) {
+    return (data as { rows: T[] }).rows;
+  }
+  return [];
+}
+
+export async function getPendingRequests(params?: {
+  page?: number;
+  pageSize?: number;
+}): Promise<{
+  success: boolean;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  requests: GuidanceItem[];
+}> {
+  const sp = new URLSearchParams();
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.pageSize) sp.set('pageSize', String(params.pageSize));
+  const qs = sp.toString();
+  const url = getApiUrl(`${EP.REQUESTS}${qs ? `?${qs}` : ''}`);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: unknown }>(response);
+  const items = extractItems<GuidanceItem>(data.data);
+  return {
+    success: true,
+    page: params?.page ?? 1,
+    pageSize: params?.pageSize ?? items.length,
+    total: items.length,
+    totalPages: 1,
+    requests: items,
+  };
+}
+
+export async function getScheduledGuidances(params?: { pageSize?: number }): Promise<GuidanceItem[]> {
+  void params;
+  const url = getApiUrl(EP.SCHEDULED);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: unknown }>(response);
+  return extractItems<GuidanceItem>(data.data);
+}
+
+export async function approveGuidanceRequest(
+  guidanceId: string,
+  body?: { feedback?: string },
+): Promise<void> {
+  const url = getApiUrl(EP.REQUEST_APPROVE(guidanceId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    ...(body ? {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    } : {}),
+  });
+  await handleJson(response);
+}
+
+export async function rejectGuidanceRequest(
+  guidanceId: string,
+  body: { rejectionReason?: string; message?: string },
+): Promise<void> {
+  const url = getApiUrl(EP.REQUEST_REJECT(guidanceId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rejectionReason: body.rejectionReason ?? body.message }),
+  });
+  await handleJson(response);
+}
+
+export async function cancelGuidanceByLecturer(
+  guidanceId: string,
+  body?: { reason?: string },
+): Promise<void> {
+  const url = getApiUrl(EP.REQUEST_CANCEL(guidanceId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+  await handleJson(response);
+}
+
+export async function getLecturerGuidanceDetail(guidanceId: string): Promise<{ guidance: GuidanceItem }> {
+  const url = getApiUrl(EP.GUIDANCE_DETAIL(guidanceId));
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: { guidance: GuidanceItem } }>(response);
+  return data.data;
+}
+
+export async function submitLecturerFeedback(
+  guidanceId: string,
+  body: { feedback: string },
+): Promise<void> {
+  const url = getApiUrl(EP.FEEDBACK(guidanceId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  await handleJson(response);
+}
+
+export async function getPendingApproval(params?: { pageSize?: number }): Promise<{
+  total: number;
+  guidances: GuidanceItem[];
+}> {
+  void params;
+  const url = getApiUrl(EP.PENDING_APPROVAL);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: GuidanceItem[] }>(response);
+  const items = data.data ?? [];
+  return { total: items.length, guidances: items };
+}
+
+export async function approveSummary(
+  guidanceId: string,
+  body?: { supervisorFeedback?: string },
+): Promise<void> {
+  const url = getApiUrl(EP.APPROVE_SUMMARY(guidanceId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+  await handleJson(response);
+}
+
+export const approveSessionSummary = (guidanceId: string): Promise<void> =>
+  approveSummary(guidanceId);
+
+export type PendingApprovalItem = GuidanceItem;
+
+export async function rejectSummary(
+  guidanceId: string,
+  body?: { reason?: string },
+): Promise<void> {
+  const url = getApiUrl(EP.REJECT_SUMMARY(guidanceId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+  await handleJson(response);
+}
+
+export async function getGuidanceHistory(studentId: string): Promise<GuidanceItem[]> {
+  const url = getApiUrl(EP.GUIDANCE_HISTORY(studentId));
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: GuidanceItem[] }>(response);
+  return data.data ?? [];
+}
+
+// ============================================
+// My Students
+// ============================================
 
 export interface MyStudentItem {
   studentId: string;
-  fullName: string;
-  email?: string;
-  identityNumber?: string;
   thesisId?: string;
-  thesisTitle?: string;
-  thesisStatus?: string;
-  roles?: string[]; // e.g., ["pembimbing1"]
-  thesisRating?: "ONGOING" | "SLOW" | "AT_RISK" | "FAILED" | "CANCELLED";
-  latestMilestone?: string;
-  // Milestone progress info
+  fullName?: string;
+  email?: string | null;
+  identityNumber?: string | null;
+  thesisTitle?: string | null;
+  thesisStatus?: string | null;
+  roles?: string[];
+  thesisRating?: string | null;
+  latestMilestone?: string | null;
   totalMilestones?: number;
   completedMilestones?: number;
-  milestoneProgress?: number; // 0-100 percentage
-  // Guidance info
+  milestoneProgress?: number;
   completedGuidanceCount?: number;
   lastGuidanceDate?: string | null;
   deadlineDate?: string | null;
   startDate?: string | null;
-}
-
-export interface GuidanceItem {
-  id: string;
-  studentId?: string;
-  studentName?: string;
-  studentNim?: string;
-  supervisorId?: string;
-  supervisorName?: string;
-  thesisId?: string;
-  status: GuidanceStatus;
-  // New schema fields
-  requestedDate?: string;
-  requestedDateFormatted?: string;
-  approvedDate?: string;
-  approvedDateFormatted?: string;
-  duration?: number;
-  notes?: string;
-  studentNotes?: string; // alias for notes from student
-  supervisorFeedback?: string;
-  rejectionReason?: string;
-  completedAt?: string;
-  document?: {
-    fileName: string;
-    filePath: string;
-  } | null;
-  documentUrl?: string; // link to external document (e.g., Google Docs, Overleaf)
-  createdAt?: string;
-  createdAtFormatted?: string;
-  updatedAt?: string;
-  requestedAt?: string; // alias for createdAt
-  // Milestone info
-  milestoneId?: string;
-  milestone?: {
-    id: string;
-    title: string;
-    status: string;
-  } | null;
-  milestoneName?: string;
-  milestoneStatus?: string;
-  milestoneIds?: string[];
-  milestoneTitles?: string[];
   [key: string]: unknown;
 }
 
-export interface ApproveGuidanceBody {
-  feedback?: string;
+export async function getMyStudents(): Promise<{ students: MyStudentItem[] }> {
+  const url = getApiUrl(EP.MY_STUDENTS);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: MyStudentItem[] }>(response);
+  return { students: data.data ?? [] };
 }
 
-// API calls
 export interface StudentDetail {
-  thesisId: string;
-  title: string;
-  status: string;
-  rating: string;
-  startDate: string | null;
-  startDateFormatted: string | null;
-  deadlineDate: string | null;
-  deadlineDateFormatted: string | null;
-  student: {
-    id: string;
-    fullName: string;
-    nim: string;
-    email: string;
-  };
-  document: {
-    id: string;
-    fileName: string;
-    url: string;
-  } | null;
-  proposalDocument: {
-    id: string;
-    fileName: string;
-    url: string;
-  } | null;
-  uploadedFiles: Array<{
-    id: string;
-    fileName: string;
-    filePath: string;
-    uploadedAt: string;
-    guidanceDate: string;
-  }>;
-  milestones: {
-    id: string;
-    title: string;
-    status: string;
-    updatedAt: string;
-    updatedAtFormatted?: string;
-    progressPercentage: number;
-    targetDate?: string;
-    targetDateFormatted?: string;
-  }[];
+  thesisId?: string;
+  title?: string | null;
+  status?: string | null;
+  rating?: string | null;
+  startDate?: string | null;
+  deadlineDate?: string | null;
   researchMethodScore?: {
-    id: string;
-    supervisorScore: number | null;
-    lecturerScore: number | null;
+    supervisorScore?: number | null;
+    lecturerScore?: number | null;
+    finalScore?: number | null;
+    isFinalized?: boolean;
   } | null;
-  guidanceHistory: {
+  student: {
+    id?: string | null;
+    fullName?: string;
+    nim?: string;
+    email?: string | null;
+  };
+  document?: {
+    id?: string;
+    fileName?: string | null;
+    url?: string | null;
+  } | null;
+  proposalDocument?: {
+    id?: string;
+    fileName?: string | null;
+    url?: string | null;
+  } | null;
+  uploadedFiles?: Array<{
+    id?: string;
+    fileName?: string | null;
+    filePath?: string | null;
+    url?: string | null;
+    uploadedAt?: string | null;
+    guidanceDate?: string | null;
+  }>;
+  guidanceHistory?: {
     count: number;
     items: GuidanceItem[];
   };
-  userRole?: string | null;
+  milestones?: Array<{
+    id: string;
+    title?: string | null;
+    status?: string | null;
+    updatedAt?: string | null;
+    updatedAtFormatted?: string | null;
+    targetDate?: string | null;
+    orderIndex?: number;
+    progressPercentage?: number;
+    description?: string | null;
+    supervisorNotes?: string | null;
+    feedback?: string | null;
+    latestDocument?: {
+      fileName?: string | null;
+      filePath?: string | null;
+    } | null;
+  }>;
+  [key: string]: unknown;
 }
 
-export const validateMilestone = async (milestoneId: string, notes?: string): Promise<{ success: boolean; data: any }> => {
-  const res = await apiRequest(getApiUrl(`/milestones/${milestoneId}/validate`), {
-    method: "POST",
-    body: JSON.stringify({ supervisorNotes: notes }),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memvalidasi milestone" }));
-    throw new Error(errorData.message || "Gagal memvalidasi milestone");
-  }
-  return res.json();
-};
-
-export const requestMilestoneRevision = async (milestoneId: string, notes: string): Promise<{ success: boolean; data: any }> => {
-  const res = await apiRequest(getApiUrl(`/milestones/${milestoneId}/request-revision`), {
-    method: "POST",
-    body: JSON.stringify({ revisionNotes: notes }),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal mengirim permintaan revisi" }));
-    throw new Error(errorData.message || "Gagal mengirim permintaan revisi");
-  }
-  return res.json();
-};
-
-export const getStudentDetail = async (thesisId: string): Promise<{ success: boolean; data: StudentDetail }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS_DETAIL(thesisId)));
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail mahasiswa" }));
-    throw new Error(errorData.message || "Gagal memuat detail mahasiswa");
-  }
-  return res.json();
-};
-
-export const getMyStudents = async (params?: { roles?: string }): Promise<{ success: boolean; count: number; students: MyStudentItem[] }> => {
-  const qs = params?.roles ? `?roles=${encodeURIComponent(params.roles)}` : "";
-  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS}${qs}`));
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat mahasiswa bimbingan" }));
-    throw new Error(errorData.message || "Gagal memuat mahasiswa bimbingan");
-  }
-  return res.json();
-};
-
-export type WarningType = "SLOW" | "AT_RISK" | "FAILED";
-
-export const sendWarningToStudent = async (thesisId: string, warningType: WarningType): Promise<{ success: boolean; message: string }> => {
-  const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS}/${thesisId}/send-warning`), {
-    method: "POST",
-    body: JSON.stringify({ warningType }),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal mengirim peringatan" }));
-    throw new Error(errorData.message || "Gagal mengirim peringatan");
-  }
-  return res.json();
-};
-
-export const getPendingRequests = async (params?: { page?: number; pageSize?: number }): Promise<{ success: boolean; page: number; pageSize: number; total: number; totalPages: number; requests: GuidanceItem[] }> => {
-  const url = new URL(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUESTS));
-  if (params?.page) url.searchParams.set("page", String(params.page));
-  if (params?.pageSize) url.searchParams.set("pageSize", String(params.pageSize));
-  const res = await apiRequest(url.toString());
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat permintaan bimbingan" }));
-    throw new Error(errorData.message || "Gagal memuat permintaan bimbingan");
-  }
-  return res.json();
-};
-
-export const getScheduledGuidances = async (params?: { page?: number; pageSize?: number }): Promise<{ success: boolean; page: number; pageSize: number; total: number; totalPages: number; guidances: GuidanceItem[] }> => {
-  const url = new URL(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.SCHEDULED));
-  if (params?.page) url.searchParams.set("page", String(params.page));
-  if (params?.pageSize) url.searchParams.set("pageSize", String(params.pageSize));
-  const res = await apiRequest(url.toString());
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat bimbingan terjadwal" }));
-    throw new Error(errorData.message || "Gagal memuat bimbingan terjadwal");
-  }
-  return res.json();
-};
-
-export const rejectGuidanceRequest = async (guidanceId: string, body: { message: string }): Promise<{ success: boolean; guidance: GuidanceItem }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUEST_REJECT(guidanceId)), {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal menolak permintaan" }));
-    throw new Error(errorData.message || "Gagal menolak permintaan");
-  }
-  return res.json();
-};
-
-export const approveGuidanceRequest = async (guidanceId: string, body?: Record<string, unknown>): Promise<{ success: boolean; guidance: GuidanceItem }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUEST_APPROVE(guidanceId)), {
-    method: "PATCH",
-    body: JSON.stringify(body || {}),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal menyetujui permintaan" }));
-    throw new Error(errorData.message || "Gagal menyetujui permintaan");
-  }
-  return res.json();
-};
-
-export const cancelGuidanceByLecturer = async (guidanceId: string, body: { reason: string }): Promise<{ success: boolean; guidance: GuidanceItem }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.REQUEST_CANCEL(guidanceId)), {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal membatalkan bimbingan" }));
-    throw new Error(errorData.message || "Gagal membatalkan bimbingan");
-  }
-  return res.json();
-};
-
-export const postFeedback = async (guidanceId: string, body: { message: string }): Promise<{ success: boolean; guidance: GuidanceItem }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.FEEDBACK(guidanceId)), {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal mengirim feedback" }));
-    throw new Error(errorData.message || "Gagal mengirim feedback");
-  }
-  return res.json();
-};
-
-export const getLecturerGuidanceHistory = async (studentId: string): Promise<{ success: boolean; count: number; items: GuidanceItem[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.GUIDANCE_HISTORY(studentId)));
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat riwayat bimbingan" }));
-    throw new Error(errorData.message || "Gagal memuat riwayat bimbingan");
-  }
-  return res.json();
-};
-
-// ==================== SESSION SUMMARY APPROVAL ====================
-
-export interface PendingApprovalItem {
-  id: string;
-  studentName?: string;
-  studentId?: string;
-  approvedDate?: string;
-  approvedDateFormatted?: string;
-  summarySubmittedAt?: string;
-  summarySubmittedAtFormatted?: string;
-  sessionSummary?: string;
-  actionItems?: string;
-  milestoneName?: string;
+export async function getStudentDetail(thesisId: string): Promise<{ data: StudentDetail }> {
+  const url = getApiUrl(EP.MY_STUDENTS_DETAIL(thesisId));
+  const response = await apiRequest(url);
+  const json = await handleJson<{ success: boolean; data: StudentDetail }>(response);
+  return { data: json.data };
 }
 
-/**
- * Get guidances pending summary approval (for 1-click approve)
- */
-export const getPendingApproval = async (params?: { page?: number; pageSize?: number }): Promise<{
-  success: boolean;
-  total: number;
-  guidances: PendingApprovalItem[];
-  page: number;
-  pageSize: number;
-}> => {
-  const url = (() => {
-    const base = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.PENDING_APPROVAL);
-    if (!params?.page && !params?.pageSize) return base;
-    const qs = new URLSearchParams();
-    if (params?.page) qs.set("page", String(params.page));
-    if (params?.pageSize) qs.set("pageSize", String(params.pageSize));
-    return `${base}?${qs.toString()}`;
-  })();
-
-  const res = await apiRequest(url);
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat catatan bimbingan" }));
-    throw new Error(errorData.message || "Gagal memuat catatan bimbingan");
-  }
-  return res.json();
-};
-
-/**
- * Approve session summary - 1 click, minimal interaction
- */
-export const approveSessionSummary = async (guidanceId: string): Promise<{
-  success: boolean;
-  guidance: { id: string; status: GuidanceStatus; completedAt?: string };
-}> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.APPROVE_SUMMARY(guidanceId)), {
-    method: "PUT",
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal menyetujui catatan" }));
-    throw new Error(errorData.message || "Gagal menyetujui catatan");
-  }
-  return res.json();
-};
-
-// Guidance detail response type
-export interface GuidanceDetailItem extends GuidanceItem {
-  studentNim?: string;
-  studentEmail?: string;
-  thesisTitle?: string;
-  sessionSummary?: string;
-  actionItems?: string;
-  summarySubmittedAt?: string;
-  summarySubmittedAtFormatted?: string;
-  completedAtFormatted?: string;
-  createdAtFormatted?: string;
+export async function validateMilestone(milestoneId: string): Promise<void> {
+  const url = getApiUrl(`/milestones/${milestoneId}/validate`);
+  const response = await apiRequest(url, { method: 'POST' });
+  await handleJson(response);
 }
-
-/**
- * Get detailed guidance info for session detail page
- */
-export const getLecturerGuidanceDetail = async (guidanceId: string): Promise<{
-  success: boolean;
-  guidance: GuidanceDetailItem;
-}> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.GUIDANCE_DETAIL(guidanceId)));
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail bimbingan" }));
-    throw new Error(errorData.message || "Gagal memuat detail bimbingan");
-  }
-  return res.json();
-};
-
-// ==================== MILESTONE MANAGEMENT ====================
 
 export interface CreateMilestoneForStudentDto {
   title: string;
   description?: string;
   targetDate?: string;
+  instructions?: string;
   supervisorNotes?: string;
 }
 
-/**
- * Create milestone for student (supervisor only)
- */
-export const createMilestoneForStudent = async (thesisId: string, data: CreateMilestoneForStudentDto): Promise<{
-  success: boolean;
-  message: string;
-  data: {
-    id: string;
-    title: string;
-    description?: string;
-    status: string;
-    progressPercentage: number;
-  };
-}> => {
-  const res = await apiRequest(getApiUrl(`/milestones/thesis/${thesisId}/by-supervisor`), {
-    method: "POST",
+export async function createMilestoneForStudent(
+  thesisId: string,
+  data: CreateMilestoneForStudentDto,
+): Promise<Record<string, unknown>> {
+  const url = getApiUrl(`${EP.MY_STUDENTS_DETAIL(thesisId)}/milestones`);
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal membuat milestone" }));
-    throw new Error(errorData.message || "Gagal membuat milestone");
-  }
-  return res.json();
-};
-
-// ==================== THESIS CHANGE REQUEST ====================
-
-export interface ChangeRequestApproval {
-  id: string;
-  lecturerId: string;
-  status: 'pending' | 'approved' | 'rejected';
-  notes?: string;
-  lecturer: {
-    user: {
-      id: string;
-      fullName: string;
-    };
-  };
+  return handleJson(response);
 }
 
-export interface PendingChangeRequest {
-  id: string;
-  thesisId: string;
-  requestType: 'topic' | 'supervisor' | 'both';
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-  approvals: ChangeRequestApproval[];
-  thesis: {
-    student: {
-      user: {
-        id: string;
-        fullName: string;
-        identityNumber: string;
-      };
-    };
-  };
-  proposedThesis?: {
-    id: string;
-    title: string;
-    topic?: {
-      id: string;
-      name: string;
-    };
-  };
-}
+// ============================================
+// Warning Notifications
+// ============================================
 
-/**
- * Get pending change request for a thesis that requires lecturer review
- */
-export const getPendingChangeRequestForThesis = async (thesisId: string): Promise<{
-  success: boolean;
-  data: PendingChangeRequest | null;
-}> => {
-  const res = await apiRequest(getApiUrl(`/thesis-change-requests/thesis/${thesisId}/pending`));
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat permintaan perubahan" }));
-    throw new Error(errorData.message || "Gagal memuat permintaan perubahan");
-  }
-  return res.json();
-};
+export type WarningType = 'SLOW' | 'AT_RISK' | 'FAILED';
 
-/**
- * Review change request (approve/reject) by lecturer
- */
-export const reviewChangeRequest = async (requestId: string, data: { status: 'approved' | 'rejected'; notes?: string }): Promise<{
-  success: boolean;
-  message: string;
-}> => {
-  const res = await apiRequest(getApiUrl(`/thesis-change-requests/${requestId}/review`), {
-    method: "POST",
-    body: JSON.stringify(data),
+export async function sendWarningToStudent(
+  thesisId: string,
+  warningType: WarningType,
+): Promise<{ success: boolean; message: string }> {
+  const url = getApiUrl(`${EP.MY_STUDENTS_DETAIL(thesisId)}/warning`);
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ warningType }),
   });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memproses review" }));
-    throw new Error(errorData.message || "Gagal memproses review");
-  }
-  return res.json();
-};
+  return handleJson<{ success: boolean; message: string }>(response);
+}
 
-// ─── Pembimbing 2 Requests ─────────────────────────────────────────────────
+// ============================================
+// Supervisor 2 Requests
+// ============================================
 
 export interface Supervisor2RequestItem {
   requestId: string;
-  thesisId: string;
-  studentId: string;
   studentName: string;
-  studentEmail: string | null;
-  studentNim: string | null;
+  studentNim?: string;
+  studentEmail?: string;
   thesisTitle: string;
   requestedAt: string;
 }
 
-export const getSupervisor2Requests = async (): Promise<Supervisor2RequestItem[]> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.SUPERVISOR2_REQUESTS));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan");
-  const data = await res.json();
+export async function getSupervisor2Requests(): Promise<Supervisor2RequestItem[]> {
+  const url = getApiUrl(EP.SUPERVISOR2_REQUESTS);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: Supervisor2RequestItem[] }>(response);
   return data.data ?? [];
-};
+}
 
-export const approveSupervisor2Request = async (requestId: string): Promise<{ success: boolean; message: string }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.SUPERVISOR2_APPROVE(requestId)), {
-    method: "PATCH",
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui permintaan");
-  return res.json();
-};
+export async function approveSupervisor2Request(requestId: string): Promise<{ message: string }> {
+  const url = getApiUrl(EP.SUPERVISOR2_APPROVE(requestId));
+  const response = await apiRequest(url, { method: 'POST' });
+  return handleJson<{ message: string }>(response);
+}
 
-export const rejectSupervisor2Request = async (requestId: string, reason?: string): Promise<{ success: boolean; message: string }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.SUPERVISOR2_REJECT(requestId)), {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+export async function rejectSupervisor2Request(
+  requestId: string,
+  reason?: string,
+): Promise<{ message: string }> {
+  const url = getApiUrl(EP.SUPERVISOR2_REJECT(requestId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ reason }),
   });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak permintaan");
-  return res.json();
-};
-
-export const approveThesisProposalAPI = async (thesisId: string): Promise<{ success: boolean; message: string; thesis: any }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.APPROVE_THESIS_PROPOSAL(thesisId)), {
-    method: "POST",
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui proposal tugas akhir");
-  return res.json();
-};
-
-// ==================== STUDENT TRANSFER ====================
-
-export interface TransferLecturer {
-  id: string;
-  fullName: string;
-  identityNumber: string;
-  currentStudentCount: number;
+  return handleJson<{ message: string }>(response);
 }
 
-export interface TransferStudent {
-  thesisId: string;
-  thesisSupervisorId: string;
-  studentName: string;
-  studentNim: string;
-  thesisTitle: string;
-  role: string;
-}
+// ============================================
+// Proposal Version History (for Lecturer)
+// ============================================
 
-export interface IncomingTransfer {
-  notificationId: string;
-  sourceLecturerId: string;
-  sourceLecturerName: string;
-  students: TransferStudent[];
-  reason: string;
-  createdAt: string;
-}
-
-export const getEligibleTransferLecturers = async (): Promise<{ success: boolean; lecturers: TransferLecturer[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_ELIGIBLE_LECTURERS));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat daftar dosen");
-  return res.json();
-};
-
-export const requestStudentTransfer = async (body: {
-  thesisIds: string[];
-  targetLecturerId: string;
-  reason: string;
-}): Promise<{ success: boolean; message: string; studentCount: number }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_REQUEST), {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal mengirim permintaan transfer" }));
-    throw new Error(errorData.message || "Gagal mengirim permintaan transfer");
+export interface ProposalVersion {
+    id: string;
+    version: number;
+    isLatest: boolean;
+    fileName: string | null;
+    fileSize: number | null;
+    description: string | null;
+    mimeType?: string | null;
+    submittedAsFinalAt?: string | null;
+    createdAt: string;
+    url: string | null;
   }
-  return res.json();
-};
 
-export const getIncomingTransfers = async (): Promise<{ success: boolean; count: number; transfers: IncomingTransfer[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_INCOMING));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan transfer masuk");
-  return res.json();
-};
-
-export const approveTransfer = async (notificationId: string): Promise<{ success: boolean; message: string }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_APPROVE(notificationId)), {
-    method: "PATCH",
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui transfer");
-  return res.json();
-};
-
-export const rejectTransfer = async (notificationId: string, reason?: string): Promise<{ success: boolean; message: string }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_REJECT(notificationId)), {
-    method: "PATCH",
-    body: JSON.stringify({ reason }),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak transfer");
-  return res.json();
-};
+export async function getStudentProposalVersions(
+  thesisId: string,
+): Promise<{ thesisId: string; versions: ProposalVersion[] }> {
+  const url = getApiUrl(EP.STUDENT_PROPOSAL_VERSIONS(thesisId));
+  const response = await apiRequest(url);
+  return handleJson(response);
+}

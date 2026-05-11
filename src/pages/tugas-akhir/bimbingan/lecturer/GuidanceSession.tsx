@@ -175,7 +175,7 @@ export default function LecturerGuidanceSessionPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Sesi Bimbingan</h1>
+            <h1 className="text-base font-semibold tracking-tight sm:text-lg">Sesi Bimbingan</h1>
           </div>
         </div>
         <Card>
@@ -202,8 +202,8 @@ export default function LecturerGuidanceSessionPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Sesi Bimbingan</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-base font-semibold tracking-tight sm:text-lg">Sesi Bimbingan</h1>
+            <p className="text-xs text-muted-foreground sm:text-sm">
               {toTitleCaseName(guidance.studentName || "-")}
             </p>
           </div>

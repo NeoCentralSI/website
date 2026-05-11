@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { clearAuthTokens, getAuthTokens, getUserProfileAPI, loginAPI, logoutAPI, saveAuthTokens, type User } from '@/services/auth.service';
 import { unregisterFcmToken } from '@/services/notification.service';
@@ -8,6 +8,11 @@ import { toTitleCaseName } from '@/lib/text';
 
 // Key untuk menyimpan FCM token di localStorage
 const FCM_TOKEN_KEY = 'fcm_token';
+
+// Stable query key — JANGAN masukkan accessToken ke key.
+// Memasukkan token ke key menyebabkan cache miss setiap kali token di-refresh
+// sehingga isLoggedIn sempat false → redirect ke /login.
+const AUTH_QUERY_KEY = ['auth-user'] as const;
 
 interface AuthContextType {
   user: User | null;
@@ -37,11 +42,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const hasAccessToken = Boolean(getAuthTokens().accessToken);
 
-  // Gunakan React Query untuk management state user & auth checking
-  // Ini otomatis handle caching, deduplication, dan revalidation
-  const { data: user, isLoading: isQueryLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ['auth-user'],
+  // Ref untuk mencegah race condition:
+  // Jika login berhasil, jangan biarkan background auth check yang gagal
+  // menghapus token baru via clearAuthTokens().
+  const loginInProgressRef = useRef(false);
+
+  // Gunakan React Query untuk management state user & auth checking.
+  // Query key STABIL (tidak mengandung accessToken) sehingga setQueryData
+  // langsung match tanpa cache-miss.
+  const { data: user, isLoading, error, refetch } = useQuery({
+    queryKey: AUTH_QUERY_KEY,
     queryFn: async () => {
       const { accessToken } = getAuthTokens();
       if (!accessToken) return null;
@@ -50,41 +62,58 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     staleTime: Infinity, // User data jarang berubah, manual refresh jika perlu
     gcTime: 1000 * 60 * 30, // Keep in cache for 30 mins
     retry: false, // Jangan retry jika 401, langsung logout
-    enabled: location.pathname !== '/auth/microsoft/callback', // Skip fetch saat callback process
+    enabled: hasAccessToken && location.pathname !== '/auth/microsoft/callback', // Skip fetch saat callback process
   });
-
-  const isLoading = isQueryLoading || isFetching;
 
   // Handle error (misal token expired atau invalid)
   useEffect(() => {
     if (error) {
       console.error('[useAuth] Auth check failed:', error);
-      clearAuthTokens();
-      queryClient.setQueryData(['auth-user'], null);
+      // Jangan clear token jika ada login baru yang sedang berjalan
+      if (!loginInProgressRef.current) {
+        clearAuthTokens();
+        queryClient.setQueryData(AUTH_QUERY_KEY, null);
+      }
     }
   }, [error, queryClient]);
 
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await loginAPI({ email, password });
+  // ─── Semua fungsi di-memoize dengan useCallback ───────────────────────
+  // Ini KRITIS agar komponen consumer (terutama MicrosoftCallback) yang
+  // memakai fungsi sebagai useEffect dependency tidak re-run setiap kali
+  // AuthProvider re-render. Tanpa memoize, setUserDirectly berubah setiap
+  // render → MicrosoftCallback useEffect re-run → URL sudah berubah →
+  // tokensString null → redirect ke /login.
 
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      // Tandai login sedang berlangsung agar background auth check
+      // yang gagal tidak menghapus token baru
+      loginInProgressRef.current = true;
+
+      // Cancel query lama yang mungkin masih berjalan (stale session check)
+      queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEY });
+
+      const response = await loginAPI({ email, password });
+      
       saveAuthTokens(response.accessToken, response.refreshToken);
-      queryClient.setQueryData(['auth-user'], response.user);
+      queryClient.setQueryData(AUTH_QUERY_KEY, response.user);
       toast.success('Login berhasil', {
         description: `Selamat datang, ${toTitleCaseName(response.user.fullName)}`,
       });
       navigate('/dashboard');
     } catch (error) {
-      // If account is not verified, redirect to auth-inactive page
+      // If account is not verified, redirect to account-inactive page
       if ((error as any)?.code === 'NOT_VERIFIED') {
-        navigate('/auth/inactive', { state: { email } });
+        navigate('/account-inactive', { state: { email } });
         return;
       }
       throw error;
+    } finally {
+      loginInProgressRef.current = false;
     }
-  };
+  }, [navigate, queryClient]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       // Unregister FCM token first, before logout invalidates the auth token
       const fcmToken = localStorage.getItem(FCM_TOKEN_KEY);
@@ -96,7 +125,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           console.error('FCM unregister error (ignored):', fcmError);
         }
       }
-
+      
       // Now call logout API
       if (getAuthTokens().accessToken) {
         await logoutAPI();
@@ -106,36 +135,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       clearAuthTokens();
       localStorage.removeItem(FCM_TOKEN_KEY);
-      queryClient.setQueryData(['auth-user'], null);
+      queryClient.setQueryData(AUTH_QUERY_KEY, null);
       queryClient.clear(); // Clear all cache
       navigate('/login');
     }
-  };
+  }, [navigate, queryClient]);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       await refetch();
     } catch (error) {
       console.error('Failed to refresh user data:', error);
       clearAuthTokens();
-      queryClient.setQueryData(['auth-user'], null);
+      queryClient.setQueryData(AUTH_QUERY_KEY, null);
       navigate('/login');
     }
-  };
+  }, [refetch, navigate, queryClient]);
 
-  const setUserDirectly = (userData: User) => {
-    queryClient.setQueryData(['auth-user'], userData);
-  };
+  const setUserDirectly = useCallback((userData: User) => {
+    queryClient.setQueryData(AUTH_QUERY_KEY, userData);
+  }, [queryClient]);
 
-  const value: AuthContextType = {
+  // ─── Memoize context value ─────────────────────────────────────────────
+  // Mencegah semua consumer re-render kecuali data yang mereka pakai berubah.
+  const value: AuthContextType = useMemo(() => ({
     user: user || null,
     isLoading,
     isLoggedIn: !!user,
     login,
     logout,
     refreshUser,
-    setUserDirectly
-  };
+    setUserDirectly,
+  }), [user, isLoading, login, logout, refreshUser, setUserDirectly]);
+
 
   return (
     <AuthContext.Provider value={value}>

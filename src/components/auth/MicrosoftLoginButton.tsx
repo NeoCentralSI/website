@@ -1,6 +1,7 @@
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
-import { ENV } from '@/config/env';
+import { API_CONFIG, getApiUrl } from '@/config/api';
 
 interface MicrosoftLoginButtonProps {
   disabled?: boolean;
@@ -17,8 +18,7 @@ export function MicrosoftLoginButton({
 
   const handleMicrosoftLogin = () => {
     setIsLoading(true);
-    // Redirect langsung ke backend endpoint yang akan redirect ke Microsoft
-    window.location.href = `${ENV.API_BASE_URL}/auth/microsoft/login`;
+    window.location.href = getApiUrl(API_CONFIG.ENDPOINTS.AUTH.MICROSOFT_LOGIN);
   };
 
   return (

@@ -26,7 +26,6 @@ import { RequirementsNotMet } from '@/components/shared/RequirementsNotMet';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
 import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
-import { useMilestones } from '@/hooks/milestone';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -36,6 +35,17 @@ export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const qc = useQueryClient();
   const navigate = useNavigate();
+
+  // P0-03 (canon §5.5): phase logbook ditentukan oleh `thesisDetail.isProposal`.
+  // - isProposal=true → fase pra-TA-04 → logbook `phase=proposal`
+  // - isProposal=false (TA-04 sudah disahkan) → fase Tugas Akhir penuh → `phase=thesis`
+  // Wajib ambil thesisDetail SEBELUM hook useStudentGuidance untuk pakai phase
+  // yang benar.
+  const { data: thesisDetail } = useQuery({
+    queryKey: ["my-thesis-detail"],
+    queryFn: getMyThesisDetail,
+  });
+  const guidancePhase: 'proposal' | 'thesis' = thesisDetail?.isProposal ? 'proposal' : 'thesis';
 
   const {
     items,
@@ -56,12 +66,7 @@ export default function StudentGuidancePage() {
     hasPendingRequest,
     pendingRequestInfo,
     refetch,
-  } = useStudentGuidance();
-
-  const { data: thesisDetail } = useQuery({
-    queryKey: ["my-thesis-detail"],
-    queryFn: getMyThesisDetail,
-  });
+  } = useStudentGuidance(guidancePhase);
 
   const isThesisInactive = thesisDetail?.status === "Gagal" || thesisDetail?.status === "Dibatalkan" || thesisDetail?.status === "Selesai";
 
@@ -140,10 +145,6 @@ export default function StudentGuidancePage() {
 
   const thesisId = supervisorsQuery.data?.thesisId ?? '';
 
-  // Fetch milestones for guidance dialog
-  const milestonesQuery = useMilestones(thesisId);
-  const milestones = milestonesQuery.data?.milestones ?? [];
-
   const breadcrumb = useMemo(() => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }], []);
 
   useEffect(() => {
@@ -178,7 +179,6 @@ export default function StudentGuidancePage() {
     onExport: (guidanceId: string) => {
       setExportGuidanceId(guidanceId);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [items, supervisorFilter, setSupervisorFilter, status, setStatus, setPage, openDocumentPreview, navigate, thesisDetail?.student?.nim, thesisDetail?.student?.name, selectedIds, exportableIds]);
 
   const handleReschedule = async (data: { requestedDate: string; studentNotes: string }) => {
@@ -201,20 +201,25 @@ export default function StudentGuidancePage() {
     }
   };
 
+  // P0-03: Tampilkan phase badge agar mahasiswa tahu apakah ini logbook
+  // proposal (pra-TA-04) atau logbook tugas akhir penuh (pasca-TA-04).
+  const phaseLabel = guidancePhase === 'proposal' ? 'Logbook Proposal' : 'Logbook Tugas Akhir';
+  const phaseDescription = guidancePhase === 'proposal'
+    ? 'Sesi bimbingan untuk fase pra-TA-04 (penyusunan & revisi proposal). Tidak ada minimum jumlah sesi (canon §5.5).'
+    : 'Sesi bimbingan untuk fase Tugas Akhir penuh (pasca-pengesahan TA-04 oleh KaDep).';
+
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Bimbingan Tugas Akhir</h1>
-          <p className="text-gray-500">Jadwal bimbingan Tugas Akhir</p>
-        </div>
+    <div className="space-y-5 sm:space-y-6">
+      <div>
+        <h1 className="text-base font-semibold tracking-tight sm:text-lg">{phaseLabel}</h1>
+        <p className="text-xs text-muted-foreground sm:text-sm">{phaseDescription}</p>
       </div>
 
       <TabsNav
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone' },
+          { label: 'Riwayat Bimbingan', to: '/tugas-akhir/bimbingan/student/history', end: true },
         ]}
       />
 
@@ -233,18 +238,24 @@ export default function StudentGuidancePage() {
             />
           )}
 
-          {!thesisId || thesisDetail?.isProposal ? (
+          {/* P1-07 (canon §5.5): Logbook proposal HARUS terbuka sejak pembimbing resmi
+              tercatat — bukan menunggu TA-04 disetujui. Gate yang benar:
+              !thesisId (mahasiswa belum punya thesis sama sekali) ATAU
+              hasNoSupervisor (thesis ada tapi pembimbing belum tercatat).
+              isProposal=true berarti masih di fase Metopen — logbook tetap aktif
+              dengan phase=proposal. */}
+          {(!thesisId || (thesisDetail?.supervisors?.length ?? 0) === 0) ? (
             <RequirementsNotMet
-              title="Syarat Mata Kuliah Belum Terpenuhi"
-              description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+              title="Pembimbing Resmi Belum Ditetapkan"
+              description="Logbook bimbingan akan terbuka segera setelah pembimbing resmi tercatat di SIMPTA. Pastikan pengajuan TA-01/TA-02 Anda sudah disetujui."
               requirements={[
                 {
-                  label: "Mengambil mata kuliah Tugas Akhir",
+                  label: "Pembimbing resmi tercatat di SIMPTA",
                   met: false,
-                  description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                  description: "Pembimbing resmi tercatat setelah TA-01 disetujui dosen atau TA-02 difinalisasi KaDep (canon §5.4).",
                 },
               ]}
-              homeUrl="/dashboard"
+              homeUrl="/metopel"
             />
           ) : isThesisInactive ? (
             <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
@@ -330,11 +341,10 @@ export default function StudentGuidancePage() {
         open={openRequest}
         onOpenChange={setOpenRequest}
         supervisors={supervisorsQuery.data?.supervisors || []}
-        milestones={milestones}
+        phase="thesis"
         onSubmitted={() => {
           qc.invalidateQueries({ queryKey: ['student-guidance'] });
           qc.invalidateQueries({ queryKey: ['notification-unread'] });
-          qc.invalidateQueries({ queryKey: ['milestones'] });
         }}
       />
 

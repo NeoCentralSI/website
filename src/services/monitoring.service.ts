@@ -1,4 +1,4 @@
-import { API_CONFIG, getApiUrl } from "@/config/api";
+import { getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
 // ========== Types ==========
@@ -549,90 +549,5 @@ export async function sendBatchWarnings(thesisIds: string[], warningType: Warnin
   return response.json();
 }
 
-// ==================== KADEP TRANSFER APPROVAL ====================
-
-export interface KadepTransferStudent {
-  thesisId: string;
-  thesisSupervisorId: string;
-  studentName: string;
-  studentNim: string;
-  thesisTitle: string;
-  role: string;
-}
-
-export interface KadepTransfer {
-  notificationId: string;
-  sourceLecturerId: string;
-  sourceLecturerName: string;
-  targetLecturerId: string;
-  targetLecturerName: string;
-  students: KadepTransferStudent[];
-  reason: string;
-  targetApproved: boolean;
-  status: 'pending' | 'approved' | 'rejected' | 'target_rejected';
-  createdAt: string;
-}
-
-export async function getKadepPendingTransfers(): Promise<{ success: boolean; count: number; transfers: KadepTransfer[] }> {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_PENDING));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan transfer");
-  return res.json();
-}
-
-export async function getKadepAllTransfers(params: {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-  status?: string;
-} = {}): Promise<{
-  success: boolean;
-  data: KadepTransfer[];
-  pagination: { total: number; page: number; pageSize: number; totalPages: number };
-}> {
-  const searchParams = new URLSearchParams();
-  if (params.page) searchParams.set("page", String(params.page));
-  if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
-  if (params.search) searchParams.set("search", params.search);
-  if (params.status) searchParams.set("status", params.status);
-  const url = `${getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_ALL)}?${searchParams.toString()}`;
-  const res = await apiRequest(url);
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat data transfer");
-  return res.json();
-}
-
-export async function kadepApproveTransfer(notificationId: string): Promise<{ success: boolean; message: string }> {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFER_APPROVE(notificationId)), {
-    method: "PATCH",
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui transfer");
-  return res.json();
-}
-
-export async function kadepRejectTransfer(notificationId: string, reason?: string): Promise<{ success: boolean; message: string }> {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFER_REJECT(notificationId)), {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak transfer");
-  return res.json();
-}
-
-/**
- * Download supervisor transfer history report as PDF
- */
-export async function downloadTransferReportPdf(): Promise<Blob> {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_REPORT_DOWNLOAD);
-  const response = await apiRequest(url);
-  if (!response.ok) {
-    let message = "Gagal mengunduh laporan transfer";
-    try {
-      const json = await response.json();
-      if (json.message) message = json.message;
-    } catch {
-      // response is not JSON
-    }
-    throw new Error(message);
-  }
-  return response.blob();
-}
+// KADEP TRANSFER APPROVAL block removed per SIMPTA canon v2.1 refactor.
+// Pergantian dosen pembimbing is replaced by Path C escalation flow (BR-26).

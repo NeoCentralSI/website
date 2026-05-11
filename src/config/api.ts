@@ -16,9 +16,7 @@ export const API_CONFIG = {
       ACTIVATE_ACCOUNT: '/auth/verify/request',
       MICROSOFT_LOGIN: '/auth/microsoft/login',
       MICROSOFT_CALLBACK: '/auth/microsoft/callback',
-    },
-    USER: {
-      PROFILE: '/user/profile',
+      MICROSOFT_EXCHANGE: '/auth/microsoft/exchange',
     },
     PROFILE: {
       UPLOAD_AVATAR: '/profile/avatar',
@@ -64,6 +62,17 @@ export const API_CONFIG = {
       CRITERIA_REORDER: '/defence-rubrics/criteria/reorder',
       RUBRICS_REORDER: '/defence-rubrics/rubrics/reorder',
       WEIGHT_SUMMARY: (role: string) => `/defence-rubrics/weight-summary?role=${role}`,
+    },
+    RUBRIC_METOPEN: {
+      CPMKS: (role: string) => `/rubric-metopen/cpmks?role=${role}`,
+      CRITERIA: '/rubric-metopen/criteria',
+      CRITERIA_BY_ID: (criteriaId: string) => `/rubric-metopen/criteria/${criteriaId}`,
+      CPMK_CONFIG: (cpmkId: string, role: string) => `/rubric-metopen/cpmk/${cpmkId}?role=${role}`,
+      CRITERIA_RUBRICS: (criteriaId: string) => `/rubric-metopen/criteria/${criteriaId}/rubrics`,
+      RUBRIC_BY_ID: (rubricId: string) => `/rubric-metopen/rubrics/${rubricId}`,
+      CRITERIA_REORDER: '/rubric-metopen/criteria/reorder',
+      RUBRICS_REORDER: '/rubric-metopen/rubrics/reorder',
+      WEIGHT_SUMMARY: (role: string) => `/rubric-metopen/weight-summary?role=${role}`,
     },
     EXIT_SURVEY: {
       BASE: '/exit-surveys',
@@ -147,6 +156,11 @@ export const API_CONFIG = {
       UPDATE_THESIS_TITLE: '/thesisGuidance/student/my-thesis/title',
       THESIS_HISTORY: '/thesisGuidance/student/thesis-history',
       PROPOSE_THESIS: '/thesisGuidance/student/propose-thesis',
+      // Proposal Versioning
+      PROPOSAL_UPLOAD: '/thesisGuidance/student/proposal/upload',
+      PROPOSAL_VERSIONS: '/thesisGuidance/student/proposal/versions',
+      PROPOSAL_STATUS: '/thesisGuidance/student/proposal/status',
+      PROPOSAL_SUBMIT_FINAL: '/thesisGuidance/student/proposal/submit-final',
       // Pembimbing 2 Request
       AVAILABLE_SUPERVISORS_2: '/thesisGuidance/student/available-supervisors-2',
       REQUEST_SUPERVISOR_2: '/thesisGuidance/student/request-supervisor-2',
@@ -177,23 +191,14 @@ export const API_CONFIG = {
       // Guidance Detail
       GUIDANCE_DETAIL: (guidanceId: string) => `/thesisGuidance/lecturer/guidance/${guidanceId}`,
       // Pembimbing 2 Requests
-      SUPERVISOR2_REQUESTS: '/thesisGuidance/lecturer/supervisor2-requests',
-      SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
-      SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
-      APPROVE_THESIS_PROPOSAL: (thesisId: string) => `/thesisGuidance/lecturer/proposals/${thesisId}/approve`,
-      TRANSFER_ELIGIBLE_LECTURERS: '/thesisGuidance/lecturer/transfer/eligible-lecturers',
-      TRANSFER_REQUEST: '/thesisGuidance/lecturer/transfer/request',
-      TRANSFER_INCOMING: '/thesisGuidance/lecturer/transfer/incoming',
-      TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/approve`,
-      TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/reject`,
-    },
+        SUPERVISOR2_REQUESTS: '/thesisGuidance/lecturer/supervisor2-requests',
+        SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
+        SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
+        STUDENT_PROPOSAL_VERSIONS: (thesisId: string) => `/thesisGuidance/lecturer/students/${thesisId}/proposal/versions`,
+      },
     THESIS_MONITORING: {
       DASHBOARD: '/thesisGuidance/monitoring/dashboard',
-      TRANSFERS_PENDING: '/kadep-transfers/pending',
-      TRANSFERS_ALL: '/kadep-transfers/all',
-      TRANSFERS_REPORT_DOWNLOAD: '/kadep-transfers/report/download',
-      TRANSFER_APPROVE: (notifId: string) => `/kadep-transfers/${notifId}/approve`,
-      TRANSFER_REJECT: (notifId: string) => `/kadep-transfers/${notifId}/reject`,
+      // Transfer endpoints removed per SIMPTA canon v2.1 refactor — Path C escalation replaces pergantian
     },
     THESIS_SEMINAR: {
       // --- Shared / Global ---
@@ -362,12 +367,12 @@ export const API_CONFIG = {
       MONITORING_LIST: '/insternship/monitoring/list',
     },
     INTERNSHIP_KADEP: {
-      BASE: '/insternship/kadep',
-      COMPANY_STATS: '/insternship/kadep/companies/stats',
-      COMPANIES: '/insternship/kadep/companies',
-      COMPANY_DETAIL: (id: string) => `/insternship/kadep/companies/${id}`,
-      PENDING_LETTERS: '/insternship/kadep/pending-letters',
-      APPROVE_LETTER: '/insternship/kadep/approve-letter',
+      BASE: '/internship/kadep',
+      COMPANY_STATS: '/internship/kadep/companies/stats',
+      COMPANIES: '/internship/kadep/companies',
+      COMPANY_DETAIL: (id: string) => `/internship/kadep/companies/${id}`,
+      PENDING_LETTERS: '/internship/kadep/pending-letters',
+      APPROVE_LETTER: '/internship/kadep/approve-letter',
     },
     INTERNSHIP_ADMIN: {
       BASE: '/insternship/admin',
@@ -383,33 +388,40 @@ export const API_CONFIG = {
       HOLIDAYS: '/insternship/holidays',
     },
     INTERNSHIP_TEMPLATES: {
-      GET: (name: string) => `/insternship/templates/${name}`,
-      PREVIEW: (name: string) => `/insternship/templates/${name}/preview`,
-      SAVE: '/insternship/templates',
+      GET: (name: string) => `/internship/templates/${name}`,
+      PREVIEW: (name: string) => `/internship/templates/${name}/preview`,
+      SAVE: '/internship/templates',
     },
     INTERNSHIP_PUBLIC: {
-      VERIFY_LETTER: (id: string) => `/insternship/public/verify-letter/${id}`,
+      VERIFY_LETTER: (id: string) => `/internship/public/verify-letter/${id}`,
     },
     METOPEN: {
       ELIGIBILITY: '/metopen/eligibility',
-      TEMPLATES: '/metopen/templates',
-      TEMPLATE_DETAIL: (id: string) => `/metopen/templates/${id}`,
-      TEMPLATES_REORDER: '/metopen/templates/reorder',
-      PUBLISH_TASKS: '/metopen/publish-tasks',
-      MY_TASKS: '/metopen/my-tasks',
-      TASK_DETAIL: (milestoneId: string) => `/metopen/my-tasks/${milestoneId}`,
-      SUBMIT: (milestoneId: string) => `/metopen/submit/${milestoneId}`,
-      MY_GATE_STATUS: '/metopen/my-gate-status',
-      GRADING_QUEUE: '/metopen/grading-queue',
-      GRADE: (milestoneId: string) => `/metopen/grade/${milestoneId}`,
-      PROGRESS: (thesisId: string) => `/metopen/progress/${thesisId}`,
-      GATE_STATUS: (thesisId: string) => `/metopen/gate-status/${thesisId}`,
-      MONITORING: '/metopen/monitoring',
+      /** Mahasiswa: status pengesahan judul + dokumen (read-only). */
+      ME_PROPOSAL_APPROVAL: '/metopen/me/proposal-approval',
+      /** Mahasiswa: snapshot eligibility seminar tanpa side effect sync. */
+      ME_SEMINAR_ELIGIBILITY: '/metopen/me/seminar-eligibility',
+      /** Mahasiswa: sinkron antre KaDep + ringkasan status. */
+      ME_PROPOSAL_QUEUE_SYNC: '/metopen/me/proposal-queue/sync',
+      /** BR-23: Arsip Metopel mahasiswa pasca TA-04 — read-only single source of truth. */
+      ME_ARCHIVE: '/metopen/me/archive',
+      /** KaDep/Admin: antre judul menunggu pengesahan. */
+      KADEP_PENDING_TITLE_REPORTS: (academicYearId?: string) =>
+        academicYearId
+          ? `/metopen/kadep/title-reports/pending?academicYearId=${academicYearId}`
+          : '/metopen/kadep/title-reports/pending',
+      KADEP_TITLE_REPORT_REVIEW: (thesisId: string) =>
+        `/metopen/kadep/thesis/${thesisId}/title-report/review`,
     },
     ASSESSMENT: {
       // TA-03A: Supervisor scoring of Metopen proposal
       SUPERVISOR_SCORING_QUEUE: '/assessment/supervisor/queue',
       SUPERVISOR_SUBMIT_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
+      // BR-20: Pembimbing 2 co-sign endpoint
+      SUPERVISOR_CO_SIGN: (thesisId: string) => `/assessment/supervisor/${thesisId}/co-sign`,
+      // BR-20: Klasifikasi role caller (P1/P2/null) untuk UI
+      SUPERVISOR_CONTEXT: (thesisId: string) => `/assessment/supervisor/${thesisId}/context`,
+      SUPERVISOR_GET_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
       // TA-03B: Metopen lecturer scoring
       METOPEN_SCORING_QUEUE: '/assessment/metopen/queue',
       METOPEN_SUBMIT_SCORE: (thesisId: string) => `/assessment/metopen/${thesisId}/score`,

@@ -154,7 +154,7 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
                                             <div className="flex flex-wrap gap-2">
                                                 {g.document && (
                                                     <a
-                                                        href={getDocumentUrl(g.document.filePath)}
+                                                        href={getDocumentUrl(g.document.filePath ?? "")}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1.5 rounded-md border border-blue-200 transition-colors"

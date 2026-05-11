@@ -19,7 +19,8 @@ export interface User {
 export interface AcademicYear {
   id: string;
   semester: 'ganjil' | 'genap';
-  year: string;
+  /** SIMPTA: backend may return number (legacy) or string; UI normalises */
+  year: number | string;
   startDate?: string;
   endDate?: string;
   isActive: boolean;
@@ -372,7 +373,37 @@ export const getUsersAPI = async (params?: {
   return response.json();
 };
 
-// Student interface with detailed info
+/**
+ * Student interface with detailed info.
+ * SIMPTA canon v2.1 extensions (BR-25 metopen eligibility, BR-04 seminar eligibility):
+ * - metopenEligibility: snapshot lengkap status Metopel mahasiswa
+ * - visibleAcademicYear: konteks tahun ajaran yang ditampilkan ke UI
+ * - isInMetopen, hasActiveThesis: flag derived dari relasi
+ * - activeTheses[].status: status lifecycle tugas akhir (active, withdrawn, finalized, etc.)
+ */
+export interface MetopenEligibilitySnapshot {
+  eligibleMetopen: boolean;
+  hasExternalStatus: boolean;
+  source: string;
+  updatedAt: string | null;
+  readOnly: boolean;
+  canAccess: boolean;
+  canSubmit: boolean;
+  thesisId: string | null;
+  thesisTitle: string | null;
+  thesisStatus: string | null;
+  reason?: string | null;
+}
+
+export interface VisibleAcademicYear {
+  id: string;
+  year: number | string;
+  semester: 'ganjil' | 'genap';
+  label?: string;
+  isActive: boolean;
+  sources?: string[];
+}
+
 export interface Student {
   id: string;
   fullName: string;
@@ -383,15 +414,24 @@ export interface Student {
   student?: {
     enrollmentYear: number | null;
     sksCompleted: number;
-    currentSemester: number | null;
+    currentSemester?: number | null;
     status: string | null;
-    mandatoryCoursesCompleted: boolean;
-    mkwuCompleted: boolean;
-    internshipCompleted: boolean;
-    kknCompleted: boolean;
+    mandatoryCoursesCompleted?: boolean;
+    mkwuCompleted?: boolean;
+    internshipCompleted?: boolean;
+    kknCompleted?: boolean;
     researchMethodCompleted?: boolean;
+    /** SIMPTA BR-25: metopen eligibility computed by backend without SKS hard-code */
+    metopenEligibility?: MetopenEligibilitySnapshot | null;
+    /** SIMPTA: konteks tahun ajaran aktif yang ditampilkan ke UI */
+    visibleAcademicYear?: VisibleAcademicYear | null;
+    /** SIMPTA: flag derived — mahasiswa sedang mengambil mata kuliah Metopen */
+    isInMetopen?: boolean;
+    /** SIMPTA: flag derived — mahasiswa memiliki tugas akhir aktif */
+    hasActiveThesis?: boolean;
     activeTheses: Array<{
       title: string;
+      status?: string;
       supervisors: Array<{
         role: string;
         fullName: string;
@@ -418,10 +458,21 @@ export interface Lecturer {
 }
 
 // Get all students
+// SIMPTA canon v2.1: supports academicYearContext snapshot + extended filters
 export const getStudentsAPI = async (params?: {
   page?: number;
   pageSize?: number;
   search?: string;
+  /** SIMPTA: filter mahasiswa berdasarkan program studi */
+  programFilter?: string;
+  /** SIMPTA: filter status mahasiswa (aktif, cuti, lulus, dll.) */
+  statusFilter?: string;
+  /** SIMPTA: filter angkatan masuk */
+  enrollmentYearFilter?: string;
+  /** SIMPTA: filter tahun ajaran konteks */
+  academicYearFilter?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }): Promise<{
   students: Student[];
   meta: {
@@ -430,11 +481,25 @@ export const getStudentsAPI = async (params?: {
     total: number;
     totalPages: number;
   };
+  /** SIMPTA BR-25: konteks tahun ajaran aktif untuk eligibility computation */
+  academicYearContext?: {
+    id: string;
+    semester: 'ganjil' | 'genap';
+    year: number | string;
+    label?: string;
+    isActive?: boolean;
+  } | null;
 }> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.programFilter) queryParams.append('programFilter', params.programFilter);
+  if (params?.statusFilter) queryParams.append('statusFilter', params.statusFilter);
+  if (params?.enrollmentYearFilter) queryParams.append('enrollmentYearFilter', params.enrollmentYearFilter);
+  if (params?.academicYearFilter) queryParams.append('academicYearFilter', params.academicYearFilter);
+  if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+  if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
   const response = await fetch(getApiUrl(`/adminfeatures/students?${queryParams}`), {
     method: 'GET',
@@ -534,6 +599,8 @@ export interface StudentDetail {
     kknCompleted?: boolean | null;
     researchMethodCompleted?: boolean | null;
   };
+  /** SIMPTA BR-25: metopen eligibility snapshot (read-only di Mahasiswa detail) */
+  metopenEligibility?: MetopenEligibilitySnapshot | null;
   cplScores?: Array<{
     cplId: string;
     cplCode: string;

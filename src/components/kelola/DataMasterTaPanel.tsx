@@ -1,8 +1,6 @@
-import { useState, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Download, Upload } from "lucide-react";
-import { format } from "date-fns";
-import * as xlsx from "xlsx";
+import { Plus, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 import { getMasterDataTheses, createMasterDataThesis, updateMasterDataThesis, getMasterDataThesisStatuses, type MasterDataThesis, type SupervisorData } from "@/services/masterDataTa.service";
 import { getStudentsAPI, getLecturersAPI, getAcademicYearsAPI } from "@/services/admin.service";
@@ -18,7 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Spinner, Loading } from "@/components/ui/spinner";
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { ExportExcelDialog } from "./ExportExcelDialog";
 import { ImportMasterDataDialog } from "./ImportMasterDataDialog";
+import { Upload } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 interface FormState {
@@ -58,8 +58,8 @@ export function DataMasterTaPanel() {
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
     const [importDialogOpen, setImportDialogOpen] = useState(false);
-    const [isExporting, setIsExporting] = useState(false);
     const [formState, setFormState] = useState<FormState>(emptyForm);
 
     // Queries
@@ -121,7 +121,7 @@ export function DataMasterTaPanel() {
         setDialogOpen(true);
     };
 
-    const handleStartEdit = (thesis: MasterDataThesis) => {
+    const handleStartEdit = useCallback((thesis: MasterDataThesis) => {
         setFormState({
             id: thesis.id,
             studentId: thesis.student?.id || "",
@@ -137,9 +137,9 @@ export function DataMasterTaPanel() {
             isProposal: thesis.isProposal || false,
         });
         setDialogOpen(true);
-    };
+    }, []);
 
-    const handleToggleProposal = (t: MasterDataThesis, checked: boolean) => {
+    const handleToggleProposal = useCallback((t: MasterDataThesis, checked: boolean) => {
         const payload = {
             title: t.title,
             thesisTopicId: t.topic?.id,
@@ -152,44 +152,7 @@ export function DataMasterTaPanel() {
             isProposal: checked,
         };
         updateMutation.mutate({ id: t.id, data: payload });
-    };
-
-    const handleDirectExport = () => {
-        setIsExporting(true);
-        try {
-            const excelData = theses.map((t, index) => ({
-                "No": index + 1,
-                "NIM": t.student?.nim || "-",
-                "Nama Mahasiswa": t.student?.name || "-",
-                "Judul Tugas Akhir": t.title || "-",
-                "Topik": t.topic?.name || "-",
-                "Tahun Ajaran": t.academicYear ? `${t.academicYear.year} - ${t.academicYear.semester}` : "-",
-                "Rating": t.rating || "-",
-                "Status": t.status || "-",
-                "Pembimbing 1": t.supervisors.find(s => s.roleName === "Pembimbing 1")?.name || "-",
-                "Pembimbing 2": t.supervisors.find(s => s.roleName === "Pembimbing 2")?.name || "-",
-                "Tanggal Mulai": t.startDate ? format(new Date(t.startDate), "dd MMM yyyy") : "-"
-            }));
-
-            const worksheet = xlsx.utils.json_to_sheet(excelData);
-            const workbook = xlsx.utils.book_new();
-            xlsx.utils.book_append_sheet(workbook, worksheet, "Data TA");
-
-            // Adjust column widths
-            worksheet["!cols"] = [
-                { wch: 5 }, { wch: 15 }, { wch: 30 }, { wch: 50 }, { wch: 20 },
-                { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 30 }, { wch: 15 }
-            ];
-
-            xlsx.writeFile(workbook, `Data_Master_TA_${format(new Date(), "yyyyMMdd_HHmmss")}.xlsx`);
-            toast.success("Data berhasil dieksport ke Excel");
-        } catch (error) {
-            console.error("Export error:", error);
-            toast.error("Gagal mengeksport data");
-        } finally {
-            setIsExporting(false);
-        }
-    };
+    }, [updateMutation]);
 
     const handleSubmit = () => {
         if (!formState.studentId) {
@@ -323,7 +286,7 @@ export function DataMasterTaPanel() {
                 </Button>
             )
         }
-    ], []);
+    ], [handleToggleProposal, handleStartEdit, updateMutation.isPending]);
 
     if (isLoading && theses.length === 0) {
         return <div className="p-8 flex justify-center"><Loading size="lg" text="Memuat data..." /></div>;
@@ -353,8 +316,8 @@ export function DataMasterTaPanel() {
                         <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
                             <Upload className="mr-2 h-4 w-4" /> Import Excel
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleDirectExport} disabled={isExporting}>
-                            {isExporting ? <Spinner className="size-4 mr-2" /> : <Download className="mr-2 h-4 w-4" />} Export Excel
+                        <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)}>
+                            <Download className="mr-2 h-4 w-4" /> Export Excel
                         </Button>
                         <Button onClick={handleStartCreate} size="sm">
                             <Plus className="mr-2 h-4 w-4" /> Tambah Data TA
@@ -531,7 +494,15 @@ export function DataMasterTaPanel() {
                 </DialogContent>
             </Dialog>
 
-
+            <ExportExcelDialog
+                open={exportDialogOpen}
+                onOpenChange={setExportDialogOpen}
+                theses={theses}
+                academicYears={academicYears.map((year) => ({
+                    ...year,
+                    year: String(year.year),
+                }))}
+            />
             <ImportMasterDataDialog
                 open={importDialogOpen}
                 onOpenChange={setImportDialogOpen}

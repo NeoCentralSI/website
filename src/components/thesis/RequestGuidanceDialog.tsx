@@ -11,10 +11,17 @@ import { ComboBox } from "@/components/ui/combobox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Settings2 } from "lucide-react";
 import type { SupervisorBusySlot, SupervisorsResponse } from "@/services/studentGuidance.service";
+import type { GuidancePhase } from "@/services/studentGuidance.service";
 import { getSupervisorAvailability, requestStudentGuidance } from "@/services/studentGuidance.service";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { Milestone } from "@/types/milestone.types";
+
+/** Tipe minimal item agenda opsional yang bisa ditautkan ke sesi bimbingan. */
+export interface GuidanceMilestoneItem {
+  id: string;
+  title: string;
+  status: string;
+}
 
 const DURATION_OPTIONS = [
   { value: '30', label: '30 menit' },
@@ -27,11 +34,14 @@ export type RequestGuidanceDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   supervisors?: SupervisorsResponse["supervisors"];
-  milestones?: Milestone[];
+  /** Item yang bisa dipilih: Milestone TA atau MetopenTask. Gunakan GuidanceMilestoneItem. */
+  milestones?: GuidanceMilestoneItem[];
+  /** Phase: 'proposal' untuk bimbingan proposal, 'thesis' atau undefined untuk bimbingan TA */
+  phase?: GuidancePhase;
   onSubmitted?: () => void;
 };
 
-export default function RequestGuidanceDialog({ open, onOpenChange, supervisors = [], milestones = [], onSubmitted }: RequestGuidanceDialogProps) {
+export default function RequestGuidanceDialog({ open, onOpenChange, supervisors = [], milestones = [], phase, onSubmitted }: RequestGuidanceDialogProps) {
   const [when, setWhen] = useState<Date | null>(null);
   const [duration, setDuration] = useState('60');
   const [note, setNote] = useState("");
@@ -115,6 +125,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
         documentUrl: documentUrl || undefined,
         supervisorId: resolvedSupervisorId || undefined,
         milestoneIds: selectedMilestoneIds.length ? selectedMilestoneIds : undefined,
+        phase,
       });
     },
     onSuccess: (res) => {
@@ -144,9 +155,12 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
     ...supervisors.map((s) => ({ label: s.name || s.id, value: s.id }))
   ];
 
+  const isProposal = phase === "proposal";
+
   const activeMilestones = milestones.filter((m) => m.status !== "completed");
 
-  const canSubmit = !!when && !slotConflict && !checkingAvailability && selectedMilestoneIds.length > 0;
+  // Agenda tautan bersifat opsional. Source of truth logbook adalah sesi bimbingan itu sendiri.
+  const canSubmit = !!when && !slotConflict && !checkingAvailability;
 
   const toggleMilestone = (id: string) => {
     setSelectedMilestoneIds((prev) =>
@@ -222,7 +236,9 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
 
           {/* Optional: File Upload */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Unggah file thesis (opsional)</Label>
+            <Label className="text-sm font-medium">
+              {isProposal ? "Unggah file proposal (opsional)" : "Unggah file thesis (opsional)"}
+            </Label>
             <Input
               type="file"
               accept=".pdf,application/pdf"
@@ -233,11 +249,12 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
             </p>
           </div>
 
-          {/* Required: Milestone Selection */}
+          {/* Agenda opsional */}
           {activeMilestones.length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                Milestone yang Dibahas <span className="text-destructive">*</span>
+                {isProposal ? "Agenda Proposal yang Dibahas" : "Agenda Bimbingan yang Dibahas"}
+                <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
               </Label>
               <div className="space-y-1 rounded-lg border p-3 max-h-32 overflow-auto">
                 {activeMilestones.map((m) => (
@@ -257,15 +274,6 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
                   </label>
                 ))}
               </div>
-              {selectedMilestoneIds.length === 0 && (
-                <p className="text-xs text-destructive">Pilih minimal 1 milestone</p>
-              )}
-            </div>
-          )}
-
-          {activeMilestones.length === 0 && (
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
-              <p className="text-sm text-yellow-800">Tidak ada milestone aktif. Buat milestone terlebih dahulu di halaman Milestone sebelum mengajukan bimbingan.</p>
             </div>
           )}
 

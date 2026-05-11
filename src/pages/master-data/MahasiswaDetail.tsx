@@ -116,9 +116,10 @@ export default function MahasiswaDetail() {
 
   const activeThesis = data.theses.find((t) => t.status !== 'Selesai' && t.status !== 'Dibatalkan');
   const completedTheses = data.theses.filter((t) => t.status === 'Selesai');
+  const metopenEligibility = data.metopenEligibility;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -128,8 +129,8 @@ export default function MahasiswaDetail() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{toTitleCaseName(data.fullName)}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-base font-semibold tracking-tight sm:text-lg">{toTitleCaseName(data.fullName)}</h1>
+            <p className="text-xs text-muted-foreground sm:text-sm">
               {data.identityNumber} • {data.email}
             </p>
           </div>
@@ -332,6 +333,60 @@ export default function MahasiswaDetail() {
 
         {/* Right Column - Thesis Info */}
         <div className="lg:col-span-2 space-y-6">
+          {metopenEligibility && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Users className="h-4 w-4" />
+                  Status Eligibility Metopen
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {!metopenEligibility.hasExternalStatus ? (
+                      <Badge variant="outline">Belum ada snapshot</Badge>
+                    ) : metopenEligibility.eligibleMetopen ? (
+                      <Badge className="bg-emerald-600">Eligible</Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-red-200 text-red-700">Tidak eligible</Badge>
+                    )}
+                    {metopenEligibility.readOnly && (
+                      <Badge variant="outline" className="border-blue-200 text-blue-700">Arsip TA</Badge>
+                    )}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Sumber snapshot</p>
+                      <p className="mt-1 font-medium">{metopenEligibility.source ?? 'Belum ada sumber'}</p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Terakhir diperbarui</p>
+                      <p className="mt-1 font-medium">
+                        {metopenEligibility.updatedAt ? formatDateId(metopenEligibility.updatedAt) : '-'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Akses menu/guard</p>
+                      <p className="mt-1 font-medium">{metopenEligibility.canAccess ? 'Terbuka' : 'Tertutup'}</p>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs text-muted-foreground">Akses submit TA-01 / TA-02</p>
+                      <p className="mt-1 font-medium">{metopenEligibility.canSubmit ? 'Diizinkan' : 'Tidak diizinkan'}</p>
+                    </div>
+                    {(metopenEligibility.thesisTitle || metopenEligibility.thesisStatus) && (
+                      <div className="rounded-lg border p-3 sm:col-span-2">
+                        <p className="text-xs text-muted-foreground">Konteks arsip / thesis terkait</p>
+                        <p className="mt-1 font-medium">{metopenEligibility.thesisTitle || 'Tanpa judul'}</p>
+                        <p className="text-sm text-muted-foreground">{metopenEligibility.thesisStatus || '-'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Active Thesis */}
           {activeThesis && (
             <Card>
@@ -347,7 +402,7 @@ export default function MahasiswaDetail() {
                     {activeThesis.title || <span className="italic text-muted-foreground">Judul belum ditentukan</span>}
                   </h3>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <Badge className={STATUS_COLORS[activeThesis.status || ''] || 'bg-gray-100 text-gray-700'}>
+                    <Badge className={STATUS_COLORS[activeThesis.status || ''] || 'bg-muted text-muted-foreground'}>
                       {activeThesis.status || 'Tidak diketahui'}
                     </Badge>
                     {activeThesis.topic && (
@@ -359,12 +414,12 @@ export default function MahasiswaDetail() {
                 {/* Progress */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Progress Milestone</span>
+                    <span className="text-muted-foreground">Progress Alur Proposal</span>
                     <span className="font-bold text-primary">{activeThesis.milestones.progress}%</span>
                   </div>
                   <Progress value={activeThesis.milestones.progress} className="h-2" />
                   <p className="text-xs text-muted-foreground">
-                    {activeThesis.milestones.completed} dari {activeThesis.milestones.total} milestone selesai
+                    {activeThesis.milestones.completed} dari {activeThesis.milestones.total} langkah selesai
                   </p>
                 </div>
 
@@ -436,7 +491,7 @@ export default function MahasiswaDetail() {
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {activeThesis.milestones.items.map((m) => (
                         <div key={m.id} className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
-                          {MILESTONE_STATUS_ICONS[m.status] || <Clock className="h-4 w-4 text-gray-300" />}
+                          {MILESTONE_STATUS_ICONS[m.status] || <Clock className="h-4 w-4 text-muted-foreground" />}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{m.title}</p>
                             <p className="text-xs text-muted-foreground">

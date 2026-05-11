@@ -14,9 +14,6 @@ interface LecturerInfoCardProps {
 }
 
 export function LecturerInfoCard({ lecturer }: LecturerInfoCardProps) {
-  if (!lecturer) return null;
-
-  const lecturerData = lecturer.data || {};
   const [isEditOpen, setIsEditOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -37,6 +34,10 @@ export function LecturerInfoCard({ lecturer }: LecturerInfoCardProps) {
     },
     onError: (err: any) => toast.error(err.message),
   });
+
+  if (!lecturer) return null;
+
+  const lecturerData = lecturer.data || {};
 
   const handleOpenEdit = () => {
     // Initialize form with existing data

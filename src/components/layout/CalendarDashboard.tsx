@@ -216,19 +216,13 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
           (internalTitle.split(' ').some(word => word.length > 3 && outlookTitle.includes(word)))
         );
 
-        const isMatch = timeMatch && titleMatch;
-
-        if (isMatch) {
-        }
-
-        return isMatch;
+        return timeMatch && titleMatch;
       });
 
       if (!isDuplicate) {
         // Cast to any to bypass strict type check since we're displaying only
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         allEvents.push(outlookEvent as any);
-      } else {
       }
     });
 

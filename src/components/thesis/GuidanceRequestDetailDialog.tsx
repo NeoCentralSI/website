@@ -69,7 +69,7 @@ export default function GuidanceRequestDetailDialog({
     setSubmitting(true);
     try {
       await rejectGuidanceRequest(guidance.id, {
-        message: rejectFeedback,
+        rejectionReason: rejectFeedback,
       });
       toast.success("Bimbingan ditolak");
       setMode('view');
