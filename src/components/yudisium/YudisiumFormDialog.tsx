@@ -111,7 +111,7 @@ export function YudisiumFormDialog({
 		const load = async () => {
 			setIsLoadingOptions(true);
 			try {
-				const roomsUrl = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.OPTIONS_ROOMS);
+				const roomsUrl = getApiUrl(API_CONFIG.ENDPOINTS.YUDISIUM.OPTIONS_ROOMS);
 				const [formsRes, reqsRes, roomsRes] = await Promise.all([
 					getExitSurveyForms(),
 					getYudisiumRequirements(),

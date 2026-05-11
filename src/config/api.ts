@@ -110,6 +110,7 @@ export const API_CONFIG = {
       // Actions
       EXPORT_PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/export-participants`,
       FINALIZE: (yudisiumId: string) => `/yudisiums/${yudisiumId}/finalize`,
+      OPTIONS_ROOMS: '/yudisiums/options/rooms',
     },
     NOTIFICATION: {
       BASE: '/notification',
