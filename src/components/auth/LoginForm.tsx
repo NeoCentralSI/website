@@ -79,6 +79,7 @@ export function LoginForm({
           <Input
             id="email"
             type="email"
+            autoComplete="email"
             placeholder="nama@unand.ac.id"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -104,6 +105,7 @@ export function LoginForm({
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-12 rounded-xl border-gray-200 focus:border-[#F7931E] focus:ring-[#F7931E] pr-12"
