@@ -297,7 +297,7 @@ export default function ExitSurveyFormPage() {
       toast.success('Urutan berhasil disimpan');
       setHasReordered(false);
       setReorderMode('none');
-    } catch (err) {
+    } catch {
       toast.error('Gagal menyimpan urutan');
     } finally {
       setIsSavingOrder(false);

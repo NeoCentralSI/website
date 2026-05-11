@@ -76,7 +76,7 @@ export function AdminThesisDefenceArchiveImportDialog({
     try {
       const importResult = await onImport(file);
       setResult(importResult);
-    } catch (error) {
+    } catch {
       // Error handled by mutation toast
     }
   };

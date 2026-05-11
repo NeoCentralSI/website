@@ -91,7 +91,7 @@ export interface CplStudentImportResult {
 const downloadResponseAsFile = async (response: Response, fallbackFileName: string): Promise<void> => {
     const blob = await response.blob();
     const header = response.headers.get('content-disposition') || '';
-    const fileNameMatch = header.match(/filename="?([^\";]+)"?/i);
+    const fileNameMatch = header.match(/filename="?([^";]+)"?/i);
     const fileName = fileNameMatch?.[1] || fallbackFileName;
 
     const url = URL.createObjectURL(blob);

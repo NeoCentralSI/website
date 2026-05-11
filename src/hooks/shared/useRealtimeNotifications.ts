@@ -31,7 +31,9 @@ export function useRealtimeNotifications() {
       const ctx = audioCtxRef.current as AudioContext | null;
       if (!ctx) return;
       if (ctx.state === "suspended") {
-        ctx.resume().catch(() => { });
+        ctx.resume().catch(() => {
+          // Audio resume failures are non-critical for notifications.
+        });
       }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -200,7 +202,9 @@ export function useRealtimeNotifications() {
                   qc.invalidateQueries({ queryKey: ['notification-unread'] });
                   break;
               }
-            } catch { }
+            } catch {
+              // Ignore malformed service-worker notification payloads.
+            }
           };
           navigator.serviceWorker.addEventListener('message', swListener as unknown as EventListener);
         }
@@ -214,8 +218,14 @@ export function useRealtimeNotifications() {
     const unlock = () => {
       try {
         const ctx = audioCtxRef.current;
-        if (ctx && ctx.state === "suspended") ctx.resume().catch(() => { });
-      } catch { }
+        if (ctx && ctx.state === "suspended") {
+          ctx.resume().catch(() => {
+            // Audio resume failures are non-critical for notifications.
+          });
+        }
+      } catch {
+        // Ignore browser audio unlock failures.
+      }
       document.removeEventListener("click", unlock);
       document.removeEventListener("keydown", unlock);
     };
@@ -231,7 +241,9 @@ export function useRealtimeNotifications() {
       document.removeEventListener("keydown", unlock as any);
       try {
         if (audioCtxRef.current && audioCtxRef.current.state !== "closed") audioCtxRef.current.close();
-      } catch { }
+      } catch {
+        // Ignore cleanup failures from browser audio APIs.
+      }
     };
   }, [qc, isLoggedIn]);
 }

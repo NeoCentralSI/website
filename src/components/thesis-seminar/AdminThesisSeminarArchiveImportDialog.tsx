@@ -76,7 +76,7 @@ export function AdminThesisSeminarArchiveImportDialog({
     try {
       const importResult = await onImport(file);
       setResult(importResult);
-    } catch (error) {
+    } catch {
       // Error handled by parent/toast
     }
   };
