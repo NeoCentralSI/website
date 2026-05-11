@@ -190,14 +190,15 @@ function App() {
               </Route>
 
               <Route element={<ProtectedLayout />}>
-                <Route element={<TugasAkhirGuard />}>
-                  {/* Thesis Seminar list pages — explicit paths take priority over /:id */}
-                  <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntryPage />} />
-                  <Route path="/tugas-akhir/sidang" element={<ThesisDefenceEntryPage />} />
-                  {/* Unified detail route for all roles */}
-                  <Route path="/tugas-akhir/seminar-hasil/:id" element={<ThesisSeminarDetailPage />} />
-                  <Route path="/tugas-akhir/sidang/:id" element={<ThesisDefenceDetailPage />} />
-                </Route>
+
+                {/* Thesis Seminar list pages — explicit paths take priority over /:id */}
+                <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntryPage />} />
+                <Route path="/tugas-akhir/sidang" element={<ThesisDefenceEntryPage />} />
+
+                {/* Unified detail route for all roles */}
+                <Route path="/tugas-akhir/seminar-hasil/:id" element={<ThesisSeminarDetailPage />} />
+                <Route path="/tugas-akhir/sidang/:id" element={<ThesisDefenceDetailPage />} />
+
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profil />} />
 
