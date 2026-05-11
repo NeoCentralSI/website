@@ -93,7 +93,7 @@ export async function getAdminDefenceList(params?: {
   search?: string;
   status?: string;
 }): Promise<AdminDefenceListItem[]> {
-  const res = await apiRequest(getApiUrl(buildDefenceListEndpoint({ ...params, view: 'admin' })));
+  const res = await apiRequest(getApiUrl(buildDefenceListEndpoint({ ...params, view: 'verification' })));
   return parseJsonResponse(res, 'Gagal memuat data sidang');
 }
 

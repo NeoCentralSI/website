@@ -4,8 +4,8 @@ import type {
   DefenceDocumentType,
   DefenceDocumentsResponse,
   DefenceDocumentUploadResponse,
-  ValidateDefenceDocumentPayload,
-  ValidateDefenceDocumentResponse,
+  VerifyDefenceDocumentPayload,
+  VerifyDefenceDocumentResponse,
 } from '@/types/defence.types';
 
 async function parseJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
@@ -55,19 +55,19 @@ export const uploadDefenceDocument = async (
 };
 
 /**
- * Validate (approve/decline) a defence document (Admin)
+ * Verify (approve/decline) a defence document (Admin)
  */
-export const validateDefenceDocument = async (
+export const verifyDefenceDocument = async (
   defenceId: string,
   documentTypeId: string,
-  payload: ValidateDefenceDocumentPayload
-): Promise<ValidateDefenceDocumentResponse> => {
+  payload: VerifyDefenceDocumentPayload
+): Promise<VerifyDefenceDocumentResponse> => {
   const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.VALIDATE_DOCUMENT(defenceId, documentTypeId)),
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.VERIFY_DOCUMENT(defenceId, documentTypeId)),
     {
       method: 'POST',
       body: JSON.stringify(payload),
     }
   );
-  return parseJsonResponse(response, 'Gagal memvalidasi dokumen sidang');
+  return parseJsonResponse(response, 'Gagal memverifikasi dokumen sidang');
 };

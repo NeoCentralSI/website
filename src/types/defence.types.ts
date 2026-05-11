@@ -209,12 +209,12 @@ export interface RejectedDefenceExaminer {
   assignedAt: string | null;
 }
 
-export interface ValidateDefenceDocumentPayload {
+export interface VerifyDefenceDocumentPayload {
   action: 'approve' | 'decline';
   notes?: string;
 }
 
-export interface ValidateDefenceDocumentResponse {
+export interface VerifyDefenceDocumentResponse {
   documentTypeId: string;
   status: DocumentSubmitStatus;
   defenceTransitioned: boolean;
