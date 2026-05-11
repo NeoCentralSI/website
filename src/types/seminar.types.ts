@@ -218,12 +218,12 @@ export interface AdminSeminarDetailResponse {
   audiences: SeminarAudienceItem[];
 }
 
-export interface ValidateDocumentPayload {
+export interface VerifyDocumentPayload {
   action: 'approve' | 'decline';
   notes?: string;
 }
 
-export interface ValidateDocumentResponse {
+export interface VerifyDocumentResponse {
   documentTypeId: string;
   status: DocumentSubmitStatus;
   seminarTransitioned: boolean;

@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useAdminThesisSeminarValidation } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
-import { AdminThesisSeminarValidationTable } from '@/components/thesis-seminar/AdminThesisSeminarValidationTable';
+import { useAdminThesisSeminarVerification } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
+import { AdminThesisSeminarVerificationTable } from '@/components/thesis-seminar/AdminThesisSeminarVerificationTable';
 
 
-const VALIDATION_STATUSES = [
+const VERIFICATION_STATUSES = [
   'registered',
   'verified',
   'examiner_assigned',
@@ -14,15 +14,15 @@ const VALIDATION_STATUSES = [
   'ongoing',
 ].join(',');
 
-export function AdminThesisSeminarValidationPanel() {
+export function AdminThesisSeminarVerificationPanel() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { data, isLoading, isFetching, refetch } = useAdminThesisSeminarValidation({
+  const { data, isLoading, isFetching, refetch } = useAdminThesisSeminarVerification({
     search: search.trim() || undefined,
-    status: VALIDATION_STATUSES,
+    status: VERIFICATION_STATUSES,
   });
 
   const filteredData = data ?? [];
@@ -32,7 +32,7 @@ export function AdminThesisSeminarValidationPanel() {
   }, [filteredData, page, pageSize]);
 
   return (
-    <AdminThesisSeminarValidationTable
+    <AdminThesisSeminarVerificationTable
       data={pagedData}
       loading={isLoading}
       isRefreshing={isFetching && !isLoading}

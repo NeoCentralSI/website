@@ -229,7 +229,7 @@ export const API_CONFIG = {
       DOCUMENT_TYPES: '/thesis-seminars/documents/types',
       DOCUMENTS: (id: string) => `/thesis-seminars/${id}/documents`,
       DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}`,
-      VALIDATE_DOCUMENT: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}/validate`,
+      VERIFY_DOCUMENT: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}/verify`,
 
       // --- Examiners & Assignment ---
       ELIGIBLE_EXAMINERS: (id: string) => `/thesis-seminars/${id}/eligible-examiners`,

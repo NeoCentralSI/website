@@ -3,8 +3,8 @@ import { apiRequest } from '@/services/auth.service';
 import type {
   SeminarDocument,
   SeminarDocumentType,
-  ValidateDocumentPayload,
-  ValidateDocumentResponse,
+  VerifyDocumentPayload,
+  VerifyDocumentResponse,
 } from '@/types/seminar.types';
 
 async function parseJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
@@ -51,19 +51,19 @@ export const uploadSeminarDocument = async (file: File, documentTypeName: string
 };
 
 /**
- * Validate (approve/decline) a seminar document (Admin/Lecturer)
+ * Verify (approve/decline) a seminar document (Admin/Lecturer)
  */
-export const validateSeminarDocument = async (
+export const verifySeminarDocument = async (
   seminarId: string,
   documentTypeId: string,
-  payload: ValidateDocumentPayload
-): Promise<ValidateDocumentResponse> => {
+  payload: VerifyDocumentPayload
+): Promise<VerifyDocumentResponse> => {
   const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.VALIDATE_DOCUMENT(seminarId, documentTypeId)),
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.VERIFY_DOCUMENT(seminarId, documentTypeId)),
     {
       method: 'POST',
       body: JSON.stringify(payload),
     }
   );
-  return parseJsonResponse(response, 'Gagal memvalidasi dokumen seminar');
+  return parseJsonResponse(response, 'Gagal memverifikasi dokumen seminar');
 };

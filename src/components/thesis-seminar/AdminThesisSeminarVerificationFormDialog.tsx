@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { useAdminThesisSeminarDetail, useValidateAdminThesisSeminarDocument } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
+import { useAdminThesisSeminarDetail, useVerifyAdminThesisSeminarDocument } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
 import { ExternalLink, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,7 +18,7 @@ import { openProtectedFile } from '@/lib/protected-file';
 import { apiRequest } from '@/services/auth.service';
 import { ENV } from '@/config/env';
 
-interface AdminThesisSeminarValidationModalProps {
+interface AdminThesisSeminarVerificationModalProps {
   seminar: AdminSeminarListItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,11 +36,11 @@ function getDocStatusBadge(status: DocumentSubmitStatus) {
   }
 }
 
-export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange }: AdminThesisSeminarValidationModalProps) {
+export function AdminThesisSeminarVerificationModal({ seminar, open, onOpenChange }: AdminThesisSeminarVerificationModalProps) {
   const { data: detail, isLoading } = useAdminThesisSeminarDetail(
     open && seminar ? seminar.id : undefined
   );
-  const validateMutation = useValidateAdminThesisSeminarDocument();
+  const verifyMutation = useVerifyAdminThesisSeminarDocument();
 
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [notes, setNotes] = useState('');
@@ -113,11 +113,11 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
     };
   }, [currentDoc?.filePath]);
 
-  const handleValidate = useCallback(
+  const handleVerify = useCallback(
     (action: 'approve' | 'decline') => {
       if (!seminar || !currentDoc || !currentDocType) return;
 
-      validateMutation.mutate(
+      verifyMutation.mutate(
         {
           seminarId: seminar.id,
           documentTypeId: currentDocType.id,
@@ -143,22 +143,22 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
             setNotes('');
           },
           onError: (err) => {
-            toast.error(err.message || 'Gagal memvalidasi dokumen');
+            toast.error(err.message || 'Gagal memverifikasi dokumen');
           },
         }
       );
     },
-    [seminar, currentDoc, currentDocType, notes, validateMutation, onOpenChange, orderedDocs, activeDocIndex]
+    [seminar, currentDoc, currentDocType, notes, verifyMutation, onOpenChange, orderedDocs, activeDocIndex]
   );
 
-  const canValidate = currentDoc?.status === 'submitted';
+  const canVerify = currentDoc?.status === 'submitted';
   const canDownload = !!currentDoc?.filePath;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Validasi Dokumen Seminar Hasil</DialogTitle>
+          <DialogTitle>Verifikasi Dokumen Seminar Hasil</DialogTitle>
           {detail && (
             <div className="text-sm text-muted-foreground mt-1">
               {toTitleCaseName(detail.student.name)} — {detail.student.nim}
@@ -283,8 +283,8 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                     )}
                   </div>
 
-                  {/* Validation controls - only for 'submitted' status */}
-                  {canValidate && (
+                  {/* Verification controls - only for 'submitted' status */}
+                  {canVerify && (
                     <div className="space-y-3 border-t pt-3">
                       <Textarea
                         placeholder="Catatan (opsional)..."
@@ -296,10 +296,10 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleValidate('decline')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('decline')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -314,10 +314,10 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => handleValidate('approve')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('approve')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -342,7 +342,7 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
           </div>
         ) : (
           <div className="text-sm text-muted-foreground py-8 text-center">
-            Tidak ada dokumen untuk divalidasi.
+            Tidak ada dokumen untuk diverifikasi.
           </div>
         )}
       </DialogContent>

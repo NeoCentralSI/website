@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
 import CustomTable from '@/components/layout/CustomTable';
 import type { AdminSeminarListItem } from '@/types/seminar.types';
-import { AdminThesisSeminarValidationModal } from '@/components/thesis-seminar/AdminThesisSeminarValidationFormDialog';
+import { AdminThesisSeminarVerificationModal } from '@/components/thesis-seminar/AdminThesisSeminarVerificationFormDialog';
 
 import {
   ThesisStudentInfoCell,
@@ -14,7 +14,7 @@ import {
 } from '@/components/shared/ThesisTableCells';
 
 
-interface AdminThesisSeminarValidationTableProps {
+interface AdminThesisSeminarVerificationTableProps {
   data: AdminSeminarListItem[];
   loading: boolean;
   isRefreshing?: boolean;
@@ -29,7 +29,7 @@ interface AdminThesisSeminarValidationTableProps {
   actions?: React.ReactNode;
 }
 
-export function AdminThesisSeminarValidationTable({
+export function AdminThesisSeminarVerificationTable({
   data,
   loading,
   isRefreshing,
@@ -42,7 +42,7 @@ export function AdminThesisSeminarValidationTable({
   onSearchChange,
   onDetail,
   actions,
-}: AdminThesisSeminarValidationTableProps) {
+}: AdminThesisSeminarVerificationTableProps) {
   const [selectedSeminar, setSelectedSeminar] = useState<AdminSeminarListItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -109,7 +109,7 @@ export function AdminThesisSeminarValidationTable({
                   setSelectedSeminar(row);
                   setIsModalOpen(true);
                 }}
-                title="Validasi Pendaftaran"
+                title="Verifikasi Pendaftaran"
               >
                 <CheckSquare className="w-4 h-4" />
               </Button>
@@ -128,7 +128,7 @@ export function AdminThesisSeminarValidationTable({
         columns={columns}
         loading={loading}
         isRefreshing={isRefreshing}
-        emptyText="Belum ada data pendaftaran yang perlu divalidasi"
+        emptyText="Belum ada data pendaftaran yang perlu diverifikasi"
         page={page}
         pageSize={pageSize}
         total={total}
@@ -139,7 +139,7 @@ export function AdminThesisSeminarValidationTable({
         actions={actions}
       />
 
-      <AdminThesisSeminarValidationModal
+      <AdminThesisSeminarVerificationModal
         seminar={selectedSeminar}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
