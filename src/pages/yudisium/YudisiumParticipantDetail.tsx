@@ -18,8 +18,9 @@ import autoTable from 'jspdf-autotable';
 import {
   useYudisiumParticipantDetail,
   useParticipantCplScores,
-  useVerifyCplScore,
+  useValidateCplScore,
   useRepairCplScore,
+  useFinalizeParticipants,
 } from '@/hooks/yudisium/useYudisiumParticipants';
 import { useRole } from '@/hooks/shared';
 import { openProtectedFile } from '@/lib/protected-file';
@@ -43,8 +44,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  registered:    { label: 'Menunggu Validasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  verified:      { label: 'Menunggu Validasi CPL',     className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  registered:    { label: 'Menunggu Verifikasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  verified:      { label: 'Menunggu Verifikasi CPL',     className: 'bg-blue-50 text-blue-700 border-blue-200' },
   cpl_validated: { label: 'Calon Peserta Yudisium',   className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   appointed:     { label: 'Peserta Yudisium',          className: 'bg-purple-50 text-purple-700 border-purple-200' },
   finalized:     { label: 'Lulus',                     className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -60,11 +61,11 @@ export default function YudisiumParticipantDetail() {
   const { isGkm } = useRole();
   const canPerformActions = isGkm();
 
-  const { data, isLoading } = useYudisiumParticipantDetail(yudisiumId!, yudisiumParticipantId!);
-  const { data: cplData, isLoading: loadingCpl, isFetching, refetch } = useParticipantCplScores(yudisiumId!, yudisiumParticipantId!);
+  const { data, isLoading } = useYudisiumParticipantDetail(yudisiumId || '', yudisiumParticipantId || '');
+  const { data: cplData, isLoading: loadingCpl, isFetching, refetch } = useParticipantCplScores(yudisiumId || '', yudisiumParticipantId || '');
 
-  const verifyMutation = useVerifyCplScore(yudisiumId!, yudisiumParticipantId!);
-  const repairMutation = useRepairCplScore(yudisiumId!, yudisiumParticipantId!);
+  const validateMutation = useValidateCplScore(yudisiumId || '', yudisiumParticipantId || '');
+  const repairMutation = useRepairCplScore(yudisiumId || '', yudisiumParticipantId || '');
 
   const [repairModalOpen, setRepairModalOpen] = useState(false);
   const [viewModalOpen,   setViewModalOpen]   = useState(false);
@@ -159,10 +160,10 @@ export default function YudisiumParticipantDetail() {
     doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
 
     // D. Signature
-    const validator = cplData.cplScores.find(sc => sc.validatedBy);
-    const validatorName = validator?.validatedBy || '...';
-    const validatorNip = validator?.validatedByNip || '...';
-    const validatedDate = validator?.validatedAt ? new Date(validator.validatedAt) : new Date();
+    const validator = cplData.cplScores.find(sc => sc.verifiedBy);
+    const validatorName = validator?.verifiedBy || '...';
+    const validatorNip = validator?.verifiedByNip || '...';
+    const validatedDate = validator?.verifiedAt ? new Date(validator.verifiedAt) : new Date();
 
     const signY = finalY + 40;
     doc.setFontSize(10);
@@ -241,7 +242,7 @@ export default function YudisiumParticipantDetail() {
         className: 'text-center',
         render: (row) => (
           <Badge variant="outline" className={row.passed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}>
-            {row.passed ? 'Lulus' : 'Tidak Lulus'}
+            {row.passed ? 'Lulus' : 'Belum Tercapai'}
           </Badge>
         )
       },
@@ -286,7 +287,7 @@ export default function YudisiumParticipantDetail() {
                   size="icon"
                   className="h-8 w-8 text-muted-foreground hover:text-primary"
                   onClick={() => setVerifyConfirmId(row.cplId)}
-                  disabled={verifyMutation.isPending}
+                  disabled={validateMutation.isPending}
                   title="Validasi CPL"
                 >
                   <Check className="h-4 w-4" />
@@ -631,9 +632,9 @@ export default function YudisiumParticipantDetail() {
       <AlertDialog open={!!verifyConfirmId} onOpenChange={(open) => !open && setVerifyConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Validasi Nilai CPL?</AlertDialogTitle>
+            <AlertDialogTitle>Verifikasi Nilai CPL?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini akan memvalidasi nilai CPL mahasiswa ini. Pastikan nilai sudah sesuai.
+              Tindakan ini akan memverifikasi nilai CPL mahasiswa ini. Pastikan nilai sudah sesuai.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -641,14 +642,14 @@ export default function YudisiumParticipantDetail() {
             <AlertDialogAction
               onClick={() => {
                 if (verifyConfirmId) {
-                  verifyMutation.mutate(verifyConfirmId, {
+                  validateMutation.mutate(verifyConfirmId, {
                     onSuccess: () => setVerifyConfirmId(null)
                   });
                 }
               }}
-              disabled={verifyMutation.isPending}
+              disabled={validateMutation.isPending}
             >
-              {verifyMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
+              {validateMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
               Validasi
             </AlertDialogAction>
           </AlertDialogFooter>

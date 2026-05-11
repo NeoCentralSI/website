@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { YudisiumValidationFormDialog } from '@/components/yudisium/YudisiumValidationFormDialog';
+import { YudisiumVerificationFormDialog } from '@/components/yudisium/YudisiumVerificationFormDialog';
 
 import { useRole } from '@/hooks/shared';
 import { useYudisiumEvent } from '@/hooks/yudisium/useYudisium';
@@ -40,11 +40,11 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
   registered: {
-    label: 'Menunggu Validasi Dokumen',
+    label: 'Menunggu Verifikasi Dokumen',
     className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
   },
   verified: {
-    label: 'Menunggu Validasi CPL',
+    label: 'Menunggu Verifikasi CPL',
     className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
   },
   cpl_validated: {
@@ -168,7 +168,7 @@ export default function YudisiumDetailPage() {
               size="icon"
               className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
               onClick={() => setSelectedParticipant(row)}
-              title="Validasi Pendaftaran"
+              title="Verifikasi Pendaftaran"
             >
               <CheckSquare className="h-4 w-4" />
             </Button>
@@ -310,7 +310,7 @@ export default function YudisiumDetailPage() {
       </div>
 
 
-      <YudisiumValidationFormDialog
+      <YudisiumVerificationFormDialog
         participant={selectedParticipant}
         yudisiumId={id!}
         open={!!selectedParticipant}
@@ -337,7 +337,7 @@ export default function YudisiumDetailPage() {
             <div className="flex gap-3 items-start p-3 rounded-lg bg-amber-50/50 border border-amber-100">
               <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
               <p className="text-sm text-amber-900">
-                Mahasiswa yang belum lengkap atau belum divalidasi CPL-nya akan diubah statusnya menjadi <strong>Belum Lulus</strong>.
+                Mahasiswa yang belum lengkap atau belum diverifikasi CPL-nya akan diubah statusnya menjadi <strong>Belum Lulus</strong>.
               </p>
             </div>
           </div>

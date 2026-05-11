@@ -3,8 +3,8 @@ import { apiRequest } from '../auth.service';
 import type {
   AdminYudisiumParticipantsResponse,
   AdminYudisiumParticipantDetailResponse,
-  ValidateDocumentPayload,
-  ValidateDocumentResponse,
+  VerifyDocumentPayload,
+  VerifyDocumentResponse,
   ParticipantCplResponse,
 } from '@/types/admin-yudisium.types';
 
@@ -39,14 +39,14 @@ export async function getYudisiumParticipantRequirements(
   return json.data;
 }
 
-export async function validateYudisiumDocument(
+export async function verifyYudisiumDocument(
   yudisiumId: string,
   participantId: string,
   requirementId: string,
-  payload: ValidateDocumentPayload
-): Promise<ValidateDocumentResponse> {
+  payload: VerifyDocumentPayload
+): Promise<VerifyDocumentResponse> {
   const res = await apiRequest(
-    getApiUrl(EP.VALIDATE_DOCUMENT(yudisiumId, participantId, requirementId)),
+    getApiUrl(EP.VERIFY_DOCUMENT(yudisiumId, participantId, requirementId)),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -54,7 +54,7 @@ export async function validateYudisiumDocument(
     }
   );
   const json = await res.json();
-  if (!json.success) throw new Error(json.message || 'Gagal memvalidasi dokumen');
+  if (!json.success) throw new Error(json.message || 'Gagal memverifikasi dokumen');
   return json.data;
 }
 
@@ -68,12 +68,12 @@ export async function getParticipantCplScores(
   return json.data;
 }
 
-export async function verifyCplScore(
+export async function validateCplScore(
   yudisiumId: string,
   participantId: string,
   cplId: string
-): Promise<{ cplId: string; status: string; allCplVerified: boolean }> {
-  const res = await apiRequest(getApiUrl(EP.VERIFY_CPL(yudisiumId, participantId, cplId)), {
+): Promise<{ cplId: string; status: string; allCplValidated: boolean }> {
+  const res = await apiRequest(getApiUrl(EP.VALIDATE_CPL(yudisiumId, participantId, cplId)), {
     method: 'POST',
   });
   const json = await res.json();

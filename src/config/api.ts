@@ -97,13 +97,13 @@ export const API_CONFIG = {
       PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants`,
       PARTICIPANT_DETAIL: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
       PARTICIPANT_REQUIREMENTS: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/requirements`,
-      VALIDATE_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
-        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/validate`,
+      VERIFY_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/verify`,
 
       // CPL (Lecturer / GKM)
       CPL_SCORES: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-scores`,
-      VERIFY_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
-        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/verify`,
+      VALIDATE_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/validate`,
       REPAIR_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/repair`,
 

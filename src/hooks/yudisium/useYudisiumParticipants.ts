@@ -2,15 +2,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getYudisiumParticipants,
   getYudisiumParticipantDetail,
-  validateYudisiumDocument,
+  verifyYudisiumDocument,
   getParticipantCplScores,
-  verifyCplScore,
+  validateCplScore,
   repairCplScore,
   exportParticipants,
   finalizeParticipants,
 } from '@/services/yudisium/yudisium-participant.service';
 import { toast } from 'sonner';
-import type { ValidateDocumentPayload } from '@/types/admin-yudisium.types';
+import type { VerifyDocumentPayload } from '@/types/admin-yudisium.types';
 
 export const participantKeys = {
   all: ['yudisium-participants'] as const,
@@ -35,7 +35,7 @@ export function useYudisiumParticipantDetail(yudisiumId: string, participantId: 
   });
 }
 
-export function useValidateYudisiumDocument(yudisiumId: string) {
+export function useVerifyYudisiumDocument(yudisiumId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -45,15 +45,15 @@ export function useValidateYudisiumDocument(yudisiumId: string) {
     }: {
       participantId: string;
       requirementId: string;
-      payload: ValidateDocumentPayload;
-    }) => validateYudisiumDocument(yudisiumId, participantId, requirementId, payload),
+      payload: VerifyDocumentPayload;
+    }) => verifyYudisiumDocument(yudisiumId, participantId, requirementId, payload),
     onSuccess: (data) => {
       toast.success(data.status === 'approved' ? 'Dokumen disetujui' : 'Dokumen ditolak');
       void queryClient.invalidateQueries({ queryKey: participantKeys.list(yudisiumId) });
       void queryClient.invalidateQueries({ queryKey: participantKeys.all });
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Gagal memvalidasi dokumen');
+      toast.error(err.message || 'Gagal memverifikasi dokumen');
     },
   });
 }
@@ -66,10 +66,10 @@ export function useParticipantCplScores(yudisiumId: string, participantId: strin
   });
 }
 
-export function useVerifyCplScore(yudisiumId: string, participantId: string) {
+export function useValidateCplScore(yudisiumId: string, participantId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (cplId: string) => verifyCplScore(yudisiumId, participantId, cplId),
+    mutationFn: (cplId: string) => validateCplScore(yudisiumId, participantId, cplId),
     onSuccess: () => {
       toast.success('CPL berhasil divalidasi');
       void queryClient.invalidateQueries({ queryKey: participantKeys.cplScores(participantId) });

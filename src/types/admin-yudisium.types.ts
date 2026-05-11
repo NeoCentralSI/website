@@ -74,12 +74,12 @@ export type AdminYudisiumParticipantDetailResponse = {
   documents: AdminYudisiumParticipantDocument[];
 };
 
-export type ValidateDocumentPayload = {
+export type VerifyDocumentPayload = {
   action: 'approve' | 'decline';
   notes?: string;
 };
 
-export type ValidateDocumentResponse = {
+export type VerifyDocumentResponse = {
   requirementId: string;
   status: string;
   participantTransitioned: boolean;

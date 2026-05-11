@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { useYudisiumParticipantDetail, useValidateYudisiumDocument } from '@/hooks/yudisium/useYudisiumParticipants';
+import { useYudisiumParticipantDetail, useVerifyYudisiumDocument } from '@/hooks/yudisium/useYudisiumParticipants';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
 import { apiRequest } from '@/services/auth.service';
 import { ENV } from '@/config/env';
@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import type { AdminYudisiumParticipant, AdminYudisiumParticipantDocument } from '@/types/admin-yudisium.types';
 import { openProtectedFile } from '@/lib/protected-file';
 
-interface YudisiumValidationFormDialogProps {
+interface YudisiumVerificationFormDialogProps {
   participant: AdminYudisiumParticipant | null;
   yudisiumId: string;
   open: boolean;
@@ -38,17 +38,17 @@ function getDocStatusBadge(status: AdminYudisiumParticipantDocument['status']) {
   }
 }
 
-export function YudisiumValidationFormDialog({
+export function YudisiumVerificationFormDialog({
   participant,
   yudisiumId,
   open,
   onOpenChange,
-}: YudisiumValidationFormDialogProps) {
+}: YudisiumVerificationFormDialogProps) {
   const { data: detail, isLoading } = useYudisiumParticipantDetail(
     yudisiumId,
     open && participant ? participant.id : ''
   );
-  const validateMutation = useValidateYudisiumDocument(yudisiumId);
+  const verifyMutation = useVerifyYudisiumDocument(yudisiumId);
 
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [notes, setNotes] = useState('');
@@ -115,11 +115,11 @@ export function YudisiumValidationFormDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleValidate = useCallback(
+  const handleVerify = useCallback(
     (action: 'approve' | 'decline') => {
       if (!participant || !currentDoc?.document) return;
 
-      validateMutation.mutate(
+      verifyMutation.mutate(
         {
           participantId: participant.id,
           requirementId: currentDoc.requirementId,
@@ -131,7 +131,7 @@ export function YudisiumValidationFormDialog({
             toast.success(msg);
 
             if (result.participantTransitioned) {
-              toast.success('Semua dokumen disetujui — peserta berstatus "Menunggu Validasi CPL"');
+              toast.success('Semua dokumen disetujui — peserta berstatus "Menunggu Verifikasi CPL"');
               onOpenChange(false);
             } else {
               // Auto-advance to next submitted doc
@@ -145,21 +145,21 @@ export function YudisiumValidationFormDialog({
             setNotes('');
           },
           onError: (err: any) => {
-            toast.error(err.message || 'Gagal memvalidasi dokumen');
+            toast.error(err.message || 'Gagal memverifikasi dokumen');
           },
         }
       );
     },
-    [participant, currentDoc, notes, validateMutation, onOpenChange, documents, activeDocIndex]
+    [participant, currentDoc, notes, verifyMutation, onOpenChange, documents, activeDocIndex]
   );
 
-  const canValidate = currentDoc?.status === 'submitted';
+  const canVerify = currentDoc?.status === 'submitted';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Validasi Dokumen Yudisium</DialogTitle>
+          <DialogTitle>Verifikasi Dokumen Yudisium</DialogTitle>
           {detail && (
             <div className="text-sm text-muted-foreground mt-1">
               {toTitleCaseName(detail.studentName)} — {detail.studentNim}
@@ -295,8 +295,8 @@ export function YudisiumValidationFormDialog({
                     )}
                   </div>
 
-                  {/* Validation controls - only for 'submitted' status */}
-                  {canValidate && (
+                  {/* Verification controls - only for 'submitted' status */}
+                  {canVerify && (
                     <div className="space-y-3 border-t pt-3">
                       <Textarea
                         placeholder="Catatan (opsional)..."
@@ -308,10 +308,10 @@ export function YudisiumValidationFormDialog({
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleValidate('decline')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('decline')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -326,10 +326,10 @@ export function YudisiumValidationFormDialog({
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => handleValidate('approve')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('approve')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -354,7 +354,7 @@ export function YudisiumValidationFormDialog({
           </div>
         ) : (
           <div className="text-sm text-muted-foreground py-8 text-center">
-            Tidak ada dokumen untuk divalidasi.
+            Tidak ada dokumen untuk diverifikasi.
           </div>
         )}
       </DialogContent>
