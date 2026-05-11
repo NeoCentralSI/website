@@ -28,6 +28,12 @@ export interface User {
     enrollmentYear: number;
     sksCompleted: number;
     currentSemester?: number | null;
+    eligibleMetopen?: boolean | null;
+    metopenEligibilitySource?: string | null;
+    metopenEligibilityUpdatedAt?: string | null;
+    takingThesisCourse?: boolean | null;
+    thesisCourseEnrollmentSource?: string | null;
+    thesisCourseEnrollmentUpdatedAt?: string | null;
     status: string | null;
   };
   lecturer?: {
@@ -90,13 +96,11 @@ export const loginAPI = async (credentials: LoginRequest): Promise<LoginResponse
 };
 
 export const saveAuthTokens = (accessToken: string, refreshToken: string) => {
-
   // Access token tetap di localStorage (lebih mudah untuk API calls)
   localStorage.setItem('accessToken', accessToken);
-
+  
   // Refresh token disimpan di cookies (lebih aman, httpOnly bisa ditambahkan di backend)
   setCookie('refreshToken', refreshToken, 7); // 7 hari
-
 };
 
 export const getAuthTokens = () => {
@@ -104,8 +108,6 @@ export const getAuthTokens = () => {
     accessToken: localStorage.getItem('accessToken'),
     refreshToken: getCookie('refreshToken')
   };
-
-
   return tokens;
 };
 
@@ -113,7 +115,7 @@ export const getAuthTokens = () => {
 export const logoutAPI = async (): Promise<void> => {
   try {
     const { accessToken } = getAuthTokens();
-
+    
     if (!accessToken) {
       throw new Error('Access token tidak ditemukan');
     }
@@ -206,6 +208,36 @@ export const handleMicrosoftCallbackAPI = async (code: string): Promise<LoginRes
   }
 };
 
+export interface MicrosoftExchangeResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+  hasCalendarAccess: boolean;
+}
+
+/**
+ * Tukar one-shot code dari URL callback dengan token (HTTPS body).
+ * Hanya bisa dipanggil sekali per code; code expire 60 detik setelah dibuat.
+ */
+export const exchangeMicrosoftCodeAPI = async (
+  code: string,
+): Promise<MicrosoftExchangeResponse> => {
+  const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.MICROSOFT_EXCHANGE), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Gagal menukar exchange code Microsoft');
+  }
+  const json = await response.json();
+  if (!json?.success || !json.data) {
+    throw new Error('Respons exchange tidak valid');
+  }
+  return json.data as MicrosoftExchangeResponse;
+};
+
 export const clearAuthTokens = () => {
   localStorage.removeItem('accessToken');
   clearAllAuthCookies(); // Clear refresh token dan remembered email dari cookies
@@ -227,9 +259,12 @@ export const refreshTokenAPI = async (): Promise<{ accessToken: string; refreshT
 
   // Create and store the refresh promise
   refreshTokenPromise = (async () => {
+    // Capture token SEBELUM request untuk deteksi race condition
+    const tokenBeforeRefresh = getAuthTokens().accessToken;
+
     try {
       const { refreshToken } = getAuthTokens();
-
+      
       if (!refreshToken) {
         throw new Error('Refresh token tidak ditemukan');
       }
@@ -248,13 +283,19 @@ export const refreshTokenAPI = async (): Promise<{ accessToken: string; refreshT
       }
 
       const data = await response.json();
-
+      
       return {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken
       };
     } catch (error) {
-      clearAuthTokens();
+      // Hanya clear token jika token MASIH SAMA dengan saat request dimulai.
+      // Jika token sudah berubah (misal karena login baru), jangan clear —
+      // itu token milik sesi baru.
+      const tokenNow = getAuthTokens().accessToken;
+      if (!tokenNow || tokenNow === tokenBeforeRefresh) {
+        clearAuthTokens();
+      }
       throw error;
     } finally {
       // Clear the promise after completion (success or failure)
@@ -268,7 +309,7 @@ export const refreshTokenAPI = async (): Promise<{ accessToken: string; refreshT
 export const getUserProfileAPI = async (): Promise<User> => {
   try {
     const { accessToken } = getAuthTokens();
-
+    
     if (!accessToken) {
       throw new Error('Access token tidak ditemukan');
     }
@@ -286,7 +327,7 @@ export const getUserProfileAPI = async (): Promise<User> => {
         try {
           const newTokens = await refreshTokenAPI();
           saveAuthTokens(newTokens.accessToken, newTokens.refreshToken);
-
+          
           const retryResponse = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.ME), {
             method: 'GET',
             headers: {
@@ -294,11 +335,11 @@ export const getUserProfileAPI = async (): Promise<User> => {
               'Authorization': `Bearer ${newTokens.accessToken}`,
             },
           });
-
+          
           if (!retryResponse.ok) {
             throw new Error('Invalid session');
           }
-
+          
           const userData = await retryResponse.json();
           return userData.user;
         } catch {
@@ -306,7 +347,7 @@ export const getUserProfileAPI = async (): Promise<User> => {
           throw new Error('Session expired, silakan login kembali');
         }
       }
-
+      
       // For other errors, don't clear tokens
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
       throw new Error(errorData.message || 'Gagal mengambil data user');
@@ -324,7 +365,7 @@ export const getUserProfileAPI = async (): Promise<User> => {
 
 export const apiRequest = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const { accessToken } = getAuthTokens();
-
+  
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const baseHeaders: HeadersInit = {
     ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
@@ -346,7 +387,7 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
     try {
       const newTokens = await refreshTokenAPI();
       saveAuthTokens(newTokens.accessToken, newTokens.refreshToken);
-
+      
       requestOptions.headers = {
         ...requestOptions.headers,
         Authorization: `Bearer ${newTokens.accessToken}`,
@@ -355,14 +396,14 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
       response = await fetch(url, requestOptions);
       logApi({ url, method: requestOptions.method, status: response.status, ok: response.ok, durationMs: (performance.now?.() ?? Date.now()) - retryStart, note: 'retry-after-refresh' });
     } catch (refreshError) {
-      clearAuthTokens();
-      window.location.href = '/login';
+      // Hanya clear & redirect jika token belum diganti oleh login baru
+      const tokenNow = getAuthTokens().accessToken;
+      if (!tokenNow || tokenNow === accessToken) {
+        clearAuthTokens();
+        window.location.href = '/login';
+      }
       throw refreshError;
     }
-  }
-
-  if (response.status >= 500) {
-    window.dispatchEvent(new Event('server-error'));
   }
 
   return response;

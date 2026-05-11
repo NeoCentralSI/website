@@ -18,7 +18,11 @@ export function initFirebase() {
 export async function getFirebaseMessaging(): Promise<Messaging | null> {
   try {
     const supported = await isSupported();
-    if (!supported) return null;
+    if (!supported) {
+      // Browser tidak mendukung FCM (misalnya Safari desktop) → cukup diam tanpa error.
+      console.info("[FCM] Browser does not support Firebase Messaging, skipping realtime notifications");
+      return null;
+    }
     initFirebase();
     return getMessaging();
   } catch {
@@ -29,12 +33,12 @@ export async function getFirebaseMessaging(): Promise<Messaging | null> {
 export async function acquireFcmToken(): Promise<string | null> {
   const messaging = await getFirebaseMessaging();
   if (!messaging) {
-    console.error("[FCM] getFirebaseMessaging returned null (not supported by browser)");
+    // Sudah dilog di getFirebaseMessaging; jangan spam error lagi di sini.
     return null;
   }
   const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
   if (!vapidKey) {
-    console.error("[FCM] VITE_FIREBASE_VAPID_KEY is not set in environment");
+    console.warn("[FCM] VITE_FIREBASE_VAPID_KEY is not set in environment – FCM disabled");
   }
   try {
     const token = await getToken(messaging, { vapidKey });

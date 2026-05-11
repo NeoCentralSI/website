@@ -158,7 +158,7 @@ export default function GuidanceSessionPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Sesi Bimbingan</h1>
+            <h1 className="text-base font-semibold tracking-tight sm:text-lg">Sesi Bimbingan</h1>
           </div>
         </div>
         <Card>
@@ -185,8 +185,8 @@ export default function GuidanceSessionPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Sesi Bimbingan</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-base font-semibold tracking-tight sm:text-lg">Sesi Bimbingan</h1>
+            <p className="text-xs text-muted-foreground sm:text-sm">
               {toTitleCaseName(guidance.supervisorName || "Dosen Pembimbing")}
             </p>
           </div>
@@ -281,13 +281,16 @@ export default function GuidanceSessionPage() {
                 </CardContent>
               </Card>
 
-              {/* Milestone Card */}
+              {/* P2-08 (audit Fase 3 + canon §0): Card "Milestone Dibahas" di-rename
+                  jadi "Topik Bimbingan" untuk merefleksikan canon — milestone Metopen
+                  bukan flow aktif lagi, tapi badge topik bimbingan masih punya nilai
+                  sebagai struktur sesi (bila legacy data masih ada di guidance.milestoneTitles). */}
               {guidance.milestoneTitles && guidance.milestoneTitles.length > 0 && (
                 <Card className="border-l-4 border-l-violet-500 overflow-hidden">
                   <CardHeader className="pb-3 bg-linear-to-r from-violet-500/5 to-transparent">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Target className="h-4 w-4 text-violet-500" />
-                      Milestone Dibahas
+                      Topik Bimbingan
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4">

@@ -9,7 +9,6 @@ export default function KelolaCpl() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
     const breadcrumbs = useMemo(() => [
-        { label: 'Kelola', href: '/kelola' },
         { label: 'Kelola Data CPL' },
     ], []);
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
@@ -121,7 +121,7 @@ export function DataMasterTaPanel() {
         setDialogOpen(true);
     };
 
-    const handleStartEdit = (thesis: MasterDataThesis) => {
+    const handleStartEdit = useCallback((thesis: MasterDataThesis) => {
         setFormState({
             id: thesis.id,
             studentId: thesis.student?.id || "",
@@ -137,9 +137,9 @@ export function DataMasterTaPanel() {
             isProposal: thesis.isProposal || false,
         });
         setDialogOpen(true);
-    };
+    }, []);
 
-    const handleToggleProposal = (t: MasterDataThesis, checked: boolean) => {
+    const handleToggleProposal = useCallback((t: MasterDataThesis, checked: boolean) => {
         const payload = {
             title: t.title,
             thesisTopicId: t.topic?.id,
@@ -152,7 +152,7 @@ export function DataMasterTaPanel() {
             isProposal: checked,
         };
         updateMutation.mutate({ id: t.id, data: payload });
-    };
+    }, [updateMutation]);
 
     const handleSubmit = () => {
         if (!formState.studentId) {
@@ -286,7 +286,7 @@ export function DataMasterTaPanel() {
                 </Button>
             )
         }
-    ], []);
+    ], [handleToggleProposal, handleStartEdit, updateMutation.isPending]);
 
     if (isLoading && theses.length === 0) {
         return <div className="p-8 flex justify-center"><Loading size="lg" text="Memuat data..." /></div>;
@@ -498,7 +498,10 @@ export function DataMasterTaPanel() {
                 open={exportDialogOpen}
                 onOpenChange={setExportDialogOpen}
                 theses={theses}
-                academicYears={academicYears}
+                academicYears={academicYears.map((year) => ({
+                    ...year,
+                    year: String(year.year),
+                }))}
             />
             <ImportMasterDataDialog
                 open={importDialogOpen}

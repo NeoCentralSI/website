@@ -176,7 +176,6 @@ export default function InternshipSeminarPage() {
                     <FinalReportTab 
                         internship={internship}
                         isUploading={isUploading}
-                        onFileChange={onFileChange}
                         onFinalReportSubmit={handleFinalReportSubmit}
                     />
                 )}

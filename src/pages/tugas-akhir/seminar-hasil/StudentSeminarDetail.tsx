@@ -58,7 +58,7 @@ export default function StudentSeminarDetail() {
   ];
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Back + Header */}
       <div className="flex items-center gap-3">
         <Button
@@ -71,8 +71,8 @@ export default function StudentSeminarDetail() {
         </Button>
         <div className="flex-1 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Detail Seminar Hasil</h1>
-            <p className="text-gray-500">{detail.thesis.title}</p>
+            <h1 className="text-base font-semibold tracking-tight sm:text-lg">Detail Seminar Hasil</h1>
+            <p className="text-xs text-muted-foreground sm:text-sm">{detail.thesis.title}</p>
           </div>
           <SeminarStatusBadge status={detail.status} />
         </div>

@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useRole } from '@/hooks/shared/useRole';
-import { getStudentsAPI, triggerSiaSyncAPI, type Student } from '@/services/admin.service';
+import {
+  getStudentsAPI,
+  getAcademicYearsAPI,
+  triggerSiaSyncAPI,
+  type Student,
+  type AcademicYear,
+} from '@/services/admin.service';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,7 +30,8 @@ import { Check, X } from 'lucide-react';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
-  const { isAdmin } = useRole();
+  const { isAdmin, isKoordinatorMetopen, isLoading: isRoleLoading } = useRole();
+  const showSyncButton = () => isAdmin() && !isKoordinatorMetopen();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const queryClient = useQueryClient();
 
@@ -32,6 +39,12 @@ export default function Mahasiswa() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
+  const [programFilter, setProgramFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [enrollmentYearFilter, setEnrollmentYearFilter] = useState('');
+  const [academicYearFilter, setAcademicYearFilter] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Edit states
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -57,27 +70,57 @@ export default function Mahasiswa() {
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   useEffect(() => {
-    if (!isAdmin()) {
+    if (isRoleLoading) return;
+    if (!(isAdmin() || isKoordinatorMetopen())) {
       navigate('/dashboard');
     }
-  }, [isAdmin, navigate]);
+  }, [isAdmin, isKoordinatorMetopen, isRoleLoading, navigate]);
+
+  // Fetch academic years for filter dropdown
+  const { data: ayData } = useQuery({
+    queryKey: ['academic-years', { pageSize: 100 }],
+    queryFn: () => getAcademicYearsAPI({ pageSize: 100 }),
+  });
+  const academicYears: AcademicYear[] = useMemo(() => {
+    if (!ayData) return [];
+    return (ayData as { academicYears?: AcademicYear[] })?.academicYears ?? [];
+  }, [ayData]);
 
   // Use TanStack Query for server state management
   const { data, isLoading, isFetching, refetch, error } = useQuery({
-    queryKey: ['students', { page, pageSize, search: searchValue }],
-    queryFn: () => getStudentsAPI({ page, pageSize, search: searchValue }),
+    queryKey: ['students', { page, pageSize, search: searchValue, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder }],
+    queryFn: () => getStudentsAPI({
+      page,
+      pageSize,
+      search: searchValue,
+      programFilter: programFilter || undefined,
+      statusFilter: statusFilter || undefined,
+      enrollmentYearFilter: enrollmentYearFilter || undefined,
+      academicYearFilter: academicYearFilter || undefined,
+      sortBy: sortBy || undefined,
+      sortOrder,
+    }),
     placeholderData: (previousData) => previousData, // Keep previous data while fetching
     staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) => adminUpdateStudentAPI(selectedStudent!.id, data),
+    mutationFn: (data: {
+      status: string;
+      sksCompleted: number;
+      enrollmentYear?: number;
+      currentSemester?: number;
+      mandatoryCoursesCompleted?: boolean;
+      mkwuCompleted?: boolean;
+      internshipCompleted?: boolean;
+      kknCompleted?: boolean;
+    }) => adminUpdateStudentAPI(selectedStudent!.id, data),
     onSuccess: () => {
       toast.success('Data mahasiswa berhasil diperbarui');
       queryClient.invalidateQueries({ queryKey: ['students'] });
       setIsEditOpen(false);
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const syncMutation = useMutation({
@@ -101,7 +144,7 @@ export default function Mahasiswa() {
   // Reset to page 1 when search changes
   useEffect(() => {
     setPage(1);
-  }, [searchValue]);
+  }, [searchValue, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder]);
 
   const columns: Column<Student>[] = [
     {
@@ -122,6 +165,17 @@ export default function Mahasiswa() {
     {
       key: 'enrollmentYear',
       header: 'Tahun Masuk',
+      filter: {
+        kind: 'control',
+        type: 'select',
+        value: enrollmentYearFilter,
+        onChange: setEnrollmentYearFilter,
+        options: [
+          { value: '', label: 'Semua' },
+          ...Array.from({ length: 11 }, (_, i) => 2018 + i).map((y) => ({ value: String(y), label: String(y) })),
+        ],
+        placeholder: 'Filter tahun',
+      },
       render: (row: Student) => row.student?.enrollmentYear || '-',
     },
     {
@@ -186,8 +240,62 @@ export default function Mahasiswa() {
       )
     },
     {
+      key: 'program',
+      header: 'Program',
+      filter: {
+        kind: 'control',
+        type: 'select',
+        value: programFilter,
+        onChange: setProgramFilter,
+        options: [
+          { value: '', label: 'Semua' },
+          { value: 'metopen', label: 'Metopen tanpa TA aktif' },
+          { value: 'ta', label: 'TA tanpa Metopen' },
+          { value: 'both', label: 'Metopen + TA aktif' },
+          { value: 'none', label: 'Tidak ada TA/Metopen aktif' },
+        ],
+        placeholder: 'Filter program',
+      },
+      render: (row: Student) => {
+        const activeTheses = row.student?.activeTheses ?? [];
+        const metopenEligibility = row.student?.metopenEligibility;
+        const inMetopen = Boolean(metopenEligibility?.canAccess);
+        const inTA = activeTheses.some((thesis) => thesis.status && String(thesis.status).toLowerCase() !== 'metopel');
+        if (!inMetopen && !inTA) return <span className="text-muted-foreground">—</span>;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {inMetopen && (
+              <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">
+                {metopenEligibility?.readOnly ? 'Metopen Arsip' : 'Metopen'}
+              </Badge>
+            )}
+            {inTA && (
+              <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+                TA
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       key: 'status',
       header: 'Status',
+      filter: {
+        kind: 'control',
+        type: 'select',
+        value: statusFilter,
+        onChange: setStatusFilter,
+        options: [
+          { value: '', label: 'Semua' },
+          { value: 'active', label: 'Aktif' },
+          { value: 'lulus', label: 'Lulus' },
+          { value: 'bss', label: 'Cuti' },
+          { value: 'dropout', label: 'Drop Out' },
+          { value: 'mengundurkan_diri', label: 'Mengundurkan Diri' },
+        ],
+        placeholder: 'Filter status',
+      },
       render: (row: Student) => {
         const rawStatus = row.student?.status || '-';
         const displayStatus = rawStatus === 'active' ? 'Aktif'
@@ -244,43 +352,67 @@ export default function Mahasiswa() {
   // Extract data from query result
   const students = data?.students || [];
   const total = data?.meta?.total || 0;
-
+  const academicYearContext = data?.academicYearContext ?? null;
+  const academicYearOptions = useMemo(
+    () =>
+      academicYears
+        .slice()
+        .sort((a, b) => {
+          const yearCmp = Number(b.year || 0) - Number(a.year || 0);
+          if (yearCmp !== 0) return yearCmp;
+          return (b.semester === 'genap' ? 1 : 0) - (a.semester === 'genap' ? 1 : 0);
+        })
+        .map((ay) => ({
+          value: ay.id,
+          label: `${ay.year} ${ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}`,
+        })),
+    [academicYears]
+  );
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-5 sm:space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Data Mahasiswa</h1>
-          <p className="text-gray-500">Kelola data mahasiswa sistem</p>
+          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Data Mahasiswa</h1>
+          <p className="text-xs text-muted-foreground sm:text-sm">Kelola data mahasiswa sistem</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Sinkronkan data mahasiswa dari SIA</span>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => syncMutation.mutate()}
-                  disabled={syncMutation.isPending}
-                  aria-label="Sinkronisasi data SIA"
-                >
-                  <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{syncMutation.isPending ? 'Menyinkronkan...' : 'Sinkronkan data SIA'}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {showSyncButton() && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">Sinkronkan data mahasiswa dari SIA</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => syncMutation.mutate()}
+                      disabled={syncMutation.isPending}
+                      aria-label="Sinkronisasi data SIA"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{syncMutation.isPending ? 'Menyinkronkan...' : 'Sinkronkan data SIA'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
         </div>
       </div>
 
+      {academicYearContext && (
+        <p className="text-sm text-muted-foreground">
+          Menampilkan data untuk tahun ajaran: <span className="font-medium text-foreground">{academicYearContext.label}</span>
+        </p>
+      )}
       <CustomTable
-        columns={columns as any}
+        columns={columns}
         data={students}
         loading={isLoading}
-        isRefreshing={(isFetching && !isLoading) || syncMutation.isPending}
+        isRefreshing={(isFetching && !isLoading) || (showSyncButton() && syncMutation.isPending)}
         total={total}
         page={page}
         pageSize={pageSize}
@@ -290,10 +422,58 @@ export default function Mahasiswa() {
         onSearchChange={setSearchValue}
         enableColumnFilters
         actions={
-          <RefreshButton
-            onClick={() => refetch()}
-            isRefreshing={isFetching && !isLoading}
-          />
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Tahun ajaran:</span>
+              <Select
+                value={academicYearFilter || '__active__'}
+                onValueChange={(v) => setAcademicYearFilter(v === '__active__' ? '' : v)}
+              >
+                <SelectTrigger className="h-9 w-[200px]">
+                  <SelectValue placeholder="Tahun ajaran" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__active__">Tahun aktif</SelectItem>
+                  {academicYearOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Urutkan:</span>
+              <Select
+                value={`${sortBy}:${sortOrder}`}
+                onValueChange={(v) => {
+                  const [by, order] = v.split(':');
+                  setSortBy(by);
+                  setSortOrder((order as 'asc' | 'desc') || 'desc');
+                }}
+              >
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue placeholder="Urutkan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fullName:asc">Nama A-Z</SelectItem>
+                  <SelectItem value="fullName:desc">Nama Z-A</SelectItem>
+                  <SelectItem value="identityNumber:asc">NIM Naik</SelectItem>
+                  <SelectItem value="identityNumber:desc">NIM Turun</SelectItem>
+                  <SelectItem value="enrollmentYear:desc">Tahun Masuk Terbaru</SelectItem>
+                  <SelectItem value="enrollmentYear:asc">Tahun Masuk Terlama</SelectItem>
+                  <SelectItem value="sksCompleted:desc">SKS Tertinggi</SelectItem>
+                  <SelectItem value="sksCompleted:asc">SKS Terendah</SelectItem>
+                  <SelectItem value="createdAt:desc">Terbaru Didaftarkan</SelectItem>
+                  <SelectItem value="createdAt:asc">Terlama Didaftarkan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <RefreshButton
+              onClick={() => refetch()}
+              isRefreshing={isFetching && !isLoading}
+            />
+          </div>
         }
       />
 

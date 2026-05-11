@@ -32,11 +32,11 @@ export default function MasterDataTugasAkhirPage() {
     });
 
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+        <div className="space-y-5 sm:space-y-6">
+            <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold">Data Master Tugas Akhir</h1>
-                    <p className="text-gray-500">
+                    <h1 className="text-base font-semibold tracking-tight sm:text-lg">Data Master Tugas Akhir</h1>
+                    <p className="text-xs text-muted-foreground sm:text-sm">
                         Kelola data master tugas akhir, mahasiswa, topik, dan pembimbing.
                     </p>
                 </div>

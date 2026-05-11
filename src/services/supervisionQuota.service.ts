@@ -1,4 +1,5 @@
 import { getApiUrl } from '@/config/api';
+import { getAuthTokens } from '@/services/auth.service';
 
 // ==================== Types ====================
 
@@ -18,6 +19,11 @@ export interface LecturerQuota {
   quotaMax: number;
   quotaSoftLimit: number;
   currentCount: number;
+  activeCount: number;
+  bookingCount: number;
+  pendingKadepCount: number;
+  normalAvailable: number;
+  overquotaAmount: number;
   notes: string | null;
   remaining: number;
   isNearLimit: boolean;
@@ -38,10 +44,11 @@ export interface UpdateLecturerQuotaRequest {
 // ==================== API Functions ====================
 
 export async function getDefaultQuotaAPI(academicYearId: string): Promise<SupervisionQuotaDefault> {
+  const { accessToken } = getAuthTokens();
   const res = await fetch(getApiUrl(`/supervision-quota/default/${academicYearId}`), {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
   if (!res.ok) {
@@ -55,12 +62,13 @@ export async function getDefaultQuotaAPI(academicYearId: string): Promise<Superv
 export async function setDefaultQuotaAPI(
   academicYearId: string,
   data: SetDefaultQuotaRequest
-): Promise<{ defaultQuota: SupervisionQuotaDefault; generated: { created: number; total: number } }> {
+): Promise<{ defaultQuota: SupervisionQuotaDefault; generated: { created: number; updated?: number; total: number } }> {
+  const { accessToken } = getAuthTokens();
   const res = await fetch(getApiUrl(`/supervision-quota/default/${academicYearId}`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(data),
   });
@@ -76,13 +84,14 @@ export async function getLecturerQuotasAPI(
   academicYearId: string,
   search?: string
 ): Promise<LecturerQuota[]> {
+  const { accessToken } = getAuthTokens();
   const params = new URLSearchParams();
   if (search) params.set('search', search);
   const url = getApiUrl(`/supervision-quota/lecturers/${academicYearId}${params.toString() ? `?${params}` : ''}`);
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
   if (!res.ok) {
@@ -98,13 +107,14 @@ export async function updateLecturerQuotaAPI(
   academicYearId: string,
   data: UpdateLecturerQuotaRequest
 ): Promise<LecturerQuota> {
+  const { accessToken } = getAuthTokens();
   const res = await fetch(
     getApiUrl(`/supervision-quota/lecturers/${lecturerId}/${academicYearId}`),
     {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(data),
     }

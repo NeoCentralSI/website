@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { CpmkTable } from '@/components/kelola/cpmk/CpmkTable';
@@ -13,6 +13,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { LocalTabsNav } from '@/components/ui/tabs-nav';
+
+const CPMK_SCOPE_TABS = [
+    { label: 'Tugas Akhir', value: 'thesis' },
+    { label: 'Metodologi Penelitian (Metopel)', value: 'research_method' },
+] as const;
+
+type CpmkScope = (typeof CPMK_SCOPE_TABS)[number]['value'];
 
 function academicYearLabel(semester?: string, year?: string | null) {
     const semesterLabel = semester === 'ganjil' ? 'Ganjil' : 'Genap';
@@ -21,6 +29,7 @@ function academicYearLabel(semester?: string, year?: string | null) {
 
 export function CpmkManagementPanel() {
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>(undefined);
+    const [activeScope, setActiveScope] = useState<CpmkScope>('thesis');
 
     const { data: academicYearsData } = useQuery({
         queryKey: ['cpmk-academic-years'],
@@ -45,15 +54,29 @@ export function CpmkManagementPanel() {
         isDeleting,
     } = useCpmk(effectiveAcademicYearId);
 
-    // Filter to only show thesis-type CPMKs
-    const thesisCpmks = cpmks.filter((cpmk) => cpmk.type === 'thesis');
+    const scopedCpmks = useMemo(
+        () => cpmks.filter((cpmk) => cpmk.type === activeScope),
+        [cpmks, activeScope],
+    );
 
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
+    const scopeDescription =
+        activeScope === 'thesis'
+            ? 'CPMK untuk penilaian seminar hasil, sidang, dan konteks tugas akhir (bukan Metopel).'
+            : 'CPMK untuk penilaian Metodologi Penelitian — formulir TA-03A (Pembimbing) dan TA-03B (Koordinator Metopen).';
+
     return (
         <div className="space-y-4">
+            <LocalTabsNav
+                tabs={[...CPMK_SCOPE_TABS]}
+                activeTab={activeScope}
+                onTabChange={(v) => setActiveScope(v as CpmkScope)}
+            />
+            <p className="text-xs text-muted-foreground">{scopeDescription}</p>
             <CpmkTable
-                data={thesisCpmks}
+                key={`${activeScope}-${effectiveAcademicYearId ?? 'none'}`}
+                data={scopedCpmks}
                 isLoading={isLoading}
                 isFetching={isFetching}
                 onDelete={remove}
@@ -74,7 +97,7 @@ export function CpmkManagementPanel() {
                             <SelectContent>
                                 {academicYearsData?.academicYears?.map((item) => (
                                     <SelectItem key={item.id} value={item.id}>
-                                        {academicYearLabel(item.semester, item.year)}{item.isActive ? ' (Aktif)' : ''}
+                                        {academicYearLabel(item.semester, String(item.year))}{item.isActive ? ' (Aktif)' : ''}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -86,7 +109,14 @@ export function CpmkManagementPanel() {
             <CpmkFormDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                onSubmit={(payload: CreateCpmkPayload) => create({ ...payload, academicYearId: effectiveAcademicYearId })}
+                defaultType={activeScope}
+                onSubmit={(payload: CreateCpmkPayload) =>
+                    create({
+                        ...payload,
+                        ...(effectiveAcademicYearId ? { academicYearId: effectiveAcademicYearId } : {}),
+                        type: activeScope,
+                    })
+                }
             />
         </div>
     );

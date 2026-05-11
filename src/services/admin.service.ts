@@ -19,7 +19,7 @@ export interface User {
 export interface AcademicYear {
   id: string;
   semester: 'ganjil' | 'genap';
-  year: string;
+  year: string | number;
   startDate?: string;
   endDate?: string;
   isActive: boolean;
@@ -149,6 +149,19 @@ export interface SeminarResultAudienceLink {
   };
 }
 
+export interface MetopenEligibilityView {
+  eligibleMetopen: boolean | null;
+  hasExternalStatus: boolean;
+  source: 'sia' | 'devtools' | null;
+  updatedAt: string | null;
+  readOnly: boolean;
+  canAccess: boolean;
+  canSubmit: boolean;
+  thesisId: string | null;
+  thesisTitle: string | null;
+  thesisStatus: string | null;
+}
+
 export interface CreateSeminarResultRequest {
   thesisId: string;
   date: string;
@@ -159,8 +172,15 @@ export interface CreateSeminarResultRequest {
 
 export type UpdateSeminarResultRequest = CreateSeminarResultRequest;
 
+export interface ImportStudentsSummary {
+  created: number;
+  updated?: number;
+  skipped?: number;
+  failed?: number;
+}
+
 // Import students from CSV
-export const importStudentsCsvAPI = async (file: File): Promise<{ summary: any }> => {
+export const importStudentsCsvAPI = async (file: File): Promise<{ summary: ImportStudentsSummary }> => {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -657,14 +677,26 @@ export interface Student {
   student?: {
     enrollmentYear: number | null;
     sksCompleted: number;
-    currentSemester: number | null;
+    currentSemester?: number | null;
     status: string | null;
-    mandatoryCoursesCompleted: boolean;
-    mkwuCompleted: boolean;
-    internshipCompleted: boolean;
-    kknCompleted: boolean;
+    mandatoryCoursesCompleted?: boolean;
+    mkwuCompleted?: boolean;
+    internshipCompleted?: boolean;
+    kknCompleted?: boolean;
+    metopenEligibility?: MetopenEligibilityView;
+    visibleAcademicYear?: {
+      id: string;
+      year: string | number;
+      semester: 'ganjil' | 'genap';
+      label: string;
+      isActive: boolean;
+      sources?: string[];
+    } | null;
+    isInMetopen?: boolean;
+    hasActiveThesis?: boolean;
     activeTheses: Array<{
       title: string;
+      status?: string | null;
       supervisors: Array<{
         role: string;
         fullName: string;
@@ -695,6 +727,12 @@ export const getStudentsAPI = async (params?: {
   page?: number;
   pageSize?: number;
   search?: string;
+  programFilter?: string;
+  statusFilter?: string;
+  enrollmentYearFilter?: string;
+  academicYearFilter?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }): Promise<{
   students: Student[];
   meta: {
@@ -703,11 +741,24 @@ export const getStudentsAPI = async (params?: {
     total: number;
     totalPages: number;
   };
+  academicYearContext?: {
+    id: string;
+    year: string | number;
+    semester: 'ganjil' | 'genap';
+    label: string;
+    isActive?: boolean;
+  } | null;
 }> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.programFilter) queryParams.append('programFilter', params.programFilter);
+  if (params?.statusFilter) queryParams.append('statusFilter', params.statusFilter);
+  if (params?.enrollmentYearFilter) queryParams.append('enrollmentYearFilter', params.enrollmentYearFilter);
+  if (params?.academicYearFilter) queryParams.append('academicYearFilter', params.academicYearFilter);
+  if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+  if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
   const response = await fetch(getApiUrl(`/adminfeatures/students?${queryParams}`), {
     method: 'GET',
@@ -787,6 +838,7 @@ export interface StudentDetail {
   phoneNumber?: string;
   isVerified: boolean;
   createdAt: string;
+  metopenEligibility: MetopenEligibilityView;
   student: {
     enrollmentYear: number;
     sksCompleted: number;
@@ -973,7 +1025,6 @@ export const getLecturerDetailAPI = async (id: string): Promise<{ data: Lecturer
 
 export interface KadepQuickActionsStats {
   failedThesesCount: number;
-  pendingChangeRequestsCount: number;
 }
 
 export interface FailedThesis {
@@ -990,7 +1041,7 @@ export interface FailedThesis {
 }
 
 /**
- * Get Kadep quick actions stats (failed thesis count, pending change requests count)
+ * Get Kadep quick actions stats
  */
 export const getKadepQuickActionsStats = async (): Promise<KadepQuickActionsStats> => {
   const response = await fetch(getApiUrl('/adminfeatures/kadep/quick-actions'), {
@@ -1028,7 +1079,7 @@ export const getFailedThesesList = async (): Promise<{ data: FailedThesis[]; tot
   return response.json();
 };
 
-export const updateLecturerByAdminAPI = async (id: string, data: { scienceGroupId: string | null }): Promise<{ data: any }> => {
+export const updateLecturerByAdminAPI = async (id: string, data: { scienceGroupId: string | null }): Promise<{ data: unknown }> => {
   const response = await fetch(getApiUrl(`/adminfeatures/lecturers/${id}`), {
     method: 'PATCH',
     headers: {
@@ -1053,7 +1104,7 @@ export const adminUpdateStudentAPI = async (id: string, data: {
   mkwuCompleted?: boolean;
   internshipCompleted?: boolean;
   kknCompleted?: boolean;
-}): Promise<{ data: any }> => {
+}): Promise<{ data: unknown }> => {
   const response = await fetch(getApiUrl(`/adminfeatures/students/${id}`), {
     method: 'PATCH',
     headers: {
@@ -1142,67 +1193,3 @@ export const deleteScienceGroupAPI = async (id: string): Promise<{ message: stri
   return response.json();
 };
 
-// Excel Import APIs (Bulk JSON upload)
-export const importStudentsExcelAPI = async (data: any[]): Promise<any> => {
-  const response = await fetch(getApiUrl('/adminfeatures/students/import-excel'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Gagal import mahasiswa');
-  }
-  return response.json();
-};
-
-export const importLecturersExcelAPI = async (data: any[]): Promise<any> => {
-  const response = await fetch(getApiUrl('/adminfeatures/lecturers/import-excel'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Gagal import dosen');
-  }
-  return response.json();
-};
-
-export const importUsersExcelAPI = async (data: any[]): Promise<any> => {
-  const response = await fetch(getApiUrl('/adminfeatures/users/import-excel'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Gagal import user');
-  }
-  return response.json();
-};
-
-export const importAcademicYearsExcelAPI = async (data: any[]): Promise<any> => {
-  const response = await fetch(getApiUrl('/adminfeatures/academic-years/import-excel'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Gagal import tahun ajaran');
-  }
-  return response.json();
-};

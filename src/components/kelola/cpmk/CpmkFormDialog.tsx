@@ -16,6 +16,8 @@ import type { Cpmk, CreateCpmkPayload, UpdateCpmkPayload } from '@/services/cpmk
 interface CpmkFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** Tipe CPMK untuk mode tambah (penilaian seminar/sidang TA vs Metopel TA-03A/B). */
+    defaultType?: 'research_method' | 'thesis';
     editData?: Cpmk | null;
     onSubmit: ((data: CreateCpmkPayload) => Promise<unknown>) | ((id: string, data: UpdateCpmkPayload) => Promise<unknown>);
 }
@@ -23,6 +25,7 @@ interface CpmkFormDialogProps {
 export function CpmkFormDialog({
     open,
     onOpenChange,
+    defaultType = 'thesis',
     editData,
     onSubmit,
 }: CpmkFormDialogProps) {
@@ -47,10 +50,11 @@ export function CpmkFormDialog({
 
         setIsSubmitting(true);
         try {
+            const type = isEdit && editData ? editData.type : defaultType;
             const payload = {
                 code,
                 description,
-                type: 'thesis' as const,
+                type,
             };
             if (isEdit && editData) {
                 await (onSubmit as (id: string, data: UpdateCpmkPayload) => Promise<unknown>)(editData.id, payload);
@@ -76,6 +80,15 @@ export function CpmkFormDialog({
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                        {isEdit
+                            ? editData?.type === 'research_method'
+                                ? 'Metodologi Penelitian (Metopel) — TA-03A/TA-03B'
+                                : 'Tugas Akhir — seminar, sidang, dan konteks penilaian TA'
+                            : defaultType === 'research_method'
+                                ? 'Baris baru untuk CPMK Metodologi Penelitian (penilaian Metopel).'
+                                : 'Baris baru untuk CPMK mata kuliah Tugas Akhir (bukan Metopel).'}
+                    </p>
                     <div className="space-y-2">
                         <Label htmlFor="code">Kode CPMK</Label>
                         <Input

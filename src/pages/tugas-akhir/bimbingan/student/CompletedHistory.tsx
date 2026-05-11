@@ -42,8 +42,8 @@ export default function CompletedHistoryPage() {
     <div className="p-4 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Riwayat Bimbingan</h1>
-          <p className="text-gray-500">Arsip seluruh kegiatan bimbingan</p>
+          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Riwayat Bimbingan</h1>
+          <p className="text-xs text-muted-foreground sm:text-sm">Arsip seluruh kegiatan bimbingan</p>
         </div>
       </div>
 
@@ -51,7 +51,7 @@ export default function CompletedHistoryPage() {
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone' },
+          { label: 'Riwayat Bimbingan', to: '/tugas-akhir/bimbingan/student/history', end: true },
         ]}
       />
 

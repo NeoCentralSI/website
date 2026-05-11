@@ -1161,7 +1161,7 @@ export interface StudentGuidance {
 }
 
 export const getStudentGuidance = async (): Promise<StudentGuidance> => {
-    const url = getApiUrl('/insternship/activity/guidance');
+    const url = getApiUrl('/internship/activity/guidance');
     const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat bimbingan" }));
@@ -1172,7 +1172,7 @@ export const getStudentGuidance = async (): Promise<StudentGuidance> => {
 };
 
 export const submitGuidanceResponse = async (data: { weekNumber: number; answers: Record<string, string> }) => {
-    const url = getApiUrl('/insternship/activity/guidance/submit');
+    const url = getApiUrl('/internship/activity/guidance/submit');
     const res = await apiRequest(url, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -1217,7 +1217,7 @@ export interface LecturerSupervisedStudent {
 }
 
 export const getLecturerSupervisedStudents = async (): Promise<LecturerSupervisedStudent[]> => {
-    const url = getApiUrl('/insternship/activity/guidance/lecturer/students');
+    const url = getApiUrl('/internship/activity/guidance/lecturer/students');
     const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar mahasiswa bimbingan" }));
@@ -1260,7 +1260,7 @@ export interface LecturerGuidanceTimeline {
 }
 
 export const getLecturerGuidanceTimeline = async (internshipId: string): Promise<LecturerGuidanceTimeline> => {
-    const url = getApiUrl(`/insternship/activity/guidance/lecturer/students/${internshipId}`);
+    const url = getApiUrl(`/internship/activity/guidance/lecturer/students/${internshipId}`);
     const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat timeline bimbingan" }));
@@ -1292,7 +1292,7 @@ export interface GuidanceWeekDetail {
 }
 
 export const getLecturerGuidanceWeekDetail = async (internshipId: string, weekNumber: string): Promise<GuidanceWeekDetail> => {
-    const url = getApiUrl(`/insternship/activity/guidance/lecturer/students/${internshipId}/week/${weekNumber}`);
+    const url = getApiUrl(`/internship/activity/guidance/lecturer/students/${internshipId}/week/${weekNumber}`);
     const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail bimbingan" }));
@@ -1311,7 +1311,7 @@ export interface SubmitEvaluationBody {
 }
 
 export const submitLecturerEvaluation = async (internshipId: string, weekNumber: string, body: SubmitEvaluationBody): Promise<{ success: boolean; message: string }> => {
-    const url = getApiUrl(`/insternship/activity/guidance/lecturer/students/${internshipId}/week/${weekNumber}/evaluate`);
+    const url = getApiUrl(`/internship/activity/guidance/lecturer/students/${internshipId}/week/${weekNumber}/evaluate`);
     const res = await apiRequest(url, {
         method: 'POST',
         headers: {
@@ -1392,7 +1392,7 @@ export interface InternshipCpmk {
 }
 
 export const getInternshipCpmks = async (academicYearId?: string): Promise<InternshipCpmk[]> => {
-    let url = getApiUrl('/insternship/sekdep/cpmk');
+    let url = getApiUrl('/internship/sekdep/cpmk');
     if (academicYearId && academicYearId !== 'all') {
         url += `?academicYearId=${academicYearId}`;
     }
@@ -1406,7 +1406,7 @@ export const getInternshipCpmks = async (academicYearId?: string): Promise<Inter
 };
 
 export const getInternshipCpmkById = async (id: string): Promise<InternshipCpmk> => {
-    const url = getApiUrl(`/insternship/sekdep/cpmk/${id}`);
+    const url = getApiUrl(`/internship/sekdep/cpmk/${id}`);
     const res = await apiRequest(url);
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat detail CPMK" }));
@@ -1417,7 +1417,7 @@ export const getInternshipCpmkById = async (id: string): Promise<InternshipCpmk>
 };
 
 export const createInternshipCpmk = async (data: Partial<InternshipCpmk> & { academicYearId?: string }): Promise<InternshipCpmk> => {
-    const url = getApiUrl('/insternship/sekdep/cpmk');
+    const url = getApiUrl('/internship/sekdep/cpmk');
     const res = await apiRequest(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1432,7 +1432,7 @@ export const createInternshipCpmk = async (data: Partial<InternshipCpmk> & { aca
 };
 
 export const updateInternshipCpmk = async (id: string, data: Partial<InternshipCpmk>): Promise<InternshipCpmk> => {
-    const url = getApiUrl(`/insternship/sekdep/cpmk/${id}`);
+    const url = getApiUrl(`/internship/sekdep/cpmk/${id}`);
     const res = await apiRequest(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1447,7 +1447,7 @@ export const updateInternshipCpmk = async (id: string, data: Partial<InternshipC
 };
 
 export const deleteInternshipCpmk = async (id: string): Promise<void> => {
-    const url = getApiUrl(`/insternship/sekdep/cpmk/${id}`);
+    const url = getApiUrl(`/internship/sekdep/cpmk/${id}`);
     const res = await apiRequest(url, { method: 'DELETE' });
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal menghapus CPMK" }));
@@ -1456,7 +1456,7 @@ export const deleteInternshipCpmk = async (id: string): Promise<void> => {
 };
 
 export const createInternshipRubric = async (data: Partial<InternshipAssessmentRubric>): Promise<InternshipAssessmentRubric> => {
-    const url = getApiUrl('/insternship/sekdep/rubrics');
+    const url = getApiUrl('/internship/sekdep/rubrics');
     const res = await apiRequest(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1471,7 +1471,7 @@ export const createInternshipRubric = async (data: Partial<InternshipAssessmentR
 };
 
 export const updateInternshipRubric = async (id: string, data: Partial<InternshipAssessmentRubric>): Promise<InternshipAssessmentRubric> => {
-    const url = getApiUrl(`/insternship/sekdep/rubrics/${id}`);
+    const url = getApiUrl(`/internship/sekdep/rubrics/${id}`);
     const res = await apiRequest(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1486,7 +1486,7 @@ export const updateInternshipRubric = async (id: string, data: Partial<Internshi
 };
 
 export const deleteInternshipRubric = async (id: string): Promise<void> => {
-    const url = getApiUrl(`/insternship/sekdep/rubrics/${id}`);
+    const url = getApiUrl(`/internship/sekdep/rubrics/${id}`);
     const res = await apiRequest(url, { method: 'DELETE' });
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal menghapus rubrik" }));
@@ -1495,7 +1495,7 @@ export const deleteInternshipRubric = async (id: string): Promise<void> => {
 };
 
 export const bulkUpdateInternshipRubrics = async (cpmkId: string, rubrics: Partial<InternshipAssessmentRubric>[]): Promise<{ success: boolean; message: string }> => {
-    const url = getApiUrl(`/insternship/sekdep/cpmk/${cpmkId}/rubrics/bulk`);
+    const url = getApiUrl(`/internship/sekdep/cpmk/${cpmkId}/rubrics/bulk`);
     const res = await apiRequest(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1512,7 +1512,7 @@ export const bulkUpdateInternshipRubrics = async (cpmkId: string, rubrics: Parti
  * Duplicates all CPMKs and their rubrics from one academic year to another.
  */
 export const copyInternshipCpmks = async (fromYearId: string, toYearId: string): Promise<{ success: boolean; data: any }> => {
-  const url = getApiUrl('/insternship/sekdep/cpmk/copy');
+  const url = getApiUrl('/internship/sekdep/cpmk/copy');
   const res = await apiRequest(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1529,7 +1529,7 @@ export const copyInternshipCpmks = async (fromYearId: string, toYearId: string):
  * Duplicates all guidance questions and lecturer criteria from one academic year to another.
  */
 export const copyInternshipGuidance = async (fromYearId: string, toYearId: string): Promise<{ success: boolean; data: any }> => {
-  const url = getApiUrl('/insternship/sekdep/guidance/copy');
+  const url = getApiUrl('/internship/sekdep/guidance/copy');
   const res = await apiRequest(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

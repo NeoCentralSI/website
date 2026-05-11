@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2, BookOpen, FileText } from "lucide-react";
@@ -122,7 +122,7 @@ export function TopicManagementPanel() {
     },
   });
 
-  const topics = topicsQuery.data || [];
+  const topics = useMemo(() => topicsQuery.data || [], [topicsQuery.data]);
 
   const filteredTopics = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -143,7 +143,7 @@ export function TopicManagementPanel() {
     deleteTopic.isPending ||
     bulkDeleteTopics.isPending;
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -153,15 +153,15 @@ export function TopicManagementPanel() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedIds.size === filteredTopics.length) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(filteredTopics.map((t) => t.id)));
     }
-  };
+  }, [filteredTopics, selectedIds.size]);
 
   const handleBulkDelete = () => {
     bulkDeleteTopics.mutate(Array.from(selectedIds));
@@ -177,13 +177,13 @@ export function TopicManagementPanel() {
     setDialogOpen(true);
   };
 
-  const startEdit = (topic: Topic) => {
+  const startEdit = useCallback((topic: Topic) => {
     setFormState({
       id: topic.id,
       name: topic.name,
     });
     setDialogOpen(true);
-  };
+  }, []);
 
   const handleSubmit = () => {
     if (!formState.name.trim()) {
@@ -202,10 +202,10 @@ export function TopicManagementPanel() {
     }
   };
 
-  const handleDelete = (topic: Topic) => {
+  const handleDelete = useCallback((topic: Topic) => {
     setTopicToDelete(topic);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
   // Define Columns
   const columns = useMemo<Column<Topic>[]>(

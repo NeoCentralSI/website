@@ -94,7 +94,7 @@ export default function LecturerYudisiumDetailPage() {
         setTitle('Detail Yudisium');
     }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
-    const participants = data?.participants ?? [];
+    const participants = useMemo(() => data?.participants ?? [], [data?.participants]);
     const filteredData = useMemo(() => {
         const term = search.toLowerCase();
         if (!term) return participants;

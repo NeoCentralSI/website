@@ -75,10 +75,10 @@ export default function Notifikasi() {
   };
 
   return (
-      <div className="p-6 max-w-4xl mx-auto w-full">
+      <div className="max-w-4xl mx-auto w-full">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Notifikasi</h1>
-        <p className="text-gray-600">
+        <h1 className="text-base font-semibold tracking-tight sm:text-lg">Notifikasi</h1>
+        <p className="text-xs text-muted-foreground sm:text-sm">
           Anda memiliki {unreadCount} notifikasi yang belum dibaca
         </p>
       </div>

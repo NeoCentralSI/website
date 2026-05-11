@@ -6,32 +6,43 @@ import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/spinner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  CheckCircle,
+  AlertCircle,
+  ArrowRight,
   ClipboardCheck,
   FileCheck,
-  ArrowRight,
-  AlertCircle,
-  GraduationCap,
-  Award,
-  RefreshCw,
-  AlertTriangle,
-  ArrowRightLeft
+  Send,
+  ShieldCheck,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getPendingRequests, getPendingApproval, getPendingChangeRequestForThesis, getSupervisor2Requests, getIncomingTransfers } from "@/services/lecturerGuidance.service";
-import { getSeminarReadinessStatus, getDefenceReadinessStatus, getSupervisorPendingReview } from "@/services/milestone.service";
-import { getMyStudents } from "@/services/lecturerGuidance.service";
-import { getKadepQuickActionsStats } from "@/services/admin.service";
-import { UserPlus } from "lucide-react";
-import { useRole } from '@/hooks/shared/useRole';
+import { useRole } from "@/hooks/shared/useRole";
+import {
+  getPendingApproval,
+  getPendingRequests,
+  getSupervisor2Requests,
+} from "@/services/lecturerGuidance.service";
+import { assessmentService } from "@/services/assessment.service";
+import { advisorRequestService } from "@/services/advisorRequest.service";
+import { metopenTitleService } from "@/services/metopenTitle.service";
 import { useLottie } from 'lottie-react';
 import completeAnimation from '@/assets/lottie/complete.json';
 
-// Lottie options for complete animation
 const completeLottieOptions = {
   animationData: completeAnimation,
   loop: true,
   autoplay: true,
+};
+
+type QuickAction = {
+  id: string;
+  title: string;
+  description: string;
+  count: number;
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+  link: string;
+  loading: boolean;
 };
 
 function CompleteLottie({ size = "w-24 h-24" }: { size?: string }) {
@@ -49,309 +60,143 @@ interface QuickActionsCardProps {
 }
 
 export function QuickActionsCard({ className }: QuickActionsCardProps) {
-  const { isKadep } = useRole();
+  const { isKadep, isPembimbing } = useRole();
+  const showKadepActions = isKadep();
+  const showSupervisorActions = isPembimbing();
 
-  // Check if user is Kadep
-  const isKadepUser = isKadep();
-
-  // Fetch pending supervisor 2 requests
   const { data: supervisor2RequestsData, isLoading: loadingSupervisor2 } = useQuery({
     queryKey: ["supervisor2-requests-count"],
     queryFn: () => getSupervisor2Requests(),
+    enabled: showSupervisorActions,
   });
 
-  // Fetch incoming transfer requests
-  const { data: incomingTransfersData, isLoading: loadingTransfers } = useQuery({
-    queryKey: ["incoming-transfers-count"],
-    queryFn: () => getIncomingTransfers(),
-  });
-
-  // Fetch pending guidance requests
   const { data: pendingRequestsData, isLoading: loadingRequests } = useQuery({
     queryKey: ["lecturer-pending-requests-count"],
     queryFn: () => getPendingRequests({ pageSize: 100 }),
+    enabled: showSupervisorActions,
   });
 
-  // Fetch pending summary approvals
   const { data: pendingApprovalsData, isLoading: loadingApprovals } = useQuery({
     queryKey: ["lecturer-pending-approvals-count"],
     queryFn: () => getPendingApproval({ pageSize: 100 }),
+    enabled: showSupervisorActions,
   });
 
-  // Fetch students to get their milestones
-  const { data: studentsData } = useQuery({
-    queryKey: ["my-students-for-milestones"],
-    queryFn: () => getMyStudents(),
+  const { data: supervisorScoringQueue, isLoading: loadingSupervisorScoring } = useQuery({
+    queryKey: ["supervisor-scoring-queue"],
+    queryFn: () => assessmentService.getSupervisorScoringQueue(),
+    enabled: showSupervisorActions,
   });
 
-  // Fetch pending milestone validations using dedicated endpoint
-  const { data: pendingMilestonesData, isLoading: loadingMilestones } = useQuery({
-    queryKey: ["pending-milestone-validations"],
-    queryFn: () => getSupervisorPendingReview(),
+  const { data: kadepQueue, isLoading: loadingKadepQueue } = useQuery({
+    queryKey: ["dashboard-kadep-queue"],
+    queryFn: async () => (await advisorRequestService.getKadepQueue()).data,
+    enabled: showKadepActions,
   });
 
-  // Fetch pending seminar readiness approvals
-  const { data: pendingSeminarData, isLoading: loadingSeminar } = useQuery({
-    queryKey: ["pending-seminar-approvals"],
-    queryFn: async () => {
-      if (!studentsData?.students) return [];
-
-      // Get all students' thesis IDs
-      const studentsWithThesis = studentsData.students
-        .filter((s: any) => !!s.thesisId)
-        .map((s: any) => ({ studentId: s.studentId, thesisId: s.thesisId, fullName: s.fullName }));
-
-      // Fetch seminar readiness for each thesis
-      const readinessStatuses = await Promise.all(
-        studentsWithThesis.map(async (student: any) => {
-          try {
-            const result = await getSeminarReadinessStatus(student.thesisId);
-            return {
-              ...result,
-              studentName: student.fullName,
-            };
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      // Filter for students where:
-      // 1. Milestone is 100% complete
-      // 2. Guidance requirement is met (8+ completed sessions)
-      // 3. Current user has not yet approved
-      return readinessStatuses.filter(
-        (r: any) => r && r.milestoneProgress?.isComplete && r.guidanceProgress?.isComplete && r.currentUserRole && !r.currentUserHasApproved
-      );
-    },
-    enabled: !!studentsData?.students,
-  });
-
-  // Fetch pending defence readiness approvals
-  const { data: pendingDefenceData, isLoading: loadingDefence } = useQuery({
-    queryKey: ["pending-defence-approvals"],
-    queryFn: async () => {
-      if (!studentsData?.students) return [];
-
-      // Get all students' thesis IDs
-      const studentsWithThesis = studentsData.students
-        .filter((s: any) => !!s.thesisId)
-        .map((s: any) => ({ studentId: s.studentId, thesisId: s.thesisId, fullName: s.fullName }));
-
-      // Fetch defence readiness for each thesis
-      const readinessStatuses = await Promise.all(
-        studentsWithThesis.map(async (student: any) => {
-          try {
-            const result = await getDefenceReadinessStatus(student.thesisId);
-            return {
-              ...result,
-              thesisId: student.thesisId,
-              studentName: student.fullName,
-            };
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      // Filter for students where:
-      // 1. Student has uploaded final thesis and requested defence
-      // 2. Current user has not yet approved
-      return readinessStatuses.filter(
-        (r: any) => r && r.defenceReadiness?.hasRequestedDefence && r.currentUserRole && !r.currentUserHasApproved
-      );
-    },
-    enabled: !!studentsData?.students,
-  });
-
-  // Fetch pending change requests for lecturer's students
-  const { data: pendingChangeRequestsData, isLoading: loadingChangeRequests } = useQuery({
-    queryKey: ["pending-change-requests-lecturer"],
-    queryFn: async () => {
-      if (!studentsData?.students) return [];
-
-      // Get all students' thesis IDs
-      const studentsWithThesis = studentsData.students
-        .filter((s: any) => !!s.thesisId)
-        .map((s: any) => ({ studentId: s.studentId, thesisId: s.thesisId, fullName: s.fullName }));
-
-      // Fetch pending change requests for each thesis
-      const changeRequests = await Promise.all(
-        studentsWithThesis.map(async (student: any) => {
-          try {
-            const result = await getPendingChangeRequestForThesis(student.thesisId);
-            if (result.data) {
-              return {
-                ...result.data,
-                studentName: student.fullName,
-              };
-            }
-            return null;
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      // Filter for non-null results (students with pending change requests)
-      return changeRequests.filter((r) => r !== null);
-    },
-    enabled: !!studentsData?.students,
-  });
-
-  // Fetch Kadep quick actions stats (only for Kadep)
-  const { data: kadepStatsData, isLoading: loadingKadepStats } = useQuery({
-    queryKey: ["kadep-quick-actions-stats"],
-    queryFn: () => getKadepQuickActionsStats(),
-    enabled: isKadepUser,
+  const { data: pendingTitleReports = [], isLoading: loadingTitleReports } = useQuery({
+    queryKey: ["dashboard-kadep-title-reports"],
+    queryFn: async () => (await metopenTitleService.getPendingTitleReports()).data,
+    enabled: showKadepActions,
   });
 
   const pendingSupervisor2Count = supervisor2RequestsData?.length || 0;
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
-  const pendingMilestonesCount = pendingMilestonesData?.length || 0;
-  const pendingSeminarCount = pendingSeminarData?.length || 0;
-  const pendingDefenceCount = pendingDefenceData?.length || 0;
-  const pendingChangeRequestsCount = pendingChangeRequestsData?.length || 0;
-  const pendingKadepChangeRequestsCount = kadepStatsData?.pendingChangeRequestsCount || 0;
-  const incomingTransfersCount = incomingTransfersData?.count || 0;
+  const pendingSupervisorScoringCount = supervisorScoringQueue?.length || 0;
+  const pendingKadepEscalatedCount = kadepQueue?.escalated?.length || 0;
+  const pendingTitleReportCount = pendingTitleReports.length;
 
-  // Get first pending approval's guidanceId for direct link to session page
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
-  // Get first pending milestone's thesisId for direct link to student detail
-  const firstPendingMilestoneThesisId = pendingMilestonesData?.[0]?.thesisId;
-  // Get first pending seminar's thesisId for direct link
-  const firstPendingSeminarThesisId = pendingSeminarData?.[0]?.thesisId;
-  // Get first pending defence's thesisId for direct link
-  const firstPendingDefenceThesisId = pendingDefenceData?.[0]?.thesisId;
-  // Get first pending change request's thesisId for direct link
-  const firstPendingChangeRequestThesisId = pendingChangeRequestsData?.[0]?.thesisId;
+  const firstSupervisorScoringThesisId = supervisorScoringQueue?.[0]?.thesisId;
 
-  // Calculate total pending including Kadep specific items
-  const kadepPending = isKadepUser ? (pendingKadepChangeRequestsCount) : 0;
-  const totalPending = pendingSupervisor2Count + pendingRequestsCount + pendingApprovalsCount + pendingMilestonesCount + pendingSeminarCount + pendingDefenceCount + pendingChangeRequestsCount + incomingTransfersCount + kadepPending;
+  const supervisorActions: QuickAction[] = showSupervisorActions
+    ? [
+        {
+          id: "pending-supervisor2",
+          title: "Approval Pembimbing",
+          description: "Approve permintaan Pembimbing 2",
+          count: pendingSupervisor2Count,
+          icon: UserPlus,
+          color: "text-teal-600",
+          bgColor: "bg-teal-50",
+          link: "/tugas-akhir/bimbingan/lecturer/my-students",
+          loading: loadingSupervisor2,
+        },
+        {
+          id: "pending-requests",
+          title: "Permintaan Bimbingan",
+          description: "Konfirmasi jadwal bimbingan mahasiswa",
+          count: pendingRequestsCount,
+          icon: ClipboardCheck,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          link: "/tugas-akhir/bimbingan/lecturer/requests",
+          loading: loadingRequests,
+        },
+        {
+          id: "pending-approvals",
+          title: "Catatan Bimbingan",
+          description: "Review ringkasan sesi yang diajukan mahasiswa",
+          count: pendingApprovalsCount,
+          icon: FileCheck,
+          color: "text-green-600",
+          bgColor: "bg-green-50",
+          link: firstPendingApprovalId
+            ? `/tugas-akhir/bimbingan/lecturer/session/${firstPendingApprovalId}`
+            : "/tugas-akhir/bimbingan/lecturer/requests",
+          loading: loadingApprovals,
+        },
+        {
+          id: "pending-ta03a",
+          title: "Penilaian TA-03A",
+          description: "Proposal final yang menunggu nilai pembimbing",
+          count: pendingSupervisorScoringCount,
+          icon: ShieldCheck,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50",
+          link: firstSupervisorScoringThesisId
+            ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstSupervisorScoringThesisId}`
+            : "/tugas-akhir/bimbingan/lecturer/my-students",
+          loading: loadingSupervisorScoring,
+        },
+      ]
+    : [];
 
-  // Lecturer quick actions (for pembimbing role)
-  const lecturerQuickActions = [
-    {
-      id: "pending-supervisor2",
-      title: "Approval Pembimbing",
-      description: "Approve permintaan Pembimbing 2",
-      count: pendingSupervisor2Count,
-      icon: UserPlus,
-      color: "text-teal-600",
-      bgColor: "bg-teal-50",
-      link: "/tugas-akhir/bimbingan/lecturer/my-students",
-      loading: loadingSupervisor2,
-    },
-    {
-      id: "pending-requests",
-      title: "Permintaan Bimbingan",
-      description: "Konfirmasi jadwal bimbingan",
-      count: pendingRequestsCount,
-      icon: ClipboardCheck,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      link: "/tugas-akhir/bimbingan/lecturer/requests",
-      loading: loadingRequests,
-    },
-    {
-      id: "pending-approvals",
-      title: "Catatan Bimbingan",
-      description: "Approve catatan dari mahasiswa",
-      count: pendingApprovalsCount,
-      icon: FileCheck,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      link: firstPendingApprovalId
-        ? `/tugas-akhir/bimbingan/lecturer/session/${firstPendingApprovalId}`
-        : "/tugas-akhir/bimbingan/lecturer/requests",
-      loading: loadingApprovals,
-    },
-    {
-      id: "pending-milestones",
-      title: "Milestone Progress",
-      description: "Validasi milestone 100%",
-      count: pendingMilestonesCount,
-      icon: CheckCircle,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      link: firstPendingMilestoneThesisId
-        ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingMilestoneThesisId}`
-        : "/tugas-akhir/bimbingan/lecturer/my-students",
-      loading: loadingMilestones,
-    },
-    {
-      id: "pending-seminar",
-      title: "Acc Seminar",
-      description: "Approve kesiapan seminar",
-      count: pendingSeminarCount,
-      icon: GraduationCap,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
-      link: firstPendingSeminarThesisId
-        ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingSeminarThesisId}`
-        : "/tugas-akhir/bimbingan/lecturer/my-students",
-      loading: loadingSeminar,
-    },
-    {
-      id: "pending-defence",
-      title: "Acc Sidang",
-      description: "Approve kesiapan sidang",
-      count: pendingDefenceCount,
-      icon: Award,
-      color: "text-rose-600",
-      bgColor: "bg-rose-50",
-      link: firstPendingDefenceThesisId
-        ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingDefenceThesisId}`
-        : "/tugas-akhir/bimbingan/lecturer/my-students",
-      loading: loadingDefence,
-    },
-    {
-      id: "pending-change-requests",
-      title: "Pergantian TA",
-      description: "Review permintaan pergantian",
-      count: pendingChangeRequestsCount,
-      icon: RefreshCw,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-      link: firstPendingChangeRequestThesisId
-        ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstPendingChangeRequestThesisId}`
-        : "/tugas-akhir/bimbingan/lecturer/my-students",
-      loading: loadingChangeRequests,
-    },
-    {
-      id: "incoming-transfers",
-      title: "Transfer Masuk",
-      description: "Approve transfer mahasiswa",
-      count: incomingTransfersCount,
-      icon: ArrowRightLeft,
-      color: "text-cyan-600",
-      bgColor: "bg-cyan-50",
-      link: "/tugas-akhir/bimbingan/lecturer/my-students",
-      loading: loadingTransfers,
-    },
-  ];
+  const kadepActions: QuickAction[] = showKadepActions
+    ? [
+        {
+          id: "kadep-escalated",
+          title: "Keputusan TA-01 / TA-02",
+          description: "Validasi kuota merah dan penetapan jalur departemen",
+          count: pendingKadepEscalatedCount,
+          icon: ShieldCheck,
+          color: "text-amber-600",
+          bgColor: "bg-amber-50",
+          link: "/kelola/tugas-akhir/kadep/pembimbing",
+          loading: loadingKadepQueue,
+        },
+        {
+          id: "kadep-title-reports",
+          title: "Pengesahan TA-04",
+          description: "Review proposal yang siap disahkan KaDep",
+          count: pendingTitleReportCount,
+          icon: Send,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          link: "/kelola/tugas-akhir/kadep/pengesahan-judul",
+          loading: loadingTitleReports,
+        },
+      ]
+    : [];
 
-  // Kadep specific quick actions
-  const kadepQuickActions = isKadepUser ? [
-    {
-      id: "kadep-change-requests",
-      title: "Approval Pergantian",
-      description: "Approve permintaan mahasiswa",
-      count: pendingKadepChangeRequestsCount,
-      icon: AlertTriangle,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
-      link: "/kelola/tugas-akhir/kadep/pergantian",
-      loading: loadingKadepStats,
-    },
-  ] : [];
+  const quickActions = [...kadepActions, ...supervisorActions];
+  const totalPending = quickActions.reduce((sum, action) => sum + action.count, 0);
+  const isLoading = quickActions.some((action) => action.loading);
 
-  // Combine all quick actions
-  const quickActions = [...lecturerQuickActions, ...kadepQuickActions];
-
-  const isLoading = loadingSupervisor2 || loadingRequests || loadingApprovals || loadingMilestones || loadingSeminar || loadingDefence || loadingChangeRequests || loadingTransfers || (isKadepUser && loadingKadepStats);
+  if (quickActions.length === 0) {
+    return null;
+  }
 
   return (
     <Card className={cn("flex flex-col", className)}>
@@ -375,22 +220,21 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground px-6">
             <CompleteLottie size="w-24 h-24" />
             <p className="font-medium mt-2">Semua Selesai!</p>
-            <p className="text-sm">Tidak ada yang perlu di-approve</p>
+            <p className="text-sm">Tidak ada antrean persetujuan yang aktif.</p>
           </div>
         ) : (
           <ScrollArea className="h-full max-h-100">
             <div className="space-y-3 px-6 pb-6">
               {quickActions.map((action) => (
                 <Link key={action.id} to={action.link}>
-                  <div className={cn(
-                    "flex items-start gap-3 p-3 rounded-lg border transition-all",
-                    "hover:shadow-md hover:border-primary/50 cursor-pointer",
-                    action.count > 0 ? "border-primary/20" : "border-border opacity-60"
-                  )}>
-                    <div className={cn(
-                      "p-2 rounded-lg shrink-0",
-                      action.bgColor
-                    )}>
+                  <div
+                    className={cn(
+                      "flex items-start gap-3 p-3 rounded-lg border transition-all",
+                      "hover:shadow-md hover:border-primary/50 cursor-pointer",
+                      action.count > 0 ? "border-primary/20" : "border-border opacity-60",
+                    )}
+                  >
+                    <div className={cn("p-2 rounded-lg shrink-0", action.bgColor)}>
                       <action.icon className={cn("h-5 w-5", action.color)} />
                     </div>
                     <div className="flex-1 min-w-0">

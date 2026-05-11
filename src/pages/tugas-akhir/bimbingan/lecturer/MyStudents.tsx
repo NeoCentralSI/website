@@ -5,12 +5,11 @@ import type { MyStudentItem } from "@/services/lecturerGuidance.service";
 import { getMyStudents, sendWarningToStudent, type WarningType } from "@/services/lecturerGuidance.service";
 import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { toTitleCaseName } from "@/lib/text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -27,14 +26,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle } from "lucide-react";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
-import { IncomingTransfersSection } from "@/components/bimbingan/IncomingTransfersSection";
-import { TransferStudentsDialog } from "@/components/bimbingan/TransferStudentsDialog";
 import { MyStudentsCharts } from "@/components/bimbingan/MyStudentsCharts";
 
 const getDaysRemaining = (deadlineDate?: string | null) => {
@@ -76,12 +73,6 @@ export default function LecturerMyStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const queryClient = useQueryClient();
-
-  // Student selection state for transfer
-  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
-
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
@@ -136,40 +127,6 @@ export default function LecturerMyStudentsPage() {
 
   const columns: Column<MyStudentItem>[] = useMemo(() => [
     {
-      key: 'select',
-      header: () => {
-        const allSelected = paginatedData.length > 0 && paginatedData.every(s => selectedStudentIds.has(s.studentId));
-        return (
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={(checked) => {
-              const next = new Set(selectedStudentIds);
-              if (checked) {
-                paginatedData.forEach(s => next.add(s.studentId));
-              } else {
-                paginatedData.forEach(s => next.delete(s.studentId));
-              }
-              setSelectedStudentIds(next);
-            }}
-          />
-        );
-      },
-      render: (row) => (
-        <Checkbox
-          checked={selectedStudentIds.has(row.studentId)}
-          onCheckedChange={(checked) => {
-            const next = new Set(selectedStudentIds);
-            if (checked) {
-              next.add(row.studentId);
-            } else {
-              next.delete(row.studentId);
-            }
-            setSelectedStudentIds(next);
-          }}
-        />
-      ),
-    },
-    {
       key: 'fullName',
       header: 'Mahasiswa',
       render: (row) => (
@@ -184,7 +141,7 @@ export default function LecturerMyStudentsPage() {
       header: 'Judul Tugas Akhir',
       render: (row) => (
         <div className="space-y-1">
-          <div className="max-w-62.5 truncate font-medium" title={row.thesisTitle}>
+          <div className="max-w-62.5 truncate font-medium" title={row.thesisTitle ?? undefined}>
             {row.thesisTitle || '-'}
           </div>
           <Badge variant="outline" className="text-xs">{row.thesisStatus || 'Ongoing'}</Badge>
@@ -274,7 +231,7 @@ export default function LecturerMyStudentsPage() {
       key: 'thesisRating',
       header: 'Rating',
       render: (row) => {
-        const config = getRatingConfig(row.thesisRating);
+        const config = getRatingConfig(row.thesisRating ?? undefined);
         return (
           <div className="flex items-center gap-2">
             <Badge variant={config.variant} className={cn("whitespace-nowrap", config.className)}>
@@ -291,7 +248,7 @@ export default function LecturerMyStudentsPage() {
       key: 'actions',
       header: 'Aksi',
       render: (row) => {
-        const config = getRatingConfig(row.thesisRating);
+        const config = getRatingConfig(row.thesisRating ?? undefined);
         return (
           <div className="flex items-center gap-1">
             {config.needsWarning && (
@@ -336,13 +293,7 @@ export default function LecturerMyStudentsPage() {
         );
       }
     }
-  ], [navigate, selectedStudentIds, paginatedData]);
-
-  // Get selected student items
-  const selectedStudents = useMemo(() => {
-    if (!data?.students) return [];
-    return data.students.filter((s: MyStudentItem) => selectedStudentIds.has(s.studentId));
-  }, [data?.students, selectedStudentIds]);
+  ], [navigate]);
 
   // Define tabs for reuse
   const tabs = [
@@ -351,11 +302,11 @@ export default function LecturerMyStudentsPage() {
   ];
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Mahasiswa Bimbingan</h1>
-          <p className="text-gray-500">Daftar mahasiswa yang Anda bimbing</p>
+          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Mahasiswa Bimbingan</h1>
+          <p className="text-xs text-muted-foreground sm:text-sm">Daftar mahasiswa yang Anda bimbing</p>
         </div>
       </div>
 
@@ -365,9 +316,6 @@ export default function LecturerMyStudentsPage() {
       {!isLoading && data?.students && data.students.length > 0 && (
         <MyStudentsCharts students={data.students} />
       )}
-
-      {/* Incoming Transfer Requests Section */}
-      <IncomingTransfersSection />
 
       {/* Pembimbing 2 Requests Section */}
       <Supervisor2RequestsSection />
@@ -396,23 +344,10 @@ export default function LecturerMyStudentsPage() {
           emptyText="Tidak ada mahasiswa bimbingan"
           rowKey={(row) => row.studentId}
           actions={
-            <div className="flex items-center gap-2">
-              {selectedStudents.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5"
-                  onClick={() => setTransferDialogOpen(true)}
-                >
-                  <ArrowRightLeft className="h-4 w-4" />
-                  Transfer ({selectedStudents.length})
-                </Button>
-              )}
-              <RefreshButton
-                onClick={() => refetch()}
-                isRefreshing={isFetching && !isLoading}
-              />
-            </div>
+            <RefreshButton
+              onClick={() => refetch()}
+              isRefreshing={isFetching && !isLoading}
+            />
           }
         />
       )}
@@ -437,10 +372,10 @@ export default function LecturerMyStudentsPage() {
                 <div className="flex items-center gap-2">
                   <span>Status saat ini:</span>
                   <Badge
-                    variant={getRatingConfig(warningDialog.student?.thesisRating).variant}
-                    className={getRatingConfig(warningDialog.student?.thesisRating).className}
+                    variant={getRatingConfig(warningDialog.student?.thesisRating ?? undefined).variant}
+                    className={getRatingConfig(warningDialog.student?.thesisRating ?? undefined).className}
                   >
-                    {getRatingConfig(warningDialog.student?.thesisRating).label}
+                    {getRatingConfig(warningDialog.student?.thesisRating ?? undefined).label}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -471,17 +406,6 @@ export default function LecturerMyStudentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Transfer Students Dialog */}
-      <TransferStudentsDialog
-        open={transferDialogOpen}
-        onOpenChange={setTransferDialogOpen}
-        selectedStudents={selectedStudents}
-        onSuccess={() => {
-          setSelectedStudentIds(new Set());
-          queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
-        }}
-      />
     </div>
   );
 }

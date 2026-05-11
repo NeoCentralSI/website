@@ -1,529 +1,417 @@
-import { API_CONFIG, getApiUrl } from "@/config/api";
-import { apiRequest } from "./auth.service";
+import { getApiUrl, API_CONFIG } from '@/config/api';
+import { apiRequest } from './auth.service';
 
-export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending";
+const EP = API_CONFIG.ENDPOINTS.THESIS_STUDENT;
+
+// ============================================
+// Types
+// ============================================
+
+export type GuidanceStatus =
+  | 'requested'
+  | 'accepted'
+  | 'rejected'
+  | 'summary_pending'
+  | 'completed'
+  | 'cancelled'
+  | 'deleted';
+
+export type GuidancePhase = 'proposal' | 'thesis';
 
 export interface GuidanceItem {
   id: string;
-  thesisId?: string;
-  supervisorId?: string;
-  supervisorName?: string;
-  studentId?: string;
-  studentName?: string;
-  studentNim?: string;
+  thesisId: string;
+  supervisorId: string | null;
+  supervisorName: string | null;
+  studentName?: string | null;
+  studentEmail?: string | null;
   status: GuidanceStatus;
-  // New schema: requestedDate and approvedDate instead of schedule
-  requestedDate?: string; // ISO datetime - tanggal diminta mahasiswa
-  requestedDateFormatted?: string; // WIB formatted
-  approvedDate?: string; // ISO datetime - tanggal disetujui dosen
-  approvedDateFormatted?: string; // WIB formatted
-  // Guidance details
-  duration?: number; // durasi dalam menit
-  notes?: string;
-  supervisorFeedback?: string;
-  rejectionReason?: string;
-  completedAt?: string;
+  phase: GuidancePhase;
+  location?: string | null;
+  requestedDate: string | null;
+  approvedDate: string | null;
+  requestedDateFormatted?: string;
+  approvedDateFormatted?: string;
   completedAtFormatted?: string;
-  // Session summary (diisi mahasiswa)
-  sessionSummary?: string;
-  actionItems?: string;
-  summarySubmittedAt?: string;
-  summarySubmittedAtFormatted?: string;
-  document?: {
-    id?: string;
-    fileName: string;
-    filePath: string;
-  } | null;
-  milestoneIds?: string[];
-  milestoneTitles?: string[];
-  milestoneName?: string;
-  thesisTitle?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  [key: string]: unknown;
+  duration: number;
+  notes: string | null;
+  studentNotes: string | null;
+  supervisorFeedback: string | null;
+  rejectionReason: string | null;
+  sessionSummary: string | null;
+  actionItems: string | null;
+  summarySubmittedAt: string | null;
+  completedAt: string | null;
+  document: { id: string; fileName: string | null; filePath: string | null } | null;
+  documentUrl: string | null;
+  milestoneName?: string | null;
+  thesisTitle?: string | null;
+  milestoneIds: string[];
+  milestoneTitles: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface StudentRequestGuidanceBody {
-  guidanceDate: string; // ISO datetime
-  studentNotes?: string;
-  file?: File; // thesis file to upload (optional)
-  documentUrl?: string; // Link dokumen yang akan dibahas (Google Docs, Overleaf, dll)
-  supervisorId?: string;
-  milestoneId?: string; // Link to milestone
-  milestoneIds?: string[]; // Link multiple milestones
-  duration?: number; // durasi dalam menit
-  [key: string]: unknown;
+export interface SupervisorInfo {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: string | null;
 }
 
-export interface StudentRescheduleGuidanceBody {
-  guidanceDate: string; // ISO datetime
-  studentNotes: string; // required reason/notes
-  duration?: number;
-  [key: string]: unknown;
+export interface ThesisStudentInfo {
+  id: string | null;
+  name: string | null;
+  nim: string | null;
+  email: string | null;
 }
 
-export interface StudentNotesBody {
-  studentNotes: string;
-  [key: string]: unknown;
-}
-
-export interface ProgressDetailItem {
-  componentId: string;
-  name: string;
-  description?: string;
-  orderIndex?: number;
-  isMandatory?: boolean;
-  completedAt?: string | null; // ISO
-  validatedBySupervisor?: boolean;
-  validatedAt?: string | null; // ISO
-  notes?: string | null; // catatan dari supervisor
-  [key: string]: unknown;
-}
-
-export interface StudentCompleteComponentsBody {
-  componentIds: string[];
-  completedAt?: string; // ISO
-}
-
-export interface SupervisorItem {
+export interface ThesisTopicInfo {
   id: string;
   name: string;
-  email: string;
-  role: string;
 }
 
-export interface GuidanceListResponse {
-  success: boolean;
-  count: number;
-  items: GuidanceItem[];
+export interface ThesisAcademicYearInfo {
+  id: string;
+  name?: string | null;
+  year?: string | number | null;
+  semester?: string | null;
+  isActive?: boolean;
 }
 
-export interface GuidanceDetailResponse {
-  success: boolean;
-  guidance: GuidanceItem;
+export interface ThesisDocumentInfo {
+  id: string;
+  fileName: string | null;
+  filePath: string | null;
+  uploadedAt?: string | null;
 }
 
-export interface RequestGuidanceResponse {
-  success: boolean;
-  guidance: GuidanceItem;
+export interface ThesisStatsSummary {
+  totalGuidances: number;
+  totalSessions: number;
+  totalMilestones: number;
+  completedMilestones: number;
+  inProgressMilestones: number;
+  overdueMilestones: number;
+  milestoneProgress: number;
 }
 
-export interface ProgressDetailResponse {
-  success: boolean;
-  thesisId: string;
-  components: ProgressDetailItem[];
+export interface ThesisSeminarApprovalSummary {
+  pembimbing1: boolean;
+  pembimbing2: boolean;
+  hasPembimbing2: boolean;
+  isFullyApproved: boolean;
 }
 
-export interface ProgressCompleteResponse {
-  success: boolean;
-  thesisId: string;
-  updated: number;
-  created: number;
+export interface ThesisSupervisorSummary {
+  id: string;
+  role: string | null;
+  name: string | null;
+  email: string | null;
+  identityNumber: string | null;
+  nip?: string | null;
 }
 
-export interface SupervisorsResponse {
-  success: boolean;
-  thesisId: string;
-  supervisors: SupervisorItem[];
+export interface MyThesisDetail {
+  id: string;
+  title: string | null;
+  status: string | null;
+  rating?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  deadlineDate?: string | null;
+  isProposal?: boolean;
+  student?: ThesisStudentInfo | null;
+  topic?: ThesisTopicInfo | null;
+  academicYear?: ThesisAcademicYearInfo | null;
+  document?: ThesisDocumentInfo | null;
+  proposalDocument?: ThesisDocumentInfo | null;
+  uploadedFiles?: ThesisDocumentInfo[];
+  supervisors?: ThesisSupervisorSummary[];
+  examiners?: SupervisorInfo[];
+  stats?: ThesisStatsSummary;
+  seminarApproval?: ThesisSeminarApprovalSummary;
 }
+
+export interface ThesisHistorySummary {
+  id: string;
+  title: string;
+  status: string;
+  topic: string;
+  academicYear: string;
+  createdAt: string;
+  stats: {
+    guidances: number;
+    completedMilestones: number | string;
+  };
+}
+
+export interface GuidanceExportItem {
+  id: string;
+  studentName: string | null;
+  studentId: string | null;
+  supervisorName: string | null;
+  approvedDate: string | null;
+  approvedDateFormatted?: string | null;
+  completedAt: string | null;
+  completedAtFormatted?: string | null;
+  duration: number;
+  studentNotes?: string | null;
+  sessionSummary: string | null;
+  actionItems: string | null;
+  milestoneName: string | null;
+  thesisTitle: string | null;
+}
+
+// ============================================
+// Response helper
+// ============================================
+
+async function handleJson<T = unknown>(response: Response): Promise<T> {
+  const json = await response.json().catch(() => ({ message: 'Request gagal' }));
+  if (!response.ok) {
+    throw new Error(json.message || `Request gagal (${response.status})`);
+  }
+  return json as T;
+}
+
+// ============================================
+// Student Guidance API
+// ============================================
+
+export async function listStudentGuidance(params?: {
+  status?: string;
+  phase?: string;
+}): Promise<{ count: number; items: GuidanceItem[] }> {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set('status', params.status);
+  if (params?.phase) sp.set('phase', params.phase);
+  const qs = sp.toString();
+  const url = getApiUrl(`${EP.GUIDANCE_LIST}${qs ? `?${qs}` : ''}`);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; count: number; items: GuidanceItem[] }>(response);
+  return { count: data.count, items: data.items };
+}
+
+export async function getStudentGuidanceDetail(
+  guidanceId: string,
+): Promise<{ guidance: GuidanceItem }> {
+  const url = getApiUrl(EP.GUIDANCE_DETAIL(guidanceId));
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; guidance: GuidanceItem }>(response);
+  return { guidance: data.guidance };
+}
+
+export async function getStudentSupervisors(): Promise<{
+  thesisId: string | null;
+  supervisors: SupervisorInfo[];
+}> {
+  const url = getApiUrl(EP.SUPERVISORS);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; thesisId: string | null; supervisors: SupervisorInfo[] }>(response);
+  return { thesisId: data.thesisId, supervisors: data.supervisors };
+}
+
+export async function requestGuidance(body: {
+  supervisorId?: string;
+  guidanceDate: string;
+  duration?: number;
+  studentNotes?: string;
+  documentUrl?: string;
+  phase?: GuidancePhase;
+}): Promise<GuidanceItem> {
+  const url = getApiUrl(EP.GUIDANCE_REQUEST);
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await handleJson<{ success: boolean; guidance: GuidanceItem }>(response);
+  return data.guidance;
+}
+
+export async function rescheduleStudentGuidance(
+  id: string,
+  body: { guidanceDate: string; studentNotes?: string },
+): Promise<GuidanceItem> {
+  const url = getApiUrl(EP.GUIDANCE_RESCHEDULE(id));
+  const response = await apiRequest(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await handleJson<{ success: boolean; guidance: GuidanceItem }>(response);
+  return data.guidance;
+}
+
+export async function cancelStudentGuidance(
+  id: string,
+  body?: { reason?: string },
+): Promise<GuidanceItem> {
+  const url = getApiUrl(EP.GUIDANCE_CANCEL(id));
+  const response = await apiRequest(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+  const data = await handleJson<{ success: boolean; guidance: GuidanceItem }>(response);
+  return data.guidance;
+}
+
+export async function updateStudentGuidanceNotes(
+  id: string,
+  body: { studentNotes: string },
+): Promise<GuidanceItem> {
+  const url = getApiUrl(EP.GUIDANCE_NOTES(id));
+  const response = await apiRequest(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await handleJson<{ success: boolean; guidance: GuidanceItem }>(response);
+  return data.guidance;
+}
+
+export async function submitSessionSummary(
+  id: string,
+  body: { sessionSummary: string; actionItems?: string },
+): Promise<void> {
+  const url = getApiUrl(EP.SUBMIT_SUMMARY(id));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  await handleJson(response);
+}
+
+export async function completeGuidanceSession(
+  id: string,
+  body: { sessionSummary: string; actionItems?: string },
+): Promise<void> {
+  const url = getApiUrl(EP.COMPLETE_SESSION(id));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  await handleJson(response);
+}
+
+export async function getCompletedGuidanceHistory(phase?: string): Promise<{
+  guidances: CompletedGuidance[];
+}> {
+  const qs = phase ? `?phase=${phase}` : '';
+  const url = getApiUrl(`${EP.COMPLETED_HISTORY}${qs}`);
+  const response = await apiRequest(url);
+  return handleJson(response);
+}
+
+export async function getMyThesisDetail(): Promise<MyThesisDetail | null> {
+  const url = getApiUrl(EP.MY_THESIS);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; thesis: MyThesisDetail | null }>(response);
+  return data.thesis ?? null;
+}
+
+export async function getGuidancesNeedingSummary(): Promise<GuidanceItem[]> {
+  const url = getApiUrl(EP.NEEDS_SUMMARY);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; guidances: GuidanceItem[] }>(response);
+  return data.guidances;
+}
+
+export async function exportGuidance(id: string): Promise<GuidanceExportItem> {
+  const url = getApiUrl(EP.EXPORT_GUIDANCE(id));
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; guidance: GuidanceExportItem }>(response);
+  return data.guidance;
+}
+
+// ============================================
+// Supervisor Availability
+// ============================================
 
 export interface SupervisorBusySlot {
   id: string;
   start: string;
   end: string;
-  duration: number;
-  status: GuidanceStatus;
-  studentName: string | null;
-}
-
-// Helpers
-const buildUrl = (endpoint: string, params?: Record<string, string | number | boolean | undefined>) => {
-  if (!params) return getApiUrl(endpoint);
-  const qs = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null) qs.set(k, String(v));
-  });
-  const sep = endpoint.includes("?") ? "&" : "?";
-  return getApiUrl(`${endpoint}${qs.toString() ? sep + qs.toString() : ""}`);
-};
-
-// API calls
-export const listStudentGuidance = async (params?: { status?: GuidanceStatus; q?: string; page?: number; limit?: number }): Promise<GuidanceListResponse> => {
-  const url = buildUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_LIST, {
-    status: params?.status,
-    q: params?.q,
-    page: params?.page,
-    limit: params?.limit,
-  });
-  const res = await apiRequest(url);
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat bimbingan" }));
-    throw new Error(errorData.message || "Gagal memuat bimbingan");
-  }
-  const data = await res.json();
-  return {
-    success: data.success ?? true,
-    count: data.count ?? 0,
-    items: data.items ?? [],
-  };
-};
-
-export const getStudentGuidanceDetail = async (guidanceId: string): Promise<GuidanceDetailResponse> => {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_DETAIL(guidanceId));
-  const res = await apiRequest(url);
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat detail bimbingan");
-  return res.json();
-};
-
-export const requestStudentGuidance = async (body: StudentRequestGuidanceBody): Promise<RequestGuidanceResponse> => {
-  const fd = new FormData();
-  fd.append("guidanceDate", body.guidanceDate);
-  if (body.studentNotes) fd.append("studentNotes", body.studentNotes);
-  if (body.documentUrl) fd.append("documentUrl", body.documentUrl);
-  if (body.supervisorId) fd.append("supervisorId", body.supervisorId);
-  if (body.milestoneId) fd.append("milestoneId", body.milestoneId);
-  if (body.milestoneIds && Array.isArray(body.milestoneIds)) {
-    body.milestoneIds.forEach((id) => fd.append("milestoneIds[]", id));
-  }
-  if (body.file) fd.append("file", body.file);
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_REQUEST), {
-    method: "POST",
-    body: fd,
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal mengajukan bimbingan");
-  return res.json();
-};
-
-export const rescheduleStudentGuidance = async (
-  guidanceId: string,
-  body: StudentRescheduleGuidanceBody
-): Promise<GuidanceDetailResponse> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_RESCHEDULE(guidanceId)), {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menjadwalkan ulang");
-  return res.json();
-};
-
-export const cancelStudentGuidance = async (
-  guidanceId: string,
-  body?: { reason?: string }
-): Promise<GuidanceDetailResponse> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_CANCEL(guidanceId)), {
-    method: "PATCH",
-    body: JSON.stringify(body ?? {}),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal membatalkan bimbingan");
-  return res.json();
-};
-
-export const updateStudentGuidanceNotes = async (
-  guidanceId: string,
-  body: StudentNotesBody
-): Promise<GuidanceDetailResponse> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GUIDANCE_NOTES(guidanceId)), {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memperbarui catatan");
-  return res.json();
-};
-
-export const getStudentProgressDetail = async (): Promise<ProgressDetailResponse> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.PROGRESS));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat progres");
-  return res.json();
-};
-
-export const completeStudentProgressComponents = async (
-  body: StudentCompleteComponentsBody
-): Promise<ProgressCompleteResponse> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.PROGRESS_COMPLETE), {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memperbarui komponen");
-  return res.json();
-};
-
-export const getStudentGuidanceHistory = async (): Promise<GuidanceListResponse> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.HISTORY));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat riwayat bimbingan");
-  return res.json();
-};
-
-export const getStudentSupervisors = async (): Promise<SupervisorsResponse> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.SUPERVISORS));
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal memuat pembimbing" }));
-    throw new Error(errorData.message || "Gagal memuat pembimbing");
-  }
-  const data = await res.json();
-  return {
-    success: data.success ?? true,
-    thesisId: data.thesisId ?? '',
-    supervisors: data.supervisors ?? [],
-  };
-};
-
-export const getSupervisorAvailability = async (
-  supervisorId: string,
-  params?: { start?: string; end?: string }
-): Promise<{ success: boolean; busySlots: SupervisorBusySlot[] }> => {
-  const url = (() => {
-    const endpoint = API_CONFIG.ENDPOINTS.THESIS_STUDENT.SUPERVISOR_AVAILABILITY(supervisorId);
-    if (!params?.start && !params?.end) return getApiUrl(endpoint);
-    const qs = new URLSearchParams();
-    if (params?.start) qs.set("start", params.start);
-    if (params?.end) qs.set("end", params.end);
-    return `${getApiUrl(endpoint)}?${qs.toString()}`;
-  })();
-
-  const res = await apiRequest(url);
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat ketersediaan dosen");
-  return res.json();
-};
-
-// ==================== SESSION SUMMARY ====================
-
-export interface SessionSummaryBody {
-  sessionSummary: string;
-  actionItems?: string;
-}
-
-export interface GuidanceNeedingSummary {
-  id: string;
-  supervisorName?: string;
-  approvedDate?: string;
-  approvedDateFormatted?: string;
-  duration?: number;
-  studentNotes?: string;
-  milestoneName?: string;
-  type?: string;
-}
-
-export interface CompletedGuidance {
-  id: string;
-  supervisorName?: string;
-  approvedDate?: string;
-  approvedDateFormatted?: string;
-  completedAt?: string;
-  completedAtFormatted?: string;
-  duration?: number;
-  studentNotes?: string;
-  sessionSummary?: string;
-  actionItems?: string;
-  milestoneName?: string;
-  thesisTitle?: string;
-}
-
-export interface GuidanceExport {
-  id: string;
   studentName?: string;
-  studentId?: string;
-  supervisorName?: string;
-  approvedDate?: string;
-  approvedDateFormatted?: string;
-  completedAt?: string;
-  completedAtFormatted?: string;
-  duration?: number;
+}
+
+export interface SupervisorsResponse {
+  thesisId: string | null;
+  supervisors: SupervisorInfo[];
+}
+
+export async function getSupervisorAvailability(
+  supervisorId: string,
+  params: { start: string; end: string },
+): Promise<{ busySlots: SupervisorBusySlot[] }> {
+  const sp = new URLSearchParams({ start: params.start, end: params.end });
+  const url = getApiUrl(`${EP.SUPERVISOR_AVAILABILITY(supervisorId)}?${sp.toString()}`);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ busySlots?: Array<{ start: string; end: string; studentName?: string }> }>(response);
+  return {
+    busySlots: (data.busySlots ?? []).map((slot, index) => ({
+      id: `${slot.start}-${slot.end}-${index}`,
+      ...slot,
+    })),
+  };
+}
+
+// ============================================
+// Student Guidance Request (with file upload)
+// ============================================
+
+export async function requestStudentGuidance(body: {
+  guidanceDate: string;
   studentNotes?: string;
-  sessionSummary?: string;
-  actionItems?: string;
-  milestoneName?: string;
-  thesisTitle?: string;
-  type?: string;
-}
-
-/**
- * Get guidances that need summary submission (accepted + past scheduled time)
- */
-export const getGuidancesNeedingSummary = async (): Promise<{ success: boolean; guidances: GuidanceNeedingSummary[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.NEEDS_SUMMARY));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat bimbingan yang perlu diisi");
-  return res.json();
-};
-
-/**
- * Submit session summary after guidance
- */
-export const submitSessionSummary = async (
-  guidanceId: string,
-  body: SessionSummaryBody
-): Promise<{ success: boolean; guidance: { id: string; status: GuidanceStatus; sessionSummary?: string; actionItems?: string } }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.SUBMIT_SUMMARY(guidanceId)), {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal mengirim catatan bimbingan");
-  return res.json();
-};
-
-/**
- * Mark session as complete directly (skip lecturer approval)
- */
-export const markSessionComplete = async (
-  guidanceId: string,
-  body: SessionSummaryBody
-): Promise<{ success: boolean; guidance: { id: string; status: GuidanceStatus; sessionSummary?: string; actionItems?: string; completedAt?: string } }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.COMPLETE_SESSION(guidanceId)), {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyelesaikan sesi bimbingan");
-  return res.json();
-};
-
-/**
- * Get completed guidance history for documentation
- */
-export const getCompletedGuidanceHistory = async (): Promise<{ success: boolean; guidances: CompletedGuidance[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.COMPLETED_HISTORY));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat riwayat bimbingan selesai");
-  return res.json();
-};
-
-/**
- * Get single guidance detail for export/download
- */
-export const getGuidanceForExport = async (guidanceId: string): Promise<{ success: boolean; guidance: GuidanceExport }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.EXPORT_GUIDANCE(guidanceId)));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat detail bimbingan");
-  return res.json();
-};
-
-/**
- * Generate guidance log PDF from TA-06 template via Gotenberg (server-side).
- * @param guidanceIds specific completed guidance IDs; omit for all completed
- * @returns Blob of the generated PDF
- */
-export const generateGuidanceLogPdf = async (guidanceIds?: string[]): Promise<Blob> => {
-  const res = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.GENERATE_LOG),
-    {
-      method: "POST",
-      body: JSON.stringify(guidanceIds ? { guidanceIds } : {}),
-    }
-  );
-  if (!res.ok) {
-    // Try to parse JSON error, fallback to generic message
-    let message = "Gagal generate log bimbingan";
-    try {
-      const json = await res.json();
-      if (json.message) message = json.message;
-    } catch {
-      // response is not JSON
-    }
-    throw new Error(message);
+  file?: File;
+  documentUrl?: string;
+  supervisorId?: string;
+  milestoneIds?: string[];
+  phase?: GuidancePhase;
+}): Promise<{ guidance: GuidanceItem }> {
+  const formData = new FormData();
+  formData.append('guidanceDate', body.guidanceDate);
+  if (body.studentNotes) formData.append('studentNotes', body.studentNotes);
+  if (body.documentUrl) formData.append('documentUrl', body.documentUrl);
+  if (body.supervisorId) formData.append('supervisorId', body.supervisorId);
+  if (body.phase) formData.append('phase', body.phase);
+  if (body.milestoneIds) {
+    body.milestoneIds.forEach((id) => formData.append('milestoneIds[]', id));
   }
-  return res.blob();
-};
+  if (body.file) formData.append('file', body.file);
 
-// ========== MY THESIS ==========
-
-export interface MyThesisDetail {
-  id: string;
-  title: string;
-  isProposal: boolean;
-  status: string;
-  rating: number | null;
-  startDate?: string | null;
-  deadlineDate?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  student: {
-    id: string;
-    name: string | null;
-    nim: string | null;
-    email: string | null;
-  };
-  topic: {
-    id: string;
-    name: string;
-  } | null;
-  academicYear: {
-    id: string;
-    name: string;
-    year: string;
-    semester: number;
-    isActive: boolean;
-  } | null;
-  document: {
-    id: string;
-    fileName: string;
-    filePath: string;
-  } | null;
-  proposalDocument: {
-    id: string;
-    fileName: string;
-    filePath: string;
-  } | null;
-  uploadedFiles: Array<{
-    id: string;
-    fileName: string;
-    filePath: string;
-    uploadedAt: string;
-    guidanceDate: string;
-  }>;
-  supervisors: Array<{
-    id: string;
-    name: string | null;
-    email: string | null;
-    role: string | null;
-    avatarUrl?: string;
-  }>;
-  examiners: Array<{
-    id: string;
-    name: string | null;
-    email: string | null;
-    role: string | null;
-    avatarUrl?: string;
-  }>;
-  stats: {
-    totalGuidances: number;
-    totalMilestones: number;
-    completedMilestones: number;
-    inProgressMilestones?: number;
-    overdueMilestones?: number;
-    totalSessions?: number;
-    milestoneProgress: number;
-  };
-  seminarApproval: {
-    pembimbing1: boolean;
-    pembimbing2: boolean;
-  };
+  const url = getApiUrl(EP.GUIDANCE_REQUEST);
+  const response = await apiRequest(url, {
+    method: 'POST',
+    body: formData,
+  });
+  return handleJson(response);
 }
 
-/**
- * Get current student's thesis detail
- * Returns thesis object directly (unwrapped from API response)
- */
-export const getMyThesisDetail = async (): Promise<MyThesisDetail> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.MY_THESIS));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat detail tugas akhir");
-  const data = await res.json();
-  return data.thesis;
-};
+// ============================================
+// Thesis History & Supervisor 2 Request
+// ============================================
 
-/**
- * Update thesis title
- */
-export const updateMyThesisTitle = async (title: string): Promise<{ success: boolean; message: string; thesis: { id: string; title: string; updatedAt: string } }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.UPDATE_THESIS_TITLE), {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title }),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memperbarui judul tugas akhir");
-  return res.json();
-};
+export async function getStudentThesisHistory(): Promise<{ theses: ThesisHistorySummary[] }> {
+  const url = getApiUrl(EP.THESIS_HISTORY);
+  const response = await apiRequest(url);
+  return handleJson<{ success: boolean; theses: ThesisHistorySummary[] }>(response);
+}
 
-// ─── Pembimbing 2 Request ───────────────────────────────────────────────────
+export async function getPendingSupervisor2Request(): Promise<PendingSupervisor2Request | null> {
+  const url = getApiUrl(EP.PENDING_SUPERVISOR_2);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; request: PendingSupervisor2Request }>(response);
+  return data.request ?? null;
+}
 
 export interface AvailableSupervisor2Item {
   id: string;
-  fullName: string;
+  fullName: string | null;
   email: string | null;
   identityNumber: string | null;
   scienceGroup: string | null;
@@ -536,65 +424,182 @@ export interface PendingSupervisor2Request {
   requestedAt: string;
 }
 
-export const getAvailableSupervisors2 = async (): Promise<AvailableSupervisor2Item[]> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.AVAILABLE_SUPERVISORS_2));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat daftar dosen");
-  const data = await res.json();
-  return data.data ?? [];
-};
-
-export const requestSupervisor2 = async (lecturerId: string): Promise<{ success: boolean; message: string; data: { requestId: string; lecturerName: string } }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.REQUEST_SUPERVISOR_2), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lecturerId }),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal mengirim permintaan");
-  return res.json();
-};
-
-export const getPendingSupervisor2Request = async (): Promise<PendingSupervisor2Request | null> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.PENDING_SUPERVISOR_2));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat status permintaan");
-  const data = await res.json();
-  return data.data ?? null;
-};
-
-export const cancelSupervisor2Request = async (): Promise<{ success: boolean }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.CANCEL_SUPERVISOR_2), {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal membatalkan permintaan");
-  return res.json();
-};
-
-// ─── THESIS HISTORY ─────────────────────────────────────────────────────────
-
-export interface ThesisHistoryItem {
-  id: string;
-  title: string;
-  status: string;
-  topic: string;
-  academicYear: string;
-  createdAt: string;
-  stats: {
-    guidances: number;
-    completedMilestones: number;
-  };
+export async function getAvailableSupervisors2(): Promise<AvailableSupervisor2Item[]> {
+  const url = getApiUrl(EP.AVAILABLE_SUPERVISORS_2);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; lecturers?: AvailableSupervisor2Item[]; data?: AvailableSupervisor2Item[] }>(response);
+  return data.lecturers ?? data.data ?? [];
 }
 
-export const getStudentThesisHistory = async (): Promise<{ success: boolean; theses: ThesisHistoryItem[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.THESIS_HISTORY));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat riwayat tugas akhir");
-  return res.json();
-};
-
-export const proposeThesisAPI = async (data: { title: string; topicId: string }): Promise<{ success: boolean; message: string; thesis: any }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.PROPOSE_THESIS), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+export async function requestSupervisor2(lecturerId: string): Promise<{ message: string }> {
+  const url = getApiUrl(EP.REQUEST_SUPERVISOR_2);
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lecturerId }),
   });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal mengajukan judul tugas akhir");
-  return res.json();
-};
+  return handleJson<{ message: string }>(response);
+}
+
+export async function cancelSupervisor2Request(): Promise<{ message: string }> {
+  const url = getApiUrl(EP.CANCEL_SUPERVISOR_2);
+  const response = await apiRequest(url, { method: 'POST' });
+  return handleJson<{ message: string }>(response);
+}
+
+export interface ProgressDetailItem {
+  componentId: string;
+  name: string;
+  description?: string | null;
+  completedAt?: string | null;
+  validatedBySupervisor?: boolean;
+}
+
+export type GuidanceNeedingSummary = GuidanceItem;
+export interface CompletedGuidance {
+  id: string;
+  supervisorName: string | null;
+  approvedDate: string | null;
+  approvedDateFormatted?: string;
+  completedAt: string | null;
+  completedAtFormatted?: string;
+  duration: number;
+  studentNotes: string | null;
+  sessionSummary: string | null;
+  actionItems: string | null;
+  milestoneName: string | null;
+  thesisTitle: string | null;
+  phase: GuidancePhase;
+}
+
+export async function getStudentProgressDetail(): Promise<{ thesisId: string | null }> {
+  const thesis = await getMyThesisDetail();
+  return { thesisId: thesis?.id ?? null };
+}
+
+// ============================================
+// Guidance Export & PDF Generation
+// ============================================
+
+export async function getGuidanceForExport(
+  guidanceId: string,
+): Promise<{ guidance: GuidanceExportItem }> {
+  const url = getApiUrl(EP.EXPORT_GUIDANCE(guidanceId));
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; guidance: GuidanceExportItem }>(response);
+  return { guidance: data.guidance };
+}
+
+export async function generateGuidanceLogPdf(
+  guidanceIds: string[],
+): Promise<Blob> {
+  const url = getApiUrl(EP.GENERATE_LOG);
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guidanceIds }),
+  });
+  if (!response.ok) {
+    const json = await response.json().catch(() => ({ message: 'Gagal generate PDF' }));
+    throw new Error(json.message || `Gagal generate PDF (${response.status})`);
+  }
+  return response.blob();
+}
+
+// ============================================
+// Thesis Proposal (Re-registration)
+// ============================================
+
+export async function proposeThesis(body: {
+  title: string;
+  topicId?: string;
+}): Promise<{ thesis: { id: string; title: string; status: string; message: string } }> {
+  const url = getApiUrl(EP.PROPOSE_THESIS);
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return handleJson(response);
+}
+
+// ============================================
+// Proposal Versioning
+// ============================================
+
+export interface ProposalVersion {
+  id: string;
+  version: number;
+  isLatest: boolean;
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType?: string | null;
+  description: string | null;
+  submittedAsFinalAt?: string | null;
+  createdAt: string;
+  url: string | null;
+}
+
+export interface FinalProposalVersionStatus {
+  id: string;
+  version: number;
+  submittedAsFinalAt: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
+  url: string | null;
+}
+
+export interface ProposalSubmissionStatus {
+  thesisId: string;
+  hasSupervisor: boolean;
+  proposalStatus: string | null;
+  latestVersion: ProposalVersion | null;
+  finalProposalVersion: FinalProposalVersionStatus | null;
+}
+
+export async function uploadProposalVersion(
+  file: File,
+  description?: string,
+): Promise<{ data: ProposalVersion }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (description) formData.append('description', description);
+
+  const url = getApiUrl(EP.PROPOSAL_UPLOAD);
+  const response = await apiRequest(url, {
+    method: 'POST',
+    body: formData,
+  });
+  return handleJson(response);
+}
+
+export async function getProposalVersions(): Promise<{
+  thesisId: string | null;
+  versions: ProposalVersion[];
+}> {
+  const url = getApiUrl(EP.PROPOSAL_VERSIONS);
+  const response = await apiRequest(url);
+  return handleJson(response);
+}
+
+export async function getProposalSubmissionStatus(): Promise<ProposalSubmissionStatus> {
+  const url = getApiUrl(EP.PROPOSAL_STATUS);
+  const response = await apiRequest(url);
+  const json = await handleJson<{ success: boolean; data: ProposalSubmissionStatus }>(response);
+  return json.data;
+}
+
+export async function submitFinalProposal(): Promise<{
+  data: {
+    thesisId: string;
+    finalProposalVersion: ProposalVersion;
+    alreadySubmitted: boolean;
+  };
+}> {
+  const url = getApiUrl(EP.PROPOSAL_SUBMIT_FINAL);
+  const response = await apiRequest(url, {
+    method: 'POST',
+  });
+  return handleJson(response);
+}

@@ -6,22 +6,34 @@ import {
   FileText,
   SquareTerminal,
   GraduationCap,
-  Megaphone
+  Wrench,
+  type LucideIcon,
 } from "lucide-react";
 import { useMemo } from "react";
-import { useLocation } from "react-router-dom";
 import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useAdvisorAccessState } from "./useAdvisorAccessState";
+import { useStudentEligibility } from "./useStudentEligibility";
+import { ENV } from "@/config/env";
+
+type SidebarLeafItem = { title: string; url: string };
+type SidebarNavItem = {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  items: SidebarLeafItem[];
+  isActive?: boolean;
+};
 
 export const useSidebarMenu = () => {
-  const { pathname } = useLocation();
-  const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1, isDosenPengampuMetopel } = useRole();
+  const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing, isKoordinatorMetopen } = useRole();
   const { user: authUser } = useAuth();
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
-  const { data: advisorAccess } = useAdvisorAccessState(Boolean(authUser?.id) && isStudent());
+  const isStudentUser = Boolean(authUser?.id) && isStudent();
+  const { canAccessMetopel, isMetopenReadOnly } = useStudentEligibility();
+  const { data: advisorAccess } = useAdvisorAccessState(isStudentUser && canAccessMetopel);
 
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
@@ -32,8 +44,8 @@ export const useSidebarMenu = () => {
       sekdep: isSekdep(),
       gkm: isGkm(),
       admin: isAdmin(),
-      pembimbing1: isPembimbing1(),
-      dosenPengampuMetopel: isDosenPengampuMetopel(),
+      pembimbing: isPembimbing(),
+      koordinatorMetopen: isKoordinatorMetopen(),
     };
 
     // Get user initials for avatar fallback
@@ -45,50 +57,72 @@ export const useSidebarMenu = () => {
       return (first + last).toUpperCase();
     };
 
+    /**
+     * Build menu Metopen per role.
+     *
+     * Pertimbangan canon SIMPTA v2.0:
+     * - "Inbox Pembimbing" hanya relevan untuk user yang punya role
+     *   Pembimbing 1 / Pembimbing 2. Role struktural seperti Sekdep/GKM tidak
+     *   boleh menutupi kemampuan pembimbing bila user yang sama memang
+     *   multi-role, tetapi juga tidak boleh memberi inbox ke user non-pembimbing.
+     * - "Penilaian TA-03B" tetap khusus role Koordinator Metopen
+     *   (Koordinator Metopen) sesuai BR-19.
+     */
+    const buildMetopenItems = ({
+      coordinatorLabel,
+      coordinatorUrl,
+      includeInboxPembimbing = role.pembimbing,
+    }: {
+      coordinatorLabel?: string;
+      coordinatorUrl?: string;
+      /**
+       * Default mengikuti role Pembimbing 1/2 aktif. Opsi ini hanya dipakai
+       * untuk menutup inbox pada surface tertentu tanpa memberi akses baru.
+       */
+      includeInboxPembimbing?: boolean;
+    } = {}): SidebarLeafItem[] => {
+      const items: SidebarLeafItem[] = [];
+
+      if (coordinatorLabel && coordinatorUrl) {
+        items.push({ title: coordinatorLabel, url: coordinatorUrl });
+      }
+
+      if (role.koordinatorMetopen) {
+        items.push({ title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" });
+      }
+
+      if (includeInboxPembimbing && role.pembimbing) {
+        items.push({ title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" });
+      }
+
+      return items;
+    };
+
     // STUDENT MENU
     if (role.student) {
-      const metopenItems = [
-        { title: "Overview", url: "/metopel" },
-        { title: "Tugas", url: "/metopel/tugas" },
-      ];
-
-      if (!(advisorAccess?.hasOfficialSupervisor ?? false)) {
-        metopenItems.push({ title: "Cari Pembimbing", url: "/metopel/cari-pembimbing" });
-      }
-
-      if (advisorAccess?.canOpenLogbook) {
-        metopenItems.push({ title: "Logbook Bimbingan", url: "/metopel/logbook" });
-      }
-
-      const studentNav: any[] = [
+      const studentNav: SidebarNavItem[] = [
         {
           title: "Dashboard",
           url: "/dashboard",
           icon: SquareTerminal,
           isActive: true,
+          items: [],
         },
         // Kerja Praktik
         {
           title: "Kerja Praktik",
-          url: "/kerja-praktik",
+          url: "#",
           icon: Briefcase,
           items: [
             { title: "Pendaftaran", url: "/kerja-praktik/pendaftaran" },
-            { title: "Kegiatan", url: "/kerja-praktik/kegiatan" },
+            { title: "Kegiatan", url: "/kerja-praktik/kegiatan/logbook" },
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
-        },
-        // Metode Penelitian â€” Overview ditambah sebagai sub-item pertama
-        {
-          title: "Metode Penelitian",
-          url: "/metopel",
-          icon: BookOpen,
-          items: metopenItems,
         },
         // Tugas Akhir
         {
           title: "Tugas Akhir",
-          url: "/tugas-akhir",
+          url: "#",
           icon: FileText,
           items: [
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
@@ -96,23 +130,6 @@ export const useSidebarMenu = () => {
             { title: "Sidang", url: "/tugas-akhir/sidang" },
           ],
         },
-        {
-          title: "Pengumuman",
-          url: "/pengumuman",
-          icon: Megaphone,
-          items: [
-            {
-              title: "Seminar Hasil",
-              url: "/pengumuman/seminar-hasil",
-              isActive: pathname.startsWith("/pengumuman/seminar-hasil"),
-            },
-            {
-              title: "Yudisium",
-              url: "/pengumuman/yudisium",
-              isActive: pathname.startsWith("/pengumuman/yudisium"),
-            },
-          ],
-         },
         // Yudisium — leaf item (no children)
         {
           title: "Yudisium",
@@ -120,8 +137,26 @@ export const useSidebarMenu = () => {
           icon: GraduationCap,
           items: [],
         },
-        
       ];
+
+      if (canAccessMetopel) {
+        const metopenItems = [{ title: "Overview", url: "/metopel" }];
+        const canOpenAdvisorSearch =
+          !isMetopenReadOnly &&
+          !(advisorAccess?.hasOfficialSupervisor ?? false) &&
+          (Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest));
+
+        if (canOpenAdvisorSearch) {
+          metopenItems.push({ title: "Cari Pembimbing", url: "/metopel/cari-pembimbing" });
+        }
+
+        studentNav.splice(2, 0, {
+          title: isMetopenReadOnly ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
+          url: "#",
+          icon: BookOpen,
+          items: metopenItems,
+        });
+      }
 
       return {
         user: {
@@ -143,6 +178,7 @@ export const useSidebarMenu = () => {
           url: "/dashboard",
           icon: SquareTerminal,
           isActive: true,
+          items: [],
         },
         {
           title: "Kerja Praktik",
@@ -151,32 +187,18 @@ export const useSidebarMenu = () => {
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
             { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
+            { title: "Seminar & Nilai", url: "/kerja-praktik/dosen/bimbingan" },
           ],
         },
       ];
 
-      // Dosen Pengampu Metopel â€” full management menu
-      if (role.dosenPengampuMetopel) {
+      const metopenItems = buildMetopenItems();
+      if (metopenItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: [
-            { title: "Mahasiswa", url: "/kelola/metopen/mahasiswa" },
-            { title: "Bank Template", url: "/kelola/metopen/template" },
-            { title: "Publish Tugas", url: "/kelola/metopen/publish" },
-            { title: "Antrian Penilaian", url: "/kelola/metopen/penilaian" },
-            { title: "Monitoring", url: "/kelola/metopen/monitoring" },
-            { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
-          ],
-        });
-      } else if (role.pembimbing1) {
-        // Pembimbing biasa â€” hanya inbox (tidak punya akses kelola kelas/template)
-        menuItems.push({
-          title: "Inbox Pembimbing",
-          url: "/dosen/inbox-pembimbing",
-          icon: BookOpen,
-          items: [],
+          items: metopenItems,
         });
       }
 
@@ -190,13 +212,6 @@ export const useSidebarMenu = () => {
           { title: "Seminar", url: "/tugas-akhir/seminar" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
         ],
-      });
-
-      menuItems.push({
-        title: "Yudisium",
-        url: "/yudisium",
-        icon: GraduationCap,
-        items: [],
       });
 
       // Jadwal Ketersediaan — leaf item
@@ -227,6 +242,7 @@ export const useSidebarMenu = () => {
           url: "/dashboard",
           icon: SquareTerminal,
           isActive: true,
+          items: [],
         },
         {
           title: "Kerja Praktik",
@@ -234,33 +250,21 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
+            { title: "Bimbingan", url: "/kerja-praktik/monitoring" },
+            { title: "Seminar & Nilai", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           ],
         },
       ];
 
-      if (role.dosenPengampuMetopel) {
-        menuItems.push({
-          title: "Metode Penelitian",
-          url: "#",
-          icon: BookOpen,
-          items: [
-            { title: "Mahasiswa", url: "/kelola/metopen/mahasiswa" },
-            { title: "Bank Template", url: "/kelola/metopen/template" },
-            { title: "Publish Tugas", url: "/kelola/metopen/publish" },
-            { title: "Antrian Penilaian", url: "/kelola/metopen/penilaian" },
-            { title: "Monitoring", url: "/kelola/metopen/monitoring" },
-            { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
-          ],
-        });
-      } else if (role.pembimbing1) {
-        menuItems.push({
-          title: "Inbox Pembimbing",
-          url: "/dosen/inbox-pembimbing",
-          icon: BookOpen,
-          items: [],
-        });
-      }
+      menuItems.push({
+        title: "Metode Penelitian",
+        url: "#",
+        icon: BookOpen,
+        items: buildMetopenItems({
+          coordinatorLabel: "Keputusan TA-01 s.d. TA-04",
+          coordinatorUrl: "/kelola/tugas-akhir/kadep",
+        }),
+      });
 
       menuItems.push({
         title: "Tugas Akhir",
@@ -272,13 +276,6 @@ export const useSidebarMenu = () => {
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
-      });
-
-      menuItems.push({
-        title: "Yudisium",
-        url: "/yudisium",
-        icon: GraduationCap,
-        items: [],
       });
 
       // Jadwal Ketersediaan — leaf item
@@ -298,13 +295,10 @@ export const useSidebarMenu = () => {
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/kadep" },
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
-          { title: "DSS Pembimbing", url: "/kelola/metopen/dss" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
         ],
       });
-
-      // no Profil for kadep
 
       return {
         user: {
@@ -319,6 +313,10 @@ export const useSidebarMenu = () => {
     }
 
     // LECTURER (SEKDEP) MENU
+    // Canon SIMPTA v2.0 §4 + Q5 (audit BR-24): Sekdep adalah pengelola data
+    // master TA + monitoring read-only. Role Sekdep saja bukan pembimbing
+    // operasional dan bukan co-approver TA-04. Untuk akun multi-role, menu
+    // operasional tetap mengikuti role tambahan yang benar-benar dimiliki.
     if (role.sekdep) {
       const menuItems = [
         {
@@ -326,6 +324,7 @@ export const useSidebarMenu = () => {
           url: "/dashboard",
           icon: SquareTerminal,
           isActive: true,
+          items: [],
         },
         {
           title: "Kerja Praktik",
@@ -333,30 +332,19 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
+            { title: "Bimbingan", url: "/kelola/kerja-praktik/pendaftaran/bimbingan" },
+            { title: "Seminar & Nilai", url: "/kelola/kerja-praktik/pendaftaran" },
           ],
         },
       ];
 
-      if (role.dosenPengampuMetopel) {
+      const metopenItems = buildMetopenItems();
+      if (metopenItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: [
-            { title: "Mahasiswa", url: "/kelola/metopen/mahasiswa" },
-            { title: "Bank Template", url: "/kelola/metopen/template" },
-            { title: "Publish Tugas", url: "/kelola/metopen/publish" },
-            { title: "Antrian Penilaian", url: "/kelola/metopen/penilaian" },
-            { title: "Monitoring", url: "/kelola/metopen/monitoring" },
-          ],
-        });
-      } else if (role.pembimbing1) {
-        menuItems.push({
-          title: "Inbox Pembimbing",
-          url: "/dosen/inbox-pembimbing",
-          icon: BookOpen,
-          items: [],
+          items: metopenItems,
         });
       }
 
@@ -365,18 +353,15 @@ export const useSidebarMenu = () => {
         url: "#",
         icon: FileText,
         items: [
-          { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar" },
-          { title: "Sidang", url: "/tugas-akhir/sidang" },
+          ...(role.pembimbing
+            ? [
+                { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+                { title: "Seminar", url: "/tugas-akhir/seminar" },
+                { title: "Sidang", url: "/tugas-akhir/sidang" },
+              ]
+            : []),
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
-      });
-
-      menuItems.push({
-        title: "Yudisium",
-        url: "/yudisium",
-        icon: GraduationCap,
-        items: [],
       });
 
       // Jadwal Ketersediaan — leaf item
@@ -395,13 +380,12 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
+          { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
         ],
       });
-
-      // no Profil for sekdep
 
       return {
         user: {
@@ -416,6 +400,9 @@ export const useSidebarMenu = () => {
     }
 
     // LECTURER (GKM) MENU
+    // GKM (Gugus Kendali Mutu) adalah aktor monitoring kualitas. Role GKM saja
+    // bukan pembimbing TA operasional, tetapi akun multi-role tetap mendapat
+    // menu pembimbing bila punya role Pembimbing 1/2.
     if (role.gkm) {
       const menuItems = [
         {
@@ -423,6 +410,7 @@ export const useSidebarMenu = () => {
           url: "/dashboard",
           icon: SquareTerminal,
           isActive: true,
+          items: [],
         },
         {
           title: "Kerja Praktik",
@@ -430,28 +418,36 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kerja-praktik/dosen/bimbingan" },
+            { title: "Bimbingan", url: "/kerja-praktik/monitoring" },
+            { title: "Seminar & Nilai", url: "/kerja-praktik/monitoring" },
           ],
         },
       ];
+
+      const metopenItems = buildMetopenItems();
+      if (metopenItems.length > 0) {
+        menuItems.push({
+          title: "Metode Penelitian",
+          url: "#",
+          icon: BookOpen,
+          items: metopenItems,
+        });
+      }
 
       menuItems.push({
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
         items: [
-          { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar" },
-          { title: "Sidang", url: "/tugas-akhir/sidang" },
+          ...(role.pembimbing
+            ? [
+                { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+                { title: "Seminar", url: "/tugas-akhir/seminar" },
+                { title: "Sidang", url: "/tugas-akhir/sidang" },
+              ]
+            : []),
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
-      });
-
-      menuItems.push({
-        title: "Yudisium",
-        url: "/yudisium",
-        icon: GraduationCap,
-        items: [],
       });
 
       // Jadwal Ketersediaan — leaf item
@@ -461,8 +457,6 @@ export const useSidebarMenu = () => {
         icon: Clock,
         items: [],
       });
-
-      // no Profil for gkm
 
       return {
         user: {
@@ -491,6 +485,7 @@ export const useSidebarMenu = () => {
             url: "/dashboard",
             icon: SquareTerminal,
             isActive: true,
+            items: [],
           },
           {
             title: "Kerja Praktik",
@@ -520,25 +515,10 @@ export const useSidebarMenu = () => {
             url: "#",
             icon: FileText,
             items: [
-              {
-                title: "Kelola",
-                url: "/tugas-akhir/kelola",
-              },
-              {
-                title: "Seminar Hasil",
-                url: "/tugas-akhir/seminar",
-              },
-              {
-                title: "Sidang",
-                url: "/tugas-akhir/sidang",
-              },
+              { title: "Data TA", url: "/master-data/tugas-akhir" },
+              { title: "Penjadwalan Seminar", url: "/tugas-akhir/seminar/admin" },
+              { title: "Penjadwalan Sidang", url: "/tugas-akhir/sidang/admin" },
             ],
-          },
-          {
-            title: "Yudisium",
-            url: "/yudisium",
-            icon: GraduationCap,
-            items: [],
           },
           {
             title: "Master Data",
@@ -558,10 +538,6 @@ export const useSidebarMenu = () => {
                 url: "/master-data/tugas-akhir",
               },
               {
-                title: "Data Seminar Hasil",
-                url: "/master-data/seminar-hasil",
-              },
-              {
                 title: "Kelola User",
                 url: "/master-data/user",
               },
@@ -570,15 +546,24 @@ export const useSidebarMenu = () => {
                 url: "/master-data/tahun-ajaran",
               },
               {
-                title: "Kelola Ruangan",
-                url: "/master-data/ruangan",
-              },
-              {
                 title: "Kuota Bimbingan",
                 url: "/master-data/kuota-bimbingan",
               },
             ],
           },
+          // ⚠️ DevTools simulator — eligibility set, snapshot SIA dummy.
+          // P1-01: hanya tampil bila VITE_ENABLE_DEV_TOOLS=true atau env=development.
+          // Production wajib OFF agar tidak ada admin dummy yang bocor ke user.
+          ...(ENV.ENABLE_DEV_TOOLS
+            ? [
+                {
+                  title: "Development",
+                  url: "/admin/dev-tools",
+                  icon: Wrench,
+                  items: [],
+                },
+              ]
+            : []),
         ],
         navSecondary: [],
       };
@@ -598,6 +583,7 @@ export const useSidebarMenu = () => {
           url: "/dashboard",
           icon: SquareTerminal,
           isActive: true,
+          items: [],
         },
       ],
       navSecondary: [],
@@ -605,14 +591,16 @@ export const useSidebarMenu = () => {
     // Only recompute when role flags or auth user identity change
   }, [
     // role flags
-    isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing1, isDosenPengampuMetopel,
+    isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing, isKoordinatorMetopen,
     // user deps
-    authUser?.fullName, authUser?.email, authUser?.identityNumber,
+    authUser?.fullName, authUser?.email,
     avatarBlobUrl,
-    advisorAccess?.canOpenLogbook,
-    advisorAccess?.hasOfficialSupervisor
+    advisorAccess?.canBrowseCatalog,
+    advisorAccess?.hasBlockingRequest,
+    advisorAccess?.hasOfficialSupervisor,
+    canAccessMetopel,
+    isMetopenReadOnly
   ]);
 
   return menuData;
 };
-

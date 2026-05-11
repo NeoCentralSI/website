@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { useOutletContext, useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useOutletContext, useParams, useNavigate, Outlet } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,6 @@ import { Loader2 } from 'lucide-react';
 export default function StudentDetailPage() {
     const { internshipId } = useParams<{ internshipId: string }>();
     const navigate = useNavigate();
-    const location = useLocation();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
     // Load basic student data

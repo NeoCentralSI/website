@@ -54,7 +54,7 @@ export default function AdminYudisiumValidation() {
     setTitle(data?.yudisium?.name ?? 'Detail Yudisium');
   }, [setBreadcrumbs, setTitle, data?.yudisium?.name]);
 
-  const participants = data?.participants ?? [];
+  const participants = useMemo(() => data?.participants ?? [], [data?.participants]);
 
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,7 +23,7 @@ export default function CompletedGuidanceHistory() {
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["completed-history"],
-    queryFn: getCompletedGuidanceHistory,
+    queryFn: () => getCompletedGuidanceHistory(),
   });
 
   const guidances = useMemo(() => data?.guidances || [], [data]);
@@ -47,7 +47,7 @@ export default function CompletedGuidanceHistory() {
     return filteredGuidances.slice(start, start + pageSize);
   }, [filteredGuidances, page, pageSize]);
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
@@ -57,15 +57,15 @@ export default function CompletedGuidanceHistory() {
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedIds.size === paginatedGuidances.length) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(paginatedGuidances.map((g) => g.id)));
     }
-  };
+  }, [paginatedGuidances, selectedIds.size]);
 
   const isAllSelected = paginatedGuidances.length > 0 && selectedIds.size === paginatedGuidances.length;
   const isSomeSelected = selectedIds.size > 0;
@@ -138,7 +138,7 @@ export default function CompletedGuidanceHistory() {
         </Button>
       ),
     },
-  ], [selectedIds, isAllSelected]);
+  ], [selectedIds, isAllSelected, toggleSelect, toggleSelectAll]);
 
   return (
     <>

@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
+import type { GuidanceItem, GuidanceStatus, GuidancePhase } from '@/services/studentGuidance.service';
 import { listStudentGuidance } from '@/services/studentGuidance.service';
 
-export function useStudentGuidance() {
+export function useStudentGuidance(phase?: GuidancePhase) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -21,10 +21,10 @@ export function useStudentGuidance() {
   const [pageSize, setPageSize] = useState<number>(initialLimit > 0 ? initialLimit : 10);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['student-guidance', { status }],
+    queryKey: ['student-guidance', { status, phase }],
     queryFn: async () => {
       try {
-        const res = await listStudentGuidance({ status: status || undefined });
+        const res = await listStudentGuidance({ status: status || undefined, phase });
         return (res?.items ?? []) as GuidanceItem[];
       } catch (error) {
         console.error('[useStudentGuidance] API error:', error);

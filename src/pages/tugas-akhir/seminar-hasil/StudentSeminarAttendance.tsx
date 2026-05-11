@@ -32,11 +32,11 @@ export default function StudentSeminarAttendance() {
   const { data, isLoading, isFetching } = useStudentAttendanceHistory();
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Riwayat Kehadiran Seminar</h1>
-          <p className="text-gray-500">Daftar kehadiran Anda pada seminar mahasiswa lain</p>
+          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Riwayat Kehadiran Seminar</h1>
+          <p className="text-xs text-muted-foreground sm:text-sm">Daftar kehadiran Anda pada seminar mahasiswa lain</p>
         </div>
       </div>
 

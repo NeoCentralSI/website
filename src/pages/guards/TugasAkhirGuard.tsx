@@ -26,17 +26,12 @@ export default function TugasAkhirGuard() {
       return (
         <RequirementsNotMet
           title="Tugas Akhir Belum Tersedia"
-          description="Anda belum memenuhi persyaratan untuk mengakses fitur Tugas Akhir."
+          description="Akses Tugas Akhir dibuka setelah snapshot SIA mengonfirmasi Anda sedang mengambil mata kuliah Tugas Akhir."
           requirements={[
             {
-              label: `Minimal 110 SKS`,
-              met: requirements.tugasAkhir.sks.met,
-              description: `SKS Anda saat ini: ${requirements.tugasAkhir.sks.current} SKS`,
-            },
-            {
-              label: "Mengambil mata kuliah Tugas Akhir",
+              label: "Snapshot mata kuliah Tugas Akhir valid",
               met: requirements.tugasAkhir.course.met,
-              description: "Anda harus mengambil mata kuliah Tugas Akhir semester ini",
+              description: requirements.tugasAkhir.course.description,
             },
           ]}
           homeUrl="/dashboard"

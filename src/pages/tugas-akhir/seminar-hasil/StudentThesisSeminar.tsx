@@ -184,11 +184,11 @@ export default function StudentThesisSeminar() {
   const checklistIsRecap = isPassed;
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Seminar Hasil</h1>
-          <p className="text-gray-500">Status dan progres seminar hasil tugas akhir</p>
+          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Seminar Hasil</h1>
+          <p className="text-xs text-muted-foreground sm:text-sm">Status dan progres seminar hasil tugas akhir</p>
         </div>
       </div>
 

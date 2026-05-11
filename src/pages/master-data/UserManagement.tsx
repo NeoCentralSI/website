@@ -3,38 +3,38 @@ import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Plus, Upload, Download, CheckCircle2, XCircle } from 'lucide-react';
+import { Pencil, UserPlus, Upload, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
-import { GenericImportExcelDialog } from '@/components/shared/GenericImportExcelDialog';
-import { UserExportExcelDialog } from '@/components/master-data/UserExportExcelDialog';
-import { importUsersExcelAPI, getUsersAPI, createUserAPI, updateUserAPI } from '@/services/admin.service';
+import { createUserAPI, updateUserAPI, importStudentsCsvAPI, getUsersAPI } from '@/services/admin.service';
 import { toTitleCaseName } from '@/lib/text';
 import { formatRoleName, ROLES } from '@/lib/roles';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserFormDialog } from '@/components/master-data/UserFormDialog';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { UserFormDialog, ImportStudentDialog } from '@/components/master-data';
 import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function UserManagementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const queryClient = useQueryClient();
-
-  // UI state
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isExportOpen, setIsExportOpen] = useState(false);
+  
+  // Local UI state only
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
-
-  // Filters
+  
+  // Server-side filters
   const [identityTypeFilter, setIdentityTypeFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-
-  // Form state
+  
+  // Form state (local UI state)
   const [formData, setFormData] = useState<CreateUserRequest | UpdateUserRequest>({
     fullName: '',
     email: '',
@@ -43,6 +43,7 @@ export default function UserManagementPage() {
     identityType: 'NIM',
   });
 
+  // Memoized breadcrumbs
   const breadcrumbs = useMemo(() => [
     { label: 'Master Data' },
     { label: 'Kelola User' },
@@ -53,66 +54,123 @@ export default function UserManagementPage() {
     setTitle('Kelola User');
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
+  // Convert statusFilter to boolean for API
   const isVerifiedFilter = useMemo(() => {
     if (statusFilter === 'verified') return true;
     if (statusFilter === 'unverified') return false;
     return undefined;
   }, [statusFilter]);
 
+  // Use TanStack Query for server state with all filters
   const { data, isLoading, isFetching, refetch, error } = useQuery({
-    queryKey: ['users', { page, pageSize, search: searchValue, identityType: identityTypeFilter, role: roleFilter, isVerified: isVerifiedFilter }],
-    queryFn: () => getUsersAPI({
-      page,
-      pageSize,
+    queryKey: ['users', { 
+      page, 
+      pageSize, 
+      search: searchValue,
+      identityType: identityTypeFilter,
+      role: roleFilter,
+      isVerified: isVerifiedFilter
+    }],
+    queryFn: () => getUsersAPI({ 
+      page, 
+      pageSize, 
       search: searchValue,
       identityType: identityTypeFilter || undefined,
       role: roleFilter || undefined,
       isVerified: isVerifiedFilter
     }),
     placeholderData: (previousData) => previousData,
+    staleTime: 5 * 60 * 1000,
   });
 
+  // Show error toast
   useEffect(() => {
-    if (error) toast.error((error as Error).message || 'Gagal memuat data user');
+    if (error) {
+      toast.error((error as Error).message || 'Gagal memuat data user');
+    }
   }, [error]);
 
+  // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [searchValue, identityTypeFilter, roleFilter, statusFilter]);
 
+  // Extract users from query data (no client-side filtering needed)
   const users = data?.users || [];
   const total = data?.meta?.total || 0;
 
-  const updateMutation = useMutation({
-    mutationFn: (data: UpdateUserRequest) => updateUserAPI(editingUser!.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setIsFormOpen(false);
-      setEditingUser(null);
-      toast.success('User berhasil diperbarui');
-    },
-    onError: (error: any) => toast.error(error.message || 'Gagal memperbarui user'),
-  });
+  // Invalidate cache after mutations
+  const invalidateUsers = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  };
 
-  const createMutation = useMutation({
-    mutationFn: (data: CreateUserRequest) => createUserAPI(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setIsFormOpen(false);
-      toast.success('User berhasil dibuat');
-    },
-    onError: (error: any) => toast.error(error.message || 'Gagal membuat user'),
-  });
+  const handleOpenDialog = (user?: User) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        fullName: user.fullName,
+        email: user.email,
+        roles: user.roles.map(r => r.name),
+        identityNumber: user.identityNumber,
+        identityType: user.identityType,
+        isVerified: user.isVerified,
+      });
+    } else {
+      setEditingUser(null);
+      setFormData({
+        fullName: '',
+        email: '',
+        roles: ['Mahasiswa'], // Default role for NIM
+        identityNumber: '',
+        identityType: 'NIM',
+      });
+    }
+    setDialogOpen(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingUser) {
-      updateMutation.mutate(formData as UpdateUserRequest);
-    } else {
-      createMutation.mutate(formData as CreateUserRequest);
+    setIsSubmitting(true);
+    
+    try {
+      if (editingUser) {
+        await updateUserAPI(editingUser.id, formData as UpdateUserRequest);
+        toast.success('User berhasil diupdate');
+      } else {
+        await createUserAPI(formData as CreateUserRequest);
+        toast.success('User berhasil dibuat');
+      }
+      
+      setDialogOpen(false);
+      invalidateUsers(); // Invalidate cache to refetch data
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal menyimpan user');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const handleImportCsv = async () => {
+    if (!selectedFile) {
+      toast.error('Pilih file CSV terlebih dahulu');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const result = await importStudentsCsvAPI(selectedFile);
+      toast.success(`Berhasil import ${result.summary?.created || 0} mahasiswa`);
+      setImportDialogOpen(false);
+      setSelectedFile(null);
+      invalidateUsers(); // Invalidate cache to refetch data
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal import CSV');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // Role options for form - using ROLES constants from lib/roles.ts
   const roleOptions = [
     { value: ROLES.ADMIN, label: 'Admin' },
     { value: ROLES.GKM, label: 'GKM' },
@@ -122,21 +180,23 @@ export default function UserManagementPage() {
     { value: ROLES.PEMBIMBING_2, label: 'Pembimbing 2' },
     { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
     { value: ROLES.PENGUJI, label: 'Penguji' },
-    { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
-    { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
-    { value: ROLES.DOSEN_METOPEN, label: 'Dosen Pengampu Metopel' },
+    { value: ROLES.KOORDINATOR_METOPEN, label: 'Koordinator Matkul Metopen' },
   ];
 
-  const columns = useMemo(() => [
+  const columns = [
     {
       key: 'fullName',
       header: 'Nama Lengkap',
-      render: (row: any) => <span className="font-medium">{toTitleCaseName(row.fullName)}</span>,
+      sortable: true,
+      render: (row: any) => (
+        <span className="font-medium">{toTitleCaseName(row.fullName)}</span>
+      ),
     },
     {
       key: 'email',
       header: 'Email',
       accessor: 'email',
+      sortable: true,
     },
     {
       key: 'identityNumber',
@@ -144,7 +204,9 @@ export default function UserManagementPage() {
       render: (row: any) => (
         <div>
           <div className="font-medium">{row.identityNumber || '-'}</div>
-          {row.identityType && <div className="text-xs text-muted-foreground">{row.identityType}</div>}
+          {row.identityType && (
+            <div className="text-xs text-muted-foreground">{row.identityType}</div>
+          )}
         </div>
       ),
       filter: {
@@ -165,7 +227,10 @@ export default function UserManagementPage() {
       render: (row: any) => (
         <div className="flex flex-wrap gap-1">
           {row.roles.map((role: any) => (
-            <Badge key={role.id} variant={role.status === 'active' ? 'default' : 'secondary'}>
+            <Badge
+              key={role.id}
+              variant={role.status === 'active' ? 'default' : 'secondary'}
+            >
               {formatRoleName(role.name)}
             </Badge>
           ))}
@@ -179,15 +244,13 @@ export default function UserManagementPage() {
           { label: 'Semua', value: '' },
           { label: 'Admin', value: ROLES.ADMIN },
           { label: 'GKM', value: ROLES.GKM },
-          { label: 'Kadep', value: ROLES.KETUA_DEPARTEMEN },
-          { label: 'Sekdep', value: ROLES.SEKRETARIS_DEPARTEMEN },
+          { label: 'Ketua Departemen', value: ROLES.KETUA_DEPARTEMEN },
+          { label: 'Sekretaris Departemen', value: ROLES.SEKRETARIS_DEPARTEMEN },
           { label: 'Pembimbing 1', value: ROLES.PEMBIMBING_1 },
           { label: 'Pembimbing 2', value: ROLES.PEMBIMBING_2 },
           { label: 'Mahasiswa', value: ROLES.MAHASISWA },
           { label: 'Penguji', value: ROLES.PENGUJI },
-          { label: 'Koordinator Yudisium', value: ROLES.KOORDINATOR_YUDISIUM },
-          { label: 'Tim Pengelola CPL', value: ROLES.TIM_PENGELOLA_CPL },
-          { label: 'Dosen Pengampu Metopel', value: ROLES.DOSEN_METOPEN },
+          { label: 'Koordinator Metopen', value: ROLES.KOORDINATOR_METOPEN },
         ],
       },
     },
@@ -197,9 +260,15 @@ export default function UserManagementPage() {
       render: (row: any) => (
         <div className="flex items-center gap-2">
           {row.isVerified ? (
-            <><CheckCircle2 className="w-4 h-4 text-green-600" /><span className="text-sm text-green-600">Terverifikasi</span></>
+            <>
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-green-600">Terverifikasi</span>
+            </>
           ) : (
-            <><XCircle className="w-4 h-4 text-gray-400" /><span className="text-sm text-gray-500">Belum Verifikasi</span></>
+            <>
+              <XCircle className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-500">Belum Verifikasi</span>
+            </>
           )}
         </div>
       ),
@@ -220,26 +289,14 @@ export default function UserManagementPage() {
       render: (row: any) => (
         <Button
           variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-black"
-          onClick={() => {
-            setEditingUser(row);
-            setFormData({
-              fullName: row.fullName,
-              email: row.email,
-              roles: row.roles.map((r: any) => r.name),
-              identityNumber: row.identityNumber,
-              identityType: row.identityType,
-              isVerified: row.isVerified
-            });
-            setIsFormOpen(true);
-          }}
+          size="sm"
+          onClick={() => handleOpenDialog(row as User)}
         >
           <Pencil className="w-4 h-4" />
         </Button>
       ),
     },
-  ], [identityTypeFilter, roleFilter, statusFilter]);
+  ];
 
   return (
     <div className="p-6 space-y-6">
@@ -247,6 +304,19 @@ export default function UserManagementPage() {
         <div>
           <h2 className="text-2xl font-bold">Kelola User</h2>
           <p className="text-muted-foreground">Manajemen pengguna sistem</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setImportDialogOpen(true)}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Import CSV
+          </Button>
+          <Button onClick={() => handleOpenDialog()}>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Tambah User
+          </Button>
         </div>
       </div>
 
@@ -265,57 +335,31 @@ export default function UserManagementPage() {
         onSearchChange={setSearchValue}
         enableColumnFilters={true}
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => {
-              setEditingUser(null);
-              setFormData({ fullName: '', email: '', roles: ['Mahasiswa'], identityNumber: '', identityType: 'NIM' });
-              setIsFormOpen(true);
-            }}>
-              <Plus className="w-4 h-4 mr-2" /> Tambah User
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
-              <Upload className="w-4 h-4 mr-2" /> Import Excel
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setIsExportOpen(true)}>
-              <Download className="w-4 h-4 mr-2" /> Export Excel
-            </Button>
-            <RefreshButton onClick={() => refetch()} isRefreshing={isFetching && !isLoading} />
-          </div>
+          <RefreshButton 
+            onClick={() => refetch()} 
+            isRefreshing={isFetching && !isLoading} 
+          />
         }
       />
 
       <UserFormDialog
-        open={isFormOpen}
-        onOpenChange={setIsFormOpen}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
         editingUser={editingUser}
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleSubmit}
         roleOptions={roleOptions}
-        isSubmitting={createMutation.isPending || updateMutation.isPending}
+        isSubmitting={isSubmitting}
       />
 
-      <GenericImportExcelDialog
-        open={isImportOpen}
-        onOpenChange={setIsImportOpen}
-        title="Import Data User"
-        description="Unggah file Excel untuk mendaftarkan user secara massal."
-        templateFilename="Template_Import_User"
-        templateHeaders={["Nama Lengkap", "Email", "NIM/NIP", "Tipe Identitas", "Role"]}
-        templateSampleData={[{
-          "Nama Lengkap": "Budi Santoso",
-          "Email": "budi@student.unand.ac.id",
-          "NIM/NIP": "2111521001",
-          "Tipe Identitas": "NIM",
-          "Role": "Mahasiswa"
-        }]}
-        importFn={importUsersExcelAPI}
-        queryKeys={[['users']]}
-      />
-
-      <UserExportExcelDialog
-        open={isExportOpen}
-        onOpenChange={setIsExportOpen}
+      <ImportStudentDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        selectedFile={selectedFile}
+        onFileChange={setSelectedFile}
+        onImport={handleImportCsv}
+        isImporting={isImporting}
       />
     </div>
   );

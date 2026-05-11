@@ -18,7 +18,8 @@ export default function Dashboard() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [createEventOpen, setCreateEventOpen] = useState(false);
-  const { isDosen } = useRole();
+  const { isKadep, isPembimbing } = useRole();
+  const showQuickActions = isKadep() || isPembimbing();
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Dashboard" }]);
@@ -95,7 +96,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex flex-1 flex-col p-6 h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-1 flex-col h-[calc(100vh-4rem)] overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
         <div className="lg:col-span-2 h-full min-h-0">
           {/* Calendar Only */}
@@ -106,7 +107,7 @@ export default function Dashboard() {
           />
         </div>
         <div className="lg:col-span-1 h-full min-h-0 flex flex-col gap-6">
-          {isDosen() && <QuickActionsCard className="shrink-0" />}
+          {showQuickActions && <QuickActionsCard className="shrink-0" />}
           <UpcomingEventsCard limit={20} className="flex-1 min-h-0" />
         </div>
       </div>
