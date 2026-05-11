@@ -21,7 +21,7 @@ export {
 export {
   useAdminDefenceList,
   useAdminDefenceDetail,
-  useValidateDefenceDocument,
+  useVerifyDefenceDocument,
   useDefenceSchedulingData,
   useSetDefenceSchedule,
   useFinalizeDefenceSchedule,

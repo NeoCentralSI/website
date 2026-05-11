@@ -16,7 +16,7 @@ import type { DocumentSubmitStatus } from '@/types/defence.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/shared';
-import { useValidateDefenceDocument } from '@/hooks/thesis-defence';
+import { useVerifyDefenceDocument } from '@/hooks/thesis-defence';
 import {
   Dialog,
   DialogContent,
@@ -53,7 +53,7 @@ interface Props {
 
 export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
   const { isAdmin } = useRole();
-  const validateMutation = useValidateDefenceDocument();
+  const validateMutation = useVerifyDefenceDocument();
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [selectedDocTypeId, setSelectedDocTypeId] = useState<string | null>(null);
   const [declineNotes, setDeclineNotes] = useState('');
