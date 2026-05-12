@@ -631,7 +631,7 @@ export default function SeminarHasilAnnouncement() {
                       <p className="text-sm tabular-nums">
                         {!cancelTarget.startTime || !cancelTarget.endTime
                           ? formatDateOnlyId(cancelTarget.date)
-                          : `${extractSeminarTime(cancelTarget.startTime)} – ${extractSeminarTime(cancelTarget.endTime)} WIB`}
+                          : `${extractTimeUTC(cancelTarget.startTime)} – ${extractTimeUTC(cancelTarget.endTime)} WIB`}
                       </p>
                     </div>
                   </div>
