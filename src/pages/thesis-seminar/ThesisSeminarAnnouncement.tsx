@@ -27,7 +27,7 @@ import {
   CheckCircle2,
   BookOpen,
 } from 'lucide-react';
-import { toTitleCaseName, formatRoleName } from '@/lib/text';
+import { toTitleCaseName, formatRoleName, formatDateShortId, formatDateOnlyId } from '@/lib/text';
 import { cn } from '@/lib/utils';
 import type { SeminarAnnouncementItem, ThesisSeminarStatus } from '@/types/seminar.types';
 
@@ -169,26 +169,26 @@ function SeminarCard({ seminar, onRegister, onCancel, isRegistering, isCancellin
   const audienceState = seminar.isRegistered
     ? seminar.isPresent
       ? {
-          label: 'Hadir',
-          className: 'bg-green-100 text-green-700',
-          icon: CheckCircle2,
-        }
+        label: 'Hadir',
+        className: 'bg-green-100 text-green-700',
+        icon: CheckCircle2,
+      }
       : isFinalizedResult
         ? {
-            label: 'Tidak Hadir',
-            className: 'bg-rose-100 text-rose-700',
-            icon: XCircle,
-          }
+          label: 'Tidak Hadir',
+          className: 'bg-rose-100 text-rose-700',
+          icon: XCircle,
+        }
         : {
-            label: 'Terdaftar',
-            className: 'bg-amber-50 text-amber-700',
-            icon: UserCheck,
-          }
+          label: 'Terdaftar',
+          className: 'bg-amber-50 text-amber-700',
+          icon: UserCheck,
+        }
     : {
-        label: seminar.isPast ? 'Terlewat' : 'Belum daftar',
-        className: 'bg-muted/60 text-muted-foreground',
-        icon: seminar.isPast ? XCircle : UserCheck,
-      }
+      label: seminar.isPast ? 'Selesai' : 'Belum daftar',
+      className: 'bg-muted/60 text-muted-foreground',
+      icon: seminar.isPast ? CheckCircle2 : UserCheck,
+    }
   const AudienceStateIcon = audienceState.icon
 
   return (
@@ -219,7 +219,11 @@ function SeminarCard({ seminar, onRegister, onCancel, isRegistering, isCancellin
         <div className="flex sm:flex-col gap-3 sm:gap-1.5 sm:w-32 shrink-0 sm:pt-0.5">
           <div className="flex items-center gap-1.5 text-sm font-semibold tabular-nums">
             <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span>{startTime} – {endTime}</span>
+            <span className={!seminar.startTime || !seminar.endTime ? 'text-[11px] leading-tight' : ''}>
+              {!seminar.startTime || !seminar.endTime 
+                ? formatDateShortId(seminar.date)
+                : `${startTime} – ${endTime}`}
+            </span>
           </div>
           {seminar.room && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -267,13 +271,15 @@ function SeminarCard({ seminar, onRegister, onCancel, isRegistering, isCancellin
 
         {/* Status + Action column */}
         <div className="flex flex-col items-end justify-between gap-2 shrink-0 self-stretch sm:min-w-[120px]">
-          <div className={cn(
-            'flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap',
-            audienceState.className
-          )}>
-            <AudienceStateIcon className="h-3 w-3" />
-            {audienceState.label}
-          </div>
+          {!(seminar.isOwn && !seminar.isPast && !seminar.isRegistered) && (
+            <div className={cn(
+              'flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap',
+              audienceState.className
+            )}>
+              <AudienceStateIcon className="h-3 w-3" />
+              {audienceState.label}
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex flex-col items-end gap-2 mt-auto">
@@ -316,7 +322,7 @@ function SeminarCard({ seminar, onRegister, onCancel, isRegistering, isCancellin
                   </Button>
                 )}
                 {seminar.isPast && !seminar.isRegistered && (
-                  <span className="text-xs text-muted-foreground/60 italic">Terlewat</span>
+                  <span className="text-xs text-muted-foreground/60 italic">Selesai</span>
                 )}
               </>
             )}
@@ -418,7 +424,7 @@ export default function SeminarHasilAnnouncement() {
       <div>
         <h1 className="text-2xl font-bold">Pengumuman Seminar Hasil</h1>
         <p className="text-muted-foreground">
-          Jadwal seminar hasil mahasiswa yang telah ditetapkan. Daftar hadir untuk memenuhi syarat kehadiran seminar.
+          Jadwal seminar hasil mahasiswa yang telah ditetapkan
         </p>
       </div>
 
@@ -622,7 +628,11 @@ export default function SeminarHasilAnnouncement() {
                     </div>
                     <div>
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Waktu</p>
-                      <p className="text-sm tabular-nums">{extractTimeUTC(cancelTarget.startTime)} – {extractTimeUTC(cancelTarget.endTime)}</p>
+                      <p className="text-sm tabular-nums">
+                        {!cancelTarget.startTime || !cancelTarget.endTime
+                          ? formatDateOnlyId(cancelTarget.date)
+                          : `${extractSeminarTime(cancelTarget.startTime)} – ${extractSeminarTime(cancelTarget.endTime)} WIB`}
+                      </p>
                     </div>
                   </div>
                 )}

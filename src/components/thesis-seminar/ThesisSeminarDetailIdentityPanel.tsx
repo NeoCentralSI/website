@@ -13,7 +13,7 @@ import type { DocumentSubmitStatus } from '@/types/seminar.types';
 import { BookOpen, Calendar, Eye, FileText } from 'lucide-react';
 
 function extractSeminarTime(timeIso?: string | null): string {
-  if (!timeIso) return '--';
+  if (!timeIso) return '--:--';
   const d = new Date(timeIso);
   return `${String(d.getUTCHours()).padStart(2, '0')}.${String(d.getUTCMinutes()).padStart(2, '0')}`;
 }
@@ -82,9 +82,9 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
               <div>
                 <p className="text-xs text-muted-foreground">Waktu</p>
                 <p className="text-sm font-medium mt-0.5">
-                  {detail.date && detail.startTime
-                    ? `${extractSeminarTime(detail.startTime)} – ${extractSeminarTime(detail.endTime)} WIB`
-                    : '--'}
+                  {!detail.startTime || !detail.endTime
+                    ? formatDateOnlyId(detail.date)
+                    : `${extractSeminarTime(detail.startTime)} – ${extractSeminarTime(detail.endTime)} WIB`}
                 </p>
               </div>
               <div>
