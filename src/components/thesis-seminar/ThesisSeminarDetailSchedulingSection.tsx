@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -129,6 +129,14 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState<boolean>(false);
 
+  // Sync selectedRoomId with current schedule when data loads
+  useEffect(() => {
+    if (schedulingData?.currentSchedule?.roomId) {
+      setSelectedRoomId(schedulingData.currentSchedule.roomId);
+    }
+  }, [schedulingData]);
+
+
   // ── Stable color assignment per lecturer ──────────────────────────────────
   const lecturerColorMap = useMemo(() => {
     if (!schedulingData) return {} as Record<string, string>;
@@ -185,7 +193,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
     return events;
   }, [schedulingData, lecturerColorMap]);
 
-  const effectiveRoomId = selectedRoomId || schedulingData?.rooms[0]?.id;
+  const effectiveRoomId = selectedRoomId || schedulingData?.currentSchedule?.roomId || schedulingData?.rooms[0]?.id;
 
   // ── Blocked events for chosen room (red) ──────────────────────────────────
   const blockedEvents = useMemo((): EventInput[] => {
@@ -213,7 +221,13 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const scheduleEvent = useMemo((): EventInput[] => {
     const cs = schedulingData?.currentSchedule;
     if (!cs?.date || !cs.startTime || !cs.endTime) return [];
+    
+    // Only show the green 'Draft' card if it's still in examiner_assigned status
+    // Once finalized, it will be shown as a blue 'Locked' card via blockedEvents
+    if (seminarDetail?.status !== 'examiner_assigned') return [];
+    
     const dateStr = cs.date.slice(0, 10);
+
     const scheduleTitle = cs.isOnline
       ? '📌 Seminar Daring'
       : `📌 Seminar${cs.room ? ` · ${cs.room.name}` : ''}`;
@@ -228,7 +242,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
       classNames: ['schedule-event'],
       extendedProps: { type: 'schedule' },
     }];
-  }, [schedulingData]);
+  }, [schedulingData, seminarDetail]);
 
   const allEvents = useMemo(
     () => [...availabilityEvents, ...scheduleEvent, ...blockedEvents],
@@ -311,11 +325,15 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
       };
       const targetDay = dayIndexMap[dayName];
 
+      // Use local-date arithmetic to avoid the UTC midnight-rollover bug
+      // that causes off-by-one day errors when running after 17:00 WIB (+7).
       const now = new Date();
+      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       for (let d = 0; d < 30; d++) {
-        const testDate = new Date(now.getTime() + d * 24 * 60 * 60 * 1000);
+        const testDate = new Date(todayLocal);
+        testDate.setDate(todayLocal.getDate() + d);
         if (testDate.getDay() === targetDay) {
-          const dateStr = testDate.toISOString().slice(0, 10);
+          const dateStr = toLocalDateStr(testDate);
 
           twoHourSlots.forEach((timeSlot) => {
             const sH = Math.floor(timeSlot.start / 60);
@@ -351,7 +369,14 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
       }
     });
 
-    return recommendationsList.sort((a, b) => {
+    // Clamp recommendations to 06:00-18:00 window
+    const clampedList = recommendationsList.filter((r) => {
+      const [sH] = r.startTime.split(':').map(Number);
+      const [eH, eM] = r.endTime.split(':').map(Number);
+      return sH >= 6 && (eH < 18 || (eH === 18 && eM === 0));
+    });
+
+    return clampedList.sort((a, b) => {
       const dateCompare = a.date.localeCompare(b.date);
       if (dateCompare !== 0) return dateCompare;
       return a.startTime.localeCompare(b.startTime);
@@ -400,9 +425,17 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const validateForm = (s: PendingSchedule): string | null => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const selected = new Date(s.date);
+    // Use local date parsing to avoid UTC offset causing wrong weekday
+    const [yr, mo, dy] = s.date.split('-').map(Number);
+    const selected = new Date(yr, mo - 1, dy);
     if (selected < today) return 'Tanggal tidak boleh berada di masa lalu.';
+    const dayOfWeek = selected.getDay(); // 0=Sun, 6=Sat
+    if (dayOfWeek === 0 || dayOfWeek === 6) return 'Seminar hanya dapat dijadwalkan pada hari kerja (Senin – Jumat).';
     if (s.startTime >= s.endTime) return 'Waktu mulai harus sebelum waktu selesai.';
+    const [startH] = s.startTime.split(':').map(Number);
+    const [endH, endM] = s.endTime.split(':').map(Number);
+    if (startH < 6) return 'Waktu mulai tidak boleh sebelum pukul 06.00.';
+    if (endH > 18 || (endH === 18 && endM > 0)) return 'Waktu selesai tidak boleh setelah pukul 18.00.';
     if (s.isOnline) {
       if (!s.meetingLink.trim()) return 'URL meeting wajib diisi untuk seminar daring.';
       try {
@@ -599,7 +632,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                   )}
                   {schedulingData?.rooms?.length > 0 && (
                     <Select
-                      value={selectedRoomId || schedulingData.rooms[0]?.id}
+                      value={selectedRoomId || schedulingData?.currentSchedule?.roomId || schedulingData.rooms[0]?.id}
                       onValueChange={(val) => setSelectedRoomId(val)}
                       disabled={['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status as string)}
                     >
@@ -654,7 +687,8 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                   }}
                   height="100%"
                   slotMinTime="06:00:00"
-                  slotMaxTime="22:00:00"
+                  slotMaxTime="18:00:00"
+                  selectConstraint={{ startTime: '06:00', endTime: '18:00', dows: [1, 2, 3, 4, 5] }}
                   nowIndicator
                   allDaySlot={false}
                   weekends={false}
@@ -967,7 +1001,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                     value={pendingSchedule.date ? new Date(pendingSchedule.date) : undefined}
                     onChange={(date) => {
                       setFormError(null);
-                      setPendingSchedule((prev) => prev ? { ...prev, date: date ? date.toISOString().split('T')[0] : '' } : prev);
+                      setPendingSchedule((prev) => prev ? { ...prev, date: date ? toLocalDateStr(date) : '' } : prev);
                     }}
                   />
                 </div>
