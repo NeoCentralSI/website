@@ -518,7 +518,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               <span className="text-muted-foreground">
                 Rata-rata: <span className="font-bold text-foreground">{finalData.seminar?.finalScore?.toFixed(2)}</span>
               </span>
-              <span className="text-[10px] text-muted-foreground">Min. lulus: 55</span>
+              <span className="text-[10px] text-muted-foreground">Batas kelulusan: 55</span>
             </div>
           </div>
           
@@ -546,9 +546,15 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Aspek Penilaian</th>
               {finalData.examiners?.map((ex) => (
                 <th key={ex.id} className="px-3 py-2 text-center font-semibold text-muted-foreground border-l w-36">
-                  <div className="flex flex-col items-center leading-tight">
+                  <div className="flex flex-col items-center leading-tight gap-1">
                     <span>Penguji {ex.order}</span>
-                    <span className="text-[10px] font-normal text-muted-foreground mt-0.5 truncate max-w-[120px]">
+                    <Badge 
+                      variant={ex.assessmentSubmittedAt ? 'success' : ex.isDraft ? 'warning' : 'secondary'}
+                      className="text-[9px] px-1.5 py-0 h-4 font-bold uppercase"
+                    >
+                      {ex.assessmentSubmittedAt ? 'Sudah Submit' : ex.isDraft ? 'Draf' : 'Belum Isi'}
+                    </Badge>
+                    <span className="text-[9px] font-normal text-muted-foreground truncate max-w-[120px]">
                       {ex.lecturerName}
                     </span>
                   </div>
@@ -566,7 +572,29 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                   <tr className="bg-muted/10 font-semibold border-b">
                     <td className="px-3 py-2 text-foreground">{groupLetter}</td>
                     <td colSpan={1 + (finalData.examiners?.length || 0)} className="px-3 py-2 text-foreground">
-                      {group.code} <span className="text-muted-foreground font-normal">(maksimal nilai = {groupMaxScore})</span>
+                      <div className="flex items-center gap-2">
+                        <span>{group.code}</span>
+                        <span className="text-muted-foreground font-normal">(maks. {groupMaxScore})</span>
+                        <Collapsible>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-muted/50 rounded-full">
+                              <span className="text-[10px] font-bold text-primary">i</span>
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="mt-1 p-2 bg-muted/5 rounded border text-[10px] font-normal leading-normal w-full max-w-md">
+                              {group.criteria.map(c => (
+                                <div key={c.id} className="mb-1 last:mb-0">
+                                  <div className="font-bold">{c.name}</div>
+                                  <div className="text-muted-foreground italic">
+                                    Rubrik: {c.rubrics.map(r => `${r.minScore}-${r.maxScore}: ${r.description}`).join(' | ')}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </div>
                     </td>
                   </tr>
 
@@ -645,12 +673,12 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                 {finalData.averageScore !== null ? (
                   <div className="flex items-center justify-end gap-2">
                     <span>{finalData.averageScore?.toFixed(2)}<span className="text-muted-foreground font-normal">/{totalMaxScore}</span></span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${(finalData.averageScore || 0) >= 55 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                      {(finalData.averageScore || 0) >= 55 ? '✓ Lulus' : '✕ Tidak Lulus'}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${(finalData.averageScore || 0) >= 55 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                      {(finalData.averageScore || 0) >= 55 ? '✓ LULUS' : '✕ TIDAK LULUS'}
                     </span>
                   </div>
                 ) : (
-                  <span className="text-muted-foreground">-/{totalMaxScore}</span>
+                  <span className="text-muted-foreground">Menunggu Penilaian...</span>
                 )}
               </td>
             </tr>
@@ -709,7 +737,16 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
 
       {!isFinalized && isSupervisor && finalData.recommendationUnlocked && (
         <div className="space-y-4 pt-4 border-t">
-          <h3 className="text-sm font-semibold text-foreground">Keputusan Seminar</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Keputusan Seminar</h3>
+            <div className="text-xs text-muted-foreground bg-muted/30 px-3 py-1 rounded-full border border-dashed">
+              Hasil Sementara: <span className="font-bold text-foreground">{finalData.averageScore?.toFixed(2) || '0.00'}</span> 
+              <span className="mx-2">|</span>
+              Status: <span className={`font-bold ${(finalData.averageScore || 0) >= 55 ? 'text-green-600' : 'text-red-600'}`}>
+                {(finalData.averageScore || 0) >= 55 ? 'LULUS' : 'TIDAK LULUS'}
+              </span>
+            </div>
+          </div>
           <div className="flex flex-col items-end gap-3">
             {(finalData.averageScore || 0) >= 55 ? (
               <div className="flex items-center space-x-2 self-start">
