@@ -223,9 +223,12 @@ function RevisionBoardSection({
   const summary = (board as any)?.summary || {
     total: revisions.length,
     finished: revisions.filter((r: any) => r.isFinished).length,
+    pendingApproval: revisions.filter((r: any) => r.studentSubmittedAt && !r.isFinished).length,
   };
 
-  const canFinalizeBoard = !isRevisionFinalized && summary.finished > 0;
+  const hasSubmittedItems = revisions.some(r => r.studentSubmittedAt || r.isFinished);
+  const allSubmittedApproved = revisions.every(r => !r.studentSubmittedAt || r.isFinished);
+  const canFinalizeBoard = !isRevisionFinalized && revisions.length > 0 && hasSubmittedItems && allSubmittedApproved;
 
   const handleCreate = async () => {
     if (!selectedExaminerId || !newDescription.trim()) return;
@@ -433,11 +436,6 @@ function RevisionBoardSection({
                 <Badge variant="success" className="text-xs px-2 py-1">
                   <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
                 </Badge>
-                {detail?.revisionFinalizedBy && (
-                  <span className="text-[10px] text-muted-foreground mt-1">
-                    Oleh {toTitleCaseName(detail.revisionFinalizedBy)}
-                  </span>
-                )}
               </div>
             )}
 

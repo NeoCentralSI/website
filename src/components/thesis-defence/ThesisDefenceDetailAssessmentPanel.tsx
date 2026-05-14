@@ -30,6 +30,12 @@ import {
   useFinalizeDefenceBySupervisor,
   useDownloadAssessmentResult,
 } from '@/hooks/thesis-defence';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Info } from 'lucide-react';
 import { formatDateTimeId, toTitleCaseName } from '@/lib/text';
 import type { FinalizeDefencePayload } from '@/types/defence.types';
 
@@ -461,7 +467,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
     if (!defenceId || finalScore === null) return;
     
     let status: FinalizeDefencePayload['status'] = 'failed';
-    if (finalScore >= 50) {
+    if (finalScore >= 55) {
       status = needsRevision ? 'passed_with_revision' : 'passed';
     }
 
@@ -469,7 +475,8 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
       await finalizeMutation.mutateAsync({
         defenceId,
         payload: { 
-          status, // Still send for type compatibility, but backend will recalculate
+          status,
+          recommendRevision: needsRevision,
         },
       });
       toast.success('Hasil sidang berhasil ditetapkan.');
@@ -484,7 +491,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
         <div className="flex flex-col sm:flex-row gap-4 items-stretch">
           <div className="flex-1 flex items-center justify-between flex-wrap gap-2 bg-muted/20 px-4 py-3 rounded-md border text-xs">
             <span className="text-muted-foreground">
-              Sidang ditetapkan pada <span className="font-semibold text-foreground">{formatDateTimeId(data.defence.resultFinalizedAt)}</span>
+              Sidang difinalisasi pada <span className="font-semibold text-foreground">{formatDateTimeId(data.defence.resultFinalizedAt)}</span>
               {data.defence.resultFinalizedBy && (
                 <> oleh <span className="font-semibold text-foreground">{toTitleCaseName(data.defence.resultFinalizedBy)}</span></>
               )}
@@ -533,10 +540,16 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
               </tr>
               <tr className="bg-muted/40 border-b">
                 {data.examiners.map((ex: any, i: number) => (
-                  <th key={ex.id} className="px-3 py-1 text-center font-semibold text-muted-foreground border-r last:border-0 w-32">
-                    <div className="flex flex-col items-center leading-tight">
+                  <th key={ex.id} className="px-3 py-2 text-center font-semibold text-muted-foreground border-r last:border-0 w-36">
+                    <div className="flex flex-col items-center leading-tight gap-1.5">
                       <span>Penguji {i + 1}</span>
-                      <span className="text-[10px] font-normal text-muted-foreground mt-0.5 truncate max-w-[110px]" title={ex.lecturerName}>
+                      <Badge
+                        variant={ex.assessmentSubmittedAt ? 'success' : ex.isDraft ? 'warning' : 'secondary'}
+                        className="text-[9px] px-1.5 py-0 h-4 font-bold uppercase"
+                      >
+                        {ex.assessmentSubmittedAt ? 'Sudah Submit' : ex.isDraft ? 'Draf' : 'Belum Isi'}
+                      </Badge>
+                      <span className="text-[10px] font-normal text-muted-foreground truncate max-w-[110px]" title={ex.lecturerName}>
                         {ex.lecturerName}
                       </span>
                     </div>
@@ -551,8 +564,37 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                   <tr key={group.code} className="border-b hover:bg-muted/5 transition-colors">
                     <td className="px-3 py-2 text-center border-r font-medium text-muted-foreground">{gIdx + 1}</td>
                     <td className="px-3 py-2 border-r">
-                      <span className="font-semibold">{group.code}</span>
-                      <span className="text-muted-foreground ml-1">(maks. {groupMaxScore})</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{group.code}</span>
+                        <span className="text-muted-foreground">(maks. {groupMaxScore})</span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
+                              <Info className="h-3 w-3 text-primary" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-0 shadow-xl border-primary/20" side="right" align="start">
+                            <div className="bg-primary/5 px-3 py-2 border-b border-primary/10">
+                              <h4 className="text-xs font-bold text-primary">Rubrik Penilaian: {group.code}</h4>
+                            </div>
+                            <div className="p-3 space-y-3">
+                              {group.criteria.map((c: any) => (
+                                <div key={c.id} className="space-y-1.5">
+                                  <div className="text-[11px] font-bold border-b pb-0.5">{c.name}</div>
+                                  <div className="space-y-1">
+                                    {(c.rubrics || []).map((r: any) => (
+                                      <div key={r.id} className="flex gap-2 text-[10px] leading-relaxed">
+                                        <span className="font-bold shrink-0 min-w-[30px]">{r.minScore}-{r.maxScore}:</span>
+                                        <span className="text-muted-foreground italic">{r.description}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </td>
                     {data.examiners.map((ex: any) => {
                       const exGroup = ex.assessmentDetails?.find((g: any) => g.code === group.code);
@@ -647,8 +689,37 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                     <tr key={group.code} className="border-b hover:bg-muted/5 transition-colors">
                       <td className="px-3 py-2 text-center border-r font-medium text-muted-foreground">{gIdx + 1}</td>
                       <td className="px-3 py-2 border-r">
-                        <span className="font-semibold">{group.code}</span>
-                        <span className="text-muted-foreground ml-1">(maks. {groupMaxScore})</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{group.code}</span>
+                          <span className="text-muted-foreground">(maks. {groupMaxScore})</span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
+                                <Info className="h-3 w-3 text-primary" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-0 shadow-xl border-primary/20" side="right" align="start">
+                              <div className="bg-primary/5 px-3 py-2 border-b border-primary/10">
+                                <h4 className="text-xs font-bold text-primary">Rubrik Penilaian: {group.code}</h4>
+                              </div>
+                              <div className="p-3 space-y-3">
+                                {group.criteria.map((c: any) => (
+                                  <div key={c.id} className="space-y-1.5">
+                                    <div className="text-[11px] font-bold border-b pb-0.5">{c.name}</div>
+                                    <div className="space-y-1">
+                                      {(c.rubrics || []).map((r: any) => (
+                                        <div key={r.id} className="flex gap-2 text-[10px] leading-relaxed">
+                                          <span className="font-bold shrink-0 min-w-[30px]">{r.minScore}-{r.maxScore}:</span>
+                                          <span className="text-muted-foreground italic">{r.description}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-center font-bold">{formatScoreFraction(score, groupMaxScore)}</td>
                     </tr>
@@ -754,20 +825,37 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
         )}
 
         {isFinalized ? (
-          <div className="space-y-2">
-            {FINAL_RECOMMENDATIONS.map((option) => {
-              const isSelected = data.defence.status === option.value;
-              if (!isSelected) return null;
-              return (
-                <div key={option.value} className="flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 p-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-green-700">{option.label}</p>
-                    <p className="text-xs text-green-600">{option.desc}</p>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {FINAL_RECOMMENDATIONS.map((option) => {
+                const isSelected = data.defence.status === option.value;
+                if (!isSelected) return null;
+                return (
+                  <div key={option.value} className="flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 p-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-green-700">{option.label}</p>
+                      <p className="text-xs text-green-600">{option.desc}</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            <div className="flex-1 flex items-center justify-between flex-wrap gap-2 bg-muted/20 px-4 py-3 rounded-md border text-[11px]">
+              <span className="text-muted-foreground">
+                Sidang difinalisasi pada <span className="font-semibold text-foreground">{formatDateTimeId(data.defence.resultFinalizedAt || '')}</span>
+                {data.defence.resultFinalizedBy && (
+                  <> oleh <span className="font-semibold text-foreground">{toTitleCaseName(data.defence.resultFinalizedBy)}</span></>
+                )}
+              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-muted-foreground">
+                  Skor Akhir: <span className="font-bold text-foreground">{data.defence.finalScore?.toFixed(2)}</span>
+                </span>
+                <span className="text-[10px] text-muted-foreground">Batas kelulusan: 55</span>
+              </div>
+            </div>
           </div>
         ) : isSupervisor && data.recommendationUnlocked ? (
           <div className="space-y-4">
@@ -777,12 +865,12 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                   <h4 className="font-bold text-sm">Status Kelulusan Otomatis</h4>
                   <p className="text-xs text-muted-foreground">Berdasarkan akumulasi nilai rata-rata penguji dan pembimbing.</p>
                 </div>
-                <Badge variant={finalScore !== null && finalScore < 50 ? 'destructive' : 'success'} className="px-3 py-1">
-                  {finalScore !== null && finalScore < 50 ? 'GAGAL (Tidak Lulus)' : 'LULUS'}
+                <Badge variant={finalScore !== null && finalScore < 55 ? 'destructive' : 'success'} className="px-3 py-1">
+                  {finalScore !== null && finalScore < 55 ? 'GAGAL (Tidak Lulus)' : 'LULUS'}
                 </Badge>
               </div>
 
-              {finalScore !== null && finalScore >= 50 && (
+              {finalScore !== null && finalScore >= 55 && (
                 <div className="flex items-center space-x-2 pt-2 border-t border-primary/10">
                   <Checkbox
                     id="needs-revision"
@@ -852,5 +940,5 @@ function formatScoreFraction(score: number | null, max: number): string {
 const FINAL_RECOMMENDATIONS = [
   { value: 'passed', label: 'Lulus', desc: 'Mahasiswa lulus sidang tanpa revisi.' },
   { value: 'passed_with_revision', label: 'Lulus dengan Revisi', desc: 'Mahasiswa lulus dengan kewajiban menyelesaikan revisi.' },
-  { value: 'failed', label: 'Gagal', desc: 'Mahasiswa belum lulus dan harus mengulang sidang.' },
+  { value: 'failed', label: 'Tidak Lulus', desc: 'Mahasiswa belum lulus dan harus mengulang sidang.' },
 ];

@@ -105,12 +105,18 @@ export function LecturerThesisSeminarExaminerResponseDialog({
 
               {seminar.supervisors.length > 0 && (
                 <div className="pt-2 border-t space-y-1">
-                  {seminar.supervisors.map((s, i) => (
-                    <div key={i} className="text-xs text-muted-foreground">
-                      <span>{formatRoleName(s.role)}:</span>{' '}
-                      <span className="text-foreground">{toTitleCaseName(s.name)}</span>
-                    </div>
-                  ))}
+                  {[...seminar.supervisors]
+                    .sort((a, b) => {
+                      const rankA = a.role.toLowerCase().includes('1') ? 1 : a.role.toLowerCase().includes('2') ? 2 : 3;
+                      const rankB = b.role.toLowerCase().includes('1') ? 1 : b.role.toLowerCase().includes('2') ? 2 : 3;
+                      return rankA - rankB;
+                    })
+                    .map((s, i) => (
+                      <div key={i} className="text-xs text-muted-foreground">
+                        <span>{formatRoleName(s.role)}:</span>{' '}
+                        <span className="text-foreground">{toTitleCaseName(s.name)}</span>
+                      </div>
+                    ))}
                 </div>
               )}
             </div>

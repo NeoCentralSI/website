@@ -542,6 +542,12 @@ export interface DefenceFinalizationDataResponse {
         maxScore: number;
         score: number;
         displayOrder: number;
+        rubrics?: {
+          id: string;
+          minScore: number;
+          maxScore: number;
+          description: string;
+        }[];
       }[];
     }[];
   }[];
@@ -559,6 +565,12 @@ export interface DefenceFinalizationDataResponse {
         maxScore: number;
         score: number;
         displayOrder: number;
+        rubrics?: {
+          id: string;
+          minScore: number;
+          maxScore: number;
+          description: string;
+        }[];
       }[];
     }[];
   };
@@ -569,6 +581,7 @@ export interface DefenceFinalizationDataResponse {
 
 export interface FinalizeDefencePayload {
   status: 'passed' | 'passed_with_revision' | 'failed';
+  recommendRevision?: boolean;
 }
 
 export interface FinalizeDefenceResponse {
