@@ -73,7 +73,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
     }
   };
 
-  const supervisors: any[] = detail.supervisors || [];
+  const supervisors: any[] = [...(detail.supervisors || [])].sort((a, b) => (a.role || '').localeCompare(b.role || ''));
   const examiners: any[] = detail.examiners || [];
   const documentTypes: any[] = detail.documentTypes || [];
   const documents: any[] = detail.documents || [];
@@ -99,6 +99,17 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                 <p className="text-xs text-muted-foreground">NIM</p>
                 <p className="text-sm font-medium mt-0.5">{detail.student?.nim}</p>
               </div>
+
+              {examiners.map((e: any) => (
+                <div key={e.id}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Penguji {e.order}</p>
+                    <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[9px] px-1 py-0 h-4" />
+                  </div>
+                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(e.lecturerName)}</p>
+                </div>
+              ))}
+
               <div>
                 <p className="text-xs text-muted-foreground">Tanggal Sidang</p>
                 <p className="text-sm font-medium mt-0.5">
@@ -114,7 +125,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Tempat</p>
+                <p className="text-xs text-muted-foreground">Ruangan</p>
                 <div className="text-sm font-medium mt-0.5 leading-snug">
                   {detail.room?.name || '-'}
                   {detail.meetingLink && (
@@ -129,16 +140,12 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                   )}
                 </div>
               </div>
-
-              {examiners.map((e: any) => (
-                <div key={e.id}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">Penguji {e.order}</p>
-                    <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[9px] px-1 py-0 h-4" />
-                  </div>
-                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(e.lecturerName)}</p>
+              {detail.scheduledAt && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Jadwal Ditetapkan Pada</p>
+                  <p className="text-sm font-medium mt-0.5">{formatDateOnlyId(detail.scheduledAt)}</p>
                 </div>
-              ))}
+              )}
 
               {detail.rejectedExaminers && detail.rejectedExaminers.length > 0 && (
                 <div className="pt-2 border-t">

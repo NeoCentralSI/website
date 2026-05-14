@@ -35,10 +35,10 @@ interface Props {
 }
 
 export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
-  const supervisors: any[] = detail.supervisors || (detail.thesis?.supervisors || []).map((s: any) => ({
+  const supervisors: any[] = [...(detail.supervisors || (detail.thesis?.supervisors || []).map((s: any) => ({
     name: s.lecturerName || s.name,
     role: s.role,
-  }));
+  })))].sort((a, b) => (a.role || '').localeCompare(b.role || ''));
 
   const examiners: any[] = detail.examiners ?? [];
   const documentTypes: any[] = detail.documentTypes ?? [];
@@ -73,6 +73,14 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                 <p className="text-xs text-muted-foreground">NIM</p>
                 <p className="text-sm font-medium mt-0.5">{detail.student?.nim}</p>
               </div>
+
+              {examiners.map((e: any, index: number) => (
+                <div key={e.id || index}>
+                  <p className="text-xs text-muted-foreground">Penguji {e.order || index + 1}</p>
+                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(e.lecturerName)}</p>
+                </div>
+              ))}
+
               <div>
                 <p className="text-xs text-muted-foreground">Tanggal</p>
                 <p className="text-sm font-medium mt-0.5">
@@ -83,13 +91,13 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                 <p className="text-xs text-muted-foreground">Waktu</p>
                 <p className="text-sm font-medium mt-0.5">
                   {!detail.startTime || !detail.endTime
-                    ? formatDateOnlyId(detail.date)
+                    ? detail.date ? formatDateOnlyId(detail.date) : '--:--'
                     : `${extractSeminarTime(detail.startTime)} – ${extractSeminarTime(detail.endTime)} WIB`}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Tempat</p>
-                <p className="text-sm font-medium mt-0.5">
+                <p className="text-xs text-muted-foreground">Ruangan</p>
+                <div className="text-sm font-medium mt-0.5 leading-snug">
                   {detail.room?.name || '-'}
                   {detail.meetingLink && (
                     <a
@@ -101,15 +109,14 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                       {detail.meetingLink}
                     </a>
                   )}
-                </p>
-              </div>
-
-              {examiners.map((e: any, index: number) => (
-                <div key={e.id || index}>
-                  <p className="text-xs text-muted-foreground">Penguji {e.order || index + 1}</p>
-                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(e.lecturerName)}</p>
                 </div>
-              ))}
+              </div>
+              {detail.scheduledAt && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Jadwal Ditetapkan Pada</p>
+                  <p className="text-sm font-medium mt-0.5">{formatDateOnlyId(detail.scheduledAt)}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

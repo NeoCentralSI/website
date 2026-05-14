@@ -76,6 +76,19 @@ function formatDateLong(dateStr: string): string {
   });
 }
 
+/** Format an ISO date string to "2 Maret 2026, 14:30" in ID locale */
+function formatDateTime(isoStr: string | null): string {
+  if (!isoStr) return '-';
+  const d = new Date(isoStr);
+  return d.toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 // Matches CalendarDashboard's getEventColor palette
 const LECTURER_COLORS = [
   '#3b82f6', // blue-500
@@ -117,6 +130,9 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   const [inputNomorSurat, setInputNomorSurat] = useState<string>('');
 
   const handleDownloadInvitation = () => {
+    if ((defenceDetail as any)?.invitationLetterNo) {
+      setInputNomorSurat((defenceDetail as any).invitationLetterNo);
+    }
     setIsInvitationDialogOpen(true);
   };
 
@@ -191,24 +207,35 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   // ── Blocked events for chosen room (red) ──────────────────────────────────
   const blockedEvents = useMemo((): EventInput[] => {
     if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
+    
+    // Statuses that are NOT 'Draft'
+    const finalizedStatuses = ['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'];
+    const isDraft = !finalizedStatuses.includes(defenceDetail?.status as string);
+
     return schedulingData.roomBookings
       .filter((b: DefenceRoomBooking) => b.roomId === effectiveRoomId)
       .map((b: DefenceRoomBooking) => {
         const dateStr = b.date.slice(0, 10);
+        const isCurrentDefence = b.id === `defence-${defenceId}`;
+
+        // Draft color (green) vs Finalized color (sky blue)
+        const activeBgColor = isDraft ? '#16a34a' : '#0ea5e9';
+        const activeBorderColor = isDraft ? '#15803d' : '#0284c7';
+
         return {
           id: `blocked-${b.id}`,
           title: `🔒 ${b.title}`,
           start: `${dateStr}T${extractTime(b.startTime)}:00`,
           end: `${dateStr}T${extractTime(b.endTime)}:00`,
-          backgroundColor: b.id === `defence-${defenceId}` ? '#0ea5e9' : '#ef4444',
-          borderColor: b.id === `defence-${defenceId}` ? '#0284c7' : '#dc2626',
+          backgroundColor: isCurrentDefence ? activeBgColor : '#ef4444',
+          borderColor: isCurrentDefence ? activeBorderColor : '#dc2626',
           textColor: '#ffffff',
           display: 'block',
           classNames: ['blocked-event'],
           extendedProps: { type: 'blocked', ...b },
         };
       });
-  }, [schedulingData, effectiveRoomId]);
+  }, [schedulingData, effectiveRoomId, defenceId, defenceDetail?.status]);
 
   // ── Already-scheduled defence event (green) ───────────────────────────────
   const scheduleEvent = useMemo((): EventInput[] => {
@@ -360,9 +387,28 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   }, [schedulingData, effectiveRoomId]);
 
   const roomConflicts = useMemo(() => {
-    if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
-    return schedulingData.roomBookings.filter((b: any) => b.roomId === effectiveRoomId);
-  }, [schedulingData, effectiveRoomId]);
+    if (!schedulingData || !effectiveRoomId) return [];
+    const bookings = [...(schedulingData.roomBookings || [])];
+    
+    // If there's a current draft schedule that isn't in roomBookings yet, add it
+    const cs = schedulingData.currentSchedule;
+    if (cs?.date && cs.startTime && cs.endTime && cs.roomId === effectiveRoomId) {
+      const exists = bookings.some(b => b.id === `defence-${defenceId}`);
+      if (!exists && defenceDetail?.status === 'examiner_assigned') {
+        bookings.push({
+          id: `defence-${defenceId}`,
+          title: `${defenceDetail.student?.name || 'Sidang'}`,
+          date: cs.date,
+          startTime: cs.startTime,
+          endTime: cs.endTime,
+          roomId: cs.roomId,
+          isOnline: cs.isOnline
+        });
+      }
+    }
+
+    return bookings.filter((b: any) => b.roomId === effectiveRoomId);
+  }, [schedulingData, effectiveRoomId, defenceId, defenceDetail]);
 
   const handleSelectAllow = (selectInfo: any) => {
     if (!schedulingData?.roomBookings || !effectiveRoomId) return true;
@@ -508,7 +554,7 @@ ${formattedSupervisors}
 • Dosen Penguji:
 ${formattedExaminers}
 • Waktu: ${schedDate}, ${schedTime}
-• Tempat: ${place}
+• Ruangan: ${place}
 
 Berikut ini adalah beberapa jadwal rekomendasi tambahan jika tidak bisa mengikuti jadwal di atas:
 ${recsText}
@@ -563,6 +609,12 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Terjadwal
                       </Badge>
+                      {(defenceDetail as any)?.scheduledAt && (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] text-muted-foreground leading-none">Dijadwalkan pada:</span>
+                          <span className="text-[10px] font-medium text-foreground">{formatDateTime((defenceDetail as any).scheduledAt)}</span>
+                        </div>
+                      )}
                       <Button
                         size="icon"
                         variant="outline"
@@ -634,9 +686,15 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                     </div>
                   ))}
                   {current && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-600" />
-                      <span className="text-foreground font-medium">Jadwal Sidang</span>
+                    <div className="flex items-center gap-3 ml-2 pl-3 border-l">
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#16a34a]" />
+                        <span className="text-foreground font-medium">Draft Jadwal</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#0ea5e9]" />
+                        <span className="text-foreground font-medium">Jadwal Final</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -757,16 +815,31 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                 <div className="flex flex-col gap-2 w-full">
                   {roomConflicts.map((c: any) => {
                     const isCurrent = c.id === `defence-${defenceId}`;
+                    const isDraft = defenceDetail?.status === 'examiner_assigned';
+                    
+                    let bgClass = 'bg-destructive/5 border-destructive/20 text-destructive';
+                    let textClass = 'text-destructive';
+                    let iconClass = 'text-destructive';
+                    
+                    if (isCurrent) {
+                      if (isDraft) {
+                        bgClass = 'bg-green-500/10 border-green-500/30 dark:text-green-100 backdrop-blur-sm';
+                        textClass = 'text-green-600 dark:text-green-400';
+                        iconClass = 'text-green-600 dark:text-green-400';
+                      } else {
+                        bgClass = 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm';
+                        textClass = 'text-sky-600 dark:text-sky-400';
+                        iconClass = 'text-sky-600 dark:text-sky-400';
+                      }
+                    }
+
                     return (
                       <div
                         key={c.id}
-                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${isCurrent
-                          ? 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm'
-                          : 'bg-destructive/5 border-destructive/20 text-destructive'
-                          }`}
+                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${bgClass}`}
                       >
-                        <div className={`flex items-center gap-1.5 font-semibold text-[13px] ${isCurrent ? 'text-sky-600 dark:text-sky-400' : 'text-destructive'}`}>
-                          {isCurrent ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
+                        <div className={`flex items-center gap-1.5 font-semibold text-[13px] ${textClass}`}>
+                          {isCurrent ? <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${iconClass}`} /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
                           <span className="truncate">{c.title}</span>
                         </div>
                         <div className="flex flex-col text-muted-foreground text-[11px] pl-5 space-y-0.5">

@@ -97,6 +97,8 @@ export interface SeminarInfo {
   grade: string | null;
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   room: { id: string; name: string } | null;
   documents: SeminarDocument[];
   examiners: SeminarExaminer[];
@@ -201,6 +203,8 @@ export interface AdminSeminarDetailResponse {
   grade: string | null;
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   room: { id: string; name: string } | null;
   thesis: {
     id: string;
@@ -254,6 +258,7 @@ export interface RoomOption {
 
 export interface SeminarCurrentSchedule {
   date: string;
+  scheduledAt?: string | null;
   startTime: string | null;
   endTime: string | null;
   isOnline: boolean;

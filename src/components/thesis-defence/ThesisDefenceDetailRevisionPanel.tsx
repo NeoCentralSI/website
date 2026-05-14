@@ -427,9 +427,16 @@ function RevisionBoardSection({
             )}
 
             {isRevisionFinalized && (
-              <Badge variant="success" className="text-xs px-2 py-1">
-                <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
-              </Badge>
+              <div className="flex flex-col items-end">
+                <Badge variant="success" className="text-xs px-2 py-1">
+                  <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
+                </Badge>
+                {detail?.revisionFinalizedBy && (
+                  <span className="text-[10px] text-muted-foreground mt-1">
+                    Oleh {toTitleCaseName(detail.revisionFinalizedBy)}
+                  </span>
+                )}
+              </div>
             )}
 
             {showStudentActions && !isRevisionFinalized && (

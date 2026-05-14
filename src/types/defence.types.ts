@@ -83,6 +83,8 @@ export interface DefenceInfo {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   documents: DefenceDocument[];
   examiners: DefenceExaminer[];
 }
@@ -184,6 +186,8 @@ export interface AdminDefenceDetailResponse {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   thesis: {
     id: string;
     title: string;
@@ -250,6 +254,7 @@ export interface DefenceCurrentSchedule {
   isOnline: boolean;
   meetingLink: string | null;
   room: DefenceRoomOption | null;
+  scheduledAt: string | null;
 }
 
 export interface DefenceRoomBooking {
@@ -334,6 +339,8 @@ export interface ExaminerDefenceRequestItem {
   startTime: string | null;
   endTime: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   myExaminerStatus: ExaminerAvailabilityStatus | null;
   myExaminerId: string | null;
   myExaminerOrder: number | null;
@@ -352,6 +359,8 @@ export interface SupervisedStudentDefenceItem {
   startTime: string | null;
   endTime: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   myRole: string;
   examiners: LecturerDefenceExaminer[];
 }
@@ -395,6 +404,8 @@ export interface LecturerDefenceDetailResponse {
   finalScore: number | null;
   grade: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   thesis: { id: string; title: string };
   student: { name: string; nim: string };
   viewerRole: 'examiner' | 'supervisor' | 'none';
@@ -407,6 +418,8 @@ export interface LecturerDefenceDetailResponse {
   canOpenSupervisorAssessment: boolean;
   canOpenSupervisorFinalization: boolean;
   resultFinalizedAt: string | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   allExaminerSubmitted: boolean;
   supervisorAssessmentSubmitted: boolean;
   supervisors: AdminDefenceSupervisor[];
@@ -447,6 +460,8 @@ export interface DefenceAssessmentFormResponse {
     startTime: string | null;
     endTime: string | null;
     room: { id: string; name: string } | null;
+    scheduledAt: string | null;
+    invitationLetterNo: string | null;
   };
   assessorRole: 'examiner' | 'supervisor';
   examiner: {
@@ -595,6 +610,8 @@ export interface StudentDefenceHistoryItem {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   examiners: {
     id: string;
     lecturerId: string;
@@ -619,6 +636,8 @@ export interface StudentDefenceDetailResponse {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   thesis: {
     id: string;
     studentId: string;

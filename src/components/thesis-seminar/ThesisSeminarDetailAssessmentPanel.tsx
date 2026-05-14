@@ -506,6 +506,9 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
           <div className="flex-1 flex items-center justify-between flex-wrap gap-2 bg-muted/20 px-4 py-3 rounded-md border text-xs">
             <span className="text-muted-foreground">
               Seminar disetujui pada <span className="font-semibold text-foreground">{formatDateTimeId(finalData.seminar?.resultFinalizedAt || '')}</span>
+              {finalData.seminar?.resultFinalizedBy && (
+                <> oleh <span className="font-semibold text-foreground">{toTitleCaseName(finalData.seminar.resultFinalizedBy)}</span></>
+              )}
             </span>
             <div className="flex items-center gap-3">
               <Badge variant="success">

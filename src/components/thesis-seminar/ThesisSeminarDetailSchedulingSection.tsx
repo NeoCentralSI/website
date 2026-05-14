@@ -75,6 +75,15 @@ function formatDateLong(dateStr: string): string {
   });
 }
 
+/** Format ISO to "2 Mar 2026, 14:30" */
+function formatDateTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleString('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
 // Matches CalendarDashboard's getEventColor palette
 const LECTURER_COLORS = [
   '#3b82f6', // blue-500
@@ -116,6 +125,9 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   const [inputNomorSurat, setInputNomorSurat] = useState<string>('');
 
   const handleDownloadInvitation = () => {
+    if (seminarDetail?.invitationLetterNo) {
+      setInputNomorSurat(seminarDetail.invitationLetterNo);
+    }
     setIsInvitationDialogOpen(true);
   };
 
@@ -195,27 +207,33 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
 
   const effectiveRoomId = selectedRoomId || schedulingData?.currentSchedule?.roomId || schedulingData?.rooms[0]?.id;
 
-  // ── Blocked events for chosen room (red) ──────────────────────────────────
   const blockedEvents = useMemo((): EventInput[] => {
     if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
+    const isDraft = seminarDetail?.status === 'examiner_assigned';
     return schedulingData.roomBookings
       .filter((b: any) => b.roomId === effectiveRoomId)
       .map((b: any) => {
         const dateStr = b.date.slice(0, 10);
+        const isCurrentSeminar = b.id === `seminar-${seminarId}`;
+        
+        // Draft color (green) vs Finalized color (sky blue)
+        const activeBgColor = isDraft ? '#16a34a' : '#0ea5e9';
+        const activeBorderColor = isDraft ? '#15803d' : '#0284c7';
+
         return {
           id: `blocked-${b.id}`,
           title: `🔒 ${b.title}`,
           start: `${dateStr}T${extractTime(b.startTime)}:00`,
           end: `${dateStr}T${extractTime(b.endTime)}:00`,
-          backgroundColor: b.id === `seminar-${seminarId}` ? '#0ea5e9' : '#ef4444',
-          borderColor: b.id === `seminar-${seminarId}` ? '#0284c7' : '#dc2626',
+          backgroundColor: isCurrentSeminar ? activeBgColor : '#ef4444',
+          borderColor: isCurrentSeminar ? activeBorderColor : '#dc2626',
           textColor: '#ffffff',
           display: 'block',
           classNames: ['blocked-event'],
           extendedProps: { type: 'blocked', ...b },
         };
       });
-  }, [schedulingData, effectiveRoomId]);
+  }, [schedulingData, effectiveRoomId, seminarId, seminarDetail?.status]);
 
   // ── Already-scheduled seminar event (green) ───────────────────────────────
   const scheduleEvent = useMemo((): EventInput[] => {
@@ -384,9 +402,28 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
   }, [schedulingData, effectiveRoomId]);
 
   const roomConflicts = useMemo(() => {
-    if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
-    return schedulingData.roomBookings.filter((b: any) => b.roomId === effectiveRoomId);
-  }, [schedulingData, effectiveRoomId]);
+    if (!schedulingData || !effectiveRoomId) return [];
+    const bookings = [...(schedulingData.roomBookings || [])];
+    
+    // If there's a current draft schedule that isn't in roomBookings yet, add it
+    const cs = schedulingData.currentSchedule;
+    if (cs?.date && cs.startTime && cs.endTime && cs.roomId === effectiveRoomId) {
+      const exists = bookings.some(b => b.id === `seminar-${seminarId}`);
+      if (!exists && seminarDetail?.status === 'examiner_assigned') {
+        bookings.push({
+          id: `seminar-${seminarId}`,
+          title: `${seminarDetail.student?.name || 'Seminar'}`,
+          date: cs.date,
+          startTime: cs.startTime,
+          endTime: cs.endTime,
+          roomId: cs.roomId,
+          isOnline: cs.isOnline
+        });
+      }
+    }
+
+    return bookings.filter((b: any) => b.roomId === effectiveRoomId);
+  }, [schedulingData, effectiveRoomId, seminarId, seminarDetail]);
 
   const handleSelectAllow = (selectInfo: any) => {
     if (!schedulingData?.roomBookings || !effectiveRoomId) return true;
@@ -540,7 +577,7 @@ ${formattedSupervisors}
 • Dosen Penguji:
 ${formattedExaminers}
 • Waktu: ${schedDate}, ${schedTime}
-• Tempat: ${place}
+• Ruangan: ${place}
 
 Berikut ini adalah beberapa jadwal rekomendasi tambahan jika tidak bisa mengikuti jadwal di atas:
 ${recsText}
@@ -595,6 +632,12 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Terjadwal
                       </Badge>
+                      {seminarDetail?.scheduledAt && (
+                        <div className="flex flex-col items-end mr-1">
+                          <span className="text-[10px] text-muted-foreground leading-none">Dijadwalkan pada:</span>
+                          <span className="text-[10px] font-medium text-foreground">{formatDateTime(seminarDetail.scheduledAt)}</span>
+                        </div>
+                      )}
                       <Button
                         size="icon"
                         variant="outline"
@@ -666,9 +709,15 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                     </div>
                   ))}
                   {current && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="inline-block h-2.5 w-2.5 rounded-sm bg-green-600" />
-                      <span className="text-foreground font-medium">Jadwal Seminar</span>
+                    <div className="flex items-center gap-3 ml-2 pl-3 border-l">
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#16a34a]" />
+                        <span className="text-foreground font-medium">Draft Jadwal</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#0ea5e9]" />
+                        <span className="text-foreground font-medium">Jadwal Final</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -790,16 +839,31 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                 <div className="flex flex-col gap-2 w-full">
                   {roomConflicts.map((c: any) => {
                     const isCurrent = c.id === `seminar-${seminarId}`;
+                    const isDraft = seminarDetail?.status === 'examiner_assigned';
+                    
+                    let bgClass = 'bg-destructive/5 border-destructive/20 text-destructive';
+                    let textClass = 'text-destructive';
+                    let iconClass = 'text-destructive';
+                    
+                    if (isCurrent) {
+                      if (isDraft) {
+                        bgClass = 'bg-green-500/10 border-green-500/30 dark:text-green-100 backdrop-blur-sm';
+                        textClass = 'text-green-600 dark:text-green-400';
+                        iconClass = 'text-green-600 dark:text-green-400';
+                      } else {
+                        bgClass = 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm';
+                        textClass = 'text-sky-600 dark:text-sky-400';
+                        iconClass = 'text-sky-600 dark:text-sky-400';
+                      }
+                    }
+
                     return (
                       <div
                         key={c.id}
-                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${isCurrent
-                          ? 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm'
-                          : 'bg-destructive/5 border-destructive/20 text-destructive'
-                          }`}
+                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${bgClass}`}
                       >
-                        <div className={`flex items-center gap-1.5 font-semibold text-[13px] ${isCurrent ? 'text-sky-600 dark:text-sky-400' : 'text-destructive'}`}>
-                          {isCurrent ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
+                        <div className={`flex items-center gap-1.5 font-semibold text-[13px] ${textClass}`}>
+                          {isCurrent ? <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${iconClass}`} /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
                           <span className="truncate">{c.title}</span>
                         </div>
                         <div className="flex flex-col text-muted-foreground text-[11px] pl-5 space-y-0.5">
