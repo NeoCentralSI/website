@@ -224,9 +224,12 @@ function RevisionBoardSection({
   const summary = (board as any)?.summary || {
     total: revisions.length,
     finished: revisions.filter((r: any) => r.isFinished).length,
+    pendingApproval: revisions.filter((r: any) => r.studentSubmittedAt && !r.isFinished).length,
   };
 
-  const canFinalizeBoard = !isRevisionFinalized && summary.finished > 0;
+  const hasSubmittedItems = revisions.some((r: any) => r.studentSubmittedAt || r.isFinished);
+  const allSubmittedApproved = revisions.every((r: any) => !r.studentSubmittedAt || r.isFinished);
+  const canFinalizeBoard = !isRevisionFinalized && revisions.length > 0 && hasSubmittedItems && allSubmittedApproved;
 
   const handleCreate = async () => {
     if (!selectedExaminerId || !newDescription.trim()) return;
@@ -338,7 +341,7 @@ function RevisionBoardSection({
         className: 'text-right',
         render: (row) => (
           <div className="flex items-center justify-end gap-1">
-            {showStudentActions && !row.isFinished && (
+            {showStudentActions && !row.isFinished && !isRevisionFinalized && (
               <div className="flex items-center gap-1">
                 {!row.studentSubmittedAt ? (
                   <>
@@ -406,6 +409,17 @@ function RevisionBoardSection({
 
   return (
     <div className="space-y-4">
+      {showStudentActions && !isRevisionFinalized && revisions.length > 0 && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 flex items-start gap-3">
+          <MessageSquareText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="text-xs text-foreground/80 leading-relaxed">
+            <p className="font-bold text-primary mb-1">Informasi Perbaikan</p>
+            Daftar perbaikan di bawah ini telah dibuat secara otomatis berdasarkan catatan dari para penguji.
+            Silakan lengkapi kolom <b>&quot;Perbaikan&quot;</b> untuk setiap item, lalu klik ikon <b>&quot;Ajukan&quot;</b> (<Send className="h-3 w-3 inline" />) agar dapat diperiksa oleh Pembimbing.
+          </div>
+        </div>
+      )}
+
       <CustomTable
         columns={columns}
         data={paginatedData}
