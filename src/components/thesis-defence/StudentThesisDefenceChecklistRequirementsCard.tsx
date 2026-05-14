@@ -71,12 +71,14 @@ export function StudentThesisDefenceChecklistRequirementsCard({ checklist }: Che
           current={checklist.sks.current}
           required={checklist.sks.required}
         />
-        <ChecklistRow
-          label={checklist.revisiSeminar.label}
-          met={checklist.revisiSeminar.met}
-          current={checklist.revisiSeminar.finished}
-          required={checklist.revisiSeminar.total}
-        />
+        {checklist.revisiSeminar.isVisible && (
+          <ChecklistRow
+            label={checklist.revisiSeminar.label}
+            met={checklist.revisiSeminar.met}
+            current={checklist.revisiSeminar.finished}
+            required={checklist.revisiSeminar.total}
+          />
+        )}
         <ChecklistRow
           label={checklist.pembimbing.label}
           met={checklist.pembimbing.met}

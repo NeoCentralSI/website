@@ -30,6 +30,7 @@ export interface DefenceChecklistRevisi extends DefenceChecklistItem {
   seminarStatus: 'passed' | 'passed_with_revision' | null;
   total: number;
   finished: number;
+  isVisible?: boolean;
 }
 
 export interface DefenceChecklistPembimbing extends DefenceChecklistItem {
