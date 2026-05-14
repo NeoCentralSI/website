@@ -1,13 +1,13 @@
 # ─────────────────────────────────────────────────────────────────
 # CI/CD – Frontend (website)
-# Triggers on push to main branch
+# Triggers on push to nabil-prod branch
 # Self-hosted runner on VM → build Docker image locally → deploy
 # ─────────────────────────────────────────────────────────────────
 name: Deploy Frontend
 
 on:
   push:
-    branches: [main]
+    branches: [nabil-prod]
   workflow_dispatch:
 
 env:
@@ -23,6 +23,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: nabil-prod
 
       - name: Build Docker image locally
         run: |
