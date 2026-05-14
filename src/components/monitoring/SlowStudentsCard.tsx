@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, ChevronRight, Mail, Copy, Bell, CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useRole } from "@/hooks/shared/useRole";
 import { toTitleCaseName } from "@/lib/text";
 import { sendBatchWarnings, type AtRiskStudent } from "@/services/monitoring.service";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ interface SlowStudentsCardProps {
 
 export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading, showViewAll = true }: SlowStudentsCardProps) {
     const navigate = useNavigate();
+    const { isKadep } = useRole();
     const [sending, setSending] = React.useState(false);
 
     // Combine and prioritize at-risk
@@ -108,7 +110,7 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading, show
                         </CardDescription>
                     </div>
                     <div className="flex gap-2">
-                        {displayStudents.length > 0 && (
+                        {displayStudents.length > 0 && isKadep() && (
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
