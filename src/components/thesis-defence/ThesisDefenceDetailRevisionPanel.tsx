@@ -272,15 +272,15 @@ function RevisionBoardSection({
 
   const columns = useMemo<Column<any>[]>(() => {
     const examinerRowSpans = new Map<string, number>();
-    filteredData.forEach((item, idx) => {
+    paginatedData.forEach((item, idx) => {
       const key = `${item.examinerOrder}-${item.examinerId}`;
       if (idx > 0) {
-        const prev = filteredData[idx - 1];
+        const prev = paginatedData[idx - 1];
         if (`${prev.examinerOrder}-${prev.examinerId}` === key) return;
       }
       let count = 1;
-      for (let j = idx + 1; j < filteredData.length; j++) {
-        const next = filteredData[j];
+      for (let j = idx + 1; j < paginatedData.length; j++) {
+        const next = paginatedData[j];
         if (`${next.examinerOrder}-${next.examinerId}` === key) count++;
         else break;
       }
@@ -403,7 +403,7 @@ function RevisionBoardSection({
         ),
       },
     ];
-  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, defenceId, filteredData]);
+  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, defenceId, paginatedData]);
 
   if (isLoading) return <Loading size="lg" text="Memuat board revisi..." />;
 

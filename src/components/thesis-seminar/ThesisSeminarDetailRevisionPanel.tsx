@@ -276,17 +276,17 @@ function RevisionBoardSection({
   const columns = useMemo<Column<any>[]>(() => {
     // Calculate rowSpan for examiner column
     const examinerRowSpans = new Map<string, number>();
-    filteredData.forEach((item, idx) => {
+    paginatedData.forEach((item, idx) => {
       const key = `${item.examinerOrder}-${item.examinerLecturerId}`;
       if (idx > 0) {
-        const prev = filteredData[idx - 1];
+        const prev = paginatedData[idx - 1];
         const prevKey = `${prev.examinerOrder}-${prev.examinerLecturerId}`;
         if (key === prevKey) return; // Skip
       }
       // Count subsequent matches
       let count = 1;
-      for (let j = idx + 1; j < filteredData.length; j++) {
-        const next = filteredData[j];
+      for (let j = idx + 1; j < paginatedData.length; j++) {
+        const next = paginatedData[j];
         if (`${next.examinerOrder}-${next.examinerLecturerId}` === key) {
           count++;
         } else {
@@ -394,7 +394,7 @@ function RevisionBoardSection({
         ),
       },
     ];
-  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, filteredData]);
+  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, paginatedData]);
 
   if (isLoading) return <Loading size="lg" text="Memuat board revisi..." />;
 
