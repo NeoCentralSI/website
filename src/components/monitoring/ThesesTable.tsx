@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
+import { useRole } from "@/hooks/shared/useRole";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
@@ -94,6 +95,9 @@ interface ThesesTableProps {
 
 export function ThesesTable({ isSyncing = false, academicYear, initialRating }: ThesesTableProps) {
   const navigate = useNavigate();
+  const { isGkm, isSekdep } = useRole();
+  const canSendWarning = !isGkm() && !isSekdep();
+  
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
@@ -361,7 +365,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         const config = getRatingConfig(thesis.rating);
         return (
           <div className="flex items-center justify-center gap-1">
-            {config.needsWarning && (
+            {config.needsWarning && canSendWarning && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
