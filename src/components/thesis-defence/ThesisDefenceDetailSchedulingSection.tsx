@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -146,6 +146,13 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState<boolean>(false);
 
+  // Sync selectedRoomId with current schedule when data loads
+  useEffect(() => {
+    if (schedulingData?.currentSchedule?.roomId) {
+      setSelectedRoomId(schedulingData.currentSchedule.roomId);
+    }
+  }, [schedulingData]);
+
   // ── Stable color assignment per lecturer ──────────────────────────────────
   const lecturerColorMap = useMemo(() => {
     if (!schedulingData) return {} as Record<string, string>;
@@ -202,7 +209,7 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
     return events;
   }, [schedulingData, lecturerColorMap]);
 
-  const effectiveRoomId = selectedRoomId || schedulingData?.rooms[0]?.id;
+  const effectiveRoomId = selectedRoomId || schedulingData?.currentSchedule?.roomId || schedulingData?.rooms[0]?.id;
 
   // ── Blocked events for chosen room (red) ──────────────────────────────────
   const blockedEvents = useMemo((): EventInput[] => {
@@ -210,7 +217,7 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
     
     // Statuses that are NOT 'Draft'
     const finalizedStatuses = ['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'];
-    const isDraft = !finalizedStatuses.includes(defenceDetail?.status as string);
+    const isCurrentDraft = !finalizedStatuses.includes(defenceDetail?.status as string);
 
     return schedulingData.roomBookings
       .filter((b: DefenceRoomBooking) => b.roomId === effectiveRoomId)
@@ -219,8 +226,8 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
         const isCurrentDefence = b.id === `defence-${defenceId}`;
 
         // Draft color (green) vs Finalized color (sky blue)
-        const activeBgColor = isDraft ? '#16a34a' : '#0ea5e9';
-        const activeBorderColor = isDraft ? '#15803d' : '#0284c7';
+        const activeBgColor = isCurrentDraft ? '#16a34a' : '#0ea5e9';
+        const activeBorderColor = isCurrentDraft ? '#15803d' : '#0284c7';
 
         return {
           id: `blocked-${b.id}`,
@@ -241,6 +248,11 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   const scheduleEvent = useMemo((): EventInput[] => {
     const cs = schedulingData?.currentSchedule;
     if (!cs?.date || !cs.startTime || !cs.endTime) return [];
+
+    // Only show the green 'Draft' card if it's still in examiner_assigned status
+    // Once finalized, it will be shown as a blue 'Locked' card via blockedEvents
+    if (defenceDetail?.status !== 'examiner_assigned') return [];
+
     const dateStr = cs.date.slice(0, 10);
     const scheduleTitle = cs.isOnline
       ? '📌 Sidang Daring'
@@ -256,7 +268,7 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
       classNames: ['schedule-event'],
       extendedProps: { type: 'schedule' },
     }];
-  }, [schedulingData]);
+  }, [schedulingData, defenceDetail]);
 
   const allEvents = useMemo(
     () => [...availabilityEvents, ...scheduleEvent, ...blockedEvents],
@@ -339,11 +351,15 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
       };
       const targetDay = dayIndexMap[dayName];
 
+      // Use local-date arithmetic to avoid the UTC midnight-rollover bug
+      // that causes off-by-one day errors when running after 17:00 WIB (+7).
       const now = new Date();
+      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       for (let d = 0; d < 30; d++) {
-        const testDate = new Date(now.getTime() + d * 24 * 60 * 60 * 1000);
+        const testDate = new Date(todayLocal);
+        testDate.setDate(todayLocal.getDate() + d);
         if (testDate.getDay() === targetDay) {
-          const dateStr = testDate.toISOString().slice(0, 10);
+          const dateStr = toLocalDateStr(testDate);
 
           twoHourSlots.forEach((timeSlot) => {
             const sH = Math.floor(timeSlot.start / 60);
@@ -379,7 +395,14 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
       }
     });
 
-    return recommendationsList.sort((a, b) => {
+    // Clamp recommendations to 06:00-18:00 window
+    const clampedList = recommendationsList.filter((r) => {
+      const [sH] = r.startTime.split(':').map(Number);
+      const [eH, eM] = r.endTime.split(':').map(Number);
+      return sH >= 6 && (eH < 18 || (eH === 18 && eM === 0));
+    });
+
+    return clampedList.sort((a, b) => {
       const dateCompare = a.date.localeCompare(b.date);
       if (dateCompare !== 0) return dateCompare;
       return a.startTime.localeCompare(b.startTime);
@@ -394,7 +417,7 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
     const cs = schedulingData.currentSchedule;
     if (cs?.date && cs.startTime && cs.endTime && cs.roomId === effectiveRoomId) {
       const exists = bookings.some(b => b.id === `defence-${defenceId}`);
-      if (!exists && defenceDetail?.status === 'examiner_assigned') {
+      if (!exists && !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(defenceDetail?.status as string)) {
         bookings.push({
           id: `defence-${defenceId}`,
           title: `${defenceDetail.student?.name || 'Sidang'}`,
@@ -447,11 +470,20 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   const validateForm = (s: PendingSchedule): string | null => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const selected = new Date(s.date);
+    // Use local date parsing to avoid UTC offset causing wrong weekday
+    const [yr, mo, dy] = s.date.split('-').map(Number);
+    const selected = new Date(yr, mo - 1, dy);
     if (selected < today) return 'Tanggal tidak boleh berada di masa lalu.';
+    const dayOfWeek = selected.getDay(); // 0=Sun, 6=Sat
+    if (dayOfWeek === 0 || dayOfWeek === 6) return 'Sidang hanya dapat dijadwalkan pada hari kerja (Senin – Jumat).';
     if (s.startTime >= s.endTime) return 'Waktu mulai harus sebelum waktu selesai.';
+    const [startH, startM] = s.startTime.split(':').map(Number);
+    const [endH, endM] = s.endTime.split(':').map(Number);
+    if (startH < 6) return 'Waktu mulai tidak boleh sebelum pukul 06.00.';
+    if (endH > 18 || (endH === 18 && endM > 0)) return 'Waktu selesai tidak boleh setelah pukul 18.00.';
+
     if (s.isOnline) {
-      if (!s.meetingLink.trim()) return 'URL meeting wajib diisi untuk seminar daring.';
+      if (!s.meetingLink.trim()) return 'URL meeting wajib diisi untuk sidang daring.';
       try {
         new URL(s.meetingLink);
       } catch {
@@ -460,6 +492,31 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
       return null;
     }
     if (!s.roomId) return 'Ruangan harus dipilih.';
+
+    // Room conflict check (client-side)
+    if (schedulingData?.roomBookings) {
+      const dateStr = s.date;
+      const startMins = startH * 60 + startM;
+      const endMins = endH * 60 + endM;
+
+      const conflict = schedulingData.roomBookings.find((b: any) => {
+        if (b.roomId !== s.roomId) return false;
+        if (b.date.slice(0, 10) !== dateStr) return false;
+        
+        // Skip comparing against itself (if editing existing draft)
+        if (b.id === `defence-${defenceId}`) return false;
+
+        const [bSH, bSM] = extractTime(b.startTime).split(':').map(Number);
+        const [bEH, bEM] = extractTime(b.endTime).split(':').map(Number);
+        const bStart = bSH * 60 + bSM;
+        const bEnd = bEH * 60 + bEM;
+
+        return startMins < bEnd && endMins > bStart;
+      });
+
+      if (conflict) return `Ruangan sudah digunakan untuk: ${conflict.title}.`;
+    }
+
     return null;
   };
 
@@ -486,49 +543,46 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
           setPendingSchedule(null);
         },
         onError: (err) => {
-          toast.error(err.message || 'Gagal menyimpan jadwal.');
+          setFormError(err.message || 'Gagal menyimpan jadwal.');
         },
       }
     );
   };
 
-  // ── Loading state ─────────────────────────────────────────────────────────
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Penjadwalan Sidang (Admin)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-48 items-center justify-center">
-            <Loading size="md" text="Memuat data penjadwalan..." />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!schedulingData) return null;
-
-  const { rooms, currentSchedule: current } = schedulingData;
-  const selectedRoom = rooms.find((r) => r.id === pendingSchedule?.roomId);
-
-  const supervisors = (defenceDetail as any)?.supervisors || [];
+  const supervisors = [...((defenceDetail as any)?.supervisors || [])].sort((a, b) => (a.role || '').localeCompare(b.role || ''));
   const examiners = defenceDetail?.examiners || [];
-
   const canEditSchedule = isEditable && !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(defenceDetail?.status as string);
 
   // Unique lecturers for the legend
-  const legendItems = [
-    ...new Set(schedulingData.lecturerAvailabilities.map((a) => a.lecturerId)),
-  ].map((id) => ({
-    id,
-    name: schedulingData.lecturerAvailabilities.find((a) => a.lecturerId === id)?.lecturerName || '-',
-    color: lecturerColorMap[id] || '#94a3b8',
-  }));
+  // Unique lecturers for the legend, ordered by role (Pembimbing 1, Pembimbing 2, then Examiners)
+  const legendItems = useMemo(() => {
+    if (!schedulingData) return [];
+    
+    const lecturerIds = [...new Set(schedulingData.lecturerAvailabilities.map((a) => a.lecturerId))];
+    
+    return lecturerIds
+      .map((id) => {
+        const avail = schedulingData.lecturerAvailabilities.find((a) => a.lecturerId === id);
+        // Find role from supervisors or examiners
+        const supervisor = supervisors.find((s: any) => s.id === id || s.lecturerId === id);
+        const examiner = examiners.find((e: any) => e.lecturerId === id);
+        
+        let sortOrder = 99;
+        if (supervisor) {
+          sortOrder = supervisor.role === 'pembimbing_1' ? 1 : 2;
+        } else if (examiner) {
+          sortOrder = 10 + (examiner.order || 0);
+        }
+
+        return {
+          id,
+          name: avail?.lecturerName || '-',
+          color: lecturerColorMap[id] || '#94a3b8',
+          sortOrder
+        };
+      })
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [schedulingData, supervisors, examiners, lecturerColorMap]);
 
   const handleCopyMessage = () => {
     const studentName = toTitleCaseName(defenceDetail?.student?.name) || '-';
@@ -564,6 +618,30 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
     navigator.clipboard.writeText(message);
     toast.success('Pesan jadwal sidang berhasil disalin.');
   };
+
+  // ── Loading/Error states (Must be AFTER all hooks) ─────────────────────────
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Penjadwalan Sidang (Admin)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-48 items-center justify-center">
+            <Loading size="md" text="Memuat data penjadwalan..." />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!schedulingData) return null;
+
+  const { rooms, currentSchedule: current } = schedulingData;
+  const selectedRoom = rooms.find((r) => r.id === pendingSchedule?.roomId);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -713,7 +791,8 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                   }}
                   height="100%"
                   slotMinTime="06:00:00"
-                  slotMaxTime="22:00:00"
+                  slotMaxTime="18:00:00"
+                  selectConstraint={{ startTime: '06:00', endTime: '18:00', dows: [1, 2, 3, 4, 5] }}
                   nowIndicator
                   allDaySlot={false}
                   weekends={false}
@@ -795,7 +874,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                   <AlertCircle className="h-6 w-6 text-muted-foreground/40" />
                   <p className="text-xs font-semibold text-foreground">Tidak Ada Rekomendasi</p>
                   <p className="text-[11px] max-w-[200px] mx-auto">
-                    Tidak ditemukan slot waktu 2 jam yang sesuai untuk seluruh peserta seminar.
+                    Tidak ditemukan slot waktu 2 jam yang sesuai untuk seluruh peserta sidang.
                   </p>
                 </div>
               )}
@@ -815,7 +894,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                 <div className="flex flex-col gap-2 w-full">
                   {roomConflicts.map((c: any) => {
                     const isCurrent = c.id === `defence-${defenceId}`;
-                    const isDraft = defenceDetail?.status === 'examiner_assigned';
+                    const isDraft = !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(defenceDetail?.status as string);
                     
                     let bgClass = 'bg-destructive/5 border-destructive/20 text-destructive';
                     let textClass = 'text-destructive';
@@ -875,7 +954,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-semibold">
-              Jadwalkan Seminar Hasil Secara Resmi
+              Jadwalkan Sidang Tugas Akhir Secara Resmi
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2 text-xs sm:text-sm text-muted-foreground">
@@ -1005,7 +1084,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                     value={pendingSchedule.date ? new Date(pendingSchedule.date) : undefined}
                     onChange={(date) => {
                       setFormError(null);
-                      setPendingSchedule((prev) => prev ? { ...prev, date: date ? date.toISOString().split('T')[0] : '' } : prev);
+                      setPendingSchedule((prev) => prev ? { ...prev, date: date ? toLocalDateStr(date) : '' } : prev);
                     }}
                   />
                 </div>

@@ -136,14 +136,16 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                 <p className="text-xs text-muted-foreground">Judul</p>
                 <p className="text-sm font-medium mt-0.5 leading-snug">{detail.thesis?.title}</p>
               </div>
-              {supervisors.map((s: any, index: number) => (
-                <div key={index}>
-                  <p className="text-xs text-muted-foreground">
-                    {s.role ? formatRoleName(s.role) : `Dosen Pembimbing ${index + 1}`}
-                  </p>
-                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(s.name)}</p>
-                </div>
-              ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {supervisors.map((s: any, index: number) => (
+                  <div key={index}>
+                    <p className="text-xs text-muted-foreground">
+                      {s.role ? formatRoleName(s.role) : `Dosen Pembimbing ${index + 1}`}
+                    </p>
+                    <p className="text-sm font-medium mt-0.5">{toTitleCaseName(s.name)}</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 

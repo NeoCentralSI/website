@@ -181,58 +181,78 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
       },
     }));
 
-    // Merge and deduplicate (avoid showing same event twice if synced)
-    const allEvents = [...internalEvents];
+    // Merge and deduplicate (favoring Outlook version for a cleaner integrated look)
+    const processedInternalEvents = [...internalEvents];
+    const outlookEventsToAdd: any[] = [];
 
-    // Add Outlook events that don't have matching internal events
     transformedOutlookEvents.forEach((outlookEvent) => {
-      // Check if this Outlook event is already synced as an internal event
-      const isDuplicate = internalEvents.some((internalEvent) => {
-        // Enhanced matching logic for better deduplication
+      // Find matching internal event
+      const matchIndex = processedInternalEvents.findIndex((internalEvent) => {
+        // 1. ID matching (for items with saved outlookEventId)
+        const internalOutlookId = (internalEvent as any).outlookEventId || 
+                                 (internalEvent as any).studentCalendarEventId || 
+                                 (internalEvent as any).supervisorCalendarEventId;
+        if (internalOutlookId && outlookEvent.id.includes(internalOutlookId)) return true;
 
-        // 1. Check if the internal event has an Outlook calendar event ID that matches
-        const hasMatchingOutlookId = (internalEvent as any)?.outlookEventId === outlookEvent.id.replace('outlook-', '');
-        if (hasMatchingOutlookId) {
-          return true;
-        }
+        // 2. Time-based matching (Account for timezone shifts)
+        const internalTime = new Date(internalEvent.startDate).getTime();
+        const outlookTime = new Date(outlookEvent.startDate).getTime();
+        const timeDiff = Math.abs(internalTime - outlookTime) / (1000 * 60);
+        
+        // 12 hours tolerance for potential timezone offset issues in raw data
+        const timeMatch = timeDiff <= (12 * 60);
 
-        // 2. Time-based matching with tolerance for timezone conversion issues
-        const internalTime = new Date(internalEvent.startDate);
-        const outlookTime = new Date(outlookEvent.startDate);
-        const timeDifferenceMinutes = Math.abs(internalTime.getTime() - outlookTime.getTime()) / (1000 * 60);
+        // 3. Title-based matching (Improved for Seminar/Defence/Guidance)
+        const internalTitle = (internalEvent.title || '').toLowerCase().trim();
+        const outlookTitle = (outlookEvent.title || '').toLowerCase().trim();
+        
+        const isAcademicEvent = 
+          internalTitle.includes('seminar') || 
+          internalTitle.includes('sidang') || 
+          internalTitle.includes('bimbingan');
 
-        // Allow up to 12 hours difference to account for timezone conversion issues
-        const timeMatch = timeDifferenceMinutes <= (12 * 60);
-
-        // 3. Title matching (case insensitive, partial match)
-        const internalTitle = (internalEvent.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        const outlookTitle = (outlookEvent.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
-
-        // Check if titles have common words (for "Bimbingan - Student Name" vs "Bimbingan ...")
-        const titleMatch = (
-          internalTitle.includes('bimbingan') && outlookTitle.includes('bimbingan') ||
+        const titleMatch = 
+          outlookTitle.includes(internalTitle) || 
           internalTitle.includes(outlookTitle) ||
-          outlookTitle.includes(internalTitle) ||
-          (internalTitle.split(' ').some(word => word.length > 3 && outlookTitle.includes(word)))
-        );
+          (isAcademicEvent && (
+            (internalTitle.includes('seminar') && outlookTitle.includes('seminar')) ||
+            (internalTitle.includes('sidang') && outlookTitle.includes('sidang')) ||
+            (internalTitle.includes('bimbingan') && outlookTitle.includes('bimbingan'))
+          ));
 
-        const isMatch = timeMatch && titleMatch;
-
-        if (isMatch) {
-        }
-
-        return isMatch;
+        return timeMatch && titleMatch;
       });
 
-      if (!isDuplicate) {
-        // Cast to any to bypass strict type check since we're displaying only
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        allEvents.push(outlookEvent as any);
+      if (matchIndex !== -1) {
+        // MATCH FOUND! 
+        // We "Merge" the internal metadata into the Outlook event 
+        // so clicking it still works for NeoCentral navigation
+        const internal = processedInternalEvents[matchIndex];
+        const mergedEvent = {
+          ...outlookEvent,
+          relatedId: internal.relatedId,
+          relatedType: internal.relatedType,
+          // Use the internal type for color coding but keep Outlook's identity
+          type: internal.type, 
+          color: internal.color,
+          backgroundColor: internal.backgroundColor,
+          // Carry over the Outlook-specific data in metadata
+          metadata: {
+            ...outlookEvent.metadata,
+            isSynced: true,
+            originalInternalId: internal.id
+          }
+        };
+        
+        // Replace the internal event with the merged Outlook-favored version
+        processedInternalEvents[matchIndex] = mergedEvent as any;
       } else {
+        // No match, add as a new standalone Outlook event
+        outlookEventsToAdd.push(outlookEvent);
       }
     });
 
-    return allEvents;
+    return [...processedInternalEvents, ...outlookEventsToAdd];
   }, [data?.events, outlookEvents?.events]);
 
   // Get event color based on type
