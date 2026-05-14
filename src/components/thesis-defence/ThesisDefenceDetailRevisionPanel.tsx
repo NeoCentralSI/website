@@ -85,8 +85,8 @@ export function ThesisDefenceDetailRevisionPanel({
 
   return (
     <div className="space-y-6">
-      {/* 1. Catatan Penguji (Dari Rekap Penilaian) */}
-      <ExaminerNotesSection detail={detail} />
+      {/* 1. Catatan Penguji (Dari Rekap Penilaian) — Hanya untuk Mahasiswa */}
+      {showStudentActions && <ExaminerNotesSection detail={detail} />}
 
       {/* 2. Board Revisi (Main Table) */}
       <RevisionBoardSection
@@ -207,13 +207,15 @@ function RevisionBoardSection({
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
     const visibleItems = showStudentActions ? revisions : revisions.filter(r => r.studentSubmittedAt || r.isFinished);
-    if (!term) return visibleItems;
-    return visibleItems.filter(
+    const items = !term ? visibleItems : visibleItems.filter(
       (r) =>
         r.description.toLowerCase().includes(term) ||
         (r.revisionAction || '').toLowerCase().includes(term) ||
         (r.examinerName || '').toLowerCase().includes(term)
     );
+
+    // CRITICAL: Sort by examinerOrder to ensure adjacency for merging
+    return [...items].sort((a, b) => (a.examinerOrder || 0) - (b.examinerOrder || 0));
   }, [revisions, search, showStudentActions]);
 
   const paginatedData = useMemo(() => {
@@ -295,8 +297,8 @@ function RevisionBoardSection({
         onCell: (row, index) => {
           const key = `${row.examinerOrder}-${row.examinerId}`;
           const span = examinerRowSpans.get(`${index}-${key}`);
-          if (span === undefined) return { className: 'hidden' };
-          return { rowSpan: span, className: 'align-middle font-semibold' };
+          if (span === undefined) return { className: 'sr-only !p-0 !border-0 hidden' };
+          return { rowSpan: span, className: 'align-top font-semibold bg-muted/5' };
         },
         render: (row, index) => {
           const key = `${row.examinerOrder}-${row.examinerId}`;
