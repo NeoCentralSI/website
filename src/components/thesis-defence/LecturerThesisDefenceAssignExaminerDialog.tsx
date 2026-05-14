@@ -128,7 +128,7 @@ export function LecturerThesisDefenceAssignExaminerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:!max-w-4xl !max-w-full">
+      <DialogContent className="sm:!max-w-5xl !max-w-full">
         <DialogHeader>
           <DialogTitle>
             {isPartialReplace ? 'Ganti Penguji' : isEdit ? 'Ubah Penguji' : 'Tetapkan Penguji'}

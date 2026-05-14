@@ -223,7 +223,7 @@ export function LecturerThesisSeminarAssignExaminerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:!max-w-4xl !max-w-full">
+      <DialogContent className="sm:!max-w-5xl !max-w-full">
         <DialogHeader>
           <DialogTitle>
             {isPartialReplace ? 'Ganti Penguji' : isEdit ? 'Ubah Penguji' : 'Tetapkan Penguji'}
@@ -250,8 +250,8 @@ export function LecturerThesisSeminarAssignExaminerDialog({
             />
           </div>
 
-          <div className={`grid gap-4 ${showDashboard ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
-            <div className="space-y-3 rounded-md border p-3">
+          <div className={`grid gap-4 ${showDashboard ? 'grid-cols-1 md:grid-cols-12' : 'grid-cols-1'}`}>
+            <div className={`space-y-3 rounded-md border p-3 ${showDashboard ? 'md:col-span-7' : ''}`}>
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold">
                   {isPartialReplace ? 'Pilih Dosen Penguji Pengganti' : 'Pilih Dosen Penguji'}
@@ -300,27 +300,29 @@ export function LecturerThesisSeminarAssignExaminerDialog({
                               </Badge>
                             </div>
                           </div>
-                          {isLocked && (
-                            <Badge variant="success" className="text-xs shrink-0">
-                              <Lock className="h-3 w-3 mr-1" />
-                              Penguji {lockedExaminers.find((e) => e.lecturerId === l.id)?.order}
-                            </Badge>
-                          )}
-                          {isPreviousExaminer && !isLocked && (
-                            <Badge variant="outline" className="text-xs shrink-0 border-amber-500 text-amber-600">
-                              Penguji Sebelumnya
-                            </Badge>
-                          )}
-                          {isRejected && (
-                            <Badge variant="secondary" className="text-xs shrink-0">
-                              Pernah Menolak
-                            </Badge>
-                          )}
-                          {isSelected && !isLocked && (
-                            <Badge variant="default" className="text-xs shrink-0">
-                              Penguji {selectedIds.indexOf(l.id) + 1}
-                            </Badge>
-                          )}
+                          <div className="flex gap-1 items-center shrink-0">
+                            {isLocked && (
+                              <Badge variant="success" className="text-xs shrink-0">
+                                <Lock className="h-3 w-3 mr-1" />
+                                Penguji {lockedExaminers.find((e) => e.lecturerId === l.id)?.order}
+                              </Badge>
+                            )}
+                            {isPreviousExaminer && !isLocked && (
+                              <Badge variant="outline" className="text-xs shrink-0 border-amber-500 text-amber-600">
+                                Penguji Sebelumnya
+                              </Badge>
+                            )}
+                            {isRejected && (
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                Pernah Menolak
+                              </Badge>
+                            )}
+                            {isSelected && !isLocked && (
+                              <Badge variant="default" className="text-xs shrink-0">
+                                Penguji {selectedIds.indexOf(l.id) + 1}
+                              </Badge>
+                            )}
+                          </div>
                         </label>
                       );
                     })}
@@ -331,7 +333,7 @@ export function LecturerThesisSeminarAssignExaminerDialog({
           </div>
 
           {showDashboard && (
-            <div className="space-y-3 rounded-md border p-3">
+            <div className="space-y-3 rounded-md border p-3 md:col-span-5">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold">Dashboard Rekomendasi Jadwal</h4>
               <Badge variant={scheduleDashboard.sharedSlots.length > 0 ? 'success' : 'secondary'}>
