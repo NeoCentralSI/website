@@ -20,7 +20,7 @@ export default function StudentThesisDefence() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
+      { label: 'Sidang', href: '/tugas-akhir/sidang' },
       { label: 'Status & Pendaftaran' },
     ],
     []

@@ -277,6 +277,7 @@ export function LecturerThesisSeminarAssignExaminerDialog({
                       const isSelected = selectedIds.includes(l.id);
                       const isLocked = lockedIds.includes(l.id);
                       const isRejected = rejectedIds.has(l.id);
+                      const isPreviousExaminer = (l as any).isPreviousExaminer;
                       return (
                         <label
                           key={l.id}
@@ -303,6 +304,11 @@ export function LecturerThesisSeminarAssignExaminerDialog({
                             <Badge variant="success" className="text-xs shrink-0">
                               <Lock className="h-3 w-3 mr-1" />
                               Penguji {lockedExaminers.find((e) => e.lecturerId === l.id)?.order}
+                            </Badge>
+                          )}
+                          {isPreviousExaminer && !isLocked && (
+                            <Badge variant="outline" className="text-xs shrink-0 border-amber-500 text-amber-600">
+                              Penguji Sebelumnya
                             </Badge>
                           )}
                           {isRejected && (
