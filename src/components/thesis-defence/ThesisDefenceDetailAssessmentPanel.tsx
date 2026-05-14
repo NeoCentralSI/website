@@ -498,7 +498,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                     : 'Tidak Lulus'}
               </Badge>
               <span className="text-muted-foreground">
-                Nilai Akhir: <span className="font-bold text-foreground text-sm">{finalScore?.toFixed(2)}</span>
+                Skor Akhir: <span className="font-bold text-foreground text-sm">{finalScore?.toFixed(2)}</span>
               </span>
               <Badge className="bg-primary">{finalGrade}</Badge>
             </div>
@@ -529,7 +529,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
               <tr className="bg-muted/40 border-b">
                 <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r" rowSpan={2}>No.</th>
                 <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r" rowSpan={2}>Aspek Penilaian</th>
-                <th className="px-3 py-1 text-center font-semibold text-muted-foreground border-b" colSpan={data.examiners.length}>Nilai</th>
+                <th className="px-3 py-1 text-center font-semibold text-muted-foreground border-b" colSpan={data.examiners.length}>Skor</th>
               </tr>
               <tr className="bg-muted/40 border-b">
                 {data.examiners.map((ex: any, i: number) => (
@@ -632,7 +632,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
               <tr className="bg-muted/40 border-b">
                 <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r" rowSpan={2}>No.</th>
                 <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r" rowSpan={2}>Aspek Penilaian</th>
-                <th className="px-3 py-1 text-center font-semibold text-muted-foreground border-b w-40">Nilai</th>
+                <th className="px-3 py-1 text-center font-semibold text-muted-foreground border-b w-40">Skor</th>
               </tr>
               <tr className="bg-muted/40 border-b">
                 <th className="px-3 py-1 text-center font-semibold text-muted-foreground">Pembimbing</th>
@@ -708,7 +708,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
               <tr className="bg-muted/40 border-b">
                 <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r">No.</th>
                 <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r">Penilaian</th>
-                <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-40">Nilai</th>
+                <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-40">Skor</th>
               </tr>
             </thead>
             <tbody>
@@ -728,7 +728,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
               </tr>
               <tr className="font-bold bg-primary/10 border-t-2 border-primary/20">
                 <td colSpan={2} className="px-3 py-4 text-center border-r text-sm font-black uppercase tracking-widest text-primary">
-                  Nilai Akhir (A + B)
+                  Skor Akhir (A + B)
                 </td>
                 <td className="px-3 py-4 text-center">
                   <div className="flex flex-col items-center gap-1">

@@ -1,37 +1,18 @@
 import { Check, Clock, PartyPopper } from 'lucide-react';
-import type { ThesisDefenceStatus } from '@/types/defence.types';
+import type { ThesisDefenceStatus, DefenceMilestone } from '@/types/defence.types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-
-const STEPS = [
-  { key: 'checklist', label: 'Checklist Persyaratan' },
-  { key: 'verified', label: 'Dokumen Sidang Lengkap' },
-  { key: 'examiner_assigned', label: 'Penetapan Dosen Penguji' },
-  { key: 'scheduled', label: 'Penetapan Jadwal Sidang' },
-  { key: 'sidang', label: 'Pelaksanaan Sidang Tugas Akhir' },
-] as const;
-
-function getActiveStepIndex(status: ThesisDefenceStatus | null, allChecklistMet: boolean): number {
-  if (status === 'passed' || status === 'passed_with_revision') return 4;
-  if (status === 'scheduled' || status === 'ongoing') return 3;
-  if (status === 'examiner_assigned') return 2;
-  if (status === 'verified') return 1;
-  if (status === 'registered') return 0;
-  
-  if (allChecklistMet) return 0;
-  
-  return -1;
-}
 
 interface DefenceStatusStepperProps {
   status: ThesisDefenceStatus | null;
   allChecklistMet: boolean;
+  milestones?: DefenceMilestone[];
 }
 
-export function StudentThesisDefenceStatusCard({ status, allChecklistMet }: DefenceStatusStepperProps) {
-  const activeIndex = getActiveStepIndex(status, allChecklistMet);
-  const spinePct = activeIndex === -1 ? 0 : (activeIndex + 1) * 20;
-  const completedCount = activeIndex + 1;
+export function StudentThesisDefenceStatusCard({ status, milestones = [] }: DefenceStatusStepperProps) {
+  const activeCount = milestones.filter(m => m.checked).length;
+  const totalCount = milestones.length;
+  const spinePct = totalCount > 0 ? (activeCount / totalCount) * 100 : 0;
 
   const isFinalized = status === 'passed' || status === 'passed_with_revision';
 
@@ -51,23 +32,24 @@ export function StudentThesisDefenceStatusCard({ status, allChecklistMet }: Defe
       </div>
 
       <div className="relative pl-8 flex-1 flex flex-col">
-        {STEPS.map((step, i) => {
-          const isActive = i <= activeIndex;
+        {milestones.map((step, i) => {
+          const isActive = step.checked;
+          const isNextActive = milestones[i+1]?.checked;
 
           return (
             <div
-              key={step.key}
+              key={step.id}
               className={cn(
                 "relative",
-                i < STEPS.length - 1 ? "pb-[22px]" : "pb-0"
+                i < milestones.length - 1 ? "pb-[22px]" : "pb-0"
               )}
             >
               {/* Segment to next node */}
-              {i < STEPS.length - 1 && (
+              {i < milestones.length - 1 && (
                 <div
                   className={cn(
                     "absolute top-[13px] bottom-[-13px] w-[2px] z-[0]",
-                    i < activeIndex ? "bg-[#16A34A]" : "bg-muted"
+                    isNextActive ? "bg-[#16A34A]" : "bg-muted"
                   )}
                   style={{ left: '-21px' }}
                 />
@@ -116,7 +98,7 @@ export function StudentThesisDefenceStatusCard({ status, allChecklistMet }: Defe
       <div className="mt-[18px] pt-[14px] border-t border-gray-200">
         <div className="flex justify-between items-center mb-1.5">
           <span className="text-xs text-muted-foreground font-medium">Progres Keseluruhan</span>
-          <span className="text-xs font-bold text-[#16A34A]">{spinePct}%</span>
+          <span className="text-xs font-bold text-[#16A34A]">{Math.round(spinePct)}%</span>
         </div>
         <div className="bg-muted rounded-full h-[6px] overflow-hidden">
           <div
@@ -125,7 +107,7 @@ export function StudentThesisDefenceStatusCard({ status, allChecklistMet }: Defe
           />
         </div>
         <div className="text-xs text-muted-foreground mt-1.5 font-medium">
-          {completedCount > 0 ? `${completedCount} dari ${STEPS.length} tahap selesai` : 'Checklist Persyaratan Belum Terpenuhi'}
+          {activeCount > 0 ? `${activeCount} dari ${totalCount} tahap selesai` : 'Checklist Persyaratan Belum Terpenuhi'}
         </div>
       </div>
     </div>

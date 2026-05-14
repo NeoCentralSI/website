@@ -134,7 +134,7 @@ export function StudentThesisDefenceIdentityCard({ defence, onClick }: DefenceIn
       <div key="score" className="flex flex-col gap-0.5">
         <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
           <Trophy size={12} className="opacity-50" />
-          Nilai Akhir
+          Skor Akhir
         </div>
         <div className="flex items-baseline gap-1">
           <span className="text-lg font-bold text-foreground">

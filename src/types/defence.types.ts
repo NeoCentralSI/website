@@ -89,11 +89,19 @@ export interface DefenceInfo {
   examiners: DefenceExaminer[];
 }
 
+export interface DefenceMilestone {
+  id: string;
+  label: string;
+  checked: boolean;
+}
+
 export interface DefenceOverviewResponse {
   thesisId: string;
   thesisTitle: string;
   checklist: DefenceChecklist;
   allChecklistMet: boolean;
+  milestones: DefenceMilestone[];
+  canUpload: boolean;
   defence: DefenceInfo | null;
 }
 

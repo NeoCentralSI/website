@@ -36,6 +36,7 @@ export const StudentThesisDefenceOverviewPanel = ({
           <StudentThesisDefenceStatusCard
             status={defenceStatus}
             allChecklistMet={overview.allChecklistMet}
+            milestones={overview.milestones}
           />
         </div>
 
@@ -62,7 +63,7 @@ export const StudentThesisDefenceOverviewPanel = ({
 
           {/* Column headers */}
           <div className="grid grid-cols-[40px_1.5fr_1fr_1fr_1fr_1fr_auto] gap-2 px-[10px] py-[6px] mb-[6px]">
-            {['#', 'Dosen Penguji', 'Tanggal', 'Ruangan', 'Nilai', 'Status', ''].map((col, i) => (
+            {['#', 'Dosen Penguji', 'Tanggal', 'Ruangan', 'Skor', 'Status', ''].map((col, i) => (
               <span
                 key={i}
                 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
