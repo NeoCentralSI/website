@@ -35,8 +35,8 @@ export function AdminThesisDefenceArchiveImportDialog({
       "Tanggal",
       "Ruangan",
       "Hasil",
+      "Skor",
       "Nilai",
-      "Grade",
       "Dosen Penguji 1",
       "Dosen Penguji 2",
       "Dosen Penguji 3"
@@ -51,8 +51,8 @@ export function AdminThesisDefenceArchiveImportDialog({
         "Tanggal": "2026-04-30",
         "Ruangan": "Ruang 1",
         "Hasil": "Lulus / Lulus dengan Revisi / Gagal",
-        "Nilai": 85.5,
-        "Grade": "A",
+        "Skor": 85.5,
+        "Nilai": "A",
         "Dosen Penguji 1": "Dosen 1",
         "Dosen Penguji 2": "Dosen 2",
         "Dosen Penguji 3": "(Opsional)"
@@ -107,7 +107,7 @@ export function AdminThesisDefenceArchiveImportDialog({
                 <div>
                   <p className="text-sm font-medium">Gunakan template standar</p>
                   <p className="text-xs text-muted-foreground">
-                    Kolom wajib: Nama, NIM, Judul TA, Tanggal, Hasil, Nilai, Grade, Dosen Penguji (Min. 1)
+                    Kolom wajib: Nama, NIM, Judul TA, Tanggal, Hasil, Skor, Nilai, Dosen Penguji (Min. 1)
                   </p>
                 </div>
               </div>
