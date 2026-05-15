@@ -143,8 +143,8 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
 
   // Sync selectedRoomId with current schedule when data loads
   useEffect(() => {
-    if (schedulingData?.currentSchedule?.roomId) {
-      setSelectedRoomId(schedulingData.currentSchedule.roomId);
+    if (schedulingData?.currentSchedule?.room?.id) {
+      setSelectedRoomId(schedulingData.currentSchedule.room.id);
     }
   }, [schedulingData]);
 
@@ -205,7 +205,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
     return events;
   }, [schedulingData, lecturerColorMap]);
 
-  const effectiveRoomId = selectedRoomId || schedulingData?.currentSchedule?.roomId || schedulingData?.rooms[0]?.id;
+  const effectiveRoomId = selectedRoomId || schedulingData?.currentSchedule?.room?.id || schedulingData?.rooms[0]?.id;
 
   const blockedEvents = useMemo((): EventInput[] => {
     if (!schedulingData?.roomBookings || !effectiveRoomId) return [];
@@ -407,7 +407,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
     
     // If there's a current draft schedule that isn't in roomBookings yet, add it
     const cs = schedulingData.currentSchedule;
-    if (cs?.date && cs.startTime && cs.endTime && cs.roomId === effectiveRoomId) {
+    if (cs?.date && cs.startTime && cs.endTime && cs.room?.id === effectiveRoomId) {
       const exists = bookings.some(b => b.id === `seminar-${seminarId}`);
       if (!exists && seminarDetail?.status === 'examiner_assigned') {
         bookings.push({
@@ -416,7 +416,7 @@ export function AdminThesisSeminarSchedulingSection({ seminarId, isEditable }: P
           date: cs.date,
           startTime: cs.startTime,
           endTime: cs.endTime,
-          roomId: cs.roomId,
+          roomId: cs.room?.id || '',
           isOnline: cs.isOnline
         });
       }
@@ -723,7 +723,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                   )}
                   {schedulingData?.rooms?.length > 0 && (
                     <Select
-                      value={selectedRoomId || schedulingData?.currentSchedule?.roomId || schedulingData.rooms[0]?.id}
+                      value={selectedRoomId || schedulingData?.currentSchedule?.room?.id || schedulingData.rooms[0]?.id}
                       onValueChange={(val) => setSelectedRoomId(val)}
                       disabled={['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(seminarDetail?.status as string)}
                     >

@@ -130,8 +130,8 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
   const [inputNomorSurat, setInputNomorSurat] = useState<string>('');
 
   const handleDownloadInvitation = () => {
-    if ((defenceDetail as any)?.invitationLetterNo) {
-      setInputNomorSurat((defenceDetail as any).invitationLetterNo);
+    if (defenceDetail?.invitationLetterNo) {
+      setInputNomorSurat(defenceDetail.invitationLetterNo);
     }
     setIsInvitationDialogOpen(true);
   };
@@ -148,8 +148,8 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
 
   // Sync selectedRoomId with current schedule when data loads
   useEffect(() => {
-    if (schedulingData?.currentSchedule?.roomId) {
-      setSelectedRoomId(schedulingData.currentSchedule.roomId);
+    if (schedulingData?.currentSchedule?.room?.id) {
+      setSelectedRoomId(schedulingData.currentSchedule.room.id);
     }
   }, [schedulingData]);
 
@@ -209,7 +209,7 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
     return events;
   }, [schedulingData, lecturerColorMap]);
 
-  const effectiveRoomId = selectedRoomId || schedulingData?.currentSchedule?.roomId || schedulingData?.rooms[0]?.id;
+  const effectiveRoomId = selectedRoomId || schedulingData?.currentSchedule?.room?.id || schedulingData?.rooms[0]?.id;
 
   // ── Blocked events for chosen room (red) ──────────────────────────────────
   const blockedEvents = useMemo((): EventInput[] => {
@@ -415,16 +415,16 @@ export function AdminThesisDefenceSchedulingSection({ defenceId, isEditable }: P
     
     // If there's a current draft schedule that isn't in roomBookings yet, add it
     const cs = schedulingData.currentSchedule;
-    if (cs?.date && cs.startTime && cs.endTime && cs.roomId === effectiveRoomId) {
+    if (cs?.date && cs.startTime && cs.endTime && cs.room?.id === effectiveRoomId) {
       const exists = bookings.some(b => b.id === `defence-${defenceId}`);
       if (!exists && !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(defenceDetail?.status as string)) {
         bookings.push({
           id: `defence-${defenceId}`,
-          title: `${defenceDetail.student?.name || 'Sidang'}`,
+          title: `${defenceDetail?.student?.name || 'Sidang'}`,
           date: cs.date,
           startTime: cs.startTime,
           endTime: cs.endTime,
-          roomId: cs.roomId,
+          roomId: cs.room?.id || '',
           isOnline: cs.isOnline
         });
       }
@@ -687,10 +687,10 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Terjadwal
                       </Badge>
-                      {(defenceDetail as any)?.scheduledAt && (
+                      {defenceDetail?.scheduledAt && (
                         <div className="flex flex-col items-end">
                           <span className="text-[10px] text-muted-foreground leading-none">Dijadwalkan pada:</span>
-                          <span className="text-[10px] font-medium text-foreground">{formatDateTime((defenceDetail as any).scheduledAt)}</span>
+                          <span className="text-[10px] font-medium text-foreground">{formatDateTime(defenceDetail.scheduledAt)}</span>
                         </div>
                       )}
                       <Button

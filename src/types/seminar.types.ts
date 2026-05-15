@@ -507,6 +507,7 @@ export interface SupervisorFinalizationDataResponse {
     finalScore: number | null;
     grade: string | null;
     resultFinalizedAt?: string | null;
+    resultFinalizedBy?: string | null;
     revisionFinalizedAt?: string | null;
     studentName: string;
     studentNim: string;
@@ -524,6 +525,7 @@ export interface SupervisorFinalizationDataResponse {
     assessmentScore: number | null;
     revisionNotes: string | null;
     assessmentSubmittedAt: string | null;
+    isDraft: boolean;
     assessmentDetails: {
       id: string;
       code: string;

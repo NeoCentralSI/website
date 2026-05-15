@@ -273,6 +273,7 @@ export interface DefenceRoomBooking {
   date: string;
   startTime: string;
   endTime: string;
+  isOnline: boolean;
 }
 
 export interface DefenceSchedulingData {
@@ -427,8 +428,6 @@ export interface LecturerDefenceDetailResponse {
   canOpenSupervisorAssessment: boolean;
   canOpenSupervisorFinalization: boolean;
   resultFinalizedAt: string | null;
-  scheduledAt: string | null;
-  invitationLetterNo: string | null;
   allExaminerSubmitted: boolean;
   supervisorAssessmentSubmitted: boolean;
   supervisors: AdminDefenceSupervisor[];
@@ -514,6 +513,7 @@ export interface DefenceFinalizationDataResponse {
     computedFinalScore: number | null;
     grade: string | null;
     resultFinalizedAt: string | null;
+    resultFinalizedBy: string | null;
     revisionFinalizedAt: string | null;
     revisionFinalizedBy: string | null;
     studentName: string;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle2, Download, Send } from 'lucide-react';
+import { ChevronDown, ChevronRight, CheckCircle2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth, useRole } from '@/hooks/shared';
 
