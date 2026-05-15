@@ -251,9 +251,12 @@ function App() {
                     {/* Seminar Hasil and Sidang handled by top-level routes */}
                   </Route>
 
+                  <Route path="/yudisium/exit-survey" element={<StudentExitSurveyPage />} />
+                  <Route path="/repositori" element={<RepositoryPage />} />
                   {/* Pengumuman routes */}
                   <Route path="/pengumuman" element={<Navigate to="/pengumuman/seminar-hasil" replace />} />
                   <Route path="/pengumuman/seminar-hasil" element={<ThesisSeminarAnnouncementPage />} />
+                  <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
                 </Route>
 
                 {/* Shared Routes (Student & Lecturer & Others) */}
@@ -266,10 +269,7 @@ function App() {
                 <Route path="/yudisium" element={<YudisiumEntry />} />
                 <Route path="/yudisium/:id" element={<YudisiumDetailPage />} />
                 <Route path="/yudisium/:id/peserta/:yudisiumParticipantId" element={<YudisiumParticipantDetailPage />} />
-                <Route path="/yudisium/exit-survey" element={<StudentExitSurveyPage />} />
                 <Route path="/yudisium/exit-survey/:id" element={<ExitSurveyFormPage />} />
-                <Route path="/repositori" element={<RepositoryPage />} />
-                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
 
                 {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
                 <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
