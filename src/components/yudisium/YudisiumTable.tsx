@@ -105,15 +105,22 @@ export function YudisiumTable({
             {
                 key: 'name',
                 header: 'Nama',
+                className: 'max-w-[240px] min-w-[160px] whitespace-normal',
                 render: (item) => (
-                    <span className="font-medium">{item.name || '-'}</span>
+                    <div className="max-w-[28ch] whitespace-normal break-words font-medium leading-tight">
+                        {item.name || '-'}
+                    </div>
                 ),
             },
             {
                 key: 'eventDate',
                 header: 'Tanggal',
+                width: 150,
+                className: 'whitespace-normal',
                 render: (item) => (
-                    <span className="text-sm">{formatDateTimeId(item.eventDate)}</span>
+                    <div className="max-w-[18ch] whitespace-normal break-words text-sm leading-tight">
+                        {formatDateTimeId(item.eventDate)}
+                    </div>
                 ),
             },
             {
