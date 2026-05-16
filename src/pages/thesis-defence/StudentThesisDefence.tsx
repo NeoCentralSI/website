@@ -8,11 +8,19 @@ import {
   useStudentDefenceHistory,
 } from '@/hooks/thesis-defence';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
 
 export default function StudentThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const { data: overview, isLoading: isOverviewLoading } = useStudentDefenceOverview();
+  const {
+    data: overview,
+    isLoading: isOverviewLoading,
+    isError: isOverviewError,
+    error: overviewError,
+    refetch: refetchOverview,
+  } = useStudentDefenceOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentDefenceHistory();
 
   const isLoading = isOverviewLoading || isHistoryLoading;
@@ -52,17 +60,25 @@ export default function StudentThesisDefence() {
         </div>
       </div>
 
-      {overview ? (
+      {isOverviewError ? (
+        <div className="rounded-lg border border-dashed p-8 text-center space-y-3">
+          <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            {overviewError instanceof Error
+              ? overviewError.message
+              : 'Gagal memuat data sidang tugas akhir.'}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => refetchOverview()}>
+            Coba lagi
+          </Button>
+        </div>
+      ) : overview ? (
         <StudentThesisDefenceOverviewPanel
           overview={overview}
           history={history || []}
           onDetailClick={(id) => navigate(`/tugas-akhir/sidang/${id}`)}
         />
-      ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          Data sidang tugas akhir belum tersedia.
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

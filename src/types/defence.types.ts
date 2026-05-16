@@ -97,8 +97,8 @@ export interface DefenceMilestone {
 }
 
 export interface DefenceOverviewResponse {
-  thesisId: string;
-  thesisTitle: string;
+  thesisId: string | null;
+  thesisTitle: string | null;
   checklist: DefenceChecklist;
   allChecklistMet: boolean;
   milestones: DefenceMilestone[];

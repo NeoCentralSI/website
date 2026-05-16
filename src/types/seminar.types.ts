@@ -104,11 +104,19 @@ export interface SeminarInfo {
   examiners: SeminarExaminer[];
 }
 
+export interface SeminarMilestone {
+  id: string;
+  label: string;
+  checked: boolean;
+}
+
 export interface SeminarOverviewResponse {
-  thesisId: string;
-  thesisTitle: string;
+  thesisId: string | null;
+  thesisTitle: string | null;
   checklist: SeminarChecklist;
   allChecklistMet: boolean;
+  milestones: SeminarMilestone[];
+  canUpload: boolean;
   seminar: SeminarInfo | null;
 }
 
