@@ -114,6 +114,14 @@ export default function YudisiumDetailPage() {
     return !!participantData?.yudisium?.appointedAt;
   }, [participantData?.yudisium?.appointedAt]);
 
+  const canAccessParticipantExport = useMemo(() => {
+    return isAdmin() || isDosen() || isKoordinatorYudisium();
+  }, [isAdmin, isDosen, isKoordinatorYudisium]);
+
+  const canExportParticipants = useMemo(() => {
+    return canAccessParticipantExport && (isFinalized || detail?.status === 'completed');
+  }, [canAccessParticipantExport, detail?.status, isFinalized]);
+
   const {
     data: archiveParticipantOptions = [],
     isLoading: isLoadingArchiveParticipantOptions,
@@ -319,6 +327,40 @@ export default function YudisiumDetailPage() {
           emptyText="Belum ada peserta yudisium"
           actions={
             <div className="flex items-center gap-2">
+              {canExportParticipants && (
+                <>
+                  {detail.decreeDocument?.filePath && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => {
+                        const decreeFilePath = detail.decreeDocument?.filePath;
+                        if (decreeFilePath) {
+                          openProtectedFile(decreeFilePath);
+                        }
+                      }}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Lihat SK
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => exportParticipantsMutation.mutate(detail.id)}
+                    disabled={exportParticipantsMutation.isPending}
+                  >
+                    {exportParticipantsMutation.isPending ? (
+                      <Spinner className="mr-2 h-4 w-4" />
+                    ) : (
+                      <FileDown className="mr-2 h-4 w-4" />
+                    )}
+                    Export Peserta
+                  </Button>
+                </>
+              )}
               {isKoordinatorYudisium() && isArchive && (
                 <>
                   <Button
@@ -355,40 +397,6 @@ export default function YudisiumDetailPage() {
                   )}
                   Finalisasi Peserta
                 </Button>
-              )}
-              {(isAdmin() || isDosen()) && isFinalized && (
-                <div className="flex items-center gap-2">
-                  {detail.decreeDocument?.filePath && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9"
-                      onClick={() => {
-                        const decreeFilePath = detail.decreeDocument?.filePath;
-                        if (decreeFilePath) {
-                          openProtectedFile(decreeFilePath);
-                        }
-                      }}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      Lihat SK
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9"
-                    onClick={() => exportParticipantsMutation.mutate(detail.id)}
-                    disabled={exportParticipantsMutation.isPending}
-                  >
-                    {exportParticipantsMutation.isPending ? (
-                      <Spinner className="mr-2 h-4 w-4" />
-                    ) : (
-                      <FileDown className="mr-2 h-4 w-4" />
-                    )}
-                    Export Peserta
-                  </Button>
-                </div>
               )}
               <RefreshButton
                 onClick={() => void refetchParticipants()}

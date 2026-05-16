@@ -146,15 +146,14 @@ export function YudisiumTable({
                 key: 'participantCount',
                 header: 'Peserta',
                 width: 90,
+                className: 'text-center',
                 render: (item) => (
-                    item.participantCount > 0
-                        ? (
-                            <Badge variant="outline" className="gap-1 px-2 font-medium border-gray-200 text-gray-600">
-                                <Users className="h-3 w-3" />
-                                {item.participantCount}
-                            </Badge>
-                        )
-                        : <span className="text-muted-foreground text-sm">-</span>
+                    <div className="flex justify-center">
+                        <Badge variant="outline" className="flex items-center gap-1 font-normal border-gray-200 bg-white text-gray-900">
+                            <Users className="h-3 w-3" />
+                            <span className="font-bold">{item.participantCount}</span>
+                        </Badge>
+                    </div>
                 ),
             },
             {

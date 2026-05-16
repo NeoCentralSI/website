@@ -21,10 +21,11 @@ import {
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
-import { FileUp, X } from 'lucide-react';
+import { Eye, FileText, FileUp, X } from 'lucide-react';
 import { getExitSurveyForms } from '@/services/yudisium/exit-survey.service';
 import { getYudisiumRequirements } from '@/services/yudisium/requirement.service';
 import { toast } from 'sonner';
+import { openProtectedFile } from '@/lib/protected-file';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import type { YudisiumRequirement } from '@/services/yudisium/requirement.service';
 import type {
@@ -214,7 +215,7 @@ export function YudisiumFormDialog({
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
 			const file = e.target.files[0];
-			if (file.type !== 'application/pdf') {
+			if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
 				toast.error('File harus berformat PDF');
 				return;
 			}
@@ -224,6 +225,22 @@ export function YudisiumFormDialog({
 			}
 			setDecreeFile(file);
 		}
+	};
+
+	const handleViewCurrentDecree = async () => {
+		const filePath = editData?.decreeDocument?.filePath;
+		if (!filePath) return;
+
+		try {
+			await openProtectedFile(filePath, editData?.decreeDocument?.fileName || undefined);
+		} catch (error) {
+			toast.error((error as Error).message || 'Gagal membuka dokumen SK');
+		}
+	};
+
+	const handleClearSelectedDecree = () => {
+		setDecreeFile(null);
+		if (fileInputRef.current) fileInputRef.current.value = '';
 	};
 
 	const handleSubmit = async (event: React.FormEvent) => {
@@ -428,33 +445,66 @@ export function YudisiumFormDialog({
 					{/* Upload SK (Decree) */}
 					<div className="space-y-2">
 						<Label>Unggah SK Yudisium</Label>
-						<div className="flex items-center gap-2">
-							<Input
-								type="file"
-								accept=".pdf"
-								className="hidden"
-								ref={fileInputRef}
-								onChange={handleFileChange}
-							/>
-							<Button
-								type="button"
-								variant="outline"
-								className="w-full justify-start text-muted-foreground font-normal"
-								onClick={() => fileInputRef.current?.click()}
-							>
-								<FileUp className="mr-2 h-4 w-4" />
-								{decreeFile ? decreeFile.name : 'Pilih file SK (PDF, max 5MB)'}
-							</Button>
-							{decreeFile && (
+						<Input
+							type="file"
+							accept=".pdf"
+							className="hidden"
+							ref={fileInputRef}
+							onChange={handleFileChange}
+						/>
+
+						<div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3">
+							<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+								<FileText className="h-4 w-4" />
+							</div>
+							<div className="min-w-0 flex-1">
+								<p className="truncate text-sm font-medium text-foreground">
+									{decreeFile?.name || editData?.decreeDocument?.fileName || 'Belum ada file SK'}
+								</p>
+								<p className="text-xs text-muted-foreground">
+									{decreeFile
+										? 'File baru siap diunggah saat data disimpan'
+										: editData?.decreeDocument?.filePath
+											? 'File SK saat ini'
+											: 'Pilih file PDF maksimal 5MB'}
+								</p>
+							</div>
+							<div className="flex shrink-0 items-center gap-1.5">
+								{!decreeFile && editData?.decreeDocument?.filePath && (
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										className="h-8"
+										onClick={handleViewCurrentDecree}
+									>
+										<Eye className="mr-1.5 h-3.5 w-3.5" />
+										Lihat
+									</Button>
+								)}
 								<Button
 									type="button"
-									variant="ghost"
-									size="icon"
-									onClick={() => setDecreeFile(null)}
+									variant="outline"
+									size="sm"
+									className="h-8"
+									onClick={() => fileInputRef.current?.click()}
 								>
-									<X className="h-4 w-4" />
+									<FileUp className="mr-1.5 h-3.5 w-3.5" />
+									{decreeFile || editData?.decreeDocument?.filePath ? 'Ganti' : 'Upload'}
 								</Button>
-							)}
+								{decreeFile && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className="h-8 w-8"
+										onClick={handleClearSelectedDecree}
+										title="Batalkan file baru"
+									>
+										<X className="h-4 w-4" />
+									</Button>
+								)}
+							</div>
 						</div>
 						<p className="text-[10px] text-muted-foreground">
 							Mengunggah SK akan memfinalisasi status pendaftaran dan nilai CPL seluruh peserta.
