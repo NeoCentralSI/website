@@ -52,6 +52,24 @@ export interface ReadyForSeminarStudent {
   approvedAt: string;
 }
 
+export interface SupervisorLoadStudent {
+  thesisId: string;
+  thesisTitle: string | null;
+  role: string | null;
+  name: string;
+  nim: string;
+  email: string | null;
+}
+
+export interface SupervisorLoad {
+  lecturerId: string;
+  lecturerName: string;
+  lecturerNip: string | null;
+  lecturerEmail: string | null;
+  studentCount: number;
+  students: SupervisorLoadStudent[];
+}
+
 export interface RatingDistribution {
   id: string;
   name: string;
@@ -91,6 +109,7 @@ export interface MonitoringDashboard {
   guidanceTrend: GuidanceTrend[];
   atRiskStudents: AtRiskStudent[];
   slowStudents: AtRiskStudent[];
+  supervisorLoads: SupervisorLoad[];
   readyForSeminar: ReadyForSeminarStudent[];
 }
 
@@ -276,6 +295,7 @@ const ENDPOINTS = {
   FILTERS: "/thesisGuidance/monitoring/filters",
   AT_RISK: "/thesisGuidance/monitoring/at-risk",
   READY_SEMINAR: "/thesisGuidance/monitoring/ready-seminar",
+  SUPERVISOR_LOADS: "/thesisGuidance/monitoring/supervisor-loads",
   BATCH_WARNING: "/thesisGuidance/monitoring/batch-warning",
 };
 
@@ -379,6 +399,22 @@ export async function getStudentsReadyForSeminar(academicYear?: string): Promise
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Gagal mengambil mahasiswa siap seminar");
+  }
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Get lecturer supervision workloads
+ */
+export async function getSupervisorLoads(academicYear?: string): Promise<SupervisorLoad[]> {
+  const url = academicYear && academicYear !== "all"
+    ? `${ENDPOINTS.SUPERVISOR_LOADS}?academicYear=${academicYear}`
+    : ENDPOINTS.SUPERVISOR_LOADS;
+  const response = await apiRequest(getApiUrl(url));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil beban bimbingan dosen");
   }
   const result = await response.json();
   return result.data;

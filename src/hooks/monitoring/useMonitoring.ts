@@ -5,6 +5,7 @@ import {
   getFilterOptions,
   getAtRiskStudents,
   getStudentsReadyForSeminar,
+  getSupervisorLoads,
   getThesisDetail,
   type ThesesFilters,
   type MonitoringDashboard,
@@ -12,6 +13,7 @@ import {
   type FilterOptions,
   type AtRiskStudent,
   type ReadyForSeminarStudent,
+  type SupervisorLoad,
   type ThesisDetail,
 } from "@/services/monitoring.service";
 
@@ -24,6 +26,7 @@ export const monitoringKeys = {
   filters: () => [...monitoringKeys.all, "filters"] as const,
   atRisk: (academicYear?: string) => [...monitoringKeys.all, "at-risk", academicYear] as const,
   readySeminar: (academicYear?: string) => [...monitoringKeys.all, "ready-seminar", academicYear] as const,
+  supervisorLoads: (academicYear?: string) => [...monitoringKeys.all, "supervisor-loads", academicYear] as const,
 };
 
 /**
@@ -79,6 +82,17 @@ export function useStudentsReadyForSeminar(academicYear?: string) {
   return useQuery<ReadyForSeminarStudent[], Error>({
     queryKey: monitoringKeys.readySeminar(academicYear),
     queryFn: () => getStudentsReadyForSeminar(academicYear),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+/**
+ * Hook to fetch lecturer supervision workloads
+ */
+export function useSupervisorLoads(academicYear?: string) {
+  return useQuery<SupervisorLoad[], Error>({
+    queryKey: monitoringKeys.supervisorLoads(academicYear),
+    queryFn: () => getSupervisorLoads(academicYear),
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }

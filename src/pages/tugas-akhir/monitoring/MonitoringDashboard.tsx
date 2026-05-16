@@ -10,6 +10,7 @@ import {
   ProgressDistributionChart,
   SlowStudentsCard,
   ReadyForSeminarCard,
+  SupervisorLoadCard,
   ThesesTable,
   GuidanceTrendChart,
 } from "@/components/monitoring";
@@ -187,10 +188,14 @@ export default function MonitoringDashboard() {
       </div>
 
       {/* Quick Lists */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <SlowStudentsCard
           slowStudents={data?.slowStudents}
           atRiskStudents={data?.atRiskStudents}
+          isLoading={isLoadingAny}
+        />
+        <SupervisorLoadCard
+          loads={data?.supervisorLoads}
           isLoading={isLoadingAny}
         />
         <ReadyForSeminarCard

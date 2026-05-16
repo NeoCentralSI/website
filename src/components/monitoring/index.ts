@@ -9,6 +9,7 @@ export { ProgressDistributionChart } from "./ProgressDistributionChart";
 export { AtRiskStudentsCard } from "./AtRiskStudentsCard";
 export { ReadyForSeminarCard } from "./ReadyForSeminarCard";
 export { SlowStudentsCard } from "./SlowStudentsCard";
+export { SupervisorLoadCard } from "./SupervisorLoadCard";
 export { ThesesTable } from "./ThesesTable";
 export { GuidanceTrendChart } from "./MonthlyTrendChart";
 
