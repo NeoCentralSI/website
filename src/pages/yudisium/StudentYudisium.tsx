@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
@@ -16,9 +16,10 @@ import {
   Info,
   CalendarX2,
   AlertCircle,
-  Eye,
-  X,
-} from 'lucide-react';
+	  Eye,
+	  X,
+	  MapPin,
+	} from 'lucide-react';
 import {
   useStudentYudisiumOverview,
   useStudentYudisiumRequirements,
@@ -26,6 +27,7 @@ import {
 } from '@/hooks/yudisium/useYudisiumStudent';
 import type {
   StudentYudisiumChecklistItem,
+  StudentYudisiumOverviewResponse,
   YudisiumRequirementUploadStatus,
 } from '@/types/student-yudisium.types';
 import {
@@ -37,6 +39,7 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Button } from '@/components/ui/button';
+import CustomTable, { type Column } from '@/components/layout/CustomTable';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -63,6 +66,7 @@ const checklistEntries = (checklist: Record<string, StudentYudisiumChecklistItem
 
 type YudisiumDisplayStatus = 'draft' | 'open' | 'closed' | 'scheduled' | 'ongoing' | 'completed';
 type ParticipantStatus = 'registered' | 'verified' | 'cpl_validated' | 'appointed' | 'finalized' | 'rejected' | null;
+type StudentCplScore = NonNullable<StudentYudisiumOverviewResponse['cplScores']>[number];
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -75,12 +79,12 @@ const STEPS = [
 ] as const;
 
 const STATUS_BADGE_MAP: Record<YudisiumDisplayStatus, { label: string; className: string }> = {
-  draft: { label: 'Belum Dibuka', className: 'bg-gray-100 text-gray-600 border-gray-200' },
-  open: { label: 'Pendaftaran Dibuka', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  closed: { label: 'Pendaftaran Ditutup', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  scheduled: { label: 'Terjadwalkan', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  ongoing: { label: 'Sedang Berlangsung', className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  completed: { label: 'Selesai', className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  draft: { label: 'Draft', className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' },
+  open: { label: 'Pendaftaran Dibuka', className: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' },
+  closed: { label: 'Pendaftaran Ditutup', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
+  scheduled: { label: 'Terjadwalkan', className: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' },
+  ongoing: { label: 'Sedang Berlangsung', className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
+  completed: { label: 'Selesai', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
 };
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
@@ -239,26 +243,30 @@ function StudentYudisiumIdentityCard({
   displayStatus,
   statusBadge,
   decreeDocument,
+  canDownloadCertificate,
+  onDownloadCertificate,
 }: {
   yudisium: any;
   displayStatus: YudisiumDisplayStatus;
   statusBadge: any;
   decreeDocument: any;
+  canDownloadCertificate: boolean;
+  onDownloadCertificate: () => void;
 }) {
   return (
     <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px] transition-all duration-200">
       {/* Header */}
-      <div className="flex items-center justify-between mb-[14px]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-[14px]">
         <div className="text-base font-semibold text-foreground">Informasi Yudisium</div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", statusBadge.className)}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className={cn("h-5 px-1.5 text-[10px] font-semibold rounded-full leading-none", statusBadge.className)}>
             {statusBadge.label}
           </Badge>
         </div>
       </div>
 
       {/* Info grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3 gap-x-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-y-3 gap-x-4">
         <div className="flex flex-col gap-0.5">
           <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
             <BookOpen size={12} className="opacity-50" />
@@ -279,25 +287,34 @@ function StudentYudisiumIdentityCard({
           </div>
         </div>
 
-        {yudisium.eventDate && (
-          <div className="flex flex-col gap-0.5">
-            <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-              <Calendar size={12} className="opacity-50" />
-              Tanggal Pelaksanaan
-            </div>
-            <div className="text-sm text-foreground font-medium">
-              {formatDateOnly(yudisium.eventDate)}
-            </div>
+        <div className="flex flex-col gap-0.5">
+          <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <Calendar size={12} className="opacity-50" />
+            Tanggal Pelaksanaan
           </div>
-        )}
+          <div className="text-sm text-foreground font-medium">
+            {formatDateOnly(yudisium.eventDate)}
+          </div>
+        </div>
 
-        {decreeDocument?.filePath && (
-          <div className="flex flex-col gap-0.5">
-            <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-              <FileText size={12} className="opacity-50" />
-              SK Yudisium
-            </div>
-            <button
+        <div className="flex flex-col gap-0.5">
+          <div className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <MapPin size={12} className="opacity-50" />
+            Ruangan
+          </div>
+          <div className="text-sm text-foreground font-medium truncate">
+            {yudisium.room?.name ?? '-'}
+          </div>
+        </div>
+      </div>
+
+      {(decreeDocument?.filePath || canDownloadCertificate) && (
+        <div className="mt-[14px] flex flex-wrap items-center gap-2">
+          {decreeDocument?.filePath && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs font-semibold"
               onClick={async () => {
                 try {
                   await openProtectedFile(decreeDocument.filePath, decreeDocument.fileName || 'SK-Yudisium.pdf');
@@ -305,14 +322,24 @@ function StudentYudisiumIdentityCard({
                   toast.error(err instanceof Error ? err.message : 'Gagal mengunduh SK');
                 }
               }}
-              className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:underline cursor-pointer text-left p-0 bg-transparent border-0"
             >
-              <Download size={12} />
+              <Download size={14} />
               Unduh SK
-            </button>
-          </div>
-        )}
-      </div>
+            </Button>
+          )}
+          {canDownloadCertificate && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs font-semibold"
+              onClick={onDownloadCertificate}
+            >
+              <Download size={14} />
+              Download Sertifikat
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Alerts */}
       {displayStatus === 'draft' && (
@@ -340,6 +367,7 @@ function ChecklistRow({
   revisionFinalizedAt,
   isExitSurvey,
   isYudisiumOpen,
+  canAccessExitSurvey,
   onExitSurveyClick,
 }: {
   label: string;
@@ -350,6 +378,7 @@ function ChecklistRow({
   revisionFinalizedAt?: string | null;
   isExitSurvey?: boolean;
   isYudisiumOpen?: boolean;
+  canAccessExitSurvey?: boolean;
   onExitSurveyClick?: () => void;
 }) {
   const hasProgress = current !== undefined && required !== undefined;
@@ -360,6 +389,12 @@ function ChecklistRow({
     : isInProgress
       ? `${current}/${required}`
       : 'Menunggu';
+  const exitSurveyDisabledReason =
+    isExitSurvey && !met && !canAccessExitSurvey
+      ? isYudisiumOpen
+        ? 'Lengkapi seluruh persyaratan akademik terlebih dahulu'
+        : 'Exit survey aktif saat pendaftaran yudisium dibuka'
+      : null;
 
   return (
     <div
@@ -396,20 +431,28 @@ function ChecklistRow({
             </span>
           )}
         </div>
+        {exitSurveyDisabledReason && (
+          <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+            {exitSurveyDisabledReason}
+          </p>
+        )}
       </div>
 
       {isExitSurvey && (
         <button
-          onClick={(isYudisiumOpen || met) ? onExitSurveyClick : undefined}
-          disabled={!isYudisiumOpen && !met}
+          onClick={(canAccessExitSurvey || met) ? onExitSurveyClick : undefined}
+          disabled={!canAccessExitSurvey && !met}
           className={cn(
             "shrink-0 px-[9px] py-[4px] text-[10px] font-semibold rounded-[5px] transition-all duration-200 border",
             met
               ? "border-gray-200 text-foreground bg-transparent hover:bg-accent cursor-pointer"
-              : isYudisiumOpen
+              : canAccessExitSurvey
                 ? "border-primary text-primary bg-transparent hover:bg-primary/5 cursor-pointer"
                 : "border-gray-200 text-muted-foreground bg-transparent cursor-default opacity-50"
           )}
+          title={
+            exitSurveyDisabledReason ?? undefined
+          }
         >
           {met ? 'Lihat Response' : 'Isi Survey'}
         </button>
@@ -446,6 +489,7 @@ function StudentYudisiumChecklistCard({
             revisionFinalizedAt={item.revisionFinalizedAt}
             isExitSurvey={item.key === 'exitSurvey'}
             isYudisiumOpen={isYudisiumOpen}
+            canAccessExitSurvey={item.key === 'exitSurvey' ? !!item.isAvailable : undefined}
             onExitSurveyClick={onExitSurveyClick}
           />
         ))}
@@ -590,26 +634,39 @@ function DocumentRow({
 function YudisiumRequirementCard({
   allChecklistMet,
   participantStatus,
-  isRegistrationOpen
+  isRegistrationOpen,
+  fallbackRequirements = [],
 }: {
   allChecklistMet: boolean;
   participantStatus: ParticipantStatus;
   isRegistrationOpen: boolean;
+  fallbackRequirements?: { id: string; name: string; description?: string | null }[];
 }) {
   const isLocked = !allChecklistMet || !isRegistrationOpen;
+  const isChecklistLocked = !allChecklistMet && isRegistrationOpen;
   const isBeyondVerification = ['verified', 'cpl_validated', 'appointed', 'finalized'].includes(participantStatus ?? '');
 
   const { data: reqData } = useStudentYudisiumRequirements();
   const uploadMutation = useUploadYudisiumDocument();
-  const requirements = reqData?.requirements ?? [];
+  const requirements = (reqData?.requirements?.length ? reqData.requirements : fallbackRequirements.map((req) => ({
+    id: req.id,
+    name: req.name,
+    description: req.description ?? null,
+    notes: null,
+    status: null,
+    submittedAt: null,
+    verifiedAt: null,
+    validationNotes: null,
+    document: null,
+  }))) as YudisiumRequirementUploadStatus[];
 
   return (
     <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
       <div className="text-base font-semibold text-foreground mb-[14px]">
         Upload Dokumen Yudisium
       </div>
-      {(!allChecklistMet && !isBeyondVerification) && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 p-[8px_12px] bg-muted border border-gray-200 rounded-[7px]">
+      {(isChecklistLocked && !isBeyondVerification) && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 p-[8px_12px] bg-amber-50 border border-amber-200 rounded-[7px]">
           <AlertCircle size={14} className="shrink-0 text-muted-foreground" />
           <span>Lengkapi checklist persyaratan untuk mengakses fitur upload.</span>
         </div>
@@ -678,14 +735,20 @@ function RequirementsPreviewCard({ requirements }: { requirements: { id: string;
 function StudentYudisiumHistoryCard({
   index,
   item,
+  onOpen,
 }: {
   index: number;
   item: any;
+  onOpen: () => void;
 }) {
   const statusInfo = PARTICIPANT_STATUS_MAP[item.status] || { label: item.status, className: '' };
 
   return (
-    <div className="grid grid-cols-[40px_1.5fr_1.5fr_1fr_1fr_1fr] gap-2 items-center p-[10px] bg-card border border-gray-200 rounded-[8px] transition-all duration-200">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="grid w-full grid-cols-[40px_1.5fr_1.5fr_1fr_1fr_1fr] gap-2 items-center p-[10px] bg-card border border-gray-200 rounded-[8px] text-left transition-all duration-200 hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
       {/* # */}
       <span className="text-xs font-semibold text-muted-foreground">{index}</span>
 
@@ -717,7 +780,7 @@ function StudentYudisiumHistoryCard({
           {statusInfo.label}
         </Badge>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -727,6 +790,9 @@ export default function StudentYudisium() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
   const { data, isLoading, refetch } = useStudentYudisiumOverview();
+  const [cplSearch, setCplSearch] = useState('');
+  const [cplPage, setCplPage] = useState(1);
+  const [cplPageSize, setCplPageSize] = useState(10);
 
   const breadcrumbs = useMemo(() => [
     { label: 'Yudisium' }
@@ -858,6 +924,115 @@ export default function StudentYudisium() {
   const isFinalized = currentStep >= 4;
   const statusBadge = displayStatus ? STATUS_BADGE_MAP[displayStatus] : STATUS_BADGE_MAP.draft;
 
+  const cplScores = data?.cplScores ?? [];
+  const filteredCplScores = useMemo(() => {
+    const term = cplSearch.trim().toLowerCase();
+    if (!term) return cplScores;
+
+    return cplScores.filter((score) =>
+      (score.code ?? '').toLowerCase().includes(term) ||
+      score.description.toLowerCase().includes(term) ||
+      (score.validatedBy ?? score.verifiedBy ?? '').toLowerCase().includes(term)
+    );
+  }, [cplScores, cplSearch]);
+
+  const paginatedCplScores = useMemo(() => {
+    const start = (cplPage - 1) * cplPageSize;
+    return filteredCplScores.slice(start, start + cplPageSize);
+  }, [cplPage, cplPageSize, filteredCplScores]);
+
+  const cplColumns = useMemo<Column<StudentCplScore>[]>(() => [
+    {
+      key: 'no',
+      header: 'No',
+      width: 60,
+      className: 'text-center',
+      render: (_row, index) => (
+        <span className="text-sm text-muted-foreground">
+          {(cplPage - 1) * cplPageSize + index + 1}
+        </span>
+      ),
+    },
+    {
+      key: 'code',
+      header: 'Kode CPL',
+      width: 110,
+      render: (row) => <span className="font-medium">{row.code ?? '-'}</span>,
+    },
+    {
+      key: 'description',
+      header: 'Deskripsi',
+      className: 'min-w-[320px] whitespace-normal',
+      render: (row) => (
+        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+          {row.description}
+        </p>
+      ),
+    },
+    {
+      key: 'score',
+      header: 'Nilai',
+      width: 80,
+      className: 'text-center',
+      render: (row) => <span className="font-semibold">{row.score ?? '-'}</span>,
+    },
+    {
+      key: 'minimalScore',
+      header: 'Minimal',
+      width: 90,
+      className: 'text-center',
+      render: (row) => <span>{row.minimalScore}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: 130,
+      className: 'text-center',
+      render: (row) => (
+        <Badge
+          variant="outline"
+          className={row.passed
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : 'bg-red-50 text-red-700 border-red-200'}
+        >
+          {row.passed ? 'Lulus' : 'Belum Tercapai'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'verified',
+      header: 'Diverifikasi',
+      width: 220,
+      render: (row) => {
+        const validatorName = row.validatedBy ?? row.verifiedBy ?? null;
+        const validatorNip = row.validatedByNip ?? row.verifiedByNip ?? null;
+        const validatedAt = row.validatedAt ?? row.verifiedAt ?? null;
+
+        if (!validatorName && row.status !== 'validated') {
+          return (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <X className="h-3.5 w-3.5" />
+              <span>Belum diverifikasi</span>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+              <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              <span>{validatorName || 'Terverifikasi'}</span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {validatedAt ? formatDateTime(validatedAt) : '-'}
+              {validatorNip ? ` • NIP ${validatorNip}` : ''}
+            </div>
+          </div>
+        );
+      },
+    },
+  ], [cplPage, cplPageSize]);
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-[14px]">
@@ -907,12 +1082,14 @@ export default function StudentYudisium() {
         </div>
       ) : (
         data?.yudisium && (
-          <StudentYudisiumIdentityCard
-            yudisium={data.yudisium}
-            displayStatus={displayStatus!}
-            statusBadge={statusBadge}
-            decreeDocument={data.yudisium.decreeDocument}
-          />
+	          <StudentYudisiumIdentityCard
+	            yudisium={data.yudisium}
+	            displayStatus={displayStatus!}
+	            statusBadge={statusBadge}
+	            decreeDocument={data.yudisium.decreeDocument}
+	            canDownloadCertificate={['cpl_validated', 'appointed', 'finalized'].includes(data?.participantStatus || '')}
+	            onDownloadCertificate={handleDownloadCplReport}
+	          />
         )
       )}
 
@@ -940,99 +1117,47 @@ export default function StudentYudisium() {
               allChecklistMet={data?.allChecklistMet ?? false}
               participantStatus={data?.participantStatus as ParticipantStatus}
               isRegistrationOpen={isRegistrationOpen}
+              fallbackRequirements={data?.requirements ?? []}
             />
           ) : (
             <RequirementsPreviewCard requirements={data?.requirements ?? []} />
           )}
 
-          {/* CPL Scores Card — show whenever scores exist, regardless of active period */}
-          {(data?.cplScores.length ?? 0) > 0 && (
-            <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
-              <div className="flex items-center justify-between mb-[14px]">
-                <div className="text-base font-semibold text-foreground">Validasi CPL</div>
-                <div className="flex items-center gap-2">
-                  {['cpl_validated', 'appointed', 'finalized'].includes(data?.participantStatus || '') && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-[10px] font-bold"
-                      onClick={handleDownloadCplReport}
-                    >
-                      <Download className="h-3 w-3" />
-                      Hasil CPL
-                    </Button>
-                  )}
-                  {data?.allCplVerified && (
-                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 h-5 px-1.5 text-[10px]">
-                      <Check className="mr-1 h-2.5 w-2.5" strokeWidth={3} />
-                      Tervalidasi
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              {data?.allCplVerified && (
-                <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5">
-                  <p className="text-[11px] font-medium text-emerald-700">
-                    Selamat! Anda telah menjadi <strong>Calon Peserta Yudisium</strong>.
-                  </p>
-                </div>
-              )}
-
-              <div className="overflow-x-auto rounded-[8px] border border-gray-100">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-muted/30">
-                    <tr>
-                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Kode</th>
-                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Deskripsi</th>
-                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nilai</th>
-                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Minimal Skor</th>
-                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-center">Status</th>
-                      <th className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">Diverifikasi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data?.cplScores.map((cpl: any, idx: number) => {
-                      const isValidated = cpl.status === 'validated' || !!(cpl.verifiedBy && cpl.verifiedAt);
-                      return (
-                        <tr key={idx} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
-                          <td className="px-3 py-2 text-xs font-semibold text-foreground">{cpl.code ?? '-'}</td>
-                          <td className="px-3 py-2 text-xs text-muted-foreground max-w-[45ch] whitespace-normal leading-relaxed py-3">{cpl.description}</td>
-                          <td className="px-3 py-2 text-xs font-bold text-foreground">{cpl.score ?? '-'}</td>
-                          <td className="px-3 py-2 text-xs font-medium text-muted-foreground">{cpl.minimalScore}</td>
-                          <td className="px-3 py-2 text-center">
-                            <span className={cn(
-                              "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                              cpl.passed
-                                ? "bg-emerald-50 text-emerald-600"
-                                : "bg-red-50 text-red-600"
-                            )}>
-                              {cpl.passed ? 'LULUS' : 'TIDAK LULUS'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <div className="flex justify-end">
-                              {isValidated ? (
-                                <div className="bg-emerald-100 text-emerald-600 p-0.5 rounded-full" title={`Validasi pada ${formatDateTime(cpl.verifiedAt)}`}>
-                                  <Check size={10} strokeWidth={3} />
-                                </div>
-                              ) : (
-                                <div className="bg-gray-100 text-gray-400 p-0.5 rounded-full">
-                                  <X size={10} strokeWidth={3} />
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {(data?.cplScores.length ?? 0) > 0 && (
+        <section className="space-y-[14px]">
+          {data?.allCplVerified && (
+            <div className="rounded-[10px] border border-emerald-200 bg-emerald-50/60 p-3">
+              <p className="text-sm font-medium text-emerald-700">
+                Selamat! Anda telah menjadi <strong>Calon Peserta Yudisium</strong>.
+              </p>
+            </div>
+          )}
+
+          <CustomTable
+            columns={cplColumns}
+            data={paginatedCplScores}
+            total={filteredCplScores.length}
+            page={cplPage}
+            pageSize={cplPageSize}
+            onPageChange={setCplPage}
+            onPageSizeChange={(size) => {
+              setCplPageSize(size);
+              setCplPage(1);
+            }}
+            searchValue={cplSearch}
+            onSearchChange={(value) => {
+              setCplSearch(value);
+              setCplPage(1);
+            }}
+            emptyText="Tidak ada data CPL"
+            rowKey={(row, index) => `${row.code ?? 'cpl'}-${index}`}
+            className="rounded-[10px] border-gray-200 shadow-none"
+          />
+        </section>
+      )}
 
       {/* Riwayat Percobaan — matching Thesis Defence layout */}
       {(data?.history?.length ?? 0) > 0 && (
@@ -1064,6 +1189,11 @@ export default function StudentYudisium() {
                 key={item.id}
                 index={idx + 1}
                 item={item}
+                onOpen={() =>
+                  navigate(`/yudisium/${item.yudisiumId}/peserta/${item.id}?from=student`, {
+                    state: { from: 'student-yudisium' },
+                  })
+                }
               />
             ))}
           </div>

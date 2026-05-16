@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,8 +57,13 @@ export default function YudisiumParticipantDetail() {
   const { id: yudisiumId, yudisiumParticipantId } = useParams<{ id: string; yudisiumParticipantId: string }>();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const { isGkm } = useRole();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { isGkm, isStudent } = useRole();
   const canPerformActions = isGkm();
+  const isStudentMode =
+    isStudent() &&
+    (searchParams.get('from') === 'student' || (location.state as { from?: string } | null)?.from === 'student-yudisium');
 
   const { data, isLoading } = useYudisiumParticipantDetail(yudisiumId || '', yudisiumParticipantId || '');
   const { data: cplData, isLoading: loadingCpl, isFetching, refetch } = useParticipantCplScores(yudisiumId || '', yudisiumParticipantId || '');
@@ -178,15 +183,25 @@ export default function YudisiumParticipantDetail() {
   };
 
   const baseDetailPath = `/yudisium/${yudisiumId}`;
+  const backPath = isStudentMode ? '/yudisium' : baseDetailPath;
 
   useEffect(() => {
+    if (isStudentMode) {
+      setBreadcrumbs([
+        { label: 'Yudisium', href: '/yudisium' },
+        { label: data?.yudisium?.name ?? 'Detail Peserta' },
+      ]);
+      setTitle(data?.yudisium?.name ?? 'Detail Peserta Yudisium');
+      return;
+    }
+
     setBreadcrumbs([
       { label: 'Yudisium', href: '/yudisium' },
       { label: data?.yudisium?.name ?? 'Detail', href: baseDetailPath },
       { label: data?.studentName ?? 'Detail Peserta' },
     ]);
     setTitle(data?.studentName ?? 'Detail Peserta');
-  }, [setBreadcrumbs, setTitle, data, baseDetailPath]);
+  }, [setBreadcrumbs, setTitle, data, baseDetailPath, isStudentMode]);
 
   const cplScores = useMemo(() => {
     const scores = cplData?.cplScores ?? [];
@@ -348,7 +363,7 @@ export default function YudisiumParticipantDetail() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate(baseDetailPath)} className="shrink-0">
+          <Button variant="outline" size="icon" onClick={() => navigate(backPath)} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
