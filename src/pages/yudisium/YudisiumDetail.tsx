@@ -386,14 +386,14 @@ export default function YudisiumDetailPage() {
                 <Button
                   variant="default"
                   size="sm"
-                  className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="h-8 gap-1.5 px-3 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={() => setFinalizeConfirmOpen(true)}
                   disabled={finalizeMutation.isPending}
                 >
                   {finalizeMutation.isPending ? (
-                    <Spinner className="mr-2 h-4 w-4" />
+                    <Spinner className="h-3.5 w-3.5" />
                   ) : (
-                    <CheckSquare className="mr-2 h-4 w-4" />
+                    <CheckSquare className="h-3.5 w-3.5" />
                   )}
                   Finalisasi Peserta
                 </Button>
@@ -478,7 +478,7 @@ export default function YudisiumDetailPage() {
             <div className="flex gap-3 items-start p-3 rounded-lg bg-amber-50/50 border border-amber-100">
               <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
               <p className="text-sm text-amber-900">
-                Mahasiswa yang belum lengkap atau belum diverifikasi CPL-nya akan diubah statusnya menjadi <strong>Belum Lulus</strong>.
+                Mahasiswa yang persyaratannya belum lengkap atau belum divalidasi CPL-nya akan diubah statusnya menjadi <strong>Belum Lulus</strong>.
               </p>
             </div>
           </div>
