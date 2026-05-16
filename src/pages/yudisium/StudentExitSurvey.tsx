@@ -60,7 +60,7 @@ const mapInitialAnswersFromResponse = (
       continue;
     }
 
-    if (['text', 'textarea', 'short_answer', 'paragraph', 'date'].includes(questionType as string) && answer.answerText) {
+    if (['short_answer', 'paragraph', 'date'].includes(questionType as string) && answer.answerText) {
       result[answer.questionId] = { answerText: answer.answerText };
     }
   }
@@ -102,8 +102,7 @@ function QuestionCard({
       </div>
 
       <div>
-        {/* We map the types to support both legacy and new names */}
-        {(question.questionType === 'short_answer' || question.questionType === 'text') && (
+        {question.questionType === 'short_answer' && (
           <Input
             value={answer.answerText ?? ''}
             onChange={(e) => onUpdate({ answerText: e.target.value })}
@@ -113,7 +112,7 @@ function QuestionCard({
           />
         )}
 
-        {(question.questionType === 'paragraph' || question.questionType === 'textarea') && (
+        {question.questionType === 'paragraph' && (
           <Textarea
             value={answer.answerText ?? ''}
             onChange={(e) => onUpdate({ answerText: e.target.value })}

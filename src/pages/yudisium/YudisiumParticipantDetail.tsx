@@ -423,10 +423,10 @@ export default function YudisiumParticipantDetail() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Badge
-                      variant={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'destructive' : 'warning'}
+                      variant={doc.status === 'approved' ? 'success' : doc.status === 'declined' ? 'destructive' : 'warning'}
                       className="rounded-md font-medium px-2.5 py-0.5 whitespace-nowrap"
                     >
-                      {doc.status === 'approved' ? 'Disetujui' : doc.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                      {doc.status === 'approved' ? 'Disetujui' : doc.status === 'declined' ? 'Ditolak' : 'Menunggu'}
                     </Badge>
                     {doc.document?.filePath && (
                       <Button
