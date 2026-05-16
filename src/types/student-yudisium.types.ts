@@ -11,7 +11,8 @@ export type StudentYudisiumChecklistItem = {
 
 export type StudentYudisiumChecklist = {
   sks: StudentYudisiumChecklistItem;
-  revisiSidang: StudentYudisiumChecklistItem;
+  lulusSidang: StudentYudisiumChecklistItem;
+  revisiSidang?: StudentYudisiumChecklistItem;
   mataKuliahWajib: StudentYudisiumChecklistItem;
   mataKuliahMkwu: StudentYudisiumChecklistItem;
   mataKuliahKerjaPraktik: StudentYudisiumChecklistItem;

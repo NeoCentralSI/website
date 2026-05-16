@@ -88,11 +88,11 @@ const STATUS_BADGE_MAP: Record<YudisiumDisplayStatus, { label: string; className
 };
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  registered: { label: 'Terdaftar', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  verified: { label: 'Terverifikasi', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  cpl_validated: { label: 'CPL Tervalidasi', className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  appointed: { label: 'Terjadwalkan', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  finalized: { label: 'Selesai', className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  registered: { label: 'Menunggu Verifikasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  verified: { label: 'Menunggu Validasi CPL', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  cpl_validated: { label: 'Calon Peserta Yudisium', className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  appointed: { label: 'Peserta Yudisium', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  finalized: { label: 'Lulus Yudisium', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   rejected: { label: 'Tidak Memenuhi Persyaratan', className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
@@ -242,6 +242,7 @@ function StudentYudisiumIdentityCard({
   yudisium,
   displayStatus,
   statusBadge,
+  participantStatusBadge,
   decreeDocument,
   canDownloadCertificate,
   onDownloadCertificate,
@@ -249,6 +250,7 @@ function StudentYudisiumIdentityCard({
   yudisium: any;
   displayStatus: YudisiumDisplayStatus;
   statusBadge: any;
+  participantStatusBadge: { label: string; className: string } | null;
   decreeDocument: any;
   canDownloadCertificate: boolean;
   onDownloadCertificate: () => void;
@@ -262,6 +264,11 @@ function StudentYudisiumIdentityCard({
           <Badge variant="outline" className={cn("h-5 px-1.5 text-[10px] font-semibold rounded-full leading-none", statusBadge.className)}>
             {statusBadge.label}
           </Badge>
+          {participantStatusBadge && (
+            <Badge variant="outline" className={cn("h-5 px-1.5 text-[10px] font-semibold rounded-full leading-none", participantStatusBadge.className)}>
+              {participantStatusBadge.label}
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -923,6 +930,9 @@ export default function StudentYudisium() {
   );
   const isFinalized = currentStep >= 4;
   const statusBadge = displayStatus ? STATUS_BADGE_MAP[displayStatus] : STATUS_BADGE_MAP.draft;
+  const participantStatusBadge = data?.participantStatus
+    ? PARTICIPANT_STATUS_MAP[data.participantStatus] ?? null
+    : null;
 
   const cplScores = data?.cplScores ?? [];
   const filteredCplScores = useMemo(() => {
@@ -1082,14 +1092,15 @@ export default function StudentYudisium() {
         </div>
       ) : (
         data?.yudisium && (
-	          <StudentYudisiumIdentityCard
-	            yudisium={data.yudisium}
-	            displayStatus={displayStatus!}
-	            statusBadge={statusBadge}
-	            decreeDocument={data.yudisium.decreeDocument}
-	            canDownloadCertificate={['cpl_validated', 'appointed', 'finalized'].includes(data?.participantStatus || '')}
-	            onDownloadCertificate={handleDownloadCplReport}
-	          />
+          <StudentYudisiumIdentityCard
+            yudisium={data.yudisium}
+            displayStatus={displayStatus!}
+            statusBadge={statusBadge}
+            participantStatusBadge={participantStatusBadge}
+            decreeDocument={data.yudisium.decreeDocument}
+            canDownloadCertificate={['cpl_validated', 'appointed', 'finalized'].includes(data?.participantStatus || '')}
+            onDownloadCertificate={handleDownloadCplReport}
+          />
         )
       )}
 
@@ -1128,14 +1139,6 @@ export default function StudentYudisium() {
 
       {(data?.cplScores.length ?? 0) > 0 && (
         <section className="space-y-[14px]">
-          {data?.allCplVerified && (
-            <div className="rounded-[10px] border border-emerald-200 bg-emerald-50/60 p-3">
-              <p className="text-sm font-medium text-emerald-700">
-                Selamat! Anda telah menjadi <strong>Calon Peserta Yudisium</strong>.
-              </p>
-            </div>
-          )}
-
           <CustomTable
             columns={cplColumns}
             data={paginatedCplScores}
