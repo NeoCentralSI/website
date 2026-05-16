@@ -15,6 +15,26 @@ import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useAdvisorAccessState } from "./useAdvisorAccessState";
 
+function buildPengumumanMenu(pathname: string, isFromSeminarAnnouncement: boolean) {
+  return {
+    title: "Pengumuman",
+    url: "/pengumuman/seminar-hasil",
+    icon: Megaphone,
+    items: [
+      {
+        title: "Seminar Hasil",
+        url: "/pengumuman/seminar-hasil",
+        isActive: pathname.startsWith("/pengumuman/seminar-hasil") || isFromSeminarAnnouncement,
+      },
+      {
+        title: "Yudisium",
+        url: "/pengumuman/yudisium",
+        isActive: pathname.startsWith("/pengumuman/yudisium"),
+      },
+    ],
+  };
+}
+
 export const useSidebarMenu = () => {
   const location = useLocation();
   const { pathname } = location;
@@ -106,23 +126,7 @@ export const useSidebarMenu = () => {
           icon: GraduationCap,
           items: [],
         },
-        {
-          title: "Pengumuman",
-          url: "/pengumuman/seminar-hasil",
-          icon: Megaphone,
-          items: [
-            {
-              title: "Seminar Hasil",
-              url: "/pengumuman/seminar-hasil",
-              isActive: pathname.startsWith("/pengumuman/seminar-hasil") || isFromSeminarAnnouncement,
-            },
-            {
-              title: "Yudisium",
-              url: "/pengumuman/yudisium",
-              isActive: pathname.startsWith("/pengumuman/yudisium"),
-            },
-          ],
-        },
+        buildPengumumanMenu(pathname, isFromSeminarAnnouncement),
         // Repositori — student only
         {
           title: "Repositori",
@@ -205,6 +209,8 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
+      menuItems.push(buildPengumumanMenu(pathname, isFromSeminarAnnouncement));
+
       // Jadwal Ketersediaan — leaf item
       menuItems.push({
         title: "Jadwal Ketersediaan",
@@ -283,13 +289,7 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
-      // Jadwal Ketersediaan — leaf item
-      menuItems.push({
-        title: "Jadwal Ketersediaan",
-        url: "/jadwal-ketersediaan",
-        icon: Clock,
-        items: [],
-      });
+      menuItems.push(buildPengumumanMenu(pathname, isFromSeminarAnnouncement));
 
       // Menu Kelola (fitur manajemen Kadep)
       menuItems.push({
@@ -304,6 +304,14 @@ export const useSidebarMenu = () => {
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "Kelola CPL", url: "/kelola/cpl" },
         ],
+      });
+
+      // Jadwal Ketersediaan — leaf item
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
       });
 
       // no Profil for kadep
@@ -377,13 +385,7 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
-      // Jadwal Ketersediaan — leaf item
-      menuItems.push({
-        title: "Jadwal Ketersediaan",
-        url: "/jadwal-ketersediaan",
-        icon: Clock,
-        items: [],
-      });
+      menuItems.push(buildPengumumanMenu(pathname, isFromSeminarAnnouncement));
 
       menuItems.push({
         title: "Kelola",
@@ -397,6 +399,14 @@ export const useSidebarMenu = () => {
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "Kelola CPL", url: "/kelola/cpl" },
         ],
+      });
+
+      // Jadwal Ketersediaan — leaf item
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
       });
 
       // no Profil for sekdep
@@ -448,13 +458,7 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
-      // Jadwal Ketersediaan — leaf item
-      menuItems.push({
-        title: "Jadwal Ketersediaan",
-        url: "/jadwal-ketersediaan",
-        icon: Clock,
-        items: [],
-      });
+      menuItems.push(buildPengumumanMenu(pathname, isFromSeminarAnnouncement));
 
       // Kelola Menu for GKM
       menuItems.push({
@@ -464,6 +468,14 @@ export const useSidebarMenu = () => {
         items: [
           { title: "Kelola CPL", url: "/kelola/cpl" }
         ],
+      });
+
+      // Jadwal Ketersediaan — leaf item
+      menuItems.push({
+        title: "Jadwal Ketersediaan",
+        url: "/jadwal-ketersediaan",
+        icon: Clock,
+        items: [],
       });
 
       // no Profil for gkm
@@ -540,6 +552,7 @@ export const useSidebarMenu = () => {
             icon: GraduationCap,
             items: [],
           },
+          buildPengumumanMenu(pathname, isFromSeminarAnnouncement),
           {
             title: "Master Data",
             url: "#",

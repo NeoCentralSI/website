@@ -609,6 +609,7 @@ export interface SeminarAnnouncementItem {
   startTime: string | null;
   endTime: string | null;
   status: ThesisSeminarStatus;
+  resultFinalizedAt?: string | null;
   meetingLink: string | null;
   room: { id: string; name: string } | null;
   thesisTitle: string;

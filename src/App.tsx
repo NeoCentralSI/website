@@ -253,11 +253,12 @@ function App() {
 
                   <Route path="/yudisium/exit-survey" element={<StudentExitSurveyPage />} />
                   <Route path="/repositori" element={<RepositoryPage />} />
-                  {/* Pengumuman routes */}
-                  <Route path="/pengumuman" element={<Navigate to="/pengumuman/seminar-hasil" replace />} />
-                  <Route path="/pengumuman/seminar-hasil" element={<ThesisSeminarAnnouncementPage />} />
-                  <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
                 </Route>
+
+                {/* Pengumuman — all authenticated roles */}
+                <Route path="/pengumuman" element={<Navigate to="/pengumuman/seminar-hasil" replace />} />
+                <Route path="/pengumuman/seminar-hasil" element={<ThesisSeminarAnnouncementPage />} />
+                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
 
                 {/* Shared Routes (Student & Lecturer & Others) */}
                 {/* Tugas Akhir Shared */}

@@ -29,6 +29,25 @@ function extractTimeUTC(iso: string | null | undefined): string | null {
   return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
 }
 
+function getSeminarEndDateTime(row: AttendanceRecord): Date | null {
+  if (!row.date) return null;
+
+  const date = new Date(row.date);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const end = new Date(date);
+  const endTime = extractTimeUTC(row.seminarEndTime);
+
+  if (!endTime) {
+    end.setHours(23, 59, 59, 999);
+    return end;
+  }
+
+  const [hours, minutes] = endTime.split(':').map(Number);
+  end.setHours(hours, minutes, 0, 0);
+  return end;
+}
+
 export function StudentThesisSeminarAttendanceHistoryPanel({
   attendance,
   isLoading,
@@ -68,23 +87,12 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
     }
 
     const now = new Date();
-    const seminarDeadline = row.date ? new Date(row.date) : null;
-    const endTime = extractTimeUTC(row.seminarEndTime);
-
-    if (seminarDeadline && endTime) {
-      const [hours, minutes] = endTime.split(':').map(Number);
-      seminarDeadline.setHours(hours, minutes, 0, 0);
-    }
-
+    const seminarDeadline = getSeminarEndDateTime(row);
     const isFinalized =
       ['passed', 'passed_with_revision', 'failed'].includes(row.seminarStatus || '') ||
       Boolean(row.seminarResultFinalizedAt);
 
-    if (!seminarDeadline || now < seminarDeadline) {
-      return { variant: 'warning' as const, text: 'Menunggu Verifikasi' };
-    }
-
-    if (isFinalized && now >= seminarDeadline) {
+    if (isFinalized && (!seminarDeadline || now >= seminarDeadline)) {
       return { variant: 'destructive' as const, text: 'Tidak Hadir' };
     }
 
