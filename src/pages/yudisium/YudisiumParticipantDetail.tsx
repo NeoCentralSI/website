@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import type { ChangeEvent } from 'react';
 import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,9 @@ import {
   Eye,
   Check, Plus, CheckCircle2,
   Download,
-  AlertCircle
+  AlertCircle,
+  FileUp,
+  X
 } from 'lucide-react';
 import {
   useYudisiumParticipantDetail,
@@ -79,6 +82,8 @@ export default function YudisiumParticipantDetail() {
   const [newScore, setNewScore] = useState<number>(0);
   const [recFile, setRecFile] = useState<File | null>(null);
   const [setFile, setSetFile] = useState<File | null>(null);
+  const recFileInputRef = useRef<HTMLInputElement>(null);
+  const setFileInputRef = useRef<HTMLInputElement>(null);
 
   const [verifyConfirmId, setVerifyConfirmId] = useState<string | null>(null);
   const [cplSearch, setCplSearch] = useState('');
@@ -133,6 +138,36 @@ export default function YudisiumParticipantDetail() {
   const participantCplStatus = cplData?.participantStatus ?? data?.status;
   const cplActionsEnabled = canPerformActions && participantCplStatus === 'verified';
   const showCplLockedNotice = canPerformActions && participantCplStatus === 'registered';
+
+  const handleRepairFileChange = (
+    event: ChangeEvent<HTMLInputElement>,
+    setter: (file: File | null) => void,
+  ) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) {
+      setter(null);
+      return;
+    }
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('File harus berformat PDF');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran file maksimal 5MB');
+      event.target.value = '';
+      return;
+    }
+    setter(file);
+  };
+
+  const clearRepairFile = (
+    ref: { current: HTMLInputElement | null },
+    setter: (file: File | null) => void,
+  ) => {
+    setter(null);
+    if (ref.current) ref.current.value = '';
+  };
 
   const cplColumns = useMemo<Column<CplScoreItem>[]>(() => {
     const cols: Column<CplScoreItem>[] = [
@@ -212,6 +247,26 @@ export default function YudisiumParticipantDetail() {
             </div>
           )}
 
+          {cplActionsEnabled && row.status === 'validated' && (row.recommendationDocument || row.settlementDocument) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={() => {
+                setSelectedCpl(row);
+                setNewScore(row.score ?? row.minimalScore);
+                setRecFile(null);
+                setSetFile(null);
+                clearRepairFile(recFileInputRef, setRecFile);
+                clearRepairFile(setFileInputRef, setSetFile);
+                setRepairModalOpen(true);
+              }}
+              title="Ganti Dokumen Perbaikan"
+            >
+              <FileUp className="h-4 w-4" />
+            </Button>
+          )}
+
           {/* Verify / Repair actions — GKM only after document verification is complete */}
           {cplActionsEnabled && row.status !== 'validated' && (
             <>
@@ -237,6 +292,8 @@ export default function YudisiumParticipantDetail() {
                     setNewScore(row.minimalScore);
                     setRecFile(null);
                     setSetFile(null);
+                    clearRepairFile(recFileInputRef, setRecFile);
+                    clearRepairFile(setFileInputRef, setSetFile);
                     setRepairModalOpen(true);
                   }}
                   title="Remedial / Perbaikan"
@@ -276,6 +333,11 @@ export default function YudisiumParticipantDetail() {
   }
 
   const statusInfo = PARTICIPANT_STATUS_MAP[data.status] || PARTICIPANT_STATUS_MAP.registered;
+  const hasExistingRepairDocs = !!(selectedCpl?.recommendationDocument || selectedCpl?.settlementDocument);
+  const hasRequiredRepairDocs =
+    !!(recFile || selectedCpl?.recommendationDocument) &&
+    !!(setFile || selectedCpl?.settlementDocument);
+  const hasRepairChange = !hasExistingRepairDocs || !!recFile || !!setFile;
 
   return (
     <div className="p-6 space-y-12 max-w-full overflow-x-hidden">
@@ -466,20 +528,136 @@ export default function YudisiumParticipantDetail() {
             <div className="space-y-2">
               <Label>Dokumen Rekomendasi (PDF)</Label>
               <Input
+                ref={recFileInputRef}
                 type="file"
                 accept=".pdf"
-                onChange={(e) => setRecFile(e.target.files?.[0] || null)}
+                className="hidden"
+                onChange={(e) => handleRepairFileChange(e, setRecFile)}
               />
+              <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {recFile?.name || selectedCpl?.recommendationDocument?.fileName || 'Belum ada dokumen rekomendasi'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {recFile
+                      ? 'File baru siap diunggah saat perbaikan disimpan'
+                      : selectedCpl?.recommendationDocument
+                        ? 'Dokumen rekomendasi saat ini'
+                        : 'Pilih file PDF maksimal 5MB'}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {!recFile && selectedCpl?.recommendationDocument && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => openProtectedFile(
+                        selectedCpl.recommendationDocument!.filePath,
+                        selectedCpl.recommendationDocument!.fileName,
+                      )}
+                    >
+                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      Lihat
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => recFileInputRef.current?.click()}
+                  >
+                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
+                    {recFile || selectedCpl?.recommendationDocument ? 'Ganti' : 'Upload'}
+                  </Button>
+                  {recFile && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => clearRepairFile(recFileInputRef, setRecFile)}
+                      title="Batalkan file baru"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
               <p className="text-[10px] text-muted-foreground italic">* Dokumen yang berisi detail perbaikan/quiz</p>
             </div>
 
             <div className="space-y-2">
               <Label>Dokumen Penyelesaian (PDF)</Label>
               <Input
+                ref={setFileInputRef}
                 type="file"
                 accept=".pdf"
-                onChange={(e) => setSetFile(e.target.files?.[0] || null)}
+                className="hidden"
+                onChange={(e) => handleRepairFileChange(e, setSetFile)}
               />
+              <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {setFile?.name || selectedCpl?.settlementDocument?.fileName || 'Belum ada dokumen penyelesaian'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {setFile
+                      ? 'File baru siap diunggah saat perbaikan disimpan'
+                      : selectedCpl?.settlementDocument
+                        ? 'Dokumen penyelesaian saat ini'
+                        : 'Pilih file PDF maksimal 5MB'}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {!setFile && selectedCpl?.settlementDocument && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => openProtectedFile(
+                        selectedCpl.settlementDocument!.filePath,
+                        selectedCpl.settlementDocument!.fileName,
+                      )}
+                    >
+                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      Lihat
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setFileInputRef.current?.click()}
+                  >
+                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
+                    {setFile || selectedCpl?.settlementDocument ? 'Ganti' : 'Upload'}
+                  </Button>
+                  {setFile && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => clearRepairFile(setFileInputRef, setSetFile)}
+                      title="Batalkan file baru"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
               <p className="text-[10px] text-muted-foreground italic">* Jawaban atau bukti perbaikan dari mahasiswa</p>
             </div>
           </div>
@@ -493,7 +671,7 @@ export default function YudisiumParticipantDetail() {
                       cplId: selectedCpl.cplId,
                       payload: {
                         newScore,
-                        oldScore: selectedCpl.score ?? 0,
+                        oldScore: selectedCpl.oldScore ?? selectedCpl.score ?? 0,
                         recommendation: recFile,
                         settlement: setFile
                       }
@@ -502,7 +680,7 @@ export default function YudisiumParticipantDetail() {
                   );
                 }
               }}
-              disabled={repairMutation.isPending || !recFile || !setFile}
+              disabled={repairMutation.isPending || !hasRequiredRepairDocs || !hasRepairChange}
             >
               {repairMutation.isPending && <Spinner className="mr-2 h-4 w-4" />}
               Simpan Perbaikan
