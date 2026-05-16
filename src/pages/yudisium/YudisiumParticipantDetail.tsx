@@ -11,7 +11,8 @@ import {
   ArrowLeft, FileText, CheckCircle,
   Eye,
   Check, Plus, CheckCircle2,
-  Download
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -43,12 +44,12 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  registered:    { label: 'Menunggu Verifikasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  verified:      { label: 'Menunggu Verifikasi CPL',     className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  cpl_validated: { label: 'Calon Peserta Yudisium',   className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  appointed:     { label: 'Peserta Yudisium',          className: 'bg-purple-50 text-purple-700 border-purple-200' },
-  finalized:     { label: 'Lulus',                     className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  rejected:      { label: 'Belum Lulus',               className: 'bg-red-50 text-red-700 border-red-200' },
+  registered: { label: 'Menunggu Verifikasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  verified: { label: 'Menunggu Validasi CPL', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  cpl_validated: { label: 'Calon Peserta Yudisium', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  appointed: { label: 'Peserta Yudisium', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  finalized: { label: 'Lulus', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  rejected: { label: 'Belum Lulus', className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
 
@@ -72,15 +73,15 @@ export default function YudisiumParticipantDetail() {
   const repairMutation = useRepairCplScore(yudisiumId || '', yudisiumParticipantId || '');
 
   const [repairModalOpen, setRepairModalOpen] = useState(false);
-  const [viewModalOpen,   setViewModalOpen]   = useState(false);
-  const [selectedCpl,     setSelectedCpl]     = useState<CplScoreItem | null>(null);
-  
-  const [newScore,      setNewScore]      = useState<number>(0);
-  const [recFile,       setRecFile]       = useState<File | null>(null);
-  const [setFile,       setSetFile]       = useState<File | null>(null);
-  
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedCpl, setSelectedCpl] = useState<CplScoreItem | null>(null);
+
+  const [newScore, setNewScore] = useState<number>(0);
+  const [recFile, setRecFile] = useState<File | null>(null);
+  const [setFile, setSetFile] = useState<File | null>(null);
+
   const [verifyConfirmId, setVerifyConfirmId] = useState<string | null>(null);
-  const [cplSearch,       setCplSearch]       = useState('');
+  const [cplSearch, setCplSearch] = useState('');
 
   const handleDownloadCplReport = () => {
     if (!cplData?.cplScores || cplData.cplScores.length === 0) return;
@@ -100,7 +101,7 @@ export default function YudisiumParticipantDetail() {
     doc.setFontSize(8);
     doc.text('Kampus Universitas Andalas, Limau Manis, Padang, Kode Pos 25163', pageWidth / 2, 35, { align: 'center' });
     doc.text('Email: jurusan_si@fti.unand.ac.id dan website: http://si.fti.unand.ac.id', pageWidth / 2, 40, { align: 'center' });
-    
+
     doc.setLineWidth(0.5);
     doc.line(margin, 43, pageWidth - margin, 43);
 
@@ -148,18 +149,18 @@ export default function YudisiumParticipantDetail() {
     const finalY = (doc as any).lastAutoTable.finalY + 12;
     doc.setFont('helvetica', 'bold');
     doc.text('C. KESIMPULAN ASESMEN', margin, finalY);
-    
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     const allPassed = cplData.cplScores.every(sc => sc.passed);
     doc.rect(margin, finalY + 4, 3, 3);
     if (allPassed) doc.text('x', margin + 0.8, finalY + 6.5);
     doc.text('Seluruh CPL telah dicapai sesuai standar minimum kelulusan', margin + 6, finalY + 7);
-    
+
     doc.rect(margin, finalY + 11, 3, 3);
     if (!allPassed) doc.text('x', margin + 0.8, finalY + 13.5);
-    doc.text(`Ada CPL yang belum tercapai (sebutkan): ${allPassed ? '-' : '...' }`, margin + 6, finalY + 14);
-    
+    doc.text(`Ada CPL yang belum tercapai (sebutkan): ${allPassed ? '-' : '...'}`, margin + 6, finalY + 14);
+
     doc.rect(margin, finalY + 18, 3, 3);
     doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
 
@@ -173,7 +174,7 @@ export default function YudisiumParticipantDetail() {
     doc.setFontSize(10);
     doc.text(`Padang, ${formatDateId(validatedDate)}`, pageWidth - margin - 65, signY);
     doc.text('Koordinator Asesmen CPL', pageWidth - margin - 65, signY + 6);
-    
+
     doc.setFont('helvetica', 'bold');
     doc.text(validatorName, pageWidth - margin - 65, signY + 28);
     doc.setFont('helvetica', 'normal');
@@ -206,13 +207,15 @@ export default function YudisiumParticipantDetail() {
   const cplScores = useMemo(() => {
     const scores = cplData?.cplScores ?? [];
     if (!cplSearch) return scores;
-    return scores.filter(s => 
-      (s.code?.toLowerCase().includes(cplSearch.toLowerCase())) || 
+    return scores.filter(s =>
+      (s.code?.toLowerCase().includes(cplSearch.toLowerCase())) ||
       (s.description?.toLowerCase().includes(cplSearch.toLowerCase()))
     );
   }, [cplData?.cplScores, cplSearch]);
 
-
+  const participantCplStatus = cplData?.participantStatus ?? data?.status;
+  const cplActionsEnabled = canPerformActions && participantCplStatus === 'verified';
+  const showCplLockedNotice = canPerformActions && participantCplStatus === 'registered';
 
   const cplColumns = useMemo<Column<CplScoreItem>[]>(() => {
     const cols: Column<CplScoreItem>[] = [
@@ -292,8 +295,8 @@ export default function YudisiumParticipantDetail() {
             </div>
           )}
 
-          {/* Verify / Repair actions — GKM only */}
-          {canPerformActions && row.status !== 'validated' && (
+          {/* Verify / Repair actions — GKM only after document verification is complete */}
+          {cplActionsEnabled && row.status !== 'validated' && (
             <>
               {row.passed && (
                 <Button
@@ -331,7 +334,7 @@ export default function YudisiumParticipantDetail() {
     });
 
     return cols;
-  }, [validateMutation.isPending, canPerformActions]);
+  }, [validateMutation.isPending, cplActionsEnabled]);
 
 
 
@@ -465,6 +468,17 @@ export default function YudisiumParticipantDetail() {
         <h2 className="text-lg font-semibold px-1">
           Capaian Pembelajaran Lulusan (CPL)
         </h2>
+        {showCplLockedNotice && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-medium">Validasi CPL belum dapat dilakukan.</p>
+              <p className="text-amber-700">
+                Validasi tersedia setelah seluruh dokumen persyaratan peserta terverifikasi.
+              </p>
+            </div>
+          </div>
+        )}
         <CustomTable
           columns={cplColumns}
           data={cplScores}
@@ -473,16 +487,16 @@ export default function YudisiumParticipantDetail() {
           total={cplScores.length}
           page={1}
           pageSize={100}
-          onPageChange={() => {}}
+          onPageChange={() => { }}
           searchValue={cplSearch}
           onSearchChange={setCplSearch}
           emptyText="Tidak ada data CPL"
           actions={
             <div className="flex items-center gap-2">
               {['cpl_validated', 'appointed', 'finalized'].includes(data?.status || '') && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="h-9 gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-semibold"
                   onClick={handleDownloadCplReport}
                 >
@@ -499,7 +513,7 @@ export default function YudisiumParticipantDetail() {
 
 
       {/* ── Modals ── */}
-      
+
       {/* Repair Modal */}
       <Dialog open={repairModalOpen} onOpenChange={setRepairModalOpen}>
         <DialogContent className="max-w-md">
@@ -524,7 +538,7 @@ export default function YudisiumParticipantDetail() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Dokumen Rekomendasi (PDF)</Label>
               <Input
@@ -551,8 +565,8 @@ export default function YudisiumParticipantDetail() {
               onClick={() => {
                 if (selectedCpl) {
                   repairMutation.mutate(
-                    { 
-                      cplId: selectedCpl.cplId, 
+                    {
+                      cplId: selectedCpl.cplId,
                       payload: {
                         newScore,
                         oldScore: selectedCpl.score ?? 0,
@@ -641,7 +655,7 @@ export default function YudisiumParticipantDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Verify Confirmation Dialog */}
       <AlertDialog open={!!verifyConfirmId} onOpenChange={(open) => !open && setVerifyConfirmId(null)}>
         <AlertDialogContent>

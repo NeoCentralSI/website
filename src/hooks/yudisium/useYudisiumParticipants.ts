@@ -141,6 +141,8 @@ export function useValidateCplScore(yudisiumId: string, participantId: string) {
     onSuccess: () => {
       toast.success('CPL berhasil divalidasi');
       void queryClient.invalidateQueries({ queryKey: participantKeys.cplScores(participantId) });
+      void queryClient.invalidateQueries({ queryKey: participantKeys.detail(participantId) });
+      void queryClient.invalidateQueries({ queryKey: participantKeys.list(yudisiumId) });
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -161,6 +163,8 @@ export function useRepairCplScore(yudisiumId: string, participantId: string) {
     onSuccess: () => {
       toast.success('Perbaikan CPL berhasil disimpan');
       void queryClient.invalidateQueries({ queryKey: participantKeys.cplScores(participantId) });
+      void queryClient.invalidateQueries({ queryKey: participantKeys.detail(participantId) });
+      void queryClient.invalidateQueries({ queryKey: participantKeys.list(yudisiumId) });
     },
     onError: (err: Error) => {
       toast.error(err.message);

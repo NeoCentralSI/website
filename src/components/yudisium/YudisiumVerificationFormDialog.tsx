@@ -131,7 +131,7 @@ export function YudisiumVerificationFormDialog({
             toast.success(msg);
 
             if (result.participantTransitioned) {
-              toast.success('Semua dokumen disetujui — peserta berstatus "Menunggu Verifikasi CPL"');
+              toast.success('Semua dokumen disetujui — peserta berstatus "Menunggu Validasi CPL"');
               onOpenChange(false);
             } else {
               // Auto-advance to next submitted doc
@@ -204,11 +204,10 @@ export function YudisiumVerificationFormDialog({
                 <button
                   key={entry.requirementId}
                   onClick={() => setActiveDocIndex(idx)}
-                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                    idx === activeDocIndex
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${idx === activeDocIndex
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-muted text-muted-foreground border-border hover:bg-accent'
-                  }`}
+                    }`}
                 >
                   {entry.requirementName}
                   {entry.status && (

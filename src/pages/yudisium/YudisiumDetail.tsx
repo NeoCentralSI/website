@@ -50,7 +50,7 @@ const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string 
     className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
   },
   verified: {
-    label: 'Menunggu Verifikasi CPL',
+    label: 'Menunggu Validasi CPL',
     className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
   },
   cpl_validated: {
@@ -79,10 +79,10 @@ export default function YudisiumDetailPage() {
 
   // Queries & Mutations
   const { data: detail, isLoading: isLoadingDetail, refetch: refetchDetail } = useYudisiumEvent(id!);
-  const { 
-    data: participantData, 
-    isLoading: isLoadingParticipants, 
-    isFetching: isFetchingParticipants, 
+  const {
+    data: participantData,
+    isLoading: isLoadingParticipants,
+    isFetching: isFetchingParticipants,
     refetch: refetchParticipants
   } = useYudisiumParticipants(id!);
 

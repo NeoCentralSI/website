@@ -140,7 +140,7 @@ export async function repairCplScore(
   participantId: string,
   cplId: string,
   payload: { newScore: number; oldScore: number; recommendation: File | null; settlement: File | null }
-): Promise<{ cplId: string; status: string; allCplVerified: boolean }> {
+): Promise<{ cplId: string; status: string; allCplValidated: boolean }> {
   const formData = new FormData();
   formData.append('newScore', payload.newScore.toString());
   formData.append('oldScore', payload.oldScore.toString());
