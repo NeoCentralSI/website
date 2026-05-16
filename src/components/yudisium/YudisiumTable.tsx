@@ -21,15 +21,11 @@ import type { YudisiumEvent, UpdateYudisiumPayload } from '@/services/yudisium/c
 import { YudisiumFormDialog } from '@/components/yudisium/YudisiumFormDialog';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline'; className: string }> = {
-    // Time-derived statuses
-    draft:     { label: 'Draft',                  variant: 'secondary', className: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' },
-    open:      { label: 'Pendaftaran Dibuka',      variant: 'default',   className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
-    closed:    { label: 'Pendaftaran Ditutup',     variant: 'secondary', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
-    in_review: { label: 'Dalam Review',           variant: 'outline',   className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
-    scheduled: { label: 'Acara Terjadwalkan',     variant: 'outline',   className: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' },
-    ongoing:   { label: 'Sedang Berlangsung',     variant: 'default',   className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
-    finalized: { label: 'Finalized',              variant: 'outline',   className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' },
-    completed: { label: 'Selesai',                variant: 'default',   className: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' },
+    draft: { label: 'Draft', variant: 'secondary', className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' },
+    open: { label: 'Pendaftaran Dibuka', variant: 'default', className: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' },
+    closed: { label: 'Pendaftaran Ditutup', variant: 'secondary', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
+    ongoing: { label: 'Sedang Berlangsung', variant: 'default', className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
+    completed: { label: 'Selesai', variant: 'default', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
 };
 
 interface YudisiumTableProps {
@@ -75,7 +71,7 @@ export function YudisiumTable({
 
     const filteredData = useMemo(() => {
         const latestFirst = [...data].sort((a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            new Date(b.eventDate ?? 0).getTime() - new Date(a.eventDate ?? 0).getTime(),
         );
 
         const term = search.toLowerCase();
@@ -177,7 +173,6 @@ export function YudisiumTable({
                         { label: 'Draft', value: 'draft' },
                         { label: 'Pendaftaran Dibuka', value: 'open' },
                         { label: 'Pendaftaran Ditutup', value: 'closed' },
-                        { label: 'Acara Terjadwalkan', value: 'scheduled' },
                         { label: 'Sedang Berlangsung', value: 'ongoing' },
                         { label: 'Selesai', value: 'completed' },
                     ],

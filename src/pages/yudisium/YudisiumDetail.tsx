@@ -28,14 +28,11 @@ import { useExportParticipants, useFinalizeParticipants } from '@/hooks/yudisium
 import type { AdminYudisiumParticipant } from '@/types/admin-yudisium.types';
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
-  draft: { label: 'Draft', className: 'bg-gray-100 text-gray-600 border-gray-200' },
-  open: { label: 'Pendaftaran Dibuka', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  draft: { label: 'Draft', className: 'bg-slate-50 text-slate-700 border-slate-200' },
+  open: { label: 'Pendaftaran Dibuka', className: 'bg-sky-50 text-sky-700 border-sky-200' },
   closed: { label: 'Pendaftaran Ditutup', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  in_review: { label: 'Dalam Review', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  scheduled: { label: 'Acara Terjadwalkan', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   ongoing: { label: 'Sedang Berlangsung', className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  finalized: { label: 'Finalized', className: 'bg-slate-50 text-slate-700 border-slate-200' },
-  completed: { label: 'Selesai', className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  completed: { label: 'Selesai', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 };
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
