@@ -8,6 +8,10 @@ import {
   repairCplScore,
   exportParticipants,
   finalizeParticipants,
+  getArchiveYudisiumParticipantOptions,
+  addArchiveYudisiumParticipant,
+  importArchiveYudisiumParticipants,
+  deleteArchiveYudisiumParticipant,
 } from '@/services/yudisium/participant.service';
 import { toast } from 'sonner';
 import type { VerifyDocumentPayload } from '@/types/admin-yudisium.types';
@@ -15,6 +19,7 @@ import type { VerifyDocumentPayload } from '@/types/admin-yudisium.types';
 export const participantKeys = {
   all: ['yudisium-participants'] as const,
   list: (yudisiumId: string) => [...participantKeys.all, 'list', yudisiumId] as const,
+  archiveOptions: (yudisiumId: string) => [...participantKeys.all, 'archive-options', yudisiumId] as const,
   detail: (participantId: string) => [...participantKeys.all, 'detail', participantId] as const,
   cplScores: (participantId: string) => [...participantKeys.all, 'cpl-scores', participantId] as const,
 };
@@ -32,6 +37,69 @@ export function useYudisiumParticipantDetail(yudisiumId: string, participantId: 
     queryKey: participantKeys.detail(participantId),
     queryFn: () => getYudisiumParticipantDetail(yudisiumId, participantId),
     enabled: !!participantId,
+  });
+}
+
+export function useArchiveYudisiumParticipantOptions(yudisiumId: string, enabled = true) {
+  return useQuery({
+    queryKey: participantKeys.archiveOptions(yudisiumId),
+    queryFn: () => getArchiveYudisiumParticipantOptions(yudisiumId),
+    enabled: !!yudisiumId && enabled,
+  });
+}
+
+export function useAddArchiveYudisiumParticipant(yudisiumId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ thesisId }: { thesisId: string }) => addArchiveYudisiumParticipant(yudisiumId, thesisId),
+    onSuccess: () => {
+      toast.success('Peserta yudisium berhasil ditambahkan');
+      void queryClient.invalidateQueries({ queryKey: participantKeys.list(yudisiumId) });
+      void queryClient.invalidateQueries({ queryKey: participantKeys.archiveOptions(yudisiumId) });
+      void queryClient.invalidateQueries({ queryKey: ['yudisium-events'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Gagal menambahkan peserta yudisium');
+    },
+  });
+}
+
+export function useDeleteArchiveYudisiumParticipant(yudisiumId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ participantId }: { participantId: string }) =>
+      deleteArchiveYudisiumParticipant(yudisiumId, participantId),
+    onSuccess: () => {
+      toast.success('Peserta yudisium berhasil dihapus');
+      void queryClient.invalidateQueries({ queryKey: participantKeys.list(yudisiumId) });
+      void queryClient.invalidateQueries({ queryKey: participantKeys.archiveOptions(yudisiumId) });
+      void queryClient.invalidateQueries({ queryKey: ['yudisium-events'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Gagal menghapus peserta yudisium');
+    },
+  });
+}
+
+export function useImportArchiveYudisiumParticipants(yudisiumId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file }: { file: File }) => importArchiveYudisiumParticipants(yudisiumId, file),
+    onSuccess: (result) => {
+      if (result.failed > 0 && result.successCount > 0) {
+        toast.warning(`${result.successCount} peserta berhasil diimpor, ${result.failed} gagal`);
+      } else if (result.failed > 0) {
+        toast.error('Tidak ada peserta yang berhasil diimpor');
+      } else {
+        toast.success('Peserta yudisium berhasil diimpor');
+      }
+      void queryClient.invalidateQueries({ queryKey: participantKeys.list(yudisiumId) });
+      void queryClient.invalidateQueries({ queryKey: participantKeys.archiveOptions(yudisiumId) });
+      void queryClient.invalidateQueries({ queryKey: ['yudisium-events'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Gagal mengimpor peserta yudisium');
+    },
   });
 }
 

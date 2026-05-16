@@ -2,10 +2,13 @@ import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from '../auth.service';
 import type {
   AdminYudisiumParticipantsResponse,
+  AdminYudisiumParticipant,
   AdminYudisiumParticipantDetailResponse,
   VerifyDocumentPayload,
   VerifyDocumentResponse,
   ParticipantCplResponse,
+  ArchiveYudisiumParticipantOption,
+  ArchiveYudisiumParticipantImportResult,
 } from '@/types/admin-yudisium.types';
 
 const EP = API_CONFIG.ENDPOINTS.YUDISIUM;
@@ -36,6 +39,57 @@ export async function getYudisiumParticipantRequirements(
   const res = await apiRequest(getApiUrl(EP.PARTICIPANT_REQUIREMENTS(yudisiumId, participantId)));
   const json = await res.json();
   if (!json.success) throw new Error(json.message || 'Gagal memuat persyaratan peserta');
+  return json.data;
+}
+
+export async function getArchiveYudisiumParticipantOptions(
+  yudisiumId: string
+): Promise<ArchiveYudisiumParticipantOption[]> {
+  const res = await apiRequest(getApiUrl(EP.PARTICIPANT_OPTIONS(yudisiumId)));
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat opsi peserta yudisium');
+  return json.data;
+}
+
+export async function addArchiveYudisiumParticipant(
+  yudisiumId: string,
+  thesisId: string
+): Promise<AdminYudisiumParticipant> {
+  const res = await apiRequest(getApiUrl(EP.PARTICIPANTS(yudisiumId)), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ thesisId }),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menambahkan peserta yudisium');
+  return json.data;
+}
+
+export async function importArchiveYudisiumParticipants(
+  yudisiumId: string,
+  file: File
+): Promise<ArchiveYudisiumParticipantImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await apiRequest(getApiUrl(EP.PARTICIPANTS_IMPORT(yudisiumId)), {
+    method: 'POST',
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal mengimpor peserta yudisium');
+  return json.data;
+}
+
+export async function deleteArchiveYudisiumParticipant(
+  yudisiumId: string,
+  participantId: string
+): Promise<{ id: string }> {
+  const res = await apiRequest(getApiUrl(EP.DELETE_PARTICIPANT(yudisiumId, participantId)), {
+    method: 'DELETE',
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal menghapus peserta yudisium');
   return json.data;
 }
 

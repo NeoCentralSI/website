@@ -95,8 +95,11 @@ export const API_CONFIG = {
 
       // Participants & Validation
       PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants`,
+      PARTICIPANT_OPTIONS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/options`,
+      PARTICIPANTS_IMPORT: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/import`,
       PARTICIPANT_DETAIL: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
       PARTICIPANT_REQUIREMENTS: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/requirements`,
+      DELETE_PARTICIPANT: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
       VERIFY_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/verify`,
 

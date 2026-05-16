@@ -39,6 +39,21 @@ export type AdminYudisiumParticipantsResponse = {
   participants: AdminYudisiumParticipant[];
 };
 
+export type ArchiveYudisiumParticipantOption = {
+  thesisId: string;
+  thesisTitle: string;
+  studentId: string | null;
+  studentName: string;
+  studentNim: string;
+};
+
+export type ArchiveYudisiumParticipantImportResult = {
+  total: number;
+  successCount: number;
+  failed: number;
+  failedRows: { row: number; error: string }[];
+};
+
 export type AdminYudisiumParticipantDocument = {
   requirementId: string;
   requirementName: string;

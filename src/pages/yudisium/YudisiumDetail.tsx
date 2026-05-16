@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileDown, Eye, CheckSquare, FileText } from 'lucide-react';
+import { ArrowLeft, FileDown, Eye, CheckSquare, FileText, Plus, Upload, Trash2 } from 'lucide-react';
 import { openProtectedFile } from '@/lib/protected-file';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -19,11 +19,20 @@ import {
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { YudisiumVerificationFormDialog } from '@/components/yudisium/YudisiumVerificationFormDialog';
+import { YudisiumParticipantFormDialog } from '@/components/yudisium/YudisiumParticipantFormDialog';
+import { YudisiumParticipantImportDialog } from '@/components/yudisium/YudisiumParticipantImportDialog';
 
 import { useRole } from '@/hooks/shared';
 import { useYudisiumEvent } from '@/hooks/yudisium/useYudisium';
-import { useYudisiumParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
-import { useExportParticipants, useFinalizeParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
+import {
+  useAddArchiveYudisiumParticipant,
+  useArchiveYudisiumParticipantOptions,
+  useDeleteArchiveYudisiumParticipant,
+  useExportParticipants,
+  useFinalizeParticipants,
+  useImportArchiveYudisiumParticipants,
+  useYudisiumParticipants,
+} from '@/hooks/yudisium/useYudisiumParticipants';
 
 import type { AdminYudisiumParticipant } from '@/types/admin-yudisium.types';
 
@@ -79,7 +88,13 @@ export default function YudisiumDetailPage() {
 
   const exportParticipantsMutation = useExportParticipants();
   const finalizeMutation = useFinalizeParticipants(id!);
+  const addParticipantMutation = useAddArchiveYudisiumParticipant(id!);
+  const importParticipantMutation = useImportArchiveYudisiumParticipants(id!);
+  const deleteParticipantMutation = useDeleteArchiveYudisiumParticipant(id!);
   const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
+  const [importParticipantOpen, setImportParticipantOpen] = useState(false);
+  const [participantToDelete, setParticipantToDelete] = useState<AdminYudisiumParticipant | null>(null);
 
   // Participant Table State
   const [search, setSearch] = useState('');
@@ -91,9 +106,18 @@ export default function YudisiumDetailPage() {
     return isKoordinatorYudisium() && detail?.status === 'closed';
   }, [isKoordinatorYudisium, detail?.status]);
 
+  const isArchive = useMemo(() => {
+    return !!detail && !detail.registrationOpenDate && !detail.registrationCloseDate;
+  }, [detail]);
+
   const isFinalized = useMemo(() => {
     return !!participantData?.yudisium?.appointedAt;
   }, [participantData?.yudisium?.appointedAt]);
+
+  const {
+    data: archiveParticipantOptions = [],
+    isLoading: isLoadingArchiveParticipantOptions,
+  } = useArchiveYudisiumParticipantOptions(id!, isKoordinatorYudisium() && isArchive);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -129,14 +153,50 @@ export default function YudisiumDetailPage() {
     }
   };
 
+  const handleAddArchiveParticipant = async (thesisId: string) => {
+    try {
+      await addParticipantMutation.mutateAsync({ thesisId });
+      setAddParticipantOpen(false);
+      void refetchParticipants();
+      void refetchDetail();
+    } catch {
+      // Handled by toast
+    }
+  };
+
+  const handleDeleteArchiveParticipant = async () => {
+    if (!participantToDelete) return;
+
+    try {
+      await deleteParticipantMutation.mutateAsync({ participantId: participantToDelete.id });
+      setParticipantToDelete(null);
+      void refetchParticipants();
+      void refetchDetail();
+    } catch {
+      // Handled by toast
+    }
+  };
+
+  const handleImportArchiveParticipants = async (file: File) => {
+    const result = await importParticipantMutation.mutateAsync({ file });
+    void refetchParticipants();
+    void refetchDetail();
+    return result;
+  };
+
   const columns: Column<AdminYudisiumParticipant>[] = [
     { key: 'studentName', header: 'Nama', accessor: 'studentName' },
     { key: 'studentNim', header: 'NIM', accessor: 'studentNim' },
     {
       key: 'thesisTitle',
-      header: 'Judul TA',
+      header: 'Judul Tugas Akhir',
+      width: '36rem',
+      className: 'max-w-[36rem]',
       render: (row) => (
-        <span className="text-sm line-clamp-2" title={row.thesisTitle}>
+        <span
+          className="block max-w-[36rem] whitespace-normal break-words text-sm leading-snug line-clamp-2"
+          title={row.thesisTitle}
+        >
           {row.thesisTitle || '-'}
         </span>
       ),
@@ -179,6 +239,18 @@ export default function YudisiumDetailPage() {
           >
             <Eye className="h-4 w-4" />
           </Button>
+          {isKoordinatorYudisium() && isArchive && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={() => setParticipantToDelete(row)}
+              disabled={deleteParticipantMutation.isPending}
+              title="Hapus Peserta"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -247,6 +319,27 @@ export default function YudisiumDetailPage() {
           emptyText="Belum ada peserta yudisium"
           actions={
             <div className="flex items-center gap-2">
+              {isKoordinatorYudisium() && isArchive && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setImportParticipantOpen(true)}
+                    disabled={importParticipantMutation.isPending}
+                  >
+                    <Upload className="h-3 w-3 mr-1" />
+                    Import Excel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setAddParticipantOpen(true)}
+                    disabled={addParticipantMutation.isPending}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Tambah
+                  </Button>
+                </>
+              )}
               {canFinalize && !isFinalized && (
                 <Button
                   variant="default"
@@ -315,6 +408,49 @@ export default function YudisiumDetailPage() {
           if (!open) setSelectedParticipant(null);
         }}
       />
+
+      <YudisiumParticipantFormDialog
+        open={addParticipantOpen}
+        onOpenChange={setAddParticipantOpen}
+        thesisOptions={archiveParticipantOptions}
+        isLoading={isLoadingArchiveParticipantOptions}
+        isPending={addParticipantMutation.isPending}
+        onSubmit={handleAddArchiveParticipant}
+      />
+
+      <YudisiumParticipantImportDialog
+        open={importParticipantOpen}
+        onOpenChange={setImportParticipantOpen}
+        onImport={handleImportArchiveParticipants}
+        isImporting={importParticipantMutation.isPending}
+      />
+
+      <Dialog open={!!participantToDelete} onOpenChange={(open) => !open && setParticipantToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Peserta Yudisium</DialogTitle>
+            <DialogDescription>
+              Peserta {participantToDelete?.studentName} akan dihapus dari arsip yudisium ini.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setParticipantToDelete(null)}
+              disabled={deleteParticipantMutation.isPending}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteArchiveParticipant}
+              disabled={deleteParticipantMutation.isPending}
+            >
+              {deleteParticipantMutation.isPending ? 'Menghapus...' : 'Hapus Peserta'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
         <DialogContent>
