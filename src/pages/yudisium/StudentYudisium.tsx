@@ -25,19 +25,17 @@ import {
   useStudentYudisiumRequirements,
   useUploadYudisiumDocument,
 } from '@/hooks/yudisium/useYudisiumStudent';
+import { downloadStudentCplReport } from '@/services/yudisium/student.service';
 import type {
   StudentYudisiumChecklistItem,
   StudentYudisiumOverviewResponse,
   YudisiumRequirementUploadStatus,
 } from '@/types/student-yudisium.types';
 import {
-  formatDateId,
   formatDateOnlyId
 } from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { Button } from '@/components/ui/button';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 
@@ -810,104 +808,20 @@ export default function StudentYudisium() {
     setTitle('Yudisium Mahasiswa');
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
-  const handleDownloadCplReport = () => {
-    if (!data?.cplScores || data.cplScores.length === 0) return;
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-
-    // Header
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('KEMENTERIAN PENDIDIKAN TINGGI, SAINS DAN TEKNOLOGI', pageWidth / 2, 15, { align: 'center' });
-    doc.text('UNIVERSITAS ANDALAS', pageWidth / 2, 20, { align: 'center' });
-    doc.text('FAKULTAS TEKNOLOGI INFORMASI', pageWidth / 2, 25, { align: 'center' });
-    doc.text('DEPARTEMEN SISTEM INFORMASI', pageWidth / 2, 30, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('Kampus Universitas Andalas, Limau Manis, Padang, Kode Pos 25163', pageWidth / 2, 35, { align: 'center' });
-    doc.text('Email: jurusan_si@fti.unand.ac.id dan website: http://si.fti.unand.ac.id', pageWidth / 2, 40, { align: 'center' });
-
-    doc.setLineWidth(0.5);
-    doc.line(margin, 43, pageWidth - margin, 43);
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('FORMULIR PENILAIAN CAPAIAN PEMBELAJARAN LULUSAN (CPL)', pageWidth / 2, 52, { align: 'center' });
-
-    // A. Student Data
-    doc.setFontSize(10);
-    doc.text('A. DATA MAHASISWA', margin, 62);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Nama Lengkap', margin, 69);
-    doc.text(`: ${data.studentName || '-'}`, margin + 40, 69);
-    doc.text('NIM', margin, 75);
-    doc.text(`: ${data.studentNim || '-'}`, margin + 40, 75);
-
-    // B. CPL Assessment Table
-    doc.setFont('helvetica', 'bold');
-    doc.text('B. PENILAIAN CAPAIAN PEMBELAJARAN LULUSAN (CPL)', margin, 85);
-
-    const tableData = data.cplScores.map((sc) => [
-      sc.code,
-      sc.description,
-      sc.score ?? '-',
-      sc.passed ? 'Tercapai' : 'Tidak Tercapai'
-    ]);
-
-    autoTable(doc, {
-      startY: 92,
-      head: [['Kode CPL', 'Deskripsi CPL', 'Nilai', 'Status Capaian']],
-      body: tableData,
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
-      columnStyles: {
-        0: { cellWidth: 20 },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 15, halign: 'center' },
-        3: { cellWidth: 30, halign: 'center' },
-      }
-    });
-
-    // C. Conclusion
-    const finalY = (doc as any).lastAutoTable.finalY + 12;
-    doc.setFont('helvetica', 'bold');
-    doc.text('C. KESIMPULAN ASESMEN', margin, finalY);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    const allPassed = data.cplScores.every(sc => sc.passed);
-    doc.rect(margin, finalY + 4, 3, 3);
-    if (allPassed) doc.text('x', margin + 0.8, finalY + 6.5);
-    doc.text('Seluruh CPL telah dicapai sesuai standar minimum kelulusan', margin + 6, finalY + 7);
-
-    doc.rect(margin, finalY + 11, 3, 3);
-    if (!allPassed) doc.text('x', margin + 0.8, finalY + 13.5);
-    doc.text(`Ada CPL yang belum tercapai (sebutkan): ${allPassed ? '-' : '...'}`, margin + 6, finalY + 14);
-
-    doc.rect(margin, finalY + 18, 3, 3);
-    doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
-
-    // D. Signature
-    const validator = data.cplScores.find(sc => sc.verifiedBy);
-    const validatorName = validator?.verifiedBy || '...';
-    const validatorNip = validator?.verifiedByNip || '...';
-    const validatedDate = validator?.verifiedAt ? new Date(validator.verifiedAt) : new Date();
-
-    const signY = finalY + 40;
-    doc.setFontSize(10);
-    doc.text(`Padang, ${formatDateId(validatedDate)}`, pageWidth - margin - 65, signY);
-    doc.text('Koordinator Asesmen CPL', pageWidth - margin - 65, signY + 6);
-
-    doc.setFont('helvetica', 'bold');
-    doc.text(validatorName, pageWidth - margin - 65, signY + 28);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`NIP: ${validatorNip}`, pageWidth - margin - 65, signY + 33);
-
-    doc.save(`Form_Penilaian_CPL_${data.studentNim || 'Mhs'}.pdf`);
+  const handleDownloadCplReport = async () => {
+    try {
+      const blob = await downloadStudentCplReport();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Laporan-CPL-${data?.studentNim || 'Mahasiswa'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal mengunduh sertifikat CPL');
+    }
   };
 
   // ── Derived state ───────────────────────────────────────────────────────

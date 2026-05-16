@@ -122,6 +122,15 @@ export async function getParticipantCplScores(
   return json.data;
 }
 
+export async function exportParticipantCplReport(
+  yudisiumId: string,
+  participantId: string
+): Promise<Blob> {
+  const res = await apiRequest(getApiUrl(EP.CPL_REPORT(yudisiumId, participantId)));
+  if (!res.ok) throw new Error('Gagal mengunduh laporan CPL');
+  return res.blob();
+}
+
 export async function validateCplScore(
   yudisiumId: string,
   participantId: string,

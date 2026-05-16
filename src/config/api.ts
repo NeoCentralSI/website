@@ -92,6 +92,7 @@ export const API_CONFIG = {
       ME_EXIT_SURVEY: '/yudisiums/me/exit-survey',
       ME_REQUIREMENTS: '/yudisiums/me/requirements',
       ME_REQUIREMENTS_UPLOAD: '/yudisiums/me/requirements/upload',
+      ME_CPL_REPORT: '/yudisiums/me/cpl-report',
 
       // Participants & Validation
       PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants`,
@@ -105,6 +106,7 @@ export const API_CONFIG = {
 
       // CPL (Lecturer / GKM)
       CPL_SCORES: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-scores`,
+      CPL_REPORT: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-report`,
       VALIDATE_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/validate`,
       REPAIR_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
