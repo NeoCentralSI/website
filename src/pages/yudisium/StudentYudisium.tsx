@@ -75,21 +75,21 @@ const STEPS = [
 ] as const;
 
 const STATUS_BADGE_MAP: Record<YudisiumDisplayStatus, { label: string; className: string }> = {
-  draft:     { label: 'Belum Dibuka',          className: 'bg-gray-100 text-gray-600 border-gray-200' },
-  open:      { label: 'Pendaftaran Dibuka',     className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  closed:    { label: 'Pendaftaran Ditutup',    className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  scheduled: { label: 'Terjadwalkan',           className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  ongoing:   { label: 'Sedang Berlangsung',     className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  completed: { label: 'Selesai',               className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  draft: { label: 'Belum Dibuka', className: 'bg-gray-100 text-gray-600 border-gray-200' },
+  open: { label: 'Pendaftaran Dibuka', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  closed: { label: 'Pendaftaran Ditutup', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  scheduled: { label: 'Terjadwalkan', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  ongoing: { label: 'Sedang Berlangsung', className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  completed: { label: 'Selesai', className: 'bg-slate-100 text-slate-600 border-slate-200' },
 };
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  registered:    { label: 'Terdaftar',           className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  verified:      { label: 'Terverifikasi',       className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  cpl_validated: { label: 'CPL Tervalidasi',     className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  appointed:     { label: 'Terjadwalkan',        className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  finalized:     { label: 'Selesai',             className: 'bg-slate-100 text-slate-600 border-slate-200' },
-  rejected:      { label: 'Tidak Memenuhi Persyaratan', className: 'bg-red-50 text-red-700 border-red-200' },
+  registered: { label: 'Terdaftar', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  verified: { label: 'Terverifikasi', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  cpl_validated: { label: 'CPL Tervalidasi', className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  appointed: { label: 'Terjadwalkan', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  finalized: { label: 'Selesai', className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  rejected: { label: 'Tidak Memenuhi Persyaratan', className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
 // ─── Status Derivation ───────────────────────────────────────────────────────
@@ -404,10 +404,10 @@ function ChecklistRow({
           disabled={!isYudisiumOpen && !met}
           className={cn(
             "shrink-0 px-[9px] py-[4px] text-[10px] font-semibold rounded-[5px] transition-all duration-200 border",
-            met 
-              ? "border-gray-200 text-foreground bg-transparent hover:bg-accent cursor-pointer" 
-              : isYudisiumOpen 
-                ? "border-primary text-primary bg-transparent hover:bg-primary/5 cursor-pointer" 
+            met
+              ? "border-gray-200 text-foreground bg-transparent hover:bg-accent cursor-pointer"
+              : isYudisiumOpen
+                ? "border-primary text-primary bg-transparent hover:bg-primary/5 cursor-pointer"
                 : "border-gray-200 text-muted-foreground bg-transparent cursor-default opacity-50"
           )}
         >
@@ -509,10 +509,10 @@ function DocumentRow({
       <div
         className={cn(
           "w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0",
-          isApproved ? "bg-[#dcfce7] text-[#16A34A]" : 
-          isDeclined ? "bg-[#fef2f2] text-[#dc2626]" : 
-          isUploaded ? "bg-[#dbeafe] text-[#2563eb]" : 
-          "bg-muted text-muted-foreground"
+          isApproved ? "bg-[#dcfce7] text-[#16A34A]" :
+            isDeclined ? "bg-[#fef2f2] text-[#dc2626]" :
+              isUploaded ? "bg-[#dbeafe] text-[#2563eb]" :
+                "bg-muted text-muted-foreground"
         )}
       >
         <FileText size={14} />
@@ -572,10 +572,10 @@ function DocumentRow({
             onClick={handleUploadClick}
             className={cn(
               "shrink-0 px-[9px] py-[4px] text-xs font-semibold rounded-[5px] transition-all duration-200 cursor-pointer border",
-              isDeclined 
-                ? "border-destructive text-destructive bg-transparent hover:bg-destructive/10" 
-                : canUpload 
-                  ? "border-gray-200 text-foreground bg-transparent hover:bg-accent" 
+              isDeclined
+                ? "border-destructive text-destructive bg-transparent hover:bg-destructive/10"
+                : canUpload
+                  ? "border-gray-200 text-foreground bg-transparent hover:bg-accent"
                   : "border-gray-200 text-muted-foreground cursor-default"
             )}
           >
@@ -587,18 +587,18 @@ function DocumentRow({
   );
 }
 
-function YudisiumRequirementCard({ 
-  allChecklistMet, 
+function YudisiumRequirementCard({
+  allChecklistMet,
   participantStatus,
   isRegistrationOpen
-}: { 
+}: {
   allChecklistMet: boolean;
   participantStatus: ParticipantStatus;
   isRegistrationOpen: boolean;
 }) {
   const isLocked = !allChecklistMet || !isRegistrationOpen;
   const isBeyondVerification = ['verified', 'cpl_validated', 'appointed', 'finalized'].includes(participantStatus ?? '');
-  
+
   const { data: reqData } = useStudentYudisiumRequirements();
   const uploadMutation = useUploadYudisiumDocument();
   const requirements = reqData?.requirements ?? [];
@@ -755,7 +755,7 @@ export default function StudentYudisium() {
     doc.setFontSize(8);
     doc.text('Kampus Universitas Andalas, Limau Manis, Padang, Kode Pos 25163', pageWidth / 2, 35, { align: 'center' });
     doc.text('Email: jurusan_si@fti.unand.ac.id dan website: http://si.fti.unand.ac.id', pageWidth / 2, 40, { align: 'center' });
-    
+
     doc.setLineWidth(0.5);
     doc.line(margin, 43, pageWidth - margin, 43);
 
@@ -803,18 +803,18 @@ export default function StudentYudisium() {
     const finalY = (doc as any).lastAutoTable.finalY + 12;
     doc.setFont('helvetica', 'bold');
     doc.text('C. KESIMPULAN ASESMEN', margin, finalY);
-    
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     const allPassed = data.cplScores.every(sc => sc.passed);
     doc.rect(margin, finalY + 4, 3, 3);
     if (allPassed) doc.text('x', margin + 0.8, finalY + 6.5);
     doc.text('Seluruh CPL telah dicapai sesuai standar minimum kelulusan', margin + 6, finalY + 7);
-    
+
     doc.rect(margin, finalY + 11, 3, 3);
     if (!allPassed) doc.text('x', margin + 0.8, finalY + 13.5);
-    doc.text(`Ada CPL yang belum tercapai (sebutkan): ${allPassed ? '-' : '...' }`, margin + 6, finalY + 14);
-    
+    doc.text(`Ada CPL yang belum tercapai (sebutkan): ${allPassed ? '-' : '...'}`, margin + 6, finalY + 14);
+
     doc.rect(margin, finalY + 18, 3, 3);
     doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
 
@@ -828,7 +828,7 @@ export default function StudentYudisium() {
     doc.setFontSize(10);
     doc.text(`Padang, ${formatDateId(validatedDate)}`, pageWidth - margin - 65, signY);
     doc.text('Koordinator Asesmen CPL', pageWidth - margin - 65, signY + 6);
-    
+
     doc.setFont('helvetica', 'bold');
     doc.text(validatorName, pageWidth - margin - 65, signY + 28);
     doc.setFont('helvetica', 'normal');
@@ -841,15 +841,15 @@ export default function StudentYudisium() {
 
   const displayStatus = data?.yudisium
     ? deriveDisplayStatus(
-        data.yudisium.status,
-        data.yudisium.registrationOpenDate ?? null,
-        data.yudisium.registrationCloseDate ?? null,
-        data.yudisium.eventDate ?? null,
-      )
+      data.yudisium.status,
+      data.yudisium.registrationOpenDate ?? null,
+      data.yudisium.registrationCloseDate ?? null,
+      data.yudisium.eventDate ?? null,
+    )
     : null;
 
   const isRegistrationOpen = displayStatus === 'open';
-  const hasActiveYudisium  = !!data?.yudisium;
+  const hasActiveYudisium = !!data?.yudisium;
 
   const currentStep = getActiveStepIndex(
     (data?.participantStatus as ParticipantStatus) ?? null,
@@ -879,9 +879,9 @@ export default function StudentYudisium() {
       {/* Page Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Yudisium Mahasiswa</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Yudisium</h1>
           <p className="text-muted-foreground">
-            Pantau kesiapan checklist yudisium dan dokumen persyaratan Anda.
+            Pantau status yudisium, checklist persyaratan, dan unggah dokumen persyaratan yudisium
           </p>
         </div>
       </div>
@@ -898,7 +898,7 @@ export default function StudentYudisium() {
               Persiapkan persyaratan di bawah ini. Upload dokumen dan exit survey akan aktif saat periode dibuka.
             </p>
           </div>
-          <button 
+          <button
             onClick={() => refetch()}
             className="ml-auto shrink-0 px-3 py-1.5 text-xs font-semibold rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-all cursor-pointer"
           >
@@ -907,9 +907,9 @@ export default function StudentYudisium() {
         </div>
       ) : (
         data?.yudisium && (
-          <StudentYudisiumIdentityCard 
-            yudisium={data.yudisium} 
-            displayStatus={displayStatus!} 
+          <StudentYudisiumIdentityCard
+            yudisium={data.yudisium}
+            displayStatus={displayStatus!}
             statusBadge={statusBadge}
             decreeDocument={data.yudisium.decreeDocument}
           />
@@ -927,8 +927,8 @@ export default function StudentYudisium() {
         <div className="flex flex-col gap-[14px]">
           {/* Checklist Card */}
           {data?.checklist && (
-            <StudentYudisiumChecklistCard 
-              checklist={data.checklist} 
+            <StudentYudisiumChecklistCard
+              checklist={data.checklist}
               isYudisiumOpen={isRegistrationOpen}
               onExitSurveyClick={() => navigate('/yudisium/exit-survey')}
             />
@@ -936,8 +936,8 @@ export default function StudentYudisium() {
 
           {/* Document Upload/Preview Card */}
           {(isRegistrationOpen || data?.participantStatus) ? (
-            <YudisiumRequirementCard 
-              allChecklistMet={data?.allChecklistMet ?? false} 
+            <YudisiumRequirementCard
+              allChecklistMet={data?.allChecklistMet ?? false}
               participantStatus={data?.participantStatus as ParticipantStatus}
               isRegistrationOpen={isRegistrationOpen}
             />
@@ -952,9 +952,9 @@ export default function StudentYudisium() {
                 <div className="text-base font-semibold text-foreground">Validasi CPL</div>
                 <div className="flex items-center gap-2">
                   {['cpl_validated', 'appointed', 'finalized'].includes(data?.participantStatus || '') && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="h-7 gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-[10px] font-bold"
                       onClick={handleDownloadCplReport}
                     >
@@ -970,7 +970,7 @@ export default function StudentYudisium() {
                   )}
                 </div>
               </div>
-              
+
               {data?.allCplVerified && (
                 <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-2.5">
                   <p className="text-[11px] font-medium text-emerald-700">

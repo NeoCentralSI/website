@@ -47,7 +47,7 @@ export default function StudentThesisDefence() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Sidang Tugas Akhir</h1>
           <p className="text-muted-foreground">
-            Pantau status sidang, unggah dokumen, dan lihat riwayat sidang tugas akhir
+            Pantau status sidang, checklist persyaratan, dan unggah dokumen sidang
           </p>
         </div>
       </div>

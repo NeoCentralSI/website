@@ -66,7 +66,7 @@ export default function StudentThesisSeminar() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Seminar Hasil</h1>
           <p className="text-muted-foreground">
-            Pantau status seminar, unggah dokumen, dan lihat riwayat kehadiran seminar
+            Pantau status seminar, checklist persyaratan, unggah dokumen, dan lihat riwayat kehadiran seminar hasil
           </p>
         </div>
       </div>

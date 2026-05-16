@@ -99,6 +99,13 @@ export const useSidebarMenu = () => {
             { title: "Sidang", url: "/tugas-akhir/sidang" },
           ],
         },
+        // Yudisium — leaf item (no children)
+        {
+          title: "Yudisium",
+          url: "/yudisium",
+          icon: GraduationCap,
+          items: [],
+        },
         {
           title: "Pengumuman",
           url: "/pengumuman/seminar-hasil",
@@ -115,13 +122,6 @@ export const useSidebarMenu = () => {
               isActive: pathname.startsWith("/pengumuman/yudisium"),
             },
           ],
-        },
-        // Yudisium — leaf item (no children)
-        {
-          title: "Yudisium",
-          url: "/yudisium",
-          icon: GraduationCap,
-          items: [],
         },
         // Repositori — student only
         {
