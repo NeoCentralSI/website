@@ -93,6 +93,7 @@ export const API_CONFIG = {
       ME_REQUIREMENTS: '/yudisiums/me/requirements',
       ME_REQUIREMENTS_UPLOAD: '/yudisiums/me/requirements/upload',
       ME_CPL_REPORT: '/yudisiums/me/cpl-report',
+      ME_CERTIFICATE: '/yudisiums/me/certificate',
 
       // Participants & Validation
       PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants`,

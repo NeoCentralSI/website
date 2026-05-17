@@ -40,3 +40,9 @@ export async function downloadStudentCplReport(): Promise<Blob> {
   if (!res.ok) throw new Error('Gagal mengunduh sertifikat CPL');
   return res.blob();
 }
+
+export async function downloadStudentCertificate(): Promise<Blob> {
+  const res = await apiRequest(getApiUrl(EP.ME_CERTIFICATE));
+  if (!res.ok) throw new Error('Gagal mengunduh sertifikat');
+  return res.blob();
+}

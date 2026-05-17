@@ -25,7 +25,7 @@ import {
   useStudentYudisiumRequirements,
   useUploadYudisiumDocument,
 } from '@/hooks/yudisium/useYudisiumStudent';
-import { downloadStudentCplReport } from '@/services/yudisium/student.service';
+import { downloadStudentCertificate } from '@/services/yudisium/student.service';
 import type {
   StudentYudisiumChecklistItem,
   StudentYudisiumOverviewResponse,
@@ -62,7 +62,7 @@ const checklistEntries = (checklist: Record<string, StudentYudisiumChecklistItem
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type YudisiumDisplayStatus = 'draft' | 'open' | 'closed' | 'scheduled' | 'ongoing' | 'completed';
+type YudisiumDisplayStatus = 'draft' | 'open' | 'closed' | 'ongoing' | 'completed';
 type ParticipantStatus = 'registered' | 'verified' | 'cpl_validated' | 'appointed' | 'finalized' | 'rejected' | null;
 type StudentCplScore = NonNullable<StudentYudisiumOverviewResponse['cplScores']>[number];
 
@@ -80,7 +80,6 @@ const STATUS_BADGE_MAP: Record<YudisiumDisplayStatus, { label: string; className
   draft: { label: 'Draft', className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' },
   open: { label: 'Pendaftaran Dibuka', className: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' },
   closed: { label: 'Pendaftaran Ditutup', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
-  scheduled: { label: 'Terjadwalkan', className: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' },
   ongoing: { label: 'Sedang Berlangsung', className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
   completed: { label: 'Selesai', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
 };
@@ -97,22 +96,18 @@ const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string 
 // ─── Status Derivation ───────────────────────────────────────────────────────
 
 function deriveDisplayStatus(
-  storedStatus: string,
+  _storedStatus: string,
   registrationOpenDate: string | null,
   registrationCloseDate: string | null,
   eventDate: string | null,
 ): YudisiumDisplayStatus {
   const now = new Date();
-  if (storedStatus === 'completed') return 'completed';
-  if (storedStatus === 'scheduled') {
-    if (eventDate) {
-      const ed = new Date(eventDate);
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const todayEnd = new Date(todayStart.getTime() + 86400000 - 1);
-      if (ed >= todayStart && ed <= todayEnd) return 'ongoing';
-      if (ed < todayStart) return 'completed';
-    }
-    return 'scheduled';
+  if (eventDate) {
+    const ed = new Date(eventDate);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 86400000 - 1);
+    if (ed >= todayStart && ed <= todayEnd) return 'ongoing';
+    if (ed < todayStart) return 'completed';
   }
   const openDate = registrationOpenDate ? new Date(registrationOpenDate) : null;
   const closeDate = registrationCloseDate ? new Date(registrationCloseDate) : null;
@@ -808,19 +803,19 @@ export default function StudentYudisium() {
     setTitle('Yudisium Mahasiswa');
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
-  const handleDownloadCplReport = async () => {
+  const handleDownloadCertificate = async () => {
     try {
-      const blob = await downloadStudentCplReport();
+      const blob = await downloadStudentCertificate();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Laporan-CPL-${data?.studentNim || 'Mahasiswa'}.pdf`;
+      link.download = `Sertifikat-CPL-${data?.studentNim || 'Mahasiswa'}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal mengunduh sertifikat CPL');
+      toast.error(err instanceof Error ? err.message : 'Gagal mengunduh sertifikat');
     }
   };
 
@@ -1012,8 +1007,8 @@ export default function StudentYudisium() {
             statusBadge={statusBadge}
             participantStatusBadge={participantStatusBadge}
             decreeDocument={data.yudisium.decreeDocument}
-            canDownloadCertificate={['cpl_validated', 'appointed', 'finalized'].includes(data?.participantStatus || '')}
-            onDownloadCertificate={handleDownloadCplReport}
+            canDownloadCertificate={['appointed', 'finalized'].includes(data?.participantStatus || '')}
+            onDownloadCertificate={handleDownloadCertificate}
           />
         )
       )}
