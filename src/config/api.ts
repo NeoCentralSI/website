@@ -71,6 +71,8 @@ export const API_CONFIG = {
       TOGGLE: (id: string) => `/exit-surveys/${id}/toggle`,
       DUPLICATE: (id: string) => `/exit-surveys/${id}/duplicate`,
       RESPONSES: (id: string) => `/exit-surveys/${id}/responses`,
+      RESPONSES_EXPORT_PDF: (id: string) => `/exit-surveys/${id}/responses/export.pdf`,
+      RESPONSES_EXPORT_EXCEL: (id: string) => `/exit-surveys/${id}/responses/export.xlsx`,
       QUESTIONS: (formId: string) => `/exit-surveys/${formId}/questions`,
       QUESTION_BY_ID: (formId: string, questionId: string) => `/exit-surveys/${formId}/questions/${questionId}`,
     },
