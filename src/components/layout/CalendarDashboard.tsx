@@ -232,10 +232,9 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
           ...outlookEvent,
           relatedId: internal.relatedId,
           relatedType: internal.relatedType,
-          // Use the internal type for color coding but keep Outlook's identity
-          type: internal.type, 
-          color: internal.color,
-          backgroundColor: internal.backgroundColor,
+          type: outlookEvent.type,
+          color: '#0078d4',
+          backgroundColor: '#0078d4',
           // Carry over the Outlook-specific data in metadata
           metadata: {
             ...outlookEvent.metadata,
