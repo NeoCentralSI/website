@@ -28,6 +28,12 @@ const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondar
     completed: { label: 'Selesai', variant: 'default', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
 };
 
+const isArchiveYudisium = (item: YudisiumEvent) =>
+    !item.registrationOpenDate && !item.registrationCloseDate;
+
+const canDeleteYudisium = (item: YudisiumEvent) =>
+    isArchiveYudisium(item) || item.canDelete;
+
 interface YudisiumTableProps {
     data: YudisiumEvent[];
     isLoading: boolean;
@@ -193,8 +199,11 @@ export function YudisiumTable({
                 header: 'Aksi',
                 width: 120,
                 className: 'text-right',
-                render: (item) => (
-                    <div className="flex items-center justify-end gap-1">
+                render: (item) => {
+                    const canDeleteItem = canDeleteYudisium(item);
+
+                    return (
+                        <div className="flex items-center justify-end gap-1">
                         {canViewDetail && (
                             <Button
                                 variant="ghost"
@@ -222,9 +231,9 @@ export function YudisiumTable({
                                     size="icon"
                                     className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                                     onClick={() => setDeleteId(item.id)}
-                                    disabled={isDeleting || !item.canDelete}
+                                    disabled={isDeleting || !canDeleteItem}
                                     title={
-                                        item.canDelete
+                                        canDeleteItem
                                             ? 'Hapus'
                                             : 'Tidak dapat menghapus data yang sudah memiliki relasi'
                                     }
@@ -233,8 +242,9 @@ export function YudisiumTable({
                                 </Button>
                             </>
                         )}
-                    </div>
-                ),
+                        </div>
+                    );
+                },
             });
         }
 
@@ -278,7 +288,8 @@ export function YudisiumTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Data Yudisium</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Apakah Anda yakin ingin menghapus data yudisium ini? Data yang sudah memiliki peserta tidak dapat dihapus.
+                            Apakah Anda yakin ingin menghapus data yudisium ini? Jika data arsip memiliki peserta,
+                            peserta yang terkait juga akan dihapus.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

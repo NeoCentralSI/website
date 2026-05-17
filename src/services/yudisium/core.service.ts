@@ -20,6 +20,7 @@ export interface YudisiumEvent {
   registrationOpenDate: string | null;
   registrationCloseDate: string | null;
   eventDate: string | null;
+  appointedAt?: string | null;
   notes: string | null;
   status: YudisiumStatus;
   exitSurveyForm: { id: string; name: string } | null;
