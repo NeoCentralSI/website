@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import {
-  BookOpen,
   CalendarDays,
   Clock,
   MapPin,
@@ -26,6 +25,7 @@ type AnnouncementParticipant = {
   studentName: string;
   studentNim: string;
   thesisTitle: string;
+  registeredAt: string | null;
 };
 
 function formatDateHeader(iso: string | null | undefined): string {
@@ -74,7 +74,7 @@ export default function YudisiumAnnouncementPage() {
       header: 'No',
       width: 64,
       className: 'text-center',
-      render: (_, index) => <span className="text-sm tabular-nums text-muted-foreground">{index + 1}</span>,
+      render: (_, index) => <span className="text-sm tabular-nums font-medium text-foreground">{index + 1}</span>,
     },
     {
       key: 'studentName',
@@ -86,17 +86,14 @@ export default function YudisiumAnnouncementPage() {
       key: 'studentNim',
       header: 'NIM',
       width: 150,
-      render: (row) => <span className="text-sm font-medium tabular-nums text-muted-foreground">{row.studentNim}</span>,
+      render: (row) => <span className="text-sm font-medium tabular-nums text-foreground">{row.studentNim}</span>,
     },
     {
       key: 'thesisTitle',
       header: 'Judul Tugas Akhir',
       className: 'whitespace-normal',
       render: (row) => (
-        <div className="flex items-start gap-2">
-          <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-          <p className="text-sm leading-snug text-muted-foreground">{row.thesisTitle || '-'}</p>
-        </div>
+        <p className="text-sm font-medium leading-snug text-foreground">{row.thesisTitle || '-'}</p>
       ),
     },
   ], []);
@@ -109,14 +106,22 @@ export default function YudisiumAnnouncementPage() {
       .map((item) => {
         if (!q) return item;
 
+        const sortParticipants = (participants: typeof item.participants) =>
+          [...participants].sort((a, b) => {
+            const aTime = a.registeredAt ? new Date(a.registeredAt).getTime() : Number.MAX_SAFE_INTEGER;
+            const bTime = b.registeredAt ? new Date(b.registeredAt).getTime() : Number.MAX_SAFE_INTEGER;
+            if (aTime !== bTime) return aTime - bTime;
+            return a.studentName.localeCompare(b.studentName);
+          });
+
         const eventMatches = item.name.toLowerCase().includes(q);
         const participants = eventMatches
-          ? item.participants
-          : item.participants.filter((participant) =>
+          ? sortParticipants(item.participants)
+          : sortParticipants(item.participants.filter((participant) =>
             participant.studentName.toLowerCase().includes(q) ||
             participant.studentNim.toLowerCase().includes(q) ||
             participant.thesisTitle.toLowerCase().includes(q)
-          );
+          ));
 
         return { ...item, participants };
       })
@@ -246,19 +251,19 @@ export default function YudisiumAnnouncementPage() {
                     <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
                     <h2 className="truncate text-base font-semibold">{item.name}</h2>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-foreground">
                     <span className="inline-flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 opacity-60" />
+                      <Clock className="h-3.5 w-3.5 text-foreground" />
                       {formatDateHeader(item.eventDate)}
                     </span>
                     {item.room && (
                       <span className="inline-flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 opacity-60" />
+                        <MapPin className="h-3.5 w-3.5 text-foreground" />
                         {item.room.name}
                       </span>
                     )}
                     <span className="inline-flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 opacity-60" />
+                      <Users className="h-3.5 w-3.5 text-foreground" />
                       {item.participants.length} peserta
                     </span>
                   </div>

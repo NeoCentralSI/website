@@ -65,6 +65,7 @@ export interface YudisiumAnnouncementParticipant {
   studentNim: string;
   thesisTitle: string;
   status: string;
+  registeredAt: string | null;
 }
 
 export interface YudisiumAnnouncement extends YudisiumEvent {
