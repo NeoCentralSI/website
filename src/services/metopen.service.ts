@@ -39,14 +39,21 @@ export interface MetopelEligibility {
 }
 
 export const checkMetopelEligibility = async (): Promise<MetopelEligibility> => {
-  const url = getApiUrl(ENDPOINTS.ELIGIBILITY);
-  const response = await apiRequest(url);
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.message || 'Gagal memeriksa eligibilitas');
-  }
-  const result = await response.json();
-  return result.data;
+  // Disabled for now: backend route /metopen/eligibility is not available yet.
+  // const url = getApiUrl(ENDPOINTS.ELIGIBILITY);
+  // const response = await apiRequest(url);
+  // if (!response.ok) {
+  //   const err = await response.json();
+  //   throw new Error(err.message || 'Gagal memeriksa eligibilitas');
+  // }
+  // const result = await response.json();
+  // return result.data;
+  return {
+    semester: 0,
+    isMinSemester6: false,
+    hasMetopenCourse: false,
+    canAccess: false,
+  };
 };
 
 // ==================== Template Management ====================

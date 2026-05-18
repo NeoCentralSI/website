@@ -91,10 +91,6 @@ export function useRealtimeNotifications() {
       if (!token) return false;
 
       const registrationKey = `${user.id}:${token}`;
-      const registeredToken = localStorage.getItem(FCM_TOKEN_KEY);
-      const registeredFor = localStorage.getItem(FCM_REGISTRATION_KEY);
-      if (registeredToken === token && registeredFor === registrationKey) return true;
-
       await registerFcmToken(token, "web");
       localStorage.setItem(FCM_TOKEN_KEY, token);
       localStorage.setItem(FCM_REGISTRATION_KEY, registrationKey);
