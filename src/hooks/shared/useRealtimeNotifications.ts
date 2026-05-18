@@ -9,6 +9,7 @@ import { useThesisRealtimeHandlers, type ThesisPushEventType } from "@/hooks/gui
 
 // Key untuk menyimpan FCM token di localStorage (shared dengan useAuth)
 const FCM_TOKEN_KEY = 'fcm_token';
+const FCM_REGISTRATION_KEY = 'fcm_registration';
 
 type PushEventType =
   | ThesisPushEventType
@@ -20,6 +21,30 @@ export function useRealtimeNotifications() {
   const { isLoggedIn, user } = useAuth();
   const { handleInternshipMessage, handleInternshipBackgroundMessage } = useInternshipRealtimeHandlers();
   const { handleThesisMessage, handleThesisBackgroundMessage } = useThesisRealtimeHandlers();
+
+  function showBrowserNotification(payload: any) {
+    try {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      const title = payload?.data?.title || payload?.notification?.title || "Notifikasi Baru";
+      const body = payload?.data?.body || payload?.notification?.body || "";
+      if (!title && !body) return;
+
+      navigator.serviceWorker?.ready
+        .then((registration) => {
+          registration.showNotification(title, {
+            body,
+            icon: "/vite.svg",
+            badge: "/vite.svg",
+            data: payload?.data || {},
+          });
+        })
+        .catch(() => {
+          new Notification(title, { body, data: payload?.data || {} });
+        });
+    } catch {
+      // Native notification is best-effort; toast handling still runs below.
+    }
+  }
 
   function playBeep() {
     try {
@@ -51,27 +76,32 @@ export function useRealtimeNotifications() {
 
   // Handle FCM token registration
   const setupFcm = useCallback(async () => {
-    if (!isLoggedIn || !user) return;
+    if (!isLoggedIn || !user) return false;
 
     try {
-      if (!("Notification" in window)) return;
-      if (Notification.permission === "denied") return;
+      if (!("Notification" in window)) return false;
+      if (Notification.permission === "denied") return false;
 
       if (Notification.permission !== "granted") {
         const permission = await Notification.requestPermission();
-        if (permission !== "granted") return;
+        if (permission !== "granted") return false;
       }
 
       const token = await acquireFcmToken();
-      if (!token) return;
+      if (!token) return false;
 
+      const registrationKey = `${user.id}:${token}`;
       const registeredToken = localStorage.getItem(FCM_TOKEN_KEY);
-      if (registeredToken === token) return;
+      const registeredFor = localStorage.getItem(FCM_REGISTRATION_KEY);
+      if (registeredToken === token && registeredFor === registrationKey) return true;
 
-      await registerFcmToken(token);
+      await registerFcmToken(token, "web");
       localStorage.setItem(FCM_TOKEN_KEY, token);
-    } catch {
-      // Sliently fail in production
+      localStorage.setItem(FCM_REGISTRATION_KEY, registrationKey);
+      return true;
+    } catch (error) {
+      console.error("[FCM] setup failed:", error);
+      return false;
     }
   }, [isLoggedIn, user]);
 
@@ -80,7 +110,9 @@ export function useRealtimeNotifications() {
   useEffect(() => {
     if (isLoggedIn && !fcmSetupCalled.current) {
       fcmSetupCalled.current = true;
-      setupFcm();
+      setupFcm().then((ok) => {
+        if (!ok) fcmSetupCalled.current = false;
+      });
     } else if (!isLoggedIn) {
       fcmSetupCalled.current = false;
     }
@@ -97,6 +129,7 @@ export function useRealtimeNotifications() {
         if (!messaging) return;
         unsubscribe = onMessage(messaging, (payload: any) => {
           try {
+            showBrowserNotification(payload);
             const type = payload?.data?.type as PushEventType;
 
             switch (type) {
@@ -171,7 +204,13 @@ export function useRealtimeNotifications() {
                 case 'thesis-guidance:cancelled':
                 case 'thesis-guidance:approved':
                 case 'thesis-guidance:rejected':
-                case 'thesis-guidance:notes-updated': {
+                case 'thesis-guidance:notes-updated':
+                case 'thesis-guidance:summary-submitted':
+                case 'thesis-guidance:summary-approved':
+                case "supervisor2_request":
+                case "supervisor2_approved":
+                case "supervisor2_rejected":
+                case "role_promotion": {
                   handleThesisBackgroundMessage(msg, playBeep);
                   break;
                 }
@@ -191,8 +230,23 @@ export function useRealtimeNotifications() {
                 case "internship_new_proposal":
                 case "internship_company_response":
                 case "internship_seminar_scheduled":
+                case "internship_seminar_response":
+                case "internship_seminar_completed":
+                case "internship_seminar_audience_validated":
                 case "internship_seminar_reminder":
-                case "internship_grading_completed": {
+                case "internship_grading_completed":
+                case "internship_completed":
+                case "internship_status_failed":
+                case "internship_proposal_approved_admin":
+                case "internship_supervisor_assigned":
+                case "internship_document_bulk_verification":
+                case "internship_final_report_rejected":
+                case "internship_field_assessment_completed":
+                case "internship_lecturer_assignment_generated":
+                case "internship_supervisor_letter_signed": {
+                  const title = msg?.title || msg?.data?.title || "Notifikasi Kerja Praktik";
+                  const body = msg?.body || msg?.data?.body || "";
+                  toast(title, { description: body, duration: 5000 });
                   handleInternshipBackgroundMessage(msg);
                   break;
                 }

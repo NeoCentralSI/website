@@ -37,7 +37,10 @@ export async function acquireFcmToken(): Promise<string | null> {
     console.error("[FCM] VITE_FIREBASE_VAPID_KEY is not set in environment");
   }
   try {
-    const token = await getToken(messaging, { vapidKey });
+    const serviceWorkerRegistration = "serviceWorker" in navigator
+      ? await navigator.serviceWorker.register("/firebase-messaging-sw.js")
+      : undefined;
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration });
     return token || null;
   } catch (err) {
     console.error("[FCM] getToken failed with error:", err);

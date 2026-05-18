@@ -8,6 +8,7 @@ import { toTitleCaseName } from '@/lib/text';
 
 // Key untuk menyimpan FCM token di localStorage
 const FCM_TOKEN_KEY = 'fcm_token';
+const FCM_REGISTRATION_KEY = 'fcm_registration';
 
 interface AuthContextType {
   user: User | null;
@@ -92,6 +93,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         try {
           await unregisterFcmToken(fcmToken);
           localStorage.removeItem(FCM_TOKEN_KEY);
+          localStorage.removeItem(FCM_REGISTRATION_KEY);
         } catch (fcmError) {
           console.error('FCM unregister error (ignored):', fcmError);
         }
@@ -106,6 +108,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       clearAuthTokens();
       localStorage.removeItem(FCM_TOKEN_KEY);
+      localStorage.removeItem(FCM_REGISTRATION_KEY);
       queryClient.setQueryData(['auth-user'], null);
       queryClient.clear(); // Clear all cache
       navigate('/login');

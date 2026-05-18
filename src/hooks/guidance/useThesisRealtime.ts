@@ -126,6 +126,8 @@ export function useThesisRealtimeHandlers() {
   const handleThesisBackgroundMessage = (msg: any, playBeep: () => void) => {
     const type = msg?.data?.type as ThesisPushEventType;
     const role = msg?.data?.role;
+    const title = msg?.title || msg?.data?.title || "Notifikasi Baru";
+    const body = msg?.body || msg?.data?.body || "";
 
     switch (type) {
       case 'thesis-guidance:requested': {
@@ -146,8 +148,20 @@ export function useThesisRealtimeHandlers() {
       case 'thesis-guidance:approved':
       case 'thesis-guidance:rejected':
       case 'thesis-guidance:notes-updated': {
+        toast(title, { description: body, duration: 5000 });
         qc.invalidateQueries({ queryKey: ['student-guidance'] });
         qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
+        qc.invalidateQueries({ queryKey: ['notification-unread'] });
+        return true;
+      }
+      case 'thesis-guidance:summary-submitted':
+      case 'thesis-guidance:summary-approved': {
+        toast(title, { description: body, duration: 5000 });
+        qc.invalidateQueries({ queryKey: ['student-guidance'] });
+        qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
+        qc.invalidateQueries({ queryKey: ['pending-approval'] });
+        qc.invalidateQueries({ queryKey: ['needs-summary'] });
+        qc.invalidateQueries({ queryKey: ['completed-history'] });
         qc.invalidateQueries({ queryKey: ['notification-unread'] });
         return true;
       }
@@ -155,6 +169,7 @@ export function useThesisRealtimeHandlers() {
       case "supervisor2_approved":
       case "supervisor2_rejected":
       case "role_promotion": {
+        toast(title, { description: body, duration: 5000 });
         qc.invalidateQueries({ queryKey: ["notification-unread"] });
         return true;
       }
