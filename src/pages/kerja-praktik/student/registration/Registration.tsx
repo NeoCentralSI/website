@@ -45,7 +45,7 @@ export default function InternshipProposalPage() {
 
     const activeProposal = useMemo(() => {
         return items.find(item => {
-            if (['REJECTED_BY_SEKDEP', 'REJECTED_BY_COMPANY'].includes(item.status)) {
+            if (['REJECTED_PROPOSAL', 'REJECTED_BY_COMPANY'].includes(item.status)) {
                 return false;
             }
             if (['REJECTED', 'REJECTED_BY_COMPANY'].includes(item.memberStatus as string)) {

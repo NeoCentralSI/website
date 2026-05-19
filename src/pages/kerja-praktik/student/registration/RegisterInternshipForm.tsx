@@ -38,6 +38,7 @@ export default function RegisterInternshipFormPage() {
     const [newCompanyAddress, setNewCompanyAddress] = useState("");
     const [newCompanyReason, setNewCompanyReason] = useState("");
     const [proposalFile, setProposalFile] = useState<File | null>(null);
+    const [isChangingFile, setIsChangingFile] = useState(false);
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
     const [memberSearch, setMemberSearch] = useState("");
     const [proposedStartDate, setProposedStartDate] = useState("");
@@ -122,8 +123,17 @@ export default function RegisterInternshipFormPage() {
 
     // Populate form if editing
     useEffect(() => {
-        if (proposalToEdit) {
-            setSelectedCompanyId(proposalToEdit.targetCompanyId || "");
+        if (proposalToEdit && companiesQuery.isSuccess) {
+            const company = companiesQuery.data?.data?.find((c: any) => c.id === proposalToEdit.targetCompanyId);
+            if (company && (company.status === 'diajukan' || company.status === 'DIAJUKAN')) {
+                setSelectedCompanyId("NEW");
+                setNewCompanyName(company.companyName || "");
+                setNewCompanyAddress(company.companyAddress || "");
+                setNewCompanyReason(company.alasan || "");
+            } else {
+                setSelectedCompanyId(proposalToEdit.targetCompanyId || "");
+            }
+
             setSelectedMemberIds(proposalToEdit.members?.filter(m => m.id !== user?.id).map(m => m.id) || []);
             const formatDate = (dateStr?: string | null) => {
                 if (!dateStr) return "";
@@ -136,7 +146,7 @@ export default function RegisterInternshipFormPage() {
             setProposedStartDate(formatDate(proposalToEdit.proposedStartDate));
             setProposedEndDate(formatDate(proposalToEdit.proposedEndDate));
         }
-    }, [proposalToEdit, user?.id]);
+    }, [proposalToEdit, user?.id, companiesQuery.isSuccess, companiesQuery.data?.data]);
 
     // Mapped options for ComboBox
     const companyOptions = useMemo(() => {
@@ -249,7 +259,7 @@ export default function RegisterInternshipFormPage() {
     const workingDaysCount = calculateBusinessDays(proposedStartDate, proposedEndDate, holidaysQuery.data || []);
     const isWorkingDaysValid = workingDaysCount >= 30;
 
-    const isFormValid = (!!proposalFile || !!proposalToEdit) &&
+    const isFormValid = (!!proposalFile || (!!proposalToEdit && !isChangingFile)) &&
         !!selectedCompanyId &&
         !!proposedStartDate &&
         !!proposedEndDate &&
@@ -412,23 +422,33 @@ export default function RegisterInternshipFormPage() {
                         <CardContent className="space-y-4">
                             <Label className="text-sm font-semibold">File Proposal <span className="text-destructive">*</span></Label>
 
-                            {proposalToEdit?.dokumenProposal && !proposalFile && (
+                            {proposalToEdit?.dokumenProposal && !proposalFile && !isChangingFile && (
                                 <div className="p-3 bg-primary/5 rounded-md border border-primary/10 flex items-center justify-between">
                                     <div className="flex items-center gap-2 overflow-hidden">
                                         <FileText className="h-4 w-4 text-primary shrink-0" />
                                         <span className="text-sm truncate font-medium">{proposalToEdit.dokumenProposal.fileName}</span>
                                     </div>
-                                    <Button variant="ghost" size="sm" className="text-[10px] h-7 px-2" onClick={() => setProposalFile(null)}>Ganti File</Button>
+                                    <Button variant="ghost" size="sm" className="text-[10px] h-7 px-2" onClick={() => setIsChangingFile(true)}>Ganti File</Button>
                                 </div>
                             )}
 
-                            {(!proposalToEdit || proposalFile) && (
-                                <Input
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={(e) => setProposalFile(e.target.files?.[0] || null)}
-                                    className="cursor-pointer h-11"
-                                />
+                            {(!proposalToEdit || proposalFile || isChangingFile) && (
+                                <div className="space-y-2">
+                                    <Input
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={(e) => {
+                                            setProposalFile(e.target.files?.[0] || null);
+                                            if (!e.target.files?.[0]) setIsChangingFile(false);
+                                        }}
+                                        className="cursor-pointer h-11"
+                                    />
+                                    {isChangingFile && proposalToEdit?.dokumenProposal && !proposalFile && (
+                                        <Button variant="ghost" size="sm" onClick={() => setIsChangingFile(false)} className="text-xs text-muted-foreground h-8 -mt-1 px-2">
+                                            Batal Ganti File
+                                        </Button>
+                                    )}
+                                </div>
                             )}
 
                             <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">

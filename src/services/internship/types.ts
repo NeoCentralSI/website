@@ -140,6 +140,8 @@ export interface CompanyItem {
     email: string;
     phone: string;
     status?: string;
+    companyAddress?: string;
+    alasan?: string;
 }
 
 export interface StudentItem {
@@ -172,6 +174,7 @@ export interface SekdepRegistrationItem {
     coordinatorNim: string;
     companyName: string;
     status: string;
+    proposalStatus?: string;
     proposalSekdepNotes?: string | null;
     companyResponseNotes?: string | null;
     academicYearName?: string;
@@ -607,6 +610,17 @@ export interface LecturerGuidanceTimeline {
             filePath: string;
         } | null;
         feedbackDocumentId?: string | null;
+    };
+    reportFinal?: {
+        status: string | null;
+        title: string | null;
+        notes: string | null;
+        uploadedAt: string | null;
+        document: {
+            id: string;
+            fileName: string;
+            filePath: string;
+        } | null;
     };
     seminars?: {
         id: string;

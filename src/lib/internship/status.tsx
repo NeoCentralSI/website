@@ -44,6 +44,18 @@ export const getInternshipStatusBadge = (status: string) => {
             variant = 'warning';
             label = 'PENDING';
             break;
+        case 'ONGOING':
+            variant = 'info';
+            label = 'ONGOING';
+            break;
+        case 'COMPLETED':
+            variant = 'success';
+            label = 'COMPLETED';
+            break;
+        case 'FAILED':
+            variant = 'destructive';
+            label = 'FAILED';
+            break;
         default:
             variant = 'outline';
             break;

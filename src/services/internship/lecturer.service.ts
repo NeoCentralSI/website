@@ -95,6 +95,14 @@ export const verifyFinalReportByLecturer = async (
     return res.json();
 };
 
+export const saveFinalReportFeedbackByLecturer = async (
+    internshipId: string,
+    notes?: string,
+    file?: File
+): Promise<{ success: boolean; message: string }> => {
+    return verifyFinalReportByLecturer(internshipId, 'REVISION_NEEDED', notes, file);
+};
+
 export const validateSeminarAudience = async (seminarId: string, studentId: string): Promise<{ success: boolean; message: string }> => {
     const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${seminarId}/audience/${studentId}/validate`);
     const res = await apiRequest(url, { method: "POST" });
@@ -169,6 +177,22 @@ export const completeSeminar = async (id: string): Promise<{ success: boolean; m
     return res.json();
 };
 
+export const failSeminar = async (id: string, notes?: string): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${id}/fail`);
+    const res = await apiRequest(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notes }),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal menggagalkan seminar" }));
+        throw new Error(errorData.message || "Gagal menggagalkan seminar");
+    }
+    return res.json();
+};
+
 export const getInternshipAssessment = async (internshipId: string): Promise<{ success: boolean; data: any }> => {
     const url = getApiUrl(`/insternship/activity/guidance/lecturer/assessment/${internshipId}`);
     const res = await apiRequest(url);
@@ -192,16 +216,6 @@ export const submitLecturerAssessment = async (internshipId: string, scores: { c
         throw new Error(errorData.message || "Gagal menyimpan penilaian");
     }
     return res.json();
-};
-
-export const downloadBeritaAcara = async (id: string): Promise<Blob> => {
-    const url = getApiUrl(`/insternship/activity/guidance/lecturer/seminar/${id}/berita-acara`);
-    const res = await apiRequest(url);
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Gagal mengunduh berita acara" }));
-        throw new Error(errorData.message || "Gagal mengunduh berita acara");
-    }
-    return res.blob();
 };
 
 export const getLecturerSupervisorLetter = async (academicYearId?: string): Promise<any> => {

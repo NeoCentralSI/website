@@ -10,6 +10,7 @@ import {
     bulkValidateSeminarAudience,
     updateSeminarNotes,
     completeSeminar,
+    failSeminar,
 } from '@/services/internship';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,8 +66,11 @@ export default function LecturerSeminarTab() {
     const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
     const [isSavingNotes, setIsSavingNotes] = useState<string | null>(null);
     const [isCompleting, setIsCompleting] = useState<string | null>(null);
+    const [isFailing, setIsFailing] = useState<string | null>(null);
     const [isEditingNotesMap, setIsEditingNotesMap] = useState<Record<string, boolean>>({});
     const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
+    const [confirmFailId, setConfirmFailId] = useState<string | null>(null);
+    const [failNotes, setFailNotes] = useState('');
 
     const handleStartEdit = (id: string, notes: string) => {
         setEditingNotes(prev => ({ ...prev, [id]: notes || "" }));
@@ -180,12 +184,34 @@ export default function LecturerSeminarTab() {
         try {
             await completeSeminar(seminarId);
             toast.success('Seminar berhasil diselesaikan');
+            setConfirmCompleteId(null);
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
             queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
         } catch (error: any) {
             toast.error(error.message || 'Gagal menyelesaikan seminar');
         } finally {
             setIsCompleting(null);
+        }
+    };
+
+    const handleFailSeminar = (seminarId: string, currentNotes?: string) => {
+        setFailNotes(currentNotes || '');
+        setConfirmFailId(seminarId);
+    };
+
+    const processFailSeminar = async (seminarId: string) => {
+        setIsFailing(seminarId);
+        try {
+            await failSeminar(seminarId, failNotes.trim() || undefined);
+            toast.success('Seminar berhasil dinyatakan gagal');
+            setConfirmFailId(null);
+            setFailNotes('');
+            queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
+            queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
+        } catch (error: any) {
+            toast.error(error.message || 'Gagal menggagalkan seminar');
+        } finally {
+            setIsFailing(null);
         }
     };
 
@@ -207,6 +233,7 @@ export default function LecturerSeminarTab() {
             case 'COMPLETED': return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 font-medium px-3 py-1"><CheckCircle2 className="w-4 h-4 mr-1.5" />Selesai</Badge>;
             case 'REQUESTED': return <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50 font-medium px-3 py-1">Menunggu ACC</Badge>;
             case 'REJECTED': return <Badge variant="destructive" className="font-medium px-3 py-1"><XCircle className="w-4 h-4 mr-1.5" />Ditolak</Badge>;
+            case 'FAILED': return <Badge variant="destructive" className="font-medium px-3 py-1 bg-red-700 hover:bg-red-800"><XCircle className="w-4 h-4 mr-1.5" />Gagal</Badge>;
             default: return <Badge variant="secondary" className="font-medium px-3 py-1">{status}</Badge>;
         }
     };
@@ -244,6 +271,9 @@ export default function LecturerSeminarTab() {
                 }));
 
                 const isCompleted = seminar.status === 'COMPLETED';
+                const isFailed = seminar.status === 'FAILED';
+                const isFinal = isCompleted || isFailed;
+                const canFinalize = seminar.status === 'APPROVED';
 
                 return (
                     <div key={seminar.id} className="space-y-6">
@@ -350,20 +380,34 @@ export default function LecturerSeminarTab() {
                                     </div>
                                     <CardDescription>Poin-poin penting dan hasil evaluasi selama seminar berlangsung</CardDescription>
                                 </div>
-                                {!isCompleted && (
+                                {!isFinal && (
                                     <div className="flex items-center gap-2">
                                         {!isEditingNotesMap[seminar.id] ? (
                                             <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="h-8 gap-2 border-primary/20 text-primary hover:bg-primary/5 hover:text-primary"
-                                                    onClick={() => handleCompleteSeminar(seminar.id)}
-                                                    disabled={isCompleting === seminar.id}
-                                                >
-                                                    {isCompleting === seminar.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                                    Selesaikan Seminar
-                                                </Button>
+                                                {canFinalize && (
+                                                    <>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-8 gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                            onClick={() => handleFailSeminar(seminar.id, seminar.supervisorNotes)}
+                                                            disabled={isFailing === seminar.id || isCompleting === seminar.id}
+                                                        >
+                                                            {isFailing === seminar.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                                                            Gagalkan Seminar
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-8 gap-2 border-primary/20 text-primary hover:bg-primary/5 hover:text-primary"
+                                                            onClick={() => handleCompleteSeminar(seminar.id)}
+                                                            disabled={isCompleting === seminar.id || isFailing === seminar.id}
+                                                        >
+                                                            {isCompleting === seminar.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                                            Selesaikan Seminar
+                                                        </Button>
+                                                    </>
+                                                )}
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -408,10 +452,10 @@ export default function LecturerSeminarTab() {
 
                                 <div className="flex items-center justify-between">
                                     <div className="text-xs text-muted-foreground italic">
-                                        {isCompleted ? (
-                                            <div className="flex items-center gap-1.5 text-rose-500 font-medium">
+                                        {isFinal ? (
+                                            <div className={cn("flex items-center gap-1.5 font-medium", isFailed ? "text-red-600" : "text-rose-500")}>
                                                 <AlertCircle className="w-3.5 h-3.5" />
-                                                <span>Catatan telah dikunci karena seminar telah selesai.</span>
+                                                <span>Catatan telah dikunci karena seminar telah {isFailed ? 'dinyatakan gagal' : 'selesai'}.</span>
                                             </div>
                                         ) : (
                                             isEditingNotesMap[seminar.id] ? "* Mahasiswa dapat melihat update catatan secara real-time setelah disimpan." : ""
@@ -435,7 +479,7 @@ export default function LecturerSeminarTab() {
 
 
                         {/* 3. Peserta Seminar Card */}
-                        {seminar.status !== 'REJECTED' && (
+                        {!['REJECTED', 'FAILED'].includes(seminar.status) && (
                             <Card className="border-gray-200">
                                 <CardHeader className="py-4 flex flex-row items-center justify-between space-y-0">
                                     <div className="space-y-1">
@@ -495,6 +539,39 @@ export default function LecturerSeminarTab() {
                             className="bg-emerald-600 hover:bg-emerald-700"
                         >
                             Ya, Selesaikan
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog open={!!confirmFailId} onOpenChange={(open) => {
+                if (!open) {
+                    setConfirmFailId(null);
+                    setFailNotes('');
+                }
+            }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Gagalkan Seminar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Seminar akan ditandai gagal dan mahasiswa perlu mengajukan jadwal seminar baru. Catatan di bawah akan terlihat oleh mahasiswa.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Textarea
+                        value={failNotes}
+                        onChange={(e) => setFailNotes(e.target.value)}
+                        placeholder="Tuliskan alasan atau catatan hasil seminar..."
+                        className="min-h-[120px] resize-none"
+                        disabled={!!isFailing}
+                    />
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={!!isFailing}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => confirmFailId && processFailSeminar(confirmFailId)}
+                            disabled={!!isFailing}
+                            className="bg-red-700 hover:bg-red-800"
+                        >
+                            {isFailing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Ya, Gagalkan
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

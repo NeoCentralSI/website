@@ -3,7 +3,7 @@ import { useOutletContext, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument, submitCompanyReport, submitFinalFixReport } from '@/services/internship';
+import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument, submitCompanyReport } from '@/services/internship';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 
@@ -60,7 +60,7 @@ export default function InternshipSeminarPage() {
     // Confirmation State
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [pendingUpload, setPendingUpload] = useState<{
-        type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT' | 'FINAL_FIX_REPORT';
+        type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT';
         file: File;
         title?: string;
     } | null>(null);
@@ -71,7 +71,7 @@ export default function InternshipSeminarPage() {
         }
     }, [internship]);
 
-    const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT' | 'FINAL_FIX_REPORT', file: File, title?: string) => {
+    const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT', file: File, title?: string) => {
         try {
             setIsUploading(type);
             const { documentId } = await uploadInternshipDocument(file);
@@ -97,12 +97,6 @@ export default function InternshipSeminarPage() {
                 if (response.data?.assessmentInfo?.assessmentUrl) {
                     setGeneratedAssessmentUrl(response.data.assessmentInfo.assessmentUrl);
                 }
-            } else if (type === 'FINAL_FIX_REPORT') {
-                if (!title || !title.trim()) {
-                    throw new Error("Judul laporan akhir final wajib diisi");
-                }
-                await submitFinalFixReport(title.trim(), documentId);
-                toast.success("Laporan Final Fix & Lembar Pengesahan berhasil diunggah");
             }
             
             queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
@@ -154,24 +148,6 @@ export default function InternshipSeminarPage() {
         }
     };
 
-    const handleFinalFixReportSubmit = async (title: string, file: File) => {
-        // If file is empty (dummy file for title-only update), use existing documentId
-        if (file.size === 0 && internship?.reportFinalDocId) {
-            try {
-                setIsUploading('FINAL_FIX_REPORT');
-                await submitFinalFixReport(title, internship.reportFinalDocId);
-                toast.success("Judul laporan akhir final berhasil diperbarui");
-                queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
-            } catch (error: unknown) {
-                toast.error((error as Error).message || "Gagal memperbarui judul");
-            } finally {
-                setIsUploading(null);
-            }
-        } else {
-            await handleUpload('FINAL_FIX_REPORT', file, title);
-        }
-    };
-
     const isPelaporan = location.pathname === '/kerja-praktik/seminar/pelaporan';
     const isLaporanAkhir = location.pathname === '/kerja-praktik/seminar/laporan-akhir';
     const isSeminar = location.pathname === '/kerja-praktik/seminar/jadwal';
@@ -208,12 +184,26 @@ export default function InternshipSeminarPage() {
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">Seminar & Nilai Kerja Praktik</h1>
+                    <p className="text-muted-foreground text-sm">
+                        {isSeminar ? "Lihat jadwal dan informasi seminar Kerja Praktik." : "Data Kerja Praktik belum tersedia untuk akun Anda."}
+                    </p>
                 </div>
                 <TabsNav tabs={tabs} />
-                <EmptyState
-                    title="Belum Ada Kerja Praktik"
-                    description="Anda belum memiliki kegiatan Kerja Praktik yang sedang berjalan."
-                />
+                {isSeminar ? (
+                    <SeminarTab
+                        internship={null}
+                        latestSeminar={null}
+                        endDate={null}
+                        seminarDeadline={null}
+                        isSeminarOverdue={false}
+                        isSeminarApproaching={false}
+                    />
+                ) : (
+                    <EmptyState
+                        title="Belum Ada Kerja Praktik"
+                        description="Anda belum memiliki kegiatan Kerja Praktik yang sedang berjalan."
+                    />
+                )}
             </div>
         );
     }
@@ -250,7 +240,6 @@ export default function InternshipSeminarPage() {
                         internship={internship}
                         isUploading={isUploading}
                         onFinalReportSubmit={handleFinalReportSubmit}
-                        onFinalFixReportSubmit={handleFinalFixReportSubmit}
                     />
                 )}
                 {isSeminar && (

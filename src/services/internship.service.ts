@@ -146,9 +146,11 @@ export {
   bulkValidateSeminarAudience,
   bulkApproveSeminars,
   updateSeminarNotes,
+  completeSeminar,
+  failSeminar,
+  saveFinalReportFeedbackByLecturer,
   getInternshipAssessment,
-  submitLecturerAssessment,
-  downloadBeritaAcara
+  submitLecturerAssessment
 } from './internship/lecturer.service';
 
 

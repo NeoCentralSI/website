@@ -76,13 +76,27 @@ const AssignmentTemplateEditor = () => {
 
             if (res.data) {
                 // Only fetch preview if template exists
-                const previewRes = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_TEMPLATES.PREVIEW(templateName)));
-                if (previewRes.ok) {
-                    const blob = await previewRes.blob();
-                    const url = URL.createObjectURL(blob);
+                try {
+                    const previewRes = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_TEMPLATES.PREVIEW(templateName)));
+                    if (previewRes.ok) {
+                        const blob = await previewRes.blob();
+                        const url = URL.createObjectURL(blob);
+                        setPreviewUrl(prev => {
+                            if (prev) URL.revokeObjectURL(prev);
+                            return url;
+                        });
+                    } else {
+                        // File path exists in DB but file is missing on disk
+                        setPreviewUrl(prev => {
+                            if (prev) URL.revokeObjectURL(prev);
+                            return null;
+                        });
+                    }
+                } catch {
+                    // Preview fetch failed — file likely missing on disk
                     setPreviewUrl(prev => {
                         if (prev) URL.revokeObjectURL(prev);
-                        return url;
+                        return null;
                     });
                 }
             } else {
@@ -224,7 +238,7 @@ const AssignmentTemplateEditor = () => {
                         </CardHeader>
                         <CardContent className="px-0 relative">
 
-                            {(template && template.filePath) ? (
+                            {(template && template.filePath && previewUrl) ? (
                                 <div className="overflow-hidden border">
                                     <iframe
                                         title="Template Preview"

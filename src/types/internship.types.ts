@@ -2,6 +2,8 @@ export interface CompanyItem {
     id: string;
     companyName: string;
     companyAddress: string;
+    alasan?: string;
+    status?: string;
 }
 
 export interface EligibleStudentItem {

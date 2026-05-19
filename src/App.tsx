@@ -96,7 +96,7 @@ const ManageHolidays = lazy(() => import('./pages/kerja-praktik/admin/holidays/M
 const KadepInternshipManagementPage = lazy(() => import('./pages/kerja-praktik/kadep/ManageInternship'))
 const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetterPage'))
 // Overview Pages
-const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/Overview'))
+const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/student/Overview'))
 const MetopenOverviewPage = lazy(() => import('./pages/metopel/Metopel'))
 const YudisiumEntry = lazy(() => import('./pages/yudisium/YudisiumEntry'))
 const StudentYudisiumPage = lazy(() => import('./pages/yudisium/StudentYudisium'))

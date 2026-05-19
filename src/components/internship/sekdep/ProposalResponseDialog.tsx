@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -53,7 +54,7 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
                 setAcceptedMemberIds(members.map(m => m.id));
             }
         }
-    }, [open]); // Only run when dialog opens
+    }, [members, open]); // Only run when dialog opens
 
     const isRejectSekdep = type === 'REJECTED_PROPOSAL';
     const isRejectCompany = type === 'REJECTED_BY_COMPANY';
@@ -93,7 +94,7 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-125">
                 <DialogHeader>
                     <DialogTitle>{dialogTitle}</DialogTitle>
                     <DialogDescription>
@@ -105,7 +106,7 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
                     {isAssignmentStage && isApprove && (
                         <div className="grid gap-2">
                             <Label>Daftar Mahasiswa Diterima</Label>
-                            <div className="border rounded-md p-3 space-y-2 max-h-[200px] overflow-y-auto">
+                            <div className="border rounded-md p-3 space-y-2 max-h-50 overflow-y-auto">
                                 {members.map(member => (
                                     <div key={member.id} className="flex items-center space-x-2">
                                         <Checkbox
@@ -136,7 +137,7 @@ const ProposalResponseDialog: React.FC<ProposalResponseDialogProps> = ({
                                 placeholder={isRejectSekdep ? "Alasan dokumen ditolak..." : "Catatan tambahan untuk mahasiswa..."}
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                className="min-h-[100px]"
+                                className="min-h-25"
                             />
                         </div>
                     )}
