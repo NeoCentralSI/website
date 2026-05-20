@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery } from '@tanstack/react-query';
-import { getLecturerSupervisedStudents, bulkApproveSeminars, getLecturerSupervisorLetter } from '@/services/internship';
+import { 
+    getLecturerSupervisedStudents, 
+    bulkApproveSeminars, 
+    getLecturerSupervisorLetter,
+    getGuidanceQuestions,
+    getGuidanceCriteria
+} from '@/services/internship';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Clock, CheckCircle2, FileText } from 'lucide-react';
@@ -51,6 +57,23 @@ export default function GuidanceOverviewPage() {
         queryKey: ['lecturerSupervisedStudents'],
         queryFn: getLecturerSupervisedStudents,
     });
+
+    const { data: questions = [] } = useQuery({
+        queryKey: ['guidance-questions-overview', academicYearFilter],
+        queryFn: () => getGuidanceQuestions(academicYearFilter && academicYearFilter !== 'all' ? academicYearFilter : undefined),
+    });
+
+    const { data: criteria = [] } = useQuery({
+        queryKey: ['guidance-criteria-overview', academicYearFilter],
+        queryFn: () => getGuidanceCriteria(academicYearFilter && academicYearFilter !== 'all' ? academicYearFilter : undefined),
+    });
+
+    const totalWeeksMap = useMemo(() => {
+        const weekSet = new Set<number>();
+        questions.forEach(q => weekSet.add(q.weekNumber));
+        criteria.forEach(c => weekSet.add(c.weekNumber));
+        return weekSet.size || 8;
+    }, [questions, criteria]);
 
     const { data: supervisorLetter } = useQuery({
         queryKey: ['lecturerSupervisorLetter', academicYearFilter],
@@ -104,8 +127,9 @@ export default function GuidanceOverviewPage() {
             const targetUrl = `/kerja-praktik/dosen/bimbingan/${student.internshipId}`;
             navigate(targetUrl);
         },
-        onApproveSeminar: handleApproveSeminar
-    }), [navigate, handleApproveSeminar]);
+        onApproveSeminar: handleApproveSeminar,
+        totalWeeks: totalWeeksMap
+    }), [navigate, handleApproveSeminar, totalWeeksMap]);
 
     // Client-side filtering & pagination
     const filteredData = useMemo(() => {
@@ -165,7 +189,7 @@ export default function GuidanceOverviewPage() {
                 {unreviewedCount > 0 && (
                     <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100 border-orange-200 flex gap-2 py-1.5 px-3">
                         <Clock className="w-4 h-4" />
-                        {unreviewedCount} Bimbingan Perlu Dinilai
+                        {unreviewedCount} Bimbingan Perlu Dievaluasi
                     </Badge>
                 )}
             </div>

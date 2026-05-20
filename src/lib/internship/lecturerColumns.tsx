@@ -11,11 +11,13 @@ import { MapPin } from "lucide-react";
 interface LecturerColumnProps {
     onViewDetail: (item: LecturerSupervisedStudent) => void;
     onApproveSeminar?: (item: LecturerSupervisedStudent) => void;
+    totalWeeks?: number;
 }
 
 export const getLecturerSupervisedStudentsColumns = ({
     onViewDetail,
     onApproveSeminar,
+    totalWeeks,
 }: LecturerColumnProps): Column<LecturerSupervisedStudent>[] => [
     {
         key: "student",
@@ -55,7 +57,7 @@ export const getLecturerSupervisedStudentsColumns = ({
         key: "progress",
         header: "Progres Bimbingan",
         render: (item) => {
-            const totalBimbingan = item.progress.submittedCount + item.progress.approvedCount;
+            const totalBimbingan = totalWeeks || item.progress.totalWeeks || 8;
             return (
                 <div className="flex flex-col gap-1.5 text-xs">
                     <div className="flex items-center gap-1.5 cursor-default group" title="Bimbingan menunggu penilaian">

@@ -567,7 +567,7 @@ export default function InternshipLifecycleDetail() {
             ) : (
                 <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {location.pathname.includes('logbook') && <SekdepLogbookTab logbooks={detail.logbooks} isLocked={detail.assessment.isLogbookLocked} />}
-                    {location.pathname.includes('bimbingan') && <SekdepGuidanceTab sessions={detail.guidanceSessions} />}
+                    {location.pathname.includes('bimbingan') && <SekdepGuidanceTab sessions={detail.guidanceSessions} totalWeeks={detail.guidanceProgress.total} />}
                     {location.pathname.includes('seminar') && <SekdepSeminarTab seminars={detail.seminars} />}
                     {location.pathname.includes('nilai') && (
                         <SekdepGradesTab 

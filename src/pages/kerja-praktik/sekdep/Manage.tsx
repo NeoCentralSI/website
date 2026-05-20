@@ -20,12 +20,14 @@ const TAB_ITEMS: TabItem[] = [
 ];
 
 export default function SekdepInternshipProposalPage() {
-    const { pathname } = useLocation();
+    const { pathname, search } = useLocation();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
     const activeTab = useMemo(() =>
         TAB_ITEMS.find((tab) => pathname.startsWith(tab.to)) || TAB_ITEMS[0]
         , [pathname]);
+
+    const isWeekDetail = useMemo(() => new URLSearchParams(search).has('week'), [search]);
 
     const breadcrumb = useMemo(() => [
         { label: 'Kerja Praktik' },
@@ -65,6 +67,14 @@ export default function SekdepInternshipProposalPage() {
 
         return null;
     };
+
+    if (isWeekDetail) {
+        return (
+            <div className="p-4">
+                {renderContent()}
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 space-y-6">

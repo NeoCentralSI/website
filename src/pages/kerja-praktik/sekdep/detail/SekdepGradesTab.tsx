@@ -60,7 +60,7 @@ export const SekdepGradesTab: React.FC<SekdepGradesTabProps> = ({
                     <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed max-w-[250px]">{item.cpmk?.name}</p>
                 </div>
             ),
-            className: 'w-[280px]',
+            className: 'w-[280px] whitespace-normal',
         },
         {
             key: 'level',
@@ -70,7 +70,7 @@ export const SekdepGradesTab: React.FC<SekdepGradesTabProps> = ({
                     {item.rubricLevel?.levelName || "-"}
                 </div>
             ),
-            className: 'w-[150px]',
+            className: 'w-[150px] whitespace-normal',
         },
         {
             key: 'rubric',
@@ -81,6 +81,7 @@ export const SekdepGradesTab: React.FC<SekdepGradesTabProps> = ({
                     dangerouslySetInnerHTML={{ __html: item.rubricLevel?.rubricLevelDescription || "Tanpa deskripsi rubrik" }}
                 />
             ),
+            className: 'whitespace-normal',
         },
         {
             key: 'score',
@@ -92,7 +93,7 @@ export const SekdepGradesTab: React.FC<SekdepGradesTabProps> = ({
                     </div>
                 </div>
             ),
-            className: 'w-[80px] text-center',
+            className: 'w-[80px] text-center whitespace-normal',
         },
         {
             key: 'type',
@@ -117,7 +118,7 @@ export const SekdepGradesTab: React.FC<SekdepGradesTabProps> = ({
                     )}
                 </Badge>
             ),
-            className: 'w-[130px] items-center text-center',
+            className: 'w-[130px] items-center text-center whitespace-normal',
         },
     ], []);
 
