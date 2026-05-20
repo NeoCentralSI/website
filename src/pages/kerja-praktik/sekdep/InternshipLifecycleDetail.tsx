@@ -94,7 +94,7 @@ export default function InternshipLifecycleDetail() {
     // Bulk verification mutation - menggunakan API bulk dari backend
     const singleVerificationMutation = useMutation({
         mutationFn: ({ status, notes }: { status: 'APPROVED' | 'REVISION_NEEDED', notes?: string }) => {
-            if (singleActionDoc.docType === 'reportFinal') {
+            if (singleActionDoc.docType === 'report') {
                 return rejectFinalReport(internshipId!, notes || '');
             }
             return verifyInternshipDocument(internshipId!, singleActionDoc.docType, status, notes);
@@ -191,6 +191,15 @@ export default function InternshipLifecycleDetail() {
     const reportingTableData = useMemo(() => {
         if (!detail) return [];
         const docs = [];
+
+        docs.push({
+            id: 'report',
+            title: 'Laporan Instansi',
+            docType: 'report',
+            detail: detail.reportingDocuments.report,
+            canVerify: true,
+            isSelectable: !!detail.reportingDocuments.report?.document
+        });
         
         docs.push({
             id: 'completionCertificate',
@@ -212,34 +221,21 @@ export default function InternshipLifecycleDetail() {
         
         docs.push({
             id: 'logbookDocument',
-            title: 'Laporan Kegiatan',
+            title: 'Logbook',
             docType: 'logbookDocument',
             detail: detail.reportingDocuments.logbookDocument,
             canVerify: true,
             isSelectable: !!detail.reportingDocuments.logbookDocument?.document
         });
         
-        if (detail.reportingDocuments.report) {
-            docs.push({
-                id: 'report',
-                title: 'Laporan Akhir',
-                docType: 'report',
-                detail: detail.reportingDocuments.report,
-                canVerify: true,
-                isSelectable: !!detail.reportingDocuments.report?.document
-            });
-        }
-        
-        if (detail.reportingDocuments.reportFinal && detail.reportingDocuments.reportFinal.document) {
-            docs.push({
-                id: 'reportFinal',
-                title: 'Laporan Akhir Final',
-                docType: 'reportFinal',
-                detail: detail.reportingDocuments.reportFinal,
-                canVerify: true,
-                isSelectable: true
-            });
-        }
+        docs.push({
+            id: 'beritaAcara',
+            title: 'Berita Acara',
+            docType: 'beritaAcara',
+            detail: detail.reportingDocuments.beritaAcara,
+            canVerify: false,
+            isSelectable: false
+        });
         
         return docs;
     }, [detail]);
@@ -263,7 +259,7 @@ export default function InternshipLifecycleDetail() {
                     {getStatusBadge(row.detail?.status)}
                     {row.canVerify && row.detail?.document && (
                         <div className="flex items-center gap-1">
-                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'REVISION_NEEDED') && row.docType !== 'reportFinal' && row.docType !== 'report' && (
+                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'REVISION_NEEDED') && row.docType !== 'report' && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -274,7 +270,7 @@ export default function InternshipLifecycleDetail() {
                                     TERIMA
                                 </Button>
                             )}
-                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'APPROVED') && row.docType !== 'logbookDocument' && (
+                            {((row.detail.status === 'SUBMITTED' && row.docType !== 'report') || row.detail.status === 'APPROVED') && row.docType !== 'logbookDocument' && (
                                 <Button
                                     variant="ghost"
                                     size="sm"

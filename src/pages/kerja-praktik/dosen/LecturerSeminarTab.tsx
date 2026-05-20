@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -40,7 +41,8 @@ import {
     CheckCircle2,
     XCircle,
     Users,
-    AlertCircle
+    AlertCircle,
+    Eye
 } from 'lucide-react';
 import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarDetailAudienceTable';
 
@@ -64,27 +66,20 @@ export default function LecturerSeminarTab() {
 
 
     const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
-    const [isSavingNotes, setIsSavingNotes] = useState<string | null>(null);
     const [isCompleting, setIsCompleting] = useState<string | null>(null);
     const [isFailing, setIsFailing] = useState<string | null>(null);
-    const [isEditingNotesMap, setIsEditingNotesMap] = useState<Record<string, boolean>>({});
     const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
     const [confirmFailId, setConfirmFailId] = useState<string | null>(null);
     const [failNotes, setFailNotes] = useState('');
-
-    const handleStartEdit = (id: string, notes: string) => {
-        setEditingNotes(prev => ({ ...prev, [id]: notes || "" }));
-        setIsEditingNotesMap(prev => ({ ...prev, [id]: true }));
-    };
-
-    const handleCancelEdit = (id: string) => {
-        setIsEditingNotesMap(prev => ({ ...prev, [id]: false }));
-        setEditingNotes(prev => {
-            const next = { ...prev };
-            delete next[id];
-            return next;
-        });
-    };
+    const [previewDocument, setPreviewDocument] = useState<{
+        open: boolean;
+        fileName: string;
+        filePath: string;
+    }>({
+        open: false,
+        fileName: '',
+        filePath: ''
+    });
 
     const handleApprove = async (seminarId: string) => {
         setIsApproving(seminarId);
@@ -157,23 +152,6 @@ export default function LecturerSeminarTab() {
         }
     };
 
-    const handleSaveNotes = async (seminarId: string) => {
-        const notes = editingNotes[seminarId];
-        if (notes === undefined) return;
-
-        setIsSavingNotes(seminarId);
-        try {
-            await updateSeminarNotes(seminarId, notes);
-            toast.success('Catatan seminar berhasil disimpan');
-            setIsEditingNotesMap(prev => ({ ...prev, [seminarId]: false }));
-            queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
-        } catch (error: any) {
-
-            toast.error(error.message || 'Gagal menyimpan catatan');
-        } finally {
-            setIsSavingNotes(null);
-        }
-    };
     const handleCompleteSeminar = (seminarId: string) => {
         setConfirmCompleteId(seminarId);
     };
@@ -182,9 +160,17 @@ export default function LecturerSeminarTab() {
 
         setIsCompleting(seminarId);
         try {
+            if (editingNotes[seminarId] !== undefined) {
+                await updateSeminarNotes(seminarId, editingNotes[seminarId]);
+            }
             await completeSeminar(seminarId);
             toast.success('Seminar berhasil diselesaikan');
             setConfirmCompleteId(null);
+            setEditingNotes(prev => {
+                const next = { ...prev };
+                delete next[seminarId];
+                return next;
+            });
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
             queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
         } catch (error: any) {
@@ -274,6 +260,7 @@ export default function LecturerSeminarTab() {
                 const isFailed = seminar.status === 'FAILED';
                 const isFinal = isCompleted || isFailed;
                 const canFinalize = seminar.status === 'APPROVED';
+                const notesDraft = editingNotes[seminar.id] ?? seminar.supervisorNotes ?? '';
 
                 return (
                     <div key={seminar.id} className="space-y-6">
@@ -370,8 +357,30 @@ export default function LecturerSeminarTab() {
                             </CardContent>
                         </Card>
 
+                        {canFinalize && (
+                            <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => handleFailSeminar(seminar.id, notesDraft)}
+                                    disabled={isFailing === seminar.id || isCompleting === seminar.id}
+                                >
+                                    {isFailing === seminar.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                                    Gagalkan Seminar
+                                </Button>
+                                <Button
+                                    className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                                    onClick={() => handleCompleteSeminar(seminar.id)}
+                                    disabled={isCompleting === seminar.id || isFailing === seminar.id}
+                                >
+                                    {isCompleting === seminar.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                    Selesaikan Seminar
+                                </Button>
+                            </div>
+                        )}
+
                         {/* 2. Catatan Seminar Card */}
-                        <Card className={cn("border-gray-200 transition-all", isEditingNotesMap[seminar.id] && "ring-1 ring-primary/20")}>
+                        <Card className="border-gray-200 transition-all">
                             <CardHeader className="border-b flex flex-row items-center justify-between space-y-0">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
@@ -380,65 +389,31 @@ export default function LecturerSeminarTab() {
                                     </div>
                                     <CardDescription>Poin-poin penting dan hasil evaluasi selama seminar berlangsung</CardDescription>
                                 </div>
-                                {!isFinal && (
-                                    <div className="flex items-center gap-2">
-                                        {!isEditingNotesMap[seminar.id] ? (
-                                            <div className="flex items-center gap-2">
-                                                {canFinalize && (
-                                                    <>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="h-8 gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                            onClick={() => handleFailSeminar(seminar.id, seminar.supervisorNotes)}
-                                                            disabled={isFailing === seminar.id || isCompleting === seminar.id}
-                                                        >
-                                                            {isFailing === seminar.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-                                                            Gagalkan Seminar
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="h-8 gap-2 border-primary/20 text-primary hover:bg-primary/5 hover:text-primary"
-                                                            onClick={() => handleCompleteSeminar(seminar.id)}
-                                                            disabled={isCompleting === seminar.id || isFailing === seminar.id}
-                                                        >
-                                                            {isCompleting === seminar.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                                            Selesaikan Seminar
-                                                        </Button>
-                                                    </>
-                                                )}
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="h-8 gap-2"
-                                                    onClick={() => handleStartEdit(seminar.id, seminar.supervisorNotes)}
-                                                >
-                                                    Edit Catatan
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 gap-2 text-muted-foreground"
-                                                onClick={() => handleCancelEdit(seminar.id)}
-                                            >
-                                                Batal
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {seminar.beritaAcaraDocument && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 gap-2"
+                                            onClick={() => setPreviewDocument({
+                                                open: true,
+                                                fileName: seminar.beritaAcaraDocument.fileName,
+                                                filePath: seminar.beritaAcaraDocument.filePath
+                                            })}
+                                        >
+                                            <Eye className="w-3.5 h-3.5" />
+                                            Lihat Berita Acara
+                                        </Button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-4">
-                                {isEditingNotesMap[seminar.id] ? (
+                                {!isFinal ? (
                                     <Textarea
                                         placeholder="Tuliskan poin-poin penting, pertanyaan, atau catatan selama seminar berlangsung untuk berita acara..."
                                         className="min-h-[140px] bg-white resize-none focus-visible:ring-primary leading-relaxed"
-                                        value={editingNotes[seminar.id] ?? seminar.supervisorNotes ?? ''}
+                                        value={notesDraft}
                                         onChange={(e) => setEditingNotes(prev => ({ ...prev, [seminar.id]: e.target.value }))}
-                                        disabled={isSavingNotes === seminar.id}
-                                        autoFocus
                                     />
                                 ) : (
                                     <div className="min-h-[100px] p-4 rounded-lg bg-gray-50/50 border border-gray-100 text-sm whitespace-pre-wrap leading-relaxed">
@@ -450,29 +425,14 @@ export default function LecturerSeminarTab() {
                                     </div>
                                 )}
 
-                                <div className="flex items-center justify-between">
+                                {isFinal && (
                                     <div className="text-xs text-muted-foreground italic">
-                                        {isFinal ? (
-                                            <div className={cn("flex items-center gap-1.5 font-medium", isFailed ? "text-red-600" : "text-rose-500")}>
-                                                <AlertCircle className="w-3.5 h-3.5" />
-                                                <span>Catatan telah dikunci karena seminar telah {isFailed ? 'dinyatakan gagal' : 'selesai'}.</span>
-                                            </div>
-                                        ) : (
-                                            isEditingNotesMap[seminar.id] ? "* Mahasiswa dapat melihat update catatan secara real-time setelah disimpan." : ""
-                                        )}
+                                        <div className={cn("flex items-center gap-1.5 font-medium", isFailed ? "text-red-600" : "text-rose-500")}>
+                                            <AlertCircle className="w-3.5 h-3.5" />
+                                            <span>Catatan telah dikunci karena seminar telah {isFailed ? 'dinyatakan gagal' : 'selesai'}.</span>
+                                        </div>
                                     </div>
-                                    {isEditingNotesMap[seminar.id] && (
-                                        <Button
-                                            size="sm"
-                                            onClick={() => handleSaveNotes(seminar.id)}
-                                            disabled={isSavingNotes === seminar.id || editingNotes[seminar.id] === undefined || editingNotes[seminar.id] === seminar.supervisorNotes}
-                                            className="px-6 shadow-sm"
-                                        >
-                                            {isSavingNotes === seminar.id ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-2" />}
-                                            Simpan Perubahan
-                                        </Button>
-                                    )}
-                                </div>
+                                )}
 
                             </CardContent>
                         </Card>
@@ -524,6 +484,12 @@ export default function LecturerSeminarTab() {
                     </div>
                 );
             })}
+            <DocumentPreviewDialog
+                open={previewDocument.open}
+                onOpenChange={(open) => setPreviewDocument(prev => ({ ...prev, open }))}
+                fileName={previewDocument.fileName}
+                filePath={previewDocument.filePath}
+            />
             <AlertDialog open={!!confirmCompleteId} onOpenChange={(open) => !open && setConfirmCompleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

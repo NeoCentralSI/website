@@ -90,7 +90,6 @@ const AdminAssignmentPage = lazy(() => import('./pages/kerja-praktik/admin/assig
 const ManageAssignmentLetter = lazy(() => import('./pages/kerja-praktik/admin/assignment/ManageAssignmentLetter'))
 const AssignmentTemplateEditor = lazy(() => import('./pages/kerja-praktik/admin/assignment/AssignmentTemplateEditor'))
 const InternshipTemplateEditor = lazy(() => import('./pages/kerja-praktik/admin/application/ApplicationTemplateEditor'))
-const BeritaAcaraTemplateEditor = lazy(() => import('./pages/kerja-praktik/admin/seminar/BeritaAcaraTemplateEditor'))
 const ManageHolidays = lazy(() => import('./pages/kerja-praktik/admin/holidays/ManageHolidays'))
 // Kerja Praktik - Kadep
 const KadepInternshipManagementPage = lazy(() => import('./pages/kerja-praktik/kadep/ManageInternship'))
@@ -453,7 +452,6 @@ function App() {
                   <Route path="/admin/kerja-praktik/surat-tugas" element={<AdminAssignmentPage />} />
                   <Route path="/admin/kerja-praktik/surat-tugas/:id" element={<ManageAssignmentLetter />} />
                   <Route path="/admin/kerja-praktik/surat-tugas/template" element={<AssignmentTemplateEditor />} />
-                  <Route path="/admin/kerja-praktik/seminar/template" element={<BeritaAcaraTemplateEditor />} />
                   <Route path="/admin/kerja-praktik/templates/:name" element={<InternshipTemplateEditor />} />
 
                   <Route path="/master-data/hari-libur" element={<ManageHolidays />} />

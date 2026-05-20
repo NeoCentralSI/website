@@ -294,14 +294,14 @@ export interface SekdepInternshipDetail {
     seminars: any[];
     lecturerScores: any[];
     fieldScores: any[];
-    reportingDocuments: {
-        report: DocumentVerificationDetail;
-        completionCertificate: DocumentVerificationDetail;
-        companyReceipt: DocumentVerificationDetail;
-        logbookDocument: DocumentVerificationDetail;
-        reportFinal?: DocumentVerificationDetail;
-        fieldAssessmentDocument?: DocumentVerificationDetail;
-    };
+        reportingDocuments: {
+            report: DocumentVerificationDetail;
+            completionCertificate: DocumentVerificationDetail;
+            companyReceipt: DocumentVerificationDetail;
+            logbookDocument: DocumentVerificationDetail;
+            fieldAssessmentDocument?: DocumentVerificationDetail;
+            beritaAcara?: DocumentVerificationDetail;
+        };
     status: string;
     academicYearName: string;
     createdAt: string;
@@ -403,6 +403,8 @@ export interface StudentLogbookData {
             status: string;
             date: string | null;
             time: string | null;
+            beritaAcaraDocumentId?: string | null;
+            beritaAcaraDocument?: { id: string; fileName: string; filePath: string } | null;
             room?: {
                 name: string;
             } | null;
@@ -418,10 +420,6 @@ export interface StudentLogbookData {
         reportStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
         reportNotes?: string | null;
         reportUploadedAt?: string | null;
-        reportFinalDocId?: string | null;
-        reportFinalStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
-        reportFinalNotes?: string | null;
-        reportFinalUploadedAt?: string | null;
         completionCertificateDocId?: string | null;
         companyReceiptDocId?: string | null;
         finalNumericScore?: number | null;
@@ -434,8 +432,6 @@ export interface StudentLogbookData {
         companyReceiptDoc?: { id: string; fileName: string; filePath: string } | null;
         companyReportDoc?: { id: string; fileName: string; filePath: string } | null;
         logbookDocument?: { id: string; fileName: string; filePath: string } | null;
-        reportFinalDoc?: { id: string; fileName: string; filePath: string } | null;
-        reportFinalTitle?: string | null;
     } | null;
     logbooks: InternshipLogbookItem[];
 }
@@ -611,17 +607,6 @@ export interface LecturerGuidanceTimeline {
         } | null;
         feedbackDocumentId?: string | null;
     };
-    reportFinal?: {
-        status: string | null;
-        title: string | null;
-        notes: string | null;
-        uploadedAt: string | null;
-        document: {
-            id: string;
-            fileName: string;
-            filePath: string;
-        } | null;
-    };
     seminars?: {
         id: string;
         roomId: string;
@@ -631,6 +616,8 @@ export interface LecturerGuidanceTimeline {
         status: string;
         room?: { name: string; capacity: number; location: string; };
         moderatorStudent?: { user: { fullName: string; } };
+        beritaAcaraDocumentId?: string | null;
+        beritaAcaraDocument?: { id: string; fileName: string; filePath: string } | null;
         audiences?: {
             studentId: string;
             validatedAt: string | null;

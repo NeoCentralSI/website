@@ -112,7 +112,7 @@ export default function InternshipLetterVerification() {
             case 'APPLICATION': return 'Surat Permohonan';
             case 'ASSIGNMENT': return 'Surat Tugas';
             case 'LECTURER_ASSIGNMENT': return 'Surat Tugas Dosen';
-            case 'SEMINAR_MINUTES': return 'Berita Acara Seminar (KP-006)';
+            case 'SEMINAR_MINUTES': return 'Berita Acara Seminar';
             default: return type;
         }
     };

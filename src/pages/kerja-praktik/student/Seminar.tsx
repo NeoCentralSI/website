@@ -129,22 +129,26 @@ export default function InternshipSeminarPage() {
         }
     };
 
-    const handleFinalReportSubmit = async (title: string, file: File) => {
-        // If file is empty (dummy file for title-only update), use existing documentId
-        if (file.size === 0 && internship?.reportDocumentId) {
-            // Update title only using existing document
-            try {
-                setIsUploading('FINAL_REPORT');
-                await submitInternshipReport(title, internship.reportDocumentId);
-                toast.success("Judul laporan akhir berhasil diperbarui");
-                queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
-            } catch (error: unknown) {
-                toast.error((error as Error).message || "Gagal memperbarui judul");
-            } finally {
-                setIsUploading(null);
-            }
-        } else {
+    const handleFinalReportSubmit = async (title: string, file: File | null) => {
+        if (file) {
             await handleUpload('FINAL_REPORT', file, title);
+            return;
+        }
+
+        if (!internship?.reportDocumentId) {
+            toast.error("File laporan akhir wajib diunggah");
+            return;
+        }
+
+        try {
+            setIsUploading('FINAL_REPORT');
+            await submitInternshipReport(title.trim(), internship.reportDocumentId);
+            toast.success("Perubahan laporan akhir berhasil disimpan");
+            queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
+        } catch (error: unknown) {
+            toast.error((error as Error).message || "Gagal menyimpan perubahan laporan");
+        } finally {
+            setIsUploading(null);
         }
     };
 

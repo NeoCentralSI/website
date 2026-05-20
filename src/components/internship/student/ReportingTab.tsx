@@ -45,9 +45,20 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
             filePath
         });
     };
+
+    const seminarMinutesDocument = (internship?.seminars || []).find(
+        (seminar: any) => seminar.status === 'COMPLETED' && seminar.beritaAcaraDocument
+    )?.beritaAcaraDocument || null;
+
+    const cardClass = "flex min-h-[156px] flex-col p-4 rounded-xl border bg-muted/30 gap-3";
+    const iconBoxClass = "p-2 bg-background rounded-lg border shrink-0";
+    const contentTitleClass = "text-sm font-medium truncate";
+    const contentMetaClass = "text-[10px] text-muted-foreground truncate";
+    const previewButtonClass = "h-4 w-4 p-0 shrink-0";
+
     const getStatusIcon = (status: string | null | undefined, hasDoc: boolean, type?: string) => {
         if (!hasDoc) {
-            if (type === 'KP-002') return <Clock className="h-5 w-5 text-slate-300" />;
+            if (type === 'KP-002' || type === 'SEMINAR_MINUTES') return <Clock className="h-5 w-5 text-slate-300" />;
             if (type === 'CERTIFICATE') return <Clock className="h-5 w-5 text-slate-300" />;
             return <Clock className="h-5 w-5 text-orange-500" />;
         }
@@ -116,9 +127,9 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                     </div>
                 </CardHeader>
                 <CardContent className="grid gap-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
                         {/* Completion Certificate */}
-                        <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
+                        <div className={cn("order-2", cardClass)}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-bold uppercase text-muted-foreground">Sertifikat Selesai</span>
@@ -127,17 +138,19 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                 {getStatusIcon(internship?.completionCertificateStatus, !!internship?.completionCertificateDocId, 'CERTIFICATE')}
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-background rounded-lg border">
+                                <div className={iconBoxClass}>
                                     <FileText className="h-6 w-6 text-primary" />
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="text-sm font-medium truncate">
+                                    <span className={contentTitleClass}>
                                         {internship?.completionCertificateDocId ? "Sudah Diunggah" : "Belum Diunggah"}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-muted-foreground">Format: PDF (Max 2MB)</span>
+                                        <span className={contentMetaClass}>
+                                            {internship?.completionCertificateDoc?.fileName || "Format: PDF (Max 2MB)"}
+                                        </span>
                                         {internship?.completionCertificateDoc?.fileName && (
-                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handlePreview(internship.completionCertificateDoc.fileName, internship.completionCertificateDoc.filePath)}>
+                                            <Button variant="ghost" size="sm" className={previewButtonClass} onClick={() => handlePreview(internship.completionCertificateDoc.fileName, internship.completionCertificateDoc.filePath)}>
                                                 <Eye className="h-3 w-3 text-primary" />
                                             </Button>
                                         )}
@@ -181,23 +194,25 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                         </div>
 
                         {/* Company Receipt (KP-004) */}
-                        <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
+                        <div className={cn("order-3", cardClass)}>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase text-muted-foreground">Tanda Terima</span>
                                 {getStatusIcon(internship?.companyReceiptStatus, !!internship?.companyReceiptDocId)}
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-background rounded-lg border">
+                                <div className={iconBoxClass}>
                                     <FileText className="h-6 w-6 text-primary" />
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="text-sm font-medium truncate">
+                                    <span className={contentTitleClass}>
                                         {internship?.companyReceiptDocId ? "Sudah Diunggah" : "Belum Diunggah"}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-muted-foreground">Tanda terima dari perusahaan</span>
+                                        <span className={contentMetaClass}>
+                                            {internship?.companyReceiptDoc?.fileName || "Tanda terima dari perusahaan"}
+                                        </span>
                                         {internship?.companyReceiptDoc?.fileName && (
-                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handlePreview(internship.companyReceiptDoc.fileName, internship.companyReceiptDoc.filePath)}>
+                                            <Button variant="ghost" size="sm" className={previewButtonClass} onClick={() => handlePreview(internship.companyReceiptDoc.fileName, internship.companyReceiptDoc.filePath)}>
                                                 <Eye className="h-3 w-3 text-primary" />
                                             </Button>
                                         )}
@@ -241,31 +256,25 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                         </div>
 
                         {/* Laporan Kegiatan (KP-002) */}
-                        <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
+                        <div className={cn("order-4", cardClass)}>
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Kegiatan</span>
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Logbook</span>
                                 {getStatusIcon(internship?.logbookDocumentStatus, !!internship?.logbookDocumentId, 'KP-002')}
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className={cn(
-                                    "p-2 rounded-lg border transition-colors",
-                                    internship?.logbookDocumentId ? "bg-primary/10 border-primary/20" : "bg-background border-slate-200"
-                                )}>
-                                    <FileText className={cn("h-6 w-6", internship?.logbookDocumentId ? "text-primary" : "text-slate-400")} />
+                                <div className={iconBoxClass}>
+                                    <FileText className="h-6 w-6 text-primary" />
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className={cn(
-                                        "text-sm font-bold truncate",
-                                        internship?.logbookDocumentId ? "text-slate-900" : "text-slate-500"
-                                    )}>
+                                    <span className={contentTitleClass}>
                                         {internship?.logbookDocumentId ? "Logbook Bersertifikat" : "Belum Tersedia"}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-muted-foreground">
-                                            {internship?.logbookDocumentId ? "Dihasilkan secara otomatis" : "Otomatis saat TTD Pembimbing"}
+                                        <span className={contentMetaClass}>
+                                            {internship?.logbookDocument?.fileName || "Otomatis saat TTD Pembimbing"}
                                         </span>
                                         {internship?.logbookDocument?.fileName && (
-                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handlePreview(internship.logbookDocument.fileName, internship.logbookDocument.filePath)}>
+                                            <Button variant="ghost" size="sm" className={previewButtonClass} onClick={() => handlePreview(internship.logbookDocument.fileName, internship.logbookDocument.filePath)}>
                                                 <Eye className="h-3 w-3 text-primary" />
                                             </Button>
                                         )}
@@ -293,7 +302,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                             </div>
                         </div>
                         {/* Laporan Akhir Instansi */}
-                        <div className="flex flex-col p-4 rounded-xl border bg-muted/30 gap-3">
+                        <div className={cn("order-1", cardClass)}>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Instansi</span>
                                 {getStatusIcon(
@@ -302,23 +311,23 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                 )}
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-background rounded-lg border">
+                                <div className={iconBoxClass}>
                                     <FileText className="h-6 w-6 text-primary" />
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="text-sm font-medium truncate">
+                                    <span className={contentTitleClass}>
                                         {internship?.fieldAssessmentStatus === 'COMPLETED' ? "Diterima (Sesuai Penilaian)" : (internship?.companyReportDocId ? "Sudah Diunggah" : "Belum Diunggah")}
                                     </span>
                                     {internship?.companyReportDocId && internship.companyReportDoc?.fileName && (
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-[10px] text-muted-foreground truncate">{internship.companyReportDoc.fileName}</span>
-                                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => handlePreview(internship.companyReportDoc.fileName, internship.companyReportDoc.filePath)}>
+                                            <span className={contentMetaClass}>{internship.companyReportDoc.fileName}</span>
+                                            <Button variant="ghost" size="sm" className={cn(previewButtonClass, "ml-1")} onClick={() => handlePreview(internship.companyReportDoc.fileName, internship.companyReportDoc.filePath)}>
                                                 <Eye className="h-3 w-3 text-primary" />
                                             </Button>
                                         </div>
                                     )}
                                     {!internship?.companyReportDocId && (
-                                        <span className="text-[10px] text-muted-foreground">Salinan laporan untuk instansi</span>
+                                        <span className={contentMetaClass}>Salinan laporan untuk instansi</span>
                                     )}
                                     {generatedAssessmentUrl && (
                                         <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 flex flex-col gap-2">
@@ -387,6 +396,53 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     </Button>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Berita Acara Seminar */}
+                        <div className={cn("order-5", cardClass)}>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold uppercase text-muted-foreground">Berita Acara</span>
+                                {getStatusIcon(seminarMinutesDocument ? 'APPROVED' : null, !!seminarMinutesDocument, 'SEMINAR_MINUTES')}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className={iconBoxClass}>
+                                    <FileText className="h-6 w-6 text-primary" />
+                                </div>
+                                <div className="flex flex-col min-w-0 flex-1">
+                                    <span className={contentTitleClass}>
+                                        {seminarMinutesDocument ? "Berita Acara Seminar" : "Belum Tersedia"}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={contentMetaClass}>
+                                            {seminarMinutesDocument?.fileName || "Otomatis saat seminar diselesaikan"}
+                                        </span>
+                                        {seminarMinutesDocument?.fileName && (
+                                            <Button variant="ghost" size="sm" className={previewButtonClass} onClick={() => handlePreview(seminarMinutesDocument.fileName, seminarMinutesDocument.filePath)}>
+                                                <Eye className="h-3 w-3 text-primary" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-auto pt-2">
+                                {seminarMinutesDocument ? (
+                                    <Button
+                                        size="sm"
+                                        className="w-full gap-2 font-bold"
+                                        onClick={() => handlePreview(seminarMinutesDocument.fileName, seminarMinutesDocument.filePath)}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                        Lihat
+                                    </Button>
+                                ) : (
+                                    <div className="w-full p-3 rounded-lg bg-slate-100 border border-slate-200 text-center">
+                                        <p className="text-[10px] font-semibold text-slate-500">
+                                            Menunggu seminar diselesaikan dosen
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                     </div>

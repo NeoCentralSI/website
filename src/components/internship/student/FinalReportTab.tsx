@@ -11,7 +11,7 @@ import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 interface FinalReportTabProps {
     internship: any;
     isUploading: string | null;
-    onFinalReportSubmit?: (title: string, file: File) => void;
+    onFinalReportSubmit?: (title: string, file: File | null) => void;
 }
 
 export const FinalReportTab: React.FC<FinalReportTabProps> = ({
@@ -41,14 +41,6 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
             setSelectedFile(null);
         }
     }, [internship?.reportStatus]);
-
-    useEffect(() => {
-        if (isUploading !== 'FINAL_REPORT' && selectedFile && internship?.reportDocumentId) {
-            setSelectedFile(null);
-            const fileInput = document.getElementById('upload-final-report-internal') as HTMLInputElement;
-            if (fileInput) fileInput.value = '';
-        }
-    }, [isUploading, internship?.reportDocumentId, selectedFile]);
 
     const getStatusIcon = (status: string | null | undefined, hasDoc: boolean) => {
         if (!hasDoc) return <Clock className="h-5 w-5 text-orange-500" />;
@@ -100,17 +92,13 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
             toast.error('Judul laporan akhir wajib diisi');
             return;
         }
-        if (!selectedFile && !internship?.reportDocumentId) {
+        if (!selectedFile && !hasDocument) {
             toast.error('File laporan akhir wajib diunggah');
             return;
         }
         if (!onFinalReportSubmit) return;
 
-        if (selectedFile) {
-            onFinalReportSubmit(reportTitle.trim(), selectedFile);
-        } else if (internship?.reportDocumentId) {
-            onFinalReportSubmit(reportTitle.trim(), new File([], 'dummy.pdf'));
-        }
+        onFinalReportSubmit(reportTitle.trim(), selectedFile);
 
         setSelectedFile(null);
         setIsEditMode(false);
@@ -234,6 +222,32 @@ export const FinalReportTab: React.FC<FinalReportTabProps> = ({
                                                 </div>
                                                 <Button type="button" variant="ghost" size="sm" onClick={handleRemoveFile} disabled={isUploading === 'FINAL_REPORT'} className="shrink-0">
                                                     <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ) : hasDocument && internship?.reportDocument ? (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center justify-between p-4 rounded-xl bg-background border">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <FileText className="h-5 w-5 text-primary shrink-0" />
+                                                        <div className="flex flex-col min-w-0 flex-1">
+                                                            <span className="text-sm font-medium truncate">{internship.reportDocument.fileName || 'Laporan Akhir.pdf'}</span>
+                                                            <span className="text-xs text-muted-foreground">Dokumen saat ini akan tetap digunakan jika tidak diganti</span>
+                                                        </div>
+                                                    </div>
+                                                    <Button type="button" variant="ghost" size="sm" onClick={() => setPreviewOpen(true)} className="shrink-0">
+                                                        <Eye className="h-4 w-4 mr-2" />
+                                                        Preview
+                                                    </Button>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="w-full gap-2"
+                                                    onClick={() => document.getElementById('upload-final-report-internal')?.click()}
+                                                    disabled={isUploading === 'FINAL_REPORT' || isApproved}
+                                                >
+                                                    <Upload className="h-4 w-4" />
+                                                    Ganti File PDF
                                                 </Button>
                                             </div>
                                         ) : (
