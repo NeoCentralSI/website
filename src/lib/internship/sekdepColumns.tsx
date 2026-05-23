@@ -32,8 +32,8 @@ export const getSekdepProposalColumns = ({
             header: 'Koordinator',
             render: (item) => (
                 <div className="flex flex-col py-1">
-                    <span className="font-medium text-sm leading-tight text-foreground">{item.coordinatorName}</span>
-                    <span className="text-xs text-muted-foreground">{item.coordinatorNim}</span>
+                    <span className="font-medium text-sm leading-tight text-foreground">{item.coordinatorName || '-'}</span>
+                    <span className="text-xs text-muted-foreground">{item.coordinatorNim || '-'}</span>
                 </div>
             ),
         },
@@ -57,7 +57,7 @@ export const getSekdepProposalColumns = ({
             header: 'Anggota',
             render: (item) => (
                 <div className="flex items-center justify-center gap-1 text-sm">
-                    <span>{item.memberCount} Mahasiswa</span>
+                    <span>{item.memberCount ?? 0} Mahasiswa</span>
                 </div>
             ),
             className: 'text-center',
@@ -269,8 +269,8 @@ export const getSekdepResponseColumns = ({
             header: 'Koordinator',
             render: (item) => (
                 <div className="flex flex-col py-1">
-                    <span className="font-medium text-sm leading-tight text-foreground">{item.coordinatorName}</span>
-                    <span className="text-xs text-muted-foreground">{item.coordinatorNim}</span>
+                    <span className="font-medium text-sm leading-tight text-foreground">{item.coordinatorName || '-'}</span>
+                    <span className="text-xs text-muted-foreground">{item.coordinatorNim || '-'}</span>
                 </div>
             ),
         },
@@ -294,7 +294,7 @@ export const getSekdepResponseColumns = ({
             header: 'Anggota',
             render: (item) => (
                 <div className="flex items-center justify-center gap-1 text-sm text-foreground whitespace-nowrap">
-                    <span>{item.acceptedMemberCount} Mahasiswa</span>
+                    <span>{item.acceptedMemberCount ?? 0} Mahasiswa</span>
                 </div>
             ),
             className: 'text-center',
@@ -324,7 +324,7 @@ export const getSekdepResponseColumns = ({
                             )}
                         </>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Unggah</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),
@@ -455,7 +455,7 @@ export const getSekdepInternshipListColumns = ({
                             </Badge>
                         </>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Dinilai</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),
@@ -543,7 +543,7 @@ export const getSekdepLecturerWorkloadColumns = ({
             render: (item) => (
                 <div className="flex items-center justify-center gap-2">
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        {item.activeInternshipCount} Mahasiswa
+                        {item.activeInternshipCount ?? 0} Mahasiswa
                     </Badge>
                 </div>
             ),
@@ -555,7 +555,7 @@ export const getSekdepLecturerWorkloadColumns = ({
             render: (item) => (
                 <div className="flex items-center justify-center">
                     <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
-                        {item.supervisorLetterStatus} Terbit
+                        {item.supervisorLetterStatus ? `${item.supervisorLetterStatus} Terbit` : '-'}
                     </Badge>
                 </div>
             ),

@@ -118,10 +118,10 @@ export const saveInternshipTemplate = async (name: string, content?: string | nu
     return res.json();
 };
 
-export const adminUploadCompanyResponse = async (proposalId: string, documentId: string): Promise<{ success: boolean; message: string }> => {
+export const adminUploadCompanyResponse = async (proposalId: string, documentId: string, acceptedMemberIds?: string[]): Promise<{ success: boolean; message: string }> => {
     const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.UPLOAD_COMPANY_RESPONSE(proposalId)), {
         method: "POST",
-        body: JSON.stringify({ documentId }),
+        body: JSON.stringify({ documentId, acceptedMemberIds }),
     });
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah surat balasan" }));

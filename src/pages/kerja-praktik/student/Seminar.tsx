@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { TabsNav } from '@/components/ui/tabs-nav';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument, submitCompanyReport } from '@/services/internship';
 import { Loading } from '@/components/ui/spinner';
+import { TabsNav } from '@/components/ui/tabs-nav';
+import { getStudentLogbooks, submitCompanyReceipt, submitCompanyReport, submitCompletionCertificate, submitInternshipReport, submitLogbookDocument, uploadInternshipDocument } from '@/services/internship';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { ReportingTab } from '@/components/internship/student/ReportingTab';
 import { FinalReportTab } from '@/components/internship/student/FinalReportTab';
-import { SeminarTab } from '@/components/internship/student/SeminarTab';
 import { GradesTab } from '@/components/internship/student/GradesTab';
-import EmptyState from '@/components/ui/empty-state';
+import { ReportingTab } from '@/components/internship/student/ReportingTab';
+import { SeminarTab } from '@/components/internship/student/SeminarTab';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,6 +21,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import EmptyState from '@/components/ui/empty-state';
 
 export default function InternshipSeminarPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -55,7 +55,6 @@ export default function InternshipSeminarPage() {
     const latestSeminar = seminars[0];
 
     const [isUploading, setIsUploading] = useState<string | null>(null);
-    const [generatedAssessmentUrl, setGeneratedAssessmentUrl] = useState<string | null>(null);
 
     // Confirmation State
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -64,12 +63,12 @@ export default function InternshipSeminarPage() {
         file: File;
         title?: string;
     } | null>(null);
-
-    useEffect(() => {
-        if (internship?.activeAssessmentUrl) {
-            setGeneratedAssessmentUrl(internship.activeAssessmentUrl);
-        }
-    }, [internship]);
+    const isCompanyReportReupload = Boolean(
+        pendingUpload?.type === 'COMPANY_REPORT' &&
+        internship?.companyReportDocId &&
+        internship?.companyReportStatus !== 'APPROVED' &&
+        !['COMPLETED', 'APPROVED'].includes(internship?.fieldAssessmentStatus || '')
+    );
 
     const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT', file: File, title?: string) => {
         try {
@@ -94,9 +93,6 @@ export default function InternshipSeminarPage() {
             } else if (type === 'COMPANY_REPORT') {
                 const response = await submitCompanyReport(documentId);
                 toast.success(response.message || "Laporan akhir instansi berhasil diunggah");
-                if (response.data?.assessmentInfo?.assessmentUrl) {
-                    setGeneratedAssessmentUrl(response.data.assessmentInfo.assessmentUrl);
-                }
             }
             
             queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
@@ -236,7 +232,6 @@ export default function InternshipSeminarPage() {
                         reportingDeadline={reportingDeadline}
                         isReportingOverdue={isReportingOverdue}
                         isReportingApproaching={isReportingApproaching}
-                        generatedAssessmentUrl={generatedAssessmentUrl}
                     />
                 )}
                 {isLaporanAkhir && (
@@ -266,7 +261,9 @@ export default function InternshipSeminarPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Konfirmasi Unggah Dokumen</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Dokumen ini hanya dapat diunggah satu kali dan tidak dapat diubah kembali setelah berhasil dikirim (kecuali jika nantinya diminta revisi oleh Sekdep).
+                            {isCompanyReportReupload
+                                ? "File laporan instansi akan diganti, tetapi link penilaian pembimbing lapangan yang sudah dibuat tidak akan dibuat ulang."
+                                : "Dokumen ini hanya dapat diunggah satu kali dan tidak dapat diubah kembali setelah berhasil dikirim (kecuali jika nantinya diminta revisi oleh Sekdep)."}
                             <br /><br />
                             Pastikan file yang Anda pilih sudah benar. Apakah Anda yakin ingin melanjutkan?
                         </AlertDialogDescription>

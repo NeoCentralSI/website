@@ -134,7 +134,12 @@ export default function RegisterInternshipFormPage() {
                 setSelectedCompanyId(proposalToEdit.targetCompanyId || "");
             }
 
-            setSelectedMemberIds(proposalToEdit.members?.filter(m => m.id !== user?.id).map(m => m.id) || []);
+            const coordinatorId = proposalToEdit.coordinatorId || user?.id;
+            const memberIds = proposalToEdit.members
+                ?.filter(m => m.role !== 'KOORDINATOR' && m.id !== coordinatorId)
+                .map(m => m.id)
+                .filter(Boolean) || [];
+            setSelectedMemberIds([...new Set(memberIds)]);
             const formatDate = (dateStr?: string | null) => {
                 if (!dateStr) return "";
                 const d = new Date(dateStr);
@@ -228,7 +233,7 @@ export default function RegisterInternshipFormPage() {
                 } : undefined,
                 proposalDocumentId: documentId,
                 academicYearId: activeAcademicYearQuery.data?.academicYear?.id || "",
-                memberIds: selectedMemberIds,
+                memberIds: [...new Set(selectedMemberIds.filter(id => id && id !== (proposalToEdit?.coordinatorId || user?.id)))],
                 proposedStartDate,
                 proposedEndDate,
             };

@@ -42,7 +42,8 @@ import {
     XCircle,
     Users,
     AlertCircle,
-    Eye
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarDetailAudienceTable';
 
@@ -68,6 +69,10 @@ export default function LecturerSeminarTab() {
     const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
     const [isCompleting, setIsCompleting] = useState<string | null>(null);
     const [isFailing, setIsFailing] = useState<string | null>(null);
+    const [confirmApproveId, setConfirmApproveId] = useState<string | null>(null);
+    const [confirmRejectId, setConfirmRejectId] = useState<string | null>(null);
+    const [rejectNotes, setRejectNotes] = useState('');
+    const [showRejectedSubmissions, setShowRejectedSubmissions] = useState(false);
     const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
     const [confirmFailId, setConfirmFailId] = useState<string | null>(null);
     const [failNotes, setFailNotes] = useState('');
@@ -81,11 +86,16 @@ export default function LecturerSeminarTab() {
         filePath: ''
     });
 
-    const handleApprove = async (seminarId: string) => {
+    const handleApprove = (seminarId: string) => {
+        setConfirmApproveId(seminarId);
+    };
+
+    const processApprove = async (seminarId: string) => {
         setIsApproving(seminarId);
         try {
             await approveSeminar(seminarId);
             toast.success('Pengajuan seminar berhasil disetujui');
+            setConfirmApproveId(null);
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
             queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
         } catch (error: any) {
@@ -96,11 +106,18 @@ export default function LecturerSeminarTab() {
     };
 
 
-    const handleReject = async (seminarId: string) => {
+    const handleReject = (seminarId: string) => {
+        setRejectNotes('');
+        setConfirmRejectId(seminarId);
+    };
+
+    const processReject = async (seminarId: string) => {
         setIsRejecting(seminarId);
         try {
-            await rejectSeminar(seminarId, "Ditolak oleh Dosen Pembimbing");
+            await rejectSeminar(seminarId, rejectNotes.trim() || "Ditolak oleh Dosen Pembimbing");
             toast.success('Pengajuan seminar ditolak');
+            setConfirmRejectId(null);
+            setRejectNotes('');
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
             queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
         } catch (error: any) {
@@ -212,6 +229,10 @@ export default function LecturerSeminarTab() {
     }
 
     const seminars = studentGuidance?.seminars || [];
+    const hiddenRejectedCount = seminars.filter((seminar: any, index: number) => seminar.status === 'REJECTED' && index > 0).length;
+    const visibleSeminars = seminars
+        .map((seminar: any, index: number) => ({ seminar, originalIndex: index }))
+        .filter(({ seminar, originalIndex }: any) => showRejectedSubmissions || seminar.status !== 'REJECTED' || originalIndex === 0);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -246,7 +267,23 @@ export default function LecturerSeminarTab() {
 
     return (
         <div className="space-y-8">
-            {seminars.map((seminar: any, index: number) => {
+            {hiddenRejectedCount > 0 && (
+                <div className="flex justify-end">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setShowRejectedSubmissions(prev => !prev)}
+                    >
+                        {showRejectedSubmissions ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showRejectedSubmissions
+                            ? 'Sembunyikan pengajuan ditolak'
+                            : `Tampilkan ${hiddenRejectedCount} pengajuan ditolak`}
+                    </Button>
+                </div>
+            )}
+
+            {visibleSeminars.map(({ seminar, originalIndex }: any) => {
                 const audienceRows = (seminar.audiences || []).map((a: any) => ({
                     studentId: a.studentId,
                     studentName: a.student?.user?.fullName || 'Unknown',
@@ -270,7 +307,7 @@ export default function LecturerSeminarTab() {
                                 <div className="space-y-1">
                                     <CardTitle className="text-lg flex items-center gap-2">
                                         <CalendarDays className="h-5 w-5 text-primary" />
-                                        Informasi Pengajuan Seminar {seminars.length > 1 && (index === 0 ? "(Terbaru)" : `(#${seminars.length - index})`)}
+                                        Informasi Pengajuan Seminar {seminars.length > 1 && (originalIndex === 0 ? "(Terbaru)" : `(#${seminars.length - originalIndex})`)}
                                     </CardTitle>
                                     {seminar.createdAt && (
                                         <CardDescription className="flex items-center gap-1.5">
@@ -490,6 +527,60 @@ export default function LecturerSeminarTab() {
                 fileName={previewDocument.fileName}
                 filePath={previewDocument.filePath}
             />
+            <AlertDialog open={!!confirmApproveId} onOpenChange={(open) => !open && !isApproving && setConfirmApproveId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Setujui Jadwal Seminar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Jadwal seminar akan disetujui dan mahasiswa dapat melanjutkan proses seminar sesuai tanggal, waktu, dan ruangan yang diajukan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={!!isApproving}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => confirmApproveId && processApprove(confirmApproveId)}
+                            disabled={!!isApproving}
+                            className="bg-green-600 hover:bg-green-700"
+                        >
+                            {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Ya, Setujui
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog open={!!confirmRejectId} onOpenChange={(open) => {
+                if (!open && !isRejecting) {
+                    setConfirmRejectId(null);
+                    setRejectNotes('');
+                }
+            }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Tolak Pengajuan Seminar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Pengajuan jadwal seminar akan ditolak dan mahasiswa perlu mengajukan jadwal baru. Catatan penolakan akan terlihat oleh mahasiswa.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Textarea
+                        value={rejectNotes}
+                        onChange={(e) => setRejectNotes(e.target.value)}
+                        placeholder="Tuliskan alasan penolakan jadwal seminar..."
+                        className="min-h-[120px] resize-none"
+                        disabled={!!isRejecting}
+                    />
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={!!isRejecting}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => confirmRejectId && processReject(confirmRejectId)}
+                            disabled={!!isRejecting}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {isRejecting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Ya, Tolak
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <AlertDialog open={!!confirmCompleteId} onOpenChange={(open) => !open && setConfirmCompleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

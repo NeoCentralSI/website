@@ -71,7 +71,11 @@ export function StudentProposalCard({
         step6Status = proposal.isAssignmentSigned ? 'completed' : 'processing';
     }
 
-    const canUploadResponse = proposal.status === 'APPROVED_PROPOSAL' && isCoordinator && !proposal.dokumenSuratBalasan && !!proposal.dokumenSuratPermohonan && proposal.isSigned;
+    const canUploadResponse = ['APPROVED_PROPOSAL', 'WAITING_FOR_VERIFICATION'].includes(proposal.status)
+        && isCoordinator
+        && !proposal.dokumenSuratBalasan
+        && !!proposal.dokumenSuratPermohonan
+        && proposal.isSigned;
     const canReuploadResponse = (proposal.status === 'REJECTED_PROPOSAL' || proposal.status === 'WAITING_FOR_VERIFICATION') && !!proposal.dokumenSuratBalasan && isCoordinator;
 
     const getDashedLineColor = (status: string) => {

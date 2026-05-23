@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { AssignSupervisorDialog } from './AssignSupervisorDialog';
 import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 
 export function InternshipListPanel() {
     const navigate = useNavigate();
@@ -36,6 +37,15 @@ export function InternshipListPanel() {
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+    const [previewDoc, setPreviewDoc] = useState<{ fileName?: string; filePath?: string } | null>(null);
+    const assignableDisplayItems = useMemo(
+        () => displayItems.filter((item) => !item.supervisorLetter),
+        [displayItems]
+    );
+    const assignableIds = useMemo(
+        () => new Set(assignableDisplayItems.map((item) => item.id)),
+        [assignableDisplayItems]
+    );
 
     const { academicYears } = useAcademicYears({ pageSize: 50 });
 
@@ -53,6 +63,13 @@ export function InternshipListPanel() {
     const columns = useMemo(() => getSekdepInternshipListColumns({
         onViewDetail: (item) => {
             navigate(`/kelola/kerja-praktik/mahasiswa/${item.id}`);
+        },
+        onViewAssignmentDoc: (item) => {
+            if (!item.supervisorLetter?.filePath) return;
+            setPreviewDoc({
+                fileName: item.supervisorLetter.fileName,
+                filePath: item.supervisorLetter.filePath,
+            });
         }
     }), [navigate]);
 
@@ -78,7 +95,8 @@ export function InternshipListPanel() {
                 }}
                 // Selection
                 selectedIds={selectedIds}
-                onSelectionChange={setSelectedIds}
+                onSelectionChange={(ids) => setSelectedIds(ids.filter((id) => assignableIds.has(id)))}
+                isRowSelectable={(item) => !item.supervisorLetter}
                 // Sorting
                 sortBy={sortBy}
                 sortOrder={sortOrder}
@@ -142,6 +160,15 @@ export function InternshipListPanel() {
                     setSelectedIds([]);
                     refetch();
                 }}
+            />
+
+            <DocumentPreviewDialog
+                open={!!previewDoc}
+                onOpenChange={(open) => {
+                    if (!open) setPreviewDoc(null);
+                }}
+                fileName={previewDoc?.fileName}
+                filePath={previewDoc?.filePath}
             />
         </div>
     );

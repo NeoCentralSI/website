@@ -253,6 +253,23 @@ export const sendFieldAssessmentRequest = async (
     return res.json();
 };
 
+export const updateSekdepInternshipFieldInfo = async (
+    internshipId: string,
+    body: { fieldSupervisorName: string; fieldSupervisorEmail: string; unitSection: string }
+): Promise<{ success: boolean; message: string }> => {
+    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.UPDATE_FIELD_INFO(internshipId));
+    const res = await apiRequest(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memperbarui informasi lapangan" }));
+        throw new Error(errorData.message || "Gagal memperbarui informasi lapangan");
+    }
+    return res.json();
+};
+
 export const getSekdepLecturerWorkload = async (
     q?: string,
     page: number = 1,

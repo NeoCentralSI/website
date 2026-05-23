@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { Loading } from '@/components/ui/spinner';
-import { FileText } from 'lucide-react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
-import { useQuery } from '@tanstack/react-query';
-import { getKadepPendingLetters } from '@/services/internship';
-import { getKadepInternshipLetterColumns } from '@/lib/internship';
+import { Loading } from '@/components/ui/spinner';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
+import { getKadepInternshipLetterColumns } from '@/lib/internship';
+import { getKadepPendingLetters } from '@/services/internship';
+import { useQuery } from '@tanstack/react-query';
+import { FileText } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 
 import { MonitoringPanel } from '@/components/internship/MonitoringPanel';
 import { ApplicationLettersTab } from '@/components/internship/kadep/ApplicationLettersTab';
@@ -84,15 +84,29 @@ export default function KadepInternshipManagementPage() {
         setTitle(activeTab.to.includes('monitoring') ? 'Monitoring Kerja Praktik' : 'Persetujuan Surat Kerja Praktik');
     }, [breadcrumb, setBreadcrumbs, setTitle, activeTab]);
 
-    const columns = useMemo(() => getKadepInternshipLetterColumns({
-        onViewDoc: (item) => {
-            if (item.document) {
-                openDocumentPreview(item.document.fileName, item.document.filePath);
+    const letterColumns = useMemo(() => ({
+        mahasiswa: getKadepInternshipLetterColumns({
+            nameHeader: 'Nama Mahasiswa',
+            onViewDoc: (item) => {
+                if (item.document) {
+                    openDocumentPreview(item.document.fileName, item.document.filePath);
+                }
+            },
+            onApprove: (item) => {
+                navigate(`/kelola/kerja-praktik/kadep/sign/${item.type}/${item.id}`);
             }
-        },
-        onApprove: (item) => {
-            navigate(`/kelola/kerja-praktik/kadep/sign/${item.type}/${item.id}`);
-        }
+        }),
+        dosen: getKadepInternshipLetterColumns({
+            nameHeader: 'Nama Dosen',
+            onViewDoc: (item) => {
+                if (item.document) {
+                    openDocumentPreview(item.document.fileName, item.document.filePath);
+                }
+            },
+            onApprove: (item) => {
+                navigate(`/kelola/kerja-praktik/kadep/sign/${item.type}/${item.id}`);
+            }
+        })
     }), [navigate]);
 
     const summary = useMemo(() => {
@@ -126,7 +140,6 @@ export default function KadepInternshipManagementPage() {
         const sharedProps = {
             isLoading,
             isFetching,
-            columns,
             searchQuery,
             onSearchChange: (v: string) => updateParams({ q: v }),
             academicYearId,
@@ -136,11 +149,11 @@ export default function KadepInternshipManagementPage() {
         };
 
         if (activeTab.label.startsWith("Permohonan")) {
-            return <ApplicationLettersTab data={data?.applicationLetters || []} {...sharedProps} />;
+            return <ApplicationLettersTab data={data?.applicationLetters || []} columns={letterColumns.mahasiswa} {...sharedProps} />;
         } else if (activeTab.label.startsWith("Penugasan Dosen")) {
-            return <SupervisorLettersTab data={data?.supervisorLetters || []} {...sharedProps} />;
+            return <SupervisorLettersTab data={data?.supervisorLetters || []} columns={letterColumns.dosen} {...sharedProps} />;
         } else if (activeTab.label.startsWith("Penugasan")) {
-            return <AssignmentLettersTab data={data?.assignmentLetters || []} {...sharedProps} />;
+            return <AssignmentLettersTab data={data?.assignmentLetters || []} columns={letterColumns.mahasiswa} {...sharedProps} />;
         }
 
         return null;

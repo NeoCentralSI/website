@@ -66,19 +66,47 @@ export default function LogbookPage() {
         }
     });
 
+    const internship = data?.data?.internship;
+    const isInternshipDetailsFilled = Boolean(
+        internship?.fieldSupervisorName?.trim() &&
+        internship?.fieldSupervisorEmail?.trim() &&
+        internship?.unitSection?.trim()
+    );
+
     const handleEditDetails = () => {
-        setFieldSupervisor(data?.data?.internship?.fieldSupervisorName || "");
-        setFieldSupervisorEmail(data?.data?.internship?.fieldSupervisorEmail || "");
-        setUnitSection(data?.data?.internship?.unitSection || "");
+        if (isInternshipDetailsFilled) {
+            toast.info("Informasi Kerja Praktik sudah diisi dan tidak dapat diedit kembali.");
+            return;
+        }
+
+        if (isLocked) {
+            toast.info("Informasi Kerja Praktik tidak dapat diubah karena logbook sudah dikunci.");
+            return;
+        }
+
+        setFieldSupervisor(internship?.fieldSupervisorName || "");
+        setFieldSupervisorEmail(internship?.fieldSupervisorEmail || "");
+        setUnitSection(internship?.unitSection || "");
         setDetailsOpen(true);
     };
 
     const onSubmitDetails = (e: React.FormEvent) => {
         e.preventDefault();
+        if (isInternshipDetailsFilled) {
+            toast.error("Informasi Kerja Praktik sudah tersimpan dan tidak dapat diedit kembali.");
+            setDetailsOpen(false);
+            return;
+        }
+
+        if (!fieldSupervisor.trim() || !fieldSupervisorEmail.trim() || !unitSection.trim()) {
+            toast.error("Lengkapi semua informasi Kerja Praktik sebelum menyimpan.");
+            return;
+        }
+
         updateDetailsMutation.mutate({
-            fieldSupervisorName: fieldSupervisor,
-            fieldSupervisorEmail: fieldSupervisorEmail,
-            unitSection: unitSection
+            fieldSupervisorName: fieldSupervisor.trim(),
+            fieldSupervisorEmail: fieldSupervisorEmail.trim(),
+            unitSection: unitSection.trim()
         });
     };
 
@@ -117,6 +145,7 @@ export default function LogbookPage() {
     };
 
     const isLocked = data?.data?.internship?.fieldAssessmentStatus === 'COMPLETED' || data?.data?.internship?.isLogbookLocked;
+    const canEditInternshipDetails = !isLocked && !isInternshipDetailsFilled;
     const columns = useMemo(() => getLogbookColumns({ onEdit: handleEdit, isLocked }), [handleEdit, isLocked]);
 
     const tabs = [
@@ -136,14 +165,21 @@ export default function LogbookPage() {
 
             <TabsNav tabs={tabs} preserveSearch />
 
-            {data?.data?.internship && (
+            {internship && (
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Informasi Kerja Praktik</h2>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="h-8 gap-2 text-primary" onClick={handleEditDetails} disabled={isLocked}>
-                                <Edit className="h-4 w-4" />
-                                Edit Info
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-2 text-primary"
+                                onClick={handleEditDetails}
+                                disabled={!canEditInternshipDetails}
+                                title={isInternshipDetailsFilled ? "Informasi Kerja Praktik sudah terkunci" : undefined}
+                            >
+                                {isInternshipDetailsFilled ? <Lock className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
+                                {isInternshipDetailsFilled ? "Info Terkunci" : "Isi Info"}
                             </Button>
                         </div>
                     </div>
@@ -153,15 +189,15 @@ export default function LogbookPage() {
                                 <User className="h-3 w-3" />
                                 Pembimbing Lapangan
                             </span>
-                            <span className="font-medium">{fieldSupervisor || data.data.internship.fieldSupervisorName || <span className="text-muted-foreground italic">Nama belum ditentukan</span>}</span>
-                            <span className="text-sm text-muted-foreground">{fieldSupervisorEmail || data.data.internship.fieldSupervisorEmail || <span className="italic">Email belum ditentukan</span>}</span>
+                            <span className="font-medium">{internship.fieldSupervisorName || <span className="text-muted-foreground italic">Nama belum ditentukan</span>}</span>
+                            <span className="text-sm text-muted-foreground">{internship.fieldSupervisorEmail || <span className="italic">Email belum ditentukan</span>}</span>
                         </div>
                         <div className="flex flex-col gap-1 p-4 rounded-xl border bg-card text-card-foreground">
                             <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
                                 <Edit className="h-3 w-3" />
                                 Unit / Bagian
                             </span>
-                            <span className="font-medium">{unitSection || data.data.internship.unitSection || <span className="text-muted-foreground italic">Belum ditentukan</span>}</span>
+                            <span className="font-medium">{internship.unitSection || <span className="text-muted-foreground italic">Belum ditentukan</span>}</span>
                         </div>
                     </div>
                 </div>
@@ -245,9 +281,9 @@ export default function LogbookPage() {
                 <DialogContent className="sm:max-w-[425px]">
                     <form onSubmit={onSubmitDetails}>
                         <DialogHeader>
-                            <DialogTitle>Edit Informasi Kerja Praktik</DialogTitle>
+                            <DialogTitle>Isi Informasi Kerja Praktik</DialogTitle>
                             <DialogDescription>
-                                Perbarui informasi pembimbing lapangan dan unit kerja Anda.
+                                Informasi pembimbing lapangan dan unit kerja hanya dapat disimpan satu kali.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -259,6 +295,7 @@ export default function LogbookPage() {
                                     value={fieldSupervisor}
                                     onChange={(e) => setFieldSupervisor(e.target.value)}
                                     className="h-9"
+                                    required
                                 />
                             </div>
                             <div className="grid gap-2">
@@ -270,6 +307,7 @@ export default function LogbookPage() {
                                     value={fieldSupervisorEmail}
                                     onChange={(e) => setFieldSupervisorEmail(e.target.value)}
                                     className="h-9"
+                                    required
                                 />
                             </div>
                             <div className="grid gap-2">
@@ -280,6 +318,7 @@ export default function LogbookPage() {
                                     value={unitSection}
                                     onChange={(e) => setUnitSection(e.target.value)}
                                     className="h-9"
+                                    required
                                 />
                             </div>
                         </div>
@@ -287,7 +326,7 @@ export default function LogbookPage() {
                             <Button type="button" variant="outline" size="sm" onClick={() => setDetailsOpen(false)}>Batal</Button>
                             <Button type="submit" disabled={updateDetailsMutation.isPending} size="sm" className="gap-2">
                                 {updateDetailsMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                                Simpan Perubahan
+                                Simpan Informasi
                             </Button>
                         </DialogFooter>
                     </form>

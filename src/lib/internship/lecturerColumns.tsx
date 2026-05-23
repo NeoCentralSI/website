@@ -24,8 +24,8 @@ export const getLecturerSupervisedStudentsColumns = ({
         header: "Mahasiswa",
         render: (item) => (
             <div className="flex flex-col">
-                <span className="font-medium">{item.studentName}</span>
-                <span className="text-xs text-muted-foreground">{item.studentNim}</span>
+                <span className="font-medium">{item.studentName || '-'}</span>
+                <span className="text-xs text-muted-foreground">{item.studentNim || '-'}</span>
             </div>
         ),
         sortable: true,
@@ -35,8 +35,8 @@ export const getLecturerSupervisedStudentsColumns = ({
         header: "Tempat & Waktu KP",
         render: (item) => (
             <div className="flex flex-col gap-1 pt-1 pb-1">
-                <span className="font-medium text-sm leading-tight max-w-[150px] truncate" title={item.companyName}>
-                    {item.companyName}
+                <span className="font-medium text-sm leading-tight max-w-[150px] truncate" title={item.companyName || '-'}>
+                    {item.companyName || '-'}
                 </span>
                 <div className="text-[11px] text-muted-foreground flex flex-col">
                     <span>{item.startDate ? format(new Date(item.startDate), 'dd MMM yyyy', { locale: idLocale }) : '-'} s.d.</span>
@@ -57,7 +57,7 @@ export const getLecturerSupervisedStudentsColumns = ({
         key: "progress",
         header: "Progres Bimbingan",
         render: (item) => {
-            const totalBimbingan = totalWeeks || item.progress.totalWeeks || 8;
+            const totalBimbingan = totalWeeks ?? item.progress.totalWeeks ?? 0;
             return (
                 <div className="flex flex-col gap-1.5 text-xs">
                     <div className="flex items-center gap-1.5 cursor-default group" title="Bimbingan menunggu penilaian">
@@ -69,7 +69,7 @@ export const getLecturerSupervisedStudentsColumns = ({
                     <div className="flex items-center gap-1.5 cursor-default group" title="Bimbingan telah disetujui">
                         <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
                         <span className="text-muted-foreground">
-                            {item.progress.approvedCount} / {totalBimbingan} selesai
+                            {item.progress.approvedCount} / {totalBimbingan || '-'} selesai
                         </span>
                     </div>
                 </div>
@@ -84,7 +84,7 @@ export const getLecturerSupervisedStudentsColumns = ({
             if (!seminar) {
                 return (
                     <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
-                         <span className="text-xs">Belum Ada</span>
+                         <span className="text-xs">-</span>
                     </div>
                 );
             }
@@ -135,7 +135,7 @@ export const getLecturerSupervisedStudentsColumns = ({
                                     <div className="flex items-start gap-2">
                                         <MapPin className="w-3.5 h-3.5 mt-0.5 text-muted-foreground" />
                                         <div className="flex flex-col">
-                                            <span className="text-[11px] font-medium">{seminar.room?.name || 'Ruangan belum ditentukan'}</span>
+                                            <span className="text-[11px] font-medium">{seminar.room?.name || '-'}</span>
                                             {seminar.room?.location && (
                                                 <span className="text-[10px] text-muted-foreground">{seminar.room.location}</span>
                                             )}
@@ -172,15 +172,14 @@ export const getLecturerSupervisedStudentsColumns = ({
             if (!item.report) {
                 return (
                     <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
-                        <AlertCircle className="w-4 h-4" />
-                        <span className="text-xs">Belum ada</span>
+                        <span className="text-xs">-</span>
                     </div>
                 );
             }
 
             const status = item.report.status;
             let statusConfig: { label: string; color: string; icon: React.ReactNode } = {
-                label: 'Belum Diunggah',
+                label: status || '-',
                 color: 'text-muted-foreground',
                 icon: <AlertCircle className="w-4 h-4" />
             };

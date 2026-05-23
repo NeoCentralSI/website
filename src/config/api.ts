@@ -341,6 +341,7 @@ export const API_CONFIG = {
       INTERNSHIPS_DETAIL: (id: string) => `/insternship/sekdep/internships/${id}`,
       VERIFY_DOCUMENT: (id: string) => `/insternship/sekdep/internships/${id}/verify-document`,
       VERIFY_DOCUMENTS_BULK: (id: string) => `/insternship/sekdep/internships/${id}/verify-documents-bulk`,
+      UPDATE_FIELD_INFO: (id: string) => `/insternship/sekdep/internships/${id}/field-info`,
       SEND_FIELD_ASSESSMENT: (id: string) => `/insternship/sekdep/internships/${id}/send-field-assessment`,
       LECTURERS_WORKLOAD: '/insternship/sekdep/lecturers/workload',
       LECTURERS_WORKLOAD_EXPORT: '/insternship/sekdep/lecturers/workload/export',

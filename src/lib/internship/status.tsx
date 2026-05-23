@@ -4,8 +4,12 @@ import { Badge } from "@/components/ui/badge";
 type StatusVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info';
 
 export const getInternshipStatusBadge = (status: string) => {
+    if (!status) {
+        return <span className="text-xs text-muted-foreground">-</span>;
+    }
+
     let variant: StatusVariant = 'outline';
-    let label = status ? status.replace(/_/g, ' ') : 'PENDING';
+    let label = status.replace(/_/g, ' ');
 
     switch (status) {
         case 'APPROVED_PROPOSAL':

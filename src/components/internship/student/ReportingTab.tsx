@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { cn } from "@/lib/utils";
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { FileText, Upload, CheckCircle2, Clock, Info, AlertCircle, XCircle, Eye } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
+import { cn } from "@/lib/utils";
+import { AlertCircle, CheckCircle2, Clock, Eye, FileText, Info, Upload, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface ReportingTabProps {
     internship: any;
@@ -15,7 +15,6 @@ interface ReportingTabProps {
     reportingDeadline: Date | null;
     isReportingOverdue: boolean;
     isReportingApproaching: boolean;
-    generatedAssessmentUrl?: string | null;
 }
 
 export const ReportingTab: React.FC<ReportingTabProps> = ({
@@ -25,8 +24,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
     endDate,
     reportingDeadline,
     isReportingOverdue,
-    isReportingApproaching,
-    generatedAssessmentUrl
+    isReportingApproaching
 }) => {
     const [previewConfig, setPreviewConfig] = useState<{
         open: boolean;
@@ -49,6 +47,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
     const seminarMinutesDocument = (internship?.seminars || []).find(
         (seminar: any) => seminar.status === 'COMPLETED' && seminar.beritaAcaraDocument
     )?.beritaAcaraDocument || null;
+    const isFieldAssessmentVerified = ['COMPLETED', 'APPROVED'].includes(internship?.fieldAssessmentStatus || '');
 
     const cardClass = "flex min-h-[156px] flex-col p-4 rounded-xl border bg-muted/30 gap-3";
     const iconBoxClass = "p-2 bg-background rounded-lg border shrink-0";
@@ -306,7 +305,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase text-muted-foreground">Laporan Instansi</span>
                                 {getStatusIcon(
-                                    internship?.fieldAssessmentStatus === 'COMPLETED' ? 'APPROVED' : internship?.companyReportStatus,
+                                    isFieldAssessmentVerified ? 'APPROVED' : internship?.companyReportStatus,
                                     !!internship?.companyReportDocId
                                 )}
                             </div>
@@ -316,7 +315,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                 </div>
                                 <div className="flex flex-col min-w-0 flex-1">
                                     <span className={contentTitleClass}>
-                                        {internship?.fieldAssessmentStatus === 'COMPLETED' ? "Diterima (Sesuai Penilaian)" : (internship?.companyReportDocId ? "Sudah Diunggah" : "Belum Diunggah")}
+                                        {isFieldAssessmentVerified ? "Diterima (Sesuai Penilaian)" : (internship?.companyReportDocId ? "Sudah Diunggah" : "Belum Diunggah")}
                                     </span>
                                     {internship?.companyReportDocId && internship.companyReportDoc?.fileName && (
                                         <div className="flex items-center gap-2 mt-1">
@@ -329,35 +328,10 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     {!internship?.companyReportDocId && (
                                         <span className={contentMetaClass}>Salinan laporan untuk instansi</span>
                                     )}
-                                    {generatedAssessmentUrl && (
-                                        <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-wider">
-                                                <CheckCircle2 className="h-3 w-3" />
-                                                Link Penilaian Dihasilkan
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 bg-background border px-2 py-1 rounded text-[10px] truncate font-mono text-muted-foreground">
-                                                    {generatedAssessmentUrl}
-                                                </div>
-                                                <Button
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    className="h-6 gap-1 text-[10px] px-2"
-                                                    onClick={() => window.open(generatedAssessmentUrl, '_blank')}
-                                                >
-                                                    <Eye className="h-3 w-3" />
-                                                    Buka
-                                                </Button>
-                                            </div>
-                                            <p className="text-[9px] text-muted-foreground leading-tight italic">
-                                                *Link ini telah dikirim ke email pembimbing ({internship?.fieldSupervisorEmail || 'email tidak ditemukan'}).
-                                            </p>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
-                            {(!internship?.companyReportDocId || internship?.companyReportStatus === 'REVISION_NEEDED') &&
-                                internship?.fieldAssessmentStatus !== 'COMPLETED' && (
+                            {internship?.companyReportStatus !== 'APPROVED' &&
+                                !isFieldAssessmentVerified && (
                                     <div className="mt-auto pt-2">
                                         <input
                                             type="file"
@@ -384,7 +358,7 @@ export const ReportingTab: React.FC<ReportingTabProps> = ({
                                     </div>
                                 )}
 
-                            {internship?.fieldAssessmentStatus === 'COMPLETED' && internship?.companyReportDocId && (
+                            {isFieldAssessmentVerified && internship?.companyReportDocId && (
                                 <div className="mt-auto pt-2">
                                     <Button
                                         size="sm"

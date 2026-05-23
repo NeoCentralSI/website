@@ -1,23 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import InternshipTable from '@/components/internship/InternshipTable';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useQuery } from '@tanstack/react-query';
-import { 
-    getLecturerSupervisedStudents, 
-    bulkApproveSeminars, 
-    getLecturerSupervisorLetter,
-    getGuidanceQuestions,
-    getGuidanceCriteria
-} from '@/services/internship';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertCircle, Clock, CheckCircle2, FileText } from 'lucide-react';
-import InternshipTable from '@/components/internship/InternshipTable';
-import { getLecturerSupervisedStudentsColumns } from '@/lib/internship/lecturerColumns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
+import { getLecturerSupervisedStudentsColumns } from '@/lib/internship/lecturerColumns';
+import {
+    bulkApproveSeminars,
+    getGuidanceCriteria,
+    getGuidanceQuestions,
+    getLecturerSupervisedStudents,
+    getLecturerSupervisorLetter
+} from '@/services/internship';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, CheckCircle2, Clock, FileText, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
-import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 
 export default function GuidanceOverviewPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -68,11 +68,15 @@ export default function GuidanceOverviewPage() {
         queryFn: () => getGuidanceCriteria(academicYearFilter && academicYearFilter !== 'all' ? academicYearFilter : undefined),
     });
 
-    const totalWeeksMap = useMemo(() => {
-        const weekSet = new Set<number>();
-        questions.forEach(q => weekSet.add(q.weekNumber));
-        criteria.forEach(c => weekSet.add(c.weekNumber));
-        return weekSet.size || 8;
+    const totalGuidanceWeeks = useMemo(() => {
+        const questionWeeks = new Set<number>();
+        const criteriaWeeks = new Set<number>();
+
+        questions.forEach(q => questionWeeks.add(q.weekNumber));
+        criteria.forEach(c => criteriaWeeks.add(c.weekNumber));
+
+        const configuredTotal = new Set([...questionWeeks, ...criteriaWeeks]).size;
+        return configuredTotal > 0 ? configuredTotal : undefined;
     }, [questions, criteria]);
 
     const { data: supervisorLetter } = useQuery({
@@ -128,8 +132,8 @@ export default function GuidanceOverviewPage() {
             navigate(targetUrl);
         },
         onApproveSeminar: handleApproveSeminar,
-        totalWeeks: totalWeeksMap
-    }), [navigate, handleApproveSeminar, totalWeeksMap]);
+        totalWeeks: academicYearFilter && academicYearFilter !== 'all' ? totalGuidanceWeeks : undefined
+    }), [navigate, handleApproveSeminar, totalGuidanceWeeks, academicYearFilter]);
 
     // Client-side filtering & pagination
     const filteredData = useMemo(() => {

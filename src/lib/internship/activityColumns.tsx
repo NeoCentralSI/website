@@ -32,7 +32,7 @@ export const getLogbookColumns = ({ onEdit, isLocked }: ActivityColumnProps): Co
         render: (item) => {
             const val = item.activityDescription;
             if (val) return val;
-            return isLocked ? "-" : <span className="text-muted-foreground italic">Belum diisi</span>;
+            return <span className="text-muted-foreground italic">-</span>;
         },
     },
     {

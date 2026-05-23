@@ -418,6 +418,13 @@ export function InternshipTable<T extends Record<string, any>>({
                                                             : col.accessor
                                                                 ? (row[col.accessor as keyof T] as any)
                                                                 : null;
+                                                    const isEmptyContent =
+                                                        content === null ||
+                                                        content === undefined ||
+                                                        (typeof content === "string" && content.trim() === "");
+                                                    const displayContent = isEmptyContent ? (
+                                                        <span className="text-xs text-muted-foreground">-</span>
+                                                    ) : content;
                                                     
                                                     const rs = col.rowSpan ? col.rowSpan(row, idx) : 1;
                                                     if (rs === 0) return null;
@@ -428,7 +435,7 @@ export function InternshipTable<T extends Record<string, any>>({
                                                             className={col.className}
                                                             rowSpan={rs > 1 ? rs : undefined}
                                                         >
-                                                            {content}
+                                                            {displayContent}
                                                         </TableCell>
                                                     );
                                                 })}

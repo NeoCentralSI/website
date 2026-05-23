@@ -1,10 +1,11 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "../auth.service";
-import type { 
-    LecturerSupervisedStudent, 
-    LecturerGuidanceTimeline, 
-    GuidanceWeekDetail, 
-    SubmitEvaluationBody 
+import type {
+    GuidanceWeekDetail,
+    LecturerAcademicYearOption,
+    LecturerGuidanceTimeline,
+    LecturerSupervisedStudent,
+    SubmitEvaluationBody
 } from "./types";
 
 export const getLecturerSupervisedStudents = async (): Promise<LecturerSupervisedStudent[]> => {
@@ -13,6 +14,17 @@ export const getLecturerSupervisedStudents = async (): Promise<LecturerSupervise
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal memuat daftar mahasiswa bimbingan" }));
         throw new Error(errorData.message || "Gagal memuat daftar mahasiswa bimbingan");
+    }
+    const json = await res.json();
+    return json.data;
+};
+
+export const getLecturerAcademicYears = async (): Promise<LecturerAcademicYearOption[]> => {
+    const url = getApiUrl('/insternship/activity/guidance/lecturer/academic-years');
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat tahun ajaran" }));
+        throw new Error(errorData.message || "Gagal memuat tahun ajaran");
     }
     const json = await res.json();
     return json.data;

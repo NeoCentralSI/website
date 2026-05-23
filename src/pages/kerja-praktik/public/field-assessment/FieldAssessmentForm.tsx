@@ -4,6 +4,7 @@ import SignaturePad from 'react-signature-pad-wrapper';
 import { submitFieldAssessment } from '@/services/internship/public.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, Eraser, Loader2, Send, Info, PenTool } from 'lucide-react';
 import { toast } from 'sonner';
@@ -26,6 +27,7 @@ export default function FieldAssessmentForm() {
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const [signatureOpen, setSignatureOpen] = useState(false);
+    const [assessmentNotes, setAssessmentNotes] = useState('');
     const sigPad = useRef<any>(null);
 
     // Initialize scores if re-visiting
@@ -41,6 +43,7 @@ export default function FieldAssessmentForm() {
             });
             setScores(initialScores);
         }
+        setAssessmentNotes(data.internship.fieldAssessmentNotes || '');
     }, [data.existingScores, data.cpmks]);
 
     const handleScoreChange = (cpmkId: string, val: string) => {
@@ -98,7 +101,11 @@ export default function FieldAssessmentForm() {
             const signature = sigPad.current.toDataURL();
             const formattedScores = Object.values(scores);
             
-            await submitFieldAssessment(token!, { scores: formattedScores, signature });
+            await submitFieldAssessment(token!, {
+                scores: formattedScores,
+                signature,
+                notes: assessmentNotes.trim() || undefined,
+            });
             
             setSuccess(true);
             toast.success("Penilaian berhasil dikirim!");
@@ -285,6 +292,28 @@ export default function FieldAssessmentForm() {
                         )
                     })}
                 />
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+                    <div className="space-y-1">
+                        <h2 className="text-sm font-bold text-slate-900">Catatan untuk Mahasiswa</h2>
+                        <p className="text-xs font-medium text-slate-500">
+                            Tambahkan masukan, apresiasi, atau saran perbaikan berdasarkan kinerja mahasiswa selama Kerja Praktik.
+                        </p>
+                    </div>
+                    <Textarea
+                        value={assessmentNotes}
+                        onChange={(e) => setAssessmentNotes(e.target.value)}
+                        placeholder="Tuliskan catatan untuk mahasiswa..."
+                        className="min-h-[130px] resize-none bg-white leading-relaxed"
+                        maxLength={1200}
+                        disabled={data.internship.isUsed}
+                    />
+                    {!data.internship.isUsed && (
+                        <p className="text-[11px] font-medium text-slate-400 text-right">
+                            {assessmentNotes.length}/1200
+                        </p>
+                    )}
+                </div>
 
                 {!data.internship.isUsed && (
                     <div className="flex justify-end pt-2">

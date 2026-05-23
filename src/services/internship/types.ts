@@ -1,5 +1,6 @@
 export interface InternshipProposalItem {
     id: string;
+    coordinatorId?: string;
     nama: string;
     nim: string;
     koordinatorAtauMember: string;
@@ -217,6 +218,7 @@ export interface CompanyStatsItem {
     id: string;
     companyName: string;
     address: string;
+    companyAddress?: string;
     status: string;
     proposalCount: number;
     internCount: number;
@@ -240,6 +242,8 @@ export interface AdminApprovedProposalItem {
         end: string;
     } | null;
     isSigned: boolean;
+    startDatePlanned?: string;
+    endDatePlanned?: string;
     proposedStartDate?: string;
     proposedEndDate?: string;
     academicYearName?: string;
@@ -338,6 +342,7 @@ export interface InternshipPendingLetter {
     id: string;
     type: 'APPLICATION' | 'ASSIGNMENT' | 'LECTURER_ASSIGNMENT';
     documentNumber: string;
+    academicYearName?: string;
     coordinatorName?: string;
     coordinatorNim?: string;
     coordinatorStudentId?: string;
@@ -422,10 +427,13 @@ export interface StudentLogbookData {
         reportUploadedAt?: string | null;
         completionCertificateDocId?: string | null;
         companyReceiptDocId?: string | null;
+        companyReportDocId?: string | null;
+        companyReportStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
         finalNumericScore?: number | null;
         finalGrade?: string | null;
         lecturerAssessmentStatus?: string | null;
         fieldAssessmentStatus?: string | null;
+        fieldAssessmentNotes?: string | null;
         reportDocument?: { id: string; fileName: string; filePath: string } | null;
         reportFeedbackDocument?: { id: string; fileName: string; filePath: string } | null;
         completionCertificateDoc?: { id: string; fileName: string; filePath: string } | null;
@@ -482,6 +490,8 @@ export interface SekdepSupervisorLetterDetail {
         nim: string;
         name: string;
         companyName: string;
+        actualStartDate: string | null;
+        actualEndDate: string | null;
         documents: {
             appLetterDocNumber: string | null;
             assignLetterDocNumber: string | null;
@@ -552,6 +562,7 @@ export interface LecturerSupervisedStudent {
     studentName: string;
     studentNim: string;
     companyName: string;
+    academicYearId: string;
     academicYearName: string;
     startDate: string;
     endDate: string;
@@ -582,6 +593,14 @@ export interface LecturerSupervisedStudent {
     } | null;
     finalScore?: number | null;
     finalGrade?: string | null;
+}
+
+export interface LecturerAcademicYearOption {
+    id: string;
+    year: string;
+    semester: string;
+    label: string;
+    isActive: boolean;
 }
 
 export interface LecturerGuidanceTimeline {

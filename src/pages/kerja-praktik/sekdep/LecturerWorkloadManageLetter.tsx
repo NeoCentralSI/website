@@ -15,6 +15,7 @@ import { getSekdepSupervisorLetterDetail, updateSekdepSupervisorLetter, type Sek
 import { toTitleCaseName } from "@/lib/text";
 import { DatePicker } from "@/components/ui/date-picker";
 import { API_CONFIG } from "@/config/api";
+import { formatDateShortId } from "@/lib/text";
 
 interface LetterFormValues {
     documentNumber: string;
@@ -39,6 +40,11 @@ export default function LecturerWorkloadManageLetter() {
     const watchDates = watch(["startDate", "endDate"]);
     const watchInternshipIds = watch("internshipIds") || [];
 
+    const selectedStudents = useMemo(() => {
+        if (!detail) return [];
+        return detail.assignedStudents.filter(s => watchInternshipIds.includes(s.internshipId));
+    }, [detail, watchInternshipIds]);
+
     const calculateBusinessDays = (startStr: string, endStr: string) => {
         if (!startStr || !endStr) return 0;
         const start = new Date(startStr);
@@ -57,6 +63,22 @@ export default function LecturerWorkloadManageLetter() {
     };
 
     const businessDays = calculateBusinessDays(watchDates[0], watchDates[1]);
+
+    const getKpDatePlaceholder = (field: "actualStartDate" | "actualEndDate") => {
+        const dates = selectedStudents
+            .map((student) => student[field])
+            .filter((date): date is string => Boolean(date))
+            .map((date) => new Date(date))
+            .filter((date) => !isNaN(date.getTime()));
+
+        if (dates.length === 0) return "Pilih tanggal";
+
+        const timestamp = field === "actualStartDate"
+            ? Math.min(...dates.map(date => date.getTime()))
+            : Math.max(...dates.map(date => date.getTime()));
+
+        return `Sesuai tanggal KP: ${formatDateShortId(new Date(timestamp).toISOString())}`;
+    };
 
     useEffect(() => {
         if (supervisorId) {
@@ -226,6 +248,11 @@ export default function LecturerWorkloadManageLetter() {
                                                     <span>&bull;</span>
                                                     <span className="truncate">{s.companyName}</span>
                                                 </div>
+                                                {(s.actualStartDate || s.actualEndDate) && (
+                                                    <p className="text-[11px] text-muted-foreground mt-1">
+                                                        KP: {s.actualStartDate ? formatDateShortId(s.actualStartDate) : '-'} s/d {s.actualEndDate ? formatDateShortId(s.actualEndDate) : '-'}
+                                                    </p>
+                                                )}
                                                 {s.documents.supLetterDocNumber && (
                                                     <div className="mt-1.5 flex flex-wrap gap-1">
                                                         <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">
@@ -289,6 +316,8 @@ export default function LecturerWorkloadManageLetter() {
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
                                                     onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    placeholder={getKpDatePlaceholder("actualStartDate")}
+                                                    showPastDates
                                                 />
                                             )}
                                         />
@@ -309,6 +338,8 @@ export default function LecturerWorkloadManageLetter() {
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
                                                     onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    placeholder={getKpDatePlaceholder("actualEndDate")}
+                                                    showPastDates
                                                 />
                                             )}
                                         />

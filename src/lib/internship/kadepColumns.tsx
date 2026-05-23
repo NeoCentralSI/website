@@ -1,13 +1,14 @@
-import type { InternshipPendingLetter } from '@/services/internship';
 import type { Column } from '@/components/internship/InternshipTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Check, Signature } from 'lucide-react';
 import { formatDateShortId } from '@/lib/text';
+import type { InternshipPendingLetter } from '@/services/internship';
+import { Check, FileText, Signature } from 'lucide-react';
 
 export interface KadepLetterColumnProps {
     onViewDoc: (item: InternshipPendingLetter) => void;
     onApprove: (item: InternshipPendingLetter) => void;
+    nameHeader: string;
 }
 
 /**
@@ -16,25 +17,32 @@ export interface KadepLetterColumnProps {
 export const getKadepInternshipLetterColumns = ({
     onViewDoc,
     onApprove,
+    nameHeader,
 }: KadepLetterColumnProps): Column<InternshipPendingLetter>[] => [
         {
             key: 'nama',
-            header: 'Nama Dosen',
+            header: nameHeader,
             render: (item) => {
                 const isLecturer = item.type === 'LECTURER_ASSIGNMENT';
                 return (
                     <div className="flex flex-col py-1 text-left">
-                        <span className="font-medium text-sm leading-tight">{isLecturer ? item.lecturerName : item.coordinatorName}</span>
-                        <span className="text-xs text-muted-foreground">{isLecturer ? item.lecturerNip : item.coordinatorNim}</span>
+                        <span className="font-medium text-sm leading-tight">{(isLecturer ? item.lecturerName : item.coordinatorName) || '-'}</span>
+                        <span className="text-xs text-muted-foreground">{(isLecturer ? item.lecturerNip : item.coordinatorNim) || '-'}</span>
                     </div>
                 );
             },
         },
         {
+            key: 'academicYearName',
+            header: 'Tahun Ajaran',
+            accessor: 'academicYearName',
+            className: 'text-center whitespace-nowrap',
+        },
+        {
             key: 'period',
             header: 'Periode',
             render: (item) => (
-                <div className="flex flex-col py-1 text-center min-w-[120px]">
+                <div className="flex flex-col py-1 text-center min-w-30">
                     {item.period ? (
                         <>
                             <span className="text-xs font-medium">
@@ -46,7 +54,7 @@ export const getKadepInternshipLetterColumns = ({
                             </span>
                         </>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Diatur</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),
@@ -58,7 +66,7 @@ export const getKadepInternshipLetterColumns = ({
             render: (item) => (
                 <div className="flex justify-center">
                     <code className="text-[10px] font-mono px-1.5 py-0.5 bg-muted rounded">
-                        {item.documentNumber}
+                        {item.documentNumber || '-'}
                     </code>
                 </div>
             ),
@@ -121,7 +129,7 @@ export const getKadepInternshipLetterColumns = ({
                             <span className="text-xs">Lihat</span>
                         </Button>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Ada</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),

@@ -1,7 +1,12 @@
-import type { AdminApprovedProposalItem, AdminAssignmentProposalItem } from '@/services/internship';
 import type { Column } from '@/components/internship/InternshipTable';
 import { Button } from '@/components/ui/button';
-import { FileText, Edit, FileCheck, Upload } from 'lucide-react';
+import type { AdminApprovedProposalItem, AdminAssignmentProposalItem } from '@/services/internship';
+import { Edit, FileCheck, FileText, Upload } from 'lucide-react';
+
+const hasDisplayValue = (value?: string | null) => {
+    const normalized = value?.trim();
+    return Boolean(normalized && normalized !== String.fromCharCode(8212));
+};
 
 interface AdminApprovedProposalColumnProps {
     onViewLetterDoc: (item: AdminApprovedProposalItem) => void;
@@ -20,8 +25,8 @@ export const getAdminApprovedProposalColumns = ({
             header: 'Nama',
             render: (item) => (
                 <div className="flex flex-col py-1">
-                    <span className="font-medium text-sm leading-tight">{item.coordinatorName}</span>
-                    <span className="text-xs text-muted-foreground">{item.coordinatorNim}</span>
+                    <span className="font-medium text-sm leading-tight">{item.coordinatorName || '-'}</span>
+                    <span className="text-xs text-muted-foreground">{item.coordinatorNim || '-'}</span>
                 </div>
             ),
         },
@@ -42,7 +47,7 @@ export const getAdminApprovedProposalColumns = ({
             header: 'Anggota',
             render: (item) => (
                 <div className="flex items-center justify-center gap-1">
-                    <span className="text-sm">{item.members.length} Mahasiswa</span>
+                    <span className="text-sm">{item.members?.length || 0} Mahasiswa</span>
                 </div>
             ),
             className: 'text-center',
@@ -63,7 +68,7 @@ export const getAdminApprovedProposalColumns = ({
                             </span>
                         </>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Diatur</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),
@@ -75,7 +80,7 @@ export const getAdminApprovedProposalColumns = ({
             render: (item) => (
                 <div className="flex justify-center">
                     <code className="text-[12px] font-mono px-1.5 py-0.5">
-                        {item.letterNumber}
+                        {hasDisplayValue(item.letterNumber) ? item.letterNumber : '-'}
                     </code>
                 </div>
             ),
@@ -98,7 +103,7 @@ export const getAdminApprovedProposalColumns = ({
                             <span className="text-xs">Lihat</span>
                         </Button>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Ada</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),
@@ -147,8 +152,8 @@ export const getAdminAssignmentProposalColumns = ({
             header: 'Nama',
             render: (item) => (
                 <div className="flex flex-col py-1">
-                    <span className="font-medium text-sm leading-tight">{item.coordinatorName}</span>
-                    <span className="text-xs text-muted-foreground">{item.coordinatorNim}</span>
+                    <span className="font-medium text-sm leading-tight">{item.coordinatorName || '-'}</span>
+                    <span className="text-xs text-muted-foreground">{item.coordinatorNim || '-'}</span>
                 </div>
             ),
         },
@@ -169,7 +174,7 @@ export const getAdminAssignmentProposalColumns = ({
             header: 'Anggota',
             render: (item) => (
                 <div className="flex items-center justify-center gap-1">
-                    <span className="text-sm">{item.members.length} Mahasiswa</span>
+                    <span className="text-sm">{item.members?.length || 0} Mahasiswa</span>
                 </div>
             ),
             className: 'text-center',
@@ -190,7 +195,7 @@ export const getAdminAssignmentProposalColumns = ({
                             </span>
                         </>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Diatur</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),
@@ -233,12 +238,12 @@ export const getAdminAssignmentProposalColumns = ({
             header: 'No. Surat Tugas',
             render: (item) => (
                 <div className="flex justify-center">
-                    {item.letterNumber !== "—" ? (
+                    {hasDisplayValue(item.letterNumber) ? (
                         <code className="text-[12px] font-mono px-1.5 py-0.5">
                             {item.letterNumber}
                         </code>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">—</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),
@@ -261,7 +266,7 @@ export const getAdminAssignmentProposalColumns = ({
                             <span className="text-xs">Lihat</span>
                         </Button>
                     ) : (
-                        <span className="text-xs text-muted-foreground italic">Belum Ada</span>
+                        <span className="text-xs text-muted-foreground italic">-</span>
                     )}
                 </div>
             ),
@@ -270,9 +275,13 @@ export const getAdminAssignmentProposalColumns = ({
         {
             key: 'actions',
             header: 'Aksi',
-            render: (item) => (
-                <div className="flex items-center justify-center gap-2">
-                    {item.status === 'WAITING_FOR_VERIFICATION' ? (
+            render: (item) => {
+                const canVerifyResponse = item.status === 'WAITING_FOR_VERIFICATION' && !!item.companyResponseFile;
+                const canManageAssignment = ['ACCEPTED_BY_COMPANY', 'PARTIALLY_ACCEPTED'].includes(item.status);
+
+                return (
+                    <div className="flex items-center justify-center gap-2">
+                    {canVerifyResponse ? (
                         <Button
                             variant="outline"
                             size="sm"
@@ -282,7 +291,7 @@ export const getAdminAssignmentProposalColumns = ({
                             <FileCheck className="h-4 w-4" />
                             <span className="text-xs font-semibold">Verifikasi</span>
                         </Button>
-                    ) : (
+                    ) : canManageAssignment ? (
                         <Button
                             variant="ghost"
                             size="sm"
@@ -292,9 +301,20 @@ export const getAdminAssignmentProposalColumns = ({
                             <Edit className="h-4 w-4" />
                             <span className="text-xs">Kelola ST</span>
                         </Button>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-2 px-2 text-muted-foreground cursor-not-allowed opacity-70"
+                            disabled
+                        >
+                            <Upload className="h-4 w-4" />
+                            <span className="text-xs">Menunggu Balasan</span>
+                        </Button>
                     )}
                 </div>
-            ),
+                );
+            },
             className: 'text-center',
         },
     ];

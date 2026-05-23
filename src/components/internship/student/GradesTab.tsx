@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, CheckCircle } from 'lucide-react';
+import { Award, CheckCircle, MessageSquareText } from 'lucide-react';
 
 interface GradesTabProps {
     internship: any;
@@ -69,6 +69,20 @@ export const GradesTab: React.FC<GradesTabProps> = ({ internship }) => {
                             {internship?.fieldAssessmentStatus === 'COMPLETED' ? 'Sudah Dinilai' : 'Belum Dinilai'}
                         </Badge>
                     </div>
+
+                    {internship?.fieldAssessmentStatus === 'COMPLETED' && internship?.fieldAssessmentNotes && (
+                        <div className="rounded-xl border bg-white p-4">
+                            <div className="flex items-start gap-3">
+                                <MessageSquareText className="h-5 w-5 text-primary mt-0.5" />
+                                <div className="space-y-1">
+                                    <span className="text-sm font-semibold">Catatan Pembimbing Lapangan</span>
+                                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                        {internship.fieldAssessmentNotes}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/30">
                         <div className="flex items-center gap-3">

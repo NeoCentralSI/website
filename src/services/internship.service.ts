@@ -4,161 +4,51 @@
 
 // Export all types
 export type {
-  InternshipProposalItem,
-  SubmitProposalBody,
-  CompanyItem,
-  StudentItem,
-  StudentLogbookData,
-  SeminarScheduleData,
-  UpcomingSeminarItem,
-  StudentGuidance,
-  AdminApprovedProposalItem,
-  AdminAssignmentProposalItem,
-  InternshipTemplate,
-  SekdepRegistrationItem,
-  InternshipProposalDetail,
-  CompanyStatsItem,
-  InternshipListItem,
-  SekdepInternshipDetail,
-  LecturerWorkloadItem,
-  SekdepSupervisorLetterDetail,
-  GuidanceQuestion,
-  GuidanceCriteria,
-  InternshipCpmk,
-  InternshipAssessmentRubric,
-  InternshipPendingLetter,
-  LecturerSupervisedStudent,
-  LecturerGuidanceTimeline,
-  GuidanceWeekDetail,
-  SubmitEvaluationBody,
-  OverviewCompanyItem,
-  OverviewReportItem,
-  OverviewStats,
-  InternshipLogbookItem
+    AdminApprovedProposalItem,
+    AdminAssignmentProposalItem, CompanyItem, CompanyStatsItem, GuidanceCriteria, GuidanceQuestion, GuidanceWeekDetail, InternshipAssessmentRubric, InternshipCpmk, InternshipListItem, InternshipLogbookItem, InternshipPendingLetter, InternshipProposalDetail, InternshipProposalItem, InternshipTemplate, LecturerGuidanceTimeline, LecturerSupervisedStudent, LecturerWorkloadItem, OverviewCompanyItem,
+    OverviewReportItem,
+    OverviewStats, SekdepInternshipDetail, SekdepRegistrationItem, SekdepSupervisorLetterDetail, SeminarScheduleData, StudentGuidance, StudentItem,
+    StudentLogbookData, SubmitEvaluationBody, SubmitProposalBody, UpcomingSeminarItem
 } from './internship/types';
 
 // Export student service functions
 export {
-  getStudentProposals,
-  getCompanies,
-  getEligibleStudents,
-  getWorkingDaysCount,
-  submitProposal,
-  updateProposal,
-  deleteProposal,
-  uploadInternshipDocument,
-  respondToInvitation,
-  submitCompanyResponse,
-  getStudentLogbooks,
-  updateLogbookEntry,
-  updateInternshipDetails,
-  submitCompletionCertificate,
-  submitCompanyReceipt,
-  submitLogbookDocument,
-  submitInternshipReport,
-  submitCompanyReport,
-  registerSeminar,
-  getUpcomingSeminars,
-  updateSeminarProposal,
-  approveSeminar,
-  rejectSeminar,
-  registerSeminarAudience,
-  unregisterSeminarAudience,
-  getStudentGuidance,
-  submitGuidanceResponse,
-  downloadLogbookPdf,
-  downloadLogbookDocx
+    approveSeminar, deleteProposal, downloadLogbookDocx, downloadLogbookPdf, getCompanies,
+    getEligibleStudents, getStudentGuidance, getStudentLogbooks, getStudentProposals, getUpcomingSeminars, getWorkingDaysCount, registerSeminar, registerSeminarAudience, rejectSeminar, respondToInvitation, submitCompanyReceipt, submitCompanyReport, submitCompanyResponse, submitCompletionCertificate, submitGuidanceResponse, submitInternshipReport, submitLogbookDocument, submitProposal, unregisterSeminarAudience, updateInternshipDetails, updateLogbookEntry, updateProposal, updateSeminarProposal, uploadInternshipDocument
 } from './internship/student.service';
 
 // Export admin service functions
 export {
-  verifyCompanyResponse,
-  getAdminApprovedProposals,
-  getAdminProposalLetterDetail,
-  updateAdminProposalLetter,
-  getAdminAssignmentProposals,
-  getAdminAssignmentLetterDetail,
-  updateAdminAssignmentLetter,
-  getInternshipTemplate,
-  saveInternshipTemplate,
-  adminUploadCompanyResponse
+    adminUploadCompanyResponse, getAdminApprovedProposals, getAdminAssignmentLetterDetail, getAdminAssignmentProposals, getAdminProposalLetterDetail, getInternshipTemplate,
+    saveInternshipTemplate, updateAdminAssignmentLetter, updateAdminProposalLetter, verifyCompanyResponse
 } from './internship/admin.service';
 
 // Export sekdep service functions
 export {
-  getSekdepProposals,
-  getSekdepPendingProposals,
-  getSekdepPendingResponses,
-  getSekdepProposalDetail,
-  createSekdepCompany,
-  updateSekdepCompany,
-  deleteSekdepCompany,
-  respondToSekdepProposal,
-  getSekdepInternshipList,
-  bulkAssignSupervisor,
-  getSekdepInternshipDetail,
-  verifyInternshipDocument,
-  bulkVerifyInternshipDocuments,
-  sendFieldAssessmentRequest,
-  getSekdepLecturerWorkload,
-  getSekdepSupervisorLetterDetail,
-  updateSekdepSupervisorLetter,
-  exportLecturerWorkloadPdf,
-  getSekdepInternshipTemplate,
-  saveSekdepInternshipTemplate,
-  getGuidanceQuestions,
-  createGuidanceQuestion,
-  updateGuidanceQuestion,
-  deleteGuidanceQuestion,
-  getGuidanceCriteria,
-  createGuidanceCriteria,
-  updateGuidanceCriteria,
-  deleteGuidanceCriteria,
-  getInternshipCpmks,
-  getInternshipCpmkById,
-  createInternshipCpmk,
-  updateInternshipCpmk,
-  deleteInternshipCpmk,
-  createInternshipRubric,
-  updateInternshipRubric,
-  deleteInternshipRubric,
-  bulkUpdateInternshipRubrics,
-  copyInternshipCpmks,
-  copyInternshipGuidance,
-  getCompanyStats
+    bulkAssignSupervisor, bulkUpdateInternshipRubrics, bulkVerifyInternshipDocuments, copyInternshipCpmks,
+    copyInternshipGuidance, createGuidanceCriteria, createGuidanceQuestion, createInternshipCpmk, createInternshipRubric, createSekdepCompany, deleteGuidanceCriteria, deleteGuidanceQuestion, deleteInternshipCpmk, deleteInternshipRubric, deleteSekdepCompany, exportLecturerWorkloadPdf, getCompanyStats, getGuidanceCriteria, getGuidanceQuestions, getInternshipCpmkById, getInternshipCpmks, getSekdepInternshipDetail, getSekdepInternshipList, getSekdepInternshipTemplate, getSekdepLecturerWorkload, getSekdepPendingProposals,
+    getSekdepPendingResponses,
+    getSekdepProposalDetail, getSekdepProposals, getSekdepSupervisorLetterDetail, respondToSekdepProposal, saveSekdepInternshipTemplate, sendFieldAssessmentRequest, updateGuidanceCriteria, updateGuidanceQuestion, updateInternshipCpmk, updateInternshipRubric, updateSekdepCompany, updateSekdepInternshipFieldInfo, updateSekdepSupervisorLetter, verifyInternshipDocument
 } from './internship/sekdep.service';
 
 // Export kadep service functions
 export {
-  getKadepPendingLetters,
-  approveKadepLetter
+    approveKadepLetter, getKadepPendingLetters
 } from './internship/kadep.service';
 
 // Export lecturer service functions
 export {
-  getLecturerSupervisedStudents,
-  getLecturerGuidanceTimeline,
-  getLecturerGuidanceWeekDetail,
-  submitLecturerEvaluation,
-  verifyFinalReportByLecturer,
-  validateSeminarAudience,
-  unvalidateSeminarAudience,
-  bulkValidateSeminarAudience,
-  bulkApproveSeminars,
-  updateSeminarNotes,
-  completeSeminar,
-  failSeminar,
-  saveFinalReportFeedbackByLecturer,
-  getInternshipAssessment,
-  submitLecturerAssessment
+    bulkApproveSeminars, bulkValidateSeminarAudience, completeSeminar,
+    failSeminar, getInternshipAssessment, getLecturerAcademicYears,
+    getLecturerGuidanceTimeline,
+    getLecturerGuidanceWeekDetail, getLecturerSupervisedStudents, saveFinalReportFeedbackByLecturer, submitLecturerAssessment, submitLecturerEvaluation, unvalidateSeminarAudience, updateSeminarNotes, validateSeminarAudience, verifyFinalReportByLecturer
 } from './internship/lecturer.service';
 
 
 // Export public service functions
 export {
-  verifyInternshipLetter,
-  getSeminarDetail,
-  getOverviewCompanies,
-  getOverviewReports,
-  getOverviewStats
+    getOverviewCompanies,
+    getOverviewReports,
+    getOverviewStats, getSeminarDetail, verifyInternshipLetter
 } from './internship/public.service';
+

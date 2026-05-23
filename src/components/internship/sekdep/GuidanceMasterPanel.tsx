@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,11 +14,23 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, BookOpen, GraduationCap, Copy, Pencil } from 'lucide-react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Plus, BookOpen, GraduationCap, Copy, Pencil, Trash2 } from 'lucide-react';
 import {
     getGuidanceQuestions,
     getGuidanceCriteria,
     copyInternshipGuidance,
+    deleteGuidanceQuestion,
+    deleteGuidanceCriteria,
 } from '@/services/internship';
 import { getAcademicYearsAPI } from '@/services/admin.service';
 import InternshipTable, { type Column } from '@/components/internship/InternshipTable';
@@ -76,6 +88,7 @@ export function GuidanceMasterPanel() {
     const qc = useQueryClient();
     const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
     const [addWeekDialogOpen, setAddWeekDialogOpen] = useState(false);
+    const [deleteWeekNumber, setDeleteWeekNumber] = useState<number | null>(null);
     const [newWeekInput, setNewWeekInput] = useState<number>(1);
 
     // Compute unique week numbers based on existing questions and criteria
@@ -112,6 +125,30 @@ export function GuidanceMasterPanel() {
             criteriaCount: criteria.filter(c => c.weekNumber === weekNum).length,
         }));
     }, [weeks, questions, criteria]);
+
+    const selectedDeleteWeek = useMemo(() => {
+        if (deleteWeekNumber === null) return null;
+        return weekTableData.find(week => week.weekNumber === deleteWeekNumber) || null;
+    }, [deleteWeekNumber, weekTableData]);
+
+    const deleteWeekMutation = useMutation({
+        mutationFn: async (weekNumber: number) => {
+            const weekQuestions = questions.filter(q => q.weekNumber === weekNumber);
+            const weekCriteria = criteria.filter(c => c.weekNumber === weekNumber);
+
+            await Promise.all([
+                ...weekQuestions.map(q => deleteGuidanceQuestion(q.id)),
+                ...weekCriteria.map(c => deleteGuidanceCriteria(c.id)),
+            ]);
+        },
+        onSuccess: (_, weekNumber) => {
+            toast.success(`Minggu ${weekNumber} berhasil dihapus`);
+            qc.invalidateQueries({ queryKey: ['guidance-questions', academicYearId] });
+            qc.invalidateQueries({ queryKey: ['guidance-criteria', academicYearId] });
+            setDeleteWeekNumber(null);
+        },
+        onError: (e: any) => toast.error(e.message || "Gagal menghapus minggu bimbingan"),
+    });
 
     const columns: Column<typeof weekTableData[0]>[] = useMemo(() => [
         {
@@ -150,14 +187,26 @@ export function GuidanceMasterPanel() {
             header: 'Aksi',
             width: 120,
             render: (row) => (
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-xs font-semibold gap-1 hover:text-primary"
-                    onClick={() => updateParams({ week: String(row.weekNumber) })}
-                >
-                    <Pencil className="size-3.5" />
-                </Button>
+                <div className="flex items-center gap-1">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-slate-500 hover:text-primary"
+                        onClick={() => updateParams({ week: String(row.weekNumber) })}
+                        aria-label={`Edit minggu ${row.weekNumber}`}
+                    >
+                        <Pencil className="size-3.5" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteWeekNumber(row.weekNumber)}
+                        aria-label={`Hapus minggu ${row.weekNumber}`}
+                    >
+                        <Trash2 className="size-3.5" />
+                    </Button>
+                </div>
             ),
         },
     ], [weeks, questions, criteria]);
@@ -245,6 +294,42 @@ export function GuidanceMasterPanel() {
                 description="Salin semua pertanyaan mahasiswa dan kriteria penilaian dosen dari tahun ajaran lain ke tahun ajaran terpilih saat ini."
                 targetName="bimbingan"
             />
+
+            {/* Delete Week Confirmation */}
+            <AlertDialog
+                open={deleteWeekNumber !== null}
+                onOpenChange={(open) => {
+                    if (!open && !deleteWeekMutation.isPending) setDeleteWeekNumber(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Minggu Bimbingan?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {selectedDeleteWeek ? (
+                                <>
+                                    Semua data Minggu {selectedDeleteWeek.weekNumber}, termasuk{' '}
+                                    {selectedDeleteWeek.questionsCount} pertanyaan mahasiswa dan{' '}
+                                    {selectedDeleteWeek.criteriaCount} kriteria penilaian dosen, akan dihapus permanen.
+                                </>
+                            ) : (
+                                'Data minggu bimbingan ini akan dihapus permanen.'
+                            )}{' '}
+                            Tindakan ini tidak dapat dibatalkan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteWeekMutation.isPending}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => deleteWeekNumber !== null && deleteWeekMutation.mutate(deleteWeekNumber)}
+                            disabled={deleteWeekMutation.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {deleteWeekMutation.isPending ? "Menghapus..." : "Hapus"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Add Week Dialog */}
             <Dialog open={addWeekDialogOpen} onOpenChange={setAddWeekDialogOpen}>
