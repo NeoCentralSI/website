@@ -1,6 +1,8 @@
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getUpcomingEventsAPI } from '@/services/calendar.service';
+import type { CalendarEvent } from '@/types/calendar.types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, differenceInDays, isSameDay } from 'date-fns';
@@ -12,23 +14,34 @@ import EmptyState from '@/components/ui/empty-state';
 
 interface UpcomingEventsCardProps {
   className?: string;
+  extraEvents?: CalendarEvent[];
+  isLoadingExtraEvents?: boolean;
   limit?: number; // Add limit prop to control number of events shown
 }
 
-export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps) {
+export function UpcomingEventsCard({
+  className,
+  extraEvents = [],
+  isLoadingExtraEvents = false,
+  limit
+}: UpcomingEventsCardProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['upcoming-events', limit], // Include limit in queryKey
     queryFn: () => getUpcomingEventsAPI(limit ? 30 : 7), // If limit provided (likely home dashboard), fetch 30 days but slice later? Better to just fetch enough. API accepts days, let's stick to 7 or 30 days lookahead.
     // Let's use 14 days lookahead for "Upcoming"
   });
 
-  // Filter and sort events (ensure they are future events)
-  const events = data?.events
-    ?.filter(event => new Date(event.startDate) >= new Date())
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-    .slice(0, limit || 5); // Default to 5 events if no limit specified
+  const isLoadingAll = isLoading || isLoadingExtraEvents;
 
-  if (isLoading) {
+  // Filter and sort events (ensure they are future events)
+  const events = useMemo(() => {
+    return [...(data?.events || []), ...extraEvents]
+      .filter(event => new Date(event.startDate) >= new Date())
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      .slice(0, limit || 5); // Default to 5 events if no limit specified
+  }, [data?.events, extraEvents, limit]);
+
+  if (isLoadingAll) {
     return (
       <Card className={cn("h-full", className)}>
         <CardHeader>
@@ -42,7 +55,7 @@ export function UpcomingEventsCard({ className, limit }: UpcomingEventsCardProps
     );
   }
 
-  if (error || !events || events.length === 0) {
+  if ((error && events.length === 0) || events.length === 0) {
     return (
       <Card className={cn("h-full", className)}>
         <CardHeader>
@@ -176,6 +189,7 @@ function formatEventType(type: string) {
     guidance_request: 'Permintaan Bimbingan',
     thesis_deadline: 'Deadline TA',
     seminar_scheduled: 'Seminar',
+    internship_seminar: 'Seminar KP',
     defense_scheduled: 'Sidang',
     student_guidance: 'Bimbingan Mhs',
     meeting: 'Rapat',

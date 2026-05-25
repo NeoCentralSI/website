@@ -71,7 +71,7 @@ const RegisterInternshipFormPage = lazy(() => import('./pages/kerja-praktik/stud
 const InternshipLogbookPage = lazy(() => import('./pages/kerja-praktik/student/activity/Logbook'))
 const InternshipGuidancePage = lazy(() => import('./pages/kerja-praktik/student/activity/Guidance'))
 const InternshipGuidanceDetailPage = lazy(() => import('./pages/kerja-praktik/student/activity/GuidanceDetail'))
-const InternshipSeminarPage = lazy(() => import('./pages/kerja-praktik/student/Seminar'))
+const InternshipSeminarPage = lazy(() => import('./pages/kerja-praktik/student/Manage'))
 const InternshipSeminarDetailPage = lazy(() => import('./pages/kerja-praktik/student/SeminarDetail'))
 // Kerja Praktik - Sekdep
 const SekdepInternshipProposalPage = lazy(() => import('./pages/kerja-praktik/sekdep/Manage'))
@@ -399,6 +399,7 @@ function App() {
                   <Route path="/kelola/kerja-praktik/dosen" element={<SekdepInternshipProposalPage />} />
                   <Route path="/kelola/kerja-praktik/bimbingan" element={<SekdepInternshipProposalPage />} />
                   <Route path="/kelola/kerja-praktik/cpmk" element={<SekdepInternshipProposalPage />} />
+                  <Route path="/kelola/kerja-praktik/rekap-nilai" element={<SekdepInternshipProposalPage />} />
                   <Route path="/kelola/kerja-praktik/cpmk/:cpmkId/rubrik" element={<BulkRubricManage />} />
                   <Route path="/kelola/kerja-praktik/dosen/:supervisorId" element={<LecturerWorkloadDetail />} />
                   <Route path="/kelola/kerja-praktik/dosen/:supervisorId/surat-tugas" element={<LecturerWorkloadManageLetter />} />

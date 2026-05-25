@@ -20,17 +20,27 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
-import type { EventClickArg, DateSelectArg, EventInput } from '@fullcalendar/core';
+import type { EventClickArg, DateSelectArg, EventContentArg, EventInput } from '@fullcalendar/core';
 import idLocale from '@fullcalendar/core/locales/id';
 
 interface CalendarDashboardProps {
   onEventClick?: (event: CalendarEvent) => void;
   onCreateEvent?: () => void;
+  extraEvents?: CalendarEvent[];
+  isLoadingExtraEvents?: boolean;
+  onRefreshExtraEvents?: () => Promise<unknown> | unknown;
   compact?: boolean;
   className?: string;
 }
 
-export function CalendarDashboard({ onEventClick, onCreateEvent, className }: CalendarDashboardProps) {
+export function CalendarDashboard({
+  onEventClick,
+  onCreateEvent,
+  extraEvents = [],
+  isLoadingExtraEvents = false,
+  onRefreshExtraEvents,
+  className
+}: CalendarDashboardProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const calendarRef = useRef<FullCalendar>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -117,7 +127,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
   }
 
   // Check if any sync operation is in progress
-  const isLoadingAny = isLoading || isFetchingInternal || isFetchingOutlook || isSyncing;
+  const isLoadingAny = isLoading || isFetchingInternal || isFetchingOutlook || isLoadingExtraEvents || isSyncing;
 
   // Sync function to refresh calendar data
   const handleSync = async () => {
@@ -130,6 +140,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
       });
 
       await refetchInternal();
+      await onRefreshExtraEvents?.();
 
       // Check if we have access from the fresh status
       if (freshStatus?.hasCalendarAccess) {
@@ -182,12 +193,12 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
     }));
 
     // Merge and deduplicate (avoid showing same event twice if synced)
-    const allEvents = [...internalEvents];
+    const allEvents = [...internalEvents, ...extraEvents];
 
     // Add Outlook events that don't have matching internal events
     transformedOutlookEvents.forEach((outlookEvent) => {
       // Check if this Outlook event is already synced as an internal event
-      const isDuplicate = internalEvents.some((internalEvent) => {
+      const isDuplicate = allEvents.some((internalEvent) => {
         // Enhanced matching logic for better deduplication
 
         // 1. Check if the internal event has an Outlook calendar event ID that matches
@@ -233,7 +244,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
     });
 
     return allEvents;
-  }, [data?.events, outlookEvents?.events]);
+  }, [data?.events, extraEvents, outlookEvents?.events]);
 
   // Get event color based on type
   const getEventColor = (type: string): string => {
@@ -244,6 +255,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
       guidance_rejected: '#ef4444',       // red-500 - rejected
       thesis_deadline: '#dc2626',         // red-600
       seminar_scheduled: '#8b5cf6',       // purple-500
+      internship_seminar: '#0f766e',      // teal-700
       defense_scheduled: '#f97316',       // orange-500
       submission_deadline: '#ec4899',     // pink-500
 
@@ -284,6 +296,19 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
       classNames: ['cursor-pointer'],
     }));
   }, [events]);
+
+  const renderEventContent = (arg: EventContentArg) => {
+    const shouldHideTime = arg.event.extendedProps.type === 'internship_seminar';
+
+    return (
+      <div className="min-w-0 truncate">
+        {!shouldHideTime && arg.timeText && (
+          <span className="font-semibold mr-1">{arg.timeText}</span>
+        )}
+        <span>{arg.event.title}</span>
+      </div>
+    );
+  };
 
   // Handle event click
   const handleEventClick = (clickInfo: EventClickArg) => {
@@ -411,6 +436,7 @@ export function CalendarDashboard({ onEventClick, onCreateEvent, className }: Ca
               list: 'list'
             }}
             events={fullCalendarEvents}
+            eventContent={renderEventContent}
             eventClick={handleEventClick}
             selectable={true}
             select={handleDateSelect}

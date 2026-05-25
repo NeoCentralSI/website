@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,7 @@ export default function RegisterInternshipFormPage() {
     const [memberSearch, setMemberSearch] = useState("");
     const [proposedStartDate, setProposedStartDate] = useState("");
     const [proposedEndDate, setProposedEndDate] = useState("");
+    const activeProposalToastShown = useRef(false);
 
     // Breadcrumbs
     const breadcrumbs = useMemo(() => [
@@ -75,8 +76,29 @@ export default function RegisterInternshipFormPage() {
     const proposalsQuery = useQuery({
         queryKey: ['student-proposals'],
         queryFn: () => getStudentProposals(),
-        enabled: !!proposalId
     });
+
+    const activeProposal = useMemo(() => {
+        if (proposalId || !proposalsQuery.data?.data) return null;
+
+        return proposalsQuery.data.data.find(item => {
+            if (['REJECTED_PROPOSAL', 'REJECTED_BY_COMPANY'].includes(item.status)) {
+                return false;
+            }
+            if (['REJECTED', 'REJECTED_BY_COMPANY', 'FAILED'].includes(item.memberStatus as string)) {
+                return false;
+            }
+            return true;
+        }) || null;
+    }, [proposalId, proposalsQuery.data]);
+
+    useEffect(() => {
+        if (!activeProposal || activeProposalToastShown.current) return;
+
+        activeProposalToastShown.current = true;
+        toast.error("Anda masih memiliki proposal aktif. Selesaikan atau batalkan proposal tersebut sebelum mendaftar kembali.");
+        navigate("/kerja-praktik/pendaftaran", { replace: true });
+    }, [activeProposal, navigate]);
 
     // Fetch holidays
     const holidaysQuery = useQuery({
@@ -272,7 +294,7 @@ export default function RegisterInternshipFormPage() {
         (selectedCompanyId === "NEW" ? (!!newCompanyName && !!newCompanyAddress) : true);
 
     return (
-        <div className="space-y-6 p-6 animate-in fade-in duration-500 mx-auto pb-20">
+        <div className="space-y-6 p-6 animate-in fade-in duration-500 pb-20">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">

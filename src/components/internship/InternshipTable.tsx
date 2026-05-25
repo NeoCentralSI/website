@@ -81,6 +81,7 @@ export type InternshipTableProps<T> = {
     hidePagination?: boolean;
     appendRow?: React.ReactNode;
     isRowSelectable?: (row: T, index: number) => boolean;
+    unstyled?: boolean;
 };
 
 function buildPages(current: number, total: number): (number | "ellipsis")[] {
@@ -129,6 +130,7 @@ export function InternshipTable<T extends Record<string, any>>({
     hidePagination = false,
     appendRow,
     isRowSelectable,
+    unstyled = false,
 }: InternshipTableProps<T>) {
     const [localSearch, setLocalSearch] = useState(searchValue || "");
 
@@ -194,8 +196,7 @@ export function InternshipTable<T extends Record<string, any>>({
         onSortChange(key, isAsc ? "desc" : "asc");
     };
 
-    return (
-        <Card className={cn("p-4", className)}>
+    const tableContent = (
             <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <div className="flex-1 flex items-center gap-2">
@@ -519,6 +520,15 @@ export function InternshipTable<T extends Record<string, any>>({
                     </div>
                 )}
             </div>
+    );
+
+    if (unstyled) {
+        return <div className={cn("rounded-md border bg-background p-3", className)}>{tableContent}</div>;
+    }
+
+    return (
+        <Card className={cn("p-4", className)}>
+            {tableContent}
         </Card>
     );
 }

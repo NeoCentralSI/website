@@ -92,6 +92,8 @@ export default function InternshipLifecycleDetail() {
     const [fieldInfoOpen, setFieldInfoOpen] = useState(false);
     const [fieldSupervisorName, setFieldSupervisorName] = useState('');
     const [fieldSupervisorEmail, setFieldSupervisorEmail] = useState('');
+    const [fieldSupervisorPhone, setFieldSupervisorPhone] = useState('');
+    const [fieldSupervisorNip, setFieldSupervisorNip] = useState('');
     const [unitSection, setUnitSection] = useState('');
     const [sendAssessmentConfirmOpen, setSendAssessmentConfirmOpen] = useState(false);
     const location = useLocation();
@@ -146,7 +148,13 @@ export default function InternshipLifecycleDetail() {
     };
 
     const updateFieldInfoMutation = useMutation({
-        mutationFn: (body: { fieldSupervisorName: string; fieldSupervisorEmail: string; unitSection: string }) =>
+        mutationFn: (body: {
+            fieldSupervisorName: string;
+            fieldSupervisorEmail: string;
+            fieldSupervisorPhone?: string;
+            fieldSupervisorNip?: string;
+            unitSection: string;
+        }) =>
             updateSekdepInternshipFieldInfo(internshipId!, body),
         onSuccess: (data) => {
             toast.success(data.message || "Informasi lapangan berhasil diperbarui");
@@ -178,6 +186,8 @@ export default function InternshipLifecycleDetail() {
 
         setFieldSupervisorName(normalizeDisplayValue(detail?.supervisor.fieldSupervisor));
         setFieldSupervisorEmail(normalizeDisplayValue(detail?.supervisor.fieldSupervisorEmail));
+        setFieldSupervisorPhone(normalizeDisplayValue(detail?.supervisor.fieldSupervisorPhone));
+        setFieldSupervisorNip(normalizeDisplayValue(detail?.supervisor.fieldSupervisorNip));
         setUnitSection(normalizeDisplayValue(detail?.company.unitSection));
         setFieldInfoOpen(true);
     };
@@ -187,6 +197,8 @@ export default function InternshipLifecycleDetail() {
         const payload = {
             fieldSupervisorName: fieldSupervisorName.trim(),
             fieldSupervisorEmail: fieldSupervisorEmail.trim(),
+            fieldSupervisorPhone: fieldSupervisorPhone.trim() || undefined,
+            fieldSupervisorNip: fieldSupervisorNip.trim() || undefined,
             unitSection: unitSection.trim()
         };
 
@@ -553,7 +565,13 @@ export default function InternshipLifecycleDetail() {
                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">Pembimbing Lapangan</p>
                                     <p className="font-semibold text-slate-900">{detail.supervisor.fieldSupervisor}</p>
                                     {detail.supervisor.fieldSupervisorEmail && (
-                                        <p className="text-xs text-muted-foreground">{detail.supervisor.fieldSupervisorEmail}</p>
+                                        <p className="text-xs text-muted-foreground">Email: {detail.supervisor.fieldSupervisorEmail}</p>
+                                    )}
+                                    {detail.supervisor.fieldSupervisorPhone && (
+                                        <p className="text-xs text-muted-foreground">No. HP: {detail.supervisor.fieldSupervisorPhone}</p>
+                                    )}
+                                    {detail.supervisor.fieldSupervisorNip && (
+                                        <p className="text-xs text-muted-foreground">NIP: {detail.supervisor.fieldSupervisorNip}</p>
                                     )}
                                 </div>
                             </div>
@@ -800,7 +818,7 @@ export default function InternshipLifecycleDetail() {
                         <DialogHeader>
                             <DialogTitle>Edit Informasi Lapangan</DialogTitle>
                             <DialogDescription>
-                                Perbarui pembimbing lapangan, email tujuan penilaian, dan unit kerja mahasiswa.
+                                Perbarui pembimbing lapangan, email tujuan penilaian, nomor HP, NIP, dan unit kerja mahasiswa.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -827,6 +845,29 @@ export default function InternshipLifecycleDetail() {
                                     onChange={(event) => setFieldSupervisorEmail(event.target.value)}
                                     placeholder="email@perusahaan.com"
                                     required
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="fieldSupervisorPhone" className="text-xs font-bold uppercase text-muted-foreground">
+                                    Nomor HP Pembimbing Lapangan <span className="font-normal normal-case">(opsional)</span>
+                                </Label>
+                                <Input
+                                    id="fieldSupervisorPhone"
+                                    inputMode="tel"
+                                    value={fieldSupervisorPhone}
+                                    onChange={(event) => setFieldSupervisorPhone(event.target.value)}
+                                    placeholder="Contoh: 081234567890"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="fieldSupervisorNip" className="text-xs font-bold uppercase text-muted-foreground">
+                                    NIP Pembimbing Lapangan <span className="font-normal normal-case">(opsional)</span>
+                                </Label>
+                                <Input
+                                    id="fieldSupervisorNip"
+                                    value={fieldSupervisorNip}
+                                    onChange={(event) => setFieldSupervisorNip(event.target.value)}
+                                    placeholder="NIP pembimbing"
                                 />
                             </div>
                             <div className="grid gap-2">

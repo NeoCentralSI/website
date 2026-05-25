@@ -5,16 +5,16 @@
 // Export all types
 export type {
     AdminApprovedProposalItem,
-    AdminAssignmentProposalItem, CompanyItem, CompanyStatsItem, GuidanceCriteria, GuidanceQuestion, GuidanceWeekDetail, InternshipAssessmentRubric, InternshipCpmk, InternshipListItem, InternshipLogbookItem, InternshipPendingLetter, InternshipProposalDetail, InternshipProposalItem, InternshipTemplate, LecturerGuidanceTimeline, LecturerSupervisedStudent, LecturerWorkloadItem, OverviewCompanyItem,
+    AdminAssignmentProposalItem, CompanyItem, CompanyStatsItem, GuidanceCriteria, GuidanceQuestion, GuidanceWeekDetail, InternshipAssessmentRubric, InternshipAssessmentScoreItem, InternshipCpmk, InternshipListItem, InternshipLogbookItem, InternshipPendingLetter, InternshipProposalDetail, InternshipProposalItem, InternshipTemplate, LecturerGuidanceTimeline, LecturerSupervisedStudent, LecturerWorkloadItem, OverviewCompanyItem,
     OverviewReportItem,
-    OverviewStats, SekdepInternshipDetail, SekdepRegistrationItem, SekdepSupervisorLetterDetail, SeminarScheduleData, StudentGuidance, StudentItem,
+    OverviewStats, SekdepInternshipDetail, SekdepRegistrationItem, SekdepSupervisorLetterDetail, SeminarScheduleData, StudentGuidance, StudentInternshipHistoryItem, StudentItem,
     StudentLogbookData, SubmitEvaluationBody, SubmitProposalBody, UpcomingSeminarItem
 } from './internship/types';
 
 // Export student service functions
 export {
     approveSeminar, deleteProposal, downloadLogbookDocx, downloadLogbookPdf, getCompanies,
-    getEligibleStudents, getStudentGuidance, getStudentLogbooks, getStudentProposals, getUpcomingSeminars, getWorkingDaysCount, registerSeminar, registerSeminarAudience, rejectSeminar, respondToInvitation, submitCompanyReceipt, submitCompanyReport, submitCompanyResponse, submitCompletionCertificate, submitGuidanceResponse, submitInternshipReport, submitLogbookDocument, submitProposal, unregisterSeminarAudience, updateInternshipDetails, updateLogbookEntry, updateProposal, updateSeminarProposal, uploadInternshipDocument
+    getEligibleStudents, getStudentGuidance, getStudentInternshipHistory, getStudentLogbooks, getStudentProposals, getUpcomingSeminars, getWorkingDaysCount, registerSeminar, registerSeminarAudience, rejectSeminar, respondToInvitation, submitCompanyReceipt, submitCompanyReport, submitCompanyResponse, submitCompletionCertificate, submitGuidanceResponse, submitInternshipReport, submitLogbookDocument, submitProposal, unregisterSeminarAudience, updateInternshipDetails, updateLogbookEntry, updateProposal, updateSeminarProposal, uploadInternshipDocument
 } from './internship/student.service';
 
 // Export admin service functions
@@ -26,7 +26,7 @@ export {
 // Export sekdep service functions
 export {
     bulkAssignSupervisor, bulkUpdateInternshipRubrics, bulkVerifyInternshipDocuments, copyInternshipCpmks,
-    copyInternshipGuidance, createGuidanceCriteria, createGuidanceQuestion, createInternshipCpmk, createInternshipRubric, createSekdepCompany, deleteGuidanceCriteria, deleteGuidanceQuestion, deleteInternshipCpmk, deleteInternshipRubric, deleteSekdepCompany, exportLecturerWorkloadPdf, getCompanyStats, getGuidanceCriteria, getGuidanceQuestions, getInternshipCpmkById, getInternshipCpmks, getSekdepInternshipDetail, getSekdepInternshipList, getSekdepInternshipTemplate, getSekdepLecturerWorkload, getSekdepPendingProposals,
+    copyInternshipGuidance, createGuidanceCriteria, createGuidanceQuestion, createInternshipCpmk, createInternshipRubric, createSekdepCompany, deleteGuidanceCriteria, deleteGuidanceQuestion, deleteInternshipCpmk, deleteInternshipRubric, deleteSekdepCompany, exportGradeRecapPdf, exportLecturerWorkloadPdf, getCompanyStats, getGuidanceCriteria, getGuidanceQuestions, getInternshipCpmkById, getInternshipCpmks, getSekdepInternshipDetail, getSekdepInternshipList, getSekdepInternshipTemplate, getSekdepLecturerWorkload, getSekdepPendingProposals,
     getSekdepPendingResponses,
     getSekdepProposalDetail, getSekdepProposals, getSekdepSupervisorLetterDetail, respondToSekdepProposal, saveSekdepInternshipTemplate, sendFieldAssessmentRequest, updateGuidanceCriteria, updateGuidanceQuestion, updateInternshipCpmk, updateInternshipRubric, updateSekdepCompany, updateSekdepInternshipFieldInfo, updateSekdepSupervisorLetter, verifyInternshipDocument
 } from './internship/sekdep.service';

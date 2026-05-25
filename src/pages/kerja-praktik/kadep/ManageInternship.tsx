@@ -113,11 +113,12 @@ export default function KadepInternshipManagementPage() {
         const pendingApp = (data?.applicationLetters || []).filter(l => !l.signedById).length;
         const pendingAssign = (data?.assignmentLetters || []).filter(l => !l.signedById).length;
         const pendingSup = (data?.supervisorLetters || []).filter(l => !l.signedById).length;
+        const pendingRep = (data?.pendingReplacements || []).length;
         return { 
             pendingApp, 
             pendingAssign, 
             pendingSup, 
-            total: pendingApp + pendingAssign + pendingSup,
+            total: pendingApp + pendingAssign + pendingSup + pendingRep,
             totalApp: (data?.applicationLetters || []).length,
             totalAssign: (data?.assignmentLetters || []).length,
             totalSup: (data?.supervisorLetters || []).length
@@ -151,7 +152,7 @@ export default function KadepInternshipManagementPage() {
         if (activeTab.label.startsWith("Permohonan")) {
             return <ApplicationLettersTab data={data?.applicationLetters || []} columns={letterColumns.mahasiswa} {...sharedProps} />;
         } else if (activeTab.label.startsWith("Penugasan Dosen")) {
-            return <SupervisorLettersTab data={data?.supervisorLetters || []} columns={letterColumns.dosen} {...sharedProps} />;
+            return <SupervisorLettersTab data={data?.supervisorLetters || []} pendingReplacements={data?.pendingReplacements || []} columns={letterColumns.dosen} {...sharedProps} />;
         } else if (activeTab.label.startsWith("Penugasan")) {
             return <AssignmentLettersTab data={data?.assignmentLetters || []} columns={letterColumns.mahasiswa} {...sharedProps} />;
         }

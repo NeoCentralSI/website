@@ -9,6 +9,7 @@ import { getInternshipStatusBadge } from '@/lib/internship/status';
 
 interface StudentProposalCardProps {
     proposal: InternshipProposalItem;
+    defaultExpanded?: boolean;
     onViewProposalDoc: (item: InternshipProposalItem) => void;
     onViewAppLetterDoc: (item: InternshipProposalItem) => void;
     onViewResponseDoc: (item: InternshipProposalItem) => void;
@@ -21,6 +22,7 @@ interface StudentProposalCardProps {
 
 export function StudentProposalCard({
     proposal,
+    defaultExpanded = true,
     onViewProposalDoc,
     onViewAppLetterDoc,
     onViewResponseDoc,
@@ -30,11 +32,12 @@ export function StudentProposalCard({
     onEditProposal,
     onDeleteProposal,
 }: StudentProposalCardProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
     const isCoordinator = proposal.koordinatorAtauMember === 'Koordinator';
     const isMemberPending = proposal.koordinatorAtauMember === 'Member' && proposal.memberStatus === 'PENDING';
     const isRejected = ['REJECTED', 'REJECTED_BY_COMPANY'].includes(proposal.memberStatus as string);
+    const isFailed = proposal.memberStatus === 'FAILED';
     const hasAssignment = !!proposal.dokumenSuratTugas;
 
     // Derived states for timeline steps
@@ -106,16 +109,17 @@ export function StudentProposalCard({
                             {proposal.memberStatus && (
                                 <Badge variant="outline" className={cn("text-[10px] sm:text-xs",
                                     ['ACCEPTED', 'ACCEPTED_BY_COMPANY', 'ONGOING', 'COMPLETED'].includes(proposal.memberStatus) ? 'text-green-600 border-green-300 bg-green-50' :
-                                        ['REJECTED', 'REJECTED_BY_COMPANY'].includes(proposal.memberStatus) ? 'text-red-600 border-red-300 bg-red-50' :
+                                        ['REJECTED', 'REJECTED_BY_COMPANY', 'FAILED'].includes(proposal.memberStatus) ? 'text-red-600 border-red-300 bg-red-50' :
                                             'text-amber-600 border-amber-300 bg-amber-50'
                                 )}>
                                     {proposal.memberStatus === 'ACCEPTED' ? 'Diterima' :
                                         ['ACCEPTED_BY_COMPANY', 'ONGOING', 'COMPLETED'].includes(proposal.memberStatus) ? 'Diterima Perusahaan' :
                                             proposal.memberStatus === 'REJECTED' ? 'Ditolak' :
-                                                proposal.memberStatus === 'REJECTED_BY_COMPANY' ? 'Ditolak Perusahaan' : 'Menunggu Undangan'}
+                                                proposal.memberStatus === 'REJECTED_BY_COMPANY' ? 'Ditolak Perusahaan' :
+                                                    proposal.memberStatus === 'FAILED' ? 'Gagal' : 'Menunggu Undangan'}
                                 </Badge>
                             )}
-                            {hasAssignment && (
+                            {hasAssignment && !isFailed && (
                                 <Badge variant="success" className="h-5 px-2 text-[10px] sm:text-xs">SELESAI</Badge>
                             )}
                         </div>
@@ -231,13 +235,14 @@ export function StudentProposalCard({
                                             </Badge>
                                             <Badge variant="outline" className={cn("text-[10px]",
                                                 ['ACCEPTED', 'ACCEPTED_BY_COMPANY', 'ONGOING', 'COMPLETED'].includes(member.status) ? 'text-green-600 border-green-300 bg-green-50' :
-                                                    ['REJECTED', 'REJECTED_BY_COMPANY'].includes(member.status) ? 'text-red-600 border-red-300 bg-red-50' :
+                                                    ['REJECTED', 'REJECTED_BY_COMPANY', 'FAILED'].includes(member.status) ? 'text-red-600 border-red-300 bg-red-50' :
                                                         'text-amber-600 border-amber-300 bg-amber-50'
                                             )}>
                                                 {member.status === 'ACCEPTED' ? 'Menerima' :
                                                     ['ACCEPTED_BY_COMPANY', 'ONGOING', 'COMPLETED'].includes(member.status) ? 'Diterima Perusahaan' :
                                                         member.status === 'REJECTED' ? 'Menolak Undangan' :
-                                                            member.status === 'REJECTED_BY_COMPANY' ? 'Ditolak Perusahaan' : 'Menunggu Undangan'}
+                                                            member.status === 'REJECTED_BY_COMPANY' ? 'Ditolak Perusahaan' :
+                                                                member.status === 'FAILED' ? 'Gagal' : 'Menunggu Undangan'}
                                             </Badge>
                                         </div>
                                     </div>
@@ -484,10 +489,18 @@ export function StudentProposalCard({
                             </div>
                         </div>
 
-                        {hasAssignment && !isRejected && (
+                        {hasAssignment && !isRejected && !isFailed && (
                             <div className="bg-green-50 border border-green-100 rounded-md p-3 mt-2">
                                 <p className="text-xs text-green-800">
                                     Proses pendaftaran selesai. Anda sudah dapat memulai Kerja Praktik sesuai jadwal yang tertera pada Surat Tugas.
+                                </p>
+                            </div>
+                        )}
+
+                        {isFailed && (
+                            <div className="bg-red-50 border border-red-100 rounded-md p-3 mt-2">
+                                <p className="text-xs text-red-800">
+                                    Kerja Praktik ini berstatus gagal. Riwayat dan dokumen tetap tersimpan, dan Anda dapat melakukan pendaftaran KP kembali.
                                 </p>
                             </div>
                         )}

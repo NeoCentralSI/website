@@ -48,12 +48,19 @@ export default function InternshipProposalPage() {
             if (['REJECTED_PROPOSAL', 'REJECTED_BY_COMPANY'].includes(item.status)) {
                 return false;
             }
-            if (['REJECTED', 'REJECTED_BY_COMPANY'].includes(item.memberStatus as string)) {
+            if (['REJECTED', 'REJECTED_BY_COMPANY', 'FAILED'].includes(item.memberStatus as string)) {
                 return false;
             }
             return true;
         });
     }, [items]);
+
+    const isPastProposal = (item: InternshipProposalItem) => {
+        if (['REJECTED_PROPOSAL', 'REJECTED_BY_COMPANY'].includes(item.status)) {
+            return true;
+        }
+        return ['REJECTED', 'REJECTED_BY_COMPANY', 'FAILED', 'COMPLETED'].includes(item.memberStatus as string);
+    };
 
     const handleRegisterClick = () => {
         if (activeProposal) {
@@ -150,6 +157,7 @@ export default function InternshipProposalPage() {
                                 <StudentProposalCard
                                     key={item.id}
                                     proposal={item}
+                                    defaultExpanded={!isPastProposal(item)}
                                     onViewProposalDoc={(item: InternshipProposalItem) => {
                                         if (item.dokumenProposal) {
                                             openDocumentPreview(item.dokumenProposal.fileName, item.dokumenProposal.filePath);

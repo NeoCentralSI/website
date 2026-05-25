@@ -1,29 +1,47 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award, CheckCircle, MessageSquareText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Award, CheckCircle, MessageSquareText, RotateCcw } from 'lucide-react';
 
 interface GradesTabProps {
     internship: any;
 }
 
 export const GradesTab: React.FC<GradesTabProps> = ({ internship }) => {
+    const navigate = useNavigate();
     const isCompleted = internship?.status === 'COMPLETED';
-    const hasScore = isCompleted && internship?.finalNumericScore !== null && internship?.finalNumericScore !== undefined;
+    const isFailed = internship?.status === 'FAILED';
+    const hasScore = (isCompleted || isFailed) && internship?.finalNumericScore !== null && internship?.finalNumericScore !== undefined;
 
     if (!hasScore) {
         return (
             <Card>
                 <CardHeader className="text-center py-12">
-                    <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                        <Award className="h-8 w-8 text-muted-foreground" />
+                    <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isFailed ? 'bg-red-50' : 'bg-muted'}`}>
+                        {isFailed ? (
+                            <AlertTriangle className="h-8 w-8 text-red-600" />
+                        ) : (
+                            <Award className="h-8 w-8 text-muted-foreground" />
+                        )}
                     </div>
-                    <CardTitle>Nilai Belum Tersedia</CardTitle>
+                    <CardTitle>{isFailed ? 'Kerja Praktik Gagal' : 'Nilai Belum Tersedia'}</CardTitle>
                     <CardDescription>
-                        {isCompleted 
-                            ? "Data nilai Anda sedang diproses oleh sistem."
-                            : "Nilai akhir akan ditampilkan setelah status Kerja Praktik Anda dinyatakan 'SELESAI'."}
+                        {isFailed
+                            ? "Status KP Anda gagal sebelum nilai akhir tersedia. Silakan lakukan pendaftaran ulang jika sudah siap."
+                            : isCompleted
+                                ? "Data nilai Anda sedang diproses oleh sistem."
+                                : "Nilai akhir akan ditampilkan setelah status Kerja Praktik Anda dinyatakan 'SELESAI'."}
                     </CardDescription>
+                    {isFailed && (
+                        <div className="pt-4">
+                            <Button onClick={() => navigate('/kerja-praktik/pendaftaran')} className="gap-2">
+                                <RotateCcw className="h-4 w-4" />
+                                Daftar Ulang KP
+                            </Button>
+                        </div>
+                    )}
                 </CardHeader>
             </Card>
         );
@@ -31,6 +49,25 @@ export const GradesTab: React.FC<GradesTabProps> = ({ internship }) => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {isFailed && (
+                <Card className="md:col-span-3 border-red-200 bg-red-50">
+                    <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-semibold text-red-900">Kerja Praktik dinyatakan gagal</p>
+                                <p className="text-xs text-red-700 mt-1">
+                                    Nilai akhir tetap ditampilkan sebagai riwayat. Anda dapat melakukan pendaftaran KP kembali.
+                                </p>
+                            </div>
+                        </div>
+                        <Button onClick={() => navigate('/kerja-praktik/pendaftaran')} className="gap-2 self-start sm:self-center">
+                            <RotateCcw className="h-4 w-4" />
+                            Daftar Ulang KP
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
             <Card className="md:col-span-1">
                 <CardHeader className="text-center">
                     <CardTitle>Nilai Akhir</CardTitle>
@@ -38,10 +75,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({ internship }) => {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center py-8 gap-4">
                     <div className="relative flex items-center justify-center">
-                        <div className="w-32 h-32 rounded-full border-8 border-primary/20 flex items-center justify-center">
-                            <span className="text-4xl font-bold text-primary">{internship?.finalGrade || '-'}</span>
+                        <div className={`w-32 h-32 rounded-full border-8 flex items-center justify-center ${isFailed ? 'border-red-200' : 'border-primary/20'}`}>
+                            <span className={`text-4xl font-bold ${isFailed ? 'text-red-600' : 'text-primary'}`}>{internship?.finalGrade || '-'}</span>
                         </div>
-                        <div className="absolute -bottom-2 px-4 py-1 bg-primary text-white text-xs font-bold rounded-full">
+                        <div className={`absolute -bottom-2 px-4 py-1 text-white text-xs font-bold rounded-full ${isFailed ? 'bg-red-600' : 'bg-primary'}`}>
                             SKOR: {internship?.finalNumericScore?.toFixed(2) || '0'}
                         </div>
                     </div>

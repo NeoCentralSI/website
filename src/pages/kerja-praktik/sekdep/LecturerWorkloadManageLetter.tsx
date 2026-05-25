@@ -64,21 +64,40 @@ export default function LecturerWorkloadManageLetter() {
 
     const businessDays = calculateBusinessDays(watchDates[0], watchDates[1]);
 
-    const getKpDatePlaceholder = (field: "actualStartDate" | "actualEndDate") => {
+    const getKpDate = (field: "actualStartDate" | "actualEndDate", showToast = true) => {
         const dates = selectedStudents
-            .map((student) => student[field])
-            .filter((date): date is string => Boolean(date))
-            .map((date) => new Date(date))
-            .filter((date) => !isNaN(date.getTime()));
+            .map((student: any) => student[field])
+            .filter((date: any): date is string => Boolean(date))
+            .map((date: any) => new Date(date))
+            .filter((date: any) => !isNaN(date.getTime()));
 
-        if (dates.length === 0) return "Pilih tanggal";
+        if (dates.length === 0) {
+            if (showToast) toast.error("Belum ada mahasiswa yang memiliki tanggal KP");
+            return null;
+        }
 
         const timestamp = field === "actualStartDate"
-            ? Math.min(...dates.map(date => date.getTime()))
-            : Math.max(...dates.map(date => date.getTime()));
+            ? Math.min(...dates.map((date: any) => date.getTime()))
+            : Math.max(...dates.map((date: any) => date.getTime()));
 
-        return `Sesuai tanggal KP: ${formatDateShortId(new Date(timestamp).toISOString())}`;
+        return new Date(timestamp).toISOString().split('T')[0];
     };
+
+    useEffect(() => {
+        if (selectedStudents.length > 0) {
+            const currentStart = watchDates[0];
+            const currentEnd = watchDates[1];
+            
+            if (!currentStart) {
+                const startVal = getKpDate("actualStartDate", false);
+                if (startVal) setValue("startDate", startVal);
+            }
+            if (!currentEnd) {
+                const endVal = getKpDate("actualEndDate", false);
+                if (endVal) setValue("endDate", endVal);
+            }
+        }
+    }, [selectedStudents, setValue, watchDates]);
 
     useEffect(() => {
         if (supervisorId) {
@@ -98,9 +117,9 @@ export default function LecturerWorkloadManageLetter() {
             };
 
             // Pre-fill form based on first selected item if exists (can be improved)
-            // Just defaults for now, let's select all active students
+            const studentWithDocNum = res.data.assignedStudents.find((s: any) => s.documents.supLetterDocNumber);
             reset({
-                documentNumber: "",
+                documentNumber: studentWithDocNum?.documents.supLetterDocNumber || "",
                 startDate: "",
                 endDate: "",
                 internshipIds: res.data.assignedStudents.map((s: any) => s.internshipId)
@@ -188,6 +207,8 @@ export default function LecturerWorkloadManageLetter() {
     }
 
     if (!detail) return null;
+
+    const isSigned = detail?.assignedStudents.some((s: any) => s.documents.supLetterSignedById);
 
     return (
         <div className="p-6 space-y-6 animate-in fade-in duration-500">
@@ -316,7 +337,8 @@ export default function LecturerWorkloadManageLetter() {
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
                                                     onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
-                                                    placeholder={getKpDatePlaceholder("actualStartDate")}
+                                                    placeholder="Pilih tanggal"
+                                                    disabled={isSigned}
                                                     showPastDates
                                                 />
                                             )}
@@ -338,7 +360,8 @@ export default function LecturerWorkloadManageLetter() {
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
                                                     onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
-                                                    placeholder={getKpDatePlaceholder("actualEndDate")}
+                                                    placeholder="Pilih tanggal"
+                                                    disabled={isSigned}
                                                     showPastDates
                                                 />
                                             )}
@@ -374,7 +397,7 @@ export default function LecturerWorkloadManageLetter() {
                                         <Settings2 className="h-4 w-4 mr-2" />
                                         Kelola Template
                                     </Button>
-                                    <Button type="submit" className="min-w-[120px]" disabled={submitting || watchInternshipIds.length === 0}>
+                                    <Button type="submit" className="min-w-[120px]" disabled={submitting || watchInternshipIds.length === 0 || isSigned}>
                                         {submitting ? (
                                             <>
                                                 <span className="w-4 h-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin" />

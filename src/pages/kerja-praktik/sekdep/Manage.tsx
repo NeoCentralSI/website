@@ -8,6 +8,7 @@ import { InternshipListPanel } from '@/components/internship/sekdep/InternshipLi
 import { LecturerWorkloadPanel } from '@/components/internship/sekdep/LecturerWorkloadPanel';
 import { GuidanceMasterPanel } from '@/components/internship/sekdep/GuidanceMasterPanel';
 import { InternshipCpmkPanel } from '@/components/internship/sekdep/InternshipCpmkPanel';
+import { GradeRecapPanel } from '@/components/internship/sekdep/GradeRecapPanel';
 import { MonitoringPanel } from '@/components/internship/MonitoringPanel';
 
 const TAB_ITEMS: TabItem[] = [
@@ -17,6 +18,7 @@ const TAB_ITEMS: TabItem[] = [
     { label: "Daftar Dosen", to: "/kelola/kerja-praktik/dosen" },
     { label: "Bimbingan", to: "/kelola/kerja-praktik/bimbingan" },
     { label: "CPMK", to: "/kelola/kerja-praktik/cpmk" },
+    { label: "Rekap Nilai", to: "/kelola/kerja-praktik/rekap-nilai" },
 ];
 
 export default function SekdepInternshipProposalPage() {
@@ -63,6 +65,10 @@ export default function SekdepInternshipProposalPage() {
 
         if (activeTab.label === "CPMK") {
             return <InternshipCpmkPanel />;
+        }
+
+        if (activeTab.label === "Rekap Nilai") {
+            return <GradeRecapPanel />;
         }
 
         return null;

@@ -432,8 +432,17 @@ export const getSekdepInternshipListColumns = ({
         {
             key: 'supervisor',
             header: 'Dosen Pembimbing',
-            accessor: 'supervisorName',
-            className: 'text-sm',
+            render: (item) => (
+                <div className="flex flex-col py-1">
+                    <span className="text-sm">{item.supervisorName}</span>
+                    {item.supervisorLetter?.status === 'SUPERSEDED' && (
+                        <Badge variant="outline" className="text-[9px] w-fit h-4 bg-orange-50 text-orange-600 border-orange-200 px-1 py-0 font-medium mt-0.5">
+                            SUPERSEDED
+                        </Badge>
+                    )}
+                </div>
+            ),
+            className: 'text-left min-w-[150px]',
             sortable: true,
         },
         {

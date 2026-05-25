@@ -99,7 +99,11 @@ export const getKadepInternshipLetterColumns = ({
             header: 'Status',
             render: (item) => (
                 <div className="flex items-center justify-center">
-                    {item.signedById ? (
+                    {item.letterStatus === 'SUPERSEDED' ? (
+                        <Badge variant="destructive" className="px-2 py-0 text-[10px] whitespace-nowrap opacity-80">
+                            SUPERSEDED
+                        </Badge>
+                    ) : item.signedById ? (
                         <Badge variant="success" className="px-2 py-0 text-[10px] whitespace-nowrap">
                             <Check className="h-3 w-3 mr-1" />
                             SIGNED

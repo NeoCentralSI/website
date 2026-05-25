@@ -39,11 +39,19 @@ export default function LogbookPage() {
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [fieldSupervisor, setFieldSupervisor] = useState("");
     const [fieldSupervisorEmail, setFieldSupervisorEmail] = useState("");
+    const [fieldSupervisorPhone, setFieldSupervisorPhone] = useState("");
+    const [fieldSupervisorNip, setFieldSupervisorNip] = useState("");
     const [unitSection, setUnitSection] = useState("");
     const [finishOpen, setFinishOpen] = useState(false);
 
     const updateDetailsMutation = useMutation({
-        mutationFn: (body: { fieldSupervisorName: string; fieldSupervisorEmail: string; unitSection: string }) => updateInternshipDetails(body),
+        mutationFn: (body: {
+            fieldSupervisorName: string;
+            fieldSupervisorEmail: string;
+            fieldSupervisorPhone?: string;
+            fieldSupervisorNip?: string;
+            unitSection: string;
+        }) => updateInternshipDetails(body),
         onSuccess: () => {
             toast.success("Informasi KP berhasil diperbarui");
             qc.invalidateQueries({ queryKey: ['student-logbooks'] });
@@ -86,6 +94,8 @@ export default function LogbookPage() {
 
         setFieldSupervisor(internship?.fieldSupervisorName || "");
         setFieldSupervisorEmail(internship?.fieldSupervisorEmail || "");
+        setFieldSupervisorPhone(internship?.fieldSupervisorPhone || "");
+        setFieldSupervisorNip(internship?.fieldSupervisorNip || "");
         setUnitSection(internship?.unitSection || "");
         setDetailsOpen(true);
     };
@@ -106,6 +116,8 @@ export default function LogbookPage() {
         updateDetailsMutation.mutate({
             fieldSupervisorName: fieldSupervisor.trim(),
             fieldSupervisorEmail: fieldSupervisorEmail.trim(),
+            fieldSupervisorPhone: fieldSupervisorPhone.trim() || undefined,
+            fieldSupervisorNip: fieldSupervisorNip.trim() || undefined,
             unitSection: unitSection.trim()
         });
     };
@@ -190,7 +202,11 @@ export default function LogbookPage() {
                                 Pembimbing Lapangan
                             </span>
                             <span className="font-medium">{internship.fieldSupervisorName || <span className="text-muted-foreground italic">Nama belum ditentukan</span>}</span>
-                            <span className="text-sm text-muted-foreground">{internship.fieldSupervisorEmail || <span className="italic">Email belum ditentukan</span>}</span>
+                            <div className="mt-2 grid gap-1 text-sm text-muted-foreground">
+                                <span>Email: {internship.fieldSupervisorEmail || <span className="italic">belum ditentukan</span>}</span>
+                                <span>No. HP: {internship.fieldSupervisorPhone || <span className="italic">belum diisi</span>}</span>
+                                <span>NIP: {internship.fieldSupervisorNip || <span className="italic">belum diisi</span>}</span>
+                            </div>
                         </div>
                         <div className="flex flex-col gap-1 p-4 rounded-xl border bg-card text-card-foreground">
                             <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
@@ -308,6 +324,27 @@ export default function LogbookPage() {
                                     onChange={(e) => setFieldSupervisorEmail(e.target.value)}
                                     className="h-9"
                                     required
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="supervisorPhone" className="text-xs font-bold uppercase text-muted-foreground">Nomor HP Pembimbing Lapangan <span className="font-normal normal-case">(opsional)</span></Label>
+                                <Input
+                                    id="supervisorPhone"
+                                    inputMode="tel"
+                                    placeholder="Contoh: 081234567890"
+                                    value={fieldSupervisorPhone}
+                                    onChange={(e) => setFieldSupervisorPhone(e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="supervisorNip" className="text-xs font-bold uppercase text-muted-foreground">NIP Pembimbing Lapangan <span className="font-normal normal-case">(opsional)</span></Label>
+                                <Input
+                                    id="supervisorNip"
+                                    placeholder="NIP pembimbing"
+                                    value={fieldSupervisorNip}
+                                    onChange={(e) => setFieldSupervisorNip(e.target.value)}
+                                    className="h-9"
                                 />
                             </div>
                             <div className="grid gap-2">

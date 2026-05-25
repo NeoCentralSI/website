@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import {
-    BookOpen, User, Target, Building2, CheckCircle2, Clock, MapPin,
-    FileText, GraduationCap, Plus, Calendar
+    AlertTriangle, BookOpen, User, Target, Building2, CheckCircle2, Clock, MapPin,
+    FileText, GraduationCap, Plus, Calendar, RotateCcw
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDateId } from "@/lib/text";
@@ -28,6 +28,12 @@ const countWorkingDays = (startDate: Date, endDate: Date) => {
         current.setDate(current.getDate() + 1);
     }
     return count;
+};
+
+const getSupervisorName = (internship: any) => {
+    return internship?.supervisor?.user?.fullName
+        || internship?.supLetter?.supervisor?.user?.fullName
+        || "-";
 };
 
 export function StatusTab({ internship, logbooks }: { internship: any; logbooks: any[] }) {
@@ -63,15 +69,20 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
     }
 
     const { proposal, supervisor, seminars } = internship;
+    const supervisorName = getSupervisorName(internship);
+    const fieldSupervisorName = internship.fieldSupervisorName || "-";
+    const fieldSupervisorEmail = internship.fieldSupervisorEmail || null;
     const isCompleted = internship.status === "COMPLETED";
+    const isFailed = internship.status === "FAILED";
+    const isTerminal = isCompleted || isFailed;
 
     // Progress stepper logic
     const steps = [
-        { label: "Pendaftaran", active: proposal?.status === 'APPROVED_PROPOSAL' || proposal?.status === 'WAITING_FOR_VERIFICATION' || proposal?.status === 'ACCEPTED_BY_COMPANY' || internship?.status === 'ONGOING' || isCompleted },
-        { label: "Persiapan", active: proposal?.status === 'ACCEPTED_BY_COMPANY' || internship?.status === 'ONGOING' || isCompleted },
-        { label: "Pelaksanaan", active: internship?.status === 'ONGOING' || isCompleted },
-        { label: "Seminar", active: (seminars && seminars.length > 0) || isCompleted },
-        { label: "Selesai", active: isCompleted },
+        { label: "Pendaftaran", active: proposal?.status === 'APPROVED_PROPOSAL' || proposal?.status === 'WAITING_FOR_VERIFICATION' || proposal?.status === 'ACCEPTED_BY_COMPANY' || internship?.status === 'ONGOING' || isTerminal },
+        { label: "Persiapan", active: proposal?.status === 'ACCEPTED_BY_COMPANY' || internship?.status === 'ONGOING' || isTerminal },
+        { label: "Pelaksanaan", active: internship?.status === 'ONGOING' || isTerminal },
+        { label: "Seminar", active: (seminars && seminars.length > 0) || isTerminal },
+        { label: isFailed ? "Gagal" : "Selesai", active: isTerminal },
     ];
     const reversedSteps = [...steps].reverse();
     const reversedIndex = reversedSteps.findIndex(s => s.active);
@@ -115,7 +126,9 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
                                 <CardDescription>Detail status pelaksanaan Kerja Praktik Anda</CardDescription>
                             </div>
                         </div>
-                        {isCompleted ? (
+                        {isFailed ? (
+                            <Badge variant="destructive">GAGAL</Badge>
+                        ) : isCompleted ? (
                             <Badge variant="default" className="bg-green-600">SELESAI</Badge>
                         ) : (
                             <Badge variant="secondary">BERLANGSUNG</Badge>
@@ -141,7 +154,10 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <User className="h-4 w-4" />
-                                <span>Pembimbing Lapangan: <span className="text-foreground font-medium">{internship.fieldSupervisorName || "-"}</span></span>
+                                <span>
+                                    Pembimbing Lapangan: <span className="text-foreground font-medium">{fieldSupervisorName}</span>
+                                    {fieldSupervisorEmail ? <span className="text-xs"> ({fieldSupervisorEmail})</span> : null}
+                                </span>
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Target className="h-4 w-4" />
@@ -149,6 +165,29 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
                             </div>
                         </div>
                     </div>
+
+                    {isFailed && (
+                        <>
+                            <Separator />
+                            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-start gap-3">
+                                        <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-red-900">Kerja Praktik berstatus gagal</p>
+                                            <p className="text-xs text-red-700 mt-1">
+                                                Riwayat KP ini tetap tersimpan. Jika sudah siap, mulai pendaftaran KP baru dari halaman pendaftaran.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Button onClick={() => navigate("/kerja-praktik/pendaftaran")} className="gap-2 self-start sm:self-center">
+                                        <RotateCcw className="h-4 w-4" />
+                                        Daftar Ulang KP
+                                    </Button>
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     <Separator />
 
@@ -158,7 +197,7 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
                             <GraduationCap className="h-4 w-4" /> Dosen Pembimbing
                         </span>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {supervisor ? (
+                            {supervisor || supervisorName !== "-" ? (
                                 <div className="p-3 rounded-xl bg-background/50 border hover:bg-background/80 transition-colors">
                                     <div className="flex items-center justify-between mb-2">
                                         <Badge variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
@@ -167,7 +206,7 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
                                     </div>
                                     <div className="space-y-1.5">
                                         <p className="font-medium text-sm leading-tight text-foreground/90">
-                                            {supervisor.user?.fullName || "-"}
+                                            {supervisorName}
                                         </p>
                                     </div>
                                 </div>
@@ -204,19 +243,19 @@ export function StatusTab({ internship, logbooks }: { internship: any; logbooks:
                     </div>
 
                     {/* Nilai Akhir — integrated like TA readiness cards */}
-                    {isCompleted && internship.finalNumericScore && (
+                    {isTerminal && internship.finalNumericScore !== null && internship.finalNumericScore !== undefined && (
                         <>
                             <Separator />
-                            <div className="rounded-lg bg-primary/5 border border-primary/20 p-6">
+                            <div className={`rounded-lg border p-6 ${isFailed ? 'bg-red-50 border-red-200' : 'bg-primary/5 border-primary/20'}`}>
                                 <div className="flex items-center justify-center gap-8">
                                     <div className="text-center">
                                         <p className="text-sm text-muted-foreground mb-2">Nilai Angka</p>
-                                        <p className="text-4xl font-bold text-primary">{internship.finalNumericScore}</p>
+                                        <p className={`text-4xl font-bold ${isFailed ? 'text-red-600' : 'text-primary'}`}>{internship.finalNumericScore}</p>
                                     </div>
                                     <Separator orientation="vertical" className="h-16" />
                                     <div className="text-center">
                                         <p className="text-sm text-muted-foreground mb-2">Huruf Mutu</p>
-                                        <p className="text-4xl font-black">{internship.finalGrade}</p>
+                                        <p className={`text-4xl font-black ${isFailed ? 'text-red-600' : ''}`}>{internship.finalGrade}</p>
                                     </div>
                                 </div>
                             </div>

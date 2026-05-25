@@ -1,18 +1,19 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "../auth.service";
-import type { 
-    SekdepRegistrationItem, 
-    InternshipProposalDetail, 
-    CompanyStatsItem, 
-    InternshipListItem,
-    SekdepInternshipDetail,
-    LecturerWorkloadItem,
-    SekdepSupervisorLetterDetail,
-    InternshipTemplate,
-    GuidanceQuestion,
+import type {
+    CompanyStatsItem,
     GuidanceCriteria,
+    GuidanceQuestion,
+    InternshipAssessmentRubric,
     InternshipCpmk,
-    InternshipAssessmentRubric
+    InternshipGradeRecapData,
+    InternshipListItem,
+    InternshipProposalDetail,
+    InternshipTemplate,
+    LecturerWorkloadItem,
+    SekdepInternshipDetail,
+    SekdepRegistrationItem,
+    SekdepSupervisorLetterDetail
 } from "./types";
 
 export const getSekdepProposals = async (academicYearId?: string): Promise<{ success: boolean; data: SekdepRegistrationItem[] }> => {
@@ -196,6 +197,33 @@ export const getSekdepInternshipDetail = async (id: string): Promise<{ success: 
     return res.json();
 };
 
+export const getSekdepGradeRecap = async (
+    academicYearId?: string,
+    q?: string,
+    page: number = 1,
+    pageSize: number = 10,
+    gradeStatus?: string,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
+): Promise<{ success: boolean; data: InternshipGradeRecapData; total: number }> => {
+    const params = new URLSearchParams();
+    if (academicYearId) params.append('academicYearId', academicYearId);
+    if (q) params.append('q', q);
+    if (gradeStatus && gradeStatus !== 'all') params.append('gradeStatus', gradeStatus);
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GRADE_RECAP)}?${params.toString()}`;
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat rekap nilai" }));
+        throw new Error(errorData.message || "Gagal memuat rekap nilai");
+    }
+    return res.json();
+};
+
 export const verifyInternshipDocument = async (
     id: string,
     documentType: 'report' | 'completionCertificate' | 'companyReceipt' | 'logbookDocument',
@@ -255,7 +283,13 @@ export const sendFieldAssessmentRequest = async (
 
 export const updateSekdepInternshipFieldInfo = async (
     internshipId: string,
-    body: { fieldSupervisorName: string; fieldSupervisorEmail: string; unitSection: string }
+    body: {
+        fieldSupervisorName: string;
+        fieldSupervisorEmail: string;
+        fieldSupervisorPhone?: string;
+        fieldSupervisorNip?: string;
+        unitSection: string;
+    }
 ): Promise<{ success: boolean; message: string }> => {
     const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.UPDATE_FIELD_INFO(internshipId));
     const res = await apiRequest(url, {
@@ -332,6 +366,36 @@ export const exportLecturerWorkloadPdf = async (): Promise<void> => {
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = 'Daftar_Bimbingan_KP.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+};
+
+export const exportGradeRecapPdf = async (
+    academicYearId?: string,
+    q?: string,
+    gradeStatus?: string,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
+): Promise<void> => {
+    const params = new URLSearchParams();
+    if (academicYearId) params.append('academicYearId', academicYearId);
+    if (q) params.append('q', q);
+    if (gradeStatus && gradeStatus !== 'all') params.append('gradeStatus', gradeStatus);
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
+
+    const url = `${getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_SEKDEP.GRADE_RECAP)}/download?${params.toString()}`;
+    const res = await apiRequest(url);
+    if (!res.ok) {
+        throw new Error('Gagal mengekspor PDF');
+    }
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'Rekap_Nilai_KP.pdf';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -627,3 +691,21 @@ export const rejectFinalReport = async (
 };
 
 
+
+export const requestSupervisorReplacement = async (
+    internshipId: string,
+    newSupervisorId: string,
+    reason: string
+): Promise<{ success: boolean; data: any }> => {
+    const url = getApiUrl('/insternship/sekdep/internships/replacement-request');
+    const res = await apiRequest(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internshipId, newSupervisorId, reason })
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal mengajukan penggantian" }));
+        throw new Error(errorData.message || "Gagal mengajukan penggantian");
+    }
+    return res.json();
+};
