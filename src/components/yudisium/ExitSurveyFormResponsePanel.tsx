@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { 
   PieChart, 
   Pie, 
@@ -425,44 +426,46 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
 
       {/* Export PDF Modal */}
       <Dialog open={isPdfModalOpen} onOpenChange={setIsPdfModalOpen}>
-        <DialogContent className="sm:max-w-[425px] rounded-3xl">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black">Ekspor Laporan PDF</DialogTitle>
-            <DialogDescription className="font-medium text-muted-foreground">
-              Pilih cakupan data yang ingin Anda sertakan dalam laporan formal PDF.
+            <DialogTitle>Ekspor Laporan PDF</DialogTitle>
+            <DialogDescription>
+              Pilih periode yudisium yang ingin disertakan dalam laporan exit survey.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-6 space-y-4">
+          <div className="space-y-4 py-2">
              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Periode Yudisium</label>
+                <Label htmlFor="exit-survey-pdf-period">Periode Yudisium</Label>
                 <Select value={tempPdfYudisiumId} onValueChange={setTempPdfYudisiumId}>
-                  <SelectTrigger className="w-full h-12 border-gray-200 rounded-xl bg-white shadow-sm font-bold text-gray-700 hover:border-primary transition-all">
+                  <SelectTrigger id="exit-survey-pdf-period" className="w-full">
                      <div className="flex items-center gap-2">
                         <Filter className="h-4 w-4 text-muted-foreground" />
                         <SelectValue placeholder="Pilih Periode Yudisium" />
                      </div>
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-gray-200 shadow-xl p-1">
-                    <SelectItem value="all" className="rounded-lg font-bold text-xs py-2.5">
+                  <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem value="all">
                       Semua Periode
                     </SelectItem>
                     {uniqueYudisiums.map((y) => (
-                      <SelectItem key={y.id} value={y.id} className="rounded-lg font-medium text-xs py-2.5">
+                      <SelectItem key={y.id} value={y.id} className="max-w-full whitespace-normal">
                         {y.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Pilih semua periode untuk menggabungkan seluruh respons pada formulir ini.
+                </p>
              </div>
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setIsPdfModalOpen(false)} className="rounded-xl font-bold">
+            <Button variant="outline" onClick={() => setIsPdfModalOpen(false)}>
               Batal
             </Button>
             <Button 
-              className="rounded-xl font-bold px-8" 
               onClick={() => handleExportPdf(tempPdfYudisiumId)}
             >
               Unduh Laporan
