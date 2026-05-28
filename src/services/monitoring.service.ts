@@ -117,6 +117,10 @@ export interface ThesisListItem {
   id: string;
   title: string;
   rating: 'ONGOING' | 'SLOW' | 'AT_RISK' | 'FAILED' | 'CANCELLED';
+  topic: {
+    id: string;
+    name: string;
+  } | null;
   student: {
     id: string;
     userId: string;
@@ -270,6 +274,7 @@ export interface FilterOption {
 export interface FilterOptions {
   statuses: FilterOption[];
   supervisors: FilterOption[];
+  topics: FilterOption[];
   academicYears?: {
     value: string;
     label: string;
@@ -280,6 +285,7 @@ export interface FilterOptions {
 export interface ThesesFilters {
   status?: string;
   lecturerId?: string;
+  topicId?: string;
   academicYear?: string;
   search?: string;
   page?: number;
@@ -325,6 +331,7 @@ export async function getThesesList(filters: ThesesFilters = {}): Promise<Theses
 
   if (filters.status) params.append("status", filters.status);
   if (filters.lecturerId) params.append("lecturerId", filters.lecturerId);
+  if (filters.topicId) params.append("topicId", filters.topicId);
   if (filters.academicYear && filters.academicYear !== "all") params.append("academicYear", filters.academicYear);
   if (filters.search) params.append("search", filters.search);
   if (filters.page) params.append("page", filters.page.toString());

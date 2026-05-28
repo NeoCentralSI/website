@@ -128,6 +128,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   // Filter state for dropdowns (backend filtering)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [lecturerFilter, setLecturerFilter] = useState<string | undefined>(undefined);
+  const [topicFilter, setTopicFilter] = useState<string | undefined>(undefined);
   const [ratingFilter, setRatingFilter] = useState<string | undefined>(initialRating);
 
   // Frontend pagination & search state
@@ -140,10 +141,11 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   const apiFilters = useMemo(() => ({
     status: statusFilter,
     lecturerId: lecturerFilter,
+    topicId: topicFilter,
     academicYear,
     page: 1,
     pageSize: 1000, // Fetch all data for frontend pagination & search
-  }), [statusFilter, lecturerFilter, academicYear]);
+  }), [statusFilter, lecturerFilter, topicFilter, academicYear]);
 
   const { data, isLoading, refetch, isFetching } = useThesesList(apiFilters);
   const isLoadingAny = isLoading || isFetching || isSyncing;
@@ -167,6 +169,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         thesis.student.name.toLowerCase().includes(searchLower) ||
         thesis.student.nim.toLowerCase().includes(searchLower) ||
         thesis.title?.toLowerCase().includes(searchLower) ||
+        thesis.topic?.name?.toLowerCase().includes(searchLower) ||
         thesis.supervisors.pembimbing1?.toLowerCase().includes(searchLower) ||
         thesis.supervisors.pembimbing2?.toLowerCase().includes(searchLower)
       );
@@ -181,11 +184,13 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
     return searchFilteredData.slice(startIndex, startIndex + pageSize);
   }, [searchFilteredData, page, pageSize]);
 
-  const handleFilterChange = useCallback((key: 'status' | 'lecturerId' | 'rating', value: string | undefined) => {
+  const handleFilterChange = useCallback((key: 'status' | 'lecturerId' | 'topicId' | 'rating', value: string | undefined) => {
     if (key === 'status') {
       setStatusFilter(value === "all" ? undefined : value);
     } else if (key === 'lecturerId') {
       setLecturerFilter(value === "all" ? undefined : value);
+    } else if (key === 'topicId') {
+      setTopicFilter(value === "all" ? undefined : value);
     } else if (key === 'rating') {
       setRatingFilter(value === "all" ? undefined : value);
     }
@@ -209,12 +214,13 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   const clearFilters = useCallback(() => {
     setStatusFilter(undefined);
     setLecturerFilter(undefined);
+    setTopicFilter(undefined);
     setRatingFilter(undefined);
     setFrontendSearch("");
     setPage(1);
   }, []);
 
-  const hasActiveFilters = statusFilter || lecturerFilter || ratingFilter || frontendSearch;
+  const hasActiveFilters = statusFilter || lecturerFilter || topicFilter || ratingFilter || frontendSearch;
 
   const columns: Column<ThesisListItem>[] = [
     {
@@ -232,6 +238,15 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
       header: "Mulai TA",
       render: (thesis) => (
         <span className="whitespace-nowrap">{thesis.startSemester || thesis.academicYear}</span>
+      ),
+    },
+    {
+      key: "topic",
+      header: "Topik",
+      render: (thesis) => (
+        <span className="block max-w-45 truncate text-sm" title={thesis.topic?.name || "-"}>
+          {thesis.topic?.name || "-"}
+        </span>
       ),
     },
     {
@@ -424,6 +439,23 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
           {filterOptions?.statuses.map((status) => (
             <SelectItem key={status.value} value={status.value}>
               {status.label} ({status.count})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={topicFilter || "all"}
+        onValueChange={(value) => handleFilterChange("topicId", value)}
+      >
+        <SelectTrigger className="w-50">
+          <SelectValue placeholder="Topik" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Semua Topik</SelectItem>
+          {filterOptions?.topics.map((topic) => (
+            <SelectItem key={topic.value} value={topic.value}>
+              {topic.label}{topic.count !== undefined ? ` (${topic.count})` : ""}
             </SelectItem>
           ))}
         </SelectContent>
