@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDefenceRubric } from '@/hooks/master-data/useDefenceRubric';
-import { useCpmk } from '@/hooks/master-data/useCpmk';
+import { useThesisCpmk } from '@/hooks/master-data/useThesisCpmk';
 import { getActiveAcademicYearAPI } from '@/services/admin.service';
 import { DefenceCriteriaTable } from '@/components/master-data/defence-rubric/DefenceCriteriaTable';
 import { DefenceCriteriaFormDialog } from '@/components/master-data/defence-rubric/DefenceCriteriaFormDialog';
+import { MinimumScoreDialog } from '@/components/master-data/MinimumScoreDialog';
+import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
 import {
     Card,
     CardContent,
@@ -51,13 +54,16 @@ export function DefenceRubricManagementPanel() {
         reorderRubrics,
         removeCpmkConfig,
         isRemovingCpmkConfig,
+        updateMinimumScore,
+        isUpdatingMinimumScore,
     } = useDefenceRubric(selectedRole);
 
-    const { cpmks: allCpmks } = useCpmk(activeAcademicYearId);
+    const { thesisCpmks: allCpmks } = useThesisCpmk(activeAcademicYearId);
 
     const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false);
     const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<CpmkWithRubrics | null>(null);
     const [editCriteria, setEditCriteria] = useState<AssessmentCriteria | null>(null);
+    const [minScoreDialogOpen, setMinScoreDialogOpen] = useState(false);
 
     const examinerTotal = weightSummary?.examinerTotal ?? 0;
     const supervisorTotal = weightSummary?.supervisorTotal ?? 0;
@@ -66,7 +72,7 @@ export function DefenceRubricManagementPanel() {
     const remainingScore = 100 - combinedTotal;
 
     const activeThesisCpmks = useMemo(
-        () => allCpmks.filter((cpmk) => cpmk.type === 'thesis'),
+        () => allCpmks,
         [allCpmks],
     );
 
@@ -83,7 +89,7 @@ export function DefenceRubricManagementPanel() {
                     code: cpmk.code,
                     description: cpmk.description,
                     displayOrder: 0,
-                    hasAssessmentDetails: cpmk.hasAssessmentDetails,
+                    hasAssessmentDetails: false,
                     assessmentCriterias: [],
                 } as CpmkWithRubrics;
             })
@@ -151,17 +157,31 @@ export function DefenceRubricManagementPanel() {
                             </button>
                         ))}
                     </div>
-                    {weightSummary && (
-                        <div className="flex items-center gap-3 text-sm">
-                            <span className="text-muted-foreground">Skor {roleLabel}:</span>
-                            <span className="font-bold text-primary">{roleTotalScore}</span>
-                            <span className="text-xs text-muted-foreground border-l pl-3">
-                                Penguji: {examinerTotal} | Pembimbing: {supervisorTotal}
-                            </span>
+                    <div className="flex flex-col gap-2 items-end">
+                        <div className="flex items-center gap-2">
+                            {weightSummary && (
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="h-fit py-2"
+                                    onClick={() => setMinScoreDialogOpen(true)}
+                                >
+                                    <Settings className="w-4 h-4 mr-2" />
+                                    Min Lulus: {weightSummary.minimumScore || 0}
+                                </Button>
+                            )}
                         </div>
-                    )}
+                        {weightSummary && (
+                            <div className="flex items-center gap-3 text-sm">
+                                <span className="text-muted-foreground">Skor {roleLabel}:</span>
+                                <span className="font-bold text-primary">{roleTotalScore}</span>
+                                <span className="text-xs text-muted-foreground border-l pl-3">
+                                    Penguji: {examinerTotal} | Pembimbing: {supervisorTotal}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
-
                 <DefenceCriteriaTable
                     data={mergedCpmks}
                     isLoading={isLoading}
@@ -198,6 +218,16 @@ export function DefenceRubricManagementPanel() {
                     ? (data: UpdateCriteriaPayload) => updateCriteria(editCriteria.id, data)
                     : createCriteria
                 }
+            />
+            <MinimumScoreDialog
+                open={minScoreDialogOpen}
+                onOpenChange={setMinScoreDialogOpen}
+                currentScore={weightSummary?.minimumScore || 0}
+                isLoading={isUpdatingMinimumScore}
+                onSubmit={(score) => updateMinimumScore({ 
+                    academicYearId: activeAcademicYearId, 
+                    minimumScore: score 
+                })}
             />
         </Card>
     );

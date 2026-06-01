@@ -75,6 +75,7 @@ export interface WeightSummary {
     examinerTotal: number;
     supervisorTotal: number;
     combinedTotal: number;
+    minimumScore?: number;
     details: WeightSummaryDetail[];
 }
 
@@ -107,13 +108,13 @@ export const createCriteria = async (
     const response = await apiRequest(
         getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA),
         {
-            method: 'POST',
+            method: "POST",
             body: JSON.stringify(payload),
         }
     );
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal menambah kriteria sidang');
+        throw new Error(error.message || "Gagal menambah kriteria sidang");
     }
     const result = await response.json();
     return result.data;
@@ -253,6 +254,7 @@ export const reorderRubrics = async (
 
 // ────────────────────────────────────────────
 // Weight Summary API (per role)
+
 // ────────────────────────────────────────────
 
 export const getWeightSummary = async (role: DefenceRole): Promise<WeightSummary> => {
@@ -265,4 +267,21 @@ export const getWeightSummary = async (role: DefenceRole): Promise<WeightSummary
     }
     const result = await response.json();
     return result.data;
+};
+
+export const updateMinimumScore = async (
+    payload: { academicYearId?: string; minimumScore: number }
+): Promise<void> => {
+    const yearId = payload.academicYearId || 'active';
+    const response = await apiRequest(
+        getApiUrl(`/defence-rubrics/academic-years/${yearId}/minimum-score`),
+        {
+            method: 'PATCH',
+            body: JSON.stringify({ minimumScore: payload.minimumScore }),
+        }
+    );
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal mengubah skor minimum sidang');
+    }
 };

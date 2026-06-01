@@ -18,6 +18,7 @@ export interface ThesisCpmk {
         thesisSeminarAssessmentCriterias: number;
         thesisDefenceExaminerAssessmentCriterias: number;
     };
+    hasAssessmentDetails?: boolean;
 }
 
 export interface CreateThesisCpmkPayload {
@@ -41,7 +42,7 @@ export const getThesisCpmks = async (params?: { academicYearId?: string }): Prom
     const response = await apiRequest(getApiUrl(endpoint));
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengambil data Thesis CPMK');
+        throw new Error(error.message || 'Gagal mengambil data CPMK Tugas Akhir');
     }
     const result = await response.json();
     return result.data;
@@ -51,7 +52,7 @@ export const getThesisCpmkById = async (id: string): Promise<ThesisCpmk> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_CPMK.BY_ID(id)));
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengambil detail Thesis CPMK');
+        throw new Error(error.message || 'Gagal mengambil detail CPMK Tugas Akhir');
     }
     const result = await response.json();
     return result.data;
@@ -64,7 +65,7 @@ export const createThesisCpmk = async (payload: CreateThesisCpmkPayload): Promis
     });
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal menambah data Thesis CPMK');
+        throw new Error(error.message || 'Gagal menambah data CPMK Tugas Akhir');
     }
     const result = await response.json();
     return result.data;
@@ -77,7 +78,7 @@ export const updateThesisCpmk = async (id: string, payload: UpdateThesisCpmkPayl
     });
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal mengubah data Thesis CPMK');
+        throw new Error(error.message || 'Gagal mengubah data CPMK Tugas Akhir');
     }
     const result = await response.json();
     return result.data;
@@ -89,6 +90,19 @@ export const deleteThesisCpmk = async (id: string): Promise<void> => {
     });
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Gagal menghapus data Thesis CPMK');
+        throw new Error(error.message || 'Gagal menghapus data CPMK Tugas Akhir');
+    }
+};
+
+export const copyThesisCpmkTemplate = async (sourceAcademicYearId: string, targetAcademicYearId: string): Promise<void> => {
+    const response = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_CPMK.BASE}/copy-template`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceAcademicYearId, targetAcademicYearId }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal menyalin template CPMK Tugas Akhir');
     }
 };

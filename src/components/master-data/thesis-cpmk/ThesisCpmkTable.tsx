@@ -103,7 +103,7 @@ export function ThesisCpmkTable({
             width: 90,
             className: 'text-right',
             render: (item) => {
-                const isLocked = Boolean(item._count && (item._count.thesisSeminarAssessmentCriterias > 0 || item._count.thesisDefenceExaminerAssessmentCriterias > 0));
+                const isLocked = Boolean(item.hasAssessmentDetails);
                 return (
                 <div className="flex items-center justify-end gap-1">
                     <Button

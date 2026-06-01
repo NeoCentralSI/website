@@ -51,6 +51,8 @@ export function ThesisCpmkManagementPanel() {
         update,
         remove,
         isDeleting,
+        copyTemplate,
+        isCopyingTemplate,
     } = useThesisCpmk(effectiveAcademicYearId);
 
     // Filter to only show thesis-type CPMKs
@@ -64,9 +66,17 @@ export function ThesisCpmkManagementPanel() {
         .filter((item) => item.id !== effectiveAcademicYearId);
 
     const handleCopyTemplate = async () => {
-        // TODO: Implement copy template for thesis-cpmks
-        setCopyDialogOpen(false);
-        setSourceAcademicYearId('');
+        if (!sourceAcademicYearId || !effectiveAcademicYearId) return;
+        try {
+            await copyTemplate({
+                sourceAcademicYearId,
+                targetAcademicYearId: effectiveAcademicYearId,
+            });
+            setCopyDialogOpen(false);
+            setSourceAcademicYearId('');
+        } catch (error) {
+            // Error is handled by the hook
+        }
     };
 
     return (
@@ -81,12 +91,12 @@ export function ThesisCpmkManagementPanel() {
                 onRefresh={() => refetch()}
                 isDeleting={isDeleting}
                 onCopyTemplate={() => setCopyDialogOpen(true)}
-                isCopyingTemplate={false}
+                isCopyingTemplate={isCopyingTemplate}
                 extraActions={
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <Label className="text-xs text-muted-foreground">Tahun Ajaran</Label>
                         <Select
-                            value={effectiveAcademicYearId}
+                            value={effectiveAcademicYearId || ""}
                             onValueChange={(value) => setSelectedAcademicYearId(value)}
                         >
                             <SelectTrigger className="w-full sm:w-[240px]">
@@ -134,8 +144,8 @@ export function ThesisCpmkManagementPanel() {
                         <Button variant="outline" onClick={() => setCopyDialogOpen(false)}>
                             Batal
                         </Button>
-                        <Button onClick={handleCopyTemplate} disabled={!sourceAcademicYearId}>
-                            Salin Template
+                        <Button onClick={handleCopyTemplate} disabled={!sourceAcademicYearId || isCopyingTemplate}>
+                            {isCopyingTemplate ? 'Menyalin...' : 'Salin Template'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

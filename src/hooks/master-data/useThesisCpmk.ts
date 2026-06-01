@@ -5,6 +5,7 @@ import {
     createThesisCpmk,
     updateThesisCpmk,
     deleteThesisCpmk,
+    copyThesisCpmkTemplate,
     type CreateThesisCpmkPayload,
     type UpdateThesisCpmkPayload,
 } from '@/services/master-data/thesis-cpmk.service';
@@ -24,7 +25,7 @@ export function useThesisCpmk(academicYearId?: string) {
         mutationFn: createThesisCpmk,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-            toast.success('Data Thesis CPMK berhasil ditambahkan');
+            toast.success('Data CPMK Tugas Akhir berhasil ditambahkan');
         },
         onError: (error: Error) => {
             toast.error(error.message);
@@ -36,7 +37,7 @@ export function useThesisCpmk(academicYearId?: string) {
             updateThesisCpmk(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-            toast.success('Data Thesis CPMK berhasil diubah');
+            toast.success('Data CPMK Tugas Akhir berhasil diubah');
         },
         onError: (error: Error) => {
             toast.error(error.message);
@@ -47,7 +48,19 @@ export function useThesisCpmk(academicYearId?: string) {
         mutationFn: deleteThesisCpmk,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-            toast.success('Data Thesis CPMK berhasil dihapus');
+            toast.success('Data CPMK Tugas Akhir berhasil dihapus');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
+    const copyTemplateMutation = useMutation({
+        mutationFn: ({ sourceAcademicYearId, targetAcademicYearId }: { sourceAcademicYearId: string; targetAcademicYearId: string }) =>
+            copyThesisCpmkTemplate(sourceAcademicYearId, targetAcademicYearId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            toast.success('Template CPMK Tugas Akhir berhasil disalin');
         },
         onError: (error: Error) => {
             toast.error(error.message);
@@ -62,8 +75,10 @@ export function useThesisCpmk(academicYearId?: string) {
         create: (data: CreateThesisCpmkPayload) => createMutation.mutateAsync(data),
         update: (id: string, data: UpdateThesisCpmkPayload) => updateMutation.mutateAsync({ id, data }),
         remove: deleteMutation.mutate,
+        copyTemplate: copyTemplateMutation.mutateAsync,
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
         isDeleting: deleteMutation.isPending,
+        isCopyingTemplate: copyTemplateMutation.isPending,
     };
 }

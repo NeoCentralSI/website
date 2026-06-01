@@ -64,7 +64,7 @@ export function DefenceRequirementManagementPanel() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <Label className="text-xs text-muted-foreground">Tahun Ajaran</Label>
                         <Select
-                            value={effectiveAcademicYearId}
+                            value={effectiveAcademicYearId || ""}
                             onValueChange={(value) => setSelectedAcademicYearId(value)}
                         >
                             <SelectTrigger className="w-full sm:w-[240px]">

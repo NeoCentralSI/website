@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSeminarRubric } from '@/hooks/master-data/useSeminarRubric';
-import { useCpmk } from '@/hooks/master-data/useCpmk';
+import { useThesisCpmk } from '@/hooks/master-data/useThesisCpmk';
 import { getActiveAcademicYearAPI } from '@/services/admin.service';
 import { CriteriaTable } from '@/components/master-data/seminar-rubric/CriteriaTable';
 import { CriteriaFormDialog } from '@/components/master-data/seminar-rubric/CriteriaFormDialog';
+import { MinimumScoreDialog } from '@/components/master-data/MinimumScoreDialog';
+import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
 import {
     Card,
     CardContent,
@@ -43,19 +46,22 @@ export function SeminarRubricManagementPanel() {
         reorderRubrics,
         removeCpmkConfig,
         isRemovingCpmkConfig,
+        updateMinimumScore,
+        isUpdatingMinimumScore,
     } = useSeminarRubric();
 
-    const { cpmks: allCpmks } = useCpmk(activeAcademicYearId);
+    const { thesisCpmks: allCpmks } = useThesisCpmk(activeAcademicYearId);
 
     const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false);
     const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<CpmkWithRubrics | null>(null);
     const [editCriteria, setEditCriteria] = useState<AssessmentCriteria | null>(null);
+    const [minScoreDialogOpen, setMinScoreDialogOpen] = useState(false);
 
     const currentTotalScore = weightSummary?.totalScore ?? 0;
     const remainingScore = 100 - currentTotalScore;
 
     const activeThesisCpmks = useMemo(
-        () => allCpmks.filter((cpmk) => cpmk.type === 'thesis'),
+        () => allCpmks,
         [allCpmks],
     );
 
@@ -72,7 +78,7 @@ export function SeminarRubricManagementPanel() {
                     code: cpmk.code,
                     description: cpmk.description,
                     displayOrder: 0,
-                    hasAssessmentDetails: cpmk.hasAssessmentDetails,
+                    hasAssessmentDetails: false,
                     assessmentCriterias: [],
                 } as CpmkWithRubrics;
             })
@@ -102,7 +108,20 @@ export function SeminarRubricManagementPanel() {
                             Kelola kriteria dan rubrik penilaian seminar hasil tugas akhir berdasarkan CPMK.
                         </CardDescription>
                     </div>
-                    {weightSummary && (
+                    
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {weightSummary && (
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-fit py-2"
+                                onClick={() => setMinScoreDialogOpen(true)}
+                            >
+                                <Settings className="w-4 h-4 mr-2" />
+                                Min Lulus: {weightSummary.minimumScore || 0}
+                            </Button>
+                        )}
+                        {weightSummary && (
                         <div className={`flex items-center gap-3 rounded-lg border px-4 py-2 text-sm h-fit ${weightSummary.totalScore === 100
                             ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
                             : weightSummary.totalScore > 100
@@ -120,6 +139,7 @@ export function SeminarRubricManagementPanel() {
                             </span>
                         </div>
                     )}
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -158,6 +178,16 @@ export function SeminarRubricManagementPanel() {
                     ? (data: UpdateCriteriaPayload) => updateCriteria(editCriteria.id, data)
                     : createCriteria
                 }
+            />
+            <MinimumScoreDialog
+                open={minScoreDialogOpen}
+                onOpenChange={setMinScoreDialogOpen}
+                currentScore={weightSummary?.minimumScore || 0}
+                isLoading={isUpdatingMinimumScore}
+                onSubmit={(score) => updateMinimumScore({ 
+                    academicYearId: activeAcademicYearId, 
+                    minimumScore: score 
+                })}
             />
         </Card>
     );
