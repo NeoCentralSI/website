@@ -12,12 +12,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import type { Cpl, CreateCplPayload, UpdateCplPayload } from '@/services/master-data/cpl.service';
+import type { Curriculum } from '@/services/master-data/curriculum.service';
 
 interface CplFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editData?: Cpl | null;
+    curriculums: Curriculum[];
+    defaultCurriculumId?: string;
     onSubmit: ((data: CreateCplPayload) => Promise<unknown>) | ((id: string, data: UpdateCplPayload) => Promise<unknown>);
 }
 
@@ -25,8 +35,11 @@ export function CplFormDialog({
     open,
     onOpenChange,
     editData,
+    curriculums,
+    defaultCurriculumId,
     onSubmit,
 }: CplFormDialogProps) {
+    const [curriculumId, setCurriculumId] = useState<string>(defaultCurriculumId || '');
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
     const [minimalScore, setMinimalScore] = useState<number | ''>('');
@@ -37,16 +50,18 @@ export function CplFormDialog({
 
     useEffect(() => {
         if (editData) {
+            setCurriculumId(editData.curriculumId || '');
             setCode(editData.code || '');
             setDescription(editData.description || '');
             setMinimalScore(editData.minimalScore);
         } else {
+            setCurriculumId(defaultCurriculumId || '');
             setCode('');
             setDescription('');
             setMinimalScore('');
             setIsActive(true);
         }
-    }, [editData, open]);
+    }, [editData, open, defaultCurriculumId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,6 +71,7 @@ export function CplFormDialog({
         try {
             if (isEdit && editData) {
                 const payload: UpdateCplPayload = {
+                    curriculumId,
                     code,
                     description,
                     minimalScore: Number(minimalScore),
@@ -63,6 +79,7 @@ export function CplFormDialog({
                 await (onSubmit as (id: string, data: UpdateCplPayload) => Promise<unknown>)(editData.id, payload);
             } else {
                 const payload: CreateCplPayload = {
+                    curriculumId,
                     code,
                     description,
                     minimalScore: Number(minimalScore),
@@ -78,7 +95,7 @@ export function CplFormDialog({
         }
     };
 
-    const isValid = Boolean(code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0);
+    const isValid = Boolean(curriculumId && code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

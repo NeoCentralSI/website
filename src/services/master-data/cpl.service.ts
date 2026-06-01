@@ -3,6 +3,13 @@ import { apiRequest } from '@/services/auth.service';
 
 export interface Cpl {
     id: string;
+    curriculumId?: string;
+    curriculum?: {
+        id: string;
+        name: string;
+        startYear: number;
+        endYear: number | null;
+    } | null;
     code: string;
     description: string;
     minimalScore: number;
@@ -14,6 +21,7 @@ export interface Cpl {
 }
 
 export interface CreateCplPayload {
+    curriculumId: string;
     code: string;
     description: string;
     minimalScore: number;
@@ -23,6 +31,7 @@ export interface CreateCplPayload {
 export type UpdateCplPayload = Partial<CreateCplPayload>;
 
 export interface GetCplsParams {
+    curriculumId?: string;
     status?: 'active' | 'inactive' | 'all';
     search?: string;
     page?: number;
@@ -108,6 +117,7 @@ const downloadResponseAsFile = async (response: Response, fallbackFileName: stri
 
 export const getCpls = async (params: GetCplsParams = {}): Promise<{ data: Cpl[]; total: number }> => {
     const queryParams = new URLSearchParams();
+    if (params.curriculumId) queryParams.append('curriculumId', params.curriculumId);
     if (params.status !== undefined) queryParams.append('status', params.status);
     if (params.search) queryParams.append('search', params.search);
     if (params.page) queryParams.append('page', params.page.toString());

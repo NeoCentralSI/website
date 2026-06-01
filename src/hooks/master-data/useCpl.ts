@@ -18,6 +18,7 @@ const QUERY_KEY = ['cpls'];
 export function useCpl() {
     const queryClient = useQueryClient();
     const [params, setParams] = useState<GetCplsParams>({
+        curriculumId: '',
         status: 'active',
         search: '',
         page: 1,

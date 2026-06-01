@@ -102,6 +102,7 @@ const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/
 // Master Data
 const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
 const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
+const CurriculumPage = lazy(() => import('./pages/master-data/Curriculum'))
 const Cpl = lazy(() => import('./pages/master-data/Cpl'))
 const CplDetailPage = lazy(() => import('./pages/master-data/CplDetail'))
 const MahasiswaPage = lazy(() => import('./pages/master-data/Mahasiswa'))
@@ -317,8 +318,10 @@ function App() {
                 </Route>
 
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.GKM]} />}>
-                  <Route path="/kelola/cpl" element={<Cpl />} />
-                  <Route path="/kelola/cpl/:id" element={<CplDetailPage />} />
+                  {/* CPL & Curriculum Routes */}
+                  <Route path="/kelola/cpl" element={<CurriculumPage />} />
+                  <Route path="/kelola/cpl/:curriculumId/cpls" element={<Cpl />} />
+                  <Route path="/kelola/cpl/detail/:id" element={<CplDetailPage />} />
                 </Route>
 
                 {/* Kelola Metopen - Dosen Pengampu, Sekdep, Kadep */}

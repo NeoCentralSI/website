@@ -26,6 +26,10 @@ export const API_CONFIG = {
       SERVE_AVATAR: (fileName: string) => `/profile/avatar/${fileName}`,
       LECTURER_DATA: '/profile/lecturer-data',
     },
+    CURRICULUM: {
+      BASE: '/curriculums',
+      BY_ID: (id: string) => `/curriculums/${id}`,
+    },
     CPL: {
       BASE: '/cpls',
       BY_ID: (id: string) => `/cpls/${id}`,
