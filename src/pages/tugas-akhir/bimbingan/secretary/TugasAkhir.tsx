@@ -4,7 +4,7 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
 import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
-import { CpmkManagementPanel } from "@/components/master-data/cpmk/CpmkManagementPanel";
+import { ThesisCpmkManagementPanel } from "@/components/master-data/thesis-cpmk/ThesisCpmkManagementPanel";
 import { SeminarRubricManagementPanel } from '@/components/master-data/seminar-rubric/SeminarRubricManagementPanel';
 import { DefenceRubricManagementPanel } from '@/components/master-data/defence-rubric/DefenceRubricManagementPanel';
 import { SeminarRequirementManagementPanel } from '@/components/master-data/seminar-requirement/SeminarRequirementManagementPanel';
@@ -57,7 +57,7 @@ export default function KelolaTugasAkhirPage() {
     }
 
     if (activeTab.label === "Kelola CPMK") {
-      return <CpmkManagementPanel />;
+      return <ThesisCpmkManagementPanel />;
     }
 
     if (activeTab.label === "Kelola Rubrik Seminar") {

@@ -47,6 +47,10 @@ export const API_CONFIG = {
       COPY_TEMPLATE: '/cpmks/copy-template',
       HIERARCHY: '/cpmks/hierarchy',
     },
+    THESIS_CPMK: {
+      BASE: '/thesis-cpmks',
+      BY_ID: (id: string) => `/thesis-cpmks/${id}`,
+    },
     SEMINAR_RUBRIC: {
       CPMKS: '/seminar-rubrics/cpmks',
       CRITERIA: '/seminar-rubrics/criteria',

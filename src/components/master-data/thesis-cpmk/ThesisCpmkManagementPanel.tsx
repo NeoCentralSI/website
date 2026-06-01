@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useCpmk } from '@/hooks/master-data/useCpmk';
-import { CpmkTable } from '@/components/master-data/cpmk/CpmkTable';
-import { CpmkFormDialog } from '@/components/master-data/cpmk/CpmkFormDialog';
-import type { CreateCpmkPayload } from '@/services/master-data/cpmk.service';
+import { useThesisCpmk } from '@/hooks/master-data/useThesisCpmk';
+import { ThesisCpmkTable } from '@/components/master-data/thesis-cpmk/ThesisCpmkTable';
+import { ThesisCpmkFormDialog } from '@/components/master-data/thesis-cpmk/ThesisCpmkFormDialog';
+import type { CreateThesisCpmkPayload } from '@/services/master-data/thesis-cpmk.service';
 import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.service';
 import {
     Select,
@@ -27,7 +27,7 @@ function academicYearLabel(semester?: string, year?: string | null) {
     return `${semesterLabel} ${year || ''}`.trim();
 }
 
-export function CpmkManagementPanel() {
+export function ThesisCpmkManagementPanel() {
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>(undefined);
 
     const { data: academicYearsData } = useQuery({
@@ -43,20 +43,18 @@ export function CpmkManagementPanel() {
     const effectiveAcademicYearId = selectedAcademicYearId || activeAcademicYearData?.academicYear?.id;
 
     const {
-        cpmks,
+        thesisCpmks,
         isLoading,
         isFetching,
         refetch,
         create,
         update,
         remove,
-        copyTemplate,
         isDeleting,
-        isCopyingTemplate,
-    } = useCpmk(effectiveAcademicYearId);
+    } = useThesisCpmk(effectiveAcademicYearId);
 
     // Filter to only show thesis-type CPMKs
-    const thesisCpmks = cpmks.filter((cpmk) => cpmk.type === 'thesis');
+    const thesisCpmksData = thesisCpmks;
 
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [copyDialogOpen, setCopyDialogOpen] = useState(false);
@@ -66,19 +64,15 @@ export function CpmkManagementPanel() {
         .filter((item) => item.id !== effectiveAcademicYearId);
 
     const handleCopyTemplate = async () => {
-        if (!sourceAcademicYearId || !effectiveAcademicYearId) return;
-        await copyTemplate({
-            sourceAcademicYearId,
-            targetAcademicYearId: effectiveAcademicYearId,
-        });
+        // TODO: Implement copy template for thesis-cpmks
         setCopyDialogOpen(false);
         setSourceAcademicYearId('');
     };
 
     return (
         <div className="space-y-4">
-            <CpmkTable
-                data={thesisCpmks}
+            <ThesisCpmkTable
+                data={thesisCpmksData}
                 isLoading={isLoading}
                 isFetching={isFetching}
                 onDelete={remove}
@@ -87,7 +81,7 @@ export function CpmkManagementPanel() {
                 onRefresh={() => refetch()}
                 isDeleting={isDeleting}
                 onCopyTemplate={() => setCopyDialogOpen(true)}
-                isCopyingTemplate={isCopyingTemplate}
+                isCopyingTemplate={false}
                 extraActions={
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <Label className="text-xs text-muted-foreground">Tahun Ajaran</Label>
@@ -110,10 +104,10 @@ export function CpmkManagementPanel() {
                 }
             />
 
-            <CpmkFormDialog
+            <ThesisCpmkFormDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                onSubmit={(payload: CreateCpmkPayload) => create({ ...payload, academicYearId: effectiveAcademicYearId })}
+                onSubmit={(payload: CreateThesisCpmkPayload) => create({ ...payload, academicYearId: effectiveAcademicYearId })}
             />
 
             <Dialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen}>
@@ -140,7 +134,7 @@ export function CpmkManagementPanel() {
                         <Button variant="outline" onClick={() => setCopyDialogOpen(false)}>
                             Batal
                         </Button>
-                        <Button onClick={handleCopyTemplate} disabled={!sourceAcademicYearId || isCopyingTemplate}>
+                        <Button onClick={handleCopyTemplate} disabled={!sourceAcademicYearId}>
                             Salin Template
                         </Button>
                     </DialogFooter>
