@@ -12,21 +12,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+// removed Select imports
 import type { Cpl, CreateCplPayload, UpdateCplPayload } from '@/services/master-data/cpl.service';
-import type { Curriculum } from '@/services/master-data/curriculum.service';
+// removed Curriculum import
 
 interface CplFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editData?: Cpl | null;
-    curriculums: Curriculum[];
+    // curriculums removed
     defaultCurriculumId?: string;
     onSubmit: ((data: CreateCplPayload) => Promise<unknown>) | ((id: string, data: UpdateCplPayload) => Promise<unknown>);
 }
@@ -35,7 +29,7 @@ export function CplFormDialog({
     open,
     onOpenChange,
     editData,
-    curriculums,
+    // curriculums removed
     defaultCurriculumId,
     onSubmit,
 }: CplFormDialogProps) {

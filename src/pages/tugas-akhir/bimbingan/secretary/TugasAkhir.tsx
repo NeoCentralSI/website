@@ -7,12 +7,17 @@ import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
 import { CpmkManagementPanel } from "@/components/master-data/cpmk/CpmkManagementPanel";
 import { SeminarRubricManagementPanel } from '@/components/master-data/seminar-rubric/SeminarRubricManagementPanel';
 import { DefenceRubricManagementPanel } from '@/components/master-data/defence-rubric/DefenceRubricManagementPanel';
+import { SeminarRequirementManagementPanel } from '@/components/master-data/seminar-requirement/SeminarRequirementManagementPanel';
+import { DefenceRequirementManagementPanel } from '@/components/master-data/defence-requirement/DefenceRequirementManagementPanel';
+
 const TAB_ITEMS: TabItem[] = [
   { label: "Kelola Topik", to: "/kelola/tugas-akhir/topik" },
   { label: "Kelola Milestone", to: "/kelola/tugas-akhir/milestone" },
   { label: "Kelola CPMK", to: "/kelola/tugas-akhir/cpmk" },
   { label: "Kelola Rubrik Seminar", to: "/kelola/tugas-akhir/rubrik-seminar" },
-  { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" }
+  { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" },
+  { label: "Syarat Seminar Hasil", to: "/kelola/tugas-akhir/syarat-seminar" },
+  { label: "Syarat Sidang TA", to: "/kelola/tugas-akhir/syarat-sidang" }
 ];
 
 const PLACEHOLDER_COPY: Record<string, string> = {
@@ -20,6 +25,8 @@ const PLACEHOLDER_COPY: Record<string, string> = {
   "Kelola Milestone": "Kelola daftar milestone tugas akhir, termasuk pembuatan dan pembaruan jadwal.",
   "Kelola Rubrik Seminar": "Atur rubrik penilaian untuk seminar tugas akhir di sini.",
   "Kelola Rubrik Sidang": "Atur rubrik penilaian untuk sidang tugas akhir di sini.",
+  "Syarat Seminar Hasil": "Kelola persyaratan dokumen untuk pendaftaran Seminar Hasil.",
+  "Syarat Sidang TA": "Kelola persyaratan dokumen untuk pendaftaran Sidang Tugas Akhir.",
 };
 
 export default function KelolaTugasAkhirPage() {
@@ -59,6 +66,14 @@ export default function KelolaTugasAkhirPage() {
 
     if (activeTab.label === "Kelola Rubrik Sidang") {
       return <DefenceRubricManagementPanel />;
+    }
+
+    if (activeTab.label === "Syarat Seminar Hasil") {
+      return <SeminarRequirementManagementPanel />;
+    }
+
+    if (activeTab.label === "Syarat Sidang TA") {
+      return <DefenceRequirementManagementPanel />;
     }
 
     return (

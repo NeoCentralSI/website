@@ -363,6 +363,8 @@ function App() {
                   <Route path="/kelola/tugas-akhir/milestone" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/syarat-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/syarat-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   {/* Yudisium Management - Redirect to unified detail if specific actions needed, or keep for list */}

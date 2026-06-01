@@ -1,0 +1,102 @@
+import { getApiUrl } from '@/config/api';
+import { apiRequest } from '../auth.service';
+
+export interface DefenceRequirement {
+    id: string;
+    academicYearId: string;
+    code: string;
+    name: string;
+    description: string | null;
+    isRequired: boolean;
+    isActive: boolean;
+    displayOrder: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateDefenceRequirementPayload {
+    academicYearId: string;
+    code: string;
+    name: string;
+    description?: string;
+    isRequired?: boolean;
+    isActive?: boolean;
+    displayOrder?: number;
+}
+
+export type UpdateDefenceRequirementPayload = Partial<Omit<CreateDefenceRequirementPayload, 'academicYearId'>>;
+
+export const getDefenceRequirements = async (params?: { academicYearId?: string }): Promise<DefenceRequirement[]> => {
+    const queryParams = new URLSearchParams();
+    if (params?.academicYearId) {
+        queryParams.append('academicYearId', params.academicYearId);
+    }
+    const endpoint = queryParams.toString()
+        ? `/defence-requirements?${queryParams.toString()}`
+        : `/defence-requirements`;
+
+    const response = await apiRequest(getApiUrl(endpoint));
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal mengambil data persyaratan');
+    }
+    const result = await response.json();
+    return result.data;
+};
+
+export const getDefenceRequirementById = async (id: string): Promise<DefenceRequirement> => {
+    const response = await apiRequest(getApiUrl(`/defence-requirements/${id}`));
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal mengambil detail persyaratan');
+    }
+    const result = await response.json();
+    return result.data;
+};
+
+export const createDefenceRequirement = async (payload: CreateDefenceRequirementPayload): Promise<DefenceRequirement> => {
+    const response = await apiRequest(getApiUrl(`/defence-requirements`), {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal menambah data persyaratan');
+    }
+    const result = await response.json();
+    return result.data;
+};
+
+export const updateDefenceRequirement = async (id: string, payload: UpdateDefenceRequirementPayload): Promise<DefenceRequirement> => {
+    const response = await apiRequest(getApiUrl(`/defence-requirements/${id}`), {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal mengubah data persyaratan');
+    }
+    const result = await response.json();
+    return result.data;
+};
+
+export const deleteDefenceRequirement = async (id: string): Promise<void> => {
+    const response = await apiRequest(getApiUrl(`/defence-requirements/${id}`), {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal menghapus data persyaratan');
+    }
+};
+
+export const reorderDefenceRequirements = async (orderedIds: string[]): Promise<void> => {
+    const response = await apiRequest(getApiUrl(`/defence-requirements/reorder`), {
+        method: 'PATCH',
+        body: JSON.stringify({ orderedIds }),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal mengubah urutan persyaratan');
+    }
+};

@@ -100,7 +100,7 @@ export default function MasterDataCpl() {
                 open={createCplOpen}
                 onOpenChange={setCreateCplOpen}
                 onSubmit={create}
-                curriculums={curriculums}
+                // curriculums prop removed
                 defaultCurriculumId={curriculumId}
             />
         </div>

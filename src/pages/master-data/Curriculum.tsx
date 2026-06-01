@@ -75,7 +75,7 @@ export default function MasterDataCurriculum() {
             <CurriculumFormDialog
                 open={createCurriculumOpen}
                 onOpenChange={setCreateCurriculumOpen}
-                onSubmit={createCurriculum}
+                onSubmit={async (data) => { await createCurriculum(data as any); }}
             />
 
             <CurriculumFormDialog
@@ -85,7 +85,7 @@ export default function MasterDataCurriculum() {
                     if (!open) setSelectedCurriculumId(null);
                 }}
                 initialData={selectedCurriculumData}
-                onSubmit={(data) => updateCurriculum(selectedCurriculumId as string, data)}
+                onSubmit={async (data) => { await updateCurriculum(selectedCurriculumId as string, data as any); }}
             />
         </div>
     );

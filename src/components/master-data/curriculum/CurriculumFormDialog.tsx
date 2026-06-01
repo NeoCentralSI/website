@@ -35,7 +35,7 @@ const curriculumSchema = z.object({
     path: ["endYear"],
 });
 
-type CurriculumFormValues = z.infer<typeof curriculumSchema>;
+// type CurriculumFormValues = z.infer<typeof curriculumSchema>;
 
 interface CurriculumFormDialogProps {
     open: boolean;
@@ -53,7 +53,7 @@ export function CurriculumFormDialog({
     const isEditing = !!initialData;
     const hasCpl = isEditing && (initialData.cplCount > 0);
 
-    const form = useForm<CurriculumFormValues>({
+    const form = useForm<any>({
         resolver: zodResolver(curriculumSchema),
         defaultValues: {
             name: '',
@@ -80,7 +80,7 @@ export function CurriculumFormDialog({
         }
     }, [open, initialData, form]);
 
-    const handleSubmit = async (values: CurriculumFormValues) => {
+    const handleSubmit = async (values: any) => {
         try {
             await onSubmit(values as CreateCurriculumPayload);
             onOpenChange(false);
@@ -104,7 +104,7 @@ export function CurriculumFormDialog({
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                         <FormField
-                            control={form.control}
+                            control={form.control as any}
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
@@ -119,7 +119,7 @@ export function CurriculumFormDialog({
 
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
-                                control={form.control}
+                                control={form.control as any}
                                 name="startYear"
                                 render={({ field }) => (
                                     <FormItem>
@@ -132,7 +132,7 @@ export function CurriculumFormDialog({
                                 )}
                             />
                             <FormField
-                                control={form.control}
+                                control={form.control as any}
                                 name="endYear"
                                 render={({ field: { value, onChange, ...field } }) => (
                                     <FormItem>
