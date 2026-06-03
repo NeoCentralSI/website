@@ -73,6 +73,7 @@ export function CurriculumTable({
         {
             key: 'name',
             header: 'Nama Kurikulum',
+            className: 'max-w-md whitespace-normal',
             render: (item) => (
                 <span className="font-medium">{item.name}</span>
             ),

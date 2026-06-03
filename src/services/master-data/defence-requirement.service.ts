@@ -12,6 +12,7 @@ export interface DefenceRequirement {
     displayOrder: number;
     createdAt: string;
     updatedAt: string;
+    hasRelatedData?: boolean;
 }
 
 export interface CreateDefenceRequirementPayload {
@@ -99,4 +100,17 @@ export const reorderDefenceRequirements = async (orderedIds: string[]): Promise<
         const error = await response.json();
         throw new Error(error.message || 'Gagal mengubah urutan persyaratan');
     }
+};
+
+export const copyDefenceRequirementTemplate = async (sourceAcademicYearId: string, targetAcademicYearId: string): Promise<DefenceRequirement[]> => {
+    const response = await apiRequest(getApiUrl(`/defence-requirements/copy-template`), {
+        method: 'POST',
+        body: JSON.stringify({ sourceAcademicYearId, targetAcademicYearId }),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal menyalin template persyaratan');
+    }
+    const result = await response.json();
+    return result.data;
 };

@@ -168,7 +168,7 @@ export function ThesisCpmkTable({
                                         Menyalin...
                                     </>
                                 ) : (
-                                    'Copy Template'
+                                    'Salin Template'
                                 )}
                             </Button>
                         )}

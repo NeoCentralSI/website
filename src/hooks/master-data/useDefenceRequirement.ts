@@ -6,7 +6,7 @@ import {
     updateDefenceRequirement,
     deleteDefenceRequirement,
     reorderDefenceRequirements,
-    
+    copyDefenceRequirementTemplate,
     type UpdateDefenceRequirementPayload,
 } from '@/services/master-data/defence-requirement.service';
 
@@ -55,6 +55,18 @@ export function useDefenceRequirement(academicYearId?: string) {
         },
     });
 
+    const copyTemplateMutation = useMutation({
+        mutationFn: ({ sourceAcademicYearId, targetAcademicYearId }: { sourceAcademicYearId: string; targetAcademicYearId: string }) => 
+            copyDefenceRequirementTemplate(sourceAcademicYearId, targetAcademicYearId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['defence-requirements'] });
+            toast.success('Template persyaratan berhasil disalin');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
     return {
         requirements,
         isLoading,
@@ -70,5 +82,7 @@ export function useDefenceRequirement(academicYearId?: string) {
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
         isDeleting: deleteMutation.isPending,
+        copyTemplate: copyTemplateMutation.mutateAsync,
+        isCopyingTemplate: copyTemplateMutation.isPending,
     };
 }

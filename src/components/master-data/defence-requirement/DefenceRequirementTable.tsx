@@ -27,6 +27,8 @@ interface DefenceRequirementTableProps {
     onCreate: () => void;
     onRefresh: () => void;
     isDeleting: boolean;
+    onCopyTemplate?: () => void;
+    isCopyingTemplate?: boolean;
     extraActions?: React.ReactNode;
 }
 
@@ -40,6 +42,8 @@ export function DefenceRequirementTable({
     onCreate,
     onRefresh,
     isDeleting,
+    onCopyTemplate,
+    isCopyingTemplate,
     extraActions,
 }: DefenceRequirementTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -79,6 +83,7 @@ export function DefenceRequirementTable({
             key: 'description',
             header: 'Deskripsi',
             accessor: 'description',
+            className: 'max-w-md whitespace-normal',
             render: (row) => <span className="text-sm text-muted-foreground">{row.description || '-'}</span>,
         },
         {
@@ -140,10 +145,10 @@ export function DefenceRequirementTable({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => setDeleteId(id)}
-                            disabled={isDeleting}
-                            title="Hapus Persyaratan"
+                            disabled={isDeleting || row.hasRelatedData}
+                            title={row.hasRelatedData ? "Persyaratan tidak dapat dihapus karena sudah memiliki dokumen yang diunggah" : "Hapus Persyaratan"}
                         >
                             {isDeleting && deleteId === id ? (
                                 <Spinner className="h-4 w-4" />
@@ -175,14 +180,30 @@ export function DefenceRequirementTable({
                 actions={
                     <div className="flex items-center gap-2">
                         {extraActions}
+                        {onCopyTemplate && data.length === 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onCopyTemplate}
+                                disabled={isCopyingTemplate}
+                            >
+                                {isCopyingTemplate ? (
+                                    <>
+                                        <Spinner className="mr-2 h-4 w-4" />
+                                        Menyalin...
+                                    </>
+                                ) : (
+                                    'Salin Template'
+                                )}
+                            </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={onCreate}>
+                            <Plus className="mr-2 h-4 w-4" /> Tambah
+                        </Button>
                         <RefreshButton 
-                            isRefreshing={isFetching} 
+                            isRefreshing={isFetching && !isLoading} 
                             onClick={onRefresh} 
                         />
-                        <Button onClick={onCreate}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Tambah
-                        </Button>
                     </div>
                 }
             />
@@ -202,7 +223,7 @@ export function DefenceRequirementTable({
                                 e.preventDefault();
                                 handleConfirmDelete();
                             }}
-                            className="bg-destructive hover:bg-destructive/90"
+                            className="bg-red-600 hover:bg-red-700"
                             disabled={isDeleting}
                         >
                             {isDeleting ? 'Menghapus...' : 'Hapus'}

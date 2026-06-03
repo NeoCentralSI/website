@@ -6,7 +6,7 @@ import {
     updateSeminarRequirement,
     deleteSeminarRequirement,
     reorderSeminarRequirements,
-    
+    copySeminarRequirementTemplate,
     type UpdateSeminarRequirementPayload,
 } from '@/services/master-data/seminar-requirement.service';
 
@@ -55,6 +55,18 @@ export function useSeminarRequirement(academicYearId?: string) {
         },
     });
 
+    const copyTemplateMutation = useMutation({
+        mutationFn: ({ sourceAcademicYearId, targetAcademicYearId }: { sourceAcademicYearId: string; targetAcademicYearId: string }) => 
+            copySeminarRequirementTemplate(sourceAcademicYearId, targetAcademicYearId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['seminar-requirements'] });
+            toast.success('Template persyaratan berhasil disalin');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
     return {
         requirements,
         isLoading,
@@ -70,5 +82,7 @@ export function useSeminarRequirement(academicYearId?: string) {
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
         isDeleting: deleteMutation.isPending,
+        copyTemplate: copyTemplateMutation.mutateAsync,
+        isCopyingTemplate: copyTemplateMutation.isPending,
     };
 }
