@@ -3,25 +3,36 @@ import { useOutletContext, useLocation } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { useAdvisorAccessState, useRole } from "@/hooks/shared";
+import { useStudentEligibility } from "@/hooks/shared/useStudentEligibility";
 import { MetopelOverviewTab } from "./MetopelOverviewTab";
 import CariPembimbing from "./CariPembimbing";
+import { MetopenProposalTab } from "./MetopenProposalTab";
+import { MetopenInformalLogbookTab } from "./MetopenInformalLogbookTab";
 import { Info } from "lucide-react";
 
 const BASE_TAB_ITEMS: TabItem[] = [{ label: "Overview", to: "/metopel", end: true }];
 const SEARCH_TAB: TabItem = { label: "Cari Pembimbing", to: "/metopel/cari-pembimbing" };
-
-type MetopelOutletContext = LayoutContext & { isMetopenReadOnly?: boolean };
+const PROPOSAL_TAB: TabItem = { label: "Proposal", to: "/metopel/proposal" };
+const LOGBOOK_TAB: TabItem = { label: "Catatan informal", to: "/metopel/logbook" };
 
 export default function Metopel() {
-  const { setBreadcrumbs, setTitle, isMetopenReadOnly = false } =
-    useOutletContext<MetopelOutletContext>();
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const location = useLocation();
   const { isStudent } = useRole();
   const isStudentUser = isStudent();
   const { data: advisorAccess } = useAdvisorAccessState(isStudentUser);
+  const { isMetopenOnlyTrack, isMetopenReadOnly } = useStudentEligibility();
+
+  const showMetopenProposalLogbookTabs =
+    isStudentUser &&
+    isMetopenOnlyTrack &&
+    (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
 
   const tabs = useMemo(() => {
     const items = [...BASE_TAB_ITEMS];
+    if (showMetopenProposalLogbookTabs) {
+      items.push(PROPOSAL_TAB, LOGBOOK_TAB);
+    }
     const canOpenAdvisorSearchTab =
       Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest);
 
@@ -35,10 +46,13 @@ export default function Metopel() {
     advisorAccess?.hasBlockingRequest,
     advisorAccess?.hasOfficialSupervisor,
     isMetopenReadOnly,
+    showMetopenProposalLogbookTabs,
   ]);
 
   const activeTabKey = useMemo(() => {
     if (location.pathname.startsWith("/metopel/cari-pembimbing")) return "search";
+    if (location.pathname.startsWith("/metopel/proposal")) return "proposal";
+    if (location.pathname.startsWith("/metopel/logbook")) return "logbook";
     return "overview";
   }, [location.pathname]);
 
@@ -51,6 +65,10 @@ export default function Metopel() {
     switch (activeTabKey) {
       case "search":
         return <CariPembimbing readOnly={isMetopenReadOnly} />;
+      case "proposal":
+        return <MetopenProposalTab readOnly={isMetopenReadOnly} />;
+      case "logbook":
+        return <MetopenInformalLogbookTab readOnly={isMetopenReadOnly} />;
       default:
         return <MetopelOverviewTab readOnly={isMetopenReadOnly} />;
     }

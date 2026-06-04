@@ -10,12 +10,15 @@ import {
   useStudentAttendanceHistory
 } from '@/hooks/thesis-seminar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useStudentEligibility } from '@/hooks/shared';
 
 export default function StudentThesisSeminar() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'ringkasan';
+  const { hasTugasAkhirCourse } = useStudentEligibility();
+  const studentTaParentHref = hasTugasAkhirCourse ? '/tugas-akhir' : '/metopel';
 
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true });
@@ -29,11 +32,11 @@ export default function StudentThesisSeminar() {
 
   const breadcrumbs = useMemo(
     () => [
-      { label: 'Tugas Akhir', href: '/tugas-akhir' },
+      { label: 'Tugas Akhir', href: studentTaParentHref },
       { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
       { label: activeTab === 'riwayat-kehadiran' ? 'Riwayat Kehadiran' : 'Status & Pendaftaran' },
     ],
-    [activeTab]
+    [activeTab, studentTaParentHref]
   );
 
   useEffect(() => {

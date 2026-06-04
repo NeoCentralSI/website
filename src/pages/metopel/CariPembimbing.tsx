@@ -49,6 +49,12 @@ const EMPTY_FORM_DATA: SubmitFormData = {
 const DRAFT_SAVE_DEBOUNCE_MS = 700;
 type ResearchPermitStatus = SubmitFormData['researchPermitStatus'];
 type FormDataInput = Partial<SubmitFormData> | AdvisorRequestDraft | null | undefined;
+type ThesisTopicOption = {
+    id: string;
+    name: string;
+    scienceGroupId?: string | null;
+    scienceGroup?: { id: string; name: string } | null;
+};
 
 const VALID_RESEARCH_PERMIT_STATUSES = new Set<Exclude<ResearchPermitStatus, ''>>([
     'approved',
@@ -356,7 +362,7 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
             const url = getApiUrl('/topics');
             const response = await apiRequest(url);
             if (!response.ok) throw new Error('Gagal mengambil topik');
-            const json = await response.json() as { data: Array<{ id: string; name: string }> };
+            const json = await response.json() as { data: ThesisTopicOption[] };
             return json.data ?? [];
         },
         enabled: canBrowseCatalog,
@@ -1173,8 +1179,8 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
                             {!lecturerForDialog
                                 ? 'Pengajuan Jalur Departemen (TA-02)'
                                 : lecturerForDialog.trafficLight === 'red'
-                                ? 'Pengajuan Jalur Departemen (TA-02 Digital)'
-                                : 'Pengajuan Dosen Pembimbing'}
+                                ? 'Pengajuan Escalated TA-01 (Kuota Dosen Penuh)'
+                                : 'Pengajuan Dosen Pembimbing (TA-01)'}
                         </DialogTitle>
                         <DialogDescription className="leading-relaxed">
                             {!lecturerForDialog ? (
@@ -1183,7 +1189,7 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
                                 </span>
                             ) : (
                                 <span>
-                                    {lecturerForDialog.trafficLight === 'red' ? 'Usulan akan diproses melalui KaDep untuk dosen ' : 'Mengajukan ke '}
+                                    {lecturerForDialog.trafficLight === 'red' ? 'Usulan escalated TA-01 (kuota penuh) untuk dosen ' : 'Mengajukan ke '}
                                     <strong>{lecturerForDialog.fullName}</strong>
                                     {lecturerForDialog.trafficLight === 'red' && (
                                         <Badge variant="outline" className="ml-2 bg-red-500/10 text-red-700 border-red-200">
@@ -1256,8 +1262,11 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
                                     <SelectValue placeholder="Pilih topik..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {topics.map((t: { id: string; name: string }) => (
-                                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                    {topics.map((t) => (
+                                        <SelectItem key={t.id} value={t.id} disabled={!t.scienceGroupId}>
+                                            {t.name}
+                                            {t.scienceGroup?.name ? ` - ${t.scienceGroup.name}` : ' - KBK belum dipetakan'}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -1396,7 +1405,7 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
                                 !lecturerForDialog
                                     ? 'Kirim TA-02 ke KaDep'
                                     : lecturerForDialog.trafficLight === 'red'
-                                        ? 'Kirim ke KaDep'
+                                        ? 'Kirim Eskalasi ke Dosen'
                                         : 'Kirim Pengajuan'
                             )}
                         </Button>

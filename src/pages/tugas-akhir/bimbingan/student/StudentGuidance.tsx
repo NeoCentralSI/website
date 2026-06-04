@@ -45,7 +45,11 @@ export default function StudentGuidancePage() {
     queryKey: ["my-thesis-detail"],
     queryFn: getMyThesisDetail,
   });
-  const guidancePhase: 'proposal' | 'thesis' = thesisDetail?.isProposal ? 'proposal' : 'thesis';
+  // Logbook phase: setelah TA-04 disahkan / thesis bukan lagi fase proposal → logbook tugas akhir penuh.
+  const guidancePhase: 'proposal' | 'thesis' =
+    thesisDetail?.proposalStatus === 'accepted' || thesisDetail?.isProposal === false
+      ? 'thesis'
+      : 'proposal';
 
   const {
     items,
@@ -341,7 +345,7 @@ export default function StudentGuidancePage() {
         open={openRequest}
         onOpenChange={setOpenRequest}
         supervisors={supervisorsQuery.data?.supervisors || []}
-        phase="thesis"
+        phase={guidancePhase}
         onSubmitted={() => {
           qc.invalidateQueries({ queryKey: ['student-guidance'] });
           qc.invalidateQueries({ queryKey: ['notification-unread'] });

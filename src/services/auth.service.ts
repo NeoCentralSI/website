@@ -27,13 +27,6 @@ export interface User {
     id: string;
     enrollmentYear: number;
     sksCompleted: number;
-    currentSemester?: number | null;
-    eligibleMetopen?: boolean | null;
-    metopenEligibilitySource?: string | null;
-    metopenEligibilityUpdatedAt?: string | null;
-    takingThesisCourse?: boolean | null;
-    thesisCourseEnrollmentSource?: string | null;
-    thesisCourseEnrollmentUpdatedAt?: string | null;
     status: string | null;
   };
   lecturer?: {
@@ -96,11 +89,15 @@ export const loginAPI = async (credentials: LoginRequest): Promise<LoginResponse
 };
 
 export const saveAuthTokens = (accessToken: string, refreshToken: string) => {
+  console.log('💾 [saveAuthTokens] Saving tokens to localStorage and cookies');
+  
   // Access token tetap di localStorage (lebih mudah untuk API calls)
   localStorage.setItem('accessToken', accessToken);
   
   // Refresh token disimpan di cookies (lebih aman, httpOnly bisa ditambahkan di backend)
   setCookie('refreshToken', refreshToken, 7); // 7 hari
+  
+  console.log('✅ [saveAuthTokens] Tokens saved');
 };
 
 export const getAuthTokens = () => {
@@ -108,6 +105,12 @@ export const getAuthTokens = () => {
     accessToken: localStorage.getItem('accessToken'),
     refreshToken: getCookie('refreshToken')
   };
+  
+  console.log('🔑 [getAuthTokens] Retrieved tokens:', {
+    hasAccessToken: !!tokens.accessToken,
+    hasRefreshToken: !!tokens.refreshToken
+  });
+  
   return tokens;
 };
 
@@ -206,36 +209,6 @@ export const handleMicrosoftCallbackAPI = async (code: string): Promise<LoginRes
     }
     throw new Error('Terjadi kesalahan saat memproses login Microsoft');
   }
-};
-
-export interface MicrosoftExchangeResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-  hasCalendarAccess: boolean;
-}
-
-/**
- * Tukar one-shot code dari URL callback dengan token (HTTPS body).
- * Hanya bisa dipanggil sekali per code; code expire 60 detik setelah dibuat.
- */
-export const exchangeMicrosoftCodeAPI = async (
-  code: string,
-): Promise<MicrosoftExchangeResponse> => {
-  const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.MICROSOFT_EXCHANGE), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code }),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Gagal menukar exchange code Microsoft');
-  }
-  const json = await response.json();
-  if (!json?.success || !json.data) {
-    throw new Error('Respons exchange tidak valid');
-  }
-  return json.data as MicrosoftExchangeResponse;
 };
 
 export const clearAuthTokens = () => {

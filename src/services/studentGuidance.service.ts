@@ -120,13 +120,15 @@ export interface MyThesisDetail {
   createdAt?: string;
   updatedAt?: string;
   deadlineDate?: string | null;
-  isProposal?: boolean;
   student?: ThesisStudentInfo | null;
   topic?: ThesisTopicInfo | null;
   academicYear?: ThesisAcademicYearInfo | null;
   document?: ThesisDocumentInfo | null;
   proposalDocument?: ThesisDocumentInfo | null;
   uploadedFiles?: ThesisDocumentInfo[];
+  /** Schema thesis: true = fase proposal (pra-TA-04); false = TA pasca pengesahan. */
+  isProposal?: boolean;
+  proposalStatus?: string | null;
   supervisors?: ThesisSupervisorSummary[];
   examiners?: SupervisorInfo[];
   stats?: ThesisStatsSummary;

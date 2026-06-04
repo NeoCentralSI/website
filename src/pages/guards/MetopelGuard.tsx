@@ -22,13 +22,17 @@ export default function MetopelGuard() {
     }
 
     if (!canAccessMetopel) {
+      // Canon §5.1 (audit F-0.1 / OQ-0.1): eligibility Metopen = snapshot SIA
+      // `eligibleMetopen` semata (tanpa gate semester/SKS hard-code). Tampilkan
+      // alasan kanonis yang sebenarnya, bukan syarat semester-6 non-kanonis.
+      // Pola mengikuti TugasAkhirGuard (satu requirement = snapshot SIA).
       return (
         <RequirementsNotMet
           title="Metode Penelitian Belum Tersedia"
-          description="Akses dibuka berdasarkan snapshot eligibility dari SIA. Hubungi admin DSI bila Anda yakin sudah layak namun status di sini belum berubah."
+          description="Akses Metode Penelitian terbuka setelah snapshot SIA mencatat Anda eligible Metopen. Bila Anda merasa sudah memenuhi syarat akademik, hubungi Admin/Akademik untuk sinkronisasi data SIA."
           requirements={[
             {
-              label: "Eligibility Metode Penelitian dari SIA",
+              label: "Snapshot SIA: eligible Metode Penelitian",
               met: requirements.metopel.eligibility.met,
               description: requirements.metopel.eligibility.description,
             },

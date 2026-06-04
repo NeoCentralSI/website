@@ -32,7 +32,8 @@ export const useSidebarMenu = () => {
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
   const isStudentUser = Boolean(authUser?.id) && isStudent();
-  const { canAccessMetopel, isMetopenReadOnly } = useStudentEligibility();
+  const { canAccessMetopel, isMetopenReadOnly, hasTugasAkhirCourse, isMetopenOnlyTrack } =
+    useStudentEligibility();
   const { data: advisorAccess } = useAdvisorAccessState(isStudentUser && canAccessMetopel);
 
   const menuData = useMemo(() => {
@@ -60,11 +61,14 @@ export const useSidebarMenu = () => {
     /**
      * Build menu Metopen per role.
      *
-     * Pertimbangan canon SIMPTA v2.0:
+     * Pertimbangan canon SIMPTA v2.2:
      * - "Inbox Pembimbing" hanya relevan untuk user yang punya role
      *   Pembimbing 1 / Pembimbing 2. Role struktural seperti Sekdep/GKM tidak
      *   boleh menutupi kemampuan pembimbing bila user yang sama memang
      *   multi-role, tetapi juga tidak boleh memberi inbox ke user non-pembimbing.
+     * - "Penilaian TA-03A" untuk Pembimbing 1 master + Pembimbing 2 co-sign
+     *   (BR-20). Antrean menggabungkan P1 pending input + P2 pending co-sign
+     *   supaya konsensus mufakat satu jendela navigasi.
      * - "Penilaian TA-03B" tetap khusus role Koordinator Metopen
      *   (Koordinator Metopen) sesuai BR-19.
      */
@@ -87,8 +91,16 @@ export const useSidebarMenu = () => {
         items.push({ title: coordinatorLabel, url: coordinatorUrl });
       }
 
+      if (role.pembimbing) {
+        // BR-20: antrean penilaian TA-03A — P1 input rubrik + P2 co-sign.
+        items.push({ title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" });
+      }
+
       if (role.koordinatorMetopen) {
         items.push({ title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" });
+        // Dashboard monitoring progress Metopen per mahasiswa eligible SIA:
+        // status pembimbing + rincian nilai 4 bucket (mirror xlsx download).
+        items.push({ title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" });
       }
 
       if (includeInboxPembimbing && role.pembimbing) {
@@ -119,17 +131,20 @@ export const useSidebarMenu = () => {
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
-        // Tugas Akhir
-        {
-          title: "Tugas Akhir",
-          url: "#",
-          icon: FileText,
-          items: [
-            { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-            { title: "Seminar", url: "/tugas-akhir/seminar" },
-            { title: "Sidang", url: "/tugas-akhir/sidang" },
-          ],
-        },
+        ...(hasTugasAkhirCourse
+          ? [
+              {
+                title: "Tugas Akhir",
+                url: "#",
+                icon: FileText,
+                items: [
+                  { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+                  { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
+                  { title: "Sidang", url: "/tugas-akhir/sidang" },
+                ],
+              } as SidebarNavItem,
+            ]
+          : []),
         // Yudisium — leaf item (no children)
         {
           title: "Yudisium",
@@ -148,6 +163,14 @@ export const useSidebarMenu = () => {
 
         if (canOpenAdvisorSearch) {
           metopenItems.push({ title: "Cari Pembimbing", url: "/metopel/cari-pembimbing" });
+        }
+
+        const showMetopenProposalLogbook =
+          isMetopenOnlyTrack &&
+          (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+        if (showMetopenProposalLogbook) {
+          metopenItems.push({ title: "Proposal", url: "/metopel/proposal" });
+          metopenItems.push({ title: "Catatan informal", url: "/metopel/logbook" });
         }
 
         studentNav.splice(2, 0, {
@@ -209,7 +232,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar" },
+          { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
         ],
       });
@@ -272,7 +295,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar Hasil", url: "/tugas-akhir/seminar" },
+          { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
@@ -296,7 +319,7 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
-          { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
+          { title: "Kelola Data CPL", url: "/kelola/cpl" },
         ],
       });
 
@@ -332,7 +355,7 @@ export const useSidebarMenu = () => {
           icon: Briefcase,
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
-            { title: "Bimbingan", url: "/kelola/kerja-praktik/pendaftaran/bimbingan" },
+            { title: "Bimbingan", url: "/kelola/kerja-praktik/bimbingan" },
             { title: "Seminar & Nilai", url: "/kelola/kerja-praktik/pendaftaran" },
           ],
         },
@@ -356,7 +379,7 @@ export const useSidebarMenu = () => {
           ...(role.pembimbing
             ? [
                 { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar", url: "/tugas-akhir/seminar" },
+                { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
                 { title: "Sidang", url: "/tugas-akhir/sidang" },
               ]
             : []),
@@ -380,10 +403,12 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
+          { title: "CPMK Tugas Akhir", url: "/kelola/tugas-akhir/cpmk" },
+          { title: "Rubrik Metopen (TA-03)", url: "/kelola/tugas-akhir/rubrik-metopen" },
           { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
-          { title: "Kelola Data CPL", url: "/kelola/data-cpl" },
+          { title: "Kelola Data CPL", url: "/kelola/cpl" },
         ],
       });
 
@@ -442,7 +467,7 @@ export const useSidebarMenu = () => {
           ...(role.pembimbing
             ? [
                 { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar", url: "/tugas-akhir/seminar" },
+                { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
                 { title: "Sidang", url: "/tugas-akhir/sidang" },
               ]
             : []),
@@ -506,7 +531,7 @@ export const useSidebarMenu = () => {
               },
               {
                 title: "Seminar & Nilai",
-                url: "/admin/kerja-praktik/seminar",
+                url: "/admin/kerja-praktik/seminar/template",
               },
             ],
           },
@@ -516,7 +541,7 @@ export const useSidebarMenu = () => {
             icon: FileText,
             items: [
               { title: "Data TA", url: "/master-data/tugas-akhir" },
-              { title: "Penjadwalan Seminar", url: "/tugas-akhir/seminar/admin" },
+              { title: "Penjadwalan Seminar", url: "/tugas-akhir/seminar-hasil" },
               { title: "Penjadwalan Sidang", url: "/tugas-akhir/sidang/admin" },
             ],
           },
@@ -599,7 +624,9 @@ export const useSidebarMenu = () => {
     advisorAccess?.hasBlockingRequest,
     advisorAccess?.hasOfficialSupervisor,
     canAccessMetopel,
-    isMetopenReadOnly
+    isMetopenReadOnly,
+    hasTugasAkhirCourse,
+    isMetopenOnlyTrack,
   ]);
 
   return menuData;

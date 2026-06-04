@@ -112,7 +112,7 @@ export interface AdvisorRequest {
   lecturerApprovalNote?: string | null;
   lecturerOverquotaReason?: string | null;
   status: AdvisorRequestStatus;
-  routeType: 'normal' | 'escalated';
+  routeType: 'normal' | 'escalated' | 'dept';
   rejectionReason: string | null;
   kadepNotes: string | null;
   createdAt: string;
@@ -132,7 +132,12 @@ export interface AdvisorRequest {
     scienceGroup?: { id: string; name: string };
     supervisionQuotas?: Array<{ quotaMax: number; quotaSoftLimit: number; currentCount: number }>;
   } | null;
-  topic: { id: string; name: string } | null;
+  topic: {
+    id: string;
+    name: string;
+    scienceGroupId?: string | null;
+    scienceGroup?: { id: string; name: string } | null;
+  } | null;
   redirectTarget?: {
     id: string;
     user: { id: string; fullName: string };
@@ -238,6 +243,11 @@ export interface AlternativeLecturer {
   sameTopicCount: number;
   trafficLight: 'green' | 'yellow';
   score: number;
+}
+
+export interface RecommendationResponse {
+  alternatives: AlternativeLecturer[];
+  message?: string;
 }
 
 export interface KadepQueue {
@@ -378,10 +388,10 @@ export const advisorRequestService = {
     return parseResponse<KadepQueue>(response);
   },
 
-  getRecommendations: async (id: string): Promise<ApiResponse<{ alternatives: AlternativeLecturer[] }>> => {
+  getRecommendations: async (id: string): Promise<ApiResponse<RecommendationResponse>> => {
     const url = getApiUrl(`/advisorRequest/${id}/recommendations`);
     const response = await apiRequest(url);
-    return parseResponse<{ alternatives: AlternativeLecturer[] }>(response);
+    return parseResponse<RecommendationResponse>(response);
   },
 
   decideRequest: async (id: string, data: { action: 'approve' | 'reject' | 'override' | 'redirect' | 'request_revision'; targetLecturerId?: string; notes?: string }): Promise<ApiResponse<AdvisorRequest>> => {

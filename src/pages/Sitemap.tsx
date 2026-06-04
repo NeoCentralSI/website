@@ -48,6 +48,7 @@ const sitemapGroups: SitemapGroup[] = [
       { label: 'Dashboard', path: '/dashboard' },
       { label: 'Profil', path: '/profil' },
       { label: 'Kerja Praktek', path: '/kerja-praktik' },
+      { label: 'Metode Penelitian', path: '/metopel' },
       { label: 'Tugas Akhir', path: '/tugas-akhir' },
       { label: 'Seminar', path: '/seminar' },
       { label: 'Sidang', path: '/sidang' },

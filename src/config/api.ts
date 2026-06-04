@@ -166,6 +166,7 @@ export const API_CONFIG = {
       REQUEST_SUPERVISOR_2: '/thesisGuidance/student/request-supervisor-2',
       PENDING_SUPERVISOR_2: '/thesisGuidance/student/pending-supervisor-2-request',
       CANCEL_SUPERVISOR_2: '/thesisGuidance/student/cancel-supervisor-2-request',
+      METOPEN_INFORMAL_LOGS: '/thesisGuidance/student/metopen/informal-logs',
     },
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',
@@ -424,6 +425,12 @@ export const API_CONFIG = {
       SUPERVISOR_GET_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
       // TA-03B: Metopen lecturer scoring
       METOPEN_SCORING_QUEUE: '/assessment/metopen/queue',
+      METOPEN_ATTENDANCE_LATEST: '/assessment/metopen/attendance/latest',
+      METOPEN_ATTENDANCE_UPLOAD: '/assessment/metopen/attendance/upload',
+      METOPEN_ATTENDANCE_ELIGIBILITY: (thesisId: string) => `/assessment/metopen/attendance/eligibility/${thesisId}`,
+      METOPEN_SCORES_EXPORT: '/assessment/metopen/scores/export',
+      // Koordinator dashboard: monitoring progress per mahasiswa eligible Metopen.
+      METOPEN_MONITORING: '/assessment/metopen/monitoring',
       METOPEN_SUBMIT_SCORE: (thesisId: string) => `/assessment/metopen/${thesisId}/score`,
       METOPEN_PUBLISH: (thesisId: string) => `/assessment/metopen/${thesisId}/publish`,
       // Shared: Get criteria by assessment form code

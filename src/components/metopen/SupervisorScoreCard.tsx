@@ -1,14 +1,15 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle2, FileSignature, Lock, ShieldCheck, AlertTriangle } from "lucide-react";
+import {
+    AlertTriangle,
+    Ban,
+    CheckCircle2,
+    FileSignature,
+    Lock,
+    ShieldCheck,
+} from "lucide-react";
 
-import { assessmentService } from "@/services/assessment.service";
-import type { StudentDetail } from "@/services/lecturerGuidance.service";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -20,11 +21,21 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Loading, Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 import { RubricGradingForm } from "@/components/metopen/RubricGradingForm";
+import {
+    assessmentService,
+    type ResearchMethodScoreWithDetails,
+} from "@/services/assessment.service";
+import type { StudentDetail } from "@/services/lecturerGuidance.service";
 import { formatDateId, toTitleCaseName } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 interface ComponentProps {
     thesisId: string;
@@ -34,20 +45,19 @@ interface ComponentProps {
 /**
  * SupervisorScoreCard
  *
- * BR-20 (canon §5.7.1) + BR-21 (canon §5.7.2) + audit P0-07/P0-08/P1-10:
+ * BR-20 (canon §5.7.1) + BR-21 (canon §5.7.2) + BR-28 (canon §5.7.3):
  * - Pembimbing 1 = master pengisi rubrik utuh (POST/PUT). Variant: form full edit.
  * - Pembimbing 2 = co-sign (read + audit-trail tombol). Variant: read-only score
  *   + tombol "Berikan Co-sign" yang membuka dialog konsensus.
  * - Lecturer lain (KaDep/Sekdep/penguji/dst) yang membuka detail mahasiswa →
  *   read-only ringkasan, tanpa interaksi.
- * - Setelah `isFinalized = true`: TIDAK ADA tombol Edit/Submit/Cosign apa pun
- *   (immutable post-submit). Banner finalitas wajib tampil.
+ * - Setelah `isFinalized = true`: TIDAK ADA tombol Edit/Submit/Cosign apa pun.
+ *   Banner finalitas + breakdown 4 bucket wajib tampil.
  */
 export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
     const queryClient = useQueryClient();
     const [coSignNote, setCoSignNote] = useState("");
 
-    // Fetch supervisor context untuk menentukan role caller (P1/P2/null)
     const {
         data: context,
         isLoading: isLoadingContext,
@@ -58,7 +68,6 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
         enabled: !!thesisId,
     });
 
-    // Fetch score detail (termasuk co-sign info + detail rubrik)
     const { data: scoreDetail } = useQuery({
         queryKey: ["assessment-supervisor-score-detail", thesisId],
         queryFn: () => assessmentService.getSupervisorScoreDetail(thesisId),
@@ -78,6 +87,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
             toast.error(err.message || "Gagal melakukan co-sign");
         },
     });
+
+    const summary = useMemo(() => buildScoreSummary(scoreDetail, scoreData), [scoreDetail, scoreData]);
 
     if (isLoadingContext) {
         return (
@@ -101,125 +112,95 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
 
     const role = context?.role ?? null;
     const hasP2 = Boolean(context?.hasP2);
-    const supervisorScore = scoreDetail?.supervisorScore ?? scoreData?.supervisorScore ?? null;
-    const lecturerScore = scoreDetail?.lecturerScore ?? scoreData?.lecturerScore ?? null;
-    const finalScore = scoreDetail?.finalScore ?? scoreData?.finalScore ?? null;
-    const isFinalized = scoreDetail?.isFinalized ?? scoreData?.isFinalized ?? false;
-    const coSignedAt = scoreDetail?.coSignedAt ?? null;
-    const coSignerName = scoreDetail?.coSigner?.user?.fullName
-        ? toTitleCaseName(scoreDetail.coSigner.user.fullName)
-        : null;
-    const coSignNoteValue = scoreDetail?.coSignNote ?? null;
-    const isP1Submitted = supervisorScore != null;
+    const isFinalized = summary.isFinalized;
+    const coSignedAt = summary.coSignedAt;
+    const isP1Submitted = summary.supervisorScore != null;
     const needsCoSign = hasP2 && isP1Submitted && coSignedAt == null;
 
-    /** Section ringkasan status TA-03A + TA-03B + finalScore.
-     *  Selalu tampil supaya semua aktor (P1, P2, dan read-only viewer)
-     *  melihat snapshot konsensus yang sama. */
     const summarySection = (
-        <Card>
-            <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <CardTitle className="text-base">Ringkasan Penilaian Proposal</CardTitle>
-                        <CardDescription>
-                            TA-03A (Pembimbing) maks 75 — TA-03B (Koordinator Metopen) maks 25 — Total maks 100
-                        </CardDescription>
-                    </div>
-                    {isFinalized ? (
-                        <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
-                            <Lock className="mr-1 h-3 w-3" /> Final
-                        </Badge>
-                    ) : isP1Submitted ? (
-                        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-                            Dalam Proses
-                        </Badge>
-                    ) : (
-                        <Badge variant="outline">Belum dimulai</Badge>
-                    )}
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div className="rounded-md border bg-muted/30 px-3 py-2">
-                        <p className="text-xs text-muted-foreground">TA-03A (P1{hasP2 ? " + P2 cosign" : ""})</p>
-                        <p className="text-base font-semibold">
-                            {supervisorScore != null ? `${supervisorScore} / 75` : "-"}
-                        </p>
-                    </div>
-                    <div className="rounded-md border bg-muted/30 px-3 py-2">
-                        <p className="text-xs text-muted-foreground">TA-03B (Koordinator)</p>
-                        <p className="text-base font-semibold">
-                            {lecturerScore != null ? `${lecturerScore} / 25` : "-"}
-                        </p>
-                    </div>
-                    <div className="rounded-md border bg-muted/30 px-3 py-2">
-                        <p className="text-xs text-muted-foreground">Total Final</p>
-                        <p className="text-base font-semibold">
-                            {finalScore != null ? `${finalScore} / 100` : "-"}
-                        </p>
-                    </div>
-                </div>
-                {hasP2 && (
-                    <div className="rounded-md border bg-muted/20 px-3 py-2 text-xs">
-                        {coSignedAt ? (
-                            <p>
-                                <CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-emerald-600" />
-                                Co-sign Pembimbing 2{coSignerName ? ` (${coSignerName})` : ""} pada {formatDateId(coSignedAt)}.
-                                {coSignNoteValue ? <span className="ml-1 text-muted-foreground">Catatan: {coSignNoteValue}</span> : null}
-                            </p>
-                        ) : isP1Submitted ? (
-                            <p className="text-amber-700">
-                                Pembimbing 2 belum melakukan co-sign. Penilaian TA-03A baru dianggap final konsensus setelah co-sign tercatat.
-                            </p>
-                        ) : (
-                            <p className="text-muted-foreground">
-                                Pembimbing 2 akan dapat co-sign setelah Pembimbing 1 submit penilaian.
-                            </p>
-                        )}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+        <SummaryCard
+            summary={summary}
+            hasP2={hasP2}
+            isP1Submitted={isP1Submitted}
+        />
     );
 
-    /** Banner immutable post-submit (BR-21).
-     *  Tampil ketika isFinalized = true. Pesan eksplisit agar tidak ambigu. */
+    const breakdownSection =
+        summary.bucket.presentasi != null ||
+        summary.bucket.konten != null ||
+        summary.bucket.struktur != null ||
+        summary.bucket.respon != null ? (
+            <ScoreBreakdownCard summary={summary} />
+        ) : null;
+
     const immutableBanner = isFinalized ? (
         <Alert className="border-emerald-200 bg-emerald-50">
             <ShieldCheck className="h-5 w-5 text-emerald-600" />
-            <AlertTitle className="text-emerald-800">Penilaian sudah final dan tidak dapat direvisi</AlertTitle>
+            <AlertTitle className="text-emerald-800">
+                Penilaian sudah final dan tidak dapat direvisi
+            </AlertTitle>
             <AlertDescription className="text-emerald-700">
-                Sesuai canon §5.7.2, nilai TA-03A {hasP2 ? "(termasuk co-sign Pembimbing 2)" : ""} dan TA-03B kunci permanen pasca submit. Ini menjaga integritas state pendaftaran (Beban Aktif vs Booking) sebelum TA-04 disahkan KaDep.
-                <br />
-                Revisi konten proposal hanya berlaku di fase bimbingan informal pra-submit final.
+                Sesuai canon §5.7.2, nilai TA-03A {hasP2 ? "(termasuk co-sign Pembimbing 2)" : ""} dan TA-03B
+                terkunci permanen pasca submit. Revisi konten proposal hanya berlaku di fase bimbingan
+                informal pra-submit final.
             </AlertDescription>
         </Alert>
     ) : null;
 
-    /** Variant render per role */
+    const attendanceAutoZeroBanner = summary.attendanceAutoZeroedAt ? (
+        <Alert className="border-destructive/30 bg-destructive/5">
+            <Ban className="h-5 w-5 text-destructive" />
+            <AlertTitle>Nilai TA-03 otomatis 0 karena presensi Metopel kurang dari 75%</AlertTitle>
+            <AlertDescription>
+                {summary.attendanceAutoZeroReason ??
+                    "Mahasiswa tidak memenuhi syarat presensi Metopel minimal 75%."}
+                {summary.attendanceRecord ? (
+                    <>
+                        <br />
+                        Presensi tercatat{" "}
+                        {(summary.attendanceRecord.attendancePercentage * 100).toFixed(2)}% (
+                        {summary.attendanceRecord.presentCount}/
+                        {summary.attendanceRecord.totalMeetings} pertemuan), diproses pada{" "}
+                        {formatDateId(summary.attendanceAutoZeroedAt)}.
+                    </>
+                ) : null}
+            </AlertDescription>
+        </Alert>
+    ) : null;
+
     if (role === "P1") {
-        // P1: master pengisi. Form full edit ketika belum final.
         return (
             <div className="space-y-4">
                 {summarySection}
+                {breakdownSection}
+                {attendanceAutoZeroBanner}
                 {immutableBanner}
                 {!isFinalized && (
                     <Alert className="border-blue-200 bg-blue-50">
                         <FileSignature className="h-5 w-5 text-blue-600" />
                         <AlertTitle className="text-blue-800">
-                            Anda Pembimbing 1 (master pengisi TA-03A)
+                            Anda Pembimbing 1 — master pengisi TA-03A
                         </AlertTitle>
                         <AlertDescription className="text-blue-700">
-                            Anda mengisi rubrik penilaian utuh (maks 75 poin) atas <strong>konsensus</strong> dengan {hasP2 ? "Pembimbing 2 (akan co-sign setelah Anda submit)" : "diri sendiri (thesis hanya 1 pembimbing)"}. Setelah submit, sistem akan menunggu {hasP2 ? "co-sign P2 + " : ""}TA-03B Koordinator Metopen untuk auto-finalisasi dan memicu antrean TA-04 ke KaDep.
+                            Anda mengisi rubrik penilaian utuh (maks 75 poin) atas <strong>konsensus</strong>{" "}
+                            dengan{" "}
+                            {hasP2
+                                ? "Pembimbing 2 (akan co-sign setelah Anda submit)"
+                                : "diri sendiri (thesis hanya 1 pembimbing)"}
+                            . Setelah submit, sistem menunggu {hasP2 ? "co-sign P2 + " : ""}TA-03B
+                            Koordinator Metopen untuk auto-finalisasi → memicu antrean TA-04 ke KaDep.
                         </AlertDescription>
                     </Alert>
                 )}
-                {!isFinalized && (
+                {!isFinalized && !summary.attendanceAutoZeroedAt && (
                     <RubricGradingForm
                         thesisId={thesisId}
                         formCode="TA-03A"
-                        submitButtonLabel={hasP2 ? "Submit Penilaian (atas konsensus dengan P2)" : "Submit Penilaian TA-03A"}
+                        submitButtonLabel={
+                            hasP2
+                                ? "Submit Penilaian (atas konsensus dengan P2)"
+                                : "Submit Penilaian TA-03A"
+                        }
                         submitConfirmText={
                             hasP2
                                 ? "Setelah submit, Pembimbing 2 perlu co-sign untuk finalisasi. Pasca finalisasi, nilai akan dikunci permanen dan memicu antrean TA-04 ke KaDep otomatis."
@@ -232,28 +213,34 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
     }
 
     if (role === "P2") {
-        // P2: read + co-sign. Tidak boleh edit nilai.
         return (
             <div className="space-y-4">
                 {summarySection}
+                {breakdownSection}
+                {attendanceAutoZeroBanner}
                 {immutableBanner}
                 {!isFinalized && (
-                    <Alert className="border-purple-200 bg-purple-50">
-                        <FileSignature className="h-5 w-5 text-purple-600" />
-                        <AlertTitle className="text-purple-800">
-                            Anda Pembimbing 2 (co-sign TA-03A)
+                    <Alert className="border-violet-200 bg-violet-50">
+                        <FileSignature className="h-5 w-5 text-violet-600" />
+                        <AlertTitle className="text-violet-800">
+                            Anda Pembimbing 2 — co-sign TA-03A
                         </AlertTitle>
-                        <AlertDescription className="text-purple-700">
-                            Pembimbing 1 yang mengisi rubrik utuh; Anda berperan sebagai <strong>co-sign</strong> persetujuan konsensus. Co-sign tidak mengubah nilai — hanya menambah audit trail bahwa kedua pembimbing setuju. Selaras formulir TA-03A cetak yang punya satu blok tanda tangan tunggal &ldquo;Dosen Pembimbing&rdquo;.
+                        <AlertDescription className="text-violet-700">
+                            Pembimbing 1 yang mengisi rubrik utuh; Anda berperan sebagai{" "}
+                            <strong>co-sign</strong> persetujuan konsensus. Co-sign tidak mengubah nilai —
+                            hanya menambah audit trail bahwa kedua pembimbing setuju. Selaras formulir
+                            TA-03A cetak yang punya satu blok tanda tangan tunggal &ldquo;Dosen
+                            Pembimbing&rdquo;.
                         </AlertDescription>
                     </Alert>
                 )}
                 {!isFinalized && needsCoSign && (
-                    <Card>
+                    <Card className="border-violet-200">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">Berikan Co-sign Konsensus</CardTitle>
                             <CardDescription>
-                                Anda menyetujui penilaian TA-03A yang diisi Pembimbing 1. Catatan opsional, mis. ringkasan diskusi konsensus.
+                                Anda menyetujui penilaian TA-03A yang diisi Pembimbing 1. Catatan opsional,
+                                misalnya ringkasan diskusi konsensus.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -269,14 +256,19 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                             </div>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button disabled={coSignMutation.isPending} className="w-full sm:w-auto">
+                                    <Button
+                                        disabled={coSignMutation.isPending}
+                                        className="w-full sm:w-auto"
+                                    >
                                         {coSignMutation.isPending ? (
                                             <>
-                                                <Spinner className="mr-2 h-4 w-4" /> Mencatat co-sign...
+                                                <Spinner className="mr-2 h-4 w-4" />
+                                                Mencatat co-sign...
                                             </>
                                         ) : (
                                             <>
-                                                <CheckCircle2 className="mr-2 h-4 w-4" /> Saya menyetujui penilaian ini (Co-sign)
+                                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                                Saya menyetujui penilaian ini (Co-sign)
                                             </>
                                         )}
                                     </Button>
@@ -285,7 +277,10 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Konfirmasi Co-sign Pembimbing 2</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Setelah co-sign tercatat, nilai TA-03A tidak dapat direvisi (canon §5.7.2). Bila TA-03B juga sudah masuk, sistem akan auto-finalisasi dan memicu antrean TA-04 ke KaDep. Pastikan Anda sudah berdiskusi konsensus dengan Pembimbing 1.
+                                            Setelah co-sign tercatat, nilai TA-03A tidak dapat direvisi
+                                            (canon §5.7.2). Bila TA-03B juga sudah masuk, sistem akan
+                                            auto-finalisasi dan memicu antrean TA-04 ke KaDep. Pastikan
+                                            Anda sudah berdiskusi konsensus dengan Pembimbing 1.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -305,7 +300,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                     <Alert className="border-amber-200 bg-amber-50">
                         <AlertTriangle className="h-5 w-5 text-amber-600" />
                         <AlertDescription className="text-amber-700">
-                            Pembimbing 1 belum mengisi rubrik TA-03A. Tombol co-sign akan aktif setelah Pembimbing 1 submit.
+                            Pembimbing 1 belum mengisi rubrik TA-03A. Tombol co-sign akan aktif setelah
+                            Pembimbing 1 submit.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -313,17 +309,320 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
         );
     }
 
-    // role === null → bukan pembimbing aktif → read-only ringkasan saja.
+    // role === null → bukan pembimbing aktif → read-only ringkasan + breakdown
     return (
         <div className="space-y-4">
             {summarySection}
+            {breakdownSection}
+            {attendanceAutoZeroBanner}
             {immutableBanner}
             <Alert className="border-border bg-muted/30">
                 <FileSignature className="h-5 w-5 text-muted-foreground" />
                 <AlertDescription className="text-muted-foreground">
-                    Anda bukan pembimbing aktif untuk thesis ini. Hanya Pembimbing 1 (master pengisi) dan Pembimbing 2 (co-sign) yang dapat berinteraksi dengan rubrik TA-03A.
+                    Anda bukan pembimbing aktif untuk thesis ini. Hanya Pembimbing 1 (master pengisi) dan
+                    Pembimbing 2 (co-sign) yang dapat berinteraksi dengan rubrik TA-03A.
                 </AlertDescription>
             </Alert>
         </div>
+    );
+}
+
+// ────────────────────────────────────────────────────────────
+// Sub-components
+// ────────────────────────────────────────────────────────────
+
+interface ScoreSummary {
+    supervisorScore: number | null;
+    lecturerScore: number | null;
+    finalScore: number | null;
+    isFinalized: boolean;
+    coSignedAt: string | null;
+    coSignerName: string | null;
+    coSignNote: string | null;
+    attendanceAutoZeroedAt: string | null;
+    attendanceAutoZeroReason: string | null;
+    attendanceRecord: {
+        attendancePercentage: number;
+        presentCount: number;
+        totalMeetings: number;
+    } | null;
+    bucket: {
+        presentasi: number | null;
+        konten: number | null;
+        struktur: number | null;
+        respon: number | null;
+    };
+}
+
+function buildScoreSummary(
+    scoreDetail: ResearchMethodScoreWithDetails | null | undefined,
+    scoreData?: StudentDetail["researchMethodScore"],
+): ScoreSummary {
+    const detail = scoreDetail ?? null;
+    const supervisorScore = detail?.supervisorScore ?? scoreData?.supervisorScore ?? null;
+    const lecturerScore = detail?.lecturerScore ?? scoreData?.lecturerScore ?? null;
+    const finalScore = detail?.finalScore ?? scoreData?.finalScore ?? null;
+    const isFinalized = detail?.isFinalized ?? scoreData?.isFinalized ?? false;
+    const coSignedAt = detail?.coSignedAt ?? null;
+    const coSignerName = detail?.coSigner?.user?.fullName
+        ? toTitleCaseName(detail.coSigner.user.fullName)
+        : null;
+    const coSignNote = detail?.coSignNote ?? null;
+    const attendanceAutoZeroedAt =
+        detail?.attendanceAutoZeroedAt ?? scoreData?.attendanceAutoZeroedAt ?? null;
+    const attendanceAutoZeroReason =
+        detail?.attendanceAutoZeroReason ?? scoreData?.attendanceAutoZeroReason ?? null;
+    const attendanceRecord = detail?.attendanceRecord ?? null;
+
+    const details = detail?.researchMethodScoreDetails ?? [];
+    const bucket = details.reduce<ScoreSummary["bucket"]>(
+        (acc, item) => {
+            const name = (item.criteria?.name ?? "").toLowerCase();
+            const maxScore = item.criteria?.maxScore ?? null;
+            if (name.includes("presentasi")) acc.presentasi = item.score;
+            else if (name.includes("konten") && maxScore === 40) acc.konten = item.score;
+            else if (name.includes("struktur") && maxScore === 25) acc.struktur = item.score;
+            else if (name.includes("respon") || name.includes("merespon")) acc.respon = item.score;
+            return acc;
+        },
+        { presentasi: null, konten: null, struktur: null, respon: null },
+    );
+
+    return {
+        supervisorScore,
+        lecturerScore,
+        finalScore,
+        isFinalized,
+        coSignedAt,
+        coSignerName,
+        coSignNote,
+        attendanceAutoZeroedAt,
+        attendanceAutoZeroReason,
+        attendanceRecord,
+        bucket,
+    };
+}
+
+function SummaryCard({
+    summary,
+    hasP2,
+    isP1Submitted,
+}: {
+    summary: ScoreSummary;
+    hasP2: boolean;
+    isP1Submitted: boolean;
+}) {
+    const statusBadge = summary.isFinalized ? (
+        <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800">
+            <Lock className="mr-1 h-3 w-3" /> Final
+        </Badge>
+    ) : isP1Submitted ? (
+        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
+            Dalam Proses
+        </Badge>
+    ) : (
+        <Badge variant="outline">Belum dimulai</Badge>
+    );
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <CardTitle className="text-base">Ringkasan Penilaian Proposal</CardTitle>
+                        <CardDescription>
+                            TA-03A Pembimbing maks 75 · TA-03B Koordinator Metopen maks 25 · Total maks 100
+                        </CardDescription>
+                    </div>
+                    {statusBadge}
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <ScoreStatBlock
+                        label={`TA-03A · Pembimbing${hasP2 ? " + co-sign" : ""}`}
+                        score={summary.supervisorScore}
+                        max={75}
+                        accent="blue"
+                    />
+                    <ScoreStatBlock
+                        label="TA-03B · Koordinator"
+                        score={summary.lecturerScore}
+                        max={25}
+                        accent="violet"
+                    />
+                    <ScoreStatBlock
+                        label="Total Final"
+                        score={summary.finalScore}
+                        max={100}
+                        accent="emerald"
+                        prominent
+                    />
+                </div>
+
+                {hasP2 ? (
+                    <div className="rounded-md border bg-muted/20 px-3 py-2 text-xs">
+                        {summary.coSignedAt ? (
+                            <p>
+                                <CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-emerald-600" />
+                                Co-sign Pembimbing 2{summary.coSignerName ? ` · ${summary.coSignerName}` : ""}{" "}
+                                pada {formatDateId(summary.coSignedAt)}.
+                                {summary.coSignNote ? (
+                                    <span className="ml-1 text-muted-foreground">
+                                        Catatan: {summary.coSignNote}
+                                    </span>
+                                ) : null}
+                            </p>
+                        ) : isP1Submitted ? (
+                            <p className="text-amber-700">
+                                Pembimbing 2 belum melakukan co-sign. Penilaian TA-03A baru dianggap final
+                                konsensus setelah co-sign tercatat.
+                            </p>
+                        ) : (
+                            <p className="text-muted-foreground">
+                                Pembimbing 2 akan dapat co-sign setelah Pembimbing 1 submit penilaian.
+                            </p>
+                        )}
+                    </div>
+                ) : null}
+            </CardContent>
+        </Card>
+    );
+}
+
+const STAT_ACCENTS: Record<"blue" | "violet" | "emerald", string> = {
+    blue: "border-blue-200 bg-blue-50/60",
+    violet: "border-violet-200 bg-violet-50/60",
+    emerald: "border-emerald-200 bg-emerald-50/60",
+};
+
+function ScoreStatBlock({
+    label,
+    score,
+    max,
+    accent,
+    prominent = false,
+}: {
+    label: string;
+    score: number | null;
+    max: number;
+    accent: keyof typeof STAT_ACCENTS;
+    prominent?: boolean;
+}) {
+    const percentage = score != null ? Math.round((score / max) * 100) : 0;
+    return (
+        <div className={cn("rounded-md border px-3 py-2", STAT_ACCENTS[accent])}>
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <div className="mt-0.5 flex items-baseline gap-1.5">
+                <span
+                    className={cn(
+                        "font-semibold tabular-nums",
+                        prominent ? "text-2xl" : "text-base",
+                    )}
+                >
+                    {score != null ? score : "—"}
+                </span>
+                <span className="text-xs text-muted-foreground">/ {max}</span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-background">
+                <div
+                    className={cn(
+                        "h-full transition-all",
+                        accent === "blue" && "bg-blue-500",
+                        accent === "violet" && "bg-violet-500",
+                        accent === "emerald" && "bg-emerald-500",
+                    )}
+                    style={{ width: `${score != null ? percentage : 0}%` }}
+                />
+            </div>
+        </div>
+    );
+}
+
+function ScoreBreakdownCard({ summary }: { summary: ScoreSummary }) {
+    const buckets: Array<{
+        label: string;
+        sub: string;
+        score: number | null;
+        max: number;
+        cpmk: string;
+    }> = [
+        {
+            label: "Presentasi lisan",
+            sub: "TA-03A · CPMK-01",
+            cpmk: "CPMK-01",
+            score: summary.bucket.presentasi,
+            max: 20,
+        },
+        {
+            label: "Penulisan proposal (konten)",
+            sub: "TA-03A · CPMK-02 — 4 sub",
+            cpmk: "CPMK-02",
+            score: summary.bucket.konten,
+            max: 40,
+        },
+        {
+            label: "Penulisan proposal (struktur)",
+            sub: "TA-03B · CPMK-02 default",
+            cpmk: "CPMK-02",
+            score: summary.bucket.struktur,
+            max: 25,
+        },
+        {
+            label: "Kemampuan merespons",
+            sub: "TA-03A · CPMK-03",
+            cpmk: "CPMK-03",
+            score: summary.bucket.respon,
+            max: 15,
+        },
+    ];
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Rincian Skor per CPMK (Mirror Template SIA)</CardTitle>
+                <CardDescription>
+                    Pemetaan 4 bucket sesuai kolom export xlsx Koordinator Metopen.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid gap-2 sm:grid-cols-2">
+                    {buckets.map((bucket) => {
+                        const filled = bucket.score != null;
+                        const percentage = filled ? Math.round((bucket.score! / bucket.max) * 100) : 0;
+                        return (
+                            <div
+                                key={bucket.label}
+                                className="rounded-md border bg-card px-3 py-2.5"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium">{bucket.label}</p>
+                                        <p className="text-[11px] text-muted-foreground">{bucket.sub}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-semibold tabular-nums">
+                                            {filled ? bucket.score : "—"}
+                                            <span className="ml-0.5 text-xs text-muted-foreground">
+                                                /{bucket.max}
+                                            </span>
+                                        </p>
+                                        <Badge variant="outline" className="mt-0.5 text-[10px]">
+                                            {bucket.cpmk}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                    <div
+                                        className="h-full bg-primary/70 transition-all"
+                                        style={{ width: `${percentage}%` }}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </CardContent>
+        </Card>
     );
 }

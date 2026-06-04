@@ -19,6 +19,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { Loading } from '@/components/ui/spinner';
+import { Separator } from '@/components/ui/separator';
+import { formatDateId, toTitleCaseName } from '@/lib/text';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
     pending: { label: 'Menunggu', className: 'bg-blue-500/15 text-blue-700 border-blue-200' },
@@ -44,8 +46,38 @@ const researchPermitStatusLabel: Record<string, string> = {
     not_approved: 'Izin belum disetujui',
 };
 
+const requestTypeLabel: Record<string, string> = {
+    ta_01: 'TA-01 - Pengajuan calon pembimbing',
+    ta_02: 'TA-02 - Penetapan pembimbing oleh departemen',
+};
+
 function formatDate(d: string) {
-    return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    return formatDateId(d);
+}
+
+function displayText(value?: string | null) {
+    const cleanValue = value?.trim();
+    return cleanValue ? cleanValue : '-';
+}
+
+function DetailField({ label, value }: { label: string; value?: string | null }) {
+    return (
+        <div className="min-w-0 max-w-full space-y-1 overflow-hidden">
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className="max-w-full whitespace-pre-wrap break-all text-sm leading-relaxed">
+                {displayText(value)}
+            </p>
+        </div>
+    );
+}
+
+function DetailSection({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <section className="min-w-0 max-w-full space-y-3 overflow-hidden rounded-md border border-border p-3">
+            <h3 className="text-sm font-semibold">{title}</h3>
+            {children}
+        </section>
+    );
 }
 
 function renderEmpty(icon: ReactNode, title: string, subtitle: string) {
@@ -109,6 +141,11 @@ export default function InboxPembimbing() {
     const queryClient = useQueryClient();
     const [rejectDialog, setRejectDialog] = useState<{ open: boolean; request: AdvisorRequest | null }>({ open: false, request: null });
     const [acceptDialog, setAcceptDialog] = useState<{ open: boolean; request: AdvisorRequest | null }>({ open: false, request: null });
+    const [detailDialog, setDetailDialog] = useState<{ open: boolean; request: AdvisorRequest | null; showActions: boolean }>({
+        open: false,
+        request: null,
+        showActions: false,
+    });
     const [rejectionReason, setRejectionReason] = useState('');
     const [approvalNote, setApprovalNote] = useState('');
     const [activeTab, setActiveTab] = useState('pending');
@@ -146,6 +183,7 @@ export default function InboxPembimbing() {
             queryClient.invalidateQueries({ queryKey: ['dosen-inbox-history'] });
             setRejectDialog({ open: false, request: null });
             setAcceptDialog({ open: false, request: null });
+            setDetailDialog({ open: false, request: null, showActions: false });
             setRejectionReason('');
             setApprovalNote('');
         },
@@ -156,7 +194,13 @@ export default function InboxPembimbing() {
 
     const markReviewMutation = useMutation({
         mutationFn: (id: string) => advisorRequestService.markUnderReview(id),
-        onSuccess: () => {
+        onSuccess: (response) => {
+            const updatedRequest = response.data;
+            setDetailDialog((prev) => (
+                prev.request?.id === updatedRequest.id
+                    ? { ...prev, request: updatedRequest }
+                    : prev
+            ));
             toast.success('Pengajuan ditandai sedang ditinjau');
             queryClient.invalidateQueries({ queryKey: ['dosen-inbox'] });
             queryClient.invalidateQueries({ queryKey: ['dosen-inbox-history'] });
@@ -174,6 +218,19 @@ export default function InboxPembimbing() {
 
     const handleAccept = (request: AdvisorRequest) => {
         if (needsOverquotaNote(request)) {
+            // F-1.2 + BR-26 (OQ-0.1.1): overquota wajib dual-justification. Bila request
+            // ini bukan escalated (tanpa justifikasi mahasiswa), jangan buka dialog alasan
+            // dosen (akan ditolak backend) — arahkan mahasiswa ajukan ulang jalur escalated.
+            const hasStudentJustification = Boolean(
+                (request.studentJustification || request.justificationText || '').trim(),
+            );
+            if (!hasStudentJustification) {
+                toast.error(
+                    'Kuota normal Anda penuh dan pengajuan ini belum memuat justifikasi akademik mahasiswa. Minta mahasiswa mengajukan ulang lewat jalur escalated TA-01 (dosen kuota merah) agar dapat diteruskan ke KaDep.',
+                );
+                return;
+            }
+            setDetailDialog({ open: false, request: null, showActions: false });
             setAcceptDialog({ open: true, request });
             return;
         }
@@ -203,6 +260,13 @@ export default function InboxPembimbing() {
             return;
         }
         respondMutation.mutate({ id: rejectDialog.request.id, action: 'reject', rejectionReason });
+    };
+
+    const handleOpenDetail = (request: AdvisorRequest, showActions: boolean) => {
+        setDetailDialog({ open: true, request, showActions });
+        if (showActions && request.status === 'pending') {
+            markReviewMutation.mutate(request.id);
+        }
     };
 
     const renderRequestCard = (request: AdvisorRequest, showActions: boolean) => {
@@ -276,6 +340,15 @@ export default function InboxPembimbing() {
                         <div className="flex flex-wrap items-center gap-2 pt-1 border-t">
                             <Button
                                 size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenDetail(request, true)}
+                                disabled={respondMutation.isPending || markReviewMutation.isPending}
+                            >
+                                <Eye className="h-3.5 w-3.5 mr-1" />
+                                Tinjau Detail
+                            </Button>
+                            <Button
+                                size="sm"
                                 onClick={() => handleAccept(request)}
                                 disabled={respondMutation.isPending || markReviewMutation.isPending}
                                 className="bg-emerald-600 hover:bg-emerald-700"
@@ -311,6 +384,19 @@ export default function InboxPembimbing() {
                                     Anda sedang meninjau
                                 </Badge>
                             )}
+                        </div>
+                    )}
+
+                    {!showActions && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenDetail(request, false)}
+                            >
+                                <Eye className="h-3.5 w-3.5 mr-1" />
+                                Lihat Detail
+                            </Button>
                         </div>
                     )}
                 </CardContent>
@@ -499,6 +585,104 @@ export default function InboxPembimbing() {
                             {respondMutation.isPending ? 'Memproses...' : 'Terima & Kirim ke KaDep'}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={detailDialog.open} onOpenChange={(open) => { if (!open) setDetailDialog({ open: false, request: null, showActions: false }); }}>
+                <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-3xl overflow-hidden gap-0 p-0">
+                    <DialogHeader className="px-5 pb-3 pt-5">
+                        <DialogTitle>Detail Pengajuan Pembimbing</DialogTitle>
+                        <DialogDescription>
+                            Snapshot data yang disubmit mahasiswa untuk ditinjau dosen sebelum memberi keputusan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[calc(90vh-170px)] w-full min-w-0 overflow-y-auto overflow-x-hidden">
+                        <div className="w-full min-w-0 max-w-full space-y-4 px-5 pb-5">
+                            {detailDialog.request && (
+                                <>
+                                    <DetailSection title="Mahasiswa">
+                                        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                                            <DetailField label="Nama" value={toTitleCaseName(detailDialog.request.student?.user?.fullName)} />
+                                            <DetailField label="NIM" value={detailDialog.request.student?.user?.identityNumber} />
+                                            <DetailField label="Tanggal submit" value={formatDateId(detailDialog.request.createdAt)} />
+                                            <DetailField label="Status" value={statusConfig[detailDialog.request.status]?.label ?? detailDialog.request.status} />
+                                            <DetailField label="Jenis pengajuan" value={requestTypeLabel[detailDialog.request.requestType] ?? detailDialog.request.requestType} />
+                                        </div>
+                                    </DetailSection>
+
+                                    <DetailSection title="Topik dan Judul">
+                                        <DetailField label="Topik" value={detailDialog.request.topic?.name} />
+                                        <DetailField label="Judul yang diajukan" value={detailDialog.request.proposedTitle} />
+                                    </DetailSection>
+
+                                    <DetailSection title="Substansi Pengajuan">
+                                        <div className="space-y-4">
+                                            <DetailField label="Latar belakang singkat" value={detailDialog.request.backgroundSummary} />
+                                            <DetailField label="Tujuan / permasalahan" value={detailDialog.request.problemStatement} />
+                                            <DetailField label="Rencana solusi" value={detailDialog.request.proposedSolution} />
+                                            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                                                <DetailField label="Objek penelitian" value={detailDialog.request.researchObject} />
+                                                <DetailField
+                                                    label="Status izin penelitian"
+                                                    value={
+                                                        detailDialog.request.researchPermitStatus
+                                                            ? researchPermitStatusLabel[detailDialog.request.researchPermitStatus] ?? detailDialog.request.researchPermitStatus
+                                                            : null
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                    </DetailSection>
+
+                                    <DetailSection title="Justifikasi dan Catatan">
+                                        <div className="space-y-4">
+                                            <DetailField
+                                                label="Justifikasi akademik mahasiswa"
+                                                value={detailDialog.request.studentJustification || detailDialog.request.justificationText}
+                                            />
+                                            <DetailField label="Proyeksi lulus / alasan dosen" value={detailDialog.request.lecturerOverquotaReason || detailDialog.request.lecturerApprovalNote} />
+                                            <DetailField label="Catatan KaDep" value={detailDialog.request.kadepNotes} />
+                                            <DetailField label="Alasan penolakan" value={detailDialog.request.rejectionReason} />
+                                        </div>
+                                    </DetailSection>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    {detailDialog.request && (
+                        <>
+                            <Separator />
+                            <DialogFooter className="px-5 py-4">
+                                <Button variant="outline" onClick={() => setDetailDialog({ open: false, request: null, showActions: false })}>
+                                    Tutup
+                                </Button>
+                                {detailDialog.showActions && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            className="text-red-600 border-red-200 hover:bg-red-50"
+                                            onClick={() => {
+                                                setRejectDialog({ open: true, request: detailDialog.request });
+                                                setDetailDialog({ open: false, request: null, showActions: false });
+                                            }}
+                                            disabled={respondMutation.isPending || markReviewMutation.isPending}
+                                        >
+                                            <XCircle className="h-3.5 w-3.5 mr-1" />
+                                            Tolak
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleAccept(detailDialog.request!)}
+                                            disabled={respondMutation.isPending || markReviewMutation.isPending}
+                                            className="bg-emerald-600 hover:bg-emerald-700"
+                                        >
+                                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                            Terima
+                                        </Button>
+                                    </>
+                                )}
+                            </DialogFooter>
+                        </>
+                    )}
                 </DialogContent>
             </Dialog>
 

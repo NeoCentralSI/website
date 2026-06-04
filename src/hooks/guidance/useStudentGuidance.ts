@@ -52,10 +52,10 @@ export function useStudentGuidance(phase?: GuidancePhase) {
     setSearchParams(sp, { replace: true });
   }, [status, q, supervisorFilter, page, pageSize, searchParams, setSearchParams]);
 
-  // Refetch when status changes
+  // Refetch when status or phase changes (phase drives backend filter)
   useEffect(() => {
     refetch();
-  }, [status, refetch]);
+  }, [status, phase, refetch]);
 
   // Check for pending requests
   const hasPendingRequest = useMemo(() => {

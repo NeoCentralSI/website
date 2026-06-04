@@ -115,7 +115,9 @@ const RoomPage = lazy(() => import('./pages/master-data/Room'))
 const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvailability'))
 // Kelola
 const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
+const MetopenTa03AQueuePage = lazy(() => import('./pages/kelola/MetopenTa03AQueue'))
 const MetopenTa03BQueuePage = lazy(() => import('./pages/kelola/MetopenTa03BQueue'))
+const MetopenMonitoringPage = lazy(() => import('./pages/kelola/MetopenMonitoring'))
 const InboxPembimbing = lazy(() => import('./pages/dosen/InboxPembimbing'))
 const DSSKadep = lazy(() => import('./pages/kelola/kadep/DSSKadep'))
 const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
@@ -236,6 +238,8 @@ function App() {
                   <Route element={<MetopelGuard />}>
                     <Route path="/metopel" element={<MetopenOverviewPage />} />
                     <Route path="/metopel/cari-pembimbing" element={<MetopenOverviewPage />} />
+                    <Route path="/metopel/proposal" element={<MetopenOverviewPage />} />
+                    <Route path="/metopel/logbook" element={<MetopenOverviewPage />} />
                   </Route>
 
                   <Route path="tugas-akhir" element={<TugasAkhirGuard />}>
@@ -319,10 +323,20 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/kelola/perusahaan" element={<SekdepCompanyListPage />} />
                   <Route path="/kelola/sop" element={<KelolaSopPage />} />
+                  <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
+                </Route>
+
+                {/* Kelola Tugas Akhir (topik, CPMK, rubrik Metopen TA-03, dll.) — Sekdep, Kadep, Koordinator Metopen */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.KOORDINATOR_METOPEN]} />}>
+                  <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
+                  <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/monitor" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/milestone" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
+                  <Route path="/kelola/tugas-akhir/rubrik-metopen" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 </Route>
 
                 {/* Kelola CPL - Sekdep, Kadep, GKM (non-SIMPTA improvement from origin/main) */}
@@ -335,8 +349,13 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METOPEN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/kelola/metopen" element={<KelolaMetopenPage />} />
                 </Route>
+                {/* TA-03A: penilaian Pembimbing — bagian rangkaian Metopen (BR-20). RBAC = SUPERVISOR_ROLES (P1+P2). */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.PEMBIMBING_1, ROLES.PEMBIMBING_2]} />}>
+                  <Route path="/kelola/metopen/ta03a" element={<MetopenTa03AQueuePage />} />
+                </Route>
                 <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METOPEN]} />}>
                   <Route path="/kelola/metopen/ta03b" element={<MetopenTa03BQueuePage />} />
+                  <Route path="/kelola/metopen/monitoring" element={<MetopenMonitoringPage />} />
                 </Route>
 
                 {/* Kelola - Sekretaris */}
@@ -361,15 +380,7 @@ function App() {
                     <Route path="nilai" element={<div />} />
                   </Route>
                   <Route path="/kelola/kerja-praktik/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
-                  <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
-                  <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/tugas-akhir/monitor" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/tugas-akhir/milestone" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
-                  <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/tugas-akhir/rubrik-metopen" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
+                  {/* Kelola Tugas Akhir: routes registered under shared Sekdep/Kadep/Koordinator Metopen guard above */}
                   {/* Yudisium Management - Redirect to unified detail if specific actions needed, or keep for list */}
                   <Route path="/kelola/yudisium" element={<Navigate to="/yudisium" replace />} />
                   <Route path="/kelola/yudisium/event" element={<Navigate to="/yudisium" replace />} />

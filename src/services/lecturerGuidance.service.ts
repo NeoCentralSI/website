@@ -265,6 +265,8 @@ export interface StudentDetail {
     lecturerScore?: number | null;
     finalScore?: number | null;
     isFinalized?: boolean;
+    attendanceAutoZeroedAt?: string | null;
+    attendanceAutoZeroReason?: string | null;
   } | null;
   student: {
     id?: string | null;

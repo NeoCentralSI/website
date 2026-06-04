@@ -100,7 +100,7 @@ function StatusBadge({ status }: { status: string }) {
     lulus: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
     dropout: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     bss: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-    mengundurkan_diri: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+    mengundurkan_diri: 'bg-muted text-muted-foreground',
   };
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${v[status] || 'bg-muted text-muted-foreground'}`}>{status}</span>;
 }

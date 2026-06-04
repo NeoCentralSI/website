@@ -8,10 +8,13 @@ import {
   useStudentDefenceHistory,
 } from '@/hooks/thesis-defence';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useStudentEligibility } from '@/hooks/shared';
 
 export default function StudentThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
+  const { hasTugasAkhirCourse } = useStudentEligibility();
+  const studentTaParentHref = hasTugasAkhirCourse ? '/tugas-akhir' : '/metopel';
   const { data: overview, isLoading: isOverviewLoading } = useStudentDefenceOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentDefenceHistory();
 
@@ -19,11 +22,11 @@ export default function StudentThesisDefence() {
 
   const breadcrumbs = useMemo(
     () => [
-      { label: 'Tugas Akhir', href: '/tugas-akhir' },
+      { label: 'Tugas Akhir', href: studentTaParentHref },
       { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
       { label: 'Status & Pendaftaran' },
     ],
-    []
+    [studentTaParentHref]
   );
 
   useEffect(() => {

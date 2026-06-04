@@ -29,6 +29,7 @@ export default function DSSKadep() {
     const queryClient = useQueryClient();
     const [selectedRequest, setSelectedRequest] = useState<AdvisorRequest | null>(null);
     const [alternatives, setAlternatives] = useState<AlternativeLecturer[]>([]);
+    const [recommendationMessage, setRecommendationMessage] = useState<string | null>(null);
     const [loadingAlts, setLoadingAlts] = useState(false);
     const [kadepNotes, setKadepNotes] = useState('');
     const initialTab: TabKey = location.pathname.endsWith('/pengesahan-judul')
@@ -120,12 +121,15 @@ export default function DSSKadep() {
     const handleSelectRequest = async (request: AdvisorRequest) => {
         setSelectedRequest(request);
         setAlternatives([]);
+        setRecommendationMessage(null);
         setLoadingAlts(true);
         try {
             const res = await advisorRequestService.getRecommendations(request.id);
             setAlternatives(res.data.alternatives);
-        } catch {
+            setRecommendationMessage(res.data.message ?? null);
+        } catch (err) {
             setAlternatives([]);
+            setRecommendationMessage(err instanceof Error ? err.message : 'Gagal memuat rekomendasi dosen.');
         } finally {
             setLoadingAlts(false);
         }
@@ -304,7 +308,9 @@ export default function DSSKadep() {
                                                     <Loading text="Memuat rekomendasi..." />
                                                 </div>
                                             ) : alternatives.length === 0 ? (
-                                                <p className="text-sm text-muted-foreground text-center py-4">Tidak ada dosen alternatif di KBK yang sama</p>
+                                                <p className="text-sm text-muted-foreground text-center py-4">
+                                                    {recommendationMessage || 'Tidak ada dosen alternatif di KBK yang sama'}
+                                                </p>
                                             ) : (
                                                 <div className="space-y-2">
                                                     {alternatives.map((alt, index) => (

@@ -8,6 +8,8 @@ export interface MetopelEligibility {
   eligibleMetopen: boolean | null;
   hasExternalStatus: boolean;
   hasMetopenCourse: boolean;
+  semester?: number;
+  isMinSemester6?: boolean;
   canAccess: boolean;
   canSubmit: boolean;
   readOnly: boolean;

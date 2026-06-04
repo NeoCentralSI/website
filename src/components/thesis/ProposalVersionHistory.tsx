@@ -14,6 +14,17 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
     FileText,
     Upload,
     Download,
@@ -229,7 +240,8 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["proposal-versions"] });
             queryClient.invalidateQueries({ queryKey: ["proposal-submission-status"] });
-            queryClient.invalidateQueries({ queryKey: ["student-thesis-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["my-thesis-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["student-supervisors"] });
             setUploadOpen(false);
             toast.success("Proposal berhasil diunggah");
         },
@@ -243,7 +255,8 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
         onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: ["proposal-versions"] });
             queryClient.invalidateQueries({ queryKey: ["proposal-submission-status"] });
-            queryClient.invalidateQueries({ queryKey: ["student-thesis-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["my-thesis-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["student-supervisors"] });
             toast.success(
                 result.data.alreadySubmitted
                     ? "Versi terbaru sudah menjadi proposal final aktif"
@@ -285,14 +298,38 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
                     </CardTitle>
                     {!readOnly && (
                         <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => submitFinalMutation.mutate()}
-                                disabled={!canSubmitFinal || submitFinalMutation.isPending || activeFinalVersionId === latestVersionId}
-                            >
-                                {submitFinalMutation.isPending ? "Memproses..." : "Submit Proposal Final"}
-                            </Button>
+                            {/* F-3.2: konfirmasi pra-submit — versi ini jadi acuan penilaian TA-03A/B */}
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={!canSubmitFinal || submitFinalMutation.isPending || activeFinalVersionId === latestVersionId}
+                                    >
+                                        {submitFinalMutation.isPending ? "Memproses..." : "Submit Proposal Final"}
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Submit proposal final?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Versi terbaru
+                                            {submissionStatus?.latestVersion?.version
+                                                ? ` (v${submissionStatus.latestVersion.version})`
+                                                : ""}{" "}
+                                            akan ditetapkan sebagai proposal final aktif dan menjadi acuan
+                                            penilaian TA-03A/TA-03B. Anda masih dapat mengunggah versi baru lalu
+                                            submit ulang selama penilaian belum dimulai.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => submitFinalMutation.mutate()}>
+                                            Ya, Submit Final
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                             <Button size="sm" onClick={() => setUploadOpen(true)}>
                                 <Upload className="mr-2 h-3.5 w-3.5" /> Upload Versi Baru
                             </Button>

@@ -1,21 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useOutletContext } from "react-router-dom";
-import { toast } from "sonner";
 import {
+    Ban,
     CheckCircle2,
     ClipboardCheck,
-    Download,
-    FileText,
+    FileSignature,
     GraduationCap,
     Search,
     UserCircle2,
 } from "lucide-react";
 
-import { MetopenAttendanceUploadCard } from "@/components/metopen/MetopenAttendanceUploadCard";
-import { RubricGradingForm } from "@/components/metopen/RubricGradingForm";
+import type { LayoutContext } from "@/components/layout/ProtectedLayout";
+import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,35 +24,62 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Loading, Spinner } from "@/components/ui/spinner";
-import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { assessmentService, type ScoringQueueItem } from "@/services/assessment.service";
+import { Loading } from "@/components/ui/spinner";
+import {
+    assessmentService,
+    type SupervisorScoringQueueItem,
+    type Ta03AActionStatus,
+} from "@/services/assessment.service";
 import { toTitleCaseName } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
-const METOPEN_TA03B_QUEUE_KEY = ["assessment-metopen-queue"];
+const TA03A_QUEUE_KEY = ["assessment-supervisor-queue"];
 
-type StatusFilter = "all" | "pending" | "scored";
+type StatusFilter = "all" | "needs_action" | "waiting" | "auto_zeroed";
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+    { value: "needs_action", label: "Perlu aksi saya" },
+    { value: "waiting", label: "Menunggu rekan / TA-03B" },
+    { value: "auto_zeroed", label: "Auto-zero presensi <75%" },
     { value: "all", label: "Semua proposal" },
-    { value: "pending", label: "Menunggu dinilai" },
-    { value: "scored", label: "Sudah dinilai (recall)" },
 ];
 
-export default function MetopenTa03BQueue() {
+const ACTION_LABELS: Record<Ta03AActionStatus, { label: string; tone: "amber" | "violet" | "blue" | "muted" | "destructive" }> = {
+    p1_pending: { label: "Perlu input rubrik", tone: "amber" },
+    p2_pending_cosign: { label: "Perlu co-sign", tone: "violet" },
+    p1_waiting_cosign: { label: "Menunggu rekan / TA-03B", tone: "blue" },
+    p2_waiting_p1: { label: "Menunggu Pembimbing 1 submit", tone: "muted" },
+    auto_zeroed: { label: "Presensi <75% (auto-zero)", tone: "destructive" },
+};
+
+/**
+ * BR-20 (canon §5.7.1) + BR-21 (canon §5.7.2) + BR-28 (canon §5.7.3):
+ * Halaman antrean penilaian TA-03A untuk dosen pembimbing — bagian rangkaian
+ * Metode Penelitian, gandeng dengan TA-03B (Koordinator Metopen).
+ *
+ * Konsekuensi BR-20: TA-03A adalah konsensus mufakat satu blok tanda tangan
+ * — Pembimbing 1 master pengisi rubrik 0-75 + Pembimbing 2 co-sign audit-trail.
+ * Halaman ini menggabungkan kedua surface jadi satu jendela navigasi:
+ *   - P1 perlu input rubrik → form RubricGradingForm (di SupervisorScoreCard)
+ *   - P2 perlu co-sign → tombol "Berikan Co-sign" (di SupervisorScoreCard)
+ *
+ * Detail panel kanan reuse `SupervisorScoreCard` yang sudah handle:
+ *   - Klasifikasi role aktor via `getSupervisorContext` (P1/P2/null)
+ *   - Banner finalitas BR-21 saat `isFinalized=true`
+ *   - Banner auto-zero BR-28 saat `attendanceAutoZeroedAt!=null`
+ */
+export default function MetopenTa03AQueue() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-    const queryClient = useQueryClient();
     const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("needs_action");
 
     useEffect(() => {
         setBreadcrumbs([
             { label: "Metode Penelitian", href: "/kelola/metopen" },
-            { label: "Penilaian TA-03B" },
+            { label: "Penilaian TA-03A" },
         ]);
-        setTitle("Penilaian Proposal TA-03B");
+        setTitle("Penilaian Proposal TA-03A");
     }, [setBreadcrumbs, setTitle]);
 
     const {
@@ -63,30 +88,35 @@ export default function MetopenTa03BQueue() {
         isError,
         error,
     } = useQuery({
-        queryKey: METOPEN_TA03B_QUEUE_KEY,
-        queryFn: () => assessmentService.getMetopenScoringQueue(),
+        queryKey: TA03A_QUEUE_KEY,
+        queryFn: () => assessmentService.getSupervisorScoringQueue(),
+        refetchInterval: 30_000,
     });
 
-    const downloadMutation = useMutation({
-        mutationFn: () => assessmentService.downloadMetopenScoresXlsx(),
-        onSuccess: () => {
-            toast.success("Rekap nilai TA-03 sedang diunduh.");
-        },
-        onError: (err: Error) => {
-            toast.error(err.message || "Gagal mengunduh rekap nilai TA-03");
-        },
-    });
+    const stats = useMemo(() => {
+        const total = queue.length;
+        const needsAction = queue.filter((item) =>
+            isNeedsActionStatus(item.actionStatus),
+        ).length;
+        const waiting = queue.filter((item) =>
+            isWaitingStatus(item.actionStatus),
+        ).length;
+        const autoZeroed = queue.filter((item) => item.actionStatus === "auto_zeroed").length;
+        return { total, needsAction, waiting, autoZeroed };
+    }, [queue]);
 
     const filteredQueue = useMemo(() => {
         const q = search.trim().toLowerCase();
         return queue.filter((item) => {
-            if (statusFilter === "pending" && item.isScored) return false;
-            if (statusFilter === "scored" && !item.isScored) return false;
+            if (statusFilter === "needs_action" && !isNeedsActionStatus(item.actionStatus))
+                return false;
+            if (statusFilter === "waiting" && !isWaitingStatus(item.actionStatus)) return false;
+            if (statusFilter === "auto_zeroed" && item.actionStatus !== "auto_zeroed") return false;
             if (q) {
                 const matches =
-                    item.studentName.toLowerCase().includes(q) ||
-                    item.studentNim.toLowerCase().includes(q) ||
-                    item.proposedTitle.toLowerCase().includes(q);
+                    (item.student?.fullName ?? "").toLowerCase().includes(q) ||
+                    (item.student?.identityNumber ?? "").toLowerCase().includes(q) ||
+                    (item.thesisTitle ?? "").toLowerCase().includes(q);
                 if (!matches) return false;
             }
             return true;
@@ -98,7 +128,10 @@ export default function MetopenTa03BQueue() {
             if (queue.length === 0) setSelectedThesisId(null);
             return;
         }
-        if (!selectedThesisId || !filteredQueue.some((item) => item.thesisId === selectedThesisId)) {
+        if (
+            !selectedThesisId ||
+            !filteredQueue.some((item) => item.thesisId === selectedThesisId)
+        ) {
             setSelectedThesisId(filteredQueue[0].thesisId);
         }
     }, [filteredQueue, queue.length, selectedThesisId]);
@@ -106,16 +139,10 @@ export default function MetopenTa03BQueue() {
     const selectedItem =
         queue.find((item) => item.thesisId === selectedThesisId) ?? null;
 
-    const stats = useMemo(() => {
-        const total = queue.length;
-        const scored = queue.filter((item) => item.isScored).length;
-        return { total, scored, pending: total - scored };
-    }, [queue]);
-
     if (isLoading) {
         return (
             <div className="py-12">
-                <Loading size="lg" text="Memuat antrean penilaian TA-03B..." />
+                <Loading size="lg" text="Memuat antrean penilaian TA-03A..." />
             </div>
         );
     }
@@ -124,7 +151,7 @@ export default function MetopenTa03BQueue() {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle>Antrean TA-03B gagal dimuat</CardTitle>
+                    <CardTitle className="text-base">Antrean TA-03A gagal dimuat</CardTitle>
                     <CardDescription>
                         {error instanceof Error ? error.message : "Terjadi kesalahan."}
                     </CardDescription>
@@ -135,85 +162,59 @@ export default function MetopenTa03BQueue() {
 
     return (
         <div className="space-y-5">
-            {/* Hero card ─────────────────────────────────── */}
             <Card className="overflow-hidden border-blue-200">
                 <div className="bg-gradient-to-br from-blue-500/10 via-sky-500/5 to-transparent">
                     <CardHeader className="pb-4">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="flex items-start gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
-                                    <ClipboardCheck className="h-5 w-5 text-blue-700" />
-                                </div>
-                                <div className="space-y-1">
-                                    <CardTitle className="text-base">
-                                        Penilaian Proposal TA-03B
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
-                                        Queue terbuka setelah proposal final tersedia &amp; presensi Metopel
-                                        terbaru sudah diunggah. Mahasiswa dengan presensi &lt;75% otomatis
-                                        mendapat nilai TA-03 = 0 (BR-28).
-                                    </CardDescription>
-                                </div>
+                        <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
+                                <ClipboardCheck className="h-5 w-5 text-blue-700" />
                             </div>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="self-start border-blue-300 bg-white text-blue-800 hover:bg-blue-100"
-                                onClick={() => downloadMutation.mutate()}
-                                disabled={downloadMutation.isPending}
-                                title="Unduh rekap nilai TA-03A + TA-03B kelas Metopel terbaru dalam format SIA."
-                            >
-                                {downloadMutation.isPending ? (
-                                    <>
-                                        <Spinner className="mr-2 h-4 w-4" />
-                                        Memproses...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Download Nilai TA-03 (xlsx)
-                                    </>
-                                )}
-                            </Button>
+                            <div className="space-y-1">
+                                <CardTitle className="text-base">
+                                    Antrean Penilaian Pembimbing
+                                </CardTitle>
+                                <CardDescription className="text-xs">
+                                    Antrean terbuka setelah mahasiswa submit proposal final dan presensi
+                                    Metopel terbaru sudah diunggah Koordinator. Pembimbing 1 mengisi rubrik
+                                    0-75; Pembimbing 2 memberi co-sign konsensus. Mahasiswa dengan presensi
+                                    &lt;75% otomatis mendapat nilai 0 (BR-28). Penilaian terkunci permanen
+                                    setelah submit + co-sign + TA-03B (BR-21).
+                                </CardDescription>
+                            </div>
                         </div>
                     </CardHeader>
 
-                    <CardContent className="grid gap-3 sm:grid-cols-3">
+                    <CardContent className="grid gap-3 sm:grid-cols-4">
+                        <StatCard label="Total dalam antrean" value={stats.total} tone="muted" />
+                        <StatCard label="Perlu aksi saya" value={stats.needsAction} tone="amber" />
                         <StatCard
-                            label="Total proposal di antrean"
-                            value={stats.total}
-                            tone="muted"
+                            label="Menunggu rekan / TA-03B"
+                            value={stats.waiting}
+                            tone="blue"
                         />
                         <StatCard
-                            label="Menunggu dinilai"
-                            value={stats.pending}
-                            tone="amber"
+                            label="Auto-zero presensi"
+                            value={stats.autoZeroed}
+                            tone="destructive"
                         />
-                        <StatCard label="Sudah dinilai" value={stats.scored} tone="emerald" />
                     </CardContent>
                 </div>
             </Card>
 
-            <MetopenAttendanceUploadCard />
-
-            {/* Two-pane layout ───────────────────────────── */}
             {queue.length === 0 ? (
                 <Card>
                     <CardContent className="py-16 text-center">
                         <p className="text-sm text-muted-foreground">
-                            Belum ada proposal yang menunggu penilaian TA-03B.
+                            Belum ada proposal yang menunggu penilaian TA-03A.
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                            Proposal akan masuk ke antrean ini setelah mahasiswa submit final + Pembimbing
-                            1 menyelesaikan TA-03A (parallel) atau saat presensi diunggah.
+                            Proposal akan masuk ke antrean ini setelah mahasiswa bimbingan Anda submit
+                            proposal final dan presensi Metopel terbaru tersedia.
                         </p>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid gap-5 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
-                    {/* Queue panel ─────────────── */}
                     <Card className="self-start lg:sticky lg:top-4">
                         <CardHeader className="space-y-3 pb-3">
                             <div className="flex items-center justify-between gap-2">
@@ -274,27 +275,26 @@ export default function MetopenTa03BQueue() {
                         </CardContent>
                     </Card>
 
-                    {/* Detail panel ───────────────── */}
                     <div className="space-y-4">
                         {selectedItem ? (
                             <>
                                 <ProposalSummaryCard item={selectedItem} />
-                                <RubricGradingForm
+                                <SupervisorScoreCard
                                     thesisId={selectedItem.thesisId}
-                                    formCode="TA-03B"
-                                    studentName={toTitleCaseName(selectedItem.studentName)}
-                                    onSuccess={() => {
-                                        queryClient.invalidateQueries({
-                                            queryKey: METOPEN_TA03B_QUEUE_KEY,
-                                        });
+                                    scoreData={{
+                                        supervisorScore: selectedItem.supervisorScore,
+                                        lecturerScore: selectedItem.lecturerScore,
+                                        finalScore: selectedItem.finalScore,
+                                        attendanceAutoZeroedAt: selectedItem.attendanceAutoZeroedAt,
+                                        attendanceAutoZeroReason: selectedItem.attendanceAutoZeroReason,
                                     }}
                                 />
                             </>
                         ) : (
                             <Card>
                                 <CardContent className="py-16 text-center text-sm text-muted-foreground">
-                                    Pilih proposal pada antrean di sebelah kiri untuk mulai mengisi rubrik
-                                    TA-03B.
+                                    Pilih proposal pada antrean di sebelah kiri untuk membuka rubrik
+                                    TA-03A atau tombol co-sign konsensus.
                                 </CardContent>
                             </Card>
                         )}
@@ -303,6 +303,18 @@ export default function MetopenTa03BQueue() {
             )}
         </div>
     );
+}
+
+// ────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────
+
+function isNeedsActionStatus(status: Ta03AActionStatus): boolean {
+    return status === "p1_pending" || status === "p2_pending_cosign";
+}
+
+function isWaitingStatus(status: Ta03AActionStatus): boolean {
+    return status === "p1_waiting_cosign" || status === "p2_waiting_p1";
 }
 
 // ────────────────────────────────────────────────────────────
@@ -316,12 +328,13 @@ function StatCard({
 }: {
     label: string;
     value: number;
-    tone: "muted" | "amber" | "emerald";
+    tone: "muted" | "amber" | "blue" | "destructive";
 }) {
     const toneClass: Record<typeof tone, string> = {
         muted: "border-border bg-background",
         amber: "border-amber-200 bg-amber-50/60",
-        emerald: "border-emerald-200 bg-emerald-50/60",
+        blue: "border-blue-200 bg-blue-50/60",
+        destructive: "border-destructive/30 bg-destructive/5",
     };
     return (
         <div className={cn("rounded-md border px-3 py-2.5", toneClass[tone])}>
@@ -331,15 +344,42 @@ function StatCard({
     );
 }
 
+const ROLE_BADGE: Record<"P1" | "P2", { label: string; className: string }> = {
+    P1: {
+        label: "Anda Pembimbing 1",
+        className: "border-blue-300 bg-blue-50 text-blue-800",
+    },
+    P2: {
+        label: "Anda Pembimbing 2",
+        className: "border-violet-300 bg-violet-50 text-violet-800",
+    },
+};
+
+const ACTION_TONE_CLASS: Record<
+    "amber" | "violet" | "blue" | "muted" | "destructive",
+    string
+> = {
+    amber: "border-amber-300 bg-amber-50 text-amber-800",
+    violet: "border-violet-300 bg-violet-50 text-violet-800",
+    blue: "border-blue-300 bg-blue-50 text-blue-800",
+    muted: "border-border bg-muted/30 text-muted-foreground",
+    destructive: "border-destructive/40 bg-destructive/10 text-destructive",
+};
+
 function QueueRow({
     item,
     isSelected,
     onSelect,
 }: {
-    item: ScoringQueueItem;
+    item: SupervisorScoringQueueItem;
     isSelected: boolean;
     onSelect: () => void;
 }) {
+    const studentName = item.student?.fullName ?? "—";
+    const studentNim = item.student?.identityNumber ?? "—";
+    const action = ACTION_LABELS[item.actionStatus];
+    const isAutoZero = item.actionStatus === "auto_zeroed";
+
     return (
         <button
             type="button"
@@ -355,52 +395,56 @@ function QueueRow({
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium leading-tight">
-                        {toTitleCaseName(item.studentName)}
+                        {toTitleCaseName(studentName)}
                     </p>
                     <p className="truncate font-mono text-[11px] text-muted-foreground">
-                        {item.studentNim}
+                        {studentNim}
                     </p>
                 </div>
-                {item.isScored ? (
-                    <Badge
-                        variant="outline"
-                        className="shrink-0 border-emerald-300 bg-emerald-50 text-[10px] text-emerald-800"
-                    >
-                        <CheckCircle2 className="mr-0.5 h-3 w-3" />
-                        Dinilai
-                    </Badge>
-                ) : (
-                    <Badge
-                        variant="outline"
-                        className="shrink-0 border-amber-300 bg-amber-50 text-[10px] text-amber-800"
-                    >
-                        Pending
-                    </Badge>
-                )}
+                <Badge
+                    variant="outline"
+                    className={cn(
+                        "shrink-0 text-[10px]",
+                        ACTION_TONE_CLASS[action.tone],
+                    )}
+                >
+                    {isAutoZero ? <Ban className="mr-0.5 h-3 w-3" /> : null}
+                    {action.label}
+                </Badge>
             </div>
 
-            <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{item.proposedTitle}</p>
+            <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
+                {item.thesisTitle ?? "—"}
+            </p>
 
             <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                    <GraduationCap className="h-3 w-3" />
-                    TA-03A:{" "}
-                    <strong className="text-foreground tabular-nums">
-                        {item.supervisorScore ?? "—"}
-                    </strong>
+                <span
+                    className={cn(
+                        "rounded-full border px-1.5 py-0 font-medium",
+                        ROLE_BADGE[item.actorRole].className,
+                    )}
+                >
+                    {ROLE_BADGE[item.actorRole].label}
                 </span>
-                <span className="flex items-center gap-1">
-                    TA-03B:{" "}
-                    <strong className="text-foreground tabular-nums">
-                        {item.existingScore ?? "—"}
-                    </strong>
+                <span className="flex items-center gap-1 tabular-nums">
+                    {item.supervisorScore != null ? (
+                        <>
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                            P1: <strong className="text-foreground">{item.supervisorScore}</strong>
+                        </>
+                    ) : (
+                        <>P1: —</>
+                    )}
                 </span>
             </div>
         </button>
     );
 }
 
-function ProposalSummaryCard({ item }: { item: ScoringQueueItem }) {
+function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
+    const action = ACTION_LABELS[item.actionStatus];
+    const isAutoZero = item.actionStatus === "auto_zeroed";
+
     return (
         <Card>
             <CardHeader className="pb-3">
@@ -408,18 +452,20 @@ function ProposalSummaryCard({ item }: { item: ScoringQueueItem }) {
                     <div className="space-y-1">
                         <CardTitle className="text-sm">Ringkasan Proposal</CardTitle>
                         <CardDescription>
-                            Konteks mahasiswa dan nilai TA-03A yang sudah masuk (jika ada).
+                            Konteks mahasiswa, partner pembimbing, dan status aksi yang Anda perlu
+                            lakukan.
                         </CardDescription>
                     </div>
-                    {item.isScored ? (
-                        <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800">
-                            TA-03B sudah dinilai
-                        </Badge>
-                    ) : (
-                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
-                            Menunggu rubrik
-                        </Badge>
-                    )}
+                    <Badge
+                        variant="outline"
+                        className={cn(
+                            "shrink-0",
+                            ACTION_TONE_CLASS[action.tone],
+                        )}
+                    >
+                        {isAutoZero ? <Ban className="mr-1 h-3 w-3" /> : <FileSignature className="mr-1 h-3 w-3" />}
+                        {action.label}
+                    </Badge>
                 </div>
             </CardHeader>
             <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
@@ -428,40 +474,48 @@ function ProposalSummaryCard({ item }: { item: ScoringQueueItem }) {
                         <UserCircle2 className="h-3.5 w-3.5" />
                         Mahasiswa
                     </p>
-                    <p className="font-medium">{toTitleCaseName(item.studentName)}</p>
-                    <p className="font-mono text-xs text-muted-foreground">{item.studentNim}</p>
+                    <p className="font-medium">
+                        {toTitleCaseName(item.student?.fullName ?? "—")}
+                    </p>
+                    <p className="font-mono text-xs text-muted-foreground">
+                        {item.student?.identityNumber ?? "—"}
+                    </p>
                 </div>
 
                 <div className="space-y-1">
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <GraduationCap className="h-3.5 w-3.5" />
-                        Pembimbing 1
+                        Peran Anda · Partner
                     </p>
                     <p className="font-medium">
-                        {item.supervisorName ? toTitleCaseName(item.supervisorName) : "—"}
+                        {item.actorRole === "P1" ? "Pembimbing 1 (master)" : "Pembimbing 2 (co-sign)"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        Partner:{" "}
+                        {item.partnerName ? toTitleCaseName(item.partnerName) : "(tidak ada)"}
                     </p>
                 </div>
 
                 <div className="sm:col-span-2 space-y-1">
-                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <FileText className="h-3.5 w-3.5" />
-                        Judul Proposal
-                    </p>
-                    <p className="font-medium leading-snug">{item.proposedTitle}</p>
+                    <p className="text-xs text-muted-foreground">Judul Proposal</p>
+                    <p className="font-medium leading-snug">{item.thesisTitle ?? "—"}</p>
                 </div>
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
-                    <p className="text-xs text-muted-foreground">Nilai TA-03A (Pembimbing)</p>
+                    <p className="text-xs text-muted-foreground">Skor TA-03A (Pembimbing)</p>
                     <p className="text-base font-semibold tabular-nums">
                         {item.supervisorScore ?? "—"}{" "}
                         <span className="text-xs text-muted-foreground">/ 75</span>
                     </p>
+                    {item.coSignedAt ? (
+                        <p className="mt-0.5 text-[11px] text-emerald-700">Co-sign tercatat</p>
+                    ) : null}
                 </div>
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
-                    <p className="text-xs text-muted-foreground">Nilai TA-03B (Anda)</p>
+                    <p className="text-xs text-muted-foreground">Skor TA-03B (Koordinator)</p>
                     <p className="text-base font-semibold tabular-nums">
-                        {item.existingScore ?? "—"}{" "}
+                        {item.lecturerScore ?? "—"}{" "}
                         <span className="text-xs text-muted-foreground">/ 25</span>
                     </p>
                 </div>

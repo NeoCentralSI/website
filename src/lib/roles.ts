@@ -1,12 +1,6 @@
 /**
  * Role constants - sesuai dengan database
- * Gunakan nilai ini untuk pengecekan role di frontend.
- *
- * Catatan:
- * - KOORDINATOR_METOPEN adalah role kanonis (1 orang/role) yang berhak
- *   menilai TA-03B walaupun dosen pengampu mata kuliah Metopen di lapangan
- *   bisa lebih dari 1. Lihat KONTEKS_KANONIS_SIMPTA.md §5.7.
- * - DOSEN_METOPEN dipertahankan sebagai alias backward-compatible.
+ * Gunakan nilai ini untuk pengecekan role di frontend
  */
 export const ROLES = {
   KETUA_DEPARTEMEN: "Ketua Departemen",
@@ -17,11 +11,9 @@ export const ROLES = {
   PENGUJI: "Penguji",
   MAHASISWA: "Mahasiswa",
   GKM: "GKM",
-  TIM_PENGELOLA_CPL: "Tim Pengelola CPL",
-  KOORDINATOR_YUDISIUM: "Koordinator Yudisium",
   KOORDINATOR_METOPEN: "Koordinator Matkul Metopen",
-  /** @deprecated Use KOORDINATOR_METOPEN. Same display value, kept for BC. */
-  DOSEN_METOPEN: "Koordinator Matkul Metopen",
+  KOORDINATOR_YUDISIUM: "Koordinator Yudisium",
+  TIM_PENGELOLA_CPL: "Tim Pengelola CPL",
 } as const;
 
 export type RoleName = typeof ROLES[keyof typeof ROLES];
@@ -40,19 +32,16 @@ export const LECTURER_ROLES = [
   ROLES.PEMBIMBING_2,
   ROLES.PENGUJI,
   ROLES.GKM,
-  ROLES.TIM_PENGELOLA_CPL,
-  ROLES.KOORDINATOR_YUDISIUM,
   ROLES.KOORDINATOR_METOPEN,
+  ROLES.KOORDINATOR_YUDISIUM,
+  ROLES.TIM_PENGELOLA_CPL,
 ] as const;
 
 // Staff roles (admin + management)
-// Extended from origin/main: includes KOORDINATOR_YUDISIUM and GKM for staff-level access
 export const STAFF_ROLES = [
   ROLES.ADMIN,
   ROLES.KETUA_DEPARTEMEN,
   ROLES.SEKRETARIS_DEPARTEMEN,
-  ROLES.KOORDINATOR_YUDISIUM,
-  ROLES.GKM,
 ] as const;
 
 // Display name mapping (untuk tampilan UI yang lebih singkat jika diperlukan)
@@ -66,9 +55,9 @@ export const formatRoleName = (roleName: string): string => {
     [ROLES.PEMBIMBING_2]: 'Pembimbing 2',
     [ROLES.MAHASISWA]: 'Mahasiswa',
     [ROLES.PENGUJI]: 'Penguji',
-    [ROLES.TIM_PENGELOLA_CPL]: 'Tim Pengelola CPL',
-    [ROLES.KOORDINATOR_YUDISIUM]: 'Koordinator Yudisium',
     [ROLES.KOORDINATOR_METOPEN]: 'Koordinator Metopen',
+    [ROLES.KOORDINATOR_YUDISIUM]: 'Koordinator Yudisium',
+    [ROLES.TIM_PENGELOLA_CPL]: 'Tim Pengelola CPL',
   };
   return roleMap[roleName] || roleName;
 };
@@ -83,9 +72,9 @@ export const roleOptions = [
   { value: ROLES.PEMBIMBING_2, label: 'Pembimbing 2' },
   { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
   { value: ROLES.PENGUJI, label: 'Penguji' },
-  { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
-  { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
   { value: ROLES.KOORDINATOR_METOPEN, label: 'Koordinator Matkul Metopen' },
+  { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
+  { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
 ];
 
 // Helper functions
@@ -99,13 +88,12 @@ export const isSupervisorRole = (roleName: string): boolean =>
   (SUPERVISOR_ROLES as readonly string[]).includes(roleName);
 
 export const hasAnyRole = (
-  userRoles: Array<string | { name?: string | null; status?: string | null }>,
+  roles: Array<string | { name?: string | null }>,
   allowedRoles: readonly string[],
 ): boolean => {
-  const activeRoleNames = userRoles
-    .filter((role) => typeof role === 'string' || !role.status || role.status === 'active')
+  const roleNames = roles
     .map((role) => (typeof role === 'string' ? role : role.name))
-    .filter((name): name is string => Boolean(name));
+    .filter((roleName): roleName is string => Boolean(roleName));
 
-  return allowedRoles.some((roleName) => activeRoleNames.includes(roleName));
+  return roleNames.some((roleName) => allowedRoles.includes(roleName));
 };

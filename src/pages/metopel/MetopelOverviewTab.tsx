@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ClipboardList, FileCheck2, Stamp, Users, FileText, Download, Archive, ScrollText } from "lucide-react";
 import { getApiUrl } from "@/config/api";
 import { formatDateId } from "@/lib/text";
+import { formatAdvisorRouteCode, formatAdvisorRouteProcessing } from "@/lib/advisorRoute";
 
 interface MetopelOverviewTabProps {
   /**
@@ -80,19 +81,13 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
           : "outline",
   } as const;
 
-  const initialRouteCode =
-    advisorAccess?.blockingRequest?.routeType === "escalated"
-      ? "TA-02"
-      : advisorAccess?.blockingRequest?.routeType === "normal"
-        ? "TA-01"
-        : "TA-01 / TA-02";
+  // Canon §5.2 (audit F-6.1): escalated = TA-01 (Path C), bukan TA-02. Pakai helper terpusat.
+  const initialRouteCode = formatAdvisorRouteCode(advisorAccess?.blockingRequest?.routeType);
 
   const initialRouteStatus = advisorAccess?.hasOfficialSupervisor
     ? "Pembimbing sudah ditetapkan"
     : advisorAccess?.hasBlockingRequest
-      ? advisorAccess.blockingRequest?.routeType === "escalated"
-        ? "Jalur TA-02 sedang diproses"
-        : "Jalur TA-01 sedang diproses"
+      ? formatAdvisorRouteProcessing(advisorAccess.blockingRequest?.routeType)
       : "Pilih jalur yang sesuai";
 
   const thesisTitleSummary = advisorAccess?.thesisTitle
@@ -108,10 +103,12 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
 
   const initialRouteDescription =
     advisorAccess?.blockingRequest?.routeType === "escalated"
-      ? `TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing atau saat usulan awal diproses melalui departemen dan diputuskan oleh KaDep.${thesisTitleSummary}`
-      : advisorAccess?.blockingRequest?.routeType === "normal"
-        ? `TA-01 dipakai saat mahasiswa sudah memiliki calon dosen pembimbing yang bersedia dan mengajukan awal judul melalui SIMPTA.${thesisTitleSummary}`
-        : `TA-01 dipakai saat mahasiswa sudah memiliki calon dosen pembimbing yang bersedia. TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing atau saat usulan perlu diproses melalui departemen.${thesisTitleSummary}`;
+      ? `Escalated TA-01 dipakai saat mahasiswa tetap kokoh memilih dosen yang kuota normalnya penuh; KaDep memutuskan setelah dosen memberi proyeksi lulus.${thesisTitleSummary}`
+      : advisorAccess?.blockingRequest?.routeType === "dept"
+        ? `TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing — departemen meninjau usulan dan menetapkan dosen pembimbing.${thesisTitleSummary}`
+        : advisorAccess?.blockingRequest?.routeType === "normal"
+          ? `TA-01 dipakai saat mahasiswa sudah memiliki calon dosen pembimbing yang bersedia dan mengajukan awal judul melalui SIMPTA.${thesisTitleSummary}`
+          : `TA-01 dipakai saat mahasiswa sudah memiliki calon dosen pembimbing yang bersedia. TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing atau saat usulan perlu diproses melalui departemen.${thesisTitleSummary}`;
 
   const stepCards = [
     {

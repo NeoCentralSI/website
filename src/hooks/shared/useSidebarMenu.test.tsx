@@ -74,6 +74,7 @@ describe("useSidebarMenu", () => {
       canAccessTugasAkhir: true,
       canAccessMetopel: true,
       isMetopenReadOnly: false,
+      isMetopenOnlyTrack: false,
       requirements: {
         kerjaPraktek: { sks: { met: true, current: 120, required: 90 } },
         // BR-25: Tidak ada lagi check `sks >= 110` di tugasAkhir; gate hanya
@@ -81,6 +82,7 @@ describe("useSidebarMenu", () => {
         // requirement `course`.
         tugasAkhir: {
           course: { met: true, description: "OK" },
+          module: { met: true, description: "OK" },
         },
         metopel: {
           eligibility: { met: true, description: "OK" },
@@ -96,6 +98,73 @@ describe("useSidebarMenu", () => {
       },
       isLoading: false,
     } as unknown as ReturnType<typeof useAdvisorAccessState>);
+  });
+
+  it("hides Tugas Akhir menu when student is Metopen-eligible but not enrolled in MK Tugas Akhir", () => {
+    vi.mocked(useStudentEligibility).mockReturnValue({
+      isLoading: false,
+      sks: 100,
+      hasTugasAkhirCourse: false,
+      canAccessKerjaPraktek: true,
+      canAccessTugasAkhir: false,
+      canAccessMetopel: true,
+      isMetopenReadOnly: false,
+      isMetopenOnlyTrack: true,
+      requirements: {
+        kerjaPraktek: { sks: { met: true, current: 100, required: 90 } },
+        tugasAkhir: {
+          course: { met: false, description: "Belum MK TA" },
+          module: { met: false, description: "Gunakan Metopen" },
+        },
+        metopel: { eligibility: { met: true, description: "OK" } },
+      },
+    } as unknown as ReturnType<typeof useStudentEligibility>);
+
+    const { result } = renderHook(() => useSidebarMenu());
+
+    const taMenu = result.current.navMain.find((item) => item.title === "Tugas Akhir");
+    expect(taMenu).toBeUndefined();
+
+    const metopenMenu = result.current.navMain.find((item) => item.title === "Metode Penelitian");
+    expect(metopenMenu).toBeDefined();
+  });
+
+  it("shows Metopen proposal and informal logbook when Metopen-only track has official supervisor", () => {
+    vi.mocked(useStudentEligibility).mockReturnValue({
+      isLoading: false,
+      sks: 100,
+      hasTugasAkhirCourse: false,
+      canAccessKerjaPraktek: true,
+      canAccessTugasAkhir: false,
+      canAccessMetopel: true,
+      isMetopenReadOnly: false,
+      isMetopenOnlyTrack: true,
+      requirements: {
+        kerjaPraktek: { sks: { met: true, current: 100, required: 90 } },
+        tugasAkhir: {
+          course: { met: false, description: "Belum MK TA" },
+          module: { met: false, description: "Gunakan Metopen" },
+        },
+        metopel: { eligibility: { met: true, description: "OK" } },
+      },
+    } as unknown as ReturnType<typeof useStudentEligibility>);
+
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        canBrowseCatalog: false,
+        hasBlockingRequest: false,
+        hasOfficialSupervisor: true,
+        canOpenLogbook: true,
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    const { result } = renderHook(() => useSidebarMenu());
+
+    const metopenMenu = result.current.navMain.find((item) => item.title === "Metode Penelitian");
+    const urls = metopenMenu?.items.map((i) => i.url) ?? [];
+    expect(urls).toContain("/metopel/proposal");
+    expect(urls).toContain("/metopel/logbook");
   });
 
   it("shows advisor search only when students can still browse the catalog", () => {
@@ -142,6 +211,7 @@ describe("useSidebarMenu", () => {
       (item) => item.title === "Metode Penelitian",
     );
     expect(metopenMenu?.items).toEqual([
+      { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
       { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
     ]);
   });
@@ -169,6 +239,7 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
+      { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
     ]);
   });
 
@@ -203,6 +274,7 @@ describe("useSidebarMenu", () => {
         title: "Keputusan TA-01 s.d. TA-04",
         url: "/kelola/tugas-akhir/kadep",
       },
+      { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
       { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
     ]);
   });
@@ -264,6 +336,7 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
+      { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
     ]);
   });
 
@@ -282,7 +355,9 @@ describe("useSidebarMenu", () => {
       (item) => item.title === "Metode Penelitian",
     );
     expect(metopenMenu?.items).toEqual([
+      { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
+      { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
       { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
     ]);
   });
@@ -303,5 +378,33 @@ describe("useSidebarMenu", () => {
     );
     const itemTitles = taMenu?.items.map((item) => item.title) ?? [];
     expect(itemTitles).toEqual(["Monitoring"]);
+  });
+
+  it("does not emit sidebar URLs that are not registered routes", () => {
+    const invalidUrls = [
+      "/tugas-akhir/seminar",
+      "/tugas-akhir/seminar/admin",
+      "/kelola/data-cpl",
+      "/kelola/kerja-praktik/pendaftaran/bimbingan",
+      "/admin/kerja-praktik/seminar",
+    ];
+    const scenarios = [
+      { isStudent: true },
+      { isDosen: true, isPembimbing: true, isKoordinatorMetopen: true },
+      { isDosen: true, isKadep: true, isPembimbing: true },
+      { isDosen: true, isSekdep: true, isPembimbing: true, isKoordinatorMetopen: true },
+      { isAdmin: true },
+    ];
+
+    for (const scenario of scenarios) {
+      mockRole(scenario);
+      const { result } = renderHook(() => useSidebarMenu());
+      const urls = result.current.navMain.flatMap((item) => [
+        item.url,
+        ...item.items.map((child) => child.url),
+      ]);
+
+      expect(urls).not.toEqual(expect.arrayContaining(invalidUrls));
+    }
   });
 });
