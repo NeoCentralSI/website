@@ -11,12 +11,12 @@ export default function MasterDataCurriculum() {
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kelola' },
-        { label: 'CPL & Kurikulum' },
+        { label: 'Kurikulum' },
     ], []);
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle('Kelola Kurikulum & CPL');
+        setTitle('Kurikulum');
     }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
     const {
@@ -49,7 +49,7 @@ export default function MasterDataCurriculum() {
     return (
         <div className="p-6 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">Kurikulum & CPL</h1>
+                <h1 className="text-2xl font-bold">Kurikulum</h1>
                 <p className="text-muted-foreground">Pilih kurikulum untuk melihat dan mengelola data CPL</p>
             </div>
 

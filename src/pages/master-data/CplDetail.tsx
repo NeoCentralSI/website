@@ -43,24 +43,26 @@ export default function CplDetailPage() {
 
     const breadcrumbs = useMemo(
         () => [
-            { label: 'Master Data' },
-            { label: 'CPL', href: '/kelola/cpl' },
-            { label: 'Detail CPL' },
+            { label: 'Kelola' },
+            { label: 'Kurikulum', href: '/kelola/cpl' },
+            { label: cpl?.curriculum?.name || 'Memuat...' },
+            { label: cpl?.code || 'CPL', href: cpl?.curriculumId ? `/kelola/cpl/${cpl.curriculumId}/cpls` : '/kelola/cpl' },
+            { label: 'Detail' },
         ],
-        []
+        [cpl?.curriculumId, cpl?.curriculum?.name, cpl?.code]
     );
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle('Detail CPL');
-    }, [breadcrumbs, setBreadcrumbs, setTitle]);
+        setTitle(`Detail CPL ${cpl?.code ? `- ${cpl.code}` : ''}`);
+    }, [breadcrumbs, setBreadcrumbs, setTitle, cpl?.code]);
 
     return (
         <div className="p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <Button variant="outline" size="icon" asChild className="shrink-0">
-                        <Link to="/kelola/cpl">
+                        <Link to={cpl?.curriculumId ? `/kelola/cpl/${cpl.curriculumId}/cpls` : '/kelola/cpl'}>
                             <ArrowLeft className="h-4 w-4" />
                         </Link>
                     </Button>

@@ -21,13 +21,14 @@ export default function MasterDataCpl() {
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kelola' },
-        { label: 'CPL & Kurikulum', url: '/kelola/cpl' },
-        { label: selectedCurriculum?.name || 'Daftar CPL' },
+        { label: 'Kurikulum', href: '/kelola/cpl' },
+        { label: selectedCurriculum?.name || 'Memuat...' },
+        { label: 'CPL' },
     ], [selectedCurriculum]);
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle(`Daftar CPL - ${selectedCurriculum?.name || ''}`);
+        setTitle(`CPL - ${selectedCurriculum?.name || ''}`);
     }, [breadcrumbs, setBreadcrumbs, setTitle, selectedCurriculum]);
 
     const {
