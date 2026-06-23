@@ -459,21 +459,20 @@ export const useSidebarMenu = () => {
         });
       }
 
-      menuItems.push({
-        title: "Tugas Akhir",
-        url: "#",
-        icon: FileText,
-        items: [
-          ...(role.pembimbing
-            ? [
-                { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-                { title: "Sidang", url: "/tugas-akhir/sidang" },
-              ]
-            : []),
-          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        ],
-      });
+      // F2-7 / OQ-2.4 (2026-06-10): item "Monitoring" TA dicabut dari GKM —
+      // akses monitoring hanya KaDep + Sekdep (selaras guard route FE + backend).
+      if (role.pembimbing) {
+        menuItems.push({
+          title: "Tugas Akhir",
+          url: "#",
+          icon: FileText,
+          items: [
+            { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+            { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
+            { title: "Sidang", url: "/tugas-akhir/sidang" },
+          ],
+        });
+      }
 
       // Jadwal Ketersediaan — leaf item
       menuItems.push({

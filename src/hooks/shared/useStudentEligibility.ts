@@ -27,13 +27,11 @@ interface EligibilityResult {
       sks: NumericRequirementStatus;
     };
     tugasAkhir: {
-      sks: NumericRequirementStatus;
+      // F-0.2: gate TA = snapshot SIA MK Tugas Akhir (course), bukan SKS hard-code (BR-25).
       course: RequirementStatus;
-      module: RequirementStatus;
     };
     metopel: {
-      semester: NumericRequirementStatus;
-      course: RequirementStatus;
+      // Canon §5.1 (F-0.1): eligibility = snapshot SIA semata (tanpa gate semester).
       eligibility: RequirementStatus;
     };
   };
@@ -59,14 +57,17 @@ export function useStudentEligibility(): EligibilityResult {
 
   const siaStudent = siaStudents?.find((s) => s.nim === nim);
   const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
-  const hasTugasAkhirCourse = !!siaStudent?.currentSemesterCourses?.some(
+  const hasTugasAkhirCourseFromSia = !!siaStudent?.currentSemesterCourses?.some(
     (c) => (c.name || "").toLowerCase().includes("tugas akhir")
   );
+  const takingThesisCourseFromBackend =
+    typeof metopelEligibility?.takingThesisCourse === "boolean"
+      ? metopelEligibility.takingThesisCourse
+      : typeof authUser?.student?.takingThesisCourse === "boolean"
+        ? authUser.student.takingThesisCourse
+        : null;
+  const hasTugasAkhirCourse = takingThesisCourseFromBackend ?? hasTugasAkhirCourseFromSia;
 
-  const metopelSemester = metopelEligibility?.semester ?? siaStudent?.currentSemester ?? 0;
-  const isMinSemester6 = metopelEligibility?.isMinSemester6 ?? metopelSemester >= 6;
-  const hasMetopenCourse =
-    metopelEligibility?.hasMetopenCourse ?? Boolean(metopelEligibility?.eligibleMetopen);
   const canAccessMetopel = metopelEligibility?.canAccess ?? false;
   const isMetopenReadOnly =
     metopelEligibility?.readOnly ?? metopelEligibility?.thesisPhase === "thesis";
@@ -89,32 +90,19 @@ export function useStudentEligibility(): EligibilityResult {
         sks: { met: sks >= 90, current: sks, required: 90 },
       },
       tugasAkhir: {
-        sks: {
-          met: sks >= 110,
-          current: sks,
-          required: 110,
-          description: `SKS Anda saat ini: ${sks} SKS`,
-        },
+        // BR-25 / anti-pattern #8 (audit F-0.2): gate Tugas Akhir = snapshot SIA
+        // MK Tugas Akhir, BUKAN SKS hard-code. Objek `sks`/`module` lama dihapus
+        // sebagai dead code agar tidak tersambung kembali sebagai gate.
         course: {
           met: hasTugasAkhirCourse,
           description: hasTugasAkhirCourse
             ? "Snapshot SIA mencatat Anda mengambil mata kuliah Tugas Akhir"
             : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
         },
-        module: {
-          met: canAccessTugasAkhir,
-          description: canAccessTugasAkhir
-            ? "Modul Tugas Akhir aktif"
-            : "Gunakan menu Metode Penelitian sampai snapshot MK Tugas Akhir aktif",
-        },
       },
       metopel: {
-        semester: {
-          met: isMinSemester6,
-          current: metopelSemester,
-          required: 6,
-        },
-        course: { met: hasMetopenCourse },
+        // Canon §5.1 (audit F-0.1): eligibility Metopen = snapshot SIA semata.
+        // Objek `semester`/`course` (gate semester-6 non-kanonis) dihapus.
         eligibility: {
           met: canAccessMetopel,
           description: canAccessMetopel

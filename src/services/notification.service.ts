@@ -61,10 +61,10 @@ export async function deleteAllNotifications(): Promise<{ success: boolean; dele
   return res.json();
 }
  
-export async function registerFcmToken(token: string): Promise<{ success: boolean; registered: number }> {
+export async function registerFcmToken(token: string, platform = "web"): Promise<{ success: boolean; registered: number }> {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.FCM_REGISTER), {
     method: "POST",
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ token, platform }),
   });
   if (!res.ok) throw new Error((await res.json()).message || "Gagal mendaftarkan FCM token");
   return res.json();

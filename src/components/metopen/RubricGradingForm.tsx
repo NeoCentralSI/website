@@ -130,8 +130,12 @@ export function RubricGradingForm({
                     : `Penilaian ${formCode} berhasil disimpan.`,
             );
             queryClient.invalidateQueries({ queryKey: ["supervisor-scoring-queue"] });
+            queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-queue"] });
+            queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-history"] });
             queryClient.invalidateQueries({ queryKey: ["assessment-metopen-queue"] });
+            queryClient.invalidateQueries({ queryKey: ["assessment-metopen-history"] });
             queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-score-detail", thesisId] });
+            queryClient.invalidateQueries({ queryKey: ["assessment-metopen-score-detail", thesisId] });
             queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-context", thesisId] });
             queryClient.invalidateQueries({ queryKey: ["assessment-attendance-eligibility", thesisId] });
             queryClient.invalidateQueries({ queryKey: ["metopel-seminar-eligibility"] });
@@ -429,7 +433,7 @@ export function RubricGradingForm({
                 </div>
 
                 {/* Summary footer ─────────────────────── */}
-                <div className="sticky bottom-0 -mx-6 -mb-6 mt-5 border-t bg-background px-6 py-4">
+                <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-5 border-t bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/85">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-baseline gap-2">
                             <span className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -449,12 +453,13 @@ export function RubricGradingForm({
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center">
                             {onCancel ? (
                                 <Button
                                     variant="outline"
                                     onClick={onCancel}
                                     disabled={submitMutation.isPending}
+                                    className="w-full sm:w-auto"
                                 >
                                     Batal
                                 </Button>
@@ -462,7 +467,10 @@ export function RubricGradingForm({
 
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button disabled={!allScored || submitMutation.isPending}>
+                                    <Button
+                                        disabled={!allScored || submitMutation.isPending}
+                                        className="w-full sm:w-auto"
+                                    >
                                         {submitMutation.isPending ? (
                                             <>
                                                 <Spinner className="mr-2 h-4 w-4" />
@@ -726,7 +734,7 @@ function OfficialRubricSelector({
                     {hasDbBacking ? " (tersinkron rubrik master)" : ""}.
                 </span>
             </div>
-            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-1 xl:gap-1.5">
+            <div className="grid gap-2 md:grid-cols-2 2xl:grid-cols-3">
                 {merged.map(({ level, dbRubricId }) => {
                     const isSelected = selectedLevel?.tier === level.tier;
                     const meta = getTierMeta(level.tier);
@@ -861,7 +869,7 @@ function KontenSubBreakdown({
 
     return (
         <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-blue-200 bg-blue-50/40 px-3 py-2">
+            <div className="flex flex-col items-start justify-between gap-2 rounded-md border border-dashed border-blue-200 bg-blue-50/40 px-3 py-2 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-2 text-xs text-blue-900">
                     <Info className="h-3.5 w-3.5 text-blue-700" />
                     <span>
@@ -931,7 +939,7 @@ function SubCriterionCard({
                 </Badge>
             </div>
 
-            <div className="grid gap-1.5 md:grid-cols-2 xl:grid-cols-5" aria-label={`Sub-kriteria ${subIdx + 1}`}>
+            <div className="grid gap-1.5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5" aria-label={`Sub-kriteria ${subIdx + 1}`}>
                 {sub.levels.map((level) => {
                     const isSelected = currentLevelTier === level.tier;
                     const meta = getTierMeta(level.tier);

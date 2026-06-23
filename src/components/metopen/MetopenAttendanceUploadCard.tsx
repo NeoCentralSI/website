@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload } from "lucide-react";
 
-import { assessmentService } from "@/services/assessment.service";
+import { assessmentService, type MetopenAttendancePreviewResult } from "@/services/assessment.service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -35,24 +34,45 @@ export function MetopenAttendanceUploadCard() {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // F-4.2: simpan hasil pratinjau + buka dialog konfirmasi yang menampilkan dampak.
+  const [preview, setPreview] = useState<MetopenAttendancePreviewResult | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { data: latestImport, isLoading } = useQuery({
     queryKey: LATEST_ATTENDANCE_KEY,
     queryFn: () => assessmentService.getMetopenAttendanceLatest(),
   });
 
+  // Langkah 1: dry-run pratinjau (tidak menulis DB) → tampilkan daftar yang akan di-auto-zero.
+  const previewMutation = useMutation({
+    mutationFn: (file: File) => assessmentService.previewMetopenAttendance(file),
+    onSuccess: (result) => {
+      setPreview(result);
+      setConfirmOpen(true);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gagal memproses pratinjau presensi Metopel");
+    },
+  });
+
+  // Langkah 2: commit upload (auto-zero permanen dijalankan di backend).
   const uploadMutation = useMutation({
     mutationFn: (file: File) => assessmentService.uploadMetopenAttendance(file),
     onSuccess: (result) => {
       toast.success(
-        `Presensi Metopel diproses: ${result.totals.eligibleRows} eligible, ${result.totals.ineligibleRows} tidak eligible.`,
+        `Presensi Metopel diproses: ${result.totals.eligibleRows} eligible, ${result.totals.ineligibleRows} tidak eligible, ${result.totals.autoZeroedCount} di-auto-zero.`,
       );
       setSelectedFile(null);
+      setPreview(null);
+      setConfirmOpen(false);
       if (inputRef.current) inputRef.current.value = "";
       queryClient.invalidateQueries({ queryKey: LATEST_ATTENDANCE_KEY });
       queryClient.invalidateQueries({ queryKey: ["assessment-attendance-eligibility"] });
       queryClient.invalidateQueries({ queryKey: ["assessment-metopen-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["assessment-metopen-history"] });
       queryClient.invalidateQueries({ queryKey: ["supervisor-scoring-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-history"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-kadep-title-reports"] });
     },
     onError: (err: Error) => {
@@ -60,13 +80,20 @@ export function MetopenAttendanceUploadCard() {
     },
   });
 
-  const handleUpload = () => {
+  const handlePreview = () => {
     if (!selectedFile) {
       toast.error("Pilih file XLSX presensi Metopel terlebih dahulu");
       return;
     }
+    previewMutation.mutate(selectedFile);
+  };
+
+  const handleConfirmUpload = () => {
+    if (!selectedFile) return;
     uploadMutation.mutate(selectedFile);
   };
+
+  const isBusy = previewMutation.isPending || uploadMutation.isPending;
 
   return (
     <Card>
@@ -150,44 +177,115 @@ export function MetopenAttendanceUploadCard() {
               onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
             />
           </div>
-          {/* F-4.2: konfirmasi sebelum proses — auto-zero <75% bersifat PERMANEN (canon §5.7.3). */}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button disabled={!selectedFile || uploadMutation.isPending}>
-                {uploadMutation.isPending ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    Memproses...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Unggah Presensi
-                  </>
-                )}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  Proses presensi &amp; auto-zero permanen?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  File presensi akan langsung diproses. Mahasiswa dengan presensi{" "}
-                  <strong>&lt;75%</strong> otomatis mendapat nilai TA-03 = <strong>0 secara permanen</strong>{" "}
-                  (canon §5.7.3 — tidak dapat dibatalkan walau presensi diperbaiki kemudian).
-                  Pastikan file presensi yang diunggah sudah benar dan lengkap.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction onClick={handleUpload}>Ya, Proses Presensi</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {/* F-4.2: pratinjau dulu (dry-run) sebelum commit — auto-zero <75% PERMANEN (canon §5.7.3). */}
+          <Button disabled={!selectedFile || isBusy} onClick={handlePreview}>
+            {previewMutation.isPending ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Memeriksa...
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-4 w-4" />
+                Tinjau &amp; Unggah
+              </>
+            )}
+          </Button>
         </div>
       </CardContent>
+
+      {/* F-4.2: dialog konfirmasi menampilkan DAMPAK auto-zero permanen sebelum commit. */}
+      <AlertDialog open={confirmOpen} onOpenChange={(open) => !uploadMutation.isPending && setConfirmOpen(open)}>
+        <AlertDialogContent className="max-h-[85vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              Konfirmasi proses presensi &amp; auto-zero permanen
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Pratinjau di bawah belum mengubah data apa pun. Mahasiswa dengan presensi{" "}
+              <strong>&lt;75%</strong> akan mendapat nilai TA-03 = <strong>0 secara permanen</strong>{" "}
+              (canon §5.7.3 — tidak dapat dibatalkan walau presensi diperbaiki kemudian).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {preview && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-2 rounded-md border bg-muted/20 p-3 sm:grid-cols-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total baris</p>
+                  <p className="font-medium">{preview.totals.totalRows}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Cocok mahasiswa</p>
+                  <p className="font-medium">{preview.totals.matchedRows}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Eligible (≥75%)</p>
+                  <p className="font-medium text-emerald-700">{preview.totals.eligibleRows}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Akan di-auto-zero</p>
+                  <p className="font-medium text-destructive">{preview.totals.willAutoZeroCount}</p>
+                </div>
+              </div>
+
+              {preview.willAutoZero.length > 0 ? (
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                  <p className="mb-1.5 text-xs font-semibold text-destructive">
+                    {preview.willAutoZero.length} mahasiswa akan di-auto-zero PERMANEN:
+                  </p>
+                  <ul className="max-h-40 space-y-1 overflow-y-auto text-xs">
+                    {preview.willAutoZero.map((s) => (
+                      <li key={s.identityNumber} className="flex justify-between gap-2">
+                        <span className="truncate">
+                          {s.studentName || "-"} <span className="text-muted-foreground">({s.identityNumber})</span>
+                        </span>
+                        <span className="shrink-0 font-medium text-destructive">{formatPercent(s.attendancePercentage)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+                  Tidak ada mahasiswa yang akan di-auto-zero dari file ini.
+                </p>
+              )}
+
+              {preview.totals.willSkipFinalizedCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {preview.totals.willSkipFinalizedCount} mahasiswa dilewati (nilai TA-03 sudah final, BR-21).
+                </p>
+              )}
+              {preview.totals.unmatchedRows > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {preview.totals.unmatchedRows} baris tidak cocok dengan mahasiswa terdaftar (diabaikan).
+                </p>
+              )}
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={uploadMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                handleConfirmUpload();
+              }}
+              disabled={uploadMutation.isPending}
+            >
+              {uploadMutation.isPending ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Memproses...
+                </>
+              ) : (
+                "Ya, Proses Presensi"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

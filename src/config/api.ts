@@ -192,9 +192,13 @@ export const API_CONFIG = {
       // Guidance Detail
       GUIDANCE_DETAIL: (guidanceId: string) => `/thesisGuidance/lecturer/guidance/${guidanceId}`,
       // Pembimbing 2 Requests
-        SUPERVISOR2_REQUESTS: '/thesisGuidance/lecturer/supervisor2-requests',
-        SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
-        SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
+    SUPERVISOR2_REQUESTS: '/thesisGuidance/lecturer/supervisor2-requests',
+    SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
+    SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
+    // Persetujuan akhir Pembimbing 2 oleh KaDep (F2-5 / OQ-2.2)
+    KADEP_SUPERVISOR2_REQUESTS: '/thesisGuidance/kadep/supervisor2-requests',
+    KADEP_SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/approve`,
+    KADEP_SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/reject`,
         STUDENT_PROPOSAL_VERSIONS: (thesisId: string) => `/thesisGuidance/lecturer/students/${thesisId}/proposal/versions`,
       },
     THESIS_MONITORING: {
@@ -404,8 +408,12 @@ export const API_CONFIG = {
       ME_SEMINAR_ELIGIBILITY: '/metopen/me/seminar-eligibility',
       /** Mahasiswa: sinkron antre KaDep + ringkasan status. */
       ME_PROPOSAL_QUEUE_SYNC: '/metopen/me/proposal-queue/sync',
+      /** Mahasiswa: riwayat penilaian TA-03 sejak skor tersedia, termasuk sebelum TA-04. */
+      ME_ASSESSMENT_HISTORY: '/metopen/me/assessment-history',
       /** BR-23: Arsip Metopel mahasiswa pasca TA-04 — read-only single source of truth. */
       ME_ARCHIVE: '/metopen/me/archive',
+      /** FR-ARC-05: Mahasiswa unduh Formulir TA-04 PDF (stream terautentikasi). */
+      ME_TITLE_APPROVAL_DOCUMENT: '/metopen/me/archive/title-approval-document',
       /** KaDep/Admin: antre judul menunggu pengesahan. */
       KADEP_PENDING_TITLE_REPORTS: (academicYearId?: string) =>
         academicYearId
@@ -413,10 +421,27 @@ export const API_CONFIG = {
           : '/metopen/kadep/title-reports/pending',
       KADEP_TITLE_REPORT_REVIEW: (thesisId: string) =>
         `/metopen/kadep/thesis/${thesisId}/title-report/review`,
+      /** Legacy: thesis TA-04 accepted yang belum terhubung ke Formulir TA-04 batch resmi. */
+      KADEP_TITLE_REPORTS_MISSING_DOCUMENT: (academicYearId?: string) =>
+        academicYearId
+          ? `/metopen/kadep/title-reports/missing-document?academicYearId=${academicYearId}`
+          : '/metopen/kadep/title-reports/missing-document',
+      /** Riwayat keputusan TA-04 (accepted/rejected) antar-periode. */
+      KADEP_TITLE_REPORTS_HISTORY: (academicYearId?: string) =>
+        academicYearId
+          ? `/metopen/kadep/title-reports/history?academicYearId=${academicYearId}`
+          : '/metopen/kadep/title-reports/history',
+      /** Legacy: endpoint per-thesis tidak lagi menerbitkan dokumen resmi. */
+      KADEP_TITLE_REPORT_REGENERATE: (thesisId: string) =>
+        `/metopen/kadep/thesis/${thesisId}/title-report/regenerate`,
+      /** KaDep unduh Formulir TA-04 PDF untuk thesis yang sudah terhubung ke batch. */
+      KADEP_TITLE_REPORT_DOCUMENT: (thesisId: string) =>
+        `/metopen/kadep/thesis/${thesisId}/title-report/document`,
     },
     ASSESSMENT: {
       // TA-03A: Supervisor scoring of Metopen proposal
       SUPERVISOR_SCORING_QUEUE: '/assessment/supervisor/queue',
+      SUPERVISOR_SCORING_HISTORY: '/assessment/supervisor/history',
       SUPERVISOR_SUBMIT_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
       // BR-20: Pembimbing 2 co-sign endpoint
       SUPERVISOR_CO_SIGN: (thesisId: string) => `/assessment/supervisor/${thesisId}/co-sign`,
@@ -425,7 +450,10 @@ export const API_CONFIG = {
       SUPERVISOR_GET_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
       // TA-03B: Metopen lecturer scoring
       METOPEN_SCORING_QUEUE: '/assessment/metopen/queue',
+      METOPEN_SCORING_HISTORY: '/assessment/metopen/history',
       METOPEN_ATTENDANCE_LATEST: '/assessment/metopen/attendance/latest',
+      /** F-4.2: dry-run pratinjau dampak auto-zero sebelum commit. */
+      METOPEN_ATTENDANCE_PREVIEW: '/assessment/metopen/attendance/preview',
       METOPEN_ATTENDANCE_UPLOAD: '/assessment/metopen/attendance/upload',
       METOPEN_ATTENDANCE_ELIGIBILITY: (thesisId: string) => `/assessment/metopen/attendance/eligibility/${thesisId}`,
       METOPEN_SCORES_EXPORT: '/assessment/metopen/scores/export',

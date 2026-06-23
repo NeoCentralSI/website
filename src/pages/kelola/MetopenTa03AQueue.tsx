@@ -13,6 +13,7 @@ import {
 
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
+import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Loading } from "@/components/ui/spinner";
+import { LocalTabsNav, type LocalTabItem } from "@/components/ui/tabs-nav";
 import {
     assessmentService,
     type SupervisorScoringQueueItem,
@@ -34,8 +36,15 @@ import { toTitleCaseName } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 const TA03A_QUEUE_KEY = ["assessment-supervisor-queue"];
+const TA03A_HISTORY_KEY = ["assessment-supervisor-history"];
 
+type TabKey = "active" | "history";
 type StatusFilter = "all" | "needs_action" | "waiting" | "auto_zeroed";
+
+const TAB_ITEMS: LocalTabItem[] = [
+    { value: "active", label: "Antrean Aktif" },
+    { value: "history", label: "Riwayat Dinilai" },
+];
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
     { value: "needs_action", label: "Perlu aksi saya" },
@@ -44,12 +53,13 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
     { value: "all", label: "Semua proposal" },
 ];
 
-const ACTION_LABELS: Record<Ta03AActionStatus, { label: string; tone: "amber" | "violet" | "blue" | "muted" | "destructive" }> = {
+const ACTION_LABELS: Record<Ta03AActionStatus, { label: string; tone: "amber" | "violet" | "blue" | "emerald" | "muted" | "destructive" }> = {
     p1_pending: { label: "Perlu input rubrik", tone: "amber" },
     p2_pending_cosign: { label: "Perlu co-sign", tone: "violet" },
     p1_waiting_cosign: { label: "Menunggu rekan / TA-03B", tone: "blue" },
     p2_waiting_p1: { label: "Menunggu Pembimbing 1 submit", tone: "muted" },
     auto_zeroed: { label: "Presensi <75% (auto-zero)", tone: "destructive" },
+    finalized: { label: "Final dan terkunci", tone: "emerald" },
 };
 
 /**
@@ -70,6 +80,7 @@ const ACTION_LABELS: Record<Ta03AActionStatus, { label: string; tone: "amber" | 
  */
 export default function MetopenTa03AQueue() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+    const [activeTab, setActiveTab] = useState<TabKey>("active");
     const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("needs_action");
@@ -93,6 +104,23 @@ export default function MetopenTa03AQueue() {
         refetchInterval: 30_000,
     });
 
+    const {
+        data: history = [],
+        isLoading: isHistoryLoading,
+        isError: isHistoryError,
+        error: historyError,
+    } = useQuery({
+        queryKey: TA03A_HISTORY_KEY,
+        queryFn: () => assessmentService.getSupervisorScoringHistory(),
+        enabled: activeTab === "history",
+        refetchInterval: 30_000,
+    });
+
+    const visibleItems: SupervisorScoringQueueItem[] = activeTab === "history" ? history : queue;
+    const currentLoading = activeTab === "history" ? isHistoryLoading : isLoading;
+    const currentError = activeTab === "history" ? isHistoryError : isError;
+    const currentErrorValue = activeTab === "history" ? historyError : error;
+
     const stats = useMemo(() => {
         const total = queue.length;
         const needsAction = queue.filter((item) =>
@@ -102,16 +130,18 @@ export default function MetopenTa03AQueue() {
             isWaitingStatus(item.actionStatus),
         ).length;
         const autoZeroed = queue.filter((item) => item.actionStatus === "auto_zeroed").length;
-        return { total, needsAction, waiting, autoZeroed };
-    }, [queue]);
+        return { total, needsAction, waiting, autoZeroed, history: history.length };
+    }, [history.length, queue]);
 
     const filteredQueue = useMemo(() => {
         const q = search.trim().toLowerCase();
-        return queue.filter((item) => {
-            if (statusFilter === "needs_action" && !isNeedsActionStatus(item.actionStatus))
-                return false;
-            if (statusFilter === "waiting" && !isWaitingStatus(item.actionStatus)) return false;
-            if (statusFilter === "auto_zeroed" && item.actionStatus !== "auto_zeroed") return false;
+        return visibleItems.filter((item) => {
+            if (activeTab === "active") {
+                if (statusFilter === "needs_action" && !isNeedsActionStatus(item.actionStatus))
+                    return false;
+                if (statusFilter === "waiting" && !isWaitingStatus(item.actionStatus)) return false;
+                if (statusFilter === "auto_zeroed" && item.actionStatus !== "auto_zeroed") return false;
+            }
             if (q) {
                 const matches =
                     (item.student?.fullName ?? "").toLowerCase().includes(q) ||
@@ -121,11 +151,11 @@ export default function MetopenTa03AQueue() {
             }
             return true;
         });
-    }, [queue, search, statusFilter]);
+    }, [activeTab, search, statusFilter, visibleItems]);
 
     useEffect(() => {
         if (filteredQueue.length === 0) {
-            if (queue.length === 0) setSelectedThesisId(null);
+            if (visibleItems.length === 0) setSelectedThesisId(null);
             return;
         }
         if (
@@ -134,26 +164,31 @@ export default function MetopenTa03AQueue() {
         ) {
             setSelectedThesisId(filteredQueue[0].thesisId);
         }
-    }, [filteredQueue, queue.length, selectedThesisId]);
+    }, [filteredQueue, selectedThesisId, visibleItems.length]);
 
     const selectedItem =
-        queue.find((item) => item.thesisId === selectedThesisId) ?? null;
+        visibleItems.find((item) => item.thesisId === selectedThesisId) ?? null;
 
-    if (isLoading) {
+    if (currentLoading) {
         return (
             <div className="py-12">
-                <Loading size="lg" text="Memuat antrean penilaian TA-03A..." />
+                <Loading
+                    size="lg"
+                    text={activeTab === "history" ? "Memuat riwayat penilaian TA-03A..." : "Memuat antrean penilaian TA-03A..."}
+                />
             </div>
         );
     }
 
-    if (isError) {
+    if (currentError) {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Antrean TA-03A gagal dimuat</CardTitle>
+                    <CardTitle className="text-base">
+                        {activeTab === "history" ? "Riwayat TA-03A gagal dimuat" : "Antrean TA-03A gagal dimuat"}
+                    </CardTitle>
                     <CardDescription>
-                        {error instanceof Error ? error.message : "Terjadi kesalahan."}
+                        {currentErrorValue instanceof Error ? currentErrorValue.message : "Terjadi kesalahan."}
                     </CardDescription>
                 </CardHeader>
             </Card>
@@ -162,54 +197,62 @@ export default function MetopenTa03AQueue() {
 
     return (
         <div className="space-y-5">
-            <Card className="overflow-hidden border-blue-200">
-                <div className="bg-gradient-to-br from-blue-500/10 via-sky-500/5 to-transparent">
-                    <CardHeader className="pb-4">
-                        <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
-                                <ClipboardCheck className="h-5 w-5 text-blue-700" />
-                            </div>
-                            <div className="space-y-1">
-                                <CardTitle className="text-base">
-                                    Antrean Penilaian Pembimbing
-                                </CardTitle>
-                                <CardDescription className="text-xs">
-                                    Antrean terbuka setelah mahasiswa submit proposal final dan presensi
-                                    Metopel terbaru sudah diunggah Koordinator. Pembimbing 1 mengisi rubrik
-                                    0-75; Pembimbing 2 memberi co-sign konsensus. Mahasiswa dengan presensi
-                                    &lt;75% otomatis mendapat nilai 0 (BR-28). Penilaian terkunci permanen
-                                    setelah submit + co-sign + TA-03B (BR-21).
-                                </CardDescription>
-                            </div>
+            <Card>
+                <CardHeader className="pb-4">
+                    <div className="flex items-start gap-3">
+                        <ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+                        <div className="space-y-1">
+                            <CardTitle className="text-base">
+                                Antrean Penilaian Pembimbing
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                                Antrean terbuka setelah mahasiswa submit proposal final dan presensi
+                                Metopel terbaru sudah diunggah Koordinator. Pembimbing 1 mengisi rubrik
+                                0-75; Pembimbing 2 memberi co-sign konsensus. Mahasiswa dengan presensi
+                                &lt;75% otomatis mendapat nilai 0 (BR-28). Penilaian terkunci permanen
+                                setelah submit + co-sign + TA-03B (BR-21).
+                            </CardDescription>
                         </div>
-                    </CardHeader>
+                    </div>
+                </CardHeader>
 
-                    <CardContent className="grid gap-3 sm:grid-cols-4">
-                        <StatCard label="Total dalam antrean" value={stats.total} tone="muted" />
-                        <StatCard label="Perlu aksi saya" value={stats.needsAction} tone="amber" />
-                        <StatCard
-                            label="Menunggu rekan / TA-03B"
-                            value={stats.waiting}
-                            tone="blue"
-                        />
-                        <StatCard
-                            label="Auto-zero presensi"
-                            value={stats.autoZeroed}
-                            tone="destructive"
-                        />
-                    </CardContent>
-                </div>
+                <CardContent className="grid gap-3 sm:grid-cols-4">
+                    <StatCard label="Total dalam antrean" value={stats.total} tone="muted" />
+                    <StatCard label="Perlu aksi saya" value={stats.needsAction} tone="amber" />
+                    <StatCard
+                        label="Menunggu rekan / TA-03B"
+                        value={stats.waiting}
+                        tone="blue"
+                    />
+                    <StatCard
+                        label="Riwayat dinilai"
+                        value={stats.history}
+                        tone="emerald"
+                    />
+                </CardContent>
             </Card>
 
-            {queue.length === 0 ? (
+            <LocalTabsNav
+                tabs={TAB_ITEMS}
+                activeTab={activeTab}
+                onTabChange={(value) => {
+                    setActiveTab(value as TabKey);
+                    setSelectedThesisId(null);
+                }}
+            />
+
+            {visibleItems.length === 0 ? (
                 <Card>
                     <CardContent className="py-16 text-center">
                         <p className="text-sm text-muted-foreground">
-                            Belum ada proposal yang menunggu penilaian TA-03A.
+                            {activeTab === "history"
+                                ? "Belum ada riwayat proposal yang sudah dinilai TA-03A."
+                                : "Belum ada proposal yang menunggu penilaian TA-03A."}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                            Proposal akan masuk ke antrean ini setelah mahasiswa bimbingan Anda submit
-                            proposal final dan presensi Metopel terbaru tersedia.
+                            {activeTab === "history"
+                                ? "Proposal yang sudah pernah memiliki skor, co-sign, finalisasi, atau auto-zero akan tampil di sini."
+                                : "Proposal akan masuk ke antrean ini setelah mahasiswa bimbingan Anda submit proposal final dan presensi Metopel terbaru tersedia."}
                         </p>
                     </CardContent>
                 </Card>
@@ -220,7 +263,7 @@ export default function MetopenTa03AQueue() {
                             <div className="flex items-center justify-between gap-2">
                                 <CardTitle className="text-sm">Antrean Proposal</CardTitle>
                                 <Badge variant="outline" className="text-xs tabular-nums">
-                                    {filteredQueue.length} / {queue.length}
+                                    {filteredQueue.length} / {visibleItems.length}
                                 </Badge>
                             </div>
                             <div className="space-y-2">
@@ -233,26 +276,28 @@ export default function MetopenTa03AQueue() {
                                         className="h-9 pl-8 text-sm"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                        Status
-                                    </Label>
-                                    <Select
-                                        value={statusFilter}
-                                        onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-                                    >
-                                        <SelectTrigger className="h-9 text-sm">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {STATUS_FILTERS.map((opt) => (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    {opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                {activeTab === "active" && (
+                                    <div className="space-y-1">
+                                        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            Status
+                                        </Label>
+                                        <Select
+                                            value={statusFilter}
+                                            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+                                        >
+                                            <SelectTrigger className="h-9 text-sm">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {STATUS_FILTERS.map((opt) => (
+                                                    <SelectItem key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent className="px-3 pb-3 pt-0">
@@ -279,6 +324,7 @@ export default function MetopenTa03AQueue() {
                         {selectedItem ? (
                             <>
                                 <ProposalSummaryCard item={selectedItem} />
+                                <ProposalVersionHistory thesisId={selectedItem.thesisId} compact readOnly />
                                 <SupervisorScoreCard
                                     thesisId={selectedItem.thesisId}
                                     scoreData={{
@@ -328,12 +374,13 @@ function StatCard({
 }: {
     label: string;
     value: number;
-    tone: "muted" | "amber" | "blue" | "destructive";
+    tone: "muted" | "amber" | "blue" | "emerald" | "destructive";
 }) {
     const toneClass: Record<typeof tone, string> = {
-        muted: "border-border bg-background",
+        muted: "border-slate-200 bg-slate-50/60",
         amber: "border-amber-200 bg-amber-50/60",
         blue: "border-blue-200 bg-blue-50/60",
+        emerald: "border-emerald-200 bg-emerald-50/60",
         destructive: "border-destructive/30 bg-destructive/5",
     };
     return (
@@ -356,12 +403,13 @@ const ROLE_BADGE: Record<"P1" | "P2", { label: string; className: string }> = {
 };
 
 const ACTION_TONE_CLASS: Record<
-    "amber" | "violet" | "blue" | "muted" | "destructive",
+    "amber" | "violet" | "blue" | "emerald" | "muted" | "destructive",
     string
 > = {
     amber: "border-amber-300 bg-amber-50 text-amber-800",
     violet: "border-violet-300 bg-violet-50 text-violet-800",
     blue: "border-blue-300 bg-blue-50 text-blue-800",
+    emerald: "border-emerald-300 bg-emerald-50 text-emerald-800",
     muted: "border-border bg-muted/30 text-muted-foreground",
     destructive: "border-destructive/40 bg-destructive/10 text-destructive",
 };

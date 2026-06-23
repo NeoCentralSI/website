@@ -305,13 +305,15 @@ function App() {
                   <Route path="/dosen/inbox-pembimbing" element={<InboxPembimbing />} />
                 </Route>
 
-                {/* Tugas Akhir - Non-student routes (monitoring, etc).
-                    Wrapped with RoleGuard so non-management roles do not see the page
-                    even briefly. Placeholder routes still listed but gated; they
-                    render a "Coming Soon" fallback. */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
+                {/* Monitoring TA — HANYA KaDep + Sekdep (audit pass 2 F2-7 / OQ-2.4:
+                    selaras guard backend /thesisGuidance/monitoring; GKM & Admin dicabut). */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/tugas-akhir/monitoring" element={<MonitoringDashboard />} />
                   <Route path="/tugas-akhir/monitoring/:thesisId" element={<StudentProgressDetail />} />
+                </Route>
+
+                {/* Tugas Akhir - Non-student placeholder routes ("Coming Soon"). */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/tugas-akhir/acc-pembimbing" element={<Placeholder title="Tugas Akhir - ACC Pembimbing" />} />
                   <Route path="/tugas-akhir/acc-rubrik" element={<Placeholder title="Tugas Akhir - ACC Rubrik Penilaian" />} />
                   <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />
@@ -330,7 +332,7 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.KOORDINATOR_METOPEN]} />}>
                   <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                   <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/tugas-akhir/monitor" element={<SecretaryKelolaTugasAkhirPage />} />
+                  {/* F2-12: route '/kelola/tugas-akhir/monitor' dihapus — tidak ada tab 'monitor' di TugasAkhir.tsx. */}
                   <Route path="/kelola/tugas-akhir/milestone" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />

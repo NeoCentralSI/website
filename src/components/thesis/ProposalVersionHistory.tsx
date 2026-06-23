@@ -330,7 +330,12 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                            <Button size="sm" onClick={() => setUploadOpen(true)}>
+                            <Button
+                                size="sm"
+                                onClick={() => setUploadOpen(true)}
+                                disabled={submissionStatus?.uploadLocked}
+                                title={submissionStatus?.uploadLockedReason ?? undefined}
+                            >
                                 <Upload className="mr-2 h-3.5 w-3.5" /> Upload Versi Baru
                             </Button>
                         </div>
@@ -349,6 +354,11 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
                         {!readOnly && submissionStatus && !submissionStatus.hasSupervisor && (
                             <p className="text-xs text-amber-700">
                                 Submit proposal final baru tersedia setelah dosen pembimbing resmi ditetapkan.
+                            </p>
+                        )}
+                        {!readOnly && submissionStatus?.uploadLocked && (
+                            <p className="text-xs text-amber-700">
+                                {submissionStatus.uploadLockedReason}
                             </p>
                         )}
                     </div>

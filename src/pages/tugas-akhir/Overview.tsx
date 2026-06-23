@@ -430,7 +430,7 @@ export default function TugasAkhirOverviewPage() {
                                             Selamat! Judul TA Anda sudah disahkan KaDep.
                                         </p>
                                         <p className="text-sm text-emerald-800">
-                                            SK Penugasan Pembimbing TA-04 sudah resmi terbit. Anda kini berada di fase Tugas Akhir penuh — akses Bimbingan Tugas Akhir, Seminar Hasil, dan Sidang sudah aktif.
+                                            Anda kini berada di fase Tugas Akhir penuh. Formulir TA-04 resmi dapat diunduh dari Arsip Metopel setelah batch periode difinalisasi KaDep.
                                         </p>
                                     </div>
                                 </div>

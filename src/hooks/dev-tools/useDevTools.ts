@@ -97,11 +97,14 @@ export function useDevToolsMutations() {
     updateUser: (id: string, data: UpdateUserDto) =>
       wrap(() => devToolsService.updateUser(id, data), 'Data user berhasil diperbarui'),
     deleteUser: (id: string) => wrap(() => devToolsService.deleteUser(id)),
-    resetStudent: (id: string) => wrap(() => devToolsService.resetStudent(id), 'Data mahasiswa berhasil direset'),
+    resetStudent: (id: string) => wrap(() => devToolsService.resetStudent(id)),
+    resetStudentProgress: (id: string) => wrap(() => devToolsService.resetStudentProgress(id)),
     deleteThesis: (id: string) => wrap(() => devToolsService.deleteThesis(id)),
     changePassword: (id: string, password: string) => wrap(() => devToolsService.changePassword(id, password)),
     createUser: (data: CreateUserDto) => wrap(() => devToolsService.createUser(data)),
     setMetopenEligibility: (studentId: string, eligibleMetopen: boolean | null) =>
       wrap(() => devToolsService.setMetopenEligibility(studentId, eligibleMetopen)),
+    setThesisCourseEligibility: (studentId: string, takingThesisCourse: boolean | null) =>
+      wrap(() => devToolsService.setThesisCourseEligibility(studentId, takingThesisCourse)),
   };
 }

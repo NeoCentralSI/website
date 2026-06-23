@@ -32,6 +32,7 @@ import { RubricGradingForm } from "@/components/metopen/RubricGradingForm";
 import {
     assessmentService,
     type ResearchMethodScoreWithDetails,
+    type ResearchMethodScoreDetailItem,
 } from "@/services/assessment.service";
 import type { StudentDetail } from "@/services/lecturerGuidance.service";
 import { formatDateId, toTitleCaseName } from "@/lib/text";
@@ -79,7 +80,13 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
         onSuccess: () => {
             toast.success("Co-sign Pembimbing 2 berhasil dicatat. Penilaian TA-03A finalisasi konsensus.");
             queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-score-detail", thesisId] });
+            queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-queue"] });
+            queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-history"] });
+            queryClient.invalidateQueries({ queryKey: ["assessment-metopen-queue"] });
+            queryClient.invalidateQueries({ queryKey: ["assessment-metopen-history"] });
             queryClient.invalidateQueries({ queryKey: ["student-detail", thesisId] });
+            queryClient.invalidateQueries({ queryKey: ["metopel-seminar-eligibility"] });
+            queryClient.invalidateQueries({ queryKey: ["metopel-proposal-approval"] });
             queryClient.invalidateQueries({ queryKey: ["dashboard-kadep-title-reports"] });
             setCoSignNote("");
         },
@@ -133,6 +140,12 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
             <ScoreBreakdownCard summary={summary} />
         ) : null;
 
+    // BR-20 (canon §5.7.1): Pembimbing 2 punya hak read penuh atas hasil TA-03B
+    // walau tidak menilainya. Rincian rubrik per kriteria (role 'default').
+    const ta03bDetailSection = (
+        <Ta03bRubricDetailCard details={scoreDetail?.researchMethodScoreDetails} />
+    );
+
     const immutableBanner = isFinalized ? (
         <Alert className="border-emerald-200 bg-emerald-50">
             <ShieldCheck className="h-5 w-5 text-emerald-600" />
@@ -173,9 +186,10 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
             <div className="space-y-4">
                 {summarySection}
                 {breakdownSection}
+                {ta03bDetailSection}
                 {attendanceAutoZeroBanner}
                 {immutableBanner}
-                {!isFinalized && (
+                {!isFinalized && !isP1Submitted && (
                     <Alert className="border-blue-200 bg-blue-50">
                         <FileSignature className="h-5 w-5 text-blue-600" />
                         <AlertTitle className="text-blue-800">
@@ -192,7 +206,20 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                         </AlertDescription>
                     </Alert>
                 )}
-                {!isFinalized && !summary.attendanceAutoZeroedAt && (
+                {!isFinalized && isP1Submitted && !summary.attendanceAutoZeroedAt && (
+                    <Alert className="border-blue-200 bg-blue-50">
+                        <FileSignature className="h-5 w-5 text-blue-600" />
+                        <AlertTitle className="text-blue-800">
+                            TA-03A sudah disubmit oleh Pembimbing 1
+                        </AlertTitle>
+                        <AlertDescription className="text-blue-700">
+                            Rubrik TA-03A sekarang read-only di sisi Anda. Siklus penilaian tinggal menunggu{" "}
+                            {hasP2 && !coSignedAt ? "co-sign Pembimbing 2" : "kelengkapan TA-03B Koordinator Metopen"}{" "}
+                            sebelum nilai akhir TA-03 dikunci permanen dan masuk antrean TA-04.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {!isFinalized && !isP1Submitted && !summary.attendanceAutoZeroedAt && (
                     <RubricGradingForm
                         thesisId={thesisId}
                         formCode="TA-03A"
@@ -217,6 +244,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
             <div className="space-y-4">
                 {summarySection}
                 {breakdownSection}
+                {ta03bDetailSection}
                 {attendanceAutoZeroBanner}
                 {immutableBanner}
                 {!isFinalized && (
@@ -314,6 +342,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
         <div className="space-y-4">
             {summarySection}
             {breakdownSection}
+            {ta03bDetailSection}
             {attendanceAutoZeroBanner}
             {immutableBanner}
             <Alert className="border-border bg-muted/30">
@@ -622,6 +651,74 @@ function ScoreBreakdownCard({ summary }: { summary: ScoreSummary }) {
                         );
                     })}
                 </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * Rincian rubrik TA-03B per kriteria (read-only). Memfilter detail kriteria
+ * dengan role 'default' (TA-03B) dari payload yang sudah dikirim backend.
+ * Dipakai oleh Pembimbing 1 & 2 (hak read penuh, canon §5.7.1) dan reviewer lain.
+ */
+function Ta03bRubricDetailCard({
+    details,
+}: {
+    details?: ResearchMethodScoreDetailItem[] | null;
+}) {
+    const rows = useMemo(() => {
+        const list = (details ?? []).filter(
+            (d) => (d.criteria?.role ?? null) === "default",
+        );
+        return [...list].sort(
+            (a, b) => (a.criteria?.displayOrder ?? 0) - (b.criteria?.displayOrder ?? 0),
+        );
+    }, [details]);
+
+    if (rows.length === 0) return null;
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <CardTitle className="text-sm">
+                    Rincian Rubrik TA-03B (Koordinator Metopen)
+                </CardTitle>
+                <CardDescription>
+                    Penilaian sistematika penulisan proposal (maks 25). Read-only untuk pembimbing —
+                    diisi oleh Koordinator Matkul Metopen.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {rows.map((row) => (
+                    <div
+                        key={row.assessmentCriteriaId}
+                        className="rounded-md border bg-card px-3 py-2.5"
+                    >
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                                <p className="text-sm font-medium">
+                                    {row.criteria?.name ?? "Kriteria"}
+                                </p>
+                                {row.criteria?.cpmk?.code ? (
+                                    <p className="text-[11px] text-muted-foreground">
+                                        {row.criteria.cpmk.code}
+                                    </p>
+                                ) : null}
+                            </div>
+                            <p className="shrink-0 text-sm font-semibold tabular-nums">
+                                {row.score}
+                                <span className="ml-0.5 text-xs text-muted-foreground">
+                                    /{row.criteria?.maxScore ?? "—"}
+                                </span>
+                            </p>
+                        </div>
+                        {row.assessmentRubric?.description ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {row.assessmentRubric.description}
+                            </p>
+                        ) : null}
+                    </div>
+                ))}
             </CardContent>
         </Card>
     );

@@ -18,6 +18,14 @@ export interface DevToolsMetopenEligibility {
   thesisStatus: string | null;
 }
 
+export interface DevToolsThesisCourseEligibility {
+  takingThesisCourse: boolean | null;
+  hasExternalStatus: boolean;
+  source: 'sia' | 'devtools' | null;
+  updatedAt: string | null;
+  canAccess: boolean;
+}
+
 export interface DevToolsStudent {
   id: string;
   fullName: string;
@@ -33,6 +41,7 @@ export interface DevToolsStudent {
   kknCompleted: boolean;
   currentSemester: number | null;
   metopenEligibility: DevToolsMetopenEligibility;
+  thesisCourseEligibility: DevToolsThesisCourseEligibility;
   latestThesis: {
     id: string;
     status: string;

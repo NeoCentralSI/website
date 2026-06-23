@@ -3,7 +3,7 @@ import { useOutletContext, useNavigate } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import type { MyStudentItem } from "@/services/lecturerGuidance.service";
 import { getMyStudents, sendWarningToStudent, type WarningType } from "@/services/lecturerGuidance.service";
-import { TabsNav } from "@/components/ui/tabs-nav";
+import { TabsNav, LocalTabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toTitleCaseName } from "@/lib/text";
@@ -73,6 +73,8 @@ export default function LecturerMyStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  // Aktif = mahasiswa bimbingan berjalan; Arsip = thesis selesai/ditutup (read-only).
+  const [scope, setScope] = useState<'active' | 'archive'>('active');
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
@@ -80,8 +82,8 @@ export default function LecturerMyStudentsPage() {
   }>({ open: false, student: null });
 
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['lecturer-my-students'],
-    queryFn: () => getMyStudents(),
+    queryKey: ['lecturer-my-students', scope],
+    queryFn: () => getMyStudents(scope),
   });
 
   // Send warning mutation
@@ -320,6 +322,19 @@ export default function LecturerMyStudentsPage() {
       {/* Pembimbing 2 Requests Section */}
       <Supervisor2RequestsSection />
 
+      {/* Aktif vs Arsip (mahasiswa selesai) — akses read-only pasca-finalisasi */}
+      <LocalTabsNav
+        tabs={[
+          { label: 'Aktif', value: 'active' },
+          { label: 'Arsip (Selesai)', value: 'archive' },
+        ]}
+        activeTab={scope}
+        onTabChange={(v) => {
+          setScope(v as 'active' | 'archive');
+          setPage(1);
+        }}
+      />
+
       {/* Loading state - tabs tetap render, loading di content */}
       {isLoading ? (
         <div className="flex h-[calc(100vh-280px)] items-center justify-center">
@@ -341,7 +356,7 @@ export default function LecturerMyStudentsPage() {
             setSearchQuery(val);
             setPage(1); // Reset to page 1 on search
           }}
-          emptyText="Tidak ada mahasiswa bimbingan"
+          emptyText={scope === 'archive' ? "Belum ada mahasiswa di arsip" : "Tidak ada mahasiswa bimbingan"}
           rowKey={(row) => row.studentId}
           actions={
             <RefreshButton

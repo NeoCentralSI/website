@@ -16,6 +16,11 @@ export interface MetopelEligibility {
   thesisPhase: string | null;
   source: 'sia' | 'devtools' | null;
   updatedAt: string | null;
+  takingThesisCourse: boolean | null;
+  hasThesisCourseStatus: boolean;
+  canAccessTugasAkhir: boolean;
+  thesisCourseSource: 'sia' | 'devtools' | null;
+  thesisCourseUpdatedAt: string | null;
 }
 
 export const checkMetopelEligibility = async (): Promise<MetopelEligibility> => {

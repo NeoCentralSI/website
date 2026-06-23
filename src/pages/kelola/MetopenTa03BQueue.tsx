@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 
 import { MetopenAttendanceUploadCard } from "@/components/metopen/MetopenAttendanceUploadCard";
+import { ResearchMethodScoreReadOnly } from "@/components/metopen/ResearchMethodScoreReadOnly";
 import { RubricGradingForm } from "@/components/metopen/RubricGradingForm";
+import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,24 +29,36 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Loading, Spinner } from "@/components/ui/spinner";
+import { LocalTabsNav, type LocalTabItem } from "@/components/ui/tabs-nav";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { assessmentService, type ScoringQueueItem } from "@/services/assessment.service";
 import { toTitleCaseName } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 const METOPEN_TA03B_QUEUE_KEY = ["assessment-metopen-queue"];
+const METOPEN_TA03B_HISTORY_KEY = ["assessment-metopen-history"];
+const METOPEN_SCORE_DETAIL_KEY = (thesisId?: string | null) => [
+    "assessment-metopen-score-detail",
+    thesisId,
+];
 
-type StatusFilter = "all" | "pending" | "scored";
+type TabKey = "active" | "history";
+type StatusFilter = "all" | "pending";
+
+const TAB_ITEMS: LocalTabItem[] = [
+    { value: "active", label: "Antrean Aktif" },
+    { value: "history", label: "Riwayat Dinilai" },
+];
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
     { value: "all", label: "Semua proposal" },
     { value: "pending", label: "Menunggu dinilai" },
-    { value: "scored", label: "Sudah dinilai (recall)" },
 ];
 
 export default function MetopenTa03BQueue() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
     const queryClient = useQueryClient();
+    const [activeTab, setActiveTab] = useState<TabKey>("active");
     const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
@@ -67,6 +81,23 @@ export default function MetopenTa03BQueue() {
         queryFn: () => assessmentService.getMetopenScoringQueue(),
     });
 
+    const {
+        data: history = [],
+        isLoading: isHistoryLoading,
+        isError: isHistoryError,
+        error: historyError,
+    } = useQuery({
+        queryKey: METOPEN_TA03B_HISTORY_KEY,
+        queryFn: () => assessmentService.getMetopenScoringHistory(),
+        enabled: activeTab === "history",
+        refetchInterval: 30_000,
+    });
+
+    const visibleItems: ScoringQueueItem[] = activeTab === "history" ? history : queue;
+    const currentLoading = activeTab === "history" ? isHistoryLoading : isLoading;
+    const currentError = activeTab === "history" ? isHistoryError : isError;
+    const currentErrorValue = activeTab === "history" ? historyError : error;
+
     const downloadMutation = useMutation({
         mutationFn: () => assessmentService.downloadMetopenScoresXlsx(),
         onSuccess: () => {
@@ -79,9 +110,8 @@ export default function MetopenTa03BQueue() {
 
     const filteredQueue = useMemo(() => {
         const q = search.trim().toLowerCase();
-        return queue.filter((item) => {
-            if (statusFilter === "pending" && item.isScored) return false;
-            if (statusFilter === "scored" && !item.isScored) return false;
+        return visibleItems.filter((item) => {
+            if (activeTab === "active" && statusFilter === "pending" && item.isScored) return false;
             if (q) {
                 const matches =
                     item.studentName.toLowerCase().includes(q) ||
@@ -91,42 +121,62 @@ export default function MetopenTa03BQueue() {
             }
             return true;
         });
-    }, [queue, search, statusFilter]);
+    }, [activeTab, search, statusFilter, visibleItems]);
 
     useEffect(() => {
         if (filteredQueue.length === 0) {
-            if (queue.length === 0) setSelectedThesisId(null);
+            if (visibleItems.length === 0) setSelectedThesisId(null);
             return;
         }
         if (!selectedThesisId || !filteredQueue.some((item) => item.thesisId === selectedThesisId)) {
             setSelectedThesisId(filteredQueue[0].thesisId);
         }
-    }, [filteredQueue, queue.length, selectedThesisId]);
+    }, [filteredQueue, selectedThesisId, visibleItems.length]);
 
     const selectedItem =
-        queue.find((item) => item.thesisId === selectedThesisId) ?? null;
+        visibleItems.find((item) => item.thesisId === selectedThesisId) ?? null;
+
+    const shouldLoadScoreDetail = Boolean(
+        selectedItem?.thesisId && (activeTab === "history" || selectedItem.isScored),
+    );
+
+    const {
+        data: selectedScoreDetail,
+        isLoading: isScoreDetailLoading,
+        isError: isScoreDetailError,
+        error: scoreDetailError,
+    } = useQuery({
+        queryKey: METOPEN_SCORE_DETAIL_KEY(selectedItem?.thesisId),
+        queryFn: () => assessmentService.getMetopenScoreDetail(selectedItem!.thesisId),
+        enabled: shouldLoadScoreDetail,
+    });
 
     const stats = useMemo(() => {
         const total = queue.length;
-        const scored = queue.filter((item) => item.isScored).length;
-        return { total, scored, pending: total - scored };
-    }, [queue]);
+        const pending = queue.filter((item) => !item.isScored).length;
+        return { total, pending, history: history.length };
+    }, [history.length, queue]);
 
-    if (isLoading) {
+    if (currentLoading) {
         return (
             <div className="py-12">
-                <Loading size="lg" text="Memuat antrean penilaian TA-03B..." />
+                <Loading
+                    size="lg"
+                    text={activeTab === "history" ? "Memuat riwayat penilaian TA-03B..." : "Memuat antrean penilaian TA-03B..."}
+                />
             </div>
         );
     }
 
-    if (isError) {
+    if (currentError) {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle>Antrean TA-03B gagal dimuat</CardTitle>
+                    <CardTitle>
+                        {activeTab === "history" ? "Riwayat TA-03B gagal dimuat" : "Antrean TA-03B gagal dimuat"}
+                    </CardTitle>
                     <CardDescription>
-                        {error instanceof Error ? error.message : "Terjadi kesalahan."}
+                        {currentErrorValue instanceof Error ? currentErrorValue.message : "Terjadi kesalahan."}
                     </CardDescription>
                 </CardHeader>
             </Card>
@@ -136,78 +186,91 @@ export default function MetopenTa03BQueue() {
     return (
         <div className="space-y-5">
             {/* Hero card ─────────────────────────────────── */}
-            <Card className="overflow-hidden border-blue-200">
-                <div className="bg-gradient-to-br from-blue-500/10 via-sky-500/5 to-transparent">
-                    <CardHeader className="pb-4">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="flex items-start gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
-                                    <ClipboardCheck className="h-5 w-5 text-blue-700" />
-                                </div>
-                                <div className="space-y-1">
-                                    <CardTitle className="text-base">
-                                        Penilaian Proposal TA-03B
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
-                                        Queue terbuka setelah proposal final tersedia &amp; presensi Metopel
-                                        terbaru sudah diunggah. Mahasiswa dengan presensi &lt;75% otomatis
-                                        mendapat nilai TA-03 = 0 (BR-28).
-                                    </CardDescription>
-                                </div>
+            <Card>
+                <CardHeader className="pb-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex items-start gap-3">
+                            <ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0 text-violet-700" />
+                            <div className="space-y-1">
+                                <CardTitle className="text-base">
+                                    Penilaian Proposal TA-03B
+                                </CardTitle>
+                                <CardDescription className="text-xs">
+                                    Antrean Koordinator untuk rubrik TA-03B (maks 25). Penilaian berjalan
+                                    paralel setelah proposal final tersedia; form manual akan memeriksa
+                                    presensi Metopel terbaru sebelum submit. Setelah dinilai, proposal
+                                    pindah ke riwayat read-only dengan detail rubrik dan versi proposal.
+                                </CardDescription>
                             </div>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="self-start border-blue-300 bg-white text-blue-800 hover:bg-blue-100"
-                                onClick={() => downloadMutation.mutate()}
-                                disabled={downloadMutation.isPending}
-                                title="Unduh rekap nilai TA-03A + TA-03B kelas Metopel terbaru dalam format SIA."
-                            >
-                                {downloadMutation.isPending ? (
-                                    <>
-                                        <Spinner className="mr-2 h-4 w-4" />
-                                        Memproses...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Download Nilai TA-03 (xlsx)
-                                    </>
-                                )}
-                            </Button>
                         </div>
-                    </CardHeader>
 
-                    <CardContent className="grid gap-3 sm:grid-cols-3">
-                        <StatCard
-                            label="Total proposal di antrean"
-                            value={stats.total}
-                            tone="muted"
-                        />
-                        <StatCard
-                            label="Menunggu dinilai"
-                            value={stats.pending}
-                            tone="amber"
-                        />
-                        <StatCard label="Sudah dinilai" value={stats.scored} tone="emerald" />
-                    </CardContent>
-                </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="self-start border-violet-300 bg-background text-violet-800 hover:bg-violet-100"
+                            onClick={() => downloadMutation.mutate()}
+                            disabled={downloadMutation.isPending}
+                            title="Unduh rekap nilai TA-03A + TA-03B kelas Metopel terbaru dalam format SIA."
+                        >
+                            {downloadMutation.isPending ? (
+                                <>
+                                    <Spinner className="mr-2 h-4 w-4" />
+                                    Memproses...
+                                </>
+                            ) : (
+                                <>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download Nilai TA-03 (xlsx)
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </CardHeader>
+
+                <CardContent className="grid gap-3 sm:grid-cols-3">
+                    <StatCard
+                        label="Total proposal di antrean"
+                        value={stats.total}
+                        tone="muted"
+                    />
+                    <StatCard
+                        label="Siap dinilai"
+                        value={stats.pending}
+                        tone="violet"
+                    />
+                    <StatCard
+                        label="Riwayat dinilai"
+                        value={stats.history}
+                        tone="emerald"
+                    />
+                </CardContent>
             </Card>
 
             <MetopenAttendanceUploadCard />
 
+            <LocalTabsNav
+                tabs={TAB_ITEMS}
+                activeTab={activeTab}
+                onTabChange={(value) => {
+                    setActiveTab(value as TabKey);
+                    setSelectedThesisId(null);
+                }}
+            />
+
             {/* Two-pane layout ───────────────────────────── */}
-            {queue.length === 0 ? (
+            {visibleItems.length === 0 ? (
                 <Card>
                     <CardContent className="py-16 text-center">
                         <p className="text-sm text-muted-foreground">
-                            Belum ada proposal yang menunggu penilaian TA-03B.
+                            {activeTab === "history"
+                                ? "Belum ada riwayat proposal yang sudah dinilai TA-03B."
+                                : "Belum ada proposal yang menunggu penilaian TA-03B."}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                            Proposal akan masuk ke antrean ini setelah mahasiswa submit final + Pembimbing
-                            1 menyelesaikan TA-03A (parallel) atau saat presensi diunggah.
+                            {activeTab === "history"
+                                ? "Proposal yang sudah memiliki skor Koordinator atau auto-zero presensi akan tampil di sini."
+                                : "Proposal akan masuk ke antrean ini setelah mahasiswa submit proposal final. Jika presensi Metopel belum tersedia atau kurang dari 75%, form akan menahan input manual sesuai BR-28."}
                         </p>
                     </CardContent>
                 </Card>
@@ -217,9 +280,11 @@ export default function MetopenTa03BQueue() {
                     <Card className="self-start lg:sticky lg:top-4">
                         <CardHeader className="space-y-3 pb-3">
                             <div className="flex items-center justify-between gap-2">
-                                <CardTitle className="text-sm">Antrean Proposal</CardTitle>
+                                <CardTitle className="text-sm">
+                                    {activeTab === "history" ? "Riwayat Proposal" : "Antrean Proposal"}
+                                </CardTitle>
                                 <Badge variant="outline" className="text-xs tabular-nums">
-                                    {filteredQueue.length} / {queue.length}
+                                    {filteredQueue.length} / {visibleItems.length}
                                 </Badge>
                             </div>
                             <div className="space-y-2">
@@ -232,26 +297,28 @@ export default function MetopenTa03BQueue() {
                                         className="h-9 pl-8 text-sm"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                        Status
-                                    </Label>
-                                    <Select
-                                        value={statusFilter}
-                                        onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-                                    >
-                                        <SelectTrigger className="h-9 text-sm">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {STATUS_FILTERS.map((opt) => (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    {opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                {activeTab === "active" && (
+                                    <div className="space-y-1">
+                                        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                            Status
+                                        </Label>
+                                        <Select
+                                            value={statusFilter}
+                                            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+                                        >
+                                            <SelectTrigger className="h-9 text-sm">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {STATUS_FILTERS.map((opt) => (
+                                                    <SelectItem key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent className="px-3 pb-3 pt-0">
@@ -279,16 +346,29 @@ export default function MetopenTa03BQueue() {
                         {selectedItem ? (
                             <>
                                 <ProposalSummaryCard item={selectedItem} />
-                                <RubricGradingForm
-                                    thesisId={selectedItem.thesisId}
-                                    formCode="TA-03B"
-                                    studentName={toTitleCaseName(selectedItem.studentName)}
-                                    onSuccess={() => {
-                                        queryClient.invalidateQueries({
-                                            queryKey: METOPEN_TA03B_QUEUE_KEY,
-                                        });
-                                    }}
-                                />
+                                <ProposalVersionHistory thesisId={selectedItem.thesisId} compact readOnly />
+                                {selectedItem.isScored ? (
+                                    <MetopenScoreDetailPanel
+                                        score={selectedScoreDetail}
+                                        isLoading={isScoreDetailLoading}
+                                        isError={isScoreDetailError}
+                                        error={scoreDetailError}
+                                    />
+                                ) : (
+                                    <RubricGradingForm
+                                        thesisId={selectedItem.thesisId}
+                                        formCode="TA-03B"
+                                        studentName={toTitleCaseName(selectedItem.studentName)}
+                                        onSuccess={() => {
+                                            queryClient.invalidateQueries({
+                                                queryKey: METOPEN_TA03B_QUEUE_KEY,
+                                            });
+                                            queryClient.invalidateQueries({
+                                                queryKey: METOPEN_TA03B_HISTORY_KEY,
+                                            });
+                                        }}
+                                    />
+                                )}
                             </>
                         ) : (
                             <Card>
@@ -316,11 +396,11 @@ function StatCard({
 }: {
     label: string;
     value: number;
-    tone: "muted" | "amber" | "emerald";
+    tone: "muted" | "violet" | "emerald";
 }) {
     const toneClass: Record<typeof tone, string> = {
-        muted: "border-border bg-background",
-        amber: "border-amber-200 bg-amber-50/60",
+        muted: "border-slate-200 bg-slate-50/60",
+        violet: "border-violet-200 bg-violet-50/60",
         emerald: "border-emerald-200 bg-emerald-50/60",
     };
     return (
@@ -467,5 +547,49 @@ function ProposalSummaryCard({ item }: { item: ScoringQueueItem }) {
                 </div>
             </CardContent>
         </Card>
+    );
+}
+
+function MetopenScoreDetailPanel({
+    score,
+    isLoading,
+    isError,
+    error,
+}: {
+    score: Awaited<ReturnType<typeof assessmentService.getMetopenScoreDetail>> | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    error: unknown;
+}) {
+    if (isLoading) {
+        return (
+            <Card>
+                <CardContent className="py-10">
+                    <Loading text="Memuat detail rubrik TA-03B..." />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (isError) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">Detail penilaian gagal dimuat</CardTitle>
+                    <CardDescription>
+                        {error instanceof Error ? error.message : "Terjadi kesalahan saat memuat detail rubrik."}
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        );
+    }
+
+    return (
+        <ResearchMethodScoreReadOnly
+            score={score}
+            title="Detail Riwayat Penilaian TA-03"
+            description="Nilai TA-03A/TA-03B dan descriptor rubrik tersimpan dalam mode read-only; koreksi tidak dilakukan dari halaman antrean."
+            emptyText="Detail rubrik untuk proposal ini belum tersedia."
+        />
     );
 }

@@ -98,6 +98,9 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     queryKey: ["dashboard-kadep-title-reports"],
     queryFn: async () => (await metopenTitleService.getPendingTitleReports()).data,
     enabled: showKadepActions,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchInterval: 30_000,
   });
 
   const pendingSupervisor2Count = supervisor2RequestsData?.length || 0;

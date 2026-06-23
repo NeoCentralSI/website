@@ -58,7 +58,8 @@ export type Ta03AActionStatus =
   | 'p1_waiting_cosign' // P1: sudah submit, menunggu P2 co-sign / TA-03B / finalize
   | 'p2_pending_cosign' // P2: P1 sudah submit, perlu co-sign konsensus
   | 'p2_waiting_p1'     // P2: menunggu P1 submit dulu
-  | 'auto_zeroed';      // BR-28: presensi <75% (immutable, no manual input)
+  | 'auto_zeroed'       // BR-28: presensi <75% (immutable, no manual input)
+  | 'finalized';        // Siklus TA-03 final dan read-only di riwayat
 
 export interface SupervisorScoringQueueItem {
   thesisId: string;
@@ -78,6 +79,12 @@ export interface SupervisorScoringQueueItem {
   coSignedAt: string | null;
   attendanceAutoZeroedAt: string | null;
   attendanceAutoZeroReason: string | null;
+}
+
+export interface SupervisorScoringHistoryItem extends SupervisorScoringQueueItem {
+  isFinalized: boolean;
+  finalizedAt: string | null;
+  coSignNote?: string | null;
 }
 
 export interface ResearchMethodScoreResult {
@@ -109,6 +116,9 @@ export interface ResearchMethodScoreDetailItem {
     id: string;
     name?: string | null;
     maxScore?: number | null;
+    /** Pembeda form: 'supervisor' = TA-03A, 'default' = TA-03B. */
+    role?: string | null;
+    displayOrder?: number | null;
     cpmk?: { code?: string | null; description?: string | null } | null;
   } | null;
   assessmentRubric?: {
@@ -226,6 +236,48 @@ export interface MetopenAttendanceUploadResult {
   }>;
 }
 
+/** F-4.2: hasil dry-run pratinjau presensi sebelum commit (tidak menulis DB). */
+export interface MetopenAttendanceImpactTarget {
+  identityNumber: string;
+  studentName?: string | null;
+  attendancePercentage: number;
+  thesisTitle?: string | null;
+}
+
+export interface MetopenAttendancePreviewResult {
+  metadata: {
+    classCode?: string | null;
+    courseName?: string | null;
+    semesterLabel?: string | null;
+  } | null;
+  thresholdPercent: number;
+  totals: {
+    totalRows: number;
+    matchedRows: number;
+    unmatchedRows: number;
+    eligibleRows: number;
+    ineligibleRows: number;
+    willAutoZeroCount: number;
+    willSkipFinalizedCount: number;
+  };
+  willAutoZero: MetopenAttendanceImpactTarget[];
+  willSkipFinalized: MetopenAttendanceImpactTarget[];
+  unmatchedRows: Array<{
+    identityNumber: string;
+    studentName?: string | null;
+    attendancePercentage: number;
+  }>;
+}
+
+export interface MetopenScoringHistoryItem extends ScoringQueueItem {
+  finalScore: number | null;
+  isFinalized: boolean;
+  finalizedAt: string | null;
+  coSignedAt: string | null;
+  attendanceAutoZeroedAt: string | null;
+  attendanceAutoZeroReason: string | null;
+}
+
 /**
  * BR-20: Klasifikasi role pembimbing yang sedang membuka card.
  * - P1 → form full edit rubrik (master pengisi)
@@ -302,6 +354,16 @@ export const assessmentService = {
     return json.data ?? [];
   },
 
+  getSupervisorScoringHistory: async (): Promise<SupervisorScoringHistoryItem[]> => {
+    const res = await apiRequest(getApiUrl(E.SUPERVISOR_SCORING_HISTORY));
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Gagal memuat riwayat penilaian TA-03A');
+    }
+    const json = await res.json() as { data: SupervisorScoringHistoryItem[] };
+    return json.data ?? [];
+  },
+
   // Supervisor: submit TA-03A scores (Pembimbing 1 master)
   submitSupervisorScore: async (
     thesisId: string,
@@ -372,6 +434,24 @@ export const assessmentService = {
     );
   },
 
+  getMetopenScoringHistory: async (): Promise<MetopenScoringHistoryItem[]> => {
+    const res = await apiRequest(getApiUrl(E.METOPEN_SCORING_HISTORY));
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Gagal memuat riwayat penilaian TA-03B');
+    }
+    const json = await res.json() as { data: Array<QueueApiItem & Omit<MetopenScoringHistoryItem, keyof ScoringQueueItem>> };
+    return (json.data ?? []).map((item) => ({
+      ...mapQueueItem(item, 'lecturerScore'),
+      finalScore: item.finalScore ?? null,
+      isFinalized: item.isFinalized ?? false,
+      finalizedAt: item.finalizedAt ?? null,
+      coSignedAt: item.coSignedAt ?? null,
+      attendanceAutoZeroedAt: item.attendanceAutoZeroedAt ?? null,
+      attendanceAutoZeroReason: item.attendanceAutoZeroReason ?? null,
+    }));
+  },
+
   getMetopenAttendanceLatest: async (): Promise<MetopenAttendanceImportSummary | null> => {
     const res = await apiRequest(getApiUrl(E.METOPEN_ATTENDANCE_LATEST));
     if (!res.ok) {
@@ -379,6 +459,23 @@ export const assessmentService = {
       throw new Error(err.message || 'Gagal memuat presensi Metopel terbaru');
     }
     const json = await res.json() as { data: MetopenAttendanceImportSummary | null };
+    return json.data;
+  },
+
+  /** F-4.2: dry-run pratinjau dampak auto-zero (permanen) sebelum commit. */
+  previewMetopenAttendance: async (file: File): Promise<MetopenAttendancePreviewResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await apiRequest(getApiUrl(E.METOPEN_ATTENDANCE_PREVIEW), {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Gagal memproses pratinjau presensi Metopel');
+    }
+    const json = await res.json() as { data: MetopenAttendancePreviewResult };
     return json.data;
   },
 
@@ -438,6 +535,18 @@ export const assessmentService = {
       throw new Error(err.message || 'Gagal menyimpan penilaian Metopen');
     }
     const json = await res.json() as { data: ResearchMethodScoreResult };
+    return json.data;
+  },
+
+  getMetopenScoreDetail: async (
+    thesisId: string,
+  ): Promise<ResearchMethodScoreWithDetails | null> => {
+    const res = await apiRequest(getApiUrl(E.METOPEN_SUBMIT_SCORE(thesisId)));
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Gagal memuat detail penilaian TA-03B');
+    }
+    const json = await res.json() as { data: ResearchMethodScoreWithDetails | null };
     return json.data;
   },
 

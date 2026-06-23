@@ -246,8 +246,11 @@ export interface MyStudentItem {
   [key: string]: unknown;
 }
 
-export async function getMyStudents(): Promise<{ students: MyStudentItem[] }> {
-  const url = getApiUrl(EP.MY_STUDENTS);
+export async function getMyStudents(
+  scope: 'active' | 'archive' = 'active',
+): Promise<{ students: MyStudentItem[] }> {
+  const base = getApiUrl(EP.MY_STUDENTS);
+  const url = scope === 'archive' ? `${base}?scope=archive` : base;
   const response = await apiRequest(url);
   const data = await handleJson<{ success: boolean; data: MyStudentItem[] }>(response);
   return { students: data.data ?? [] };
@@ -400,6 +403,46 @@ export async function rejectSupervisor2Request(
   reason?: string,
 ): Promise<{ message: string }> {
   const url = getApiUrl(EP.SUPERVISOR2_REJECT(requestId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  return handleJson<{ message: string }>(response);
+}
+
+// ── Persetujuan akhir Pembimbing 2 oleh KaDep (F2-5 / OQ-2.2) ──
+
+export interface Supervisor2KadepRequestItem {
+  requestId: string;
+  thesisId: string;
+  studentId: string;
+  lecturerId: string;
+  studentName: string;
+  studentNim?: string | null;
+  lecturerName: string;
+  thesisTitle: string;
+  requestedAt: string;
+}
+
+export async function getSupervisor2KadepRequests(): Promise<Supervisor2KadepRequestItem[]> {
+  const url = getApiUrl(EP.KADEP_SUPERVISOR2_REQUESTS);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: Supervisor2KadepRequestItem[] }>(response);
+  return data.data ?? [];
+}
+
+export async function approveSupervisor2KadepRequest(requestId: string): Promise<{ message: string }> {
+  const url = getApiUrl(EP.KADEP_SUPERVISOR2_APPROVE(requestId));
+  const response = await apiRequest(url, { method: 'POST' });
+  return handleJson<{ message: string }>(response);
+}
+
+export async function rejectSupervisor2KadepRequest(
+  requestId: string,
+  reason?: string,
+): Promise<{ message: string }> {
+  const url = getApiUrl(EP.KADEP_SUPERVISOR2_REJECT(requestId));
   const response = await apiRequest(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

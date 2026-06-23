@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import {
   listMetopenInformalLogs,
   type InformalLogItem,
 } from "@/services/metopenInformalLog.service";
-import { AlertCircle, FileText, Paperclip } from "lucide-react";
+import { AlertCircle, FileText, History, Info, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 
 const QK_METOPEN_INFORMAL_LOGS = ["metopen-informal-logs"] as const;
@@ -59,6 +60,9 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
 
   const thesisId = data?.thesisId ?? null;
   const items = data?.items ?? [];
+  const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan.";
+  const isThesisCourseRestriction =
+    isError && /mata kuliah Tugas Akhir|modul Bimbingan/i.test(errorMessage);
 
   if (isLoading) {
     return (
@@ -68,12 +72,30 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
     );
   }
 
+  if (isThesisCourseRestriction) {
+    return (
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertTitle>Catatan informal sudah ditutup</AlertTitle>
+        <AlertDescription className="space-y-3">
+          <p>
+            Snapshot SIA mencatat Anda sudah mengambil mata kuliah Tugas Akhir. Catatan informal
+            Metopen hanya dipakai pada fase proposal sebelum MK Tugas Akhir aktif.
+          </p>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/tugas-akhir/bimbingan">Buka Bimbingan Tugas Akhir</Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   if (isError) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Gagal memuat data</AlertTitle>
-        <AlertDescription>{error instanceof Error ? error.message : "Terjadi kesalahan."}</AlertDescription>
+        <AlertDescription>{errorMessage}</AlertDescription>
       </Alert>
     );
   }
@@ -93,7 +115,7 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-base sm:text-lg">Catatan bimbingan informal</CardTitle>
@@ -134,13 +156,25 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
       </Card>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground">Riwayat</h3>
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <History className="h-4 w-4 text-muted-foreground" />
+          Riwayat Catatan
+        </h3>
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Belum ada catatan.</p>
+          <div className="text-center py-12 rounded-xl border bg-muted/20">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <FileText className="h-7 w-7 text-muted-foreground/40" />
+            </div>
+            <p className="font-semibold text-foreground/80 text-sm">Belum ada catatan</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+              Catatan informal yang Anda tambahkan akan tampil di sini.
+            </p>
+          </div>
         ) : (
-          <ul className="space-y-3">
+          <div className="relative ml-2 border-l-2 border-muted pl-4 space-y-4">
             {items.map((entry: InformalLogItem) => (
-              <li key={entry.id}>
+              <div key={entry.id} className="relative">
+                <div className="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full border-2 border-muted bg-background" />
                 <Card>
                   <CardHeader className="space-y-1 pb-2">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -157,17 +191,14 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
                         className="inline-flex items-center gap-2 text-sm text-primary underline-offset-4 hover:underline"
                       >
                         <Paperclip className="h-4 w-4 shrink-0" />
-                        <span className="inline-flex items-center gap-1">
-                          <FileText className="h-4 w-4 shrink-0 opacity-70" />
-                          {entry.document.fileName || "Lampiran"}
-                        </span>
+                        {entry.document.fileName || "Lampiran"}
                       </a>
                     </CardContent>
                   )}
                 </Card>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

@@ -19,6 +19,7 @@ import {
   KeyRound,
   UserPlus,
   BookOpen,
+  GraduationCap,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -74,6 +75,7 @@ import {
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import type {
   DevToolsMetopenEligibility,
+  DevToolsThesisCourseEligibility,
   DevToolsStudent,
   UpdateStudentDto,
   StudentStatus,
@@ -117,19 +119,27 @@ function formatDateTimeLabel(value: string | null) {
 }
 
 function MetopenEligibilityBadge({ metopenEligibility }: { metopenEligibility: DevToolsMetopenEligibility }) {
-  if (metopenEligibility.readOnly) {
-    return <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">Arsip TA</Badge>;
-  }
-
   if (!metopenEligibility.hasExternalStatus) {
     return <Badge variant="outline" className="text-xs">Belum ada status</Badge>;
   }
 
   if (metopenEligibility.eligibleMetopen) {
-    return <Badge variant="default" className="text-xs bg-emerald-600">Eligible</Badge>;
+    return <Badge variant="default" className="text-xs bg-emerald-600">Eligible Metopen</Badge>;
   }
 
-  return <Badge variant="outline" className="text-xs border-red-200 text-red-700">Tidak eligible</Badge>;
+  return <Badge variant="outline" className="text-xs border-red-200 text-red-700">Tidak eligible Metopen</Badge>;
+}
+
+function ThesisCourseEligibilityBadge({ thesisCourseEligibility }: { thesisCourseEligibility: DevToolsThesisCourseEligibility }) {
+  if (!thesisCourseEligibility.hasExternalStatus) {
+    return <Badge variant="outline" className="text-xs">Belum ada status TA</Badge>;
+  }
+
+  if (thesisCourseEligibility.takingThesisCourse) {
+    return <Badge variant="default" className="text-xs bg-blue-600">MK TA aktif</Badge>;
+  }
+
+  return <Badge variant="outline" className="text-xs border-slate-300 text-slate-700">Belum MK TA</Badge>;
 }
 
 // ========== EDIT STUDENT DIALOG ==========
@@ -329,13 +339,16 @@ function ThesisPanel({ studentId, studentName, onDeleteThesis, isSubmitting }: {
 }
 
 // ========== STUDENT ROW ==========
-function StudentRow({ student, isExpanded, onToggle, onEdit, onDelete, onReset, onDeleteThesis, onPasswordChange, onMetopenSetEligible, onMetopenSetIneligible, onMetopenClear, isSubmitting }: {
+function StudentRow({ student, isExpanded, onToggle, onEdit, onDelete, onResetSnapshot, onResetProgress, onDeleteThesis, onPasswordChange, onMetopenSetEligible, onMetopenSetIneligible, onMetopenClear, onThesisCourseSetActive, onThesisCourseSetInactive, onThesisCourseClear, isSubmitting }: {
   student: DevToolsStudent; isExpanded: boolean; onToggle: () => void; onEdit: () => void;
-  onDelete: () => void; onReset: () => void; onDeleteThesis: (id: string) => Promise<unknown>;
+  onDelete: () => void; onResetSnapshot: () => void; onResetProgress: () => void; onDeleteThesis: (id: string) => Promise<unknown>;
   onPasswordChange: () => void;
   onMetopenSetEligible: () => void;
   onMetopenSetIneligible: () => void;
   onMetopenClear: () => void;
+  onThesisCourseSetActive: () => void;
+  onThesisCourseSetInactive: () => void;
+  onThesisCourseClear: () => void;
   isSubmitting: boolean;
 }) {
   return (
@@ -358,6 +371,14 @@ function StudentRow({ student, isExpanded, onToggle, onEdit, onDelete, onReset, 
             </span>
           </div>
         </TableCell>
+        <TableCell className="text-center">
+          <div className="flex flex-col items-center gap-1">
+            <ThesisCourseEligibilityBadge thesisCourseEligibility={student.thesisCourseEligibility} />
+            <span className="text-[11px] text-muted-foreground">
+              {student.thesisCourseEligibility.source ? `Sumber: ${student.thesisCourseEligibility.source}` : 'Belum ada snapshot'}
+            </span>
+          </div>
+        </TableCell>
         <TableCell>
           {student.latestThesis ? (
             <div className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5 text-muted-foreground" /><Badge variant="outline" className="text-xs">{student.latestThesis.status}</Badge></div>
@@ -367,53 +388,102 @@ function StudentRow({ student, isExpanded, onToggle, onEdit, onDelete, onReset, 
           <div className="flex items-center justify-end gap-0.5">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit} title="Edit"><Pencil className="h-3.5 w-3.5" /></Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onPasswordChange} title="Ubah Password"><KeyRound className="h-3.5 w-3.5" /></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onReset} title="Reset"><RotateCcw className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onResetSnapshot} title="Reset Snapshot Akademik"><RotateCcw className="h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600 hover:text-amber-700" onClick={onResetProgress} title="Reset Progress SIMPTA"><AlertTriangle className="h-3.5 w-3.5" /></Button>
             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete} title="Hapus"><Trash2 className="h-3.5 w-3.5" /></Button>
           </div>
         </TableCell>
       </TableRow>
       {isExpanded && (
-        <TableRow><TableCell colSpan={12} className="bg-muted/30 px-6 py-4">
+        <TableRow><TableCell colSpan={13} className="bg-muted/30 px-6 py-4">
           <div className="space-y-4">
-            <Card className="border-blue-200 bg-blue-50/40">
-              <CardContent className="space-y-3 p-4">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <BookOpen className="h-4 w-4 text-blue-700" />
-                  Snapshot Eligibility Metopen
-                </div>
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Status</p>
-                    <div className="mt-1"><MetopenEligibilityBadge metopenEligibility={student.metopenEligibility} /></div>
+            <div className="grid gap-3 xl:grid-cols-2">
+              <Card className="border-emerald-200 bg-emerald-50/40">
+                <CardContent className="space-y-3 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <BookOpen className="h-4 w-4 text-emerald-700" />
+                    Eligibility Metopen
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Sumber backend</p>
-                    <p className="text-sm font-medium">{student.metopenEligibility.source ?? 'Belum ada snapshot'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Gate fase proposal. Jika aktif, mahasiswa boleh mengakses alur Metode Penelitian sebelum MK Tugas Akhir.
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      <div className="mt-1"><MetopenEligibilityBadge metopenEligibility={student.metopenEligibility} /></div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Sumber backend</p>
+                      <p className="text-sm font-medium">{student.metopenEligibility.source ?? 'Belum ada snapshot'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Diperbarui</p>
+                      <p className="text-sm font-medium">{formatDateTimeLabel(student.metopenEligibility.updatedAt)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Akses Metopel</p>
+                      <p className="text-sm font-medium">
+                        {student.metopenEligibility.canAccess ? 'Menu Metopel terbuka' : 'Menu Metopel tertutup'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Diperbarui</p>
-                    <p className="text-sm font-medium">{formatDateTimeLabel(student.metopenEligibility.updatedAt)}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={onMetopenSetEligible} disabled={isSubmitting}>
+                      Set Eligible Metopen
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={onMetopenSetIneligible} disabled={isSubmitting}>
+                      Set Tidak Eligible
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={onMetopenClear} disabled={isSubmitting}>
+                      Kosongkan Snapshot
+                    </Button>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Akses aktif</p>
-                    <p className="text-sm font-medium">
-                      {student.metopenEligibility.canAccess ? 'Bisa buka menu/guard' : 'Semua surface tertutup'}
-                    </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-200 bg-blue-50/40">
+                <CardContent className="space-y-3 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <GraduationCap className="h-4 w-4 text-blue-700" />
+                    Eligibility Tugas Akhir
                   </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={onMetopenSetEligible} disabled={isSubmitting}>
-                    Set Eligible
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={onMetopenSetIneligible} disabled={isSubmitting}>
-                    Set Tidak Eligible
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={onMetopenClear} disabled={isSubmitting}>
-                    Kosongkan Snapshot
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <p className="text-xs text-muted-foreground">
+                    Snapshot MK Tugas Akhir. Jika aktif, modul Tugas Akhir terbuka dan catatan informal Metopen ditutup.
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      <div className="mt-1"><ThesisCourseEligibilityBadge thesisCourseEligibility={student.thesisCourseEligibility} /></div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Sumber backend</p>
+                      <p className="text-sm font-medium">{student.thesisCourseEligibility.source ?? 'Belum ada snapshot'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Diperbarui</p>
+                      <p className="text-sm font-medium">{formatDateTimeLabel(student.thesisCourseEligibility.updatedAt)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Akses Tugas Akhir</p>
+                      <p className="text-sm font-medium">
+                        {student.thesisCourseEligibility.canAccess ? 'Modul TA terbuka' : 'Modul TA tertutup'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={onThesisCourseSetActive} disabled={isSubmitting}>
+                      Set MK TA Aktif
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={onThesisCourseSetInactive} disabled={isSubmitting}>
+                      Set Belum MK TA
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={onThesisCourseClear} disabled={isSubmitting}>
+                      Kosongkan Snapshot
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
             <div className="flex items-center gap-2 text-sm font-medium"><FileText className="h-4 w-4" />Data Thesis — {student.fullName}</div>
             <ThesisPanel studentId={student.id} studentName={student.fullName} onDeleteThesis={onDeleteThesis} isSubmitting={isSubmitting} />
           </div>
@@ -433,7 +503,8 @@ export default function DevTools() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editStudent, setEditStudent] = useState<DevToolsStudent | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DevToolsStudent | null>(null);
-  const [resetTarget, setResetTarget] = useState<DevToolsStudent | null>(null);
+  const [resetSnapshotTarget, setResetSnapshotTarget] = useState<DevToolsStudent | null>(null);
+  const [resetProgressTarget, setResetProgressTarget] = useState<DevToolsStudent | null>(null);
   const [pwTarget, setPwTarget] = useState<{ id: string; name: string } | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -491,18 +562,23 @@ export default function DevTools() {
                 <TableHead className="text-center">SKS</TableHead><TableHead className="text-center">Sem</TableHead>
                 <TableHead className="text-center">MK Wajib</TableHead><TableHead className="text-center">MKWU</TableHead>
                 <TableHead className="text-center">KP</TableHead><TableHead className="text-center">KKN</TableHead>
-                <TableHead className="text-center">Metopen</TableHead><TableHead>Thesis</TableHead>
+                <TableHead className="text-center">Metopen</TableHead><TableHead className="text-center">Tugas Akhir</TableHead><TableHead>Thesis</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow></TableHeader><TableBody>
                 {students.map((s) => (
                   <StudentRow key={s.id} student={s} isExpanded={expandedId === s.id}
                     onToggle={() => toggleExpand(s.id)} onEdit={() => setEditStudent(s)}
-                    onDelete={() => setDeleteTarget(s)} onReset={() => setResetTarget(s)}
+                    onDelete={() => setDeleteTarget(s)}
+                    onResetSnapshot={() => setResetSnapshotTarget(s)}
+                    onResetProgress={() => setResetProgressTarget(s)}
                     onDeleteThesis={mutations.deleteThesis} isSubmitting={mutations.isSubmitting}
                     onPasswordChange={() => setPwTarget({ id: s.id, name: `${s.fullName} (${s.identityNumber})` })}
                     onMetopenSetEligible={() => mutations.setMetopenEligibility(s.id, true)}
                     onMetopenSetIneligible={() => mutations.setMetopenEligibility(s.id, false)}
                     onMetopenClear={() => mutations.setMetopenEligibility(s.id, null)}
+                    onThesisCourseSetActive={() => mutations.setThesisCourseEligibility(s.id, true)}
+                    onThesisCourseSetInactive={() => mutations.setThesisCourseEligibility(s.id, false)}
+                    onThesisCourseClear={() => mutations.setThesisCourseEligibility(s.id, null)}
                   />
                 ))}
               </TableBody></Table></div>}
@@ -525,19 +601,27 @@ export default function DevTools() {
 
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Hapus User?</AlertDialogTitle>
-          <AlertDialogDescription>User <strong>{deleteTarget?.fullName}</strong> ({deleteTarget?.identityNumber}) akan dihapus beserta seluruh data terkait. Aksi ini tidak dapat dibatalkan.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogDescription>User <strong>{deleteTarget?.fullName}</strong> ({deleteTarget?.identityNumber}) akan dihapus. Untuk mahasiswa, backend akan membersihkan progress SIMPTA dan resync kuota terlebih dahulu. Aksi ini tidak dapat dibatalkan.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel disabled={mutations.isSubmitting}>Batal</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={mutations.isSubmitting}
               onClick={async () => { if (deleteTarget) { await mutations.deleteUser(deleteTarget.id); setDeleteTarget(null); if (expandedId === deleteTarget.id) setExpandedId(null); } }}>
               {mutations.isSubmitting ? 'Menghapus...' : 'Hapus Permanen'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!resetTarget} onOpenChange={() => setResetTarget(null)}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reset Data Mahasiswa?</AlertDialogTitle>
-          <AlertDialogDescription>Data <strong>{resetTarget?.fullName}</strong> akan direset ke kondisi awal: SKS=0, Semester=1, semua flag=false, status=active.</AlertDialogDescription></AlertDialogHeader>
+      <AlertDialog open={!!resetSnapshotTarget} onOpenChange={() => setResetSnapshotTarget(null)}>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reset Snapshot Akademik?</AlertDialogTitle>
+          <AlertDialogDescription>Data <strong>{resetSnapshotTarget?.fullName}</strong> akan direset ke kondisi awal: SKS=0, Semester=1, semua flag=false, status=active, dan snapshot Metopen/Tugas Akhir dikosongkan. Riwayat pengajuan, thesis, nilai, dan kuota tidak dihapus.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel disabled={mutations.isSubmitting}>Batal</AlertDialogCancel>
-            <AlertDialogAction disabled={mutations.isSubmitting} onClick={async () => { if (resetTarget) { await mutations.resetStudent(resetTarget.id); setResetTarget(null); } }}>
-              {mutations.isSubmitting ? 'Mereset...' : 'Reset'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+            <AlertDialogAction disabled={mutations.isSubmitting} onClick={async () => { if (resetSnapshotTarget) { await mutations.resetStudent(resetSnapshotTarget.id); setResetSnapshotTarget(null); } }}>
+              {mutations.isSubmitting ? 'Mereset...' : 'Reset Snapshot'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!resetProgressTarget} onOpenChange={() => setResetProgressTarget(null)}>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reset Progress SIMPTA?</AlertDialogTitle>
+          <AlertDialogDescription>Progress SIMPTA <strong>{resetProgressTarget?.fullName}</strong> akan dihapus: draft dan riwayat TA-01/TA-02, thesis/proposal, catatan Metopen, pembimbing, nilai TA-03, serta link presensi. Snapshot akademik juga direset dan kuota dosen akan dihitung ulang. User tetap ada. Aksi ini tidak dapat dibatalkan.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel disabled={mutations.isSubmitting}>Batal</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={mutations.isSubmitting} onClick={async () => { if (resetProgressTarget) { await mutations.resetStudentProgress(resetProgressTarget.id); setResetProgressTarget(null); if (expandedId === resetProgressTarget.id) setExpandedId(null); } }}>
+              {mutations.isSubmitting ? 'Mereset...' : 'Reset Progress'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
     </div>
   );
@@ -596,7 +680,7 @@ function UserManagementTab({ onPasswordChange, mutations }: {
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Hapus User?</AlertDialogTitle>
-          <AlertDialogDescription>User <strong>{deleteId?.name}</strong> akan dihapus beserta seluruh data terkait.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogDescription>User <strong>{deleteId?.name}</strong> akan dihapus. Jika user ini mahasiswa, progress SIMPTA akan dibersihkan otomatis sebelum user dihapus.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel disabled={mutations.isSubmitting}>Batal</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={mutations.isSubmitting}
               onClick={async () => { if (deleteId) { await mutations.deleteUser(deleteId.id); setDeleteId(null); } }}>

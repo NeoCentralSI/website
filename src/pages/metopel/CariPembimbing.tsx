@@ -963,22 +963,22 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
 
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
                     <div className="rounded-lg border bg-background p-2.5 sm:p-3">
-                        <p className="text-[11px] sm:text-xs text-muted-foreground">Dosen ditampilkan</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground truncate">Dosen ditampilkan</p>
                         <p className="mt-0.5 text-sm sm:text-base font-semibold inline-flex items-center gap-1.5">
                             <Users className="h-3.5 w-3.5 text-muted-foreground" />
                             {availabilityStats.total}
                         </p>
                     </div>
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2.5 sm:p-3">
-                        <p className="text-[11px] sm:text-xs text-emerald-700">Tersedia</p>
+                        <p className="text-[11px] sm:text-xs text-emerald-700 truncate">Tersedia</p>
                         <p className="mt-0.5 text-sm sm:text-base font-semibold text-emerald-800">{availabilityStats.green}</p>
                     </div>
                     <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2.5 sm:p-3">
-                        <p className="text-[11px] sm:text-xs text-amber-700">Hampir penuh</p>
+                        <p className="text-[11px] sm:text-xs text-amber-700 truncate">Hampir penuh</p>
                         <p className="mt-0.5 text-sm sm:text-base font-semibold text-amber-800">{availabilityStats.yellow}</p>
                     </div>
                     <div className="rounded-lg border border-red-200 bg-red-50/60 p-2.5 sm:p-3">
-                        <p className="text-[11px] sm:text-xs text-red-700">Penuh / overload</p>
+                        <p className="text-[11px] sm:text-xs text-red-700 truncate">Penuh</p>
                         <p className="mt-0.5 text-sm sm:text-base font-semibold text-red-800">{availabilityStats.red}</p>
                     </div>
                 </div>
@@ -1024,9 +1024,9 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
                     {filtered.map((lecturer) => {
                         const config = trafficLightConfig[lecturer.trafficLight];
                         return (
-                            <Card key={lecturer.lecturerId} className="relative overflow-hidden border-border/80 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                            <Card key={lecturer.lecturerId} className="relative overflow-hidden border-border/80 transition-colors hover:border-border">
                                 {/* Traffic light indicator stripe */}
-                                <div className={`absolute top-0 left-0 right-0 h-1 ${config.color}`} />
+                                <div className={`absolute top-0 left-0 right-0 h-1.5 ${config.color}`} />
 
                                 <CardHeader className="flex flex-row items-center gap-3 pb-2 pt-4">
                                     <Avatar className="h-11 w-11 ring-1 ring-border/60">

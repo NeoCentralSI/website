@@ -498,24 +498,21 @@ function HeroCard({
         totalInImport > 0 ? Math.round((attendanceEligible / totalInImport) * 100) : 0;
 
     return (
-        <Card className="overflow-hidden border-blue-200">
-            <div className="bg-gradient-to-br from-blue-500/10 via-sky-500/5 to-transparent">
-                <CardHeader className="pb-3">
-                    <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
-                            <ClipboardList className="h-5 w-5 text-blue-700" />
-                        </div>
-                        <div className="space-y-1">
-                            <CardTitle className="text-base">Monitoring Kelas Metopen</CardTitle>
-                            <CardDescription className="text-xs">
-                                Pantau progress per mahasiswa eligible SIA: pencarian pembimbing dan
-                                rincian nilai TA-03 sesuai layout template SIA (Presentasi 20 + Konten 40 +
-                                Struktur 25 + Respons 15 = 100).
-                            </CardDescription>
-                        </div>
+        <Card>
+            <CardHeader className="pb-3">
+                <div className="flex items-start gap-3">
+                    <ClipboardList className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+                    <div className="space-y-1">
+                        <CardTitle className="text-base">Monitoring Kelas Metopen</CardTitle>
+                        <CardDescription className="text-xs">
+                            Pantau progress per mahasiswa eligible SIA: pencarian pembimbing dan
+                            rincian nilai TA-03 sesuai layout template SIA (Presentasi 20 + Konten 40 +
+                            Struktur 25 + Respons 15 = 100).
+                        </CardDescription>
                     </div>
-                </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2">
+                </div>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2">
                     <ProgressMetric
                         label="Cakupan import vs SIA"
                         valueLabel={`${totalInImport} / ${totalEligible} mahasiswa`}
@@ -535,7 +532,6 @@ function HeroCard({
                         tone="emerald"
                     />
                 </CardContent>
-            </div>
         </Card>
     );
 }

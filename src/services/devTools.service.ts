@@ -61,13 +61,16 @@ export const devToolsService = {
     }
   },
 
-  resetStudent: async (id: string): Promise<void> => {
+  resetStudent: async (id: string): Promise<string> => {
     const url = getApiUrl(`${BASE}/students/${id}/reset`);
     const response = await apiRequest(url, { method: 'POST' });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error((err as { message?: string }).message || 'Gagal mereset data mahasiswa');
-    }
+    return parseMsg(response, 'Gagal mereset snapshot akademik mahasiswa');
+  },
+
+  resetStudentProgress: async (id: string): Promise<string> => {
+    const url = getApiUrl(`${BASE}/students/${id}/reset-progress`);
+    const response = await apiRequest(url, { method: 'POST' });
+    return parseMsg(response, 'Gagal mereset progress SIMPTA mahasiswa');
   },
 
   // --- Users ---
@@ -122,6 +125,15 @@ export const devToolsService = {
       body: JSON.stringify({ eligibleMetopen }),
     });
     return parseMsg(response, 'Gagal mengubah snapshot eligibility Metopen');
+  },
+
+  setThesisCourseEligibility: async (studentId: string, takingThesisCourse: boolean | null): Promise<string> => {
+    const url = getApiUrl(`${BASE}/thesis-course-eligibility/${studentId}`);
+    const response = await apiRequest(url, {
+      method: 'PATCH',
+      body: JSON.stringify({ takingThesisCourse }),
+    });
+    return parseMsg(response, 'Gagal mengubah snapshot MK Tugas Akhir');
   },
 
   // --- Thesis ---

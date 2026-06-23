@@ -407,8 +407,8 @@ export async function getStudentThesisHistory(): Promise<{ theses: ThesisHistory
 export async function getPendingSupervisor2Request(): Promise<PendingSupervisor2Request | null> {
   const url = getApiUrl(EP.PENDING_SUPERVISOR_2);
   const response = await apiRequest(url);
-  const data = await handleJson<{ success: boolean; request: PendingSupervisor2Request }>(response);
-  return data.request ?? null;
+  const data = await handleJson<{ success: boolean; data: PendingSupervisor2Request | null }>(response);
+  return data.data ?? null;
 }
 
 export interface AvailableSupervisor2Item {
@@ -417,9 +417,18 @@ export interface AvailableSupervisor2Item {
   email: string | null;
   identityNumber: string | null;
   scienceGroup: string | null;
+  /** Info kuota aman untuk mahasiswa (canon §7.3): traffic light + sisa normal + beban aktif. */
+  trafficLight?: 'green' | 'yellow' | 'red' | null;
+  normalAvailable?: number | null;
+  activeCount?: number | null;
+  acceptingRequests?: boolean | null;
 }
 
+/** Tahap permintaan P2: menunggu kesediaan dosen, lalu persetujuan akhir KaDep. */
+export type Supervisor2RequestStage = 'lecturer' | 'kadep';
+
 export interface PendingSupervisor2Request {
+  stage?: Supervisor2RequestStage;
   requestId: string;
   lecturerId: string;
   lecturerName: string | null;
@@ -445,7 +454,7 @@ export async function requestSupervisor2(lecturerId: string): Promise<{ message:
 
 export async function cancelSupervisor2Request(): Promise<{ message: string }> {
   const url = getApiUrl(EP.CANCEL_SUPERVISOR_2);
-  const response = await apiRequest(url, { method: 'POST' });
+  const response = await apiRequest(url, { method: 'DELETE' });
   return handleJson<{ message: string }>(response);
 }
 
@@ -556,6 +565,8 @@ export interface ProposalSubmissionStatus {
   thesisId: string;
   hasSupervisor: boolean;
   proposalStatus: string | null;
+  uploadLocked: boolean;
+  uploadLockedReason: string | null;
   latestVersion: ProposalVersion | null;
   finalProposalVersion: FinalProposalVersionStatus | null;
 }
