@@ -111,6 +111,8 @@ export default function Mahasiswa() {
     mutationFn: (data: {
       status: string;
       sksCompleted: number;
+      gpa?: number | null;
+      graduationPredicate?: string | null;
       enrollmentYear?: number;
       currentSemester?: number;
       mandatoryCoursesCompleted?: boolean;

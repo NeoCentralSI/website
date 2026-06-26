@@ -4,7 +4,7 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
 import { DataMasterTaPanel } from "@/components/kelola/DataMasterTaPanel";
-import { CpmkManagementPanel } from "@/components/master-data/cpmk/CpmkManagementPanel";
+import { ThesisCpmkManagementPanel as CpmkManagementPanel } from "@/components/master-data/thesis-cpmk/ThesisCpmkManagementPanel";
 import { SeminarRubricManagementPanel as RubricSeminarManagementPanel } from '@/components/master-data/seminar-rubric/SeminarRubricManagementPanel';
 import { DefenceRubricManagementPanel as RubricDefenceManagementPanel } from '@/components/master-data/defence-rubric/DefenceRubricManagementPanel';
 import { RubricMetopenManagementPanel } from '@/components/kelola/rubric-metopen/RubricMetopenManagementPanel';

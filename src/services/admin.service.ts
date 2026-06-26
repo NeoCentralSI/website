@@ -20,7 +20,7 @@ export interface User {
 export interface AcademicYear {
   id: string;
   semester: 'ganjil' | 'genap';
-  year: string;
+  year: string | number;
   startDate?: string;
   endDate?: string;
   isActive: boolean;
@@ -388,15 +388,42 @@ export interface Student {
     sksCompleted: number;
     gpa?: number | null;
     graduationPredicate?: string | null;
-    currentSemester: number | null;
+    currentSemester?: number | null;
     status: string | null;
-    mandatoryCoursesCompleted: boolean;
-    mkwuCompleted: boolean;
-    internshipCompleted: boolean;
-    kknCompleted: boolean;
+    mandatoryCoursesCompleted?: boolean;
+    mkwuCompleted?: boolean;
+    internshipCompleted?: boolean;
+    kknCompleted?: boolean;
     researchMethodCompleted?: boolean;
+    metopenEligibility?: {
+      canAccess: boolean;
+      eligibleMetopen?: boolean | null;
+      hasExternalEligibility?: boolean;
+      hasExternalStatus?: boolean;
+      readOnly?: boolean;
+      metopenReadOnly?: boolean;
+      canSubmit?: boolean;
+      thesisId?: string | null;
+      thesisTitle?: string | null;
+      thesisStatus?: string | null;
+      source?: string | null;
+      metopenEligibilitySource?: string | null;
+      updatedAt?: string | null;
+      metopenEligibilityUpdatedAt?: string | null;
+    } | null;
+    visibleAcademicYear?: {
+      id?: string | null;
+      label?: string | null;
+      year?: string | number | null;
+      semester?: string | null;
+      isActive?: boolean;
+      sources?: string[];
+    } | null;
+    isInMetopen?: boolean;
+    hasActiveThesis?: boolean;
     activeTheses: Array<{
       title: string;
+      status?: string | null;
       supervisors: Array<{
         role: string;
         fullName: string;
@@ -427,6 +454,12 @@ export const getStudentsAPI = async (params?: {
   page?: number;
   pageSize?: number;
   search?: string;
+  programFilter?: string;
+  statusFilter?: string;
+  enrollmentYearFilter?: string;
+  academicYearFilter?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }): Promise<{
   students: Student[];
   meta: {
@@ -435,11 +468,26 @@ export const getStudentsAPI = async (params?: {
     total: number;
     totalPages: number;
   };
+  academicYearContext?: {
+    id?: string | null;
+    label?: string | null;
+    year?: string | number | null;
+    semester?: string | null;
+    isActive?: boolean;
+    activeAcademicYearId?: string | null;
+    selectedAcademicYearId?: string | null;
+  } | null;
 }> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.programFilter) queryParams.append('programFilter', params.programFilter);
+  if (params?.statusFilter) queryParams.append('statusFilter', params.statusFilter);
+  if (params?.enrollmentYearFilter) queryParams.append('enrollmentYearFilter', params.enrollmentYearFilter);
+  if (params?.academicYearFilter) queryParams.append('academicYearFilter', params.academicYearFilter);
+  if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+  if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
   const response = await fetch(getApiUrl(`/adminfeatures/students?${queryParams}`), {
     method: 'GET',
@@ -528,6 +576,21 @@ export interface StudentDetail {
   phoneNumber?: string;
   isVerified: boolean;
   createdAt: string;
+  metopenEligibility?: {
+    canAccess: boolean;
+    eligibleMetopen?: boolean | null;
+    hasExternalEligibility?: boolean;
+    hasExternalStatus?: boolean;
+    readOnly?: boolean;
+    metopenReadOnly?: boolean;
+    canSubmit?: boolean;
+    thesisTitle?: string | null;
+    thesisStatus?: string | null;
+    source?: string | null;
+    metopenEligibilitySource?: string | null;
+    updatedAt?: string | null;
+    metopenEligibilityUpdatedAt?: string | null;
+  } | null;
   student: {
     enrollmentYear: number;
     sksCompleted: number;
@@ -540,6 +603,21 @@ export interface StudentDetail {
     internshipCompleted?: boolean | null;
     kknCompleted?: boolean | null;
     researchMethodCompleted?: boolean | null;
+    metopenEligibility?: {
+      canAccess: boolean;
+      eligibleMetopen?: boolean | null;
+      hasExternalEligibility?: boolean;
+      hasExternalStatus?: boolean;
+      readOnly?: boolean;
+      metopenReadOnly?: boolean;
+      canSubmit?: boolean;
+      thesisTitle?: string | null;
+      thesisStatus?: string | null;
+      source?: string | null;
+      metopenEligibilitySource?: string | null;
+      updatedAt?: string | null;
+      metopenEligibilityUpdatedAt?: string | null;
+    } | null;
   };
   cplScores?: Array<{
     cplId: string;
