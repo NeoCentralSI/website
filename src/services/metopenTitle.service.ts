@@ -67,6 +67,8 @@ export type TitleReportHistoryRow = {
   academicYear: { id: string; year: string | null; semester: string } | null;
   titleApprovalDocument: { id: string; fileName: string } | null;
   documentKind: TitleApprovalDocumentKind | null;
+  ta04BatchEligible?: boolean;
+  ta04BatchBlock?: string | null;
 };
 
 export type StudentProposalThesis = {
@@ -161,7 +163,7 @@ export const metopenTitleService = {
 
   reviewTitleReport: async (
     thesisId: string,
-    body: { action: 'accept'; notes?: string | null },
+    body: { action: 'accept' | 'reject'; notes?: string | null },
   ): Promise<ApiResponse<{ thesisId: string; proposalStatus: string; notes?: string | null }>> => {
     const url = getApiUrl(API_CONFIG.ENDPOINTS.METOPEN.KADEP_TITLE_REPORT_REVIEW(thesisId));
     const response = await apiRequest(url, {

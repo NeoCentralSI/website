@@ -465,16 +465,16 @@ function QueueRow({
                 {item.thesisTitle ?? "—"}
             </p>
 
-            <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
                 <span
                     className={cn(
-                        "rounded-full border px-1.5 py-0 font-medium",
+                        "max-w-full rounded-full border px-1.5 py-0 font-medium",
                         ROLE_BADGE[item.actorRole].className,
                     )}
                 >
                     {ROLE_BADGE[item.actorRole].label}
                 </span>
-                <span className="flex items-center gap-1 tabular-nums">
+                <span className="flex shrink-0 items-center gap-1 tabular-nums">
                     {item.supervisorScore != null ? (
                         <>
                             <CheckCircle2 className="h-3 w-3 text-emerald-600" />
@@ -496,8 +496,8 @@ function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
     return (
         <Card>
             <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 space-y-1">
                         <CardTitle className="text-sm">Ringkasan Proposal</CardTitle>
                         <CardDescription>
                             Konteks mahasiswa, partner pembimbing, dan status aksi yang Anda perlu
@@ -507,7 +507,7 @@ function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
                     <Badge
                         variant="outline"
                         className={cn(
-                            "shrink-0",
+                            "w-fit max-w-full",
                             ACTION_TONE_CLASS[action.tone],
                         )}
                     >
@@ -551,7 +551,7 @@ function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                     <p className="text-xs text-muted-foreground">Skor TA-03A (Pembimbing)</p>
-                    <p className="text-base font-semibold tabular-nums">
+                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
                         {item.supervisorScore ?? "—"}{" "}
                         <span className="text-xs text-muted-foreground">/ 75</span>
                     </p>
@@ -562,7 +562,7 @@ function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                     <p className="text-xs text-muted-foreground">Skor TA-03B (Koordinator)</p>
-                    <p className="text-base font-semibold tabular-nums">
+                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
                         {item.lecturerScore ?? "—"}{" "}
                         <span className="text-xs text-muted-foreground">/ 25</span>
                     </p>

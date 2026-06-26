@@ -373,11 +373,11 @@ export function RubricGradingForm({
         <Card className={cn("overflow-hidden", formMeta.border)}>
             <CardHeader className={cn("bg-gradient-to-br pb-4", formMeta.accent)}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex items-start gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
                             <ClipboardList className="h-5 w-5 text-primary" />
                         </div>
-                        <div className="space-y-1">
+                        <div className="min-w-0 space-y-1">
                             <CardTitle className="text-base">{formMeta.title}</CardTitle>
                             <CardDescription className="text-xs">
                                 {formMeta.subtitle}
@@ -390,7 +390,7 @@ export function RubricGradingForm({
                             </CardDescription>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 self-start">
+                    <div className="flex shrink-0 items-center gap-2 self-start">
                         <Badge variant="outline" className="bg-background text-xs">
                             {criteria.length} kriteria
                         </Badge>
@@ -435,7 +435,7 @@ export function RubricGradingForm({
                 {/* Summary footer ─────────────────────── */}
                 <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-5 border-t bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/85">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-baseline gap-2">
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                             <span className="text-xs uppercase tracking-wide text-muted-foreground">
                                 Total skor
                             </span>
@@ -443,7 +443,7 @@ export function RubricGradingForm({
                             <span className="text-sm text-muted-foreground">/ {maxPossible}</span>
                             <span
                                 className={cn(
-                                    "ml-2 rounded-md px-2 py-0.5 text-[11px] font-medium",
+                                    "rounded-md px-2 py-0.5 text-[11px] font-medium",
                                     allScored
                                         ? "bg-emerald-100 text-emerald-800"
                                         : "bg-amber-100 text-amber-800",
@@ -565,11 +565,11 @@ function CriterionSection({
 
     const renderHeader = (
         <header className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
-            <div className="flex items-start gap-3">
+            <div className="flex min-w-0 items-start gap-3">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                     {index + 1}
                 </div>
-                <div className="min-w-0 space-y-0.5">
+                <div className="min-w-0 flex-1 space-y-0.5">
                     <p className="text-sm font-semibold leading-tight">{label}</p>
                     {cpmkCode ? (
                         <p className="text-xs text-muted-foreground">
@@ -659,12 +659,12 @@ function DbRubricSelector({
                                     isSelected && rubric.minScore !== rubric.maxScore ? "rounded-b-none" : "",
                                 )}
                             >
-                                <div className="flex items-center justify-between gap-2">
-                                    <span className="text-sm font-medium tabular-nums">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="shrink-0 text-sm font-medium tabular-nums">
                                         {rubric.minScore}–{rubric.maxScore}
                                     </span>
                                     {isSelected ? (
-                                        <Badge variant="default" className="text-[10px]">
+                                        <Badge variant="default" className="max-w-full text-[10px]">
                                             Dipilih · {selectedScore ?? rubric.maxScore}
                                         </Badge>
                                     ) : null}
@@ -672,7 +672,7 @@ function DbRubricSelector({
                                 <p className="mt-1 text-xs text-muted-foreground">{rubric.description}</p>
                             </button>
                             {isSelected && rubric.minScore !== rubric.maxScore ? (
-                                <div className="flex items-center gap-3 rounded-b-lg border border-t-0 border-primary/20 bg-primary/5 px-3 py-2.5">
+                                <div className="flex flex-col gap-2 rounded-b-lg border border-t-0 border-primary/20 bg-primary/5 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3">
                                     <input
                                         type="range"
                                         min={rubric.minScore}
@@ -681,23 +681,25 @@ function DbRubricSelector({
                                         onChange={(e) =>
                                             onSelect(rubric.id, parseInt(e.target.value, 10))
                                         }
-                                        className="h-2 flex-1 cursor-pointer accent-primary"
+                                        className="h-2 w-full min-w-0 flex-1 cursor-pointer accent-primary"
                                     />
-                                    <Input
-                                        type="number"
-                                        min={rubric.minScore}
-                                        max={rubric.maxScore}
-                                        value={selectedScore ?? rubric.maxScore}
-                                        onChange={(e) => {
-                                            const v = parseInt(e.target.value, 10);
-                                            if (!isNaN(v)) {
-                                                const clamped = Math.min(Math.max(v, rubric.minScore), rubric.maxScore);
-                                                onSelect(rubric.id, clamped);
-                                            }
-                                        }}
-                                        className="h-7 w-16 text-center text-sm tabular-nums"
-                                    />
-                                    <span className="text-xs text-muted-foreground">/ {rubric.maxScore}</span>
+                                    <div className="flex items-center justify-end gap-1.5 sm:shrink-0">
+                                        <Input
+                                            type="number"
+                                            min={rubric.minScore}
+                                            max={rubric.maxScore}
+                                            value={selectedScore ?? rubric.maxScore}
+                                            onChange={(e) => {
+                                                const v = parseInt(e.target.value, 10);
+                                                if (!isNaN(v)) {
+                                                    const clamped = Math.min(Math.max(v, rubric.minScore), rubric.maxScore);
+                                                    onSelect(rubric.id, clamped);
+                                                }
+                                            }}
+                                            className="h-8 w-20 text-center text-sm tabular-nums"
+                                        />
+                                        <span className="text-xs text-muted-foreground">/ {rubric.maxScore}</span>
+                                    </div>
                                 </div>
                             ) : null}
                         </div>
@@ -752,22 +754,22 @@ function OfficialRubricSelector({
                                     isSelected ? "rounded-b-none" : "",
                                 )}
                             >
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex min-w-0 flex-wrap items-center gap-2">
                                         <span
                                             className={cn(
-                                                "rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+                                                "shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold",
                                                 meta.chipClassName,
                                             )}
                                         >
                                             {level.label}
                                         </span>
-                                        <span className="text-xs font-semibold tabular-nums text-foreground">
+                                        <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
                                             {level.minScore}–{level.maxScore}
                                         </span>
                                     </div>
                                     {isSelected ? (
-                                        <Badge variant="default" className="text-[10px]">
+                                        <Badge variant="default" className="max-w-full text-[10px]">
                                             Dipilih · {selectedScore}
                                         </Badge>
                                     ) : null}
@@ -775,7 +777,7 @@ function OfficialRubricSelector({
                                 <p className="text-xs leading-relaxed text-muted-foreground">{level.description}</p>
                             </button>
                             {isSelected && level.minScore !== level.maxScore ? (
-                                <div className="flex items-center gap-3 rounded-b-lg border border-t-0 border-current/20 bg-muted/30 px-3 py-2.5">
+                                <div className="flex flex-col gap-2 rounded-b-lg border border-t-0 border-current/20 bg-muted/30 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3">
                                     <input
                                         type="range"
                                         min={level.minScore}
@@ -784,23 +786,25 @@ function OfficialRubricSelector({
                                         onChange={(e) =>
                                             onSelect({ level, dbRubricId }, parseInt(e.target.value, 10))
                                         }
-                                        className="h-2 flex-1 cursor-pointer accent-primary"
+                                        className="h-2 w-full min-w-0 flex-1 cursor-pointer accent-primary"
                                     />
-                                    <Input
-                                        type="number"
-                                        min={level.minScore}
-                                        max={level.maxScore}
-                                        value={selectedScore ?? level.maxScore}
-                                        onChange={(e) => {
-                                            const v = parseInt(e.target.value, 10);
-                                            if (!isNaN(v)) {
-                                                const clamped = Math.min(Math.max(v, level.minScore), level.maxScore);
-                                                onSelect({ level, dbRubricId }, clamped);
-                                            }
-                                        }}
-                                        className="h-7 w-16 text-center text-sm tabular-nums"
-                                    />
-                                    <span className="text-xs text-muted-foreground">/ {level.maxScore}</span>
+                                    <div className="flex items-center justify-end gap-1.5 sm:shrink-0">
+                                        <Input
+                                            type="number"
+                                            min={level.minScore}
+                                            max={level.maxScore}
+                                            value={selectedScore ?? level.maxScore}
+                                            onChange={(e) => {
+                                                const v = parseInt(e.target.value, 10);
+                                                if (!isNaN(v)) {
+                                                    const clamped = Math.min(Math.max(v, level.minScore), level.maxScore);
+                                                    onSelect({ level, dbRubricId }, clamped);
+                                                }
+                                            }}
+                                            className="h-8 w-20 text-center text-sm tabular-nums"
+                                        />
+                                        <span className="text-xs text-muted-foreground">/ {level.maxScore}</span>
+                                    </div>
                                 </div>
                             ) : null}
                         </div>
@@ -825,7 +829,7 @@ function ScalarInput({
 }) {
     return (
         <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
                 <Label
                     htmlFor={`score-${criteriaId}`}
                     className="shrink-0 text-xs text-muted-foreground"
@@ -839,7 +843,7 @@ function ScalarInput({
                     max={maxWeight}
                     value={currentScore ?? ""}
                     onChange={(e) => onChange(e.target.value, maxWeight)}
-                    className="h-9 w-32 text-sm"
+                    className="h-9 w-28 text-sm sm:w-32"
                     placeholder="0"
                 />
                 <span className="text-xs text-muted-foreground">/ {maxWeight}</span>
@@ -921,8 +925,8 @@ function SubCriterionCard({
 }) {
     return (
         <div className="rounded-md border bg-muted/20 p-3">
-            <div className="flex items-start justify-between gap-2 pb-2">
-                <div className="min-w-0">
+            <div className="flex flex-wrap items-start justify-between gap-2 pb-2">
+                <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{sub.label}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{sub.helper}</p>
                 </div>
@@ -958,16 +962,16 @@ function SubCriterionCard({
                                 )}
                                 title={level.description}
                             >
-                                <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex flex-wrap items-center justify-between gap-1.5">
                                     <span
                                         className={cn(
-                                            "rounded-full border px-1.5 py-0 text-[10px] font-semibold",
+                                            "shrink-0 rounded-full border px-1.5 py-0 text-[10px] font-semibold",
                                             meta.chipClassName,
                                         )}
                                     >
                                         {level.label}
                                     </span>
-                                    <span className="text-[11px] font-semibold tabular-nums">
+                                    <span className="shrink-0 text-[11px] font-semibold tabular-nums">
                                         {level.minScore}–{level.maxScore}
                                     </span>
                                 </div>
@@ -985,9 +989,9 @@ function SubCriterionCard({
                                         onChange={(e) =>
                                             onSelect(level, parseInt(e.target.value, 10))
                                         }
-                                        className="h-1.5 flex-1 cursor-pointer accent-primary"
+                                        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-primary"
                                     />
-                                    <span className="text-[11px] font-semibold tabular-nums text-primary">
+                                    <span className="shrink-0 text-[11px] font-semibold tabular-nums text-primary">
                                         {currentScore ?? level.maxScore}
                                     </span>
                                 </div>

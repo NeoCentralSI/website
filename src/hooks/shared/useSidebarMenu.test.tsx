@@ -260,6 +260,33 @@ describe("useSidebarMenu", () => {
     ]);
   });
 
+  it("keeps the Kadep decision menu distinct from Kelola master data", () => {
+    mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
+    mockRole({ isDosen: true, isKadep: true });
+
+    const { result } = renderHook(() => useSidebarMenu());
+
+    const metopenMenu = result.current.navMain.find(
+      (item) => item.title === "Metode Penelitian",
+    );
+    const kelolaMenu = result.current.navMain.find(
+      (item) => item.title === "Kelola",
+    );
+
+    expect(metopenMenu?.items).toContainEqual({
+      title: "Keputusan TA-01 s.d. TA-04",
+      url: "/kelola/tugas-akhir/kadep",
+    });
+    expect(kelolaMenu?.items).toContainEqual({
+      title: "Master Tugas Akhir",
+      url: "/kelola/tugas-akhir/topik",
+    });
+    expect(kelolaMenu?.items).not.toContainEqual({
+      title: "Tugas Akhir",
+      url: "/kelola/tugas-akhir/kadep",
+    });
+  });
+
   it("adds Inbox Pembimbing to Kadep only when the account is also a supervisor", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true, isPembimbing: true });
@@ -362,7 +389,7 @@ describe("useSidebarMenu", () => {
     ]);
   });
 
-  it("does not expose Inbox Pembimbing menu to GKM (P1-06)", () => {
+  it("does not expose Metopen inbox or TA monitoring menu to GKM (P1-06)", () => {
     mockAuthUser({ id: "gkm-1", fullName: "GKM Uji" });
     mockRole({ isDosen: true, isGkm: true });
 
@@ -376,8 +403,7 @@ describe("useSidebarMenu", () => {
     const taMenu = result.current.navMain.find(
       (item) => item.title === "Tugas Akhir",
     );
-    const itemTitles = taMenu?.items.map((item) => item.title) ?? [];
-    expect(itemTitles).toEqual(["Monitoring"]);
+    expect(taMenu).toBeUndefined();
   });
 
   it("does not emit sidebar URLs that are not registered routes", () => {

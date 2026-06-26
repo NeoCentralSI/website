@@ -315,7 +315,7 @@ export const useSidebarMenu = () => {
         url: "#",
         icon: Database,
         items: [
-          { title: "Tugas Akhir", url: "/kelola/tugas-akhir/kadep" },
+          { title: "Master Tugas Akhir", url: "/kelola/tugas-akhir/topik" },
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },

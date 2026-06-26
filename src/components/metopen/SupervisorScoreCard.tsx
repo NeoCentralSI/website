@@ -456,8 +456,8 @@ function SummaryCard({
     return (
         <Card>
             <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
                         <CardTitle className="text-base">Ringkasan Penilaian Proposal</CardTitle>
                         <CardDescription>
                             TA-03A Pembimbing maks 75 · TA-03B Koordinator Metopen maks 25 · Total maks 100
@@ -542,7 +542,7 @@ function ScoreStatBlock({
     return (
         <div className={cn("rounded-md border px-3 py-2", STAT_ACCENTS[accent])}>
             <p className="text-xs text-muted-foreground">{label}</p>
-            <div className="mt-0.5 flex items-baseline gap-1.5">
+            <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
                 <span
                     className={cn(
                         "font-semibold tabular-nums",
@@ -624,12 +624,12 @@ function ScoreBreakdownCard({ summary }: { summary: ScoreSummary }) {
                                 key={bucket.label}
                                 className="rounded-md border bg-card px-3 py-2.5"
                             >
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
                                         <p className="text-sm font-medium">{bucket.label}</p>
                                         <p className="text-[11px] text-muted-foreground">{bucket.sub}</p>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="shrink-0 text-right">
                                         <p className="text-sm font-semibold tabular-nums">
                                             {filled ? bucket.score : "—"}
                                             <span className="ml-0.5 text-xs text-muted-foreground">
@@ -694,8 +694,8 @@ function Ta03bRubricDetailCard({
                         key={row.assessmentCriteriaId}
                         className="rounded-md border bg-card px-3 py-2.5"
                     >
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">
                                     {row.criteria?.name ?? "Kriteria"}
                                 </p>

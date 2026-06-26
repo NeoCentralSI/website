@@ -461,7 +461,7 @@ function QueueRow({
 
             <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{item.proposedTitle}</p>
 
-            <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                     <GraduationCap className="h-3 w-3" />
                     TA-03A:{" "}
@@ -484,21 +484,21 @@ function ProposalSummaryCard({ item }: { item: ScoringQueueItem }) {
     return (
         <Card>
             <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 space-y-1">
                         <CardTitle className="text-sm">Ringkasan Proposal</CardTitle>
                         <CardDescription>
                             Konteks mahasiswa dan nilai TA-03A yang sudah masuk (jika ada).
                         </CardDescription>
                     </div>
                     {item.isScored ? (
-                        <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800">
-                            TA-03B sudah dinilai
-                        </Badge>
-                    ) : (
-                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
-                            Menunggu rubrik
-                        </Badge>
+                            <Badge variant="outline" className="w-fit max-w-full border-emerald-300 bg-emerald-50 text-emerald-800">
+                                TA-03B sudah dinilai
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="w-fit max-w-full border-amber-300 bg-amber-50 text-amber-800">
+                                Menunggu rubrik
+                            </Badge>
                     )}
                 </div>
             </CardHeader>
@@ -532,7 +532,7 @@ function ProposalSummaryCard({ item }: { item: ScoringQueueItem }) {
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                     <p className="text-xs text-muted-foreground">Nilai TA-03A (Pembimbing)</p>
-                    <p className="text-base font-semibold tabular-nums">
+                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
                         {item.supervisorScore ?? "—"}{" "}
                         <span className="text-xs text-muted-foreground">/ 75</span>
                     </p>
@@ -540,7 +540,7 @@ function ProposalSummaryCard({ item }: { item: ScoringQueueItem }) {
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                     <p className="text-xs text-muted-foreground">Nilai TA-03B (Anda)</p>
-                    <p className="text-base font-semibold tabular-nums">
+                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
                         {item.existingScore ?? "—"}{" "}
                         <span className="text-xs text-muted-foreground">/ 25</span>
                     </p>

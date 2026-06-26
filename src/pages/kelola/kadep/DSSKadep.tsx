@@ -48,6 +48,8 @@ export default function DSSKadep() {
     });
     const [titleReviewNotes, setTitleReviewNotes] = useState('');
     const [titleReviewTarget, setTitleReviewTarget] = useState<string | null>(null);
+    const [titleRejectTarget, setTitleRejectTarget] = useState<string | null>(null);
+    const [titleRejectNotes, setTitleRejectNotes] = useState('');
     const [historyAcademicYearFilter, setHistoryAcademicYearFilter] = useState<string>('all');
 
     const { data: queue, isLoading } = useQuery({
@@ -130,24 +132,37 @@ export default function DSSKadep() {
         onError: (err: Error) => toast.error(err.message),
     });
     const titleReviewMutation = useMutation({
-        mutationFn: ({ thesisId, action, notes }: { thesisId: string; action: 'accept'; notes?: string }) =>
+        mutationFn: ({ thesisId, action, notes }: { thesisId: string; action: 'accept' | 'reject'; notes?: string }) =>
             metopenTitleService.reviewTitleReport(thesisId, { action, notes }),
-        onSuccess: () => {
-            toast.success('Judul TA disahkan');
+        onSuccess: (_data, vars) => {
+            if (vars.action === 'accept') {
+                toast.success('Judul TA disahkan. Mahasiswa & pembimbing telah dinotifikasi. Mahasiswa masuk fase Tugas Akhir; Formulir TA-04 batch periode perlu difinalisasi di tab Riwayat.');
+            } else {
+                toast.success('Judul TA ditolak. Mahasiswa telah dinotifikasi dengan catatan revisi.');
+            }
             queryClient.invalidateQueries({ queryKey: ['pending-title-reports'] });
             queryClient.invalidateQueries({ queryKey: ['kadep-title-report-history'] });
+            // Explicit refetch history agar muncul langsung tanpa tunggu remount.
+            void refetchHistory();
             setTitleReviewTarget(null);
             setTitleReviewNotes('');
+            setTitleRejectTarget(null);
+            setTitleRejectNotes('');
         },
         onError: (err: Error) => toast.error(err.message),
     });
     // Riwayat keputusan TA-04 (accepted/rejected) antar-periode.
+    // staleTime:0 + refetchOnMount:'always' supaya switch tab "Riwayat" langsung
+    // refetch (mencegah stale cache ketika KaDep baru saja accept di tab "titles").
     const {
         data: titleReportHistory = [],
         isLoading: isLoadingHistory,
+        refetch: refetchHistory,
     } = useQuery({
         queryKey: ['kadep-title-report-history'],
         queryFn: async () => (await metopenTitleService.getKadepTitleReportHistory()).data,
+        staleTime: 0,
+        refetchOnMount: 'always',
     });
     // Daftar tahun akademik unik dari data history untuk dropdown filter.
     const historyAcademicYears = Array.from(
@@ -195,16 +210,21 @@ export default function DSSKadep() {
         },
         onError: (err: Error) => toast.error(err.message || 'Gagal finalisasi Formulir TA-04.'),
     });
-    // Status finalisasi batch per academic year: sudah sinkron jika semua thesis accepted
-    // di periode itu menunjuk ke dokumen batch resmi yang sama.
+    // Status finalisasi batch per academic year: sudah sinkron jika semua thesis
+    // accepted DAN batch-eligible di periode itu menunjuk ke dokumen batch resmi
+    // yang sama. Thesis accepted tapi tidak batch-eligible (data legacy/tidak
+    // lengkap) TIDAK dimasukkan ke dokumen batch — hanya yang eligible.
     const batchStatusByAcademicYear = historyAcademicYears.map((ay) => {
         const rows = titleReportHistory.filter(
             (r) => r.academicYear?.id === ay.id && r.proposalStatus === 'accepted',
         );
         const acceptedCount = rows.length;
-        const batchRows = rows.filter((r) => r.documentKind === 'batch');
+        const eligibleRows = rows.filter((r) => r.ta04BatchEligible !== false);
+        const batchEligibleCount = eligibleRows.length;
+        const ineligibleCount = acceptedCount - batchEligibleCount;
+        const batchRows = eligibleRows.filter((r) => r.documentKind === 'batch');
         const finalizedCount = batchRows.length;
-        const notLinkedCount = rows.filter((r) => r.documentKind !== 'batch').length;
+        const notLinkedCount = eligibleRows.filter((r) => r.documentKind !== 'batch').length;
         const batchDocumentNames = Array.from(
             new Set(
                 batchRows
@@ -213,11 +233,13 @@ export default function DSSKadep() {
             ),
         );
         const batchAnchor = batchRows[0] ?? null;
-        const isFinalized = acceptedCount > 0 && finalizedCount === acceptedCount && batchDocumentNames.length === 1;
+        const isFinalized = batchEligibleCount > 0 && finalizedCount === batchEligibleCount && batchDocumentNames.length === 1;
         return {
             academicYear: ay,
             label: `${ay.semester === 'genap' ? 'Genap' : 'Ganjil'} ${ay.year ?? '-'}`,
             acceptedCount,
+            batchEligibleCount,
+            ineligibleCount,
             finalizedCount,
             notLinkedCount,
             batchDocumentName: batchDocumentNames[0] ?? null,
@@ -230,6 +252,15 @@ export default function DSSKadep() {
     const getHistoryDocumentLabel = (row: TitleReportHistoryRow) => {
         if (row.documentKind === 'batch') return 'Unduh Formulir TA-04';
         return 'Belum Tersedia';
+    };
+
+    const ta04BatchBlockLabel: Record<string, string> = {
+        proposal_final_not_submitted: 'Proposal final belum disubmit',
+        ta_course_not_confirmed: 'SIA belum konfirmasi MK Tugas Akhir',
+        no_active_pembimbing_1: 'Tidak ada Pembimbing 1 aktif',
+        missing_scores: 'Nilai TA-03 belum lengkap',
+        scores_not_finalized: 'Nilai TA-03 belum final',
+        metopel_auto_zeroed: 'Gagal presensi Metopel (auto-zero)',
     };
 
     const handleSelectRequest = async (request: AdvisorRequest) => {
@@ -568,25 +599,33 @@ export default function DSSKadep() {
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium">{s.label}</p>
                                             <p className="text-xs text-muted-foreground">
-                                                {s.acceptedCount} mahasiswa disahkan
+                                                {s.batchEligibleCount} siap batch dari {s.acceptedCount} disahkan
+                                                {s.ineligibleCount > 0 && (
+                                                    <span className="text-amber-600"> ({s.ineligibleCount} tidak memenuhi syarat batch)</span>
+                                                )}
                                             </p>
                                             {s.batchDocumentName && (
                                                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
                                                     Dokumen batch: {s.batchDocumentName}
                                                 </p>
                                             )}
-                                            <div className="mt-1 flex items-center gap-1.5">
+                                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
                                                 {s.isFinalized ? (
                                                     <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
                                                         <CheckCircle2 className="h-3 w-3 mr-1" /> Formulir TA-04 tersedia
                                                     </Badge>
                                                 ) : s.hasPartialFinalization ? (
                                                     <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
-                                                        <AlertTriangle className="h-3 w-3 mr-1" /> Perlu perbarui batch ({s.finalizedCount}/{s.acceptedCount} terhubung, {s.notLinkedCount} belum)
+                                                        <AlertTriangle className="h-3 w-3 mr-1" /> Perlu perbarui batch ({s.finalizedCount}/{s.batchEligibleCount} terhubung, {s.notLinkedCount} belum)
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[10px]">
                                                         Belum difinalisasi batch
+                                                    </Badge>
+                                                )}
+                                                {s.ineligibleCount > 0 && (
+                                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]" title="Thesis accepted tapi data tidak lengkap (tidak ada proposal final / nilai TA-03 / konfirmasi MK TA). Tidak dimasukkan ke dokumen batch.">
+                                                        <AlertTriangle className="h-3 w-3 mr-1" /> {s.ineligibleCount} tidak lengkap
                                                     </Badge>
                                                 )}
                                             </div>
@@ -620,8 +659,8 @@ export default function DSSKadep() {
                                             </Button>
                                             <Button
                                                 size="sm"
-                                                onClick={() => setFinalizeBatchTarget({ academicYearId: s.academicYear.id, label: s.label, thesisCount: s.acceptedCount })}
-                                                disabled={s.isFinalized || finalizeBatchMutation.isPending}
+                                                onClick={() => setFinalizeBatchTarget({ academicYearId: s.academicYear.id, label: s.label, thesisCount: s.batchEligibleCount })}
+                                                disabled={s.isFinalized || finalizeBatchMutation.isPending || s.batchEligibleCount === 0}
                                             >
                                                 <Stamp className="h-3.5 w-3.5 mr-1" />
                                                 {s.isFinalized
@@ -656,16 +695,28 @@ export default function DSSKadep() {
                                                 <p className="text-sm font-medium">{row.studentName}</p>
                                                 <p className="text-xs text-muted-foreground">{row.studentNim}</p>
                                             </div>
-                                            <Badge
-                                                variant="outline"
-                                                className={
-                                                    row.proposalStatus === 'accepted'
-                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-xs'
-                                                        : 'bg-red-50 text-red-700 border-red-200 text-xs'
-                                                }
-                                            >
-                                                {row.proposalStatus === 'accepted' ? 'Disahkan' : 'Ditolak'}
-                                            </Badge>
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <Badge
+                                                    variant="outline"
+                                                    className={
+                                                        row.proposalStatus === 'accepted'
+                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-xs'
+                                                            : 'bg-red-50 text-red-700 border-red-200 text-xs'
+                                                    }
+                                                >
+                                                    {row.proposalStatus === 'accepted' ? 'Disahkan' : 'Ditolak'}
+                                                </Badge>
+                                                {row.proposalStatus === 'accepted' && row.ta04BatchEligible === false && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]"
+                                                        title={row.ta04BatchBlock ? ta04BatchBlockLabel[row.ta04BatchBlock] ?? row.ta04BatchBlock : 'Data tidak lengkap'}
+                                                    >
+                                                        <AlertTriangle className="h-3 w-3 mr-1" />
+                                                        Tidak masuk batch
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="rounded bg-muted/50 p-2.5">
                                             <p className="text-xs text-muted-foreground mb-0.5">Judul TA</p>
@@ -698,27 +749,43 @@ export default function DSSKadep() {
                                         {row.proposalStatus === 'accepted' && (
                                             <div className="flex flex-col gap-2 rounded-md border bg-background p-2.5 sm:flex-row sm:items-center sm:justify-between">
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-medium">
-                                                        {row.documentKind === 'batch'
-                                                            ? 'Termasuk Formulir TA-04 periode'
-                                                            : row.documentKind === 'legacy'
-                                                                ? 'Perlu perbarui Formulir TA-04 batch'
-                                                                : 'Belum masuk Formulir TA-04 batch'}
-                                                    </p>
-                                                    <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        {row.documentKind === 'batch'
-                                                            ? 'Unduhan mahasiswa dan KaDep mengarah ke Formulir TA-04 periode.'
-                                                            : row.documentKind === 'legacy'
-                                                                ? 'Ada dokumen lama non-batch pada data, tetapi output resmi harus diterbitkan ulang lewat finalisasi batch.'
-                                                                : 'Finalisasi batch periode diperlukan sebelum mahasiswa dapat mengunduh Formulir TA-04.'}
-                                                    </p>
-                                                    {row.titleApprovalDocument && (
-                                                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                                            File: {row.titleApprovalDocument.fileName}
-                                                        </p>
+                                                    {row.ta04BatchEligible === false ? (
+                                                        <>
+                                                            <p className="text-xs font-medium text-amber-700">
+                                                                Tidak termasuk Formulir TA-04 batch
+                                                            </p>
+                                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                                                {row.ta04BatchBlock
+                                                                    ? `Alasan: ${ta04BatchBlockLabel[row.ta04BatchBlock] ?? row.ta04BatchBlock}. `
+                                                                    : 'Data thesis tidak lengkap. '}
+                                                                Thesis ini tetap berstatus disahkan, tetapi tidak dimasukkan ke dokumen batch periode karena tidak memenuhi syarat kelengkapan data.
+                                                            </p>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <p className="text-xs font-medium">
+                                                                {row.documentKind === 'batch'
+                                                                    ? 'Termasuk Formulir TA-04 periode'
+                                                                    : row.documentKind === 'legacy'
+                                                                        ? 'Perlu perbarui Formulir TA-04 batch'
+                                                                        : 'Belum masuk Formulir TA-04 batch'}
+                                                            </p>
+                                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                                                {row.documentKind === 'batch'
+                                                                    ? 'Unduhan mahasiswa dan KaDep mengarah ke Formulir TA-04 periode.'
+                                                                    : row.documentKind === 'legacy'
+                                                                        ? 'Ada dokumen lama non-batch pada data, tetapi output resmi harus diterbitkan ulang lewat finalisasi batch.'
+                                                                        : 'Finalisasi batch periode diperlukan sebelum mahasiswa dapat mengunduh Formulir TA-04.'}
+                                                            </p>
+                                                            {row.titleApprovalDocument && (
+                                                                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                                    File: {row.titleApprovalDocument.fileName}
+                                                                </p>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </div>
-                                                {row.documentKind === 'batch' && row.titleApprovalDocument && (
+                                                {row.ta04BatchEligible !== false && row.documentKind === 'batch' && row.titleApprovalDocument && (
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
@@ -891,9 +958,21 @@ export default function DSSKadep() {
                                                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                                                 Sahkan TA-04
                                             </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                                onClick={() => {
+                                                    setTitleRejectTarget(report.thesisId);
+                                                    setTitleRejectNotes('');
+                                                }}
+                                            >
+                                                <XCircle className="h-3.5 w-3.5 mr-1" />
+                                                Tolak / Minta Revisi
+                                            </Button>
                                             {!allMet && (
                                                 <p className="self-center text-xs text-muted-foreground">
-                                                    Tombol akan aktif setelah semua 5 syarat terpenuhi.
+                                                    Tombol Sahkan aktif setelah semua 5 syarat terpenuhi.
                                                 </p>
                                             )}
                                         </div>
@@ -957,6 +1036,57 @@ export default function DSSKadep() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog
+                open={!!titleRejectTarget}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setTitleRejectTarget(null);
+                        setTitleRejectNotes('');
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Tolak Pengesahan TA-04 / Minta Revisi</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Mahasiswa akan dinotifikasi (in-app + push) dengan catatan di bawah. Proposal masuk status <span className="font-medium">rejected</span>; mahasiswa dapat merevisi proposal sesuai catatan lalu pembimbing menyetujui revisi untuk masuk antrean kembali (canon §5.8.2).
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="space-y-2 py-2">
+                        <Label>Catatan / Arahan Revisi (wajib, minimal 10 karakter)</Label>
+                        <Textarea
+                            value={titleRejectNotes}
+                            onChange={(e) => setTitleRejectNotes(e.target.value)}
+                            placeholder="Contoh: Judul terlalu luas; persempit ke studi kasus spesifik dan lengkapi tinjauan pustaka bab 2."
+                            rows={4}
+                        />
+                        {titleRejectNotes.trim().length > 0 && titleRejectNotes.trim().length < 10 && (
+                            <p className="text-xs text-red-600">Catatan minimal 10 karakter.</p>
+                        )}
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            disabled={
+                                titleReviewMutation.isPending ||
+                                titleRejectNotes.trim().length < 10
+                            }
+                            onClick={() =>
+                                titleRejectTarget &&
+                                titleReviewMutation.mutate({
+                                    thesisId: titleRejectTarget,
+                                    action: 'reject',
+                                    notes: titleRejectNotes.trim(),
+                                })
+                            }
+                        >
+                            {titleReviewMutation.isPending ? 'Memproses...' : 'Ya, Tolak & Minta Revisi'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, action: 'approve' })}>
                 <DialogContent>
@@ -1024,7 +1154,7 @@ export default function DSSKadep() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Finalisasi Formulir TA-04 {finalizeBatchTarget?.label}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Anda akan menerbitkan satu Formulir TA-04 batch untuk {finalizeBatchTarget?.thesisCount} mahasiswa yang sudah disahkan pada periode {finalizeBatchTarget?.label}. Semua thesis accepted pada periode ini akan diarahkan ke dokumen yang sama. Aksi ini dapat diulang untuk memperbarui batch jika ada mahasiswa baru disahkan kemudian.
+                            Anda akan menerbitkan satu Formulir TA-04 batch untuk {finalizeBatchTarget?.thesisCount} mahasiswa yang sudah disahkan dan memenuhi syarat kelengkapan data pada periode {finalizeBatchTarget?.label}. Thesis accepted dengan data tidak lengkap tidak dimasukkan ke dokumen batch. Aksi ini dapat diulang untuk memperbarui batch jika ada mahasiswa baru disahkan kemudian.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
