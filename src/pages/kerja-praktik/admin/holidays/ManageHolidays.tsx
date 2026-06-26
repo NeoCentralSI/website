@@ -7,6 +7,7 @@ import {
     getHolidays,
     createHoliday,
     deleteHoliday,
+    syncHolidays,
     type InternshipHoliday,
 } from "@/services/internship/holiday.service";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
     Trash2,
     CalendarOff,
     Search,
+    RefreshCw,
 } from "lucide-react";
 
 export default function ManageHolidays() {
@@ -102,6 +104,15 @@ export default function ManageHolidays() {
         onError: (err: Error) => toast.error(err.message),
     });
 
+    const syncMut = useMutation({
+        mutationFn: () => syncHolidays(selectedYear),
+        onSuccess: (res) => {
+            toast.success(res.message);
+            queryClient.invalidateQueries({ queryKey: ["internship-holidays"] });
+        },
+        onError: (err: Error) => toast.error(err.message),
+    });
+
     const yearOptions = useMemo(() => {
         const curr = new Date().getFullYear();
         return [curr - 1, curr, curr + 1].map(String);
@@ -159,6 +170,16 @@ export default function ManageHolidays() {
                                 onClick={() => refetch()}
                                 isRefreshing={isFetching && !isLoading}
                             />
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => syncMut.mutate()}
+                                disabled={syncMut.isPending}
+                                className="gap-1.5"
+                            >
+                                <RefreshCw className={`h-4 w-4 ${syncMut.isPending ? "animate-spin" : ""}`} />
+                                {syncMut.isPending ? "Menyinkronkan..." : `Sinkronisasi ${selectedYear}`}
+                            </Button>
                             <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
                                 <Plus className="h-4 w-4" />
                                 Tambah Libur

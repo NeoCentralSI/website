@@ -22,12 +22,14 @@ export const SekdepSeminarTab: React.FC<SekdepSeminarTabProps> = ({ seminars }) 
     return (
         <Card className="border-none shadow-none bg-transparent pt-0">
             <CardHeader className="px-0 pt-0">
+                <div>
                 <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-800">
                     Pelaksanaan Seminar
                 </CardTitle>
                 <p className="text-sm text-slate-500 mt-1">
                     Detail penjadwalan, lokasi, dan hasil seminar kerja praktik.
                 </p>
+                </div>
             </CardHeader>
             <CardContent className="px-0 space-y-6">
                 {seminars.map((seminar) => (

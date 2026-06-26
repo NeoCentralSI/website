@@ -10,12 +10,14 @@ import {
     bulkValidateSeminarAudience,
     updateSeminarNotes,
     completeSeminar,
+    failSeminar,
 } from '@/services/internship';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -39,7 +41,9 @@ import {
     CheckCircle2,
     XCircle,
     Users,
-    AlertCircle
+    AlertCircle,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { ThesisSeminarAudienceTable } from '@/components/thesis-seminar/ThesisSeminarDetailAudienceTable';
 
@@ -63,30 +67,35 @@ export default function LecturerSeminarTab() {
 
 
     const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
-    const [isSavingNotes, setIsSavingNotes] = useState<string | null>(null);
     const [isCompleting, setIsCompleting] = useState<string | null>(null);
-    const [isEditingNotesMap, setIsEditingNotesMap] = useState<Record<string, boolean>>({});
+    const [isFailing, setIsFailing] = useState<string | null>(null);
+    const [confirmApproveId, setConfirmApproveId] = useState<string | null>(null);
+    const [confirmRejectId, setConfirmRejectId] = useState<string | null>(null);
+    const [rejectNotes, setRejectNotes] = useState('');
+    const [showRejectedSubmissions, setShowRejectedSubmissions] = useState(false);
     const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
+    const [confirmFailId, setConfirmFailId] = useState<string | null>(null);
+    const [failNotes, setFailNotes] = useState('');
+    const [previewDocument, setPreviewDocument] = useState<{
+        open: boolean;
+        fileName: string;
+        filePath: string;
+    }>({
+        open: false,
+        fileName: '',
+        filePath: ''
+    });
 
-    const handleStartEdit = (id: string, notes: string) => {
-        setEditingNotes(prev => ({ ...prev, [id]: notes || "" }));
-        setIsEditingNotesMap(prev => ({ ...prev, [id]: true }));
+    const handleApprove = (seminarId: string) => {
+        setConfirmApproveId(seminarId);
     };
 
-    const handleCancelEdit = (id: string) => {
-        setIsEditingNotesMap(prev => ({ ...prev, [id]: false }));
-        setEditingNotes(prev => {
-            const next = { ...prev };
-            delete next[id];
-            return next;
-        });
-    };
-
-    const handleApprove = async (seminarId: string) => {
+    const processApprove = async (seminarId: string) => {
         setIsApproving(seminarId);
         try {
             await approveSeminar(seminarId);
             toast.success('Pengajuan seminar berhasil disetujui');
+            setConfirmApproveId(null);
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
             queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
         } catch (error: any) {
@@ -97,11 +106,18 @@ export default function LecturerSeminarTab() {
     };
 
 
-    const handleReject = async (seminarId: string) => {
+    const handleReject = (seminarId: string) => {
+        setRejectNotes('');
+        setConfirmRejectId(seminarId);
+    };
+
+    const processReject = async (seminarId: string) => {
         setIsRejecting(seminarId);
         try {
-            await rejectSeminar(seminarId, "Ditolak oleh Dosen Pembimbing");
+            await rejectSeminar(seminarId, rejectNotes.trim() || "Ditolak oleh Dosen Pembimbing");
             toast.success('Pengajuan seminar ditolak');
+            setConfirmRejectId(null);
+            setRejectNotes('');
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
             queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
         } catch (error: any) {
@@ -153,23 +169,6 @@ export default function LecturerSeminarTab() {
         }
     };
 
-    const handleSaveNotes = async (seminarId: string) => {
-        const notes = editingNotes[seminarId];
-        if (notes === undefined) return;
-
-        setIsSavingNotes(seminarId);
-        try {
-            await updateSeminarNotes(seminarId, notes);
-            toast.success('Catatan seminar berhasil disimpan');
-            setIsEditingNotesMap(prev => ({ ...prev, [seminarId]: false }));
-            queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
-        } catch (error: any) {
-
-            toast.error(error.message || 'Gagal menyimpan catatan');
-        } finally {
-            setIsSavingNotes(null);
-        }
-    };
     const handleCompleteSeminar = (seminarId: string) => {
         setConfirmCompleteId(seminarId);
     };
@@ -178,14 +177,44 @@ export default function LecturerSeminarTab() {
 
         setIsCompleting(seminarId);
         try {
+            if (editingNotes[seminarId] !== undefined) {
+                await updateSeminarNotes(seminarId, editingNotes[seminarId]);
+            }
             await completeSeminar(seminarId);
             toast.success('Seminar berhasil diselesaikan');
+            setConfirmCompleteId(null);
+            setEditingNotes(prev => {
+                const next = { ...prev };
+                delete next[seminarId];
+                return next;
+            });
             queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
             queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
         } catch (error: any) {
             toast.error(error.message || 'Gagal menyelesaikan seminar');
         } finally {
             setIsCompleting(null);
+        }
+    };
+
+    const handleFailSeminar = (seminarId: string, currentNotes?: string) => {
+        setFailNotes(currentNotes || '');
+        setConfirmFailId(seminarId);
+    };
+
+    const processFailSeminar = async (seminarId: string) => {
+        setIsFailing(seminarId);
+        try {
+            await failSeminar(seminarId, failNotes.trim() || undefined);
+            toast.success('Seminar berhasil dinyatakan gagal');
+            setConfirmFailId(null);
+            setFailNotes('');
+            queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
+            queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
+        } catch (error: any) {
+            toast.error(error.message || 'Gagal menggagalkan seminar');
+        } finally {
+            setIsFailing(null);
         }
     };
 
@@ -200,6 +229,10 @@ export default function LecturerSeminarTab() {
     }
 
     const seminars = studentGuidance?.seminars || [];
+    const hiddenRejectedCount = seminars.filter((seminar: any, index: number) => seminar.status === 'REJECTED' && index > 0).length;
+    const visibleSeminars = seminars
+        .map((seminar: any, index: number) => ({ seminar, originalIndex: index }))
+        .filter(({ seminar, originalIndex }: any) => showRejectedSubmissions || seminar.status !== 'REJECTED' || originalIndex === 0);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -207,6 +240,7 @@ export default function LecturerSeminarTab() {
             case 'COMPLETED': return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 font-medium px-3 py-1"><CheckCircle2 className="w-4 h-4 mr-1.5" />Selesai</Badge>;
             case 'REQUESTED': return <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50 font-medium px-3 py-1">Menunggu ACC</Badge>;
             case 'REJECTED': return <Badge variant="destructive" className="font-medium px-3 py-1"><XCircle className="w-4 h-4 mr-1.5" />Ditolak</Badge>;
+            case 'FAILED': return <Badge variant="destructive" className="font-medium px-3 py-1 bg-red-700 hover:bg-red-800"><XCircle className="w-4 h-4 mr-1.5" />Gagal</Badge>;
             default: return <Badge variant="secondary" className="font-medium px-3 py-1">{status}</Badge>;
         }
     };
@@ -233,7 +267,23 @@ export default function LecturerSeminarTab() {
 
     return (
         <div className="space-y-8">
-            {seminars.map((seminar: any, index: number) => {
+            {hiddenRejectedCount > 0 && (
+                <div className="flex justify-end">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setShowRejectedSubmissions(prev => !prev)}
+                    >
+                        {showRejectedSubmissions ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showRejectedSubmissions
+                            ? 'Sembunyikan pengajuan ditolak'
+                            : `Tampilkan ${hiddenRejectedCount} pengajuan ditolak`}
+                    </Button>
+                </div>
+            )}
+
+            {visibleSeminars.map(({ seminar, originalIndex }: any) => {
                 const audienceRows = (seminar.audiences || []).map((a: any) => ({
                     studentId: a.studentId,
                     studentName: a.student?.user?.fullName || 'Unknown',
@@ -244,6 +294,10 @@ export default function LecturerSeminarTab() {
                 }));
 
                 const isCompleted = seminar.status === 'COMPLETED';
+                const isFailed = seminar.status === 'FAILED';
+                const isFinal = isCompleted || isFailed;
+                const canFinalize = seminar.status === 'APPROVED';
+                const notesDraft = editingNotes[seminar.id] ?? seminar.supervisorNotes ?? '';
 
                 return (
                     <div key={seminar.id} className="space-y-6">
@@ -253,7 +307,7 @@ export default function LecturerSeminarTab() {
                                 <div className="space-y-1">
                                     <CardTitle className="text-lg flex items-center gap-2">
                                         <CalendarDays className="h-5 w-5 text-primary" />
-                                        Informasi Pengajuan Seminar {seminars.length > 1 && (index === 0 ? "(Terbaru)" : `(#${seminars.length - index})`)}
+                                        Informasi Pengajuan Seminar {seminars.length > 1 && (originalIndex === 0 ? "(Terbaru)" : `(#${seminars.length - originalIndex})`)}
                                     </CardTitle>
                                     {seminar.createdAt && (
                                         <CardDescription className="flex items-center gap-1.5">
@@ -340,8 +394,30 @@ export default function LecturerSeminarTab() {
                             </CardContent>
                         </Card>
 
+                        {canFinalize && (
+                            <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => handleFailSeminar(seminar.id, notesDraft)}
+                                    disabled={isFailing === seminar.id || isCompleting === seminar.id}
+                                >
+                                    {isFailing === seminar.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                                    Gagalkan Seminar
+                                </Button>
+                                <Button
+                                    className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                                    onClick={() => handleCompleteSeminar(seminar.id)}
+                                    disabled={isCompleting === seminar.id || isFailing === seminar.id}
+                                >
+                                    {isCompleting === seminar.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                    Selesaikan Seminar
+                                </Button>
+                            </div>
+                        )}
+
                         {/* 2. Catatan Seminar Card */}
-                        <Card className={cn("border-gray-200 transition-all", isEditingNotesMap[seminar.id] && "ring-1 ring-primary/20")}>
+                        <Card className="border-gray-200 transition-all">
                             <CardHeader className="border-b flex flex-row items-center justify-between space-y-0">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
@@ -350,51 +426,31 @@ export default function LecturerSeminarTab() {
                                     </div>
                                     <CardDescription>Poin-poin penting dan hasil evaluasi selama seminar berlangsung</CardDescription>
                                 </div>
-                                {!isCompleted && (
-                                    <div className="flex items-center gap-2">
-                                        {!isEditingNotesMap[seminar.id] ? (
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="h-8 gap-2 border-primary/20 text-primary hover:bg-primary/5 hover:text-primary"
-                                                    onClick={() => handleCompleteSeminar(seminar.id)}
-                                                    disabled={isCompleting === seminar.id}
-                                                >
-                                                    {isCompleting === seminar.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                                    Selesaikan Seminar
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="h-8 gap-2"
-                                                    onClick={() => handleStartEdit(seminar.id, seminar.supervisorNotes)}
-                                                >
-                                                    Edit Catatan
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 gap-2 text-muted-foreground"
-                                                onClick={() => handleCancelEdit(seminar.id)}
-                                            >
-                                                Batal
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {seminar.beritaAcaraDocument && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 gap-2"
+                                            onClick={() => setPreviewDocument({
+                                                open: true,
+                                                fileName: seminar.beritaAcaraDocument.fileName,
+                                                filePath: seminar.beritaAcaraDocument.filePath
+                                            })}
+                                        >
+                                            <Eye className="w-3.5 h-3.5" />
+                                            Lihat Berita Acara
+                                        </Button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-4">
-                                {isEditingNotesMap[seminar.id] ? (
+                                {!isFinal ? (
                                     <Textarea
                                         placeholder="Tuliskan poin-poin penting, pertanyaan, atau catatan selama seminar berlangsung untuk berita acara..."
                                         className="min-h-[140px] bg-white resize-none focus-visible:ring-primary leading-relaxed"
-                                        value={editingNotes[seminar.id] ?? seminar.supervisorNotes ?? ''}
+                                        value={notesDraft}
                                         onChange={(e) => setEditingNotes(prev => ({ ...prev, [seminar.id]: e.target.value }))}
-                                        disabled={isSavingNotes === seminar.id}
-                                        autoFocus
                                     />
                                 ) : (
                                     <div className="min-h-[100px] p-4 rounded-lg bg-gray-50/50 border border-gray-100 text-sm whitespace-pre-wrap leading-relaxed">
@@ -406,36 +462,21 @@ export default function LecturerSeminarTab() {
                                     </div>
                                 )}
 
-                                <div className="flex items-center justify-between">
+                                {isFinal && (
                                     <div className="text-xs text-muted-foreground italic">
-                                        {isCompleted ? (
-                                            <div className="flex items-center gap-1.5 text-rose-500 font-medium">
-                                                <AlertCircle className="w-3.5 h-3.5" />
-                                                <span>Catatan telah dikunci karena seminar telah selesai.</span>
-                                            </div>
-                                        ) : (
-                                            isEditingNotesMap[seminar.id] ? "* Mahasiswa dapat melihat update catatan secara real-time setelah disimpan." : ""
-                                        )}
+                                        <div className={cn("flex items-center gap-1.5 font-medium", isFailed ? "text-red-600" : "text-rose-500")}>
+                                            <AlertCircle className="w-3.5 h-3.5" />
+                                            <span>Catatan telah dikunci karena seminar telah {isFailed ? 'dinyatakan gagal' : 'selesai'}.</span>
+                                        </div>
                                     </div>
-                                    {isEditingNotesMap[seminar.id] && (
-                                        <Button
-                                            size="sm"
-                                            onClick={() => handleSaveNotes(seminar.id)}
-                                            disabled={isSavingNotes === seminar.id || editingNotes[seminar.id] === undefined || editingNotes[seminar.id] === seminar.supervisorNotes}
-                                            className="px-6 shadow-sm"
-                                        >
-                                            {isSavingNotes === seminar.id ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-2" />}
-                                            Simpan Perubahan
-                                        </Button>
-                                    )}
-                                </div>
+                                )}
 
                             </CardContent>
                         </Card>
 
 
                         {/* 3. Peserta Seminar Card */}
-                        {seminar.status !== 'REJECTED' && (
+                        {!['REJECTED', 'FAILED'].includes(seminar.status) && (
                             <Card className="border-gray-200">
                                 <CardHeader className="py-4 flex flex-row items-center justify-between space-y-0">
                                     <div className="space-y-1">
@@ -480,6 +521,66 @@ export default function LecturerSeminarTab() {
                     </div>
                 );
             })}
+            <DocumentPreviewDialog
+                open={previewDocument.open}
+                onOpenChange={(open) => setPreviewDocument(prev => ({ ...prev, open }))}
+                fileName={previewDocument.fileName}
+                filePath={previewDocument.filePath}
+            />
+            <AlertDialog open={!!confirmApproveId} onOpenChange={(open) => !open && !isApproving && setConfirmApproveId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Setujui Jadwal Seminar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Jadwal seminar akan disetujui dan mahasiswa dapat melanjutkan proses seminar sesuai tanggal, waktu, dan ruangan yang diajukan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={!!isApproving}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => confirmApproveId && processApprove(confirmApproveId)}
+                            disabled={!!isApproving}
+                            className="bg-green-600 hover:bg-green-700"
+                        >
+                            {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Ya, Setujui
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog open={!!confirmRejectId} onOpenChange={(open) => {
+                if (!open && !isRejecting) {
+                    setConfirmRejectId(null);
+                    setRejectNotes('');
+                }
+            }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Tolak Pengajuan Seminar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Pengajuan jadwal seminar akan ditolak dan mahasiswa perlu mengajukan jadwal baru. Catatan penolakan akan terlihat oleh mahasiswa.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Textarea
+                        value={rejectNotes}
+                        onChange={(e) => setRejectNotes(e.target.value)}
+                        placeholder="Tuliskan alasan penolakan jadwal seminar..."
+                        className="min-h-[120px] resize-none"
+                        disabled={!!isRejecting}
+                    />
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={!!isRejecting}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => confirmRejectId && processReject(confirmRejectId)}
+                            disabled={!!isRejecting}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {isRejecting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Ya, Tolak
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <AlertDialog open={!!confirmCompleteId} onOpenChange={(open) => !open && setConfirmCompleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -495,6 +596,39 @@ export default function LecturerSeminarTab() {
                             className="bg-emerald-600 hover:bg-emerald-700"
                         >
                             Ya, Selesaikan
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog open={!!confirmFailId} onOpenChange={(open) => {
+                if (!open) {
+                    setConfirmFailId(null);
+                    setFailNotes('');
+                }
+            }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Gagalkan Seminar?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Seminar akan ditandai gagal dan mahasiswa perlu mengajukan jadwal seminar baru. Catatan di bawah akan terlihat oleh mahasiswa.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Textarea
+                        value={failNotes}
+                        onChange={(e) => setFailNotes(e.target.value)}
+                        placeholder="Tuliskan alasan atau catatan hasil seminar..."
+                        className="min-h-[120px] resize-none"
+                        disabled={!!isFailing}
+                    />
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={!!isFailing}>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => confirmFailId && processFailSeminar(confirmFailId)}
+                            disabled={!!isFailing}
+                            className="bg-red-700 hover:bg-red-800"
+                        >
+                            {isFailing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                            Ya, Gagalkan
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

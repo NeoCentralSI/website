@@ -60,7 +60,7 @@ const RegisterInternshipFormPage = lazy(() => import('./pages/kerja-praktik/stud
 const InternshipLogbookPage = lazy(() => import('./pages/kerja-praktik/student/activity/Logbook'))
 const InternshipGuidancePage = lazy(() => import('./pages/kerja-praktik/student/activity/Guidance'))
 const InternshipGuidanceDetailPage = lazy(() => import('./pages/kerja-praktik/student/activity/GuidanceDetail'))
-const InternshipSeminarPage = lazy(() => import('./pages/kerja-praktik/student/Seminar'))
+const InternshipSeminarPage = lazy(() => import('./pages/kerja-praktik/student/Manage'))
 const InternshipSeminarDetailPage = lazy(() => import('./pages/kerja-praktik/student/SeminarDetail'))
 // Kerja Praktik - Sekdep
 const SekdepInternshipProposalPage = lazy(() => import('./pages/kerja-praktik/sekdep/Manage'))
@@ -85,7 +85,7 @@ const ManageHolidays = lazy(() => import('./pages/kerja-praktik/admin/holidays/M
 const KadepInternshipManagementPage = lazy(() => import('./pages/kerja-praktik/kadep/ManageInternship'))
 const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetterPage'))
 // Overview Pages
-const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/Overview'))
+const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/student/Overview'))
 const MetopenOverviewPage = lazy(() => import('./pages/metopel/Metopel'))
 const YudisiumEntry = lazy(() => import('./pages/yudisium/YudisiumEntry'))
 const StudentExitSurveyPage = lazy(() => import('./pages/yudisium/StudentExitSurvey'))

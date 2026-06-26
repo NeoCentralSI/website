@@ -4,8 +4,12 @@ import { Badge } from "@/components/ui/badge";
 type StatusVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info';
 
 export const getInternshipStatusBadge = (status: string) => {
+    if (!status) {
+        return <span className="text-xs text-muted-foreground">-</span>;
+    }
+
     let variant: StatusVariant = 'outline';
-    let label = status ? status.replace(/_/g, ' ') : 'PENDING';
+    let label = status.replace(/_/g, ' ');
 
     switch (status) {
         case 'APPROVED_PROPOSAL':
@@ -43,6 +47,18 @@ export const getInternshipStatusBadge = (status: string) => {
         case 'PENDING':
             variant = 'warning';
             label = 'PENDING';
+            break;
+        case 'ONGOING':
+            variant = 'info';
+            label = 'ONGOING';
+            break;
+        case 'COMPLETED':
+            variant = 'success';
+            label = 'COMPLETED';
+            break;
+        case 'FAILED':
+            variant = 'destructive';
+            label = 'FAILED';
             break;
         default:
             variant = 'outline';

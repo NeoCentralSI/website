@@ -30,7 +30,7 @@ export const getCompanyStatsColumns = ({
             key: 'companyName',
             header: 'Nama Perusahaan',
             render: (item) => (
-                <span className="font-medium text-sm leading-tight text-wrap">{item.companyName}</span>
+                <span className="font-medium text-sm leading-tight text-wrap">{item.companyName || '-'}</span>
             ),
             sortable: true,
         },
@@ -58,7 +58,10 @@ export const getCompanyStatsColumns = ({
             key: 'status',
             header: 'Status Perusahaan',
             render: (item) => {
-                const status = (item.status || 'save').toLowerCase();
+                const status = item.status?.toLowerCase();
+                if (!status) {
+                    return <span className="text-xs text-muted-foreground">-</span>;
+                }
                 const variant = status === 'blacklist' ? 'destructive' : 'success';
                 return (
                     <div className="flex items-center justify-center">

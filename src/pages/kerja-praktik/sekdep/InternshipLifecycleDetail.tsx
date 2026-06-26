@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -14,6 +14,9 @@ import {
     Download,
     MessageSquare,
     XCircle,
+    Share2,
+    Pencil,
+    Loader2,
 } from 'lucide-react';
 import InternshipTable from '@/components/internship/InternshipTable';
 import { toast } from 'sonner';
@@ -21,7 +24,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { getSekdepInternshipDetail, verifyInternshipDocument, bulkVerifyInternshipDocuments, rejectFinalReport } from '@/services/internship';
+import {
+    getSekdepInternshipDetail,
+    verifyInternshipDocument,
+    bulkVerifyInternshipDocuments,
+    rejectFinalReport,
+    sendFieldAssessmentRequest,
+    updateSekdepInternshipFieldInfo
+} from '@/services/internship';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import { SekdepLogbookTab } from './detail/SekdepLogbookTab';
 import { SekdepGuidanceTab } from './detail/SekdepGuidanceTab';
@@ -40,6 +50,16 @@ import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { cn } from '@/lib/utils';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function InternshipLifecycleDetail() {
     const { internshipId } = useParams<{ internshipId: string }>();
@@ -69,8 +89,21 @@ export default function InternshipLifecycleDetail() {
     const [singleActionDoc, setSingleActionDoc] = useState<any>(null);
     const [singleActionMode, setSingleActionMode] = useState<'APPROVE' | 'REJECT'>('APPROVE');
     const [singleDialogOpen, setSingleDialogOpen] = useState(false);
+    const [fieldInfoOpen, setFieldInfoOpen] = useState(false);
+    const [fieldSupervisorName, setFieldSupervisorName] = useState('');
+    const [fieldSupervisorEmail, setFieldSupervisorEmail] = useState('');
+    const [fieldSupervisorPhone, setFieldSupervisorPhone] = useState('');
+    const [fieldSupervisorNip, setFieldSupervisorNip] = useState('');
+    const [unitSection, setUnitSection] = useState('');
+    const [sendAssessmentConfirmOpen, setSendAssessmentConfirmOpen] = useState(false);
     const location = useLocation();
     const isDashboard = location.pathname.endsWith(internshipId!);
+    const isFieldAssessmentVerified = ['COMPLETED', 'APPROVED'].includes(detail?.assessment.fieldStatus || '');
+    const canSendFieldAssessment = Boolean(
+        detail?.assessment.isLogbookLocked &&
+        detail?.reportingDocuments.report?.document &&
+        !isFieldAssessmentVerified
+    );
 
     const tabs = useMemo(() => [
         { label: 'Overview', to: `/kelola/kerja-praktik/mahasiswa/${internshipId}`, end: true },
@@ -94,7 +127,7 @@ export default function InternshipLifecycleDetail() {
     // Bulk verification mutation - menggunakan API bulk dari backend
     const singleVerificationMutation = useMutation({
         mutationFn: ({ status, notes }: { status: 'APPROVED' | 'REVISION_NEEDED', notes?: string }) => {
-            if (singleActionDoc.docType === 'reportFinal') {
+            if (singleActionDoc.docType === 'report') {
                 return rejectFinalReport(internshipId!, notes || '');
             }
             return verifyInternshipDocument(internshipId!, singleActionDoc.docType, status, notes);
@@ -112,6 +145,69 @@ export default function InternshipLifecycleDetail() {
 
     const handleSingleVerify = (status: 'APPROVED' | 'REVISION_NEEDED', notes?: string) => {
         singleVerificationMutation.mutate({ status, notes });
+    };
+
+    const updateFieldInfoMutation = useMutation({
+        mutationFn: (body: {
+            fieldSupervisorName: string;
+            fieldSupervisorEmail: string;
+            fieldSupervisorPhone?: string;
+            fieldSupervisorNip?: string;
+            unitSection: string;
+        }) =>
+            updateSekdepInternshipFieldInfo(internshipId!, body),
+        onSuccess: (data) => {
+            toast.success(data.message || "Informasi lapangan berhasil diperbarui");
+            queryClient.invalidateQueries({ queryKey: ['sekdepInternshipDetail', internshipId] });
+            setFieldInfoOpen(false);
+        },
+        onError: (error) => {
+            toast.error(error instanceof Error ? error.message : "Gagal memperbarui informasi lapangan");
+        }
+    });
+
+    const sendAssessmentMutation = useMutation({
+        mutationFn: () => sendFieldAssessmentRequest(internshipId!),
+        onSuccess: (data) => {
+            toast.success(data.message || `Link penilaian dikirim ke ${data.email}`);
+            queryClient.invalidateQueries({ queryKey: ['sekdepInternshipDetail', internshipId] });
+            setSendAssessmentConfirmOpen(false);
+        },
+        onError: (error) => {
+            toast.error(error instanceof Error ? error.message : "Gagal mengirim link penilaian");
+        }
+    });
+
+    const openFieldInfoDialog = () => {
+        const normalizeDisplayValue = (value?: string | null) => {
+            if (!value || value === '-' || value === 'Belum Ditentukan') return '';
+            return value;
+        };
+
+        setFieldSupervisorName(normalizeDisplayValue(detail?.supervisor.fieldSupervisor));
+        setFieldSupervisorEmail(normalizeDisplayValue(detail?.supervisor.fieldSupervisorEmail));
+        setFieldSupervisorPhone(normalizeDisplayValue(detail?.supervisor.fieldSupervisorPhone));
+        setFieldSupervisorNip(normalizeDisplayValue(detail?.supervisor.fieldSupervisorNip));
+        setUnitSection(normalizeDisplayValue(detail?.company.unitSection));
+        setFieldInfoOpen(true);
+    };
+
+    const handleFieldInfoSubmit = (event: FormEvent) => {
+        event.preventDefault();
+        const payload = {
+            fieldSupervisorName: fieldSupervisorName.trim(),
+            fieldSupervisorEmail: fieldSupervisorEmail.trim(),
+            fieldSupervisorPhone: fieldSupervisorPhone.trim() || undefined,
+            fieldSupervisorNip: fieldSupervisorNip.trim() || undefined,
+            unitSection: unitSection.trim()
+        };
+
+        if (!payload.fieldSupervisorName || !payload.fieldSupervisorEmail || !payload.unitSection) {
+            toast.error("Lengkapi nama pembimbing lapangan, email, dan unit kerja.");
+            return;
+        }
+
+        updateFieldInfoMutation.mutate(payload);
     };
 
     const handleAction = (mode: 'APPROVE' | 'REJECT', row: any) => {
@@ -184,13 +280,28 @@ export default function InternshipLifecycleDetail() {
             case 'REVISION_NEEDED':
                 return <Badge className="bg-amber-100 text-amber-700 border-amber-200 pointer-events-none">Perlu Revisi</Badge>;
             default:
-                return <Badge variant="outline" className="text-slate-400 pointer-events-none">Belum Diunggah</Badge>;
+                return '-'
         }
     };
 
     const reportingTableData = useMemo(() => {
         if (!detail) return [];
         const docs = [];
+        const reportDetail = {
+            ...detail.reportingDocuments.report,
+            status: isFieldAssessmentVerified
+                ? 'APPROVED'
+                : detail.reportingDocuments.report?.status
+        };
+
+        docs.push({
+            id: 'report',
+            title: 'Laporan Instansi',
+            docType: 'report',
+            detail: reportDetail,
+            canVerify: false,
+            isSelectable: !!detail.reportingDocuments.report?.document
+        });
         
         docs.push({
             id: 'completionCertificate',
@@ -212,37 +323,24 @@ export default function InternshipLifecycleDetail() {
         
         docs.push({
             id: 'logbookDocument',
-            title: 'Laporan Kegiatan',
+            title: 'Logbook',
             docType: 'logbookDocument',
             detail: detail.reportingDocuments.logbookDocument,
             canVerify: true,
             isSelectable: !!detail.reportingDocuments.logbookDocument?.document
         });
         
-        if (detail.reportingDocuments.report) {
-            docs.push({
-                id: 'report',
-                title: 'Laporan Akhir',
-                docType: 'report',
-                detail: detail.reportingDocuments.report,
-                canVerify: true,
-                isSelectable: !!detail.reportingDocuments.report?.document
-            });
-        }
-        
-        if (detail.reportingDocuments.reportFinal && detail.reportingDocuments.reportFinal.document) {
-            docs.push({
-                id: 'reportFinal',
-                title: 'Laporan Akhir Final',
-                docType: 'reportFinal',
-                detail: detail.reportingDocuments.reportFinal,
-                canVerify: true,
-                isSelectable: true
-            });
-        }
+        docs.push({
+            id: 'beritaAcara',
+            title: 'Berita Acara',
+            docType: 'beritaAcara',
+            detail: detail.reportingDocuments.beritaAcara,
+            canVerify: false,
+            isSelectable: false
+        });
         
         return docs;
-    }, [detail]);
+    }, [detail, isFieldAssessmentVerified]);
 
     const reportingColumns = useMemo(() => [
         {
@@ -263,7 +361,7 @@ export default function InternshipLifecycleDetail() {
                     {getStatusBadge(row.detail?.status)}
                     {row.canVerify && row.detail?.document && (
                         <div className="flex items-center gap-1">
-                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'REVISION_NEEDED') && row.docType !== 'reportFinal' && row.docType !== 'report' && (
+                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'REVISION_NEEDED') && row.docType !== 'report' && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -274,7 +372,7 @@ export default function InternshipLifecycleDetail() {
                                     TERIMA
                                 </Button>
                             )}
-                            {(row.detail.status === 'SUBMITTED' || row.detail.status === 'APPROVED') && row.docType !== 'logbookDocument' && (
+                            {((row.detail.status === 'SUBMITTED' && row.docType !== 'report') || row.detail.status === 'APPROVED') && row.docType !== 'logbookDocument' && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -308,7 +406,7 @@ export default function InternshipLifecycleDetail() {
                     <span className="text-xs">Lihat</span>
                 </Button>
             ) : (
-                <span className="text-xs text-slate-400 italic">Belum diunggah</span>
+                '-'
             )
         },
         {
@@ -390,8 +488,38 @@ export default function InternshipLifecycleDetail() {
                 <div className="lg:col-span-6 space-y-6">
 
                     {/* Overview Card with Premium Styling */}
-                    <Card className="w-full border from-primary/5 via-background to-background">
-                        <CardContent className="space-y-6">
+                    <Card className="relative w-full border from-primary/5 via-background to-background">
+                        <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 text-slate-700"
+                                onClick={() => setSendAssessmentConfirmOpen(true)}
+                                disabled={!canSendFieldAssessment || sendAssessmentMutation.isPending}
+                                title={
+                                    isFieldAssessmentVerified
+                                        ? "Penilaian lapangan sudah selesai"
+                                        : !canSendFieldAssessment
+                                            ? "Kunci logbook dan pastikan laporan instansi sudah diunggah"
+                                            : "Kirim ulang link penilaian"
+                                }
+                            >
+                                {sendAssessmentMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 text-slate-700"
+                                onClick={openFieldInfoDialog}
+                                disabled={updateFieldInfoMutation.isPending || detail.assessment.fieldStatus === 'COMPLETED'}
+                                title="Edit informasi lapangan"
+                            >
+                                <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                        </div>
+                        <CardContent className="space-y-6 pr-24">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
                                     <div className="space-y-1">
@@ -436,6 +564,15 @@ export default function InternshipLifecycleDetail() {
                                 <div className="min-w-0">
                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">Pembimbing Lapangan</p>
                                     <p className="font-semibold text-slate-900">{detail.supervisor.fieldSupervisor}</p>
+                                    {detail.supervisor.fieldSupervisorEmail && (
+                                        <p className="text-xs text-muted-foreground">Email: {detail.supervisor.fieldSupervisorEmail}</p>
+                                    )}
+                                    {detail.supervisor.fieldSupervisorPhone && (
+                                        <p className="text-xs text-muted-foreground">No. HP: {detail.supervisor.fieldSupervisorPhone}</p>
+                                    )}
+                                    {detail.supervisor.fieldSupervisorNip && (
+                                        <p className="text-xs text-muted-foreground">NIP: {detail.supervisor.fieldSupervisorNip}</p>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>
@@ -571,7 +708,7 @@ export default function InternshipLifecycleDetail() {
             ) : (
                 <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {location.pathname.includes('logbook') && <SekdepLogbookTab logbooks={detail.logbooks} isLocked={detail.assessment.isLogbookLocked} />}
-                    {location.pathname.includes('bimbingan') && <SekdepGuidanceTab sessions={detail.guidanceSessions} />}
+                    {location.pathname.includes('bimbingan') && <SekdepGuidanceTab sessions={detail.guidanceSessions} totalWeeks={detail.guidanceProgress.total} />}
                     {location.pathname.includes('seminar') && <SekdepSeminarTab seminars={detail.seminars} />}
                     {location.pathname.includes('nilai') && (
                         <SekdepGradesTab 
@@ -674,6 +811,126 @@ export default function InternshipLifecycleDetail() {
                     mode={singleActionMode}
                 />
             )}
+
+            <Dialog open={fieldInfoOpen} onOpenChange={setFieldInfoOpen}>
+                <DialogContent className="sm:max-w-[460px]">
+                    <form onSubmit={handleFieldInfoSubmit}>
+                        <DialogHeader>
+                            <DialogTitle>Edit Informasi Lapangan</DialogTitle>
+                            <DialogDescription>
+                                Perbarui pembimbing lapangan, email tujuan penilaian, nomor HP, NIP, dan unit kerja mahasiswa.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="fieldSupervisorName" className="text-xs font-bold uppercase text-muted-foreground">
+                                    Nama Pembimbing Lapangan
+                                </Label>
+                                <Input
+                                    id="fieldSupervisorName"
+                                    value={fieldSupervisorName}
+                                    onChange={(event) => setFieldSupervisorName(event.target.value)}
+                                    placeholder="Nama lengkap pembimbing"
+                                    required
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="fieldSupervisorEmail" className="text-xs font-bold uppercase text-muted-foreground">
+                                    Email Pembimbing Lapangan
+                                </Label>
+                                <Input
+                                    id="fieldSupervisorEmail"
+                                    type="email"
+                                    value={fieldSupervisorEmail}
+                                    onChange={(event) => setFieldSupervisorEmail(event.target.value)}
+                                    placeholder="email@perusahaan.com"
+                                    required
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="fieldSupervisorPhone" className="text-xs font-bold uppercase text-muted-foreground">
+                                    Nomor HP Pembimbing Lapangan <span className="font-normal normal-case">(opsional)</span>
+                                </Label>
+                                <Input
+                                    id="fieldSupervisorPhone"
+                                    inputMode="tel"
+                                    value={fieldSupervisorPhone}
+                                    onChange={(event) => setFieldSupervisorPhone(event.target.value)}
+                                    placeholder="Contoh: 081234567890"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="fieldSupervisorNip" className="text-xs font-bold uppercase text-muted-foreground">
+                                    NIP Pembimbing Lapangan <span className="font-normal normal-case">(opsional)</span>
+                                </Label>
+                                <Input
+                                    id="fieldSupervisorNip"
+                                    value={fieldSupervisorNip}
+                                    onChange={(event) => setFieldSupervisorNip(event.target.value)}
+                                    placeholder="NIP pembimbing"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="unitSection" className="text-xs font-bold uppercase text-muted-foreground">
+                                    Unit / Bagian Kerja
+                                </Label>
+                                <Input
+                                    id="unitSection"
+                                    value={unitSection}
+                                    onChange={(event) => setUnitSection(event.target.value)}
+                                    placeholder="Contoh: Divisi IT"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setFieldInfoOpen(false)}>
+                                Batal
+                            </Button>
+                            <Button type="submit" size="sm" className="gap-2" disabled={updateFieldInfoMutation.isPending}>
+                                {updateFieldInfoMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                                Simpan
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={sendAssessmentConfirmOpen} onOpenChange={setSendAssessmentConfirmOpen}>
+                <DialogContent className="sm:max-w-[420px]">
+                    <DialogHeader>
+                        <DialogTitle>Kirim Ulang Link Penilaian?</DialogTitle>
+                        <DialogDescription>
+                            Link penilaian baru akan dikirim ke email pembimbing lapangan dan link lama yang belum digunakan akan dinonaktifkan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="rounded-lg border bg-slate-50 p-3 text-sm">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email Tujuan</p>
+                        <p className="mt-1 font-medium text-slate-900">{detail.supervisor.fieldSupervisorEmail || '-'}</p>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSendAssessmentConfirmOpen(false)}
+                            disabled={sendAssessmentMutation.isPending}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => sendAssessmentMutation.mutate()}
+                            disabled={sendAssessmentMutation.isPending}
+                        >
+                            {sendAssessmentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+                            Kirim Link
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Preview Dialog */}
             <DocumentPreviewDialog

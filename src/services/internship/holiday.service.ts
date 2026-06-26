@@ -65,3 +65,18 @@ export const deleteHoliday = async (id: string): Promise<{ success: boolean; mes
     }
     return res.json();
 };
+
+export const syncHolidays = async (year: string): Promise<{
+    success: boolean;
+    message: string;
+    data: { created: number; updated: number; total: number };
+}> => {
+    const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.INTERNSHIP_ADMIN.HOLIDAYS}/sync?year=${year}`), {
+        method: "POST",
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal melakukan sinkronisasi hari libur" }));
+        throw new Error(errorData.message || "Gagal melakukan sinkronisasi hari libur");
+    }
+    return res.json();
+};

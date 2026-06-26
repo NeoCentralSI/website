@@ -1,12 +1,13 @@
-import { useOutletContext, useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
+import { ExplorerTab } from "@/components/internship/student/overview/ExplorerTab";
+import { HistoryTab } from "@/components/internship/student/overview/HistoryTab";
+import { StatusTab } from "@/components/internship/student/overview/StatusTab";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { useQuery } from "@tanstack/react-query";
-import { getStudentLogbooks } from "@/services/internship.service";
 import { Loading } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StatusTab } from "@/components/internship/student/overview/StatusTab";
-import { ExplorerTab } from "@/components/internship/student/overview/ExplorerTab";
+import { getStudentInternshipHistory, getStudentLogbooks } from "@/services/internship.service";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 
 export default function KerjaPraktekOverviewPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -29,6 +30,12 @@ export default function KerjaPraktekOverviewPage() {
         queryFn: getStudentLogbooks,
     });
 
+    const { data: historyData, isLoading: isHistoryLoading } = useQuery({
+        queryKey: ["student-internship-history"],
+        queryFn: getStudentInternshipHistory,
+        enabled: activeTab === "history",
+    });
+
     if (isLoading) {
         return <Loading size="lg" text="Memuat data Kerja Praktik..." />;
     }
@@ -41,11 +48,19 @@ export default function KerjaPraktekOverviewPage() {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6 w-full">
                 <TabsList>
                     <TabsTrigger value="status">Status Terkini</TabsTrigger>
+                    <TabsTrigger value="history">Riwayat KP</TabsTrigger>
                     <TabsTrigger value="explorer">Jelajah</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="status" className="w-full space-y-6">
                     <StatusTab internship={internship} logbooks={logbooks} />
+                </TabsContent>
+
+                <TabsContent value="history" className="w-full space-y-6">
+                    <HistoryTab
+                        items={historyData?.data || []}
+                        isLoading={isHistoryLoading}
+                    />
                 </TabsContent>
 
                 <TabsContent value="explorer" className="w-full space-y-6">

@@ -100,8 +100,8 @@ const ManageApplicationLetter: React.FC = () => {
 
             reset({
                 documentNumber: res.data.letterNumber || "",
-                startDatePlanned: formatDate(res.data.period?.start || res.data.proposedStartDate || null),
-                endDatePlanned: formatDate(res.data.period?.end || res.data.proposedEndDate || null)
+                startDatePlanned: formatDate(res.data.period?.start || res.data.startDatePlanned || res.data.proposedStartDate || null),
+                endDatePlanned: formatDate(res.data.period?.end || res.data.endDatePlanned || res.data.proposedEndDate || null)
             });
         } catch (error: any) {
             toast.error(error.message || "Gagal memuat detail pengajuan");

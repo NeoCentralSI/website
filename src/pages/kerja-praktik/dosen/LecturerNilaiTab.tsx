@@ -224,7 +224,7 @@ export default function LecturerNilaiTab() {
                         {
                             key: 'cpmk',
                             header: 'Kriteria Penilaian',
-                            className: 'w-[15%]',
+                            className: 'w-[15%] whitespace-normal',
                             rowSpan: (row) => row.isFirst ? row.rubricCount : 0,
                             render: (row) => (
                                 <div className="flex flex-col gap-1 py-1">
@@ -236,7 +236,7 @@ export default function LecturerNilaiTab() {
                         {
                             key: 'level',
                             header: 'Nama Level',
-                            className: 'w-[12%]',
+                            className: 'w-[12%] whitespace-normal',
                             render: (row) => {
                                 const isSelected = selectedScores[row.cpmkId]?.chosenRubricId === row.id;
                                 return (
@@ -252,6 +252,7 @@ export default function LecturerNilaiTab() {
                         {
                             key: 'description',
                             header: 'Kriteria & Poin Penilaian',
+                            className: 'whitespace-normal',
                             render: (row) => {
                                 const isSelected = selectedScores[row.cpmkId]?.chosenRubricId === row.id;
                                 return (

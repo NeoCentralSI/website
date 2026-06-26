@@ -7,6 +7,7 @@ export type EventType =
   | 'guidance_rejected'      // rejected guidance
   | 'thesis_deadline'
   | 'seminar_scheduled'
+  | 'internship_seminar'
   | 'defense_scheduled'
   | 'submission_deadline'
   
@@ -52,7 +53,7 @@ export interface CalendarEvent {
   participants?: Array<{
     userId: string;
     name: string;
-    role: 'student' | 'lecturer' | 'admin';
+    role: 'student' | 'lecturer' | 'admin' | 'moderator';
   }>;
   
   // Location/Link

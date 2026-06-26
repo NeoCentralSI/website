@@ -94,9 +94,9 @@ export default function AdminAssignmentPage() {
     };
 
     const uploadMutation = useMutation({
-        mutationFn: async ({ proposalId, file }: { proposalId: string; file: File }) => {
+        mutationFn: async ({ proposalId, file, acceptedMemberIds }: { proposalId: string; file: File; acceptedMemberIds: string[] }) => {
             const { documentId } = await uploadInternshipDocument(file);
-            return adminUploadCompanyResponse(proposalId, documentId);
+            return adminUploadCompanyResponse(proposalId, documentId, acceptedMemberIds);
         },
         onSuccess: (data) => {
             toast.success(data.message);
@@ -108,11 +108,12 @@ export default function AdminAssignmentPage() {
         }
     });
 
-    const handleConfirmUpload = (file: File) => {
+    const handleConfirmUpload = (file: File, acceptedMemberIds: string[]) => {
         if (selectedProposal) {
             uploadMutation.mutate({
                 proposalId: selectedProposal.id,
-                file
+                file,
+                acceptedMemberIds
             });
         }
     };
@@ -318,6 +319,7 @@ export default function AdminAssignmentPage() {
                     open={uploadOpen}
                     onOpenChange={setUploadOpen}
                     companyName={selectedProposal.companyName}
+                    members={selectedProposal.members}
                     onConfirm={handleConfirmUpload}
                     isLoading={uploadMutation.isPending}
                 />

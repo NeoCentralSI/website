@@ -1,5 +1,6 @@
 export interface InternshipProposalItem {
     id: string;
+    coordinatorId?: string;
     nama: string;
     nim: string;
     koordinatorAtauMember: string;
@@ -127,6 +128,7 @@ export interface InternshipListItem {
         id: string;
         fileName: string;
         filePath: string;
+        status?: string;
     };
     finalScore?: number | null;
     finalGrade?: string | null;
@@ -140,6 +142,8 @@ export interface CompanyItem {
     email: string;
     phone: string;
     status?: string;
+    companyAddress?: string;
+    alasan?: string;
 }
 
 export interface StudentItem {
@@ -172,6 +176,7 @@ export interface SekdepRegistrationItem {
     coordinatorNim: string;
     companyName: string;
     status: string;
+    proposalStatus?: string;
     proposalSekdepNotes?: string | null;
     companyResponseNotes?: string | null;
     academicYearName?: string;
@@ -214,6 +219,7 @@ export interface CompanyStatsItem {
     id: string;
     companyName: string;
     address: string;
+    companyAddress?: string;
     status: string;
     proposalCount: number;
     internCount: number;
@@ -237,6 +243,8 @@ export interface AdminApprovedProposalItem {
         end: string;
     } | null;
     isSigned: boolean;
+    startDatePlanned?: string;
+    endDatePlanned?: string;
     proposedStartDate?: string;
     proposedEndDate?: string;
     academicYearName?: string;
@@ -270,6 +278,8 @@ export interface SekdepInternshipDetail {
         name: string;
         fieldSupervisor: string;
         fieldSupervisorEmail: string | null;
+        fieldSupervisorPhone: string | null;
+        fieldSupervisorNip: string | null;
     };
     logbookProgress: {
         filled: number;
@@ -291,14 +301,14 @@ export interface SekdepInternshipDetail {
     seminars: any[];
     lecturerScores: any[];
     fieldScores: any[];
-    reportingDocuments: {
-        report: DocumentVerificationDetail;
-        completionCertificate: DocumentVerificationDetail;
-        companyReceipt: DocumentVerificationDetail;
-        logbookDocument: DocumentVerificationDetail;
-        reportFinal?: DocumentVerificationDetail;
-        fieldAssessmentDocument?: DocumentVerificationDetail;
-    };
+        reportingDocuments: {
+            report: DocumentVerificationDetail;
+            completionCertificate: DocumentVerificationDetail;
+            companyReceipt: DocumentVerificationDetail;
+            logbookDocument: DocumentVerificationDetail;
+            fieldAssessmentDocument?: DocumentVerificationDetail;
+            beritaAcara?: DocumentVerificationDetail;
+        };
     status: string;
     academicYearName: string;
     createdAt: string;
@@ -335,6 +345,7 @@ export interface InternshipPendingLetter {
     id: string;
     type: 'APPLICATION' | 'ASSIGNMENT' | 'LECTURER_ASSIGNMENT';
     documentNumber: string;
+    academicYearName?: string;
     coordinatorName?: string;
     coordinatorNim?: string;
     coordinatorStudentId?: string;
@@ -351,6 +362,7 @@ export interface InternshipPendingLetter {
     } | null;
     createdAt: string;
     signedById: string | null;
+    letterStatus?: string;
     document: {
         id: string;
         fileName: string;
@@ -373,9 +385,12 @@ export interface StudentLogbookData {
         id: string;
         fieldSupervisorName: string | null;
         fieldSupervisorEmail: string | null;
+        fieldSupervisorPhone: string | null;
+        fieldSupervisorNip: string | null;
         unitSection: string | null;
         actualStartDate: string | null;
         actualEndDate: string | null;
+        supervisorId?: string | null;
         isLogbookLocked: boolean;
         logbookLockedAt: string | null;
         activeAssessmentUrl?: string | null;
@@ -388,18 +403,49 @@ export interface StudentLogbookData {
         proposal: {
             targetCompany: {
                 companyName: string;
-            }
+            };
+            internships?: {
+                id: string;
+                studentId: string;
+                supervisorId: string | null;
+                status: string;
+                student: {
+                    user: {
+                        fullName: string;
+                        identityNumber: string;
+                    }
+                };
+                supervisor?: {
+                    user: {
+                        fullName: string;
+                    }
+                } | null;
+                seminars?: {
+                    id: string;
+                    status: string;
+                }[];
+            }[];
         },
         supervisor?: {
             user: {
                 fullName: string;
             }
         } | null;
+        supLetter?: {
+            document?: { id: string; fileName: string; filePath: string } | null;
+            supervisor?: {
+                user?: {
+                    fullName?: string;
+                } | null;
+            } | null;
+        } | null;
         seminars?: {
             id: string;
             status: string;
             date: string | null;
             time: string | null;
+            beritaAcaraDocumentId?: string | null;
+            beritaAcaraDocument?: { id: string; fileName: string; filePath: string } | null;
             room?: {
                 name: string;
             } | null;
@@ -415,26 +461,125 @@ export interface StudentLogbookData {
         reportStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
         reportNotes?: string | null;
         reportUploadedAt?: string | null;
-        reportFinalDocId?: string | null;
-        reportFinalStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
-        reportFinalNotes?: string | null;
-        reportFinalUploadedAt?: string | null;
         completionCertificateDocId?: string | null;
         companyReceiptDocId?: string | null;
+        companyReportDocId?: string | null;
+        companyReportStatus?: 'SUBMITTED' | 'APPROVED' | 'REVISION_NEEDED' | null;
         finalNumericScore?: number | null;
         finalGrade?: string | null;
         lecturerAssessmentStatus?: string | null;
         fieldAssessmentStatus?: string | null;
+        fieldAssessmentNotes?: string | null;
         reportDocument?: { id: string; fileName: string; filePath: string } | null;
         reportFeedbackDocument?: { id: string; fileName: string; filePath: string } | null;
         completionCertificateDoc?: { id: string; fileName: string; filePath: string } | null;
         companyReceiptDoc?: { id: string; fileName: string; filePath: string } | null;
         companyReportDoc?: { id: string; fileName: string; filePath: string } | null;
         logbookDocument?: { id: string; fileName: string; filePath: string } | null;
-        reportFinalDoc?: { id: string; fileName: string; filePath: string } | null;
-        reportFinalTitle?: string | null;
     } | null;
     logbooks: InternshipLogbookItem[];
+}
+
+export interface StudentInternshipHistoryItem {
+    id: string;
+    status: 'COMPLETED' | 'FAILED' | string;
+    actualStartDate: string | null;
+    actualEndDate: string | null;
+    fieldSupervisorName?: string | null;
+    fieldSupervisorEmail?: string | null;
+    fieldSupervisorPhone?: string | null;
+    fieldSupervisorNip?: string | null;
+    unitSection?: string | null;
+    finalNumericScore?: number | null;
+    finalGrade?: string | null;
+    lecturerAssessmentStatus?: string | null;
+    fieldAssessmentStatus?: string | null;
+    fieldAssessmentNotes?: string | null;
+    reportTitle?: string | null;
+    reportStatus?: string | null;
+    reportNotes?: string | null;
+    reportUploadedAt?: string | null;
+    logbookDocumentStatus?: string | null;
+    companyReceiptStatus?: string | null;
+    completionCertificateStatus?: string | null;
+    companyReportStatus?: string | null;
+    proposal?: {
+        targetCompany?: {
+            companyName?: string;
+            companyAddress?: string;
+        } | null;
+        academicYear?: {
+            year?: string | null;
+            semester?: string | null;
+        } | null;
+        proposalDocument?: { id: string; fileName: string; filePath: string } | null;
+        appLetterDoc?: { id: string; fileName: string; filePath: string } | null;
+        companyResponseDoc?: { id: string; fileName: string; filePath: string } | null;
+        assignLetterDoc?: { id: string; fileName: string; filePath: string } | null;
+    } | null;
+    supervisor?: {
+        user?: {
+            fullName?: string;
+        } | null;
+    } | null;
+    supLetter?: {
+        document?: { id: string; fileName: string; filePath: string } | null;
+        supervisor?: {
+            user?: {
+                fullName?: string;
+            } | null;
+        } | null;
+    } | null;
+    seminars?: any[];
+    guidanceSessions?: InternshipGuidanceSessionHistoryItem[];
+    logbooks?: InternshipLogbookItem[];
+    lecturerScores?: InternshipAssessmentScoreItem[];
+    fieldScores?: InternshipAssessmentScoreItem[];
+    reportDocument?: { id: string; fileName: string; filePath: string } | null;
+    reportFeedbackDocument?: { id: string; fileName: string; filePath: string } | null;
+    fieldAssessmentDoc?: { id: string; fileName: string; filePath: string } | null;
+    completionCertificateDoc?: { id: string; fileName: string; filePath: string } | null;
+    companyReceiptDoc?: { id: string; fileName: string; filePath: string } | null;
+    companyReportDoc?: { id: string; fileName: string; filePath: string } | null;
+    logbookDocument?: { id: string; fileName: string; filePath: string } | null;
+}
+
+export interface InternshipAssessmentScoreItem {
+    internshipId?: string;
+    chosenRubricId?: string;
+    score: number;
+    chosenRubric?: {
+        cpmk?: {
+            id?: string;
+            code?: string;
+            name?: string;
+            weight?: number;
+            assessorType?: string;
+        } | null;
+    } | null;
+}
+
+export interface InternshipGuidanceSessionHistoryItem {
+    id: string;
+    weekNumber: number;
+    status: 'SUBMITTED' | 'LATE' | 'APPROVED' | string;
+    submissionDate?: string | null;
+    approvedAt?: string | null;
+    studentAnswers?: {
+        questionId: string;
+        answerText: string;
+        question?: {
+            questionText?: string;
+        } | null;
+    }[];
+    lecturerAnswers?: {
+        criteriaId: string;
+        evaluationValue?: string | null;
+        answerText?: string | null;
+        criteria?: {
+            criteriaName?: string;
+        } | null;
+    }[];
 }
 
 export interface SeminarScheduleData {
@@ -474,6 +619,14 @@ export interface LecturerWorkloadItem {
     supervisorLetterStatus: string;
 }
 
+
+export interface PendingReplacement {
+    id: string;
+    newSupervisorName: string;
+    reason: string;
+    requestedAt: string;
+}
+
 export interface SekdepSupervisorLetterDetail {
     id: string;
     lecturerName: string;
@@ -483,6 +636,8 @@ export interface SekdepSupervisorLetterDetail {
         nim: string;
         name: string;
         companyName: string;
+        actualStartDate: string | null;
+        actualEndDate: string | null;
         documents: {
             appLetterDocNumber: string | null;
             assignLetterDocNumber: string | null;
@@ -491,6 +646,7 @@ export interface SekdepSupervisorLetterDetail {
             supLetterStartDate: string | null;
             supLetterEndDate: string | null;
             supLetterDocId: string | null;
+            supLetterSignedById: string | null;
             supLetterFile: {
                 id: string;
                 fileName: string;
@@ -553,6 +709,7 @@ export interface LecturerSupervisedStudent {
     studentName: string;
     studentNim: string;
     companyName: string;
+    academicYearId: string;
     academicYearName: string;
     startDate: string;
     endDate: string;
@@ -583,6 +740,14 @@ export interface LecturerSupervisedStudent {
     } | null;
     finalScore?: number | null;
     finalGrade?: string | null;
+}
+
+export interface LecturerAcademicYearOption {
+    id: string;
+    year: string;
+    semester: string;
+    label: string;
+    isActive: boolean;
 }
 
 export interface LecturerGuidanceTimeline {
@@ -617,6 +782,8 @@ export interface LecturerGuidanceTimeline {
         status: string;
         room?: { name: string; capacity: number; location: string; };
         moderatorStudent?: { user: { fullName: string; } };
+        beritaAcaraDocumentId?: string | null;
+        beritaAcaraDocument?: { id: string; fileName: string; filePath: string } | null;
         audiences?: {
             studentId: string;
             validatedAt: string | null;
@@ -689,6 +856,39 @@ export interface InternshipCpmk {
     createdAt: string;
     updatedAt: string;
     rubrics?: InternshipAssessmentRubric[];
+}
+
+export interface InternshipGradeRecapCpmk {
+    id: string;
+    code: string;
+    name: string;
+    weight: number;
+    assessorType: 'LECTURER' | 'FIELD' | string;
+}
+
+export interface InternshipGradeRecapScore {
+    score: number;
+    weightedScore: number;
+    assessorType: 'LECTURER' | 'FIELD' | string;
+}
+
+export interface InternshipGradeRecapItem {
+    id: string;
+    studentName: string;
+    studentNim: string;
+    companyName: string;
+    academicYearName: string;
+    status: string;
+    gradeStatus: 'PASSED' | 'FAILED' | 'PENDING' | string;
+    scores: Record<string, InternshipGradeRecapScore | undefined>;
+    totalScore: number | null;
+    finalGrade: string | null;
+}
+
+export interface InternshipGradeRecapData {
+    academicYearId: string | null;
+    cpmks: InternshipGradeRecapCpmk[];
+    items: InternshipGradeRecapItem[];
 }
 
 export interface OverviewCompanyItem {

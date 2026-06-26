@@ -15,6 +15,7 @@ import { getSekdepSupervisorLetterDetail, updateSekdepSupervisorLetter, type Sek
 import { toTitleCaseName } from "@/lib/text";
 import { DatePicker } from "@/components/ui/date-picker";
 import { API_CONFIG } from "@/config/api";
+import { formatDateShortId } from "@/lib/text";
 
 interface LetterFormValues {
     documentNumber: string;
@@ -39,6 +40,11 @@ export default function LecturerWorkloadManageLetter() {
     const watchDates = watch(["startDate", "endDate"]);
     const watchInternshipIds = watch("internshipIds") || [];
 
+    const selectedStudents = useMemo(() => {
+        if (!detail) return [];
+        return detail.assignedStudents.filter(s => watchInternshipIds.includes(s.internshipId));
+    }, [detail, watchInternshipIds]);
+
     const calculateBusinessDays = (startStr: string, endStr: string) => {
         if (!startStr || !endStr) return 0;
         const start = new Date(startStr);
@@ -58,6 +64,41 @@ export default function LecturerWorkloadManageLetter() {
 
     const businessDays = calculateBusinessDays(watchDates[0], watchDates[1]);
 
+    const getKpDate = (field: "actualStartDate" | "actualEndDate", showToast = true) => {
+        const dates = selectedStudents
+            .map((student: any) => student[field])
+            .filter((date: any): date is string => Boolean(date))
+            .map((date: any) => new Date(date))
+            .filter((date: any) => !isNaN(date.getTime()));
+
+        if (dates.length === 0) {
+            if (showToast) toast.error("Belum ada mahasiswa yang memiliki tanggal KP");
+            return null;
+        }
+
+        const timestamp = field === "actualStartDate"
+            ? Math.min(...dates.map((date: any) => date.getTime()))
+            : Math.max(...dates.map((date: any) => date.getTime()));
+
+        return new Date(timestamp).toISOString().split('T')[0];
+    };
+
+    useEffect(() => {
+        if (selectedStudents.length > 0) {
+            const currentStart = watchDates[0];
+            const currentEnd = watchDates[1];
+            
+            if (!currentStart) {
+                const startVal = getKpDate("actualStartDate", false);
+                if (startVal) setValue("startDate", startVal);
+            }
+            if (!currentEnd) {
+                const endVal = getKpDate("actualEndDate", false);
+                if (endVal) setValue("endDate", endVal);
+            }
+        }
+    }, [selectedStudents, setValue, watchDates]);
+
     useEffect(() => {
         if (supervisorId) {
             fetchDetail();
@@ -76,9 +117,9 @@ export default function LecturerWorkloadManageLetter() {
             };
 
             // Pre-fill form based on first selected item if exists (can be improved)
-            // Just defaults for now, let's select all active students
+            const studentWithDocNum = res.data.assignedStudents.find((s: any) => s.documents.supLetterDocNumber);
             reset({
-                documentNumber: "",
+                documentNumber: studentWithDocNum?.documents.supLetterDocNumber || "",
                 startDate: "",
                 endDate: "",
                 internshipIds: res.data.assignedStudents.map((s: any) => s.internshipId)
@@ -167,6 +208,8 @@ export default function LecturerWorkloadManageLetter() {
 
     if (!detail) return null;
 
+    const isSigned = detail?.assignedStudents.some((s: any) => s.documents.supLetterSignedById);
+
     return (
         <div className="p-6 space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-4">
@@ -226,6 +269,11 @@ export default function LecturerWorkloadManageLetter() {
                                                     <span>&bull;</span>
                                                     <span className="truncate">{s.companyName}</span>
                                                 </div>
+                                                {(s.actualStartDate || s.actualEndDate) && (
+                                                    <p className="text-[11px] text-muted-foreground mt-1">
+                                                        KP: {s.actualStartDate ? formatDateShortId(s.actualStartDate) : '-'} s/d {s.actualEndDate ? formatDateShortId(s.actualEndDate) : '-'}
+                                                    </p>
+                                                )}
                                                 {s.documents.supLetterDocNumber && (
                                                     <div className="mt-1.5 flex flex-wrap gap-1">
                                                         <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">
@@ -289,6 +337,9 @@ export default function LecturerWorkloadManageLetter() {
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
                                                     onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    placeholder="Pilih tanggal"
+                                                    disabled={isSigned}
+                                                    showPastDates
                                                 />
                                             )}
                                         />
@@ -309,6 +360,9 @@ export default function LecturerWorkloadManageLetter() {
                                                 <DatePicker
                                                     value={field.value ? new Date(field.value) : undefined}
                                                     onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : "")}
+                                                    placeholder="Pilih tanggal"
+                                                    disabled={isSigned}
+                                                    showPastDates
                                                 />
                                             )}
                                         />
@@ -343,7 +397,7 @@ export default function LecturerWorkloadManageLetter() {
                                         <Settings2 className="h-4 w-4 mr-2" />
                                         Kelola Template
                                     </Button>
-                                    <Button type="submit" className="min-w-[120px]" disabled={submitting || watchInternshipIds.length === 0}>
+                                    <Button type="submit" className="min-w-[120px]" disabled={submitting || watchInternshipIds.length === 0 || isSigned}>
                                         {submitting ? (
                                             <>
                                                 <span className="w-4 h-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin" />

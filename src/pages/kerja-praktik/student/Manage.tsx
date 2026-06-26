@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { TabsNav } from '@/components/ui/tabs-nav';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStudentLogbooks, uploadInternshipDocument, submitCompletionCertificate, submitCompanyReceipt, submitInternshipReport, submitLogbookDocument, submitCompanyReport, submitFinalFixReport } from '@/services/internship';
 import { Loading } from '@/components/ui/spinner';
+import { TabsNav } from '@/components/ui/tabs-nav';
+import { getStudentLogbooks, submitCompanyReceipt, submitCompanyReport, submitCompletionCertificate, submitInternshipReport, submitLogbookDocument, uploadInternshipDocument } from '@/services/internship';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { ReportingTab } from '@/components/internship/student/ReportingTab';
 import { FinalReportTab } from '@/components/internship/student/FinalReportTab';
-import { SeminarTab } from '@/components/internship/student/SeminarTab';
 import { GradesTab } from '@/components/internship/student/GradesTab';
-import EmptyState from '@/components/ui/empty-state';
+import { ReportingTab } from '@/components/internship/student/ReportingTab';
+import { SeminarTab } from '@/components/internship/student/SeminarTab';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,6 +21,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import EmptyState from '@/components/ui/empty-state';
 
 export default function InternshipSeminarPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -55,23 +55,22 @@ export default function InternshipSeminarPage() {
     const latestSeminar = seminars[0];
 
     const [isUploading, setIsUploading] = useState<string | null>(null);
-    const [generatedAssessmentUrl, setGeneratedAssessmentUrl] = useState<string | null>(null);
 
     // Confirmation State
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [pendingUpload, setPendingUpload] = useState<{
-        type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT' | 'FINAL_FIX_REPORT';
+        type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT';
         file: File;
         title?: string;
     } | null>(null);
+    const isCompanyReportReupload = Boolean(
+        pendingUpload?.type === 'COMPANY_REPORT' &&
+        internship?.companyReportDocId &&
+        internship?.companyReportStatus !== 'APPROVED' &&
+        !['COMPLETED', 'APPROVED'].includes(internship?.fieldAssessmentStatus || '')
+    );
 
-    useEffect(() => {
-        if (internship?.activeAssessmentUrl) {
-            setGeneratedAssessmentUrl(internship.activeAssessmentUrl);
-        }
-    }, [internship]);
-
-    const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT' | 'FINAL_FIX_REPORT', file: File, title?: string) => {
+    const handleUpload = async (type: 'CERTIFICATE' | 'RECEIPT' | 'REPORT' | 'FINAL_REPORT' | 'COMPANY_REPORT', file: File, title?: string) => {
         try {
             setIsUploading(type);
             const { documentId } = await uploadInternshipDocument(file);
@@ -94,15 +93,6 @@ export default function InternshipSeminarPage() {
             } else if (type === 'COMPANY_REPORT') {
                 const response = await submitCompanyReport(documentId);
                 toast.success(response.message || "Laporan akhir instansi berhasil diunggah");
-                if (response.data?.assessmentInfo?.assessmentUrl) {
-                    setGeneratedAssessmentUrl(response.data.assessmentInfo.assessmentUrl);
-                }
-            } else if (type === 'FINAL_FIX_REPORT') {
-                if (!title || !title.trim()) {
-                    throw new Error("Judul laporan akhir final wajib diisi");
-                }
-                await submitFinalFixReport(title.trim(), documentId);
-                toast.success("Laporan Final Fix & Lembar Pengesahan berhasil diunggah");
             }
             
             queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
@@ -135,40 +125,26 @@ export default function InternshipSeminarPage() {
         }
     };
 
-    const handleFinalReportSubmit = async (title: string, file: File) => {
-        // If file is empty (dummy file for title-only update), use existing documentId
-        if (file.size === 0 && internship?.reportDocumentId) {
-            // Update title only using existing document
-            try {
-                setIsUploading('FINAL_REPORT');
-                await submitInternshipReport(title, internship.reportDocumentId);
-                toast.success("Judul laporan akhir berhasil diperbarui");
-                queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
-            } catch (error: unknown) {
-                toast.error((error as Error).message || "Gagal memperbarui judul");
-            } finally {
-                setIsUploading(null);
-            }
-        } else {
+    const handleFinalReportSubmit = async (title: string, file: File | null) => {
+        if (file) {
             await handleUpload('FINAL_REPORT', file, title);
+            return;
         }
-    };
 
-    const handleFinalFixReportSubmit = async (title: string, file: File) => {
-        // If file is empty (dummy file for title-only update), use existing documentId
-        if (file.size === 0 && internship?.reportFinalDocId) {
-            try {
-                setIsUploading('FINAL_FIX_REPORT');
-                await submitFinalFixReport(title, internship.reportFinalDocId);
-                toast.success("Judul laporan akhir final berhasil diperbarui");
-                queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
-            } catch (error: unknown) {
-                toast.error((error as Error).message || "Gagal memperbarui judul");
-            } finally {
-                setIsUploading(null);
-            }
-        } else {
-            await handleUpload('FINAL_FIX_REPORT', file, title);
+        if (!internship?.reportDocumentId) {
+            toast.error("File laporan akhir wajib diunggah");
+            return;
+        }
+
+        try {
+            setIsUploading('FINAL_REPORT');
+            await submitInternshipReport(title.trim(), internship.reportDocumentId);
+            toast.success("Perubahan laporan akhir berhasil disimpan");
+            queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
+        } catch (error: unknown) {
+            toast.error((error as Error).message || "Gagal menyimpan perubahan laporan");
+        } finally {
+            setIsUploading(null);
         }
     };
 
@@ -208,12 +184,26 @@ export default function InternshipSeminarPage() {
             <div className="flex flex-col gap-6 p-6">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">Seminar & Nilai Kerja Praktik</h1>
+                    <p className="text-muted-foreground text-sm">
+                        {isSeminar ? "Lihat jadwal dan informasi seminar Kerja Praktik." : "Data Kerja Praktik belum tersedia untuk akun Anda."}
+                    </p>
                 </div>
                 <TabsNav tabs={tabs} />
-                <EmptyState
-                    title="Belum Ada Kerja Praktik"
-                    description="Anda belum memiliki kegiatan Kerja Praktik yang sedang berjalan."
-                />
+                {isSeminar ? (
+                    <SeminarTab
+                        internship={null}
+                        latestSeminar={null}
+                        endDate={null}
+                        seminarDeadline={null}
+                        isSeminarOverdue={false}
+                        isSeminarApproaching={false}
+                    />
+                ) : (
+                    <EmptyState
+                        title="Belum Ada Kerja Praktik"
+                        description="Anda belum memiliki kegiatan Kerja Praktik yang sedang berjalan."
+                    />
+                )}
             </div>
         );
     }
@@ -242,7 +232,6 @@ export default function InternshipSeminarPage() {
                         reportingDeadline={reportingDeadline}
                         isReportingOverdue={isReportingOverdue}
                         isReportingApproaching={isReportingApproaching}
-                        generatedAssessmentUrl={generatedAssessmentUrl}
                     />
                 )}
                 {isLaporanAkhir && (
@@ -250,7 +239,6 @@ export default function InternshipSeminarPage() {
                         internship={internship}
                         isUploading={isUploading}
                         onFinalReportSubmit={handleFinalReportSubmit}
-                        onFinalFixReportSubmit={handleFinalFixReportSubmit}
                     />
                 )}
                 {isSeminar && (
@@ -273,7 +261,9 @@ export default function InternshipSeminarPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Konfirmasi Unggah Dokumen</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Dokumen ini hanya dapat diunggah satu kali dan tidak dapat diubah kembali setelah berhasil dikirim (kecuali jika nantinya diminta revisi oleh Sekdep).
+                            {isCompanyReportReupload
+                                ? "File laporan instansi akan diganti, tetapi link penilaian pembimbing lapangan yang sudah dibuat tidak akan dibuat ulang."
+                                : "Dokumen ini hanya dapat diunggah satu kali dan tidak dapat diubah kembali setelah berhasil dikirim (kecuali jika nantinya diminta revisi oleh Sekdep)."}
                             <br /><br />
                             Pastikan file yang Anda pilih sudah benar. Apakah Anda yakin ingin melanjutkan?
                         </AlertDialogDescription>

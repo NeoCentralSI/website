@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -8,13 +8,23 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Upload, FileText, X } from "lucide-react";
+
+interface Member {
+    id: string;
+    name: string;
+    nim: string;
+    role: string;
+    status: string;
+}
 
 interface AdminUploadCompanyResponseDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     companyName: string;
-    onConfirm: (file: File) => void;
+    members?: Member[];
+    onConfirm: (file: File, acceptedMemberIds: string[]) => void;
     isLoading: boolean;
 }
 
@@ -22,11 +32,19 @@ export default function AdminUploadCompanyResponseDialog({
     open,
     onOpenChange,
     companyName,
+    members = [],
     onConfirm,
     isLoading,
 }: AdminUploadCompanyResponseDialogProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [acceptedMemberIds, setAcceptedMemberIds] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (open) {
+            setAcceptedMemberIds(members.map(member => member.id));
+        }
+    }, [open, members]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -40,13 +58,14 @@ export default function AdminUploadCompanyResponseDialog({
 
     const handleConfirm = () => {
         if (selectedFile) {
-            onConfirm(selectedFile);
+            onConfirm(selectedFile, acceptedMemberIds);
         }
     };
 
     const handleOpenChange = (isOpen: boolean) => {
         if (!isOpen) {
             setSelectedFile(null);
+            setAcceptedMemberIds([]);
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
             }
@@ -60,6 +79,18 @@ export default function AdminUploadCompanyResponseDialog({
             fileInputRef.current.value = "";
         }
     };
+
+    const toggleMember = (studentId: string) => {
+        setAcceptedMemberIds(prev =>
+            prev.includes(studentId)
+                ? prev.filter(id => id !== studentId)
+                : [...prev, studentId]
+        );
+    };
+
+    const acceptedCount = acceptedMemberIds.length;
+    const isRejectedAll = members.length > 0 && acceptedCount === 0;
+    const isPartial = members.length > 0 && acceptedCount > 0 && acceptedCount < members.length;
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -113,6 +144,36 @@ export default function AdminUploadCompanyResponseDialog({
                             onChange={handleFileChange}
                         />
                     </div>
+
+                    {members.length > 0 && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                                <label className="text-sm font-medium">Mahasiswa yang Diterima</label>
+                                <span className="text-xs text-muted-foreground">{acceptedCount}/{members.length}</span>
+                            </div>
+                            <div className="border rounded-md divide-y">
+                                {members.map((member) => (
+                                    <div key={member.id} className="flex items-center justify-between gap-3 p-3 hover:bg-muted/50 transition-colors">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium truncate">{member.name}</p>
+                                            <p className="text-xs text-muted-foreground">{member.nim} - {member.role}</p>
+                                        </div>
+                                        <Checkbox
+                                            checked={acceptedMemberIds.includes(member.id)}
+                                            onCheckedChange={() => toggleMember(member.id)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {isRejectedAll
+                                    ? "Semua mahasiswa akan ditandai ditolak perusahaan."
+                                    : isPartial
+                                        ? "Mahasiswa yang tidak dicentang akan ditandai ditolak perusahaan."
+                                        : "Semua mahasiswa akan ditandai diterima perusahaan."}
+                            </p>
+                        </div>
+                    )}
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isLoading}>
@@ -121,6 +182,7 @@ export default function AdminUploadCompanyResponseDialog({
                     <Button
                         onClick={handleConfirm}
                         disabled={isLoading || !selectedFile}
+                        variant={isRejectedAll ? "destructive" : "default"}
                     >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Upload Surat Balasan

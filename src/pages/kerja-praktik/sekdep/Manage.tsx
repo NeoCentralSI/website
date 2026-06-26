@@ -8,6 +8,7 @@ import { InternshipListPanel } from '@/components/internship/sekdep/InternshipLi
 import { LecturerWorkloadPanel } from '@/components/internship/sekdep/LecturerWorkloadPanel';
 import { GuidanceMasterPanel } from '@/components/internship/sekdep/GuidanceMasterPanel';
 import { InternshipCpmkPanel } from '@/components/internship/sekdep/InternshipCpmkPanel';
+import { GradeRecapPanel } from '@/components/internship/sekdep/GradeRecapPanel';
 import { MonitoringPanel } from '@/components/internship/MonitoringPanel';
 
 const TAB_ITEMS: TabItem[] = [
@@ -17,15 +18,18 @@ const TAB_ITEMS: TabItem[] = [
     { label: "Daftar Dosen", to: "/kelola/kerja-praktik/dosen" },
     { label: "Bimbingan", to: "/kelola/kerja-praktik/bimbingan" },
     { label: "CPMK", to: "/kelola/kerja-praktik/cpmk" },
+    { label: "Rekap Nilai", to: "/kelola/kerja-praktik/rekap-nilai" },
 ];
 
 export default function SekdepInternshipProposalPage() {
-    const { pathname } = useLocation();
+    const { pathname, search } = useLocation();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
     const activeTab = useMemo(() =>
         TAB_ITEMS.find((tab) => pathname.startsWith(tab.to)) || TAB_ITEMS[0]
         , [pathname]);
+
+    const isWeekDetail = useMemo(() => new URLSearchParams(search).has('week'), [search]);
 
     const breadcrumb = useMemo(() => [
         { label: 'Kerja Praktik' },
@@ -63,8 +67,20 @@ export default function SekdepInternshipProposalPage() {
             return <InternshipCpmkPanel />;
         }
 
+        if (activeTab.label === "Rekap Nilai") {
+            return <GradeRecapPanel />;
+        }
+
         return null;
     };
+
+    if (isWeekDetail) {
+        return (
+            <div className="p-4">
+                {renderContent()}
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 space-y-6">
