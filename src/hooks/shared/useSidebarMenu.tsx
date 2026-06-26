@@ -401,8 +401,6 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
-          { title: "CPMK Tugas Akhir", url: "/kelola/tugas-akhir/cpmk" },
-          { title: "Rubrik Metopen (TA-03)", url: "/kelola/tugas-akhir/rubrik-metopen" },
           { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
