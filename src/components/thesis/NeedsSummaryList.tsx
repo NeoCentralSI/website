@@ -22,7 +22,7 @@ export default function NeedsSummaryList() {
     return null;
   }
 
-  const guidances = data?.guidances || [];
+  const guidances = data || [];
 
   if (guidances.length === 0) {
     return null; // Don't show anything if no pending summaries

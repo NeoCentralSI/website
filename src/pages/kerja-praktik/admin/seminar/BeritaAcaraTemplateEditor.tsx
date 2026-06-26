@@ -39,11 +39,11 @@ const BeritaAcaraTemplateEditor = () => {
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kerja Praktik' },
-        { label: 'Seminar', path: '/admin/kerja-praktik/seminar' },
+        { label: 'Seminar', path: '/admin/kerja-praktik/seminar/template' },
         { label: 'Kelola Template Berita Acara' }
     ], []);
 
-    const backPath = '/admin/kerja-praktik/seminar';
+    const backPath = '/admin/kerja-praktik/seminar/template';
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);

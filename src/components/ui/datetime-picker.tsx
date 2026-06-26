@@ -49,6 +49,7 @@ export function DateTimePicker({
     const mm = String(value.getMinutes()).padStart(2, "0");
     return `${hh}:${mm}`;
   });
+  const valueTime = value?.getTime() ?? null;
 
   React.useEffect(() => {
     if (!value) return;
@@ -56,7 +57,7 @@ export function DateTimePicker({
     const hh = String(value.getHours()).padStart(2, "0");
     const mm = String(value.getMinutes()).padStart(2, "0");
     setTime(`${hh}:${mm}`);
-  }, [value?.getTime?.()]);
+  }, [value, valueTime]);
 
   const commit = (d: Date | null, t: string) => {
     if (!d || !t) {

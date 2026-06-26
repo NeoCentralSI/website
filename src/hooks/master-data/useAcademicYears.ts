@@ -56,7 +56,8 @@ export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
     setIsSubmitting(true);
     try {
       // Remove isActive from update payload since it's auto-computed
-      const { isActive, ...updateData } = formData;
+      const updateData = { ...formData };
+      delete updateData.isActive;
       await updateAcademicYearAPI(id, updateData);
       toast.success('Tahun ajaran berhasil diupdate');
       invalidateAcademicYears();
@@ -106,7 +107,7 @@ export function useAcademicYearForm() {
     setEditingYear(year);
     setFormData({
       semester: year.semester,
-      year: year.year,
+      year: String(year.year),
       startDate: year.startDate,
       endDate: year.endDate,
     });

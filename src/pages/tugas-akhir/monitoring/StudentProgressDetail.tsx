@@ -402,12 +402,12 @@ export default function StudentProgressDetail() {
 
         {/* Right Column - Progress Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Milestone Progress */}
+          {/* Active flow progress */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Target className="h-4 w-4" />
-                Progress Milestone
+                Progress Alur Proposal
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -419,11 +419,11 @@ export default function StudentProgressDetail() {
                 </div>
                 <Progress value={data.progress.percent} className="h-3" />
                 <p className="text-xs text-muted-foreground">
-                  {data.progress.completed} dari {data.progress.total} milestone selesai
+                  {data.progress.completed} dari {data.progress.total} langkah selesai
                 </p>
               </div>
 
-              {/* Milestones List */}
+              {/* Active flow steps */}
               {data.milestones.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {data.milestones.map((m) => (
@@ -448,7 +448,7 @@ export default function StudentProgressDetail() {
                   ))}
                 </div>
               ) : (
-                <EmptyState message="Belum ada milestone" icon={Target} />
+                <EmptyState message="Belum ada langkah alur yang tercatat" icon={Target} />
               )}
             </CardContent>
           </Card>

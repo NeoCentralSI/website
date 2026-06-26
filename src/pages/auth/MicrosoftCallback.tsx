@@ -1,73 +1,59 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveAuthTokens } from '@/services/auth.service';
 import { useAuth } from '@/hooks/shared';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { toTitleCaseName } from '@/lib/text';
+import { API_CONFIG, getApiUrl } from '@/config/api';
 
 export default function MicrosoftCallback() {
-  
   const navigate = useNavigate();
   const { setUserDirectly } = useAuth();
+  const processedRef = useRef(false);
 
   useEffect(() => {
-    
+    if (processedRef.current) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const exchangeCode = urlParams.get('code');
+
     const handleCallback = async () => {
       try {
-        
-        // Get tokens from URL query params (backend redirect with tokens)
-        const urlParams = new URLSearchParams(window.location.search);
-        const tokensString = urlParams.get('tokens');
-        
-
-        if (!tokensString) {
-          console.error('⚠️ Tokens not found, redirecting to login...');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 1000);
+        if (!exchangeCode) {
+          navigate('/login', { replace: true });
           return;
         }
 
-        // Decode base64 tokens
-        const decodedString = atob(tokensString);
-        const { accessToken, refreshToken, user, hasCalendarAccess } = JSON.parse(decodedString);
-        
+        processedRef.current = true;
 
-        // Save tokens
+        const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.MICROSOFT_EXCHANGE), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: exchangeCode }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Exchange failed');
+        }
+
+        const { accessToken, refreshToken, user, hasCalendarAccess } = result.data;
+
         saveAuthTokens(accessToken, refreshToken);
-
-        // Save calendar access status
         localStorage.setItem('hasCalendarAccess', JSON.stringify(hasCalendarAccess ?? false));
-
-        // Delay untuk ensure tokens saved
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Set user langsung tanpa fetch API (hindari double load)
         setUserDirectly(user);
 
-        // Delay untuk ensure state updated
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Clear URL query params
-        window.history.replaceState(null, '', '/auth/microsoft/callback');
-
-        // Final delay before redirect
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Show login success notification
         toast.success('Login berhasil', {
           description: `Selamat datang, ${toTitleCaseName(user.fullName)}`,
         });
 
-        // Redirect to dashboard dengan SPA navigation
         navigate('/dashboard', { replace: true });
       } catch (error) {
-        console.error('❌ Callback error:', error);
-        // Jangan tampilkan error, langsung redirect ke login
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 1000);
+        console.error('Callback error:', error);
+        processedRef.current = true;
+        navigate('/login', { replace: true });
       }
     };
 

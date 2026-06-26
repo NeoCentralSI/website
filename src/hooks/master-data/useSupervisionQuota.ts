@@ -27,8 +27,12 @@ export function useSetDefaultQuota() {
   return useMutation({
     mutationFn: ({ academicYearId, data }: { academicYearId: string; data: SetDefaultQuotaRequest }) =>
       setDefaultQuotaAPI(academicYearId, data),
-    onSuccess: () => {
-      toast.success('Default kuota berhasil disimpan');
+    onSuccess: (res) => {
+      const gen = res?.generated;
+      const msg = gen
+        ? `Default kuota berhasil disimpan. Diterapkan ke ${gen.total} dosen${gen.updated != null ? ` (${gen.created} baru, ${gen.updated} diperbarui)` : ''}.`
+        : 'Default kuota berhasil disimpan';
+      toast.success(msg);
       qc.invalidateQueries({ queryKey: ['supervision-quota'] });
     },
     onError: (err: Error) => {

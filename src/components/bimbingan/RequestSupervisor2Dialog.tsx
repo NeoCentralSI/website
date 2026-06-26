@@ -12,9 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import EmptyState from "@/components/ui/empty-state";
 import { toast } from "sonner";
 import { toTitleCaseName } from "@/lib/text";
+import { cn } from "@/lib/utils";
 import {
   getAvailableSupervisors2,
   requestSupervisor2,
@@ -27,6 +29,13 @@ interface RequestSupervisor2DialogProps {
   hasPembimbing2: boolean;
   hasPendingRequest: boolean;
 }
+
+// Info kuota aman untuk mahasiswa (canon §7.3): hanya traffic light.
+const TRAFFIC_LIGHT_META: Record<string, { label: string; className: string }> = {
+  green: { label: "Tersedia", className: "border-green-300 bg-green-50 text-green-700" },
+  yellow: { label: "Hampir penuh", className: "border-amber-300 bg-amber-50 text-amber-700" },
+  red: { label: "Penuh", className: "border-red-300 bg-red-50 text-red-700" },
+};
 
 export function RequestSupervisor2Dialog({
   hasPembimbing2,
@@ -123,17 +132,32 @@ export function RequestSupervisor2Dialog({
           ) : (
             filteredLecturers.map((lecturer) => {
               const isSelected = selectedLecturer?.id === lecturer.id;
+              const isFull =
+                lecturer.trafficLight === "red" || lecturer.acceptingRequests === false;
+              const trafficMeta = lecturer.trafficLight
+                ? TRAFFIC_LIGHT_META[lecturer.trafficLight]
+                : null;
+              const hasQuotaInfo =
+                !!trafficMeta ||
+                lecturer.normalAvailable != null ||
+                lecturer.activeCount != null;
               return (
                 <Card
                   key={lecturer.id}
-                  className={`p-3 cursor-pointer transition-all hover:shadow-sm ${
+                  aria-disabled={isFull}
+                  className={cn(
+                    "p-3 transition-all",
+                    isFull ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:shadow-sm",
                     isSelected
                       ? "ring-2 ring-primary bg-primary/5"
-                      : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => setSelectedLecturer(lecturer)}
+                      : !isFull && "hover:bg-muted/50",
+                  )}
+                  onClick={() => {
+                    if (isFull) return;
+                    setSelectedLecturer(lecturer);
+                  }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">
                         {toTitleCaseName(lecturer.fullName || "")}
@@ -145,6 +169,32 @@ export function RequestSupervisor2Dialog({
                       {lecturer.email && (
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {lecturer.email}
+                        </p>
+                      )}
+                      {hasQuotaInfo && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                          {trafficMeta && (
+                            <Badge variant="outline" className={cn("text-[10px]", trafficMeta.className)}>
+                              {trafficMeta.label}
+                            </Badge>
+                          )}
+                          {lecturer.normalAvailable != null && (
+                            <span className="text-[11px] text-muted-foreground">
+                              Sisa normal: {lecturer.normalAvailable}
+                            </span>
+                          )}
+                          {lecturer.activeCount != null && (
+                            <span className="text-[11px] text-muted-foreground">
+                              Beban aktif: {lecturer.activeCount}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {isFull && (
+                        <p className="mt-1 text-[11px] text-red-600">
+                          {lecturer.acceptingRequests === false
+                            ? "Dosen sedang menutup penerimaan permintaan."
+                            : "Kuota pembimbing penuh."}
                         </p>
                       )}
                     </div>

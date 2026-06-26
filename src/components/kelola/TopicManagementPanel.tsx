@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2, BookOpen, FileText } from "lucide-react";
 import * as topicService from "@/services/topic.service";
+import { getScienceGroupsAPI } from "@/services/admin.service";
 
 import type { Topic, CreateTopicDto, UpdateTopicDto } from "@/types/topic.types";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner, Loading } from "@/components/ui/spinner";
@@ -36,10 +38,12 @@ import { formatDateId } from "@/lib/text";
 type TopicFormState = {
   id?: string;
   name: string;
+  scienceGroupId: string;
 };
 
 const emptyForm: TopicFormState = {
   name: "",
+  scienceGroupId: "",
 };
 
 export function TopicManagementPanel() {
@@ -60,6 +64,10 @@ export function TopicManagementPanel() {
   const topicsQuery = useQuery({
     queryKey: ["topics"],
     queryFn: topicService.getTopics,
+  });
+  const scienceGroupsQuery = useQuery({
+    queryKey: ["science-groups"],
+    queryFn: async () => (await getScienceGroupsAPI()).data,
   });
 
   // Mutations
@@ -122,7 +130,7 @@ export function TopicManagementPanel() {
     },
   });
 
-  const topics = topicsQuery.data || [];
+  const topics = useMemo(() => topicsQuery.data || [], [topicsQuery.data]);
 
   const filteredTopics = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -143,7 +151,7 @@ export function TopicManagementPanel() {
     deleteTopic.isPending ||
     bulkDeleteTopics.isPending;
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -153,15 +161,15 @@ export function TopicManagementPanel() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedIds.size === filteredTopics.length) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(filteredTopics.map((t) => t.id)));
     }
-  };
+  }, [filteredTopics, selectedIds.size]);
 
   const handleBulkDelete = () => {
     bulkDeleteTopics.mutate(Array.from(selectedIds));
@@ -177,22 +185,28 @@ export function TopicManagementPanel() {
     setDialogOpen(true);
   };
 
-  const startEdit = (topic: Topic) => {
+  const startEdit = useCallback((topic: Topic) => {
     setFormState({
       id: topic.id,
       name: topic.name,
+      scienceGroupId: topic.scienceGroupId ?? "",
     });
     setDialogOpen(true);
-  };
+  }, []);
 
   const handleSubmit = () => {
     if (!formState.name.trim()) {
       toast.error("Nama topik wajib diisi");
       return;
     }
+    if (!formState.scienceGroupId) {
+      toast.error("KBK topik wajib dipilih");
+      return;
+    }
 
     const payload = {
       name: formState.name.trim(),
+      scienceGroupId: formState.scienceGroupId,
     };
 
     if (formState.id) {
@@ -202,10 +216,10 @@ export function TopicManagementPanel() {
     }
   };
 
-  const handleDelete = (topic: Topic) => {
+  const handleDelete = useCallback((topic: Topic) => {
     setTopicToDelete(topic);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
   // Define Columns
   const columns = useMemo<Column<Topic>[]>(
@@ -236,6 +250,18 @@ export function TopicManagementPanel() {
         header: "Nama Topik",
         accessor: "name",
         className: "font-medium",
+      },
+      {
+        key: "scienceGroup",
+        header: "KBK",
+        width: "180px",
+        render: (topic) => (
+          topic.scienceGroup?.name ? (
+            <Badge variant="outline">{topic.scienceGroup.name}</Badge>
+          ) : (
+            <Badge variant="destructive">Belum dipetakan</Badge>
+          )
+        ),
       },
       {
         key: "thesisCount",
@@ -369,8 +395,8 @@ export function TopicManagementPanel() {
             </DialogTitle>
             <DialogDescription>
               {formState.id
-                ? "Perbarui nama topik tugas akhir."
-                : "Buat topik baru untuk mengelompokkan template milestone."}
+                ? "Perbarui topik dan KBK yang menjadi dasar rekomendasi pembimbing."
+                : "Buat topik baru dan petakan ke KBK agar rekomendasi pembimbing KaDep akurat."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -386,6 +412,31 @@ export function TopicManagementPanel() {
                 disabled={createTopic.isPending || updateTopic.isPending}
               />
             </div>
+            <div className="space-y-2">
+              <Label>KBK Topik</Label>
+              <Select
+                value={formState.scienceGroupId}
+                onValueChange={(value) =>
+                  setFormState((prev) => ({ ...prev, scienceGroupId: value }))
+                }
+                disabled={
+                  scienceGroupsQuery.isLoading ||
+                  createTopic.isPending ||
+                  updateTopic.isPending
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih KBK..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(scienceGroupsQuery.data ?? []).map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -399,6 +450,7 @@ export function TopicManagementPanel() {
               onClick={handleSubmit}
               disabled={
                 !formState.name.trim() ||
+                !formState.scienceGroupId ||
                 createTopic.isPending ||
                 updateTopic.isPending
               }

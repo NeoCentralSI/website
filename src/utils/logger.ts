@@ -10,5 +10,5 @@ type ApiLog = {
 };
 
 export function logApi(_info: ApiLog) {
-  // eslint-disable-next-line no-console
+  void _info;
 }

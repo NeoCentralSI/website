@@ -49,6 +49,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
           <Input
             id="email"
             type="email"
+            autoComplete="email"
             placeholder="nama@unand.ac.id"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

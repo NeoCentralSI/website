@@ -2,7 +2,6 @@ import { getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 import type { Topic, CreateTopicDto, UpdateTopicDto, BulkDeleteResult } from "@/types/topic.types";
 
-// API Endpoints
 const ENDPOINTS = {
   TOPICS: "/topics",
   TOPIC_DETAIL: (id: string) => `/topics/${id}`,

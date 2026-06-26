@@ -8,30 +8,25 @@ import {
   useStudentDefenceHistory,
 } from '@/hooks/thesis-defence';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
+import { useStudentEligibility } from '@/hooks/shared';
 
 export default function StudentThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const {
-    data: overview,
-    isLoading: isOverviewLoading,
-    isError: isOverviewError,
-    error: overviewError,
-    refetch: refetchOverview,
-  } = useStudentDefenceOverview();
+  const { hasTugasAkhirCourse } = useStudentEligibility();
+  const studentTaParentHref = hasTugasAkhirCourse ? '/tugas-akhir' : '/metopel';
+  const { data: overview, isLoading: isOverviewLoading } = useStudentDefenceOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentDefenceHistory();
 
   const isLoading = isOverviewLoading || isHistoryLoading;
 
   const breadcrumbs = useMemo(
     () => [
-      { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Sidang', href: '/tugas-akhir/sidang' },
+      { label: 'Tugas Akhir', href: studentTaParentHref },
+      { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
       { label: 'Status & Pendaftaran' },
     ],
-    []
+    [studentTaParentHref]
   );
 
   useEffect(() => {
@@ -55,30 +50,22 @@ export default function StudentThesisDefence() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Sidang Tugas Akhir</h1>
           <p className="text-muted-foreground">
-            Pantau status sidang, checklist persyaratan, dan unggah dokumen sidang
+            Pantau status sidang, unggah dokumen, dan lihat riwayat sidang tugas akhir
           </p>
         </div>
       </div>
 
-      {isOverviewError ? (
-        <div className="rounded-lg border border-dashed p-8 text-center space-y-3">
-          <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {overviewError instanceof Error
-              ? overviewError.message
-              : 'Gagal memuat data sidang tugas akhir.'}
-          </p>
-          <Button variant="outline" size="sm" onClick={() => refetchOverview()}>
-            Coba lagi
-          </Button>
-        </div>
-      ) : overview ? (
+      {overview ? (
         <StudentThesisDefenceOverviewPanel
           overview={overview}
           history={history || []}
           onDetailClick={(id) => navigate(`/tugas-akhir/sidang/${id}`)}
         />
-      ) : null}
+      ) : (
+        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+          Data sidang tugas akhir belum tersedia.
+        </div>
+      )}
     </div>
   );
 }

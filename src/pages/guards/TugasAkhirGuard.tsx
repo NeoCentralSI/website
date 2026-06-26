@@ -21,22 +21,16 @@ export default function TugasAkhirGuard() {
       );
     }
 
-    // Check eligibility requirements
     if (!canAccessTugasAkhir) {
       return (
         <RequirementsNotMet
           title="Tugas Akhir Belum Tersedia"
-          description="Anda belum memenuhi persyaratan untuk mengakses fitur Tugas Akhir."
+          description="Modul Tugas Akhir (overview, bimbingan formal, seminar, sidang) hanya terbuka setelah snapshot SIA mencatat Anda mengambil mata kuliah Tugas Akhir. Untuk fase Metode Penelitian, unggah proposal dan catatan bimbingan informal lewat menu Metode Penelitian di sidebar."
           requirements={[
             {
-              label: `Minimal 110 SKS`,
-              met: requirements.tugasAkhir.sks.met,
-              description: `SKS Anda saat ini: ${requirements.tugasAkhir.sks.current} SKS`,
-            },
-            {
-              label: "Mengambil mata kuliah Tugas Akhir",
+              label: "Mengambil mata kuliah Tugas Akhir (snapshot SIA)",
               met: requirements.tugasAkhir.course.met,
-              description: "Anda harus mengambil mata kuliah Tugas Akhir semester ini",
+              description: requirements.tugasAkhir.course.description,
             },
           ]}
           homeUrl="/dashboard"

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import * as xlsx from "xlsx";
+import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -7,6 +7,8 @@ import { FileSpreadsheet, Download, Upload, AlertCircle, CheckCircle2 } from "lu
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { importMasterDataTheses } from "@/services/masterDataTa.service";
@@ -76,15 +78,15 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
             }
         ];
 
-        const worksheet = xlsx.utils.json_to_sheet(sampleData, { header: headers });
-        const workbook = xlsx.utils.book_new();
-        xlsx.utils.book_append_sheet(workbook, worksheet, "Template Import TA");
+        const worksheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Template Import TA");
 
         // Auto-width
         const colWidths = headers.map(() => ({ wch: 20 }));
         worksheet["!cols"] = colWidths;
 
-        xlsx.writeFile(workbook, "Template_Import_Tugas_Akhir.xlsx");
+        XLSX.writeFile(workbook, "Template_Import_Tugas_Akhir.xlsx");
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,10 +104,10 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
         reader.onload = (e) => {
             try {
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = xlsx.read(data, { type: "array" });
+                const workbook = XLSX.read(data, { type: "array" });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const rows = xlsx.utils.sheet_to_json(worksheet);
+                const rows = XLSX.utils.sheet_to_json(worksheet);
 
                 if (rows.length === 0) {
                     toast.error("File excel kosong atau tidak valid");
@@ -241,13 +243,4 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
             </DialogContent>
         </Dialog>
     );
-}
-
-// Inline components to avoid missing imports in snippet
-function Label({ children, ...props }: any) {
-    return <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" {...props}>{children}</label>;
-}
-
-function Input({ ...props }: any) {
-    return <input className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" {...props} />;
 }

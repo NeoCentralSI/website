@@ -1,111 +1,114 @@
 import { useQuery } from "@tanstack/react-query";
 import { getCachedStudentsFromSia } from "@/services/sia.service";
 import { checkMetopelEligibility } from "@/services/metopen.service";
-import { useAuth } from "@/hooks/shared";
+import { useAuth } from "./useAuth";
+
+type RequirementStatus = {
+  met: boolean;
+  description?: string;
+};
+
+type NumericRequirementStatus = RequirementStatus & {
+  current: number;
+  required: number;
+};
 
 interface EligibilityResult {
   isLoading: boolean;
   sks: number;
-  semester: number;
   hasTugasAkhirCourse: boolean;
-  hasMetopenCourse: boolean;
   canAccessKerjaPraktek: boolean;
   canAccessTugasAkhir: boolean;
-  canAccessMetopen: boolean;
+  canAccessMetopel: boolean;
+  isMetopenReadOnly: boolean;
+  isMetopenOnlyTrack: boolean;
   requirements: {
     kerjaPraktek: {
-      sks: { met: boolean; current: number; required: number };
+      sks: NumericRequirementStatus;
     };
     tugasAkhir: {
-      sks: { met: boolean; current: number; required: number };
-      course: { met: boolean };
+      // F-0.2: gate TA = snapshot SIA MK Tugas Akhir (course), bukan SKS hard-code (BR-25).
+      course: RequirementStatus;
     };
-    metopen: {
-      course: { met: boolean };
+    metopel: {
+      // Canon §5.1 (F-0.1): eligibility = snapshot SIA semata (tanpa gate semester).
+      eligibility: RequirementStatus;
     };
   };
 }
 
 export function useStudentEligibility(): EligibilityResult {
-  const { user: authUser, isLoading: isAuthLoading } = useAuth();
+  const { user: authUser } = useAuth();
   const nim = authUser?.identityNumber;
 
-  // Primary source: SIA cache (when admin has synced data)
-  const { data: siaStudents, isLoading: isSiaLoading } = useQuery({
+  const { data: siaStudents, isLoading: siaLoading } = useQuery({
     queryKey: ["sia-cached-students"],
     queryFn: getCachedStudentsFromSia,
     enabled: !!nim,
     staleTime: 5 * 60 * 1000,
-    retry: 0, // Don't retry — if SIA fails, fall through to DB checks immediately
   });
 
-  // Always fetch backend eligibility check in parallel.
-  // Backend checks thesis status "Metopel" in DB as proxy for SIA enrollment.
-  // This is the authoritative fallback when SIA cache is unavailable.
-  const { data: backendEligibility, isLoading: isBackendEligibilityLoading } = useQuery({
-    queryKey: ["metopen-eligibility-check", authUser?.id],
+  const { data: metopelEligibility, isLoading: metopelLoading } = useQuery({
+    queryKey: ["metopel-eligibility"],
     queryFn: checkMetopelEligibility,
-    enabled: !!nim && !!authUser?.id,
+    enabled: !!nim,
     staleTime: 5 * 60 * 1000,
-    retry: 1,
   });
 
   const siaStudent = siaStudents?.find((s) => s.nim === nim);
-  const hasSiaData = !!siaStudent;
-
-  // SKS: from SIA if available, else from user profile (auth/me endpoint)
-  const sks = Math.max(
-    siaStudent?.sksCompleted ?? 0,
-    authUser?.student?.sksCompleted ?? 0
+  const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
+  const hasTugasAkhirCourseFromSia = !!siaStudent?.currentSemesterCourses?.some(
+    (c) => (c.name || "").toLowerCase().includes("tugas akhir")
   );
-  const semester = siaStudent?.currentSemester ?? 0;
+  const takingThesisCourseFromBackend =
+    typeof metopelEligibility?.takingThesisCourse === "boolean"
+      ? metopelEligibility.takingThesisCourse
+      : typeof authUser?.student?.takingThesisCourse === "boolean"
+        ? authUser.student.takingThesisCourse
+        : null;
+  const hasTugasAkhirCourse = takingThesisCourseFromBackend ?? hasTugasAkhirCourseFromSia;
 
-  // Metopen course:
-  // - Backend (thesis status "Metopel") is authoritative when it says canAccess.
-  // - When backend says no, fall back to SIA currentSemesterCourses if available.
-  // This prevents SIA cache (which may be incomplete) from overriding DB-verified eligibility.
-  const hasMetopenCourse =
-    backendEligibility?.canAccess === true ||
-    (hasSiaData &&
-      !!siaStudent?.currentSemesterCourses?.some(
-        (c) => (c.name || "").toLowerCase().includes("metodologi penelitian")
-      ));
-
-  // Tugas Akhir course:
-  // - If SIA has data: check currentSemesterCourses for "Tugas Akhir"
-  // - Else: SKS >= 110 is sufficient (SIA integration pending)
-  const hasTugasAkhirCourse = hasSiaData
-    ? !!siaStudent?.currentSemesterCourses?.some(
-        (c) => (c.name || "").toLowerCase().includes("tugas akhir")
-      )
-    : sks >= 110;
+  const canAccessMetopel = metopelEligibility?.canAccess ?? false;
+  const isMetopenReadOnly =
+    metopelEligibility?.readOnly ?? metopelEligibility?.thesisPhase === "thesis";
+  const isMetopenOnlyTrack = canAccessMetopel && !hasTugasAkhirCourse;
 
   const canAccessKerjaPraktek = sks >= 90;
-  const canAccessTugasAkhir = sks >= 110 && hasTugasAkhirCourse;
-  const canAccessMetopen = hasMetopenCourse;
-
-  // Loading: wait for auth + both SIA and backend eligibility to resolve
-  const isLoading = isAuthLoading || isSiaLoading || isBackendEligibilityLoading;
+  const canAccessTugasAkhir = hasTugasAkhirCourse;
 
   return {
-    isLoading,
+    isLoading: siaLoading || metopelLoading,
     sks,
-    semester,
     hasTugasAkhirCourse,
-    hasMetopenCourse,
     canAccessKerjaPraktek,
     canAccessTugasAkhir,
-    canAccessMetopen,
+    canAccessMetopel,
+    isMetopenReadOnly,
+    isMetopenOnlyTrack,
     requirements: {
       kerjaPraktek: {
         sks: { met: sks >= 90, current: sks, required: 90 },
       },
       tugasAkhir: {
-        sks: { met: sks >= 110, current: sks, required: 110 },
-        course: { met: hasTugasAkhirCourse },
+        // BR-25 / anti-pattern #8 (audit F-0.2): gate Tugas Akhir = snapshot SIA
+        // MK Tugas Akhir, BUKAN SKS hard-code. Objek `sks`/`module` lama dihapus
+        // sebagai dead code agar tidak tersambung kembali sebagai gate.
+        course: {
+          met: hasTugasAkhirCourse,
+          description: hasTugasAkhirCourse
+            ? "Snapshot SIA mencatat Anda mengambil mata kuliah Tugas Akhir"
+            : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
+        },
       },
-      metopen: {
-        course: { met: hasMetopenCourse },
+      metopel: {
+        // Canon §5.1 (audit F-0.1): eligibility Metopen = snapshot SIA semata.
+        // Objek `semester`/`course` (gate semester-6 non-kanonis) dihapus.
+        eligibility: {
+          met: canAccessMetopel,
+          description: canAccessMetopel
+            ? "Snapshot eligibility Metopen aktif"
+            : "Snapshot eligibility Metopen belum aktif",
+        },
       },
     },
   };

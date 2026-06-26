@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import { useRole, useAuth } from '@/hooks/shared';
+import { useRole, useAuth, useStudentEligibility } from '@/hooks/shared';
 import { useThesisDefenceDetail } from '@/hooks/thesis-defence';
 import { toTitleCaseName } from '@/lib/text';
 
@@ -23,6 +23,8 @@ export default function ThesisDefenceDetailPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { isStudent, isAdmin, isKadep } = useRole();
   const { user } = useAuth();
+  const { hasTugasAkhirCourse } = useStudentEligibility();
+  const studentTaParentHref = hasTugasAkhirCourse ? '/tugas-akhir' : '/metopel';
 
   const _isStudent = isStudent();
   const _isKadep = isKadep();
@@ -38,7 +40,7 @@ export default function ThesisDefenceDetailPage() {
 
   const breadcrumbs = useMemo(() => {
     const base = [
-      { label: 'Tugas Akhir', href: _isStudent ? '/tugas-akhir' : undefined },
+      { label: 'Tugas Akhir', href: _isStudent ? studentTaParentHref : undefined },
       { label: 'Sidang', href: '/tugas-akhir/sidang' },
     ];
 
@@ -46,7 +48,7 @@ export default function ThesisDefenceDetailPage() {
       ...base,
       { label: 'Detail' },
     ];
-  }, [_isStudent]);
+  }, [_isStudent, studentTaParentHref]);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);

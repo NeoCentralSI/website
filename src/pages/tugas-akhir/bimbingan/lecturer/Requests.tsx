@@ -50,8 +50,11 @@ export default function LecturerBimbinganPage() {
 
   // Merge both data sources into a single list, sorted by date (newest first)
   const allGuidances = useMemo(() => {
-    const requests = requestsQuery.data?.requests || [];
-    const scheduled = scheduledQuery.data?.guidances || [];
+    // getPendingRequests returns { requests: GuidanceItem[] }; getScheduledGuidances returns GuidanceItem[]
+    const requestsRaw = requestsQuery.data?.requests;
+    const scheduledRaw = scheduledQuery.data;
+    const requests = Array.isArray(requestsRaw) ? requestsRaw : [];
+    const scheduled = Array.isArray(scheduledRaw) ? scheduledRaw : [];
 
     // Combine and deduplicate by id
     const map = new Map<string, GuidanceItem>();
@@ -167,12 +170,10 @@ export default function LecturerBimbinganPage() {
   };
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Bimbingan Tugas Akhir</h1>
-          <p className="text-gray-500">Kelola permintaan dan jadwal bimbingan mahasiswa</p>
-        </div>
+    <div className="space-y-5 sm:space-y-6">
+      <div>
+        <h1 className="text-base font-semibold tracking-tight sm:text-lg">Bimbingan Tugas Akhir</h1>
+        <p className="text-xs text-muted-foreground sm:text-sm">Kelola permintaan dan jadwal bimbingan mahasiswa</p>
       </div>
 
       <TabsNav tabs={tabs} />

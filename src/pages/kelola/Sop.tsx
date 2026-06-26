@@ -6,7 +6,7 @@ import { SopManager } from "@/components/kelola/SopManager";
 export default function KelolaSopPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
-  const breadcrumbs = useMemo(() => [{ label: "Kelola" }, { label: "Panduan" }], []);
+  const breadcrumbs = useMemo(() => [{ label: "Kelola Panduan" }], []);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);

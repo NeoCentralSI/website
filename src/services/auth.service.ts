@@ -28,8 +28,13 @@ export interface User {
     id: string;
     enrollmentYear: number;
     sksCompleted: number;
-    currentSemester?: number | null;
     status: string | null;
+    eligibleMetopen?: boolean | null;
+    metopenEligibilitySource?: 'sia' | 'devtools' | null;
+    metopenEligibilityUpdatedAt?: string | null;
+    takingThesisCourse?: boolean | null;
+    thesisCourseEnrollmentSource?: 'sia' | 'devtools' | null;
+    thesisCourseEnrollmentUpdatedAt?: string | null;
   };
   lecturer?: {
     id: string;
@@ -91,13 +96,15 @@ export const loginAPI = async (credentials: LoginRequest): Promise<LoginResponse
 };
 
 export const saveAuthTokens = (accessToken: string, refreshToken: string) => {
-
+  console.log('💾 [saveAuthTokens] Saving tokens to localStorage and cookies');
+  
   // Access token tetap di localStorage (lebih mudah untuk API calls)
   localStorage.setItem('accessToken', accessToken);
-
+  
   // Refresh token disimpan di cookies (lebih aman, httpOnly bisa ditambahkan di backend)
   setCookie('refreshToken', refreshToken, 7); // 7 hari
-
+  
+  console.log('✅ [saveAuthTokens] Tokens saved');
 };
 
 export const getAuthTokens = () => {
@@ -105,8 +112,12 @@ export const getAuthTokens = () => {
     accessToken: localStorage.getItem('accessToken'),
     refreshToken: getCookie('refreshToken')
   };
-
-
+  
+  console.log('🔑 [getAuthTokens] Retrieved tokens:', {
+    hasAccessToken: !!tokens.accessToken,
+    hasRefreshToken: !!tokens.refreshToken
+  });
+  
   return tokens;
 };
 
@@ -114,7 +125,7 @@ export const getAuthTokens = () => {
 export const logoutAPI = async (): Promise<void> => {
   try {
     const { accessToken } = getAuthTokens();
-
+    
     if (!accessToken) {
       throw new Error('Access token tidak ditemukan');
     }
@@ -228,9 +239,12 @@ export const refreshTokenAPI = async (): Promise<{ accessToken: string; refreshT
 
   // Create and store the refresh promise
   refreshTokenPromise = (async () => {
+    // Capture token SEBELUM request untuk deteksi race condition
+    const tokenBeforeRefresh = getAuthTokens().accessToken;
+
     try {
       const { refreshToken } = getAuthTokens();
-
+      
       if (!refreshToken) {
         throw new Error('Refresh token tidak ditemukan');
       }
@@ -249,13 +263,19 @@ export const refreshTokenAPI = async (): Promise<{ accessToken: string; refreshT
       }
 
       const data = await response.json();
-
+      
       return {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken
       };
     } catch (error) {
-      clearAuthTokens();
+      // Hanya clear token jika token MASIH SAMA dengan saat request dimulai.
+      // Jika token sudah berubah (misal karena login baru), jangan clear —
+      // itu token milik sesi baru.
+      const tokenNow = getAuthTokens().accessToken;
+      if (!tokenNow || tokenNow === tokenBeforeRefresh) {
+        clearAuthTokens();
+      }
       throw error;
     } finally {
       // Clear the promise after completion (success or failure)
@@ -269,7 +289,7 @@ export const refreshTokenAPI = async (): Promise<{ accessToken: string; refreshT
 export const getUserProfileAPI = async (): Promise<User> => {
   try {
     const { accessToken } = getAuthTokens();
-
+    
     if (!accessToken) {
       throw new Error('Access token tidak ditemukan');
     }
@@ -287,7 +307,7 @@ export const getUserProfileAPI = async (): Promise<User> => {
         try {
           const newTokens = await refreshTokenAPI();
           saveAuthTokens(newTokens.accessToken, newTokens.refreshToken);
-
+          
           const retryResponse = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.ME), {
             method: 'GET',
             headers: {
@@ -295,11 +315,11 @@ export const getUserProfileAPI = async (): Promise<User> => {
               'Authorization': `Bearer ${newTokens.accessToken}`,
             },
           });
-
+          
           if (!retryResponse.ok) {
             throw new Error('Invalid session');
           }
-
+          
           const userData = await retryResponse.json();
           return userData.user;
         } catch {
@@ -307,7 +327,7 @@ export const getUserProfileAPI = async (): Promise<User> => {
           throw new Error('Session expired, silakan login kembali');
         }
       }
-
+      
       // For other errors, don't clear tokens
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
       throw new Error(errorData.message || 'Gagal mengambil data user');
@@ -325,7 +345,7 @@ export const getUserProfileAPI = async (): Promise<User> => {
 
 export const apiRequest = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const { accessToken } = getAuthTokens();
-
+  
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const baseHeaders: HeadersInit = {
     ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
@@ -347,7 +367,7 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
     try {
       const newTokens = await refreshTokenAPI();
       saveAuthTokens(newTokens.accessToken, newTokens.refreshToken);
-
+      
       requestOptions.headers = {
         ...requestOptions.headers,
         Authorization: `Bearer ${newTokens.accessToken}`,
@@ -356,14 +376,14 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
       response = await fetch(url, requestOptions);
       logApi({ url, method: requestOptions.method, status: response.status, ok: response.ok, durationMs: (performance.now?.() ?? Date.now()) - retryStart, note: 'retry-after-refresh' });
     } catch (refreshError) {
-      clearAuthTokens();
-      window.location.href = '/login';
+      // Hanya clear & redirect jika token belum diganti oleh login baru
+      const tokenNow = getAuthTokens().accessToken;
+      if (!tokenNow || tokenNow === accessToken) {
+        clearAuthTokens();
+        window.location.href = '/login';
+      }
       throw refreshError;
     }
-  }
-
-  if (response.status >= 500) {
-    window.dispatchEvent(new Event('server-error'));
   }
 
   return response;

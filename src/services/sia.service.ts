@@ -11,8 +11,8 @@ export interface SiaStudent {
   name: string;
   sksCompleted: number;
   currentSemester?: number;
-  internshipCompleted?: boolean;
   currentSemesterCourses?: SiaCourse[];
+  internshipCompleted?: boolean;
 }
 
 export const getCachedStudentsFromSia = async (): Promise<SiaStudent[]> => {

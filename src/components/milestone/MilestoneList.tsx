@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MilestoneCard } from "./MilestoneCard";
 import { MilestoneProgressCard } from "./MilestoneProgressCard";
 import { Button } from "@/components/ui/button";
@@ -164,8 +164,9 @@ export function MilestoneList({
   });
 
   const enableReorder = isOwner && !!onReorder && reorderEnabled && !isReordering;
-  const startableIds = new Set(
-    orderedMilestones.filter((m) => m.status === "not_started").map((m) => m.id)
+  const startableIds = useMemo(
+    () => new Set(orderedMilestones.filter((m) => m.status === "not_started").map((m) => m.id)),
+    [orderedMilestones]
   );
 
   const handleDragStart = (milestoneId: string) => {

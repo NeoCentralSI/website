@@ -14,11 +14,6 @@ interface LecturerEducationCardProps {
 }
 
 export function LecturerEducationCard({ lecturer }: LecturerEducationCardProps) {
-  if (!lecturer) return null;
-
-  const lecturerData = lecturer.data || {};
-  const educationHistory = lecturerData?.riwayat_pendidikan || [];
-
   const [isEditOpen, setIsEditOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -34,6 +29,11 @@ export function LecturerEducationCard({ lecturer }: LecturerEducationCardProps) 
     },
     onError: (err: any) => toast.error(err.message),
   });
+
+  if (!lecturer) return null;
+
+  const lecturerData = lecturer.data || {};
+  const educationHistory = lecturerData?.riwayat_pendidikan || [];
 
   const handleOpenEdit = () => {
     // Clone existing array to avoid direct mutation
