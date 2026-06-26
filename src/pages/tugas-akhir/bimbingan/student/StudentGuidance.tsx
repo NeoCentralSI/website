@@ -213,7 +213,7 @@ export default function StudentGuidancePage() {
     : 'Sesi bimbingan untuk fase Tugas Akhir penuh (pasca-pengesahan TA-04 oleh KaDep).';
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="p-6 space-y-6">
       <div>
         <h1 className="text-base font-semibold tracking-tight sm:text-lg">{phaseLabel}</h1>
         <p className="text-xs text-muted-foreground sm:text-sm">{phaseDescription}</p>

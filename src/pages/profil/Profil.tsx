@@ -48,7 +48,7 @@ export default function Profil() {
 
 
   return (
-    <div className="space-y-5 pt-2">
+    <div className="p-6 space-y-6">
       {isProfileIncomplete && <ProfileIncompleteAlert />}
 
       <div className="flex flex-col lg:flex-row gap-5">

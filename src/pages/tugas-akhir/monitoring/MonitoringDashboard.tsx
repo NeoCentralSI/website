@@ -112,7 +112,7 @@ export default function MonitoringDashboard() {
   }
 
   return (
-    <div className="flex flex-1 flex-col p-6 space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header with Academic Year Filter and Reload */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

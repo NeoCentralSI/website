@@ -204,7 +204,7 @@ export default function AdminAssignmentPage() {
     }, [filteredData, page, pageSize]);
 
     return (
-        <div className="p-4">
+        <div className="p-6 space-y-6">
             <div className="flex items-center gap-2 mb-6 text-2xl font-semibold">
                 <ClipboardList className="h-6 w-6 text-primary" />
                 <h1>Surat Tugas Kerja Praktik</h1>

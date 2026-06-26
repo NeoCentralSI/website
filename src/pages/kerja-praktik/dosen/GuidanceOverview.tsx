@@ -184,7 +184,7 @@ export default function GuidanceOverviewPage() {
     const unreviewedCount = students?.reduce((sum, s) => sum + s.progress.submittedCount, 0) || 0;
 
     return (
-        <div className="flex flex-col gap-6 p-6 w-full">
+        <div className="p-6 space-y-6">
             <div className="flex justify-between items-end">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">Daftar Mahasiswa Bimbingan</h1>

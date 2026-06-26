@@ -354,7 +354,7 @@ export default function DSSKadep() {
     };
 
     return (
-        <div className="space-y-5 sm:space-y-6">
+        <div className="p-6 space-y-6">
             <div>
                 <h1 className="text-base font-semibold tracking-tight sm:text-lg">Kelola TA-01 s.d. TA-04</h1>
                 <p className="text-xs text-muted-foreground sm:text-sm">{tabLabels[activeTab]} — pisahkan flow TA-01 (overquota) vs TA-02 (penetapan dosen) vs Finalisasi Booking vs Pengesahan TA-04.</p>

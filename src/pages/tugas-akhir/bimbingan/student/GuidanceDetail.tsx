@@ -29,7 +29,7 @@ export default function GuidanceDetailPage() {
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   return (
-    <div className="p-4">
+    <div className="p-6 space-y-6">
       <Button variant="secondary" onClick={() => navigate(-1)} className="mb-4">
         Kembali
       </Button>

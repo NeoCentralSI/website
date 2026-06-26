@@ -189,7 +189,7 @@ export default function TugasAkhirOverviewPage() {
 
     if (!hasThesis && (!historyData?.theses || historyData.theses.length === 0)) {
         return (
-            <div className="space-y-5 sm:space-y-6">
+            <div className="p-6 space-y-6">
                 <Card className="border-primary/20 bg-primary/5">
                     <CardHeader>
                         <CardTitle className="text-base font-semibold tracking-tight sm:text-lg">Belum Ada Tugas Akhir Aktif</CardTitle>
@@ -313,7 +313,7 @@ export default function TugasAkhirOverviewPage() {
     ];
 
     return (
-        <div className="space-y-5 sm:space-y-6">
+        <div className="p-6 space-y-6">
             <LocalTabsNav tabs={TAB_ITEMS} activeTab={activeTab} onTabChange={setActiveTab} />
 
             {activeTab === "overview" && (

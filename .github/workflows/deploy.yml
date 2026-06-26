@@ -1,13 +1,13 @@
 # ─────────────────────────────────────────────────────────────────
 # CI/CD – Frontend (website)
-# Triggers on push to nabil-prod branch
+# Triggers on push to staging branch
 # Self-hosted runner on VM → build Docker image locally → deploy
 # ─────────────────────────────────────────────────────────────────
 name: Deploy Frontend
 
 on:
   push:
-    branches: [nabil-prod]
+    branches: [staging]
 
 env:
   DEPLOY_DIR: /www/wwwroot/neocentral
@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: nabil-prod
+          ref: staging
 
       - name: Build Docker image locally
         run: |

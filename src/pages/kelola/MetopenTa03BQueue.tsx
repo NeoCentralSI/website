@@ -184,7 +184,7 @@ export default function MetopenTa03BQueue() {
     }
 
     return (
-        <div className="space-y-5">
+        <div className="p-6 space-y-6">
             {/* Hero card ─────────────────────────────────── */}
             <Card>
                 <CardHeader className="pb-4">

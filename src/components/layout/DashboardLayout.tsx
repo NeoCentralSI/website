@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { useEffect, Suspense } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Suspense } from 'react';
+import { Link } from 'react-router-dom';
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 import { Loading } from "@/components/ui/spinner";
 import { ActiveAcademicYearBadge } from "@/components/layout/ActiveAcademicYearBadge";
@@ -28,26 +28,15 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, breadcrumbs, title }: DashboardLayoutProps) {
-  const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const sidebarData = useSidebarMenu();
   // Mount global realtime listener once user is present
   useRealtimeNotifications();
 
-  // Redirect ke login jika tidak ada user setelah loading selesai
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/login', { replace: true });
-    }
-  }, [isLoading, user, navigate]);
-
-  // Full blank loading state saat browser reload (auth loading)
-  if (isLoading || !user) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <Loading size="lg" text="Memuat..." />
-      </div>
-    );
+  // ProtectedLayout already handles auth checking and loading states,
+  // so we can safely render the dashboard content when user is available.
+  if (!user) {
+    return null;
   }
 
   return (

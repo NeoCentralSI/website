@@ -954,7 +954,7 @@ export default function StudentYudisium() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-[14px]">
+      <div className="p-6 space-y-6">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-32 w-full" />
         <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-[14px]">

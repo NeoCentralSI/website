@@ -73,7 +73,7 @@ export default function GuidancePage() {
 
     if (!guidanceData || !guidanceData.internshipId) {
         return (
-            <div className="flex flex-col gap-6 p-6">
+            <div className="p-6 space-y-6">
                 <div className="flex flex-col gap-2">
                     <h2 className="text-2xl font-bold tracking-tight">Kegiatan Kerja Praktik</h2>
                     <p className="text-muted-foreground">Kelola logbook dan bimbingan mingguan Anda.</p>
@@ -88,7 +88,7 @@ export default function GuidancePage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6">
+        <div className="p-6 space-y-6">
             <div className="flex flex-col gap-2">
                 <h2 className="text-2xl font-bold tracking-tight">Kegiatan Kerja Praktik</h2>
                 <p className="text-muted-foreground">Kelola logbook dan bimbingan mingguan Anda.</p>

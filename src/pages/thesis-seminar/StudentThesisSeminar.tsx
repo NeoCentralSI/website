@@ -46,7 +46,7 @@ export default function StudentThesisSeminar() {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-6">
+      <div className="p-6 space-y-6">
         <Skeleton className="h-10 w-[250px]" />
         <Skeleton className="h-10 w-full max-w-md" />
         <Skeleton className="h-[200px] w-full" />

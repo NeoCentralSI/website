@@ -6,7 +6,6 @@ import {
   FileText,
   SquareTerminal,
   GraduationCap,
-  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { useMemo } from "react";
@@ -15,7 +14,6 @@ import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useAdvisorAccessState } from "./useAdvisorAccessState";
 import { useStudentEligibility } from "./useStudentEligibility";
-import { ENV } from "@/config/env";
 
 type SidebarLeafItem = { title: string; url: string };
 type SidebarNavItem = {
@@ -575,19 +573,6 @@ export const useSidebarMenu = () => {
               },
             ],
           },
-          // ⚠️ DevTools simulator — eligibility set, snapshot SIA dummy.
-          // P1-01: hanya tampil bila VITE_ENABLE_DEV_TOOLS=true atau env=development.
-          // Production wajib OFF agar tidak ada admin dummy yang bocor ke user.
-          ...(ENV.ENABLE_DEV_TOOLS
-            ? [
-                {
-                  title: "Development",
-                  url: "/admin/dev-tools",
-                  icon: Wrench,
-                  items: [],
-                },
-              ]
-            : []),
         ],
         navSecondary: [],
       };

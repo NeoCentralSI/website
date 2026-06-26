@@ -196,7 +196,7 @@ export default function MetopenTa03AQueue() {
     }
 
     return (
-        <div className="space-y-5">
+        <div className="p-6 space-y-6">
             <Card>
                 <CardHeader className="pb-4">
                     <div className="flex items-start gap-3">

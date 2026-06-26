@@ -20,7 +20,7 @@ export default function TopikSaya() {
   }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
   return (
-    <div className="p-4">
+    <div className="p-6 space-y-6">
       <Alert>
         <AlertTitle>Publish topik dosen tidak aktif</AlertTitle>
         <AlertDescription>

@@ -76,14 +76,14 @@ export default function SekdepInternshipProposalPage() {
 
     if (isWeekDetail) {
         return (
-            <div className="p-4">
+            <div className="p-6 space-y-6">
                 {renderContent()}
             </div>
         );
     }
 
     return (
-        <div className="p-4 space-y-6">
+        <div className="p-6 space-y-6">
             <div className="flex items-center gap-2 text-2xl font-semibold">
                 <FileText className="h-6 w-6 text-primary" />
                 <h1>Kelola Kerja Praktik</h1>

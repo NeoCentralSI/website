@@ -1,21 +1,9 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
-import Lottie from 'lottie-react'
-import serverErrorAnimation from '@/assets/lottie/server_eror.json'
-import { Button } from '@/components/ui/button'
-import { ENV } from '@/config/env'
 import { Loading } from '@/components/ui/spinner'
 import { AuthProvider, NotificationProvider } from '@/hooks/shared'
 import { Toaster } from './components/ui/sonner'
 // Static imports: core pages, layout, guards
-import Login from './pages/Login'
-import Landing from './pages/Landing'
-import SitemapPage from './pages/Sitemap'
-import MicrosoftCallback from './pages/auth/MicrosoftCallback'
-import ActivationSuccess from './pages/auth/ActivationSuccess'
-import AccountInactive from './pages/auth/AccountInactive'
-import ActivationEmailSent from './pages/auth/ActivationEmailSent'
-import ResetPassword from './pages/ResetPassword'
 import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import NotFoundPage from './pages/NotFound'
@@ -28,6 +16,14 @@ import RoleGuard from './pages/guards/RoleGuard'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
 
 // Lazy-loaded pages
+const Login = lazy(() => import('./pages/Login'))
+const Landing = lazy(() => import('./pages/Landing'))
+const SitemapPage = lazy(() => import('./pages/Sitemap'))
+const MicrosoftCallback = lazy(() => import('./pages/auth/MicrosoftCallback'))
+const ActivationSuccess = lazy(() => import('./pages/auth/ActivationSuccess'))
+const AccountInactive = lazy(() => import('./pages/auth/AccountInactive'))
+const ActivationEmailSent = lazy(() => import('./pages/auth/ActivationEmailSent'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Profil = lazy(() => import('./pages/profil/Profil'))
 // Tugas Akhir - Bimbingan
@@ -98,8 +94,6 @@ const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview')
 // Tugas Akhir - Monitoring
 const MonitoringDashboard = lazy(() => import('./pages/tugas-akhir/monitoring/MonitoringDashboard'))
 const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/StudentProgressDetail'))
-// Dev Tools (⚠️ Remove before production)
-const DevToolsPage = lazy(() => import('./pages/dev-tools/DevTools'))
 // Master Data
 const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
 const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
@@ -143,21 +137,15 @@ function App() {
   }, []);
 
   if (showServerError) {
+    const ServerError = lazy(() => import('@/components/shared/ServerError'));
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-6">
-        <div className="max-w-md w-full text-center space-y-6">
-          <Lottie animationData={serverErrorAnimation} loop={true} className="w-64 h-64 mx-auto" />
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">Terjadi Kesalahan Server</h1>
-            <p className="text-muted-foreground text-sm">
-              Maaf, server sedang mengalami gangguan atau masalah internal saat ini. Silakan coba beberapa saat lagi.
-            </p>
-          </div>
-          <Button onClick={() => setShowServerError(false)} className="w-full sm:w-auto">
-            Kembali & Coba Lagi
-          </Button>
+      <Suspense fallback={
+        <div className="flex h-screen w-screen items-center justify-center bg-background">
+          <Loading size="lg" text="Memuat..." />
         </div>
-      </div>
+      }>
+        <ServerError onRetry={() => setShowServerError(false)} />
+      </Suspense>
     );
   }
 
@@ -429,12 +417,6 @@ function App() {
                   <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
                   <Route path="/master-data/ruangan" element={<RoomPage />} />
                   <Route path="/master-data/kuota-bimbingan" element={<KuotaBimbinganPage />} />
-                  {/* P1-01: DevTools simulator — di-render hanya bila ENV.ENABLE_DEV_TOOLS=true.
-                      Production env wajib false. Bila false, route ini tidak terdaftar dan
-                      akan jatuh ke 404 catch-all. */}
-                  {ENV.ENABLE_DEV_TOOLS && (
-                    <Route path="/admin/dev-tools" element={<DevToolsPage />} />
-                  )}
                 </Route>
               </Route>
 

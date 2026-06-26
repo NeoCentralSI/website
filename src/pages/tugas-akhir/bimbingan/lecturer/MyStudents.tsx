@@ -304,7 +304,7 @@ export default function LecturerMyStudentsPage() {
   ];
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-base font-semibold tracking-tight sm:text-lg">Mahasiswa Bimbingan</h1>

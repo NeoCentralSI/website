@@ -518,7 +518,7 @@ export default function DevTools() {
   const toggleExpand = useCallback((id: string) => setExpandedId((prev) => (prev === id ? null : id)), []);
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="p-6 space-y-6">
       <Card className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30">
         <CardContent className="flex items-start gap-3 pt-4 pb-4">
           <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />

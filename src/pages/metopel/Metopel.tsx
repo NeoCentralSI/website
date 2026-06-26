@@ -75,7 +75,7 @@ export default function Metopel() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-5">
+    <div className="p-6 space-y-6">
       {isMetopenReadOnly && (
         <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />

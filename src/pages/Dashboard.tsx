@@ -189,7 +189,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex flex-1 flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-1 flex-col h-[calc(100vh-4rem)] overflow-hidden p-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
         <div className="lg:col-span-2 h-full min-h-0">
           {/* Calendar Only */}

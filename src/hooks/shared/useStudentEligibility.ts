@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCachedStudentsFromSia } from "@/services/sia.service";
 import { checkMetopelEligibility } from "@/services/metopen.service";
 import { useAuth } from "./useAuth";
+import { useRole } from "./useRole";
 
 type RequirementStatus = {
   met: boolean;
@@ -39,19 +40,23 @@ interface EligibilityResult {
 
 export function useStudentEligibility(): EligibilityResult {
   const { user: authUser } = useAuth();
+  const { isStudent } = useRole();
   const nim = authUser?.identityNumber;
+  // Only fire API calls for students — lecturers/admins also have identityNumber
+  // (NIP/NIDN) but the backend returns 403, causing constant error logs.
+  const isStudentUser = isStudent();
 
   const { data: siaStudents, isLoading: siaLoading } = useQuery({
     queryKey: ["sia-cached-students"],
     queryFn: getCachedStudentsFromSia,
-    enabled: !!nim,
+    enabled: !!nim && isStudentUser,
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: metopelEligibility, isLoading: metopelLoading } = useQuery({
     queryKey: ["metopel-eligibility"],
     queryFn: checkMetopelEligibility,
-    enabled: !!nim,
+    enabled: !!nim && isStudentUser,
     staleTime: 5 * 60 * 1000,
   });
 

@@ -195,7 +195,7 @@ export default function MetopenMonitoring() {
     const { attendanceImport, stats, unmatchedRecords } = data;
 
     return (
-        <div className="space-y-5">
+        <div className="p-6 space-y-6">
             <HeroCard
                 totalEligible={stats.totalEligibleSia}
                 totalInImport={stats.totalInImport}
