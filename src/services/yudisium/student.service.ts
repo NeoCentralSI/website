@@ -34,3 +34,15 @@ export async function uploadYudisiumDocument(file: File, requirementId: string) 
   if (!json.success) throw new Error(json.message || 'Gagal mengunggah dokumen');
   return json.data;
 }
+
+export async function downloadStudentCplReport(): Promise<Blob> {
+  const res = await apiRequest(getApiUrl(EP.ME_CPL_REPORT));
+  if (!res.ok) throw new Error('Gagal mengunduh sertifikat CPL');
+  return res.blob();
+}
+
+export async function downloadStudentCertificate(): Promise<Blob> {
+  const res = await apiRequest(getApiUrl(EP.ME_CERTIFICATE));
+  if (!res.ok) throw new Error('Gagal mengunduh sertifikat');
+  return res.blob();
+}

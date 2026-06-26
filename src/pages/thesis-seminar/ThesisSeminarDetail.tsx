@@ -63,7 +63,7 @@ export default function ThesisSeminarDetailPage() {
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-    setTitle(isArchiveRoute ? 'Detail Arsip Seminar' : 'Detail Seminar Hasil');
+    setTitle('Detail Seminar Hasil');
   }, [setBreadcrumbs, setTitle, breadcrumbs, isArchiveRoute]);
 
   if (isLoading) {
@@ -144,12 +144,8 @@ export default function ThesisSeminarDetailPage() {
   }
 
   let showAudience = false;
-  if (isAudienceFinalized) {
+  if (isAudienceFinalized || isAudienceOngoing) {
     showAudience = true;
-  } else if (isAudienceOngoing) {
-    if (isUserSupervisor) {
-      showAudience = true;
-    }
   }
 
   const showRevisions = (isUserStudent || isUserSupervisor) && d.status === 'passed_with_revision';
@@ -171,12 +167,10 @@ export default function ThesisSeminarDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              {isStudent()
-                ? (isArchiveRoute ? 'Detail Arsip Seminar' : 'Detail Seminar Hasil')
-                : toTitleCaseName(d.student?.name || 'Seminar Detail')}
+              Detail Seminar Hasil
             </h1>
             <p className="text-muted-foreground">
-              {isStudent() ? d.thesis?.title : d.student?.nim}
+              {toTitleCaseName(d.student?.name || '')} • {d.student?.nim || '-'}
             </p>
           </div>
         </div>

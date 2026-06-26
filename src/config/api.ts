@@ -26,6 +26,10 @@ export const API_CONFIG = {
       SERVE_AVATAR: (fileName: string) => `/profile/avatar/${fileName}`,
       LECTURER_DATA: '/profile/lecturer-data',
     },
+    CURRICULUM: {
+      BASE: '/curriculums',
+      BY_ID: (id: string) => `/curriculums/${id}`,
+    },
     CPL: {
       BASE: '/cpls',
       BY_ID: (id: string) => `/cpls/${id}`,
@@ -42,6 +46,10 @@ export const API_CONFIG = {
       BY_ID: (id: string) => `/cpmks/${id}`,
       COPY_TEMPLATE: '/cpmks/copy-template',
       HIERARCHY: '/cpmks/hierarchy',
+    },
+    THESIS_CPMK: {
+      BASE: '/thesis-cpmks',
+      BY_ID: (id: string) => `/thesis-cpmks/${id}`,
     },
     SEMINAR_RUBRIC: {
       CPMKS: '/seminar-rubrics/cpmks',
@@ -71,6 +79,8 @@ export const API_CONFIG = {
       TOGGLE: (id: string) => `/exit-surveys/${id}/toggle`,
       DUPLICATE: (id: string) => `/exit-surveys/${id}/duplicate`,
       RESPONSES: (id: string) => `/exit-surveys/${id}/responses`,
+      RESPONSES_EXPORT_PDF: (id: string) => `/exit-surveys/${id}/responses/export.pdf`,
+      RESPONSES_EXPORT_EXCEL: (id: string) => `/exit-surveys/${id}/responses/export.xlsx`,
       QUESTIONS: (formId: string) => `/exit-surveys/${formId}/questions`,
       QUESTION_BY_ID: (formId: string, questionId: string) => `/exit-surveys/${formId}/questions/${questionId}`,
     },
@@ -92,24 +102,31 @@ export const API_CONFIG = {
       ME_EXIT_SURVEY: '/yudisiums/me/exit-survey',
       ME_REQUIREMENTS: '/yudisiums/me/requirements',
       ME_REQUIREMENTS_UPLOAD: '/yudisiums/me/requirements/upload',
+      ME_CPL_REPORT: '/yudisiums/me/cpl-report',
+      ME_CERTIFICATE: '/yudisiums/me/certificate',
 
       // Participants & Validation
       PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants`,
+      PARTICIPANT_OPTIONS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/options`,
+      PARTICIPANTS_IMPORT: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/import`,
       PARTICIPANT_DETAIL: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
       PARTICIPANT_REQUIREMENTS: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/requirements`,
-      VALIDATE_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
-        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/validate`,
+      DELETE_PARTICIPANT: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
+      VERIFY_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/verify`,
 
       // CPL (Lecturer / GKM)
       CPL_SCORES: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-scores`,
-      VERIFY_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
-        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/verify`,
+      CPL_REPORT: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-report`,
+      VALIDATE_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/validate`,
       REPAIR_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/repair`,
 
       // Actions
       EXPORT_PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/export-participants`,
       FINALIZE: (yudisiumId: string) => `/yudisiums/${yudisiumId}/finalize`,
+      OPTIONS_ROOMS: '/yudisiums/options/rooms',
     },
     NOTIFICATION: {
       BASE: '/notification',
@@ -229,7 +246,7 @@ export const API_CONFIG = {
       DOCUMENT_TYPES: '/thesis-seminars/documents/types',
       DOCUMENTS: (id: string) => `/thesis-seminars/${id}/documents`,
       DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}`,
-      VALIDATE_DOCUMENT: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}/validate`,
+      VERIFY_DOCUMENT: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}/verify`,
 
       // --- Examiners & Assignment ---
       ELIGIBLE_EXAMINERS: (id: string) => `/thesis-seminars/${id}/eligible-examiners`,
@@ -285,7 +302,7 @@ export const API_CONFIG = {
       DOCUMENT_TYPES: '/thesis-defences/documents/types',
       DOCUMENTS: (id: string) => `/thesis-defences/${id}/documents`,
       DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}`,
-      VALIDATE_DOCUMENT: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}/validate`,
+      VERIFY_DOCUMENT: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}/verify`,
 
       // --- Examiners & Assignment ---
       ELIGIBLE_EXAMINERS: (id: string) => `/thesis-defences/${id}/eligible-examiners`,

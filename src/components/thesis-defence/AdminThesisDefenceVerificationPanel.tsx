@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAdminDefenceList } from '@/hooks/thesis-defence/useAdminThesisDefence';
-import { AdminThesisDefenceValidationTable } from '@/components/thesis-defence/AdminThesisDefenceValidationTable';
+import { AdminThesisDefenceVerificationTable } from '@/components/thesis-defence/AdminThesisDefenceVerificationTable';
 
-const VALIDATION_STATUSES = [
+const VERIFICATION_STATUSES = [
   'registered',
   'verified',
   'examiner_assigned',
@@ -13,7 +13,7 @@ const VALIDATION_STATUSES = [
   'ongoing',
 ].join(',');
 
-export function AdminThesisDefenceValidationPanel() {
+export function AdminThesisDefenceVerificationPanel() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -21,7 +21,7 @@ export function AdminThesisDefenceValidationPanel() {
 
   const { data, isLoading, isFetching, refetch } = useAdminDefenceList({
     search: search.trim() || undefined,
-    status: VALIDATION_STATUSES,
+    status: VERIFICATION_STATUSES,
   });
 
   const filteredData = data ?? [];
@@ -31,7 +31,7 @@ export function AdminThesisDefenceValidationPanel() {
   }, [filteredData, page, pageSize]);
 
   return (
-    <AdminThesisDefenceValidationTable
+    <AdminThesisDefenceVerificationTable
       data={pagedData}
       loading={isLoading}
       isRefreshing={isFetching && !isLoading}

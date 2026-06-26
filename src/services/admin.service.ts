@@ -7,6 +7,7 @@ export interface User {
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
   isVerified: boolean;
+  gender: boolean | null;
   roles: Array<{
     id: string;
     name: string;
@@ -44,6 +45,7 @@ export interface CreateUserRequest {
   roles?: string[];
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
+  gender?: boolean | null;
 }
 
 export interface UpdateUserRequest {
@@ -53,6 +55,7 @@ export interface UpdateUserRequest {
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
   isVerified?: boolean;
+  gender?: boolean | null;
 }
 
 export interface CreateAcademicYearRequest {
@@ -383,6 +386,8 @@ export interface Student {
   student?: {
     enrollmentYear: number | null;
     sksCompleted: number;
+    gpa?: number | null;
+    graduationPredicate?: string | null;
     currentSemester: number | null;
     status: string | null;
     mandatoryCoursesCompleted: boolean;
@@ -526,6 +531,8 @@ export interface StudentDetail {
   student: {
     enrollmentYear: number;
     sksCompleted: number;
+    gpa?: number | null;
+    graduationPredicate?: string | null;
     status: string | null;
     currentSemester?: number | null;
     mandatoryCoursesCompleted?: boolean | null;
@@ -784,6 +791,8 @@ export const updateLecturerByAdminAPI = async (id: string, data: { scienceGroupI
 export const adminUpdateStudentAPI = async (id: string, data: {
   status: string;
   sksCompleted: number;
+  gpa?: number | null;
+  graduationPredicate?: string | null;
   enrollmentYear?: number;
   currentSemester?: number;
   mandatoryCoursesCompleted?: boolean;
@@ -801,6 +810,8 @@ export const adminUpdateStudentAPI = async (id: string, data: {
     body: JSON.stringify({
       status: data.status,
       skscompleted: data.sksCompleted,
+      gpa: data.gpa,
+      graduationPredicate: data.graduationPredicate,
       enrollmentYear: data.enrollmentYear,
       currentSemester: data.currentSemester,
       mandatoryCoursesCompleted: data.mandatoryCoursesCompleted,

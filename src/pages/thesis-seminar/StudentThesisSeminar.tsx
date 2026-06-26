@@ -10,6 +10,8 @@ import {
   useStudentAttendanceHistory
 } from '@/hooks/thesis-seminar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
 
 export default function StudentThesisSeminar() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -21,7 +23,13 @@ export default function StudentThesisSeminar() {
     setSearchParams({ tab }, { replace: true });
   };
 
-  const { data: overview, isLoading: isOverviewLoading } = useStudentSeminarOverview();
+  const {
+    data: overview,
+    isLoading: isOverviewLoading,
+    isError: isOverviewError,
+    error: overviewError,
+    refetch: refetchOverview,
+  } = useStudentSeminarOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentSeminarHistory();
   const { data: attendance, isLoading: isAttendanceLoading, isFetching: isAttendanceFetching } = useStudentAttendanceHistory();
 
@@ -66,7 +74,7 @@ export default function StudentThesisSeminar() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Seminar Hasil</h1>
           <p className="text-muted-foreground">
-            Pantau status seminar, unggah dokumen, dan lihat riwayat kehadiran seminar
+            Pantau status seminar, checklist persyaratan, unggah dokumen, dan lihat riwayat kehadiran seminar hasil
           </p>
         </div>
       </div>
@@ -79,17 +87,25 @@ export default function StudentThesisSeminar() {
           isLoading={isAttendanceLoading}
           isFetching={isAttendanceFetching}
         />
+      ) : isOverviewError ? (
+        <div className="rounded-lg border border-dashed p-8 text-center space-y-3">
+          <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            {overviewError instanceof Error
+              ? overviewError.message
+              : 'Gagal memuat data seminar hasil.'}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => refetchOverview()}>
+            Coba lagi
+          </Button>
+        </div>
       ) : overview ? (
         <StudentThesisSeminarOverviewPanel
           overview={overview}
           history={history || []}
           onDetailClick={(id) => navigate(`/tugas-akhir/seminar-hasil/${id}`)}
         />
-      ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          Data seminar hasil belum tersedia.
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

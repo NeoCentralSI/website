@@ -9,7 +9,7 @@ import {
   toggleExitSurveyForm,
   deleteExitSurveyForm,
   duplicateExitSurveyForm,
-} from '@/services/yudisium/yudisium-exit-survey.service';
+} from '@/services/yudisium/exit-survey.service';
 import type {
   CreateExitSurveyFormPayload,
   UpdateExitSurveyFormPayload,

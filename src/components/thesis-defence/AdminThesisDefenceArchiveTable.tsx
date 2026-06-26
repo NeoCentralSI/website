@@ -92,7 +92,7 @@ export function AdminThesisDefenceArchiveTable({
       },
       {
         key: 'score',
-        header: 'Nilai',
+        header: 'Skor',
         width: 100,
         render: (row: AdminDefenceArchiveItem) => (
           <div className="font-medium text-sm">
@@ -104,7 +104,7 @@ export function AdminThesisDefenceArchiveTable({
       },
       {
         key: 'grade',
-        header: 'Grade',
+        header: 'Nilai',
         width: 80,
         render: (row: AdminDefenceArchiveItem) => (
           <div className="font-bold text-sm">

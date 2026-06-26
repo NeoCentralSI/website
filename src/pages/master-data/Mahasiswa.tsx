@@ -38,6 +38,8 @@ export default function Mahasiswa() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editSks, setEditSks] = useState<number>(0);
+  const [editGpa, setEditGpa] = useState<string>('');
+  const [editGraduationPredicate, setEditGraduationPredicate] = useState<string>('none');
   const [editSemester, setEditSemester] = useState<number>(1);
   const [editStatus, setEditStatus] = useState<string>('');
   const [editMandatory, setEditMandatory] = useState<boolean>(false);
@@ -246,6 +248,8 @@ export default function Mahasiswa() {
               onClick={() => {
                 setSelectedStudent(row);
                 setEditSks(row.student?.sksCompleted || 0);
+                setEditGpa(row.student?.gpa != null ? row.student.gpa.toFixed(2) : '');
+                setEditGraduationPredicate(row.student?.graduationPredicate || 'none');
                 setEditSemester(row.student?.currentSemester || 1);
                 setEditStatus(row.student?.status || 'active');
                 setEditMandatory(row.student?.mandatoryCoursesCompleted || false);
@@ -350,6 +354,34 @@ export default function Mahasiswa() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>IPK</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="4"
+                  step="0.01"
+                  value={editGpa}
+                  onChange={(e) => setEditGpa(e.target.value)}
+                  placeholder="Contoh: 3.82"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Predikat</Label>
+                <Select value={editGraduationPredicate} onValueChange={setEditGraduationPredicate}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih predikat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Belum ditentukan</SelectItem>
+                    <SelectItem value="Sangat Memuaskan">Sangat Memuaskan</SelectItem>
+                    <SelectItem value="Dengan Pujian">Dengan Pujian</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={editStatus} onValueChange={setEditStatus}>
@@ -434,6 +466,8 @@ export default function Mahasiswa() {
                 e.preventDefault();
                 updateMutation.mutate({
                   sksCompleted: editSks,
+                  gpa: editGpa === '' ? null : Math.round(Number(editGpa) * 100) / 100,
+                  graduationPredicate: editGraduationPredicate === 'none' ? null : editGraduationPredicate,
                   status: editStatus,
                   currentSemester: editSemester,
                   mandatoryCoursesCompleted: editMandatory,

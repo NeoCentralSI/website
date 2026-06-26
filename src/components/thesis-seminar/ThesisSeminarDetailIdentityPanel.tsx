@@ -13,7 +13,7 @@ import type { DocumentSubmitStatus } from '@/types/seminar.types';
 import { BookOpen, Calendar, Eye, FileText } from 'lucide-react';
 
 function extractSeminarTime(timeIso?: string | null): string {
-  if (!timeIso) return '--';
+  if (!timeIso) return '--:--';
   const d = new Date(timeIso);
   return `${String(d.getUTCHours()).padStart(2, '0')}.${String(d.getUTCMinutes()).padStart(2, '0')}`;
 }
@@ -35,10 +35,10 @@ interface Props {
 }
 
 export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
-  const supervisors: any[] = detail.supervisors || (detail.thesis?.supervisors || []).map((s: any) => ({
+  const supervisors: any[] = [...(detail.supervisors || (detail.thesis?.supervisors || []).map((s: any) => ({
     name: s.lecturerName || s.name,
     role: s.role,
-  }));
+  })))].sort((a, b) => (a.role || '').localeCompare(b.role || ''));
 
   const examiners: any[] = detail.examiners ?? [];
   const documentTypes: any[] = detail.documentTypes ?? [];
@@ -73,6 +73,14 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                 <p className="text-xs text-muted-foreground">NIM</p>
                 <p className="text-sm font-medium mt-0.5">{detail.student?.nim}</p>
               </div>
+
+              {examiners.map((e: any, index: number) => (
+                <div key={e.id || index}>
+                  <p className="text-xs text-muted-foreground">Penguji {e.order || index + 1}</p>
+                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(e.lecturerName)}</p>
+                </div>
+              ))}
+
               <div>
                 <p className="text-xs text-muted-foreground">Tanggal</p>
                 <p className="text-sm font-medium mt-0.5">
@@ -82,14 +90,14 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
               <div>
                 <p className="text-xs text-muted-foreground">Waktu</p>
                 <p className="text-sm font-medium mt-0.5">
-                  {detail.date && detail.startTime
-                    ? `${extractSeminarTime(detail.startTime)} – ${extractSeminarTime(detail.endTime)} WIB`
-                    : '--'}
+                  {!detail.startTime || !detail.endTime
+                    ? detail.date ? formatDateOnlyId(detail.date) : '--:--'
+                    : `${extractSeminarTime(detail.startTime)} – ${extractSeminarTime(detail.endTime)} WIB`}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Tempat</p>
-                <p className="text-sm font-medium mt-0.5">
+                <p className="text-xs text-muted-foreground">Ruangan</p>
+                <div className="text-sm font-medium mt-0.5 leading-snug">
                   {detail.room?.name || '-'}
                   {detail.meetingLink && (
                     <a
@@ -101,15 +109,14 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                       {detail.meetingLink}
                     </a>
                   )}
-                </p>
-              </div>
-
-              {examiners.map((e: any, index: number) => (
-                <div key={e.id || index}>
-                  <p className="text-xs text-muted-foreground">Penguji {e.order || index + 1}</p>
-                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(e.lecturerName)}</p>
                 </div>
-              ))}
+              </div>
+              {detail.scheduledAt && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Jadwal Ditetapkan Pada</p>
+                  <p className="text-sm font-medium mt-0.5">{formatDateOnlyId(detail.scheduledAt)}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -129,14 +136,16 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                 <p className="text-xs text-muted-foreground">Judul</p>
                 <p className="text-sm font-medium mt-0.5 leading-snug">{detail.thesis?.title}</p>
               </div>
-              {supervisors.map((s: any, index: number) => (
-                <div key={index}>
-                  <p className="text-xs text-muted-foreground">
-                    {s.role ? formatRoleName(s.role) : `Dosen Pembimbing ${index + 1}`}
-                  </p>
-                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(s.name)}</p>
-                </div>
-              ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {supervisors.map((s: any, index: number) => (
+                  <div key={index}>
+                    <p className="text-xs text-muted-foreground">
+                      {s.role ? formatRoleName(s.role) : `Dosen Pembimbing ${index + 1}`}
+                    </p>
+                    <p className="text-sm font-medium mt-0.5">{toTitleCaseName(s.name)}</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 

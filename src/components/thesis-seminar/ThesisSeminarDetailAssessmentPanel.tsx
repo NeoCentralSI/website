@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, Download } from 'lucide-react';
+import { ChevronDown, ChevronRight, CheckCircle2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth, useRole } from '@/hooks/shared';
 
@@ -505,7 +505,10 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
         <div className="flex gap-4 items-stretch">
           <div className="flex-1 flex items-center justify-between flex-wrap gap-2 bg-muted/20 px-4 py-3 rounded-md border text-xs">
             <span className="text-muted-foreground">
-              Seminar disetujui pada <span className="font-semibold text-foreground">{formatDateTimeId(finalData.seminar?.resultFinalizedAt || '')}</span>
+              Seminar difinalisasi pada <span className="font-semibold text-foreground">{formatDateTimeId(finalData.seminar?.resultFinalizedAt || '')}</span>
+              {finalData.seminar?.resultFinalizedBy && (
+                <> oleh <span className="font-semibold text-foreground">{toTitleCaseName(finalData.seminar.resultFinalizedBy)}</span></>
+              )}
             </span>
             <div className="flex items-center gap-3">
               <Badge variant="success">
@@ -518,7 +521,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               <span className="text-muted-foreground">
                 Rata-rata: <span className="font-bold text-foreground">{finalData.seminar?.finalScore?.toFixed(2)}</span>
               </span>
-              <span className="text-[10px] text-muted-foreground">Min. lulus: 55</span>
+              <span className="text-[10px] text-muted-foreground">Batas kelulusan: 55</span>
             </div>
           </div>
           
@@ -546,9 +549,15 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Aspek Penilaian</th>
               {finalData.examiners?.map((ex) => (
                 <th key={ex.id} className="px-3 py-2 text-center font-semibold text-muted-foreground border-l w-36">
-                  <div className="flex flex-col items-center leading-tight">
+                  <div className="flex flex-col items-center leading-tight gap-1">
                     <span>Penguji {ex.order}</span>
-                    <span className="text-[10px] font-normal text-muted-foreground mt-0.5 truncate max-w-[120px]">
+                    <Badge 
+                      variant={ex.assessmentSubmittedAt ? 'success' : ex.isDraft ? 'warning' : 'secondary'}
+                      className="text-[9px] px-1.5 py-0 h-4 font-bold uppercase"
+                    >
+                      {ex.assessmentSubmittedAt ? 'Sudah Submit' : ex.isDraft ? 'Draf' : 'Belum Isi'}
+                    </Badge>
+                    <span className="text-[9px] font-normal text-muted-foreground truncate max-w-[120px]">
                       {ex.lecturerName}
                     </span>
                   </div>
@@ -566,7 +575,29 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                   <tr className="bg-muted/10 font-semibold border-b">
                     <td className="px-3 py-2 text-foreground">{groupLetter}</td>
                     <td colSpan={1 + (finalData.examiners?.length || 0)} className="px-3 py-2 text-foreground">
-                      {group.code} <span className="text-muted-foreground font-normal">(maksimal nilai = {groupMaxScore})</span>
+                      <div className="flex items-center gap-2">
+                        <span>{group.code}</span>
+                        <span className="text-muted-foreground font-normal">(maks. {groupMaxScore})</span>
+                        <Collapsible>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-muted/50 rounded-full">
+                              <span className="text-[10px] font-bold text-primary">i</span>
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="mt-1 p-2 bg-muted/5 rounded border text-[10px] font-normal leading-normal w-full max-w-md">
+                              {group.criteria.map(c => (
+                                <div key={c.id} className="mb-1 last:mb-0">
+                                  <div className="font-bold">{c.name}</div>
+                                  <div className="text-muted-foreground italic">
+                                    Rubrik: {c.rubrics.map(r => `${r.minScore}-${r.maxScore}: ${r.description}`).join(' | ')}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </div>
                     </td>
                   </tr>
 
@@ -645,12 +676,12 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                 {finalData.averageScore !== null ? (
                   <div className="flex items-center justify-end gap-2">
                     <span>{finalData.averageScore?.toFixed(2)}<span className="text-muted-foreground font-normal">/{totalMaxScore}</span></span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${(finalData.averageScore || 0) >= 55 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                      {(finalData.averageScore || 0) >= 55 ? '✓ Lulus' : '✕ Tidak Lulus'}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${(finalData.averageScore || 0) >= 55 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                      {(finalData.averageScore || 0) >= 55 ? '✓ LULUS' : '✕ TIDAK LULUS'}
                     </span>
                   </div>
                 ) : (
-                  <span className="text-muted-foreground">-/{totalMaxScore}</span>
+                  <span className="text-muted-foreground">Menunggu Penilaian...</span>
                 )}
               </td>
             </tr>
@@ -701,18 +732,65 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
         );
       })()}
 
+
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="text-base font-bold text-foreground">Hasil Keputusan Seminar</h3>
+      </div>
+
       {!finalData.recommendationUnlocked && !isFinalized && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          Fitur rekomendasi hasil akhir terkunci sampai seluruh penguji submit penilaian.
+        <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          Penetapan hasil akan terbuka setelah seluruh penguji menyelesaikan penilaian.
         </div>
       )}
 
-      {!isFinalized && isSupervisor && finalData.recommendationUnlocked && (
-        <div className="space-y-4 pt-4 border-t">
-          <h3 className="text-sm font-semibold text-foreground">Keputusan Seminar</h3>
-          <div className="flex flex-col items-end gap-3">
+      {isFinalized ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {FINAL_RECOMMENDATIONS.map((option) => {
+              const isSelected = finalData.seminar?.status === option.value;
+              if (!isSelected) return null;
+              return (
+                <div key={option.value} className="flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 p-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-green-700">{option.label}</p>
+                    <p className="text-xs text-green-600">{option.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex-1 flex items-center justify-between flex-wrap gap-2 bg-muted/20 px-4 py-3 rounded-md border text-[11px]">
+            <span className="text-muted-foreground">
+              Seminar difinalisasi pada <span className="font-semibold text-foreground">{formatDateTimeId(finalData.seminar?.resultFinalizedAt || '')}</span>
+              {finalData.seminar?.resultFinalizedBy && (
+                <> oleh <span className="font-semibold text-foreground">{toTitleCaseName(finalData.seminar.resultFinalizedBy)}</span></>
+              )}
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-muted-foreground">
+                Rata-rata: <span className="font-bold text-foreground">{finalData.seminar?.finalScore?.toFixed(2)}</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground">Batas kelulusan: 55</span>
+            </div>
+          </div>
+        </div>
+      ) : isSupervisor && finalData.recommendationUnlocked ? (
+        <div className="space-y-4">
+          <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h4 className="font-bold text-sm">Status Kelulusan Otomatis</h4>
+                <p className="text-xs text-muted-foreground">Berdasarkan akumulasi nilai rata-rata penguji.</p>
+              </div>
+              <Badge variant={(finalData.averageScore || 0) < 55 ? 'destructive' : 'success'} className="px-3 py-1">
+                {(finalData.averageScore || 0) < 55 ? 'GAGAL (Tidak Lulus)' : 'LULUS'}
+              </Badge>
+            </div>
+
             {(finalData.averageScore || 0) >= 55 ? (
-              <div className="flex items-center space-x-2 self-start">
+              <div className="flex items-center space-x-2 pt-2 border-t border-primary/10">
                 <Checkbox 
                   id="recommend-revision" 
                   checked={recommendRevision}
@@ -720,51 +798,54 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                 />
                 <Label
                   htmlFor="recommend-revision"
-                  className="text-xs font-medium leading-none cursor-pointer text-foreground select-none"
+                  className="text-xs font-medium cursor-pointer"
                 >
-                  Rekomendasikan Revisi
+                  Mahasiswa direkomendasikan melakukan revisi (Lulus dengan Revisi)
                 </Label>
               </div>
             ) : (
-              <div className="text-xs text-red-600 self-start font-medium">
+              <div className="text-xs text-red-600 pt-2 border-t border-primary/10 font-medium italic">
                 Rata-rata nilai di bawah 55. Mahasiswa dinyatakan Tidak Lulus.
               </div>
             )}
-            
-            <div className="flex justify-end mt-2">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    disabled={!canFinalize || finalizeMutation.isPending}
-                    className="font-semibold"
-                  >
-                    {finalizeMutation.isPending ? (
-                      <>
-                        <Spinner className="mr-2 h-4 w-4" />
-                        Menetapkan...
-                      </>
-                    ) : (
-                      'Tetapkan Hasil Seminar'
-                    )}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Tindakan ini akan menetapkan hasil akhir seminar secara permanen dan tidak dapat diubah lagi.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => void handleFinalize()}>Ya, Tetapkan</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button disabled={!canFinalize || finalizeMutation.isPending}>
+                  {finalizeMutation.isPending ? (
+                    <><Spinner className="mr-2 h-4 w-4" />Menetapkan...</>
+                  ) : (
+                    'Tetapkan Hasil Seminar'
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tindakan ini akan menetapkan hasil akhir seminar secara permanen dan tidak dapat diubah lagi.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => void handleFinalize()}>Ya, Tetapkan</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
+      ) : (
+        <p className="text-xs text-muted-foreground italic">Menunggu penetapan hasil oleh dosen pembimbing.</p>
       )}
     </div>
+
   );
 }
+
+const FINAL_RECOMMENDATIONS = [
+  { value: 'passed', label: 'Lulus', desc: 'Mahasiswa lulus seminar hasil tanpa revisi.' },
+  { value: 'passed_with_revision', label: 'Lulus dengan Revisi', desc: 'Mahasiswa lulus seminar hasil dengan kewajiban menyelesaikan revisi.' },
+  { value: 'failed', label: 'Tidak Lulus', desc: 'Mahasiswa belum lulus seminar hasil.' },
+];

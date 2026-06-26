@@ -12,6 +12,7 @@ import {
     getWeightSummary,
     reorderCriteria,
     reorderRubrics,
+    updateMinimumScore,
     type CreateCriteriaPayload,
     type UpdateCriteriaPayload,
     type CreateRubricPayload,
@@ -182,6 +183,18 @@ export function useSeminarRubric() {
         },
     });
 
+    // ── Update minimum score mutation ────────
+    const updateMinimumScoreMutation = useMutation({
+        mutationFn: updateMinimumScore,
+        onSuccess: () => {
+            invalidateAll();
+            toast.success('Skor minimum berhasil diubah');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
     return {
         // Data
         cpmks: cpmks ?? [],
@@ -218,5 +231,9 @@ export function useSeminarRubric() {
             reorderCriteriaMutation.mutateAsync({ cpmkId, orderedIds }),
         reorderRubrics: (criteriaId: string, orderedIds: string[]) =>
             reorderRubricsMutation.mutateAsync({ criteriaId, orderedIds }),
+            
+        // Settings actions
+        updateMinimumScore: updateMinimumScoreMutation.mutateAsync,
+        isUpdatingMinimumScore: updateMinimumScoreMutation.isPending,
     };
 }

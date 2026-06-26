@@ -38,6 +38,29 @@ export const getExitSurveyFormResponses = async (id: string): Promise<any[]> => 
   return handleResponse(response, 'Gagal mengambil respons form');
 };
 
+const withYudisiumFilter = (url: string, yudisiumId?: string) => {
+  if (!yudisiumId || yudisiumId === 'all') return url;
+  return `${url}?yudisiumId=${encodeURIComponent(yudisiumId)}`;
+};
+
+export const downloadExitSurveyResponsesPdf = async (
+  id: string,
+  yudisiumId?: string
+): Promise<Blob> => {
+  const response = await apiRequest(getApiUrl(withYudisiumFilter(E.RESPONSES_EXPORT_PDF(id), yudisiumId)));
+  if (!response.ok) throw new Error('Gagal mengunduh laporan PDF');
+  return response.blob();
+};
+
+export const downloadExitSurveyResponsesExcel = async (
+  id: string,
+  yudisiumId?: string
+): Promise<Blob> => {
+  const response = await apiRequest(getApiUrl(withYudisiumFilter(E.RESPONSES_EXPORT_EXCEL(id), yudisiumId)));
+  if (!response.ok) throw new Error('Gagal mengunduh laporan Excel');
+  return response.blob();
+};
+
 export const createExitSurveyForm = async (
   payload: CreateExitSurveyFormPayload
 ): Promise<ExitSurveyForm> => {

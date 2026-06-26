@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileDown, Eye, CheckSquare, FileText } from 'lucide-react';
+import { ArrowLeft, FileDown, Eye, CheckSquare, FileText, Plus, Upload, Trash2 } from 'lucide-react';
 import { openProtectedFile } from '@/lib/protected-file';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -18,29 +18,35 @@ import {
 } from '@/components/ui/dialog';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { YudisiumValidationFormDialog } from '@/components/yudisium/YudisiumValidationFormDialog';
+import { YudisiumVerificationFormDialog } from '@/components/yudisium/YudisiumVerificationFormDialog';
+import { YudisiumParticipantFormDialog } from '@/components/yudisium/YudisiumParticipantFormDialog';
+import { YudisiumParticipantImportDialog } from '@/components/yudisium/YudisiumParticipantImportDialog';
 
 import { useRole } from '@/hooks/shared';
 import { useYudisiumEvent } from '@/hooks/yudisium/useYudisium';
-import { useYudisiumParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
-import { useExportParticipants, useFinalizeParticipants } from '@/hooks/yudisium/useYudisiumParticipants';
+import {
+  useAddArchiveYudisiumParticipant,
+  useArchiveYudisiumParticipantOptions,
+  useDeleteArchiveYudisiumParticipant,
+  useExportParticipants,
+  useFinalizeParticipants,
+  useImportArchiveYudisiumParticipants,
+  useYudisiumParticipants,
+} from '@/hooks/yudisium/useYudisiumParticipants';
 
 import type { AdminYudisiumParticipant } from '@/types/admin-yudisium.types';
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
-  draft: { label: 'Draft', className: 'bg-gray-100 text-gray-600 border-gray-200' },
-  open: { label: 'Pendaftaran Dibuka', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  draft: { label: 'Draft', className: 'bg-slate-50 text-slate-700 border-slate-200' },
+  open: { label: 'Pendaftaran Dibuka', className: 'bg-sky-50 text-sky-700 border-sky-200' },
   closed: { label: 'Pendaftaran Ditutup', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  in_review: { label: 'Dalam Review', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  scheduled: { label: 'Acara Terjadwalkan', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   ongoing: { label: 'Sedang Berlangsung', className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  finalized: { label: 'Finalized', className: 'bg-slate-50 text-slate-700 border-slate-200' },
-  completed: { label: 'Selesai', className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  completed: { label: 'Selesai', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 };
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
   registered: {
-    label: 'Menunggu Validasi Dokumen',
+    label: 'Menunggu Verifikasi Dokumen',
     className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
   },
   verified: {
@@ -73,16 +79,22 @@ export default function YudisiumDetailPage() {
 
   // Queries & Mutations
   const { data: detail, isLoading: isLoadingDetail, refetch: refetchDetail } = useYudisiumEvent(id!);
-  const { 
-    data: participantData, 
-    isLoading: isLoadingParticipants, 
-    isFetching: isFetchingParticipants, 
+  const {
+    data: participantData,
+    isLoading: isLoadingParticipants,
+    isFetching: isFetchingParticipants,
     refetch: refetchParticipants
   } = useYudisiumParticipants(id!);
 
   const exportParticipantsMutation = useExportParticipants();
   const finalizeMutation = useFinalizeParticipants(id!);
+  const addParticipantMutation = useAddArchiveYudisiumParticipant(id!);
+  const importParticipantMutation = useImportArchiveYudisiumParticipants(id!);
+  const deleteParticipantMutation = useDeleteArchiveYudisiumParticipant(id!);
   const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
+  const [importParticipantOpen, setImportParticipantOpen] = useState(false);
+  const [participantToDelete, setParticipantToDelete] = useState<AdminYudisiumParticipant | null>(null);
 
   // Participant Table State
   const [search, setSearch] = useState('');
@@ -94,9 +106,26 @@ export default function YudisiumDetailPage() {
     return isKoordinatorYudisium() && detail?.status === 'closed';
   }, [isKoordinatorYudisium, detail?.status]);
 
+  const isArchive = useMemo(() => {
+    return !!detail && !detail.registrationOpenDate && !detail.registrationCloseDate;
+  }, [detail]);
+
   const isFinalized = useMemo(() => {
-    return (participantData?.participants ?? []).some(p => ['appointed', 'rejected'].includes(p.status));
-  }, [participantData?.participants]);
+    return !!participantData?.yudisium?.appointedAt;
+  }, [participantData?.yudisium?.appointedAt]);
+
+  const canAccessParticipantExport = useMemo(() => {
+    return isAdmin() || isDosen() || isKoordinatorYudisium();
+  }, [isAdmin, isDosen, isKoordinatorYudisium]);
+
+  const canExportParticipants = useMemo(() => {
+    return canAccessParticipantExport && (isFinalized || detail?.status === 'completed');
+  }, [canAccessParticipantExport, detail?.status, isFinalized]);
+
+  const {
+    data: archiveParticipantOptions = [],
+    isLoading: isLoadingArchiveParticipantOptions,
+  } = useArchiveYudisiumParticipantOptions(id!, isKoordinatorYudisium() && isArchive);
 
   useEffect(() => {
     setBreadcrumbs([
@@ -132,14 +161,50 @@ export default function YudisiumDetailPage() {
     }
   };
 
+  const handleAddArchiveParticipant = async (thesisId: string) => {
+    try {
+      await addParticipantMutation.mutateAsync({ thesisId });
+      setAddParticipantOpen(false);
+      void refetchParticipants();
+      void refetchDetail();
+    } catch {
+      // Handled by toast
+    }
+  };
+
+  const handleDeleteArchiveParticipant = async () => {
+    if (!participantToDelete) return;
+
+    try {
+      await deleteParticipantMutation.mutateAsync({ participantId: participantToDelete.id });
+      setParticipantToDelete(null);
+      void refetchParticipants();
+      void refetchDetail();
+    } catch {
+      // Handled by toast
+    }
+  };
+
+  const handleImportArchiveParticipants = async (file: File) => {
+    const result = await importParticipantMutation.mutateAsync({ file });
+    void refetchParticipants();
+    void refetchDetail();
+    return result;
+  };
+
   const columns: Column<AdminYudisiumParticipant>[] = [
     { key: 'studentName', header: 'Nama', accessor: 'studentName' },
     { key: 'studentNim', header: 'NIM', accessor: 'studentNim' },
     {
       key: 'thesisTitle',
-      header: 'Judul TA',
+      header: 'Judul Tugas Akhir',
+      width: '36rem',
+      className: 'max-w-[36rem]',
       render: (row) => (
-        <span className="text-sm line-clamp-2" title={row.thesisTitle}>
+        <span
+          className="block max-w-[36rem] whitespace-normal break-words text-sm leading-snug line-clamp-2"
+          title={row.thesisTitle}
+        >
           {row.thesisTitle || '-'}
         </span>
       ),
@@ -168,7 +233,7 @@ export default function YudisiumDetailPage() {
               size="icon"
               className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
               onClick={() => setSelectedParticipant(row)}
-              title="Validasi Pendaftaran"
+              title="Verifikasi Pendaftaran"
             >
               <CheckSquare className="h-4 w-4" />
             </Button>
@@ -182,6 +247,18 @@ export default function YudisiumDetailPage() {
           >
             <Eye className="h-4 w-4" />
           </Button>
+          {isKoordinatorYudisium() && isArchive && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={() => setParticipantToDelete(row)}
+              disabled={deleteParticipantMutation.isPending}
+              title="Hapus Peserta"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -250,24 +327,8 @@ export default function YudisiumDetailPage() {
           emptyText="Belum ada peserta yudisium"
           actions={
             <div className="flex items-center gap-2">
-              {canFinalize && !isFinalized && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={() => setFinalizeConfirmOpen(true)}
-                  disabled={finalizeMutation.isPending}
-                >
-                  {finalizeMutation.isPending ? (
-                    <Spinner className="mr-2 h-4 w-4" />
-                  ) : (
-                    <CheckSquare className="mr-2 h-4 w-4" />
-                  )}
-                  Finalisasi Peserta
-                </Button>
-              )}
-              {(isAdmin() || isDosen()) && isFinalized && (
-                <div className="flex items-center gap-2">
+              {canExportParticipants && (
+                <>
                   {detail.decreeDocument?.filePath && (
                     <Button
                       variant="outline"
@@ -298,7 +359,44 @@ export default function YudisiumDetailPage() {
                     )}
                     Export Peserta
                   </Button>
-                </div>
+                </>
+              )}
+              {isKoordinatorYudisium() && isArchive && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setImportParticipantOpen(true)}
+                    disabled={importParticipantMutation.isPending}
+                  >
+                    <Upload className="h-3 w-3 mr-1" />
+                    Import Excel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setAddParticipantOpen(true)}
+                    disabled={addParticipantMutation.isPending}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Tambah
+                  </Button>
+                </>
+              )}
+              {canFinalize && !isFinalized && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 gap-1.5 px-3 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                  onClick={() => setFinalizeConfirmOpen(true)}
+                  disabled={finalizeMutation.isPending}
+                >
+                  {finalizeMutation.isPending ? (
+                    <Spinner className="h-3.5 w-3.5" />
+                  ) : (
+                    <CheckSquare className="h-3.5 w-3.5" />
+                  )}
+                  Finalisasi Peserta
+                </Button>
               )}
               <RefreshButton
                 onClick={() => void refetchParticipants()}
@@ -310,7 +408,7 @@ export default function YudisiumDetailPage() {
       </div>
 
 
-      <YudisiumValidationFormDialog
+      <YudisiumVerificationFormDialog
         participant={selectedParticipant}
         yudisiumId={id!}
         open={!!selectedParticipant}
@@ -318,6 +416,49 @@ export default function YudisiumDetailPage() {
           if (!open) setSelectedParticipant(null);
         }}
       />
+
+      <YudisiumParticipantFormDialog
+        open={addParticipantOpen}
+        onOpenChange={setAddParticipantOpen}
+        thesisOptions={archiveParticipantOptions}
+        isLoading={isLoadingArchiveParticipantOptions}
+        isPending={addParticipantMutation.isPending}
+        onSubmit={handleAddArchiveParticipant}
+      />
+
+      <YudisiumParticipantImportDialog
+        open={importParticipantOpen}
+        onOpenChange={setImportParticipantOpen}
+        onImport={handleImportArchiveParticipants}
+        isImporting={importParticipantMutation.isPending}
+      />
+
+      <Dialog open={!!participantToDelete} onOpenChange={(open) => !open && setParticipantToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Peserta Yudisium</DialogTitle>
+            <DialogDescription>
+              Peserta {participantToDelete?.studentName} akan dihapus dari arsip yudisium ini.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setParticipantToDelete(null)}
+              disabled={deleteParticipantMutation.isPending}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteArchiveParticipant}
+              disabled={deleteParticipantMutation.isPending}
+            >
+              {deleteParticipantMutation.isPending ? 'Menghapus...' : 'Hapus Peserta'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
         <DialogContent>
@@ -337,7 +478,7 @@ export default function YudisiumDetailPage() {
             <div className="flex gap-3 items-start p-3 rounded-lg bg-amber-50/50 border border-amber-100">
               <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
               <p className="text-sm text-amber-900">
-                Mahasiswa yang belum lengkap atau belum divalidasi CPL-nya akan diubah statusnya menjadi <strong>Belum Lulus</strong>.
+                Mahasiswa yang persyaratannya belum lengkap atau belum divalidasi CPL-nya akan diubah statusnya menjadi <strong>Belum Lulus</strong>.
               </p>
             </div>
           </div>

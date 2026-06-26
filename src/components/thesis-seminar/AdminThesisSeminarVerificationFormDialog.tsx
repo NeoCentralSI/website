@@ -9,17 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { useAdminDefenceDetail, useValidateDefenceDocument } from '@/hooks/thesis-defence/useAdminThesisDefence';
+import { useAdminThesisSeminarDetail, useVerifyAdminThesisSeminarDocument } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 import { toTitleCaseName, formatDateId } from '@/lib/text';
 import { ExternalLink, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import type { AdminDefenceListItem, DocumentSubmitStatus } from '@/types/defence.types';
+import type { AdminSeminarListItem, DocumentSubmitStatus } from '@/types/seminar.types';
 import { openProtectedFile } from '@/lib/protected-file';
 import { apiRequest } from '@/services/auth.service';
 import { ENV } from '@/config/env';
 
-interface AdminThesisDefenceValidationFormDialogProps {
-  defence: AdminDefenceListItem | null;
+interface AdminThesisSeminarVerificationModalProps {
+  seminar: AdminSeminarListItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -36,11 +36,11 @@ function getDocStatusBadge(status: DocumentSubmitStatus) {
   }
 }
 
-export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenChange }: AdminThesisDefenceValidationFormDialogProps) {
-  const { data: detail, isLoading } = useAdminDefenceDetail(
-    open && defence ? defence.id : undefined
+export function AdminThesisSeminarVerificationModal({ seminar, open, onOpenChange }: AdminThesisSeminarVerificationModalProps) {
+  const { data: detail, isLoading } = useAdminThesisSeminarDetail(
+    open && seminar ? seminar.id : undefined
   );
-  const validateMutation = useValidateDefenceDocument();
+  const verifyMutation = useVerifyAdminThesisSeminarDocument();
 
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [notes, setNotes] = useState('');
@@ -59,13 +59,13 @@ export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenCh
   const currentDoc = currentEntry?.doc || null;
   const currentDocType = currentEntry?.docType || null;
 
-  // Reset state when defence changes
+  // Reset state when seminar changes
   useEffect(() => {
     if (open) {
       setActiveDocIndex(0);
       setNotes('');
     }
-  }, [open, defence?.id]);
+  }, [open, seminar?.id]);
 
   // Update notes when switching docs
   useEffect(() => {
@@ -113,13 +113,13 @@ export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenCh
     };
   }, [currentDoc?.filePath]);
 
-  const handleValidate = useCallback(
+  const handleVerify = useCallback(
     (action: 'approve' | 'decline') => {
-      if (!defence || !currentDoc || !currentDocType) return;
+      if (!seminar || !currentDoc || !currentDocType) return;
 
-      validateMutation.mutate(
+      verifyMutation.mutate(
         {
-          defenceId: defence.id,
+          seminarId: seminar.id,
           documentTypeId: currentDocType.id,
           payload: { action, notes: notes.trim() || undefined },
         },
@@ -128,8 +128,8 @@ export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenCh
             const msg = action === 'approve' ? 'Dokumen disetujui' : 'Dokumen ditolak';
             toast.success(msg);
 
-            if (result.defenceTransitioned) {
-              toast.success('Semua dokumen disetujui — sidang berstatus "Terverifikasi"');
+            if (result.seminarTransitioned) {
+              toast.success('Semua dokumen disetujui — seminar berstatus "Terverifikasi"');
               onOpenChange(false);
             } else {
               // Auto-advance to next unverified document
@@ -143,22 +143,22 @@ export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenCh
             setNotes('');
           },
           onError: (err) => {
-            toast.error(err.message || 'Gagal memvalidasi dokumen');
+            toast.error(err.message || 'Gagal memverifikasi dokumen');
           },
         }
       );
     },
-    [defence, currentDoc, currentDocType, notes, validateMutation, onOpenChange, orderedDocs, activeDocIndex]
+    [seminar, currentDoc, currentDocType, notes, verifyMutation, onOpenChange, orderedDocs, activeDocIndex]
   );
 
-  const canValidate = currentDoc?.status === 'submitted';
+  const canVerify = currentDoc?.status === 'submitted';
   const canDownload = !!currentDoc?.filePath;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Validasi Dokumen Sidang TA</DialogTitle>
+          <DialogTitle>Verifikasi Dokumen Seminar Hasil</DialogTitle>
           {detail && (
             <div className="text-sm text-muted-foreground mt-1">
               {toTitleCaseName(detail.student.name)} — {detail.student.nim}
@@ -283,8 +283,8 @@ export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenCh
                     )}
                   </div>
 
-                  {/* Validation controls - only for 'submitted' status */}
-                  {canValidate && (
+                  {/* Verification controls - only for 'submitted' status */}
+                  {canVerify && (
                     <div className="space-y-3 border-t pt-3">
                       <Textarea
                         placeholder="Catatan (opsional)..."
@@ -296,10 +296,10 @@ export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenCh
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleValidate('decline')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('decline')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -314,10 +314,10 @@ export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenCh
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => handleValidate('approve')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('approve')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -342,7 +342,7 @@ export function AdminThesisDefenceValidationFormDialog({ defence, open, onOpenCh
           </div>
         ) : (
           <div className="text-sm text-muted-foreground py-8 text-center">
-            Tidak ada dokumen untuk divalidasi.
+            Tidak ada dokumen untuk diverifikasi.
           </div>
         )}
       </DialogContent>

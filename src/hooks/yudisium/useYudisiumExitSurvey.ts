@@ -15,7 +15,7 @@ import {
   deleteExitSurveyQuestion,
   getStudentExitSurvey,
   submitStudentExitSurvey,
-} from '@/services/yudisium/yudisium-exit-survey.service';
+} from '@/services/yudisium/exit-survey.service';
 
 export const exitSurveyKeys = {
   all: ['yudisium-exit-survey'] as const,

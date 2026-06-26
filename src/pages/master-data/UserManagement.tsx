@@ -42,6 +42,7 @@ export default function UserManagementPage() {
     roles: [],
     identityNumber: '',
     identityType: 'NIM',
+    gender: null,
   });
 
   const breadcrumbs = useMemo(() => [
@@ -178,7 +179,6 @@ export default function UserManagementPage() {
     { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
     { value: ROLES.PENGUJI, label: 'Penguji' },
     { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
-    { value: ROLES.GKM, label: 'GKM' },
     { value: ROLES.DOSEN_METOPEN, label: 'Dosen Pengampu Metopel' },
   ];
 
@@ -241,7 +241,6 @@ export default function UserManagementPage() {
           { label: 'Mahasiswa', value: ROLES.MAHASISWA },
           { label: 'Penguji', value: ROLES.PENGUJI },
           { label: 'Koordinator Yudisium', value: ROLES.KOORDINATOR_YUDISIUM },
-          { label: 'GKM', value: ROLES.GKM },
           { label: 'Dosen Pengampu Metopel', value: ROLES.DOSEN_METOPEN },
         ],
       },
@@ -285,7 +284,8 @@ export default function UserManagementPage() {
               roles: row.roles.map((r: any) => r.name),
               identityNumber: row.identityNumber,
               identityType: row.identityType,
-              isVerified: row.isVerified
+              isVerified: row.isVerified,
+              gender: row.gender ?? null,
             } as any);
             setIsFormOpen(true);
           }}
@@ -323,7 +323,7 @@ export default function UserManagementPage() {
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => {
               setEditingUser(null);
-              setFormData({ fullName: '', email: '', roles: ['Mahasiswa'], identityNumber: '', identityType: 'NIM' });
+              setFormData({ fullName: '', email: '', roles: ['Mahasiswa'], identityNumber: '', identityType: 'NIM', gender: null });
               setIsFormOpen(true);
             }}>
               <Plus className="w-4 h-4 mr-2" /> Tambah User

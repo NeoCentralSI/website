@@ -6,14 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { ComboBox } from '@/components/ui/combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { CplStudentScore } from '@/services/master-data/cpl.service';
+import type { CplStudentScore, CplStudentScoreStatus } from '@/services/master-data/cpl.service';
 
 interface CplStudentScoreFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editData?: CplStudentScore | null;
-    onCreate: (payload: { studentId: string; score: number; status: string }) => Promise<unknown>;
-    onUpdate: (studentId: string, score: number, status: string) => Promise<unknown>;
+    onCreate: (payload: { studentId: string; score: number; status: CplStudentScoreStatus }) => Promise<unknown>;
+    onUpdate: (studentId: string, score: number, status: CplStudentScoreStatus) => Promise<unknown>;
     isSubmitting: boolean;
     studentOptions: Array<{ value: string; label: string }>;
 }
@@ -32,17 +32,17 @@ export function CplStudentScoreFormDialog({
 
     const [studentId, setStudentId] = useState('');
     const [score, setScore] = useState<number | ''>('');
-    const [status, setStatus] = useState<string>('finalized');
+    const [status, setStatus] = useState<CplStudentScoreStatus>('calculated');
 
     useEffect(() => {
         if (editData) {
             setStudentId(editData.studentId);
             setScore(editData.score);
-            setStatus(editData.status || 'finalized');
+            setStatus(editData.status || 'calculated');
         } else {
             setStudentId('');
             setScore('');
-            setStatus('finalized');
+            setStatus('calculated');
         }
     }, [editData, open]);
 
@@ -105,13 +105,13 @@ export function CplStudentScoreFormDialog({
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="status">Status</Label>
-                        <Select value={status} onValueChange={setStatus} disabled={isSiaData}>
+                        <Select value={status} onValueChange={(v: CplStudentScoreStatus) => setStatus(v)} disabled={isSiaData}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Pilih status" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="calculated">Dihitung</SelectItem>
-                                <SelectItem value="verified">Diverifikasi</SelectItem>
+                                <SelectItem value="calculated">Sedang Dihitung</SelectItem>
+                                <SelectItem value="validated">Valid</SelectItem>
                                 <SelectItem value="finalized">Final</SelectItem>
                             </SelectContent>
                         </Select>

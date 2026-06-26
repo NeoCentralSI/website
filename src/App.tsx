@@ -102,6 +102,7 @@ const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/
 // Master Data
 const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
 const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
+const CurriculumPage = lazy(() => import('./pages/master-data/Curriculum'))
 const Cpl = lazy(() => import('./pages/master-data/Cpl'))
 const CplDetailPage = lazy(() => import('./pages/master-data/CplDetail'))
 const MahasiswaPage = lazy(() => import('./pages/master-data/Mahasiswa'))
@@ -190,14 +191,15 @@ function App() {
               </Route>
 
               <Route element={<ProtectedLayout />}>
-                <Route element={<TugasAkhirGuard />}>
-                  {/* Thesis Seminar list pages — explicit paths take priority over /:id */}
-                  <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntryPage />} />
-                  <Route path="/tugas-akhir/sidang" element={<ThesisDefenceEntryPage />} />
-                  {/* Unified detail route for all roles */}
-                  <Route path="/tugas-akhir/seminar-hasil/:id" element={<ThesisSeminarDetailPage />} />
-                  <Route path="/tugas-akhir/sidang/:id" element={<ThesisDefenceDetailPage />} />
-                </Route>
+
+                {/* Thesis Seminar list pages — explicit paths take priority over /:id */}
+                <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntryPage />} />
+                <Route path="/tugas-akhir/sidang" element={<ThesisDefenceEntryPage />} />
+
+                {/* Unified detail route for all roles */}
+                <Route path="/tugas-akhir/seminar-hasil/:id" element={<ThesisSeminarDetailPage />} />
+                <Route path="/tugas-akhir/sidang/:id" element={<ThesisDefenceDetailPage />} />
+
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profil />} />
 
@@ -250,10 +252,14 @@ function App() {
                     {/* Seminar Hasil and Sidang handled by top-level routes */}
                   </Route>
 
-                  {/* Pengumuman routes */}
-                  <Route path="/pengumuman" element={<Navigate to="/pengumuman/seminar-hasil" replace />} />
-                  <Route path="/pengumuman/seminar-hasil" element={<ThesisSeminarAnnouncementPage />} />
+                  <Route path="/yudisium/exit-survey" element={<StudentExitSurveyPage />} />
+                  <Route path="/repositori" element={<RepositoryPage />} />
                 </Route>
+
+                {/* Pengumuman — all authenticated roles */}
+                <Route path="/pengumuman" element={<Navigate to="/pengumuman/seminar-hasil" replace />} />
+                <Route path="/pengumuman/seminar-hasil" element={<ThesisSeminarAnnouncementPage />} />
+                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
 
                 {/* Shared Routes (Student & Lecturer & Others) */}
                 {/* Tugas Akhir Shared */}
@@ -265,10 +271,7 @@ function App() {
                 <Route path="/yudisium" element={<YudisiumEntry />} />
                 <Route path="/yudisium/:id" element={<YudisiumDetailPage />} />
                 <Route path="/yudisium/:id/peserta/:yudisiumParticipantId" element={<YudisiumParticipantDetailPage />} />
-                <Route path="/yudisium/exit-survey" element={<StudentExitSurveyPage />} />
                 <Route path="/yudisium/exit-survey/:id" element={<ExitSurveyFormPage />} />
-                <Route path="/repositori" element={<RepositoryPage />} />
-                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
 
                 {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
                 <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
@@ -315,8 +318,10 @@ function App() {
                 </Route>
 
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.GKM]} />}>
-                  <Route path="/kelola/cpl" element={<Cpl />} />
-                  <Route path="/kelola/cpl/:id" element={<CplDetailPage />} />
+                  {/* CPL & Curriculum Routes */}
+                  <Route path="/kelola/cpl" element={<CurriculumPage />} />
+                  <Route path="/kelola/cpl/:curriculumId/cpls" element={<Cpl />} />
+                  <Route path="/kelola/cpl/detail/:id" element={<CplDetailPage />} />
                 </Route>
 
                 {/* Kelola Metopen - Dosen Pengampu, Sekdep, Kadep */}
@@ -358,6 +363,8 @@ function App() {
                   <Route path="/kelola/tugas-akhir/milestone" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/syarat-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/syarat-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   {/* Yudisium Management - Redirect to unified detail if specific actions needed, or keep for list */}

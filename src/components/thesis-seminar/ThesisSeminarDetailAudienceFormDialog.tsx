@@ -81,7 +81,7 @@ export function AdminThesisSeminarAudienceDialog({
             Batal
           </Button>
           <Button onClick={handleSubmit} disabled={!selectedStudentId || isPending}>
-            {isPending ? 'Menyimpan...' : 'Tambah Audience'}
+            {isPending ? 'Menyimpan...' : 'Tambah Peserta'}
           </Button>
         </DialogFooter>
       </DialogContent>

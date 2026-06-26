@@ -12,6 +12,7 @@ import {
     getWeightSummary,
     reorderCriteria,
     reorderRubrics,
+    updateMinimumScore,
     type DefenceRole,
     type CreateCriteriaPayload,
     type UpdateCriteriaPayload,
@@ -184,6 +185,18 @@ export function useDefenceRubric(role: DefenceRole) {
         },
     });
 
+    // ── Update minimum score mutation ────────
+    const updateMinimumScoreMutation = useMutation({
+        mutationFn: updateMinimumScore,
+        onSuccess: () => {
+            invalidateAll();
+            toast.success('Skor minimum sidang berhasil diubah');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
     return {
         // Data
         cpmks: cpmks ?? [],
@@ -220,5 +233,9 @@ export function useDefenceRubric(role: DefenceRole) {
             reorderCriteriaMutation.mutateAsync({ cpmkId, orderedIds }),
         reorderRubrics: (criteriaId: string, orderedIds: string[]) =>
             reorderRubricsMutation.mutateAsync({ criteriaId, orderedIds }),
+            
+        // Settings actions
+        updateMinimumScore: updateMinimumScoreMutation.mutateAsync,
+        isUpdatingMinimumScore: updateMinimumScoreMutation.isPending,
     };
 }

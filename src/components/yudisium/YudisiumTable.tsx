@@ -17,20 +17,22 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { formatDateOnlyId, formatDateTimeId } from '@/lib/text';
-import type { YudisiumEvent, UpdateYudisiumPayload } from '@/services/yudisium/yudisium.service';
+import type { YudisiumEvent, UpdateYudisiumPayload } from '@/services/yudisium/core.service';
 import { YudisiumFormDialog } from '@/components/yudisium/YudisiumFormDialog';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline'; className: string }> = {
-    // Time-derived statuses
-    draft:     { label: 'Draft',                  variant: 'secondary', className: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' },
-    open:      { label: 'Pendaftaran Dibuka',      variant: 'default',   className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
-    closed:    { label: 'Pendaftaran Ditutup',     variant: 'secondary', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
-    in_review: { label: 'Dalam Review',           variant: 'outline',   className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
-    scheduled: { label: 'Acara Terjadwalkan',     variant: 'outline',   className: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' },
-    ongoing:   { label: 'Sedang Berlangsung',     variant: 'default',   className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
-    finalized: { label: 'Finalized',              variant: 'outline',   className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' },
-    completed: { label: 'Selesai',                variant: 'default',   className: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' },
+    draft: { label: 'Draft', variant: 'secondary', className: 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' },
+    open: { label: 'Pendaftaran Dibuka', variant: 'default', className: 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' },
+    closed: { label: 'Pendaftaran Ditutup', variant: 'secondary', className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
+    ongoing: { label: 'Sedang Berlangsung', variant: 'default', className: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
+    completed: { label: 'Selesai', variant: 'default', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
 };
+
+const isArchiveYudisium = (item: YudisiumEvent) =>
+    !item.registrationOpenDate && !item.registrationCloseDate;
+
+const canDeleteYudisium = (item: YudisiumEvent) =>
+    isArchiveYudisium(item) || item.canDelete;
 
 interface YudisiumTableProps {
     data: YudisiumEvent[];
@@ -38,7 +40,7 @@ interface YudisiumTableProps {
     isFetching: boolean;
     onDelete: (id: string) => void;
     onUpdate: (id: string, data: UpdateYudisiumPayload) => Promise<unknown>;
-    onCreate: (payload: import('@/services/yudisium/yudisium.service').CreateYudisiumPayload) => Promise<unknown>;
+    onCreate: (payload: import('@/services/yudisium/core.service').CreateYudisiumPayload) => Promise<unknown>;
     onRefresh: () => void;
     isDeleting: boolean;
     canManage: boolean;
@@ -75,7 +77,7 @@ export function YudisiumTable({
 
     const filteredData = useMemo(() => {
         const latestFirst = [...data].sort((a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            new Date(b.eventDate ?? 0).getTime() - new Date(a.eventDate ?? 0).getTime(),
         );
 
         const term = search.toLowerCase();
@@ -105,15 +107,22 @@ export function YudisiumTable({
             {
                 key: 'name',
                 header: 'Nama',
+                className: 'max-w-[240px] min-w-[160px] whitespace-normal',
                 render: (item) => (
-                    <span className="font-medium">{item.name || '-'}</span>
+                    <div className="max-w-[28ch] whitespace-normal break-words font-medium leading-tight">
+                        {item.name || '-'}
+                    </div>
                 ),
             },
             {
                 key: 'eventDate',
                 header: 'Tanggal',
+                width: 150,
+                className: 'whitespace-normal',
                 render: (item) => (
-                    <span className="text-sm">{formatDateTimeId(item.eventDate)}</span>
+                    <div className="max-w-[18ch] whitespace-normal break-words text-sm leading-tight">
+                        {formatDateTimeId(item.eventDate)}
+                    </div>
                 ),
             },
             {
@@ -143,15 +152,14 @@ export function YudisiumTable({
                 key: 'participantCount',
                 header: 'Peserta',
                 width: 90,
+                className: 'text-center',
                 render: (item) => (
-                    item.participantCount > 0
-                        ? (
-                            <Badge variant="outline" className="gap-1 px-2 font-medium border-gray-200 text-gray-600">
-                                <Users className="h-3 w-3" />
-                                {item.participantCount}
-                            </Badge>
-                        )
-                        : <span className="text-muted-foreground text-sm">-</span>
+                    <div className="flex justify-center">
+                        <Badge variant="outline" className="flex items-center gap-1 font-normal border-gray-200 bg-white text-gray-900">
+                            <Users className="h-3 w-3" />
+                            <span className="font-bold">{item.participantCount}</span>
+                        </Badge>
+                    </div>
                 ),
             },
             {
@@ -170,7 +178,6 @@ export function YudisiumTable({
                         { label: 'Draft', value: 'draft' },
                         { label: 'Pendaftaran Dibuka', value: 'open' },
                         { label: 'Pendaftaran Ditutup', value: 'closed' },
-                        { label: 'Acara Terjadwalkan', value: 'scheduled' },
                         { label: 'Sedang Berlangsung', value: 'ongoing' },
                         { label: 'Selesai', value: 'completed' },
                     ],
@@ -192,8 +199,11 @@ export function YudisiumTable({
                 header: 'Aksi',
                 width: 120,
                 className: 'text-right',
-                render: (item) => (
-                    <div className="flex items-center justify-end gap-1">
+                render: (item) => {
+                    const canDeleteItem = canDeleteYudisium(item);
+
+                    return (
+                        <div className="flex items-center justify-end gap-1">
                         {canViewDetail && (
                             <Button
                                 variant="ghost"
@@ -221,9 +231,9 @@ export function YudisiumTable({
                                     size="icon"
                                     className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                                     onClick={() => setDeleteId(item.id)}
-                                    disabled={isDeleting || !item.canDelete}
+                                    disabled={isDeleting || !canDeleteItem}
                                     title={
-                                        item.canDelete
+                                        canDeleteItem
                                             ? 'Hapus'
                                             : 'Tidak dapat menghapus data yang sudah memiliki relasi'
                                     }
@@ -232,8 +242,9 @@ export function YudisiumTable({
                                 </Button>
                             </>
                         )}
-                    </div>
-                ),
+                        </div>
+                    );
+                },
             });
         }
 
@@ -277,7 +288,8 @@ export function YudisiumTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Data Yudisium</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Apakah Anda yakin ingin menghapus data yudisium ini? Data yang sudah memiliki peserta tidak dapat dihapus.
+                            Apakah Anda yakin ingin menghapus data yudisium ini? Jika data arsip memiliki peserta,
+                            peserta yang terkait juga akan dihapus.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

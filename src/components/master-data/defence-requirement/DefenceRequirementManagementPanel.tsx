@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useCpmk } from '@/hooks/master-data/useCpmk';
-import { CpmkTable } from '@/components/master-data/cpmk/CpmkTable';
-import { CpmkFormDialog } from '@/components/master-data/cpmk/CpmkFormDialog';
-import type { CreateCpmkPayload } from '@/services/master-data/cpmk.service';
+import { useDefenceRequirement } from '@/hooks/master-data/useDefenceRequirement';
+import { DefenceRequirementTable } from './DefenceRequirementTable';
+import { DefenceRequirementFormDialog } from './DefenceRequirementFormDialog';
+
 import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.service';
 import {
     Select,
@@ -27,36 +27,34 @@ function academicYearLabel(semester?: string, year?: string | null) {
     return `${semesterLabel} ${year || ''}`.trim();
 }
 
-export function CpmkManagementPanel() {
+export function DefenceRequirementManagementPanel() {
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>(undefined);
 
     const { data: academicYearsData } = useQuery({
-        queryKey: ['cpmk-academic-years'],
+        queryKey: ['academic-years'],
         queryFn: () => getAcademicYearsAPI({ page: 1, pageSize: 100 }),
     });
 
     const { data: activeAcademicYearData } = useQuery({
-        queryKey: ['cpmk-active-academic-year'],
+        queryKey: ['active-academic-year'],
         queryFn: getActiveAcademicYearAPI,
     });
 
     const effectiveAcademicYearId = selectedAcademicYearId || activeAcademicYearData?.academicYear?.id;
 
     const {
-        cpmks,
+        requirements,
         isLoading,
         isFetching,
         refetch,
         create,
         update,
         remove,
-        copyTemplate,
         isDeleting,
+        reorder,
+        copyTemplate,
         isCopyingTemplate,
-    } = useCpmk(effectiveAcademicYearId);
-
-    // Filter to only show thesis-type CPMKs
-    const thesisCpmks = cpmks.filter((cpmk) => cpmk.type === 'thesis');
+    } = useDefenceRequirement(effectiveAcademicYearId);
 
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [copyDialogOpen, setCopyDialogOpen] = useState(false);
@@ -67,32 +65,37 @@ export function CpmkManagementPanel() {
 
     const handleCopyTemplate = async () => {
         if (!sourceAcademicYearId || !effectiveAcademicYearId) return;
-        await copyTemplate({
-            sourceAcademicYearId,
-            targetAcademicYearId: effectiveAcademicYearId,
-        });
-        setCopyDialogOpen(false);
-        setSourceAcademicYearId('');
+        try {
+            await copyTemplate({
+                sourceAcademicYearId,
+                targetAcademicYearId: effectiveAcademicYearId,
+            });
+            setCopyDialogOpen(false);
+            setSourceAcademicYearId('');
+        } catch (error) {
+            // Error is handled by the hook
+        }
     };
 
     return (
         <div className="space-y-4">
-            <CpmkTable
-                data={thesisCpmks}
+            <DefenceRequirementTable
+                data={requirements}
                 isLoading={isLoading}
                 isFetching={isFetching}
                 onDelete={remove}
-                onUpdate={update}
+                onUpdate={(id, data) => update({ id, data })}
                 onCreate={() => setCreateDialogOpen(true)}
                 onRefresh={() => refetch()}
                 isDeleting={isDeleting}
+                onReorder={reorder}
                 onCopyTemplate={() => setCopyDialogOpen(true)}
                 isCopyingTemplate={isCopyingTemplate}
                 extraActions={
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <Label className="text-xs text-muted-foreground">Tahun Ajaran</Label>
                         <Select
-                            value={effectiveAcademicYearId}
+                            value={effectiveAcademicYearId || ""}
                             onValueChange={(value) => setSelectedAcademicYearId(value)}
                         >
                             <SelectTrigger className="w-full sm:w-[240px]">
@@ -110,16 +113,16 @@ export function CpmkManagementPanel() {
                 }
             />
 
-            <CpmkFormDialog
+            <DefenceRequirementFormDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                onSubmit={(payload: CreateCpmkPayload) => create({ ...payload, academicYearId: effectiveAcademicYearId })}
+                onSubmit={(payload: any) => create({ ...payload, academicYearId: effectiveAcademicYearId! })}
             />
 
             <Dialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Copy Template CPMK</DialogTitle>
+                        <DialogTitle>Copy Template Persyaratan Sidang</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-2">
                         <Label>Pilih Tahun Ajaran Sumber</Label>
@@ -141,7 +144,7 @@ export function CpmkManagementPanel() {
                             Batal
                         </Button>
                         <Button onClick={handleCopyTemplate} disabled={!sourceAcademicYearId || isCopyingTemplate}>
-                            Salin Template
+                            {isCopyingTemplate ? 'Menyalin...' : 'Salin Template'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

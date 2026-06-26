@@ -84,8 +84,8 @@ export function ThesisSeminarDetailRevisionPanel({ seminarId, detail, onRefresh,
 
   return (
     <div className="space-y-6">
-      {/* 1. Catatan Penguji (Dari Rekap Penilaian) */}
-      <ExaminerNotesSection detail={detail} />
+      {/* 1. Catatan Penguji (Dari Rekap Penilaian) — Hanya untuk Mahasiswa */}
+      {showStudentActions && <ExaminerNotesSection detail={detail} />}
 
       {/* 2. Board Revisi (Main Table) */}
       <RevisionBoardSection
@@ -206,13 +206,15 @@ function RevisionBoardSection({
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
     const visibleItems = showStudentActions ? revisions : revisions.filter(r => r.studentSubmittedAt || r.isFinished);
-    if (!term) return visibleItems;
-    return visibleItems.filter(
+    const items = !term ? visibleItems : visibleItems.filter(
       (r) =>
         r.description.toLowerCase().includes(term) ||
         (r.revisionAction || '').toLowerCase().includes(term) ||
         (r.examinerName || '').toLowerCase().includes(term)
     );
+
+    // CRITICAL: Sort by examinerOrder to ensure adjacency for merging
+    return [...items].sort((a, b) => (a.examinerOrder || 0) - (b.examinerOrder || 0));
   }, [revisions, search, showStudentActions]);
 
   const paginatedData = useMemo(() => {
@@ -223,9 +225,12 @@ function RevisionBoardSection({
   const summary = (board as any)?.summary || {
     total: revisions.length,
     finished: revisions.filter((r: any) => r.isFinished).length,
+    pendingApproval: revisions.filter((r: any) => r.studentSubmittedAt && !r.isFinished).length,
   };
 
-  const canFinalizeBoard = !isRevisionFinalized && summary.finished > 0;
+  const hasSubmittedItems = revisions.some(r => r.studentSubmittedAt || r.isFinished);
+  const allSubmittedApproved = revisions.every(r => !r.studentSubmittedAt || r.isFinished);
+  const canFinalizeBoard = !isRevisionFinalized && revisions.length > 0 && hasSubmittedItems && allSubmittedApproved;
 
   const handleCreate = async () => {
     if (!selectedExaminerId || !newDescription.trim()) return;
@@ -273,17 +278,17 @@ function RevisionBoardSection({
   const columns = useMemo<Column<any>[]>(() => {
     // Calculate rowSpan for examiner column
     const examinerRowSpans = new Map<string, number>();
-    filteredData.forEach((item, idx) => {
+    paginatedData.forEach((item, idx) => {
       const key = `${item.examinerOrder}-${item.examinerLecturerId}`;
       if (idx > 0) {
-        const prev = filteredData[idx - 1];
+        const prev = paginatedData[idx - 1];
         const prevKey = `${prev.examinerOrder}-${prev.examinerLecturerId}`;
         if (key === prevKey) return; // Skip
       }
       // Count subsequent matches
       let count = 1;
-      for (let j = idx + 1; j < filteredData.length; j++) {
-        const next = filteredData[j];
+      for (let j = idx + 1; j < paginatedData.length; j++) {
+        const next = paginatedData[j];
         if (`${next.examinerOrder}-${next.examinerLecturerId}` === key) {
           count++;
         } else {
@@ -302,11 +307,11 @@ function RevisionBoardSection({
           const key = `${row.examinerOrder}-${row.examinerLecturerId}`;
           const span = examinerRowSpans.get(`${index}-${key}`);
           if (span === undefined) {
-            return { className: 'hidden' };
+            return { className: 'sr-only !p-0 !border-0 hidden' };
           }
           return {
             rowSpan: span,
-            className: 'align-middle font-semibold',
+            className: 'align-top font-semibold bg-muted/5',
           };
         },
         render: (row, index) => {
@@ -354,7 +359,7 @@ function RevisionBoardSection({
         render: (row) => (
           <div className="flex items-center justify-end gap-1">
             {/* Student Actions */}
-            {showStudentActions && !row.isFinished && (
+            {showStudentActions && !row.isFinished && !isRevisionFinalized && (
               <div className="flex items-center gap-1">
                 {!row.studentSubmittedAt ? (
                   <>
@@ -391,12 +396,23 @@ function RevisionBoardSection({
         ),
       },
     ];
-  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, filteredData]);
+  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, paginatedData]);
 
   if (isLoading) return <Loading size="lg" text="Memuat board revisi..." />;
 
   return (
     <div className="space-y-4">
+      {showStudentActions && !isRevisionFinalized && revisions.length > 0 && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 flex items-start gap-3">
+          <MessageSquareText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="text-xs text-foreground/80 leading-relaxed">
+            <p className="font-bold text-primary mb-1">Informasi Perbaikan</p>
+            Daftar perbaikan di bawah ini telah dibuat secara otomatis berdasarkan catatan dari para penguji. 
+            Silakan lengkapi kolom <b>"Perbaikan"</b> untuk setiap item, lalu klik ikon <b>"Ajukan"</b> (<Send className="h-3 w-3 inline" />) agar dapat diperiksa oleh Pembimbing.
+          </div>
+        </div>
+      )}
+
       <CustomTable
         columns={columns}
         data={paginatedData}
@@ -418,12 +434,14 @@ function RevisionBoardSection({
             )}
 
             {isRevisionFinalized && (
-              <Badge variant="success" className="text-xs px-2 py-1">
-                <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
-              </Badge>
+              <div className="flex flex-col items-end">
+                <Badge variant="success" className="text-xs px-2 py-1">
+                  <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
+                </Badge>
+              </div>
             )}
 
-            {showStudentActions && (
+            {showStudentActions && !isRevisionFinalized && (
               <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Tambah
               </Button>

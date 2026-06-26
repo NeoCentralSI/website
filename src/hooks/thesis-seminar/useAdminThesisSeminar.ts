@@ -11,7 +11,7 @@ import {
   getAdminThesisSeminarRoomOptions,
   getAdminThesisSeminarSchedulingData,
   getAdminThesisSeminarThesisOptions,
-  getAdminThesisSeminarValidationList,
+  getAdminThesisSeminarVerificationList,
   importAdminThesisSeminarArchive,
   setAdminThesisSeminarSchedule,
   finalizeAdminThesisSeminarSchedule,
@@ -29,16 +29,16 @@ import {
   removeAdminThesisSeminarAudience,
   exportAdminThesisSeminarAudiencesPdf,
 } from '@/services/thesis-seminar/audience.service';
-import { validateSeminarDocument } from '@/services/thesis-seminar/doc.service';
-import type { SetSchedulePayload, ValidateDocumentPayload } from '@/types/seminar.types';
+import { verifySeminarDocument } from '@/services/thesis-seminar/doc.service';
+import type { SetSchedulePayload, VerifyDocumentPayload } from '@/types/seminar.types';
 
-export function useAdminThesisSeminarValidation(params?: {
+export function useAdminThesisSeminarVerification(params?: {
   search?: string;
   status?: string;
 }) {
   return useQuery({
-    queryKey: ['admin-thesis-seminar', 'validation', params?.search, params?.status],
-    queryFn: () => getAdminThesisSeminarValidationList(params),
+    queryKey: ['admin-thesis-seminar', 'verification', params?.search, params?.status],
+    queryFn: () => getAdminThesisSeminarVerificationList(params),
   });
 }
 
@@ -112,7 +112,7 @@ export function useAdminThesisSeminarAudienceStudentOptions(seminarId: string | 
   });
 }
 
-export function useValidateAdminThesisSeminarDocument() {
+export function useVerifyAdminThesisSeminarDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -123,10 +123,10 @@ export function useValidateAdminThesisSeminarDocument() {
     }: {
       seminarId: string;
       documentTypeId: string;
-      payload: ValidateDocumentPayload;
-    }) => validateSeminarDocument(seminarId, documentTypeId, payload),
+      payload: VerifyDocumentPayload;
+    }) => verifySeminarDocument(seminarId, documentTypeId, payload),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'verification'] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', variables.seminarId] });
     },
   });
@@ -144,7 +144,7 @@ export function useSetAdminThesisSeminarSchedule() {
       payload: SetSchedulePayload;
     }) => setAdminThesisSeminarSchedule(seminarId, payload),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'verification'] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', variables.seminarId] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'scheduling', variables.seminarId] });
     },
@@ -157,7 +157,7 @@ export function useFinalizeAdminThesisSeminarSchedule() {
   return useMutation({
     mutationFn: (seminarId: string) => finalizeAdminThesisSeminarSchedule(seminarId),
     onSuccess: (_data, seminarId) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'verification'] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', seminarId] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'scheduling', seminarId] });
     },
@@ -171,7 +171,7 @@ export function useCancelAdminThesisSeminar() {
     mutationFn: ({ seminarId, cancelledReason }: { seminarId: string; cancelledReason?: string }) =>
       cancelAdminThesisSeminar(seminarId, cancelledReason),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'validation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'verification'] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', variables.seminarId] });
       toast.success('Seminar berhasil dibatalkan');
     },

@@ -9,118 +9,120 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { useAdminThesisSeminarDetail, useValidateAdminThesisSeminarDocument } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
-import { toTitleCaseName, formatDateId } from '@/lib/text';
-import { ExternalLink, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
-import { toast } from 'sonner';
-import type { AdminSeminarListItem, DocumentSubmitStatus } from '@/types/seminar.types';
-import { openProtectedFile } from '@/lib/protected-file';
+import { useYudisiumParticipantDetail, useVerifyYudisiumDocument } from '@/hooks/yudisium/useYudisiumParticipants';
+import { formatDateId, toTitleCaseName } from '@/lib/text';
 import { apiRequest } from '@/services/auth.service';
 import { ENV } from '@/config/env';
+import { CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
+import type { AdminYudisiumParticipant, AdminYudisiumParticipantDocument } from '@/types/admin-yudisium.types';
+import { openProtectedFile } from '@/lib/protected-file';
 
-interface AdminThesisSeminarValidationModalProps {
-  seminar: AdminSeminarListItem | null;
+interface YudisiumVerificationFormDialogProps {
+  participant: AdminYudisiumParticipant | null;
+  yudisiumId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-function getDocStatusBadge(status: DocumentSubmitStatus) {
+function getDocStatusBadge(status: AdminYudisiumParticipantDocument['status']) {
   switch (status) {
     case 'approved':
       return <Badge variant="success">Disetujui</Badge>;
     case 'declined':
       return <Badge variant="destructive">Ditolak</Badge>;
     case 'submitted':
-    default:
       return <Badge variant="warning">Menunggu</Badge>;
+    default:
+      return <Badge variant="secondary">Belum Upload</Badge>;
   }
 }
 
-export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange }: AdminThesisSeminarValidationModalProps) {
-  const { data: detail, isLoading } = useAdminThesisSeminarDetail(
-    open && seminar ? seminar.id : undefined
+export function YudisiumVerificationFormDialog({
+  participant,
+  yudisiumId,
+  open,
+  onOpenChange,
+}: YudisiumVerificationFormDialogProps) {
+  const { data: detail, isLoading } = useYudisiumParticipantDetail(
+    yudisiumId,
+    open && participant ? participant.id : ''
   );
-  const validateMutation = useValidateAdminThesisSeminarDocument();
+  const verifyMutation = useVerifyYudisiumDocument(yudisiumId);
 
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [notes, setNotes] = useState('');
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [isFileLoading, setIsFileLoading] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
-  // Build ordered document list (match docTypes order)
-  const orderedDocs = detail
-    ? detail.documentTypes.map((dt) => {
-      const doc = detail.documents.find((d) => d.documentTypeId === dt.id);
-      return { docType: dt, doc: doc || null };
-    })
-    : [];
+  const documents = detail?.documents ?? [];
+  const currentDoc = documents[activeDocIndex];
 
-  const currentEntry = orderedDocs[activeDocIndex];
-  const currentDoc = currentEntry?.doc || null;
-  const currentDocType = currentEntry?.docType || null;
-
-  // Reset state when seminar changes
   useEffect(() => {
     if (open) {
       setActiveDocIndex(0);
       setNotes('');
+      setPdfBlobUrl(null);
     }
-  }, [open, seminar?.id]);
+  }, [open, participant?.id]);
 
-  // Update notes when switching docs
   useEffect(() => {
     setNotes('');
-  }, [activeDocIndex]);
-
-  // Fetch and create blob URL for PDF preview
-  useEffect(() => {
-    if (!currentDoc?.filePath) {
-      setBlobUrl(null);
-      return;
+    // Revoke previous blob URL
+    if (pdfBlobUrl) {
+      URL.revokeObjectURL(pdfBlobUrl);
+      setPdfBlobUrl(null);
     }
 
-    let active = true;
-    setIsFileLoading(true);
+    // Load PDF for current doc
+    const filePath = currentDoc?.document?.filePath;
+    if (!filePath) return;
 
-    const fetchFile = async () => {
-      try {
-        const normalized = currentDoc.filePath!.replace(/^\/+/, '');
-        const fileUrl = `${ENV.API_BASE_URL}/${normalized}`;
+    let cancelled = false;
+    setPdfLoading(true);
 
-        const res = await apiRequest(fileUrl, { method: 'GET' });
-        if (!res.ok) throw new Error();
+    const normalized = filePath.replace(/^\/+/, '');
+    const fileUrl = `${ENV.API_BASE_URL}/${normalized}`;
 
-        const blob = await res.blob();
-        if (active) {
-          const url = URL.createObjectURL(blob);
-          setBlobUrl(url);
-        }
-      } catch {
-        if (active) toast.error('Gagal memuat preview dokumen');
-      } finally {
-        if (active) setIsFileLoading(false);
-      }
-    };
-
-    fetchFile();
+    apiRequest(fileUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load PDF');
+        return res.blob();
+      })
+      .then((blob) => {
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        setPdfBlobUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setPdfBlobUrl(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPdfLoading(false);
+      });
 
     return () => {
-      active = false;
-      setBlobUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return null;
-      });
+      cancelled = true;
     };
-  }, [currentDoc?.filePath]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDocIndex, currentDoc?.document?.filePath]);
 
-  const handleValidate = useCallback(
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleVerify = useCallback(
     (action: 'approve' | 'decline') => {
-      if (!seminar || !currentDoc || !currentDocType) return;
+      if (!participant || !currentDoc?.document) return;
 
-      validateMutation.mutate(
+      verifyMutation.mutate(
         {
-          seminarId: seminar.id,
-          documentTypeId: currentDocType.id,
+          participantId: participant.id,
+          requirementId: currentDoc.requirementId,
           payload: { action, notes: notes.trim() || undefined },
         },
         {
@@ -128,13 +130,13 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
             const msg = action === 'approve' ? 'Dokumen disetujui' : 'Dokumen ditolak';
             toast.success(msg);
 
-            if (result.seminarTransitioned) {
-              toast.success('Semua dokumen disetujui — seminar berstatus "Terverifikasi"');
+            if (result.participantTransitioned) {
+              toast.success('Semua dokumen disetujui — peserta berstatus "Menunggu Validasi CPL"');
               onOpenChange(false);
             } else {
-              // Auto-advance to next unverified document
-              const nextIdx = orderedDocs.findIndex(
-                (entry, i) => i > activeDocIndex && entry.doc?.status === 'submitted'
+              // Auto-advance to next submitted doc
+              const nextIdx = documents.findIndex(
+                (entry, i) => i > activeDocIndex && entry.status === 'submitted'
               );
               if (nextIdx >= 0) {
                 setActiveDocIndex(nextIdx);
@@ -142,26 +144,25 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
             }
             setNotes('');
           },
-          onError: (err) => {
-            toast.error(err.message || 'Gagal memvalidasi dokumen');
+          onError: (err: any) => {
+            toast.error(err.message || 'Gagal memverifikasi dokumen');
           },
         }
       );
     },
-    [seminar, currentDoc, currentDocType, notes, validateMutation, onOpenChange, orderedDocs, activeDocIndex]
+    [participant, currentDoc, notes, verifyMutation, onOpenChange, documents, activeDocIndex]
   );
 
-  const canValidate = currentDoc?.status === 'submitted';
-  const canDownload = !!currentDoc?.filePath;
+  const canVerify = currentDoc?.status === 'submitted';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Validasi Dokumen Seminar Hasil</DialogTitle>
+          <DialogTitle>Verifikasi Dokumen Yudisium</DialogTitle>
           {detail && (
             <div className="text-sm text-muted-foreground mt-1">
-              {toTitleCaseName(detail.student.name)} — {detail.student.nim}
+              {toTitleCaseName(detail.studentName)} — {detail.studentNim}
             </div>
           )}
         </DialogHeader>
@@ -170,9 +171,9 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
           <div className="flex items-center justify-center py-12">
             <Spinner className="h-8 w-8" />
           </div>
-        ) : detail && orderedDocs.length > 0 ? (
+        ) : detail && documents.length > 0 ? (
           <div className="space-y-4">
-            {/* Document navigator */}
+            {/* Navigation */}
             <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
@@ -184,13 +185,13 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                 Sebelumnya
               </Button>
               <span className="text-sm font-medium">
-                Dokumen {activeDocIndex + 1} / {orderedDocs.length}
+                Dokumen {activeDocIndex + 1} / {documents.length}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={activeDocIndex === orderedDocs.length - 1}
-                onClick={() => setActiveDocIndex((i) => Math.min(orderedDocs.length - 1, i + 1))}
+                disabled={activeDocIndex === documents.length - 1}
+                onClick={() => setActiveDocIndex((i) => Math.min(documents.length - 1, i + 1))}
               >
                 Selanjutnya
                 <ChevronRight className="h-4 w-4 ml-1" />
@@ -199,20 +200,21 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
 
             {/* Documents overview pills */}
             <div className="flex gap-2 flex-wrap justify-center">
-              {orderedDocs.map((entry, idx) => (
+              {documents.map((entry, idx) => (
                 <button
-                  key={entry.docType.id}
+                  key={entry.requirementId}
                   onClick={() => setActiveDocIndex(idx)}
                   className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${idx === activeDocIndex
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-muted text-muted-foreground border-border hover:bg-accent'
                     }`}
                 >
-                  {entry.docType.name}
-                  {entry.doc && (
+                  {entry.requirementName}
+                  {entry.status && (
                     <span className="ml-1.5">
-                      {entry.doc.status === 'approved' && '✓'}
-                      {entry.doc.status === 'declined' && '✗'}
+                      {entry.status === 'approved' && '✓'}
+                      {entry.status === 'declined' && '✗'}
+                      {entry.status === 'submitted' && '•'}
                     </span>
                   )}
                 </button>
@@ -222,22 +224,29 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
             {/* Current document detail */}
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-medium">{currentDocType?.name}</h4>
+                <div>
+                  <h4 className="font-medium">{currentDoc?.requirementName}</h4>
+                  {currentDoc?.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      {currentDoc.description}
+                    </p>
+                  )}
+                </div>
                 {currentDoc && getDocStatusBadge(currentDoc.status)}
               </div>
 
-              {currentDoc ? (
+              {currentDoc?.document ? (
                 <>
                   <div className="flex items-center gap-3 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="truncate">{currentDoc.fileName || 'File'}</span>
-                    {canDownload && (
+                    <span className="truncate">{currentDoc.document.fileName || 'File'}</span>
+                    {currentDoc.document.filePath && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={async () => {
                           try {
-                            await openProtectedFile(currentDoc!.filePath!, currentDoc?.fileName || undefined);
+                            await openProtectedFile(currentDoc.document!.filePath!, currentDoc.document?.fileName || undefined);
                           } catch (error) {
                             toast.error((error as Error).message || 'Gagal membuka dokumen');
                           }
@@ -251,13 +260,13 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
 
                   {/* PDF preview */}
                   <div className="rounded border bg-muted overflow-hidden" style={{ height: '480px' }}>
-                    {isFileLoading ? (
+                    {pdfLoading ? (
                       <div className="flex items-center justify-center h-full">
                         <Spinner className="h-6 w-6" />
                       </div>
-                    ) : blobUrl ? (
+                    ) : pdfBlobUrl ? (
                       <iframe
-                        src={blobUrl}
+                        src={pdfBlobUrl}
                         title="Preview Dokumen"
                         className="w-full h-full"
                       />
@@ -269,11 +278,13 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                   </div>
 
                   <div className="text-xs text-muted-foreground space-y-1">
-                    <div>Diunggah: {formatDateId(currentDoc.submittedAt)}</div>
+                    {currentDoc.submittedAt && (
+                      <div>Diunggah: {formatDateId(currentDoc.submittedAt)}</div>
+                    )}
                     {currentDoc.verifiedAt && (
                       <div>
                         Diverifikasi: {formatDateId(currentDoc.verifiedAt)} oleh{' '}
-                        {toTitleCaseName(currentDoc.verifiedBy)}
+                        {toTitleCaseName(currentDoc.verifiedBy || '-')}
                       </div>
                     )}
                     {currentDoc.notes && (
@@ -283,8 +294,8 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                     )}
                   </div>
 
-                  {/* Validation controls - only for 'submitted' status */}
-                  {canValidate && (
+                  {/* Verification controls - only for 'submitted' status */}
+                  {canVerify && (
                     <div className="space-y-3 border-t pt-3">
                       <Textarea
                         placeholder="Catatan (opsional)..."
@@ -296,10 +307,10 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleValidate('decline')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('decline')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -314,10 +325,10 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => handleValidate('approve')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('approve')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -342,7 +353,7 @@ export function AdminThesisSeminarValidationModal({ seminar, open, onOpenChange 
           </div>
         ) : (
           <div className="text-sm text-muted-foreground py-8 text-center">
-            Tidak ada dokumen untuk divalidasi.
+            Tidak ada dokumen untuk diverifikasi.
           </div>
         )}
       </DialogContent>

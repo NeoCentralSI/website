@@ -18,6 +18,7 @@ const QUERY_KEY = ['cpls'];
 export function useCpl() {
     const queryClient = useQueryClient();
     const [params, setParams] = useState<GetCplsParams>({
+        curriculumId: '',
         status: 'active',
         search: '',
         page: 1,
@@ -77,7 +78,7 @@ export function useCpl() {
     const exportAllMutation = useMutation({
         mutationFn: exportAllCplStudentScores,
         onSuccess: () => {
-            toast.success('Export semua nilai CPL berhasil diunduh');
+            toast.success('Berhasil mengekspor semua data CPL dan nilai mahasiswa terkait');
         },
         onError: (error: Error) => {
             toast.error(error.message);

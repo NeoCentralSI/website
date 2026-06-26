@@ -8,6 +8,7 @@ import { CplStudentScoreTable } from '@/components/master-data/cpl/CplStudentSco
 import { CplStudentScoreFormDialog } from '@/components/master-data/cpl/CplStudentScoreFormDialog';
 import { CplStudentScoreImportDialog } from '@/components/master-data/cpl/CplStudentScoreImportDialog';
 import type { CplStudentScore } from '@/services/master-data/cpl.service';
+import { useRole } from '@/hooks/shared';
 
 export default function CplDetailPage() {
     const { id = '' } = useParams();
@@ -15,6 +16,9 @@ export default function CplDetailPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
     const [editData, setEditData] = useState<CplStudentScore | null>(null);
+
+    const { isGkm } = useRole();
+    const isManagement = isGkm();
 
     const {
         cpl,
@@ -39,24 +43,26 @@ export default function CplDetailPage() {
 
     const breadcrumbs = useMemo(
         () => [
-            { label: 'Master Data' },
-            { label: 'CPL', href: '/kelola/cpl' },
-            { label: cpl?.code ? `Detail ${cpl.code}` : 'Detail CPL' },
+            { label: 'Kelola' },
+            { label: 'Kurikulum', href: '/kelola/cpl' },
+            { label: cpl?.curriculum?.name || 'Memuat...' },
+            { label: cpl?.code || 'CPL', href: cpl?.curriculumId ? `/kelola/cpl/${cpl.curriculumId}/cpls` : '/kelola/cpl' },
+            { label: 'Detail' },
         ],
-        [cpl?.code]
+        [cpl?.curriculumId, cpl?.curriculum?.name, cpl?.code]
     );
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle('Detail CPL');
-    }, [breadcrumbs, setBreadcrumbs, setTitle]);
+        setTitle(`Detail CPL ${cpl?.code ? `- ${cpl.code}` : ''}`);
+    }, [breadcrumbs, setBreadcrumbs, setTitle, cpl?.code]);
 
     return (
         <div className="p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <Button variant="outline" size="icon" asChild className="shrink-0">
-                        <Link to="/kelola/cpl">
+                        <Link to={cpl?.curriculumId ? `/kelola/cpl/${cpl.curriculumId}/cpls` : '/kelola/cpl'}>
                             <ArrowLeft className="h-4 w-4" />
                         </Link>
                     </Button>
@@ -93,6 +99,7 @@ export default function CplDetailPage() {
                 onImportClick={() => setImportOpen(true)}
                 onExport={exportScores}
                 isExporting={isExporting}
+                isManagement={isManagement}
             />
 
             <CplStudentScoreFormDialog

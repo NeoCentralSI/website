@@ -9,120 +9,120 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { useYudisiumParticipantDetail, useValidateYudisiumDocument } from '@/hooks/yudisium/useYudisiumParticipants';
-import { formatDateId, toTitleCaseName } from '@/lib/text';
+import { useAdminDefenceDetail, useVerifyDefenceDocument } from '@/hooks/thesis-defence/useAdminThesisDefence';
+import { toTitleCaseName, formatDateId } from '@/lib/text';
+import { ExternalLink, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { toast } from 'sonner';
+import type { AdminDefenceListItem, DocumentSubmitStatus } from '@/types/defence.types';
+import { openProtectedFile } from '@/lib/protected-file';
 import { apiRequest } from '@/services/auth.service';
 import { ENV } from '@/config/env';
-import { CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText, ExternalLink } from 'lucide-react';
-import { toast } from 'sonner';
-import type { AdminYudisiumParticipant, AdminYudisiumParticipantDocument } from '@/types/admin-yudisium.types';
-import { openProtectedFile } from '@/lib/protected-file';
 
-interface YudisiumValidationFormDialogProps {
-  participant: AdminYudisiumParticipant | null;
-  yudisiumId: string;
+interface AdminThesisDefenceVerificationFormDialogProps {
+  defence: AdminDefenceListItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-function getDocStatusBadge(status: AdminYudisiumParticipantDocument['status']) {
+function getDocStatusBadge(status: DocumentSubmitStatus) {
   switch (status) {
     case 'approved':
       return <Badge variant="success">Disetujui</Badge>;
     case 'declined':
       return <Badge variant="destructive">Ditolak</Badge>;
     case 'submitted':
-      return <Badge variant="warning">Menunggu</Badge>;
     default:
-      return <Badge variant="secondary">Belum Upload</Badge>;
+      return <Badge variant="warning">Menunggu</Badge>;
   }
 }
 
-export function YudisiumValidationFormDialog({
-  participant,
-  yudisiumId,
-  open,
-  onOpenChange,
-}: YudisiumValidationFormDialogProps) {
-  const { data: detail, isLoading } = useYudisiumParticipantDetail(
-    yudisiumId,
-    open && participant ? participant.id : ''
+export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpenChange }: AdminThesisDefenceVerificationFormDialogProps) {
+  const { data: detail, isLoading } = useAdminDefenceDetail(
+    open && defence ? defence.id : undefined
   );
-  const validateMutation = useValidateYudisiumDocument(yudisiumId);
+  const verifyMutation = useVerifyDefenceDocument();
 
   const [activeDocIndex, setActiveDocIndex] = useState(0);
   const [notes, setNotes] = useState('');
-  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isFileLoading, setIsFileLoading] = useState(false);
 
-  const documents = detail?.documents ?? [];
-  const currentDoc = documents[activeDocIndex];
+  // Build ordered document list (match docTypes order)
+  const orderedDocs = detail
+    ? detail.documentTypes.map((dt) => {
+      const doc = detail.documents.find((d) => d.documentTypeId === dt.id);
+      return { docType: dt, doc: doc || null };
+    })
+    : [];
 
+  const currentEntry = orderedDocs[activeDocIndex];
+  const currentDoc = currentEntry?.doc || null;
+  const currentDocType = currentEntry?.docType || null;
+
+  // Reset state when defence changes
   useEffect(() => {
     if (open) {
       setActiveDocIndex(0);
       setNotes('');
-      setPdfBlobUrl(null);
     }
-  }, [open, participant?.id]);
+  }, [open, defence?.id]);
 
+  // Update notes when switching docs
   useEffect(() => {
     setNotes('');
-    // Revoke previous blob URL
-    if (pdfBlobUrl) {
-      URL.revokeObjectURL(pdfBlobUrl);
-      setPdfBlobUrl(null);
+  }, [activeDocIndex]);
+
+  // Fetch and create blob URL for PDF preview
+  useEffect(() => {
+    if (!currentDoc?.filePath) {
+      setBlobUrl(null);
+      return;
     }
 
-    // Load PDF for current doc
-    const filePath = currentDoc?.document?.filePath;
-    if (!filePath) return;
+    let active = true;
+    setIsFileLoading(true);
 
-    let cancelled = false;
-    setPdfLoading(true);
+    const fetchFile = async () => {
+      try {
+        const normalized = currentDoc.filePath!.replace(/^\/+/, '');
+        const fileUrl = `${ENV.API_BASE_URL}/${normalized}`;
 
-    const normalized = filePath.replace(/^\/+/, '');
-    const fileUrl = `${ENV.API_BASE_URL}/${normalized}`;
+        const res = await apiRequest(fileUrl, { method: 'GET' });
+        if (!res.ok) throw new Error();
 
-    apiRequest(fileUrl)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load PDF');
-        return res.blob();
-      })
-      .then((blob) => {
-        if (cancelled) return;
-        const url = URL.createObjectURL(blob);
-        setPdfBlobUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setPdfBlobUrl(null);
-      })
-      .finally(() => {
-        if (!cancelled) setPdfLoading(false);
+        const blob = await res.blob();
+        if (active) {
+          const url = URL.createObjectURL(blob);
+          setBlobUrl(url);
+        }
+      } catch {
+        if (active) toast.error('Gagal memuat preview dokumen');
+      } finally {
+        if (active) setIsFileLoading(false);
+      }
+    };
+
+    const cleanup = () => {
+      active = false;
+      setBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
       });
-
-    return () => {
-      cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDocIndex, currentDoc?.document?.filePath]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchFile();
 
-  const handleValidate = useCallback(
+    return cleanup;
+  }, [currentDoc?.filePath]);
+
+  const handleVerify = useCallback(
     (action: 'approve' | 'decline') => {
-      if (!participant || !currentDoc?.document) return;
+      if (!defence || !currentDoc || !currentDocType) return;
 
-      validateMutation.mutate(
+      verifyMutation.mutate(
         {
-          participantId: participant.id,
-          requirementId: currentDoc.requirementId,
+          defenceId: defence.id,
+          documentTypeId: currentDocType.id,
           payload: { action, notes: notes.trim() || undefined },
         },
         {
@@ -130,13 +130,13 @@ export function YudisiumValidationFormDialog({
             const msg = action === 'approve' ? 'Dokumen disetujui' : 'Dokumen ditolak';
             toast.success(msg);
 
-            if (result.participantTransitioned) {
-              toast.success('Semua dokumen disetujui — peserta berstatus "Menunggu Validasi CPL"');
+            if (result.defenceTransitioned) {
+              toast.success('Semua dokumen disetujui — sidang berstatus "Terverifikasi"');
               onOpenChange(false);
             } else {
-              // Auto-advance to next submitted doc
-              const nextIdx = documents.findIndex(
-                (entry, i) => i > activeDocIndex && entry.status === 'submitted'
+              // Auto-advance to next unverified document
+              const nextIdx = orderedDocs.findIndex(
+                (entry, i) => i > activeDocIndex && entry.doc?.status === 'submitted'
               );
               if (nextIdx >= 0) {
                 setActiveDocIndex(nextIdx);
@@ -144,25 +144,26 @@ export function YudisiumValidationFormDialog({
             }
             setNotes('');
           },
-          onError: (err: any) => {
-            toast.error(err.message || 'Gagal memvalidasi dokumen');
+          onError: (err) => {
+            toast.error(err.message || 'Gagal memverifikasi dokumen');
           },
         }
       );
     },
-    [participant, currentDoc, notes, validateMutation, onOpenChange, documents, activeDocIndex]
+    [defence, currentDoc, currentDocType, notes, verifyMutation, onOpenChange, orderedDocs, activeDocIndex]
   );
 
-  const canValidate = currentDoc?.status === 'submitted';
+  const canVerify = currentDoc?.status === 'submitted';
+  const canDownload = !!currentDoc?.filePath;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Validasi Dokumen Yudisium</DialogTitle>
+          <DialogTitle>Verifikasi Dokumen Sidang TA</DialogTitle>
           {detail && (
             <div className="text-sm text-muted-foreground mt-1">
-              {toTitleCaseName(detail.studentName)} — {detail.studentNim}
+              {toTitleCaseName(detail.student.name)} — {detail.student.nim}
             </div>
           )}
         </DialogHeader>
@@ -171,9 +172,9 @@ export function YudisiumValidationFormDialog({
           <div className="flex items-center justify-center py-12">
             <Spinner className="h-8 w-8" />
           </div>
-        ) : detail && documents.length > 0 ? (
+        ) : detail && orderedDocs.length > 0 ? (
           <div className="space-y-4">
-            {/* Navigation */}
+            {/* Document navigator */}
             <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
@@ -185,13 +186,13 @@ export function YudisiumValidationFormDialog({
                 Sebelumnya
               </Button>
               <span className="text-sm font-medium">
-                Dokumen {activeDocIndex + 1} / {documents.length}
+                Dokumen {activeDocIndex + 1} / {orderedDocs.length}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={activeDocIndex === documents.length - 1}
-                onClick={() => setActiveDocIndex((i) => Math.min(documents.length - 1, i + 1))}
+                disabled={activeDocIndex === orderedDocs.length - 1}
+                onClick={() => setActiveDocIndex((i) => Math.min(orderedDocs.length - 1, i + 1))}
               >
                 Selanjutnya
                 <ChevronRight className="h-4 w-4 ml-1" />
@@ -200,22 +201,20 @@ export function YudisiumValidationFormDialog({
 
             {/* Documents overview pills */}
             <div className="flex gap-2 flex-wrap justify-center">
-              {documents.map((entry, idx) => (
+              {orderedDocs.map((entry, idx) => (
                 <button
-                  key={entry.requirementId}
+                  key={entry.docType.id}
                   onClick={() => setActiveDocIndex(idx)}
-                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                    idx === activeDocIndex
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${idx === activeDocIndex
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-muted text-muted-foreground border-border hover:bg-accent'
-                  }`}
+                    }`}
                 >
-                  {entry.requirementName}
-                  {entry.status && (
+                  {entry.docType.name}
+                  {entry.doc && (
                     <span className="ml-1.5">
-                      {entry.status === 'approved' && '✓'}
-                      {entry.status === 'declined' && '✗'}
-                      {entry.status === 'submitted' && '•'}
+                      {entry.doc.status === 'approved' && '✓'}
+                      {entry.doc.status === 'declined' && '✗'}
                     </span>
                   )}
                 </button>
@@ -225,29 +224,22 @@ export function YudisiumValidationFormDialog({
             {/* Current document detail */}
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">{currentDoc?.requirementName}</h4>
-                  {currentDoc?.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                      {currentDoc.description}
-                    </p>
-                  )}
-                </div>
+                <h4 className="font-medium">{currentDocType?.name}</h4>
                 {currentDoc && getDocStatusBadge(currentDoc.status)}
               </div>
 
-              {currentDoc?.document ? (
+              {currentDoc ? (
                 <>
                   <div className="flex items-center gap-3 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="truncate">{currentDoc.document.fileName || 'File'}</span>
-                    {currentDoc.document.filePath && (
+                    <span className="truncate">{currentDoc.fileName || 'File'}</span>
+                    {canDownload && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={async () => {
                           try {
-                            await openProtectedFile(currentDoc.document!.filePath!, currentDoc.document?.fileName || undefined);
+                            await openProtectedFile(currentDoc!.filePath!, currentDoc?.fileName || undefined);
                           } catch (error) {
                             toast.error((error as Error).message || 'Gagal membuka dokumen');
                           }
@@ -261,13 +253,13 @@ export function YudisiumValidationFormDialog({
 
                   {/* PDF preview */}
                   <div className="rounded border bg-muted overflow-hidden" style={{ height: '480px' }}>
-                    {pdfLoading ? (
+                    {isFileLoading ? (
                       <div className="flex items-center justify-center h-full">
                         <Spinner className="h-6 w-6" />
                       </div>
-                    ) : pdfBlobUrl ? (
+                    ) : blobUrl ? (
                       <iframe
-                        src={pdfBlobUrl}
+                        src={blobUrl}
                         title="Preview Dokumen"
                         className="w-full h-full"
                       />
@@ -279,13 +271,11 @@ export function YudisiumValidationFormDialog({
                   </div>
 
                   <div className="text-xs text-muted-foreground space-y-1">
-                    {currentDoc.submittedAt && (
-                      <div>Diunggah: {formatDateId(currentDoc.submittedAt)}</div>
-                    )}
+                    <div>Diunggah: {formatDateId(currentDoc.submittedAt)}</div>
                     {currentDoc.verifiedAt && (
                       <div>
                         Diverifikasi: {formatDateId(currentDoc.verifiedAt)} oleh{' '}
-                        {toTitleCaseName(currentDoc.verifiedBy || '-')}
+                        {toTitleCaseName(currentDoc.verifiedBy)}
                       </div>
                     )}
                     {currentDoc.notes && (
@@ -295,8 +285,8 @@ export function YudisiumValidationFormDialog({
                     )}
                   </div>
 
-                  {/* Validation controls - only for 'submitted' status */}
-                  {canValidate && (
+                  {/* Verification controls - only for 'submitted' status */}
+                  {canVerify && (
                     <div className="space-y-3 border-t pt-3">
                       <Textarea
                         placeholder="Catatan (opsional)..."
@@ -308,10 +298,10 @@ export function YudisiumValidationFormDialog({
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleValidate('decline')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('decline')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -326,10 +316,10 @@ export function YudisiumValidationFormDialog({
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => handleValidate('approve')}
-                          disabled={validateMutation.isPending}
+                          onClick={() => handleVerify('approve')}
+                          disabled={verifyMutation.isPending}
                         >
-                          {validateMutation.isPending ? (
+                          {verifyMutation.isPending ? (
                             <>
                               <Spinner className="mr-2 h-4 w-4" />
                               Memproses...
@@ -354,7 +344,7 @@ export function YudisiumValidationFormDialog({
           </div>
         ) : (
           <div className="text-sm text-muted-foreground py-8 text-center">
-            Tidak ada dokumen untuk divalidasi.
+            Tidak ada dokumen untuk diverifikasi.
           </div>
         )}
       </DialogContent>

@@ -5,6 +5,7 @@ export type AdminYudisiumEvent = {
   registrationOpenDate: string | null;
   registrationCloseDate: string | null;
   eventDate: string | null;
+  appointedAt: string | null;
   createdAt: string;
   participantCount: number;
 };
@@ -20,7 +21,6 @@ export type AdminYudisiumParticipant = {
   id: string;
   status: string;
   registeredAt: string | null;
-  appointedAt: string | null;
   notes: string | null;
   studentName: string;
   studentNim: string;
@@ -34,8 +34,24 @@ export type AdminYudisiumParticipantsResponse = {
     id: string;
     name: string;
     status: string;
+    appointedAt: string | null;
   };
   participants: AdminYudisiumParticipant[];
+};
+
+export type ArchiveYudisiumParticipantOption = {
+  thesisId: string;
+  thesisTitle: string;
+  studentId: string | null;
+  studentName: string;
+  studentNim: string;
+};
+
+export type ArchiveYudisiumParticipantImportResult = {
+  total: number;
+  successCount: number;
+  failed: number;
+  failedRows: { row: number; error: string }[];
 };
 
 export type AdminYudisiumParticipantDocument = {
@@ -59,12 +75,12 @@ export type AdminYudisiumParticipantDetailResponse = {
   id: string;
   status: string;
   registeredAt: string | null;
-  appointedAt: string | null;
   notes: string | null;
   yudisium: {
     id: string;
     name: string;
     status: string;
+    appointedAt: string | null;
   };
   studentName: string;
   studentNim: string;
@@ -73,12 +89,12 @@ export type AdminYudisiumParticipantDetailResponse = {
   documents: AdminYudisiumParticipantDocument[];
 };
 
-export type ValidateDocumentPayload = {
+export type VerifyDocumentPayload = {
   action: 'approve' | 'decline';
   notes?: string;
 };
 
-export type ValidateDocumentResponse = {
+export type VerifyDocumentResponse = {
   requirementId: string;
   status: string;
   participantTransitioned: boolean;
@@ -92,13 +108,13 @@ export type CplScoreItem = {
   score: number | null;
   oldScore: number | null;
   minimalScore: number;
-  status: 'calculated' | 'verified' | 'finalized';
+  status: 'calculated' | 'validated' | 'finalized';
   passed: boolean;
   recommendationDocument: { fileName: string; filePath: string } | null;
   settlementDocument: { fileName: string; filePath: string } | null;
-  verifiedAt: string | null;
-  verifiedBy: string | null;
-  verifiedByNip?: string | null;
+  validatedAt: string | null;
+  validatedBy: string | null;
+  validatedByNip?: string | null;
 };
 
 export type ParticipantCplResponse = {

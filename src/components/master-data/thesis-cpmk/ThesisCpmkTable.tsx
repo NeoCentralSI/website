@@ -14,15 +14,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import type { Cpmk, UpdateCpmkPayload } from '@/services/master-data/cpmk.service';
-import { CpmkFormDialog } from '@/components/master-data/cpmk/CpmkFormDialog';
+import type { ThesisCpmk, UpdateThesisCpmkPayload } from '@/services/master-data/thesis-cpmk.service';
+import { ThesisCpmkFormDialog } from '@/components/master-data/thesis-cpmk/ThesisCpmkFormDialog';
 
-interface CpmkTableProps {
-    data: Cpmk[];
+interface ThesisCpmkTableProps {
+    data: ThesisCpmk[];
     isLoading: boolean;
     isFetching: boolean;
     onDelete: (id: string) => void;
-    onUpdate: (id: string, data: UpdateCpmkPayload) => Promise<unknown>;
+    onUpdate: (id: string, data: UpdateThesisCpmkPayload) => Promise<unknown>;
     onCreate: () => void;
     onRefresh: () => void;
     isDeleting: boolean;
@@ -31,7 +31,7 @@ interface CpmkTableProps {
     isCopyingTemplate?: boolean;
 }
 
-export function CpmkTable({
+export function ThesisCpmkTable({
     data,
     isLoading,
     isFetching,
@@ -43,9 +43,9 @@ export function CpmkTable({
     extraActions,
     onCopyTemplate,
     isCopyingTemplate = false,
-}: CpmkTableProps) {
+}: ThesisCpmkTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
-    const [editItem, setEditItem] = useState<Cpmk | null>(null);
+    const [editItem, setEditItem] = useState<ThesisCpmk | null>(null);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -71,7 +71,7 @@ export function CpmkTable({
         return filteredData.slice(start, start + pageSize);
     }, [filteredData, page, pageSize]);
 
-    const columns = useMemo<Column<Cpmk>[]>(() => [
+    const columns = useMemo<Column<ThesisCpmk>[]>(() => [
         {
             key: 'no',
             header: 'No',
@@ -102,7 +102,9 @@ export function CpmkTable({
             header: 'Aksi',
             width: 90,
             className: 'text-right',
-            render: (item) => (
+            render: (item) => {
+                const isLocked = Boolean(item.hasAssessmentDetails);
+                return (
                 <div className="flex items-center justify-end gap-1">
                     <Button
                         variant="ghost"
@@ -116,14 +118,14 @@ export function CpmkTable({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-8 w-8 ${item.hasAssessmentDetails
+                        className={`h-8 w-8 ${isLocked
                                 ? 'text-red-400 hover:text-red-500'
                                 : 'text-red-600 hover:text-red-700 hover:bg-red-50'
                             }`}
                         onClick={() => setDeleteId(item.id)}
-                        disabled={isDeleting || item.hasAssessmentDetails}
+                        disabled={isDeleting || isLocked}
                         title={
-                            item.hasAssessmentDetails
+                            isLocked
                                 ? 'CPMK tidak dapat dihapus karena sudah memiliki detail penilaian'
                                 : 'Hapus'
                         }
@@ -131,7 +133,7 @@ export function CpmkTable({
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
-            ),
+            )},
         },
     ], [isDeleting, page, pageSize]);
 
@@ -166,7 +168,7 @@ export function CpmkTable({
                                         Menyalin...
                                     </>
                                 ) : (
-                                    'Copy Template'
+                                    'Salin Template'
                                 )}
                             </Button>
                         )}
@@ -212,7 +214,7 @@ export function CpmkTable({
 
             {/* Edit Dialog */}
             {editItem && (
-                <CpmkFormDialog
+                <ThesisCpmkFormDialog
                     open={!!editItem}
                     onOpenChange={(open: boolean) => !open && setEditItem(null)}
                     editData={editItem}

@@ -130,7 +130,7 @@ function buildSeminarListEndpoint(params?: {
     : API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE;
 }
 
-function normalizeValidationSeminar(item: any): AdminSeminarListItem {
+function normalizeVerificationSeminar(item: any): AdminSeminarListItem {
   return {
     id: item.id,
     thesisId: item.thesisId ?? null,
@@ -205,13 +205,13 @@ export async function getAdminThesisSeminarDetail(seminarId: string): Promise<Ad
 // Role-specific Lists
 // ============================================================
 
-export async function getAdminThesisSeminarValidationList(params?: {
+export async function getAdminThesisSeminarVerificationList(params?: {
   search?: string;
   status?: string;
 }): Promise<AdminSeminarListItem[]> {
-  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'validation' })));
-  const data = await parseJsonResponse<any[]>(response, 'Gagal memuat data validasi seminar');
-  return data.map(normalizeValidationSeminar);
+  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'verification' })));
+  const data = await parseJsonResponse<any[]>(response, 'Gagal memuat data verifikasi seminar');
+  return data.map(normalizeVerificationSeminar);
 }
 
 export async function getExaminerRequests(params?: { search?: string }): Promise<ExaminerRequestItem[]> {

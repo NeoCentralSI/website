@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import type { ChangeEvent } from 'react';
+import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,20 +12,23 @@ import {
   ArrowLeft, FileText, CheckCircle,
   Eye,
   Check, Plus, CheckCircle2,
-  Download
+  Download,
+  AlertCircle,
+  FileUp,
+  X
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import {
   useYudisiumParticipantDetail,
   useParticipantCplScores,
-  useVerifyCplScore,
+  useValidateCplScore,
   useRepairCplScore,
 } from '@/hooks/yudisium/useYudisiumParticipants';
 import { useRole } from '@/hooks/shared';
 import { openProtectedFile } from '@/lib/protected-file';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
+import { exportParticipantCplReport } from '@/services/yudisium/participant.service';
 import type { CplScoreItem } from '@/types/admin-yudisium.types';
+import { toast } from 'sonner';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
@@ -43,12 +47,12 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  registered:    { label: 'Menunggu Validasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  verified:      { label: 'Menunggu Validasi CPL',     className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  cpl_validated: { label: 'Calon Peserta Yudisium',   className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  appointed:     { label: 'Peserta Yudisium',          className: 'bg-purple-50 text-purple-700 border-purple-200' },
-  finalized:     { label: 'Lulus',                     className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  rejected:      { label: 'Belum Lulus',               className: 'bg-red-50 text-red-700 border-red-200' },
+  registered: { label: 'Menunggu Verifikasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  verified: { label: 'Menunggu Validasi CPL', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  cpl_validated: { label: 'Calon Peserta Yudisium', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  appointed: { label: 'Peserta Yudisium', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  finalized: { label: 'Lulus', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  rejected: { label: 'Belum Lulus', className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
 
@@ -57,147 +61,113 @@ export default function YudisiumParticipantDetail() {
   const { id: yudisiumId, yudisiumParticipantId } = useParams<{ id: string; yudisiumParticipantId: string }>();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const { isGkm } = useRole();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { isGkm, isStudent } = useRole();
   const canPerformActions = isGkm();
+  const isStudentMode =
+    isStudent() &&
+    (searchParams.get('from') === 'student' || (location.state as { from?: string } | null)?.from === 'student-yudisium');
 
-  const { data, isLoading } = useYudisiumParticipantDetail(yudisiumId!, yudisiumParticipantId!);
-  const { data: cplData, isLoading: loadingCpl, isFetching, refetch } = useParticipantCplScores(yudisiumId!, yudisiumParticipantId!);
+  const { data, isLoading } = useYudisiumParticipantDetail(yudisiumId || '', yudisiumParticipantId || '');
+  const { data: cplData, isLoading: loadingCpl, isFetching, refetch } = useParticipantCplScores(yudisiumId || '', yudisiumParticipantId || '');
 
-  const verifyMutation = useVerifyCplScore(yudisiumId!, yudisiumParticipantId!);
-  const repairMutation = useRepairCplScore(yudisiumId!, yudisiumParticipantId!);
+  const validateMutation = useValidateCplScore(yudisiumId || '', yudisiumParticipantId || '');
+  const repairMutation = useRepairCplScore(yudisiumId || '', yudisiumParticipantId || '');
 
   const [repairModalOpen, setRepairModalOpen] = useState(false);
-  const [viewModalOpen,   setViewModalOpen]   = useState(false);
-  const [selectedCpl,     setSelectedCpl]     = useState<CplScoreItem | null>(null);
-  
-  const [newScore,      setNewScore]      = useState<number>(0);
-  const [recFile,       setRecFile]       = useState<File | null>(null);
-  const [setFile,       setSetFile]       = useState<File | null>(null);
-  
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedCpl, setSelectedCpl] = useState<CplScoreItem | null>(null);
+
+  const [newScore, setNewScore] = useState<number>(0);
+  const [recFile, setRecFile] = useState<File | null>(null);
+  const [setFile, setSetFile] = useState<File | null>(null);
+  const recFileInputRef = useRef<HTMLInputElement>(null);
+  const setFileInputRef = useRef<HTMLInputElement>(null);
+
   const [verifyConfirmId, setVerifyConfirmId] = useState<string | null>(null);
-  const [cplSearch,       setCplSearch]       = useState('');
+  const [cplSearch, setCplSearch] = useState('');
 
-  const handleDownloadCplReport = () => {
-    if (!cplData?.cplScores || cplData.cplScores.length === 0) return;
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-
-    // Header
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('KEMENTERIAN PENDIDIKAN TINGGI, SAINS DAN TEKNOLOGI', pageWidth / 2, 15, { align: 'center' });
-    doc.text('UNIVERSITAS ANDALAS', pageWidth / 2, 20, { align: 'center' });
-    doc.text('FAKULTAS TEKNOLOGI INFORMASI', pageWidth / 2, 25, { align: 'center' });
-    doc.text('DEPARTEMEN SISTEM INFORMASI', pageWidth / 2, 30, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('Kampus Universitas Andalas, Limau Manis, Padang, Kode Pos 25163', pageWidth / 2, 35, { align: 'center' });
-    doc.text('Email: jurusan_si@fti.unand.ac.id dan website: http://si.fti.unand.ac.id', pageWidth / 2, 40, { align: 'center' });
-    
-    doc.setLineWidth(0.5);
-    doc.line(margin, 43, pageWidth - margin, 43);
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('FORMULIR PENILAIAN CAPAIAN PEMBELAJARAN LULUSAN (CPL)', pageWidth / 2, 52, { align: 'center' });
-
-    // A. Student Data
-    doc.setFontSize(10);
-    doc.text('A. DATA MAHASISWA', margin, 62);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Nama Lengkap', margin, 69);
-    doc.text(`: ${data?.studentName || '-'}`, margin + 40, 69);
-    doc.text('NIM', margin, 75);
-    doc.text(`: ${data?.studentNim || '-'}`, margin + 40, 75);
-
-    // B. CPL Assessment Table
-    doc.setFont('helvetica', 'bold');
-    doc.text('B. PENILAIAN CAPAIAN PEMBELAJARAN LULUSAN (CPL)', margin, 85);
-
-    const tableData = cplData.cplScores.map((sc) => [
-      sc.code,
-      sc.description,
-      sc.score ?? '-',
-      sc.passed ? 'Tercapai' : 'Tidak Tercapai'
-    ]);
-
-    autoTable(doc, {
-      startY: 92,
-      head: [['Kode CPL', 'Deskripsi CPL', 'Nilai', 'Status Capaian']],
-      body: tableData,
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
-      columnStyles: {
-        0: { cellWidth: 20 },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 15, halign: 'center' },
-        3: { cellWidth: 30, halign: 'center' },
-      }
-    });
-
-    // C. Conclusion
-    const finalY = (doc as any).lastAutoTable.finalY + 12;
-    doc.setFont('helvetica', 'bold');
-    doc.text('C. KESIMPULAN ASESMEN', margin, finalY);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    const allPassed = cplData.cplScores.every(sc => sc.passed);
-    doc.rect(margin, finalY + 4, 3, 3);
-    if (allPassed) doc.text('x', margin + 0.8, finalY + 6.5);
-    doc.text('Seluruh CPL telah dicapai sesuai standar minimum kelulusan', margin + 6, finalY + 7);
-    
-    doc.rect(margin, finalY + 11, 3, 3);
-    if (!allPassed) doc.text('x', margin + 0.8, finalY + 13.5);
-    doc.text(`Ada CPL yang belum tercapai (sebutkan): ${allPassed ? '-' : '...' }`, margin + 6, finalY + 14);
-    
-    doc.rect(margin, finalY + 18, 3, 3);
-    doc.text('Perlu tindak lanjut: -', margin + 6, finalY + 21);
-
-    // D. Signature
-    const verifier = cplData.cplScores.find(sc => sc.verifiedBy);
-    const verifierName = verifier?.verifiedBy || '...';
-    const verifierNip = verifier?.verifiedByNip || '...';
-    const verifiedDate = verifier?.verifiedAt ? new Date(verifier.verifiedAt) : new Date();
-
-    const signY = finalY + 40;
-    doc.setFontSize(10);
-    doc.text(`Padang, ${formatDateId(verifiedDate)}`, pageWidth - margin - 65, signY);
-    doc.text('Koordinator Asesmen CPL', pageWidth - margin - 65, signY + 6);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text(verifierName, pageWidth - margin - 65, signY + 28);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`NIP: ${verifierNip}`, pageWidth - margin - 65, signY + 33);
-
-    doc.save(`Form_Penilaian_CPL_${data?.studentNim || 'Mhs'}.pdf`);
+  const handleDownloadCplReport = async () => {
+    if (!yudisiumId || !yudisiumParticipantId) return;
+    try {
+      const blob = await exportParticipantCplReport(yudisiumId, yudisiumParticipantId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Laporan-CPL-${data?.studentNim || 'Mahasiswa'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal mengunduh laporan CPL');
+    }
   };
 
   const baseDetailPath = `/yudisium/${yudisiumId}`;
+  const backPath = isStudentMode ? '/yudisium' : baseDetailPath;
 
   useEffect(() => {
+    if (isStudentMode) {
+      setBreadcrumbs([
+        { label: 'Yudisium', href: '/yudisium' },
+        { label: data?.yudisium?.name ?? 'Detail Peserta' },
+      ]);
+      setTitle(data?.yudisium?.name ?? 'Detail Peserta Yudisium');
+      return;
+    }
+
     setBreadcrumbs([
       { label: 'Yudisium', href: '/yudisium' },
       { label: data?.yudisium?.name ?? 'Detail', href: baseDetailPath },
       { label: data?.studentName ?? 'Detail Peserta' },
     ]);
     setTitle(data?.studentName ?? 'Detail Peserta');
-  }, [setBreadcrumbs, setTitle, data, baseDetailPath]);
+  }, [setBreadcrumbs, setTitle, data, baseDetailPath, isStudentMode]);
 
   const cplScores = useMemo(() => {
     const scores = cplData?.cplScores ?? [];
     if (!cplSearch) return scores;
-    return scores.filter(s => 
-      (s.code?.toLowerCase().includes(cplSearch.toLowerCase())) || 
+    return scores.filter(s =>
+      (s.code?.toLowerCase().includes(cplSearch.toLowerCase())) ||
       (s.description?.toLowerCase().includes(cplSearch.toLowerCase()))
     );
   }, [cplData?.cplScores, cplSearch]);
 
+  const participantCplStatus = cplData?.participantStatus ?? data?.status;
+  const cplActionsEnabled = canPerformActions && participantCplStatus === 'verified';
+  const showCplLockedNotice = canPerformActions && participantCplStatus === 'registered';
 
+  const handleRepairFileChange = (
+    event: ChangeEvent<HTMLInputElement>,
+    setter: (file: File | null) => void,
+  ) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) {
+      setter(null);
+      return;
+    }
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('File harus berformat PDF');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran file maksimal 5MB');
+      event.target.value = '';
+      return;
+    }
+    setter(file);
+  };
+
+  const clearRepairFile = (
+    ref: { current: HTMLInputElement | null },
+    setter: (file: File | null) => void,
+  ) => {
+    setter(null);
+    if (ref.current) ref.current.value = '';
+  };
 
   const cplColumns = useMemo<Column<CplScoreItem>[]>(() => {
     const cols: Column<CplScoreItem>[] = [
@@ -241,7 +211,7 @@ export default function YudisiumParticipantDetail() {
         className: 'text-center',
         render: (row) => (
           <Badge variant="outline" className={row.passed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}>
-            {row.passed ? 'Lulus' : 'Tidak Lulus'}
+            {row.passed ? 'Lulus' : 'Belum Tercapai'}
           </Badge>
         )
       },
@@ -270,15 +240,35 @@ export default function YudisiumParticipantDetail() {
             </Button>
           )}
 
-          {/* Verified badge — visible to ALL roles */}
-          {row.status === 'verified' && (
-            <div className="flex items-center justify-center h-8 w-8" title={`Tervalidasi oleh ${row.verifiedBy ?? '-'}`}>
+          {/* Validated badge — visible to ALL roles */}
+          {row.status === 'validated' && (
+            <div className="flex items-center justify-center h-8 w-8" title={`Tervalidasi oleh ${row.validatedBy ?? '-'}`}>
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
           )}
 
-          {/* Verify / Repair actions — GKM only */}
-          {canPerformActions && row.status !== 'verified' && (
+          {cplActionsEnabled && row.status === 'validated' && (row.recommendationDocument || row.settlementDocument) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={() => {
+                setSelectedCpl(row);
+                setNewScore(row.score ?? row.minimalScore);
+                setRecFile(null);
+                setSetFile(null);
+                clearRepairFile(recFileInputRef, setRecFile);
+                clearRepairFile(setFileInputRef, setSetFile);
+                setRepairModalOpen(true);
+              }}
+              title="Ganti Dokumen Perbaikan"
+            >
+              <FileUp className="h-4 w-4" />
+            </Button>
+          )}
+
+          {/* Verify / Repair actions — GKM only after document verification is complete */}
+          {cplActionsEnabled && row.status !== 'validated' && (
             <>
               {row.passed && (
                 <Button
@@ -286,7 +276,7 @@ export default function YudisiumParticipantDetail() {
                   size="icon"
                   className="h-8 w-8 text-muted-foreground hover:text-primary"
                   onClick={() => setVerifyConfirmId(row.cplId)}
-                  disabled={verifyMutation.isPending}
+                  disabled={validateMutation.isPending}
                   title="Validasi CPL"
                 >
                   <Check className="h-4 w-4" />
@@ -302,6 +292,8 @@ export default function YudisiumParticipantDetail() {
                     setNewScore(row.minimalScore);
                     setRecFile(null);
                     setSetFile(null);
+                    clearRepairFile(recFileInputRef, setRecFile);
+                    clearRepairFile(setFileInputRef, setSetFile);
                     setRepairModalOpen(true);
                   }}
                   title="Remedial / Perbaikan"
@@ -316,7 +308,7 @@ export default function YudisiumParticipantDetail() {
     });
 
     return cols;
-  }, [verifyMutation.isPending, canPerformActions]);
+  }, [validateMutation.isPending, cplActionsEnabled]);
 
 
 
@@ -341,6 +333,11 @@ export default function YudisiumParticipantDetail() {
   }
 
   const statusInfo = PARTICIPANT_STATUS_MAP[data.status] || PARTICIPANT_STATUS_MAP.registered;
+  const hasExistingRepairDocs = !!(selectedCpl?.recommendationDocument || selectedCpl?.settlementDocument);
+  const hasRequiredRepairDocs =
+    !!(recFile || selectedCpl?.recommendationDocument) &&
+    !!(setFile || selectedCpl?.settlementDocument);
+  const hasRepairChange = !hasExistingRepairDocs || !!recFile || !!setFile;
 
   return (
     <div className="p-6 space-y-12 max-w-full overflow-x-hidden">
@@ -348,7 +345,7 @@ export default function YudisiumParticipantDetail() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate(baseDetailPath)} className="shrink-0">
+          <Button variant="outline" size="icon" onClick={() => navigate(backPath)} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
@@ -405,28 +402,34 @@ export default function YudisiumParticipantDetail() {
           </h2>
           <Card className="h-full flex flex-col overflow-hidden">
             <CardContent className="pt-6 space-y-3 flex-1">
-              {data.documents.map((doc: any) => (
-                <div
-                  key={doc.requirementId}
-                  className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl shadow-sm hover:border-border transition-colors gap-4"
+	              {data.documents.map((doc: any) => {
+	                const documentMeta = [
+	                  doc.document?.fileName || null,
+	                  doc.submittedAt ? formatDateId(doc.submittedAt) : null,
+	                ].filter(Boolean).join(' • ');
+
+	                return (
+	                <div
+	                  key={doc.requirementId}
+	                  className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl shadow-sm hover:border-border transition-colors gap-4"
                 >
                   <div className="flex items-center gap-4 min-w-0">
                     <div className={`p-2.5 rounded-lg shrink-0 ${doc.document ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
                       <FileText className="h-5 w-5" />
                     </div>
-                    <div className="min-w-0">
-                      <span className="font-medium text-sm text-foreground block truncate">{doc.requirementName}</span>
-                      <span className="text-xs text-muted-foreground block mt-0.5 truncate">
-                        {doc.document ? `${doc.document.fileName || 'File'} • ${formatDateId(doc.document.createdAt)}` : 'Belum diunggah'}
-                      </span>
-                    </div>
+	                    <div className="min-w-0">
+	                      <span className="font-medium text-sm text-foreground block truncate">{doc.requirementName}</span>
+	                      <span className="text-xs text-muted-foreground block mt-0.5 truncate">
+	                        {documentMeta || 'Belum diunggah'}
+	                      </span>
+	                    </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Badge
-                      variant={doc.status === 'approved' ? 'success' : doc.status === 'rejected' ? 'destructive' : 'warning'}
+                      variant={doc.status === 'approved' ? 'success' : doc.status === 'declined' ? 'destructive' : 'warning'}
                       className="rounded-md font-medium px-2.5 py-0.5 whitespace-nowrap"
                     >
-                      {doc.status === 'approved' ? 'Disetujui' : doc.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                      {doc.status === 'approved' ? 'Disetujui' : doc.status === 'declined' ? 'Ditolak' : 'Menunggu'}
                     </Badge>
                     {doc.document?.filePath && (
                       <Button
@@ -437,9 +440,10 @@ export default function YudisiumParticipantDetail() {
                         <Eye className="h-4 w-4" />
                       </Button>
                     )}
-                  </div>
-                </div>
-              ))}
+	                  </div>
+	                </div>
+	                );
+	              })}
             </CardContent>
           </Card>
         </div>
@@ -450,6 +454,17 @@ export default function YudisiumParticipantDetail() {
         <h2 className="text-lg font-semibold px-1">
           Capaian Pembelajaran Lulusan (CPL)
         </h2>
+        {showCplLockedNotice && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-medium">Validasi CPL belum dapat dilakukan.</p>
+              <p className="text-amber-700">
+                Validasi tersedia setelah seluruh dokumen persyaratan peserta terverifikasi.
+              </p>
+            </div>
+          </div>
+        )}
         <CustomTable
           columns={cplColumns}
           data={cplScores}
@@ -458,18 +473,18 @@ export default function YudisiumParticipantDetail() {
           total={cplScores.length}
           page={1}
           pageSize={100}
-          onPageChange={() => {}}
+          onPageChange={() => { }}
           searchValue={cplSearch}
           onSearchChange={setCplSearch}
           emptyText="Tidak ada data CPL"
           actions={
             <div className="flex items-center gap-2">
               {['cpl_validated', 'appointed', 'finalized'].includes(data?.status || '') && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-9 gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-semibold"
-                  onClick={handleDownloadCplReport}
+                <Button
+	                  variant="outline"
+	                  size="sm"
+	                  className="h-9 gap-2 border-primary/40 text-primary hover:bg-primary/5 font-semibold"
+	                  onClick={handleDownloadCplReport}
                 >
                   <Download className="h-4 w-4" />
                   Download Hasil
@@ -484,7 +499,7 @@ export default function YudisiumParticipantDetail() {
 
 
       {/* ── Modals ── */}
-      
+
       {/* Repair Modal */}
       <Dialog open={repairModalOpen} onOpenChange={setRepairModalOpen}>
         <DialogContent className="max-w-md">
@@ -509,24 +524,140 @@ export default function YudisiumParticipantDetail() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Dokumen Rekomendasi (PDF)</Label>
               <Input
+                ref={recFileInputRef}
                 type="file"
                 accept=".pdf"
-                onChange={(e) => setRecFile(e.target.files?.[0] || null)}
+                className="hidden"
+                onChange={(e) => handleRepairFileChange(e, setRecFile)}
               />
+              <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {recFile?.name || selectedCpl?.recommendationDocument?.fileName || 'Belum ada dokumen rekomendasi'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {recFile
+                      ? 'File baru siap diunggah saat perbaikan disimpan'
+                      : selectedCpl?.recommendationDocument
+                        ? 'Dokumen rekomendasi saat ini'
+                        : 'Pilih file PDF maksimal 5MB'}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {!recFile && selectedCpl?.recommendationDocument && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => openProtectedFile(
+                        selectedCpl.recommendationDocument!.filePath,
+                        selectedCpl.recommendationDocument!.fileName,
+                      )}
+                    >
+                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      Lihat
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => recFileInputRef.current?.click()}
+                  >
+                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
+                    {recFile || selectedCpl?.recommendationDocument ? 'Ganti' : 'Upload'}
+                  </Button>
+                  {recFile && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => clearRepairFile(recFileInputRef, setRecFile)}
+                      title="Batalkan file baru"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
               <p className="text-[10px] text-muted-foreground italic">* Dokumen yang berisi detail perbaikan/quiz</p>
             </div>
 
             <div className="space-y-2">
               <Label>Dokumen Penyelesaian (PDF)</Label>
               <Input
+                ref={setFileInputRef}
                 type="file"
                 accept=".pdf"
-                onChange={(e) => setSetFile(e.target.files?.[0] || null)}
+                className="hidden"
+                onChange={(e) => handleRepairFileChange(e, setSetFile)}
               />
+              <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {setFile?.name || selectedCpl?.settlementDocument?.fileName || 'Belum ada dokumen penyelesaian'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {setFile
+                      ? 'File baru siap diunggah saat perbaikan disimpan'
+                      : selectedCpl?.settlementDocument
+                        ? 'Dokumen penyelesaian saat ini'
+                        : 'Pilih file PDF maksimal 5MB'}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {!setFile && selectedCpl?.settlementDocument && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => openProtectedFile(
+                        selectedCpl.settlementDocument!.filePath,
+                        selectedCpl.settlementDocument!.fileName,
+                      )}
+                    >
+                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      Lihat
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setFileInputRef.current?.click()}
+                  >
+                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
+                    {setFile || selectedCpl?.settlementDocument ? 'Ganti' : 'Upload'}
+                  </Button>
+                  {setFile && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => clearRepairFile(setFileInputRef, setSetFile)}
+                      title="Batalkan file baru"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
               <p className="text-[10px] text-muted-foreground italic">* Jawaban atau bukti perbaikan dari mahasiswa</p>
             </div>
           </div>
@@ -536,11 +667,11 @@ export default function YudisiumParticipantDetail() {
               onClick={() => {
                 if (selectedCpl) {
                   repairMutation.mutate(
-                    { 
-                      cplId: selectedCpl.cplId, 
+                    {
+                      cplId: selectedCpl.cplId,
                       payload: {
                         newScore,
-                        oldScore: selectedCpl.score ?? 0,
+                        oldScore: selectedCpl.oldScore ?? selectedCpl.score ?? 0,
                         recommendation: recFile,
                         settlement: setFile
                       }
@@ -549,7 +680,7 @@ export default function YudisiumParticipantDetail() {
                   );
                 }
               }}
-              disabled={repairMutation.isPending || !recFile || !setFile}
+              disabled={repairMutation.isPending || !hasRequiredRepairDocs || !hasRepairChange}
             >
               {repairMutation.isPending && <Spinner className="mr-2 h-4 w-4" />}
               Simpan Perbaikan
@@ -617,8 +748,8 @@ export default function YudisiumParticipantDetail() {
 
             <div className="pt-2 border-t">
               <p className="text-[10px] text-muted-foreground">Tervalidasi oleh:</p>
-              <p className="text-sm font-medium">{selectedCpl?.verifiedBy ?? '-'}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{selectedCpl?.verifiedAt ? formatDateId(selectedCpl.verifiedAt) : '-'}</p>
+              <p className="text-sm font-medium">{selectedCpl?.validatedBy ?? '-'}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{selectedCpl?.validatedAt ? formatDateId(selectedCpl.validatedAt) : '-'}</p>
             </div>
           </div>
           <DialogFooter>
@@ -626,14 +757,14 @@ export default function YudisiumParticipantDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Verify Confirmation Dialog */}
       <AlertDialog open={!!verifyConfirmId} onOpenChange={(open) => !open && setVerifyConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Validasi Nilai CPL?</AlertDialogTitle>
+            <AlertDialogTitle>Verifikasi Nilai CPL?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini akan memvalidasi nilai CPL mahasiswa ini. Pastikan nilai sudah sesuai.
+              Tindakan ini akan memverifikasi nilai CPL mahasiswa ini. Pastikan nilai sudah sesuai.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -641,14 +772,14 @@ export default function YudisiumParticipantDetail() {
             <AlertDialogAction
               onClick={() => {
                 if (verifyConfirmId) {
-                  verifyMutation.mutate(verifyConfirmId, {
+                  validateMutation.mutate(verifyConfirmId, {
                     onSuccess: () => setVerifyConfirmId(null)
                   });
                 }
               }}
-              disabled={verifyMutation.isPending}
+              disabled={validateMutation.isPending}
             >
-              {verifyMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
+              {validateMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : null}
               Validasi
             </AlertDialogAction>
           </AlertDialogFooter>
