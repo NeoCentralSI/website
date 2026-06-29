@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import type { AssessmentCriteria, CreateCriteriaPayload, UpdateCriteriaPayload, MetopenRole } from '@/services/rubricMetopen.service';
+import type { MetopenAssessmentCriteria, CreateCriteriaPayload, UpdateCriteriaPayload, MetopenRole } from '@/services/rubricMetopen.service';
 
 interface MetopenCriteriaFormDialogProps {
     open: boolean;
@@ -14,7 +14,7 @@ interface MetopenCriteriaFormDialogProps {
     cpmkId: string;
     cpmkCode: string;
     role: MetopenRole;
-    editData?: AssessmentCriteria | null;
+    editData?: MetopenAssessmentCriteria | null;
     remainingScore?: number;
     onSubmit:
         | ((data: CreateCriteriaPayload) => Promise<unknown>)
@@ -58,7 +58,7 @@ export function MetopenCriteriaFormDialog({
                 await (onSubmit as (data: UpdateCriteriaPayload) => Promise<unknown>)(payload);
             } else {
                 await (onSubmit as (data: CreateCriteriaPayload) => Promise<unknown>)({
-                    ...payload, cpmkId, role,
+                    ...payload, metopenCpmkId: cpmkId, role,
                 });
             }
             onOpenChange(false);

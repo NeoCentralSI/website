@@ -3,9 +3,9 @@ import { apiRequest } from './auth.service';
 
 export type MetopenRole = 'supervisor' | 'default';
 
-export interface AssessmentRubric {
+export interface MetopenAssessmentRubric {
     id: string;
-    assessmentCriteriaId: string;
+    metopenAssessmentCriteriaId: string;
     minScore: number;
     maxScore: number;
     description: string;
@@ -14,27 +14,40 @@ export interface AssessmentRubric {
     updatedAt: string;
 }
 
-export interface AssessmentCriteria {
+export interface MetopenAssessmentCriteria {
     id: string;
-    cpmkId: string;
+    metopenCpmkId: string;
     name: string | null;
     maxScore: number | null;
-    appliesTo: 'proposal' | 'metopen';
     role: MetopenRole;
     displayOrder: number;
-    assessmentRubrics: AssessmentRubric[];
+    metopenAssessmentRubrics: MetopenAssessmentRubric[];
 }
 
-export interface CpmkWithRubrics {
+export interface MetopenCpmkWithRubrics {
     id: string;
     code: string;
     description: string;
-    displayOrder: number;
-    assessmentCriterias: AssessmentCriteria[];
+    metopenAssessmentCriterias: MetopenAssessmentCriteria[];
+}
+
+export interface MetopenCpmk {
+    id: string;
+    code: string;
+    description: string;
+    academicYearId: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateMetopenCpmkPayload {
+    code: string;
+    description: string;
+    academicYearId?: string;
 }
 
 export interface CreateCriteriaPayload {
-    cpmkId: string;
+    metopenCpmkId: string;
     role: MetopenRole;
     name?: string;
     maxScore: number;
@@ -78,25 +91,38 @@ async function parseResponse<T>(response: Response, fallbackMsg: string): Promis
     return result.data;
 }
 
-export const getCpmksWithRubrics = async (role: MetopenRole): Promise<CpmkWithRubrics[]> => {
+export const getCpmksWithRubrics = async (role: MetopenRole): Promise<MetopenCpmkWithRubrics[]> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS(role)));
-    return parseResponse<CpmkWithRubrics[]>(response, 'Gagal mengambil data CPMK rubrik Metopel');
+    return parseResponse<MetopenCpmkWithRubrics[]>(response, 'Gagal mengambil data CPMK rubrik Metopel');
 };
 
-export const createCriteria = async (payload: CreateCriteriaPayload): Promise<AssessmentCriteria> => {
+export const getAllMetopenCpmks = async (): Promise<MetopenCpmk[]> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS_ALL));
+    return parseResponse<MetopenCpmk[]>(response, 'Gagal mengambil daftar CPMK Metopel');
+};
+
+export const createMetopenCpmk = async (payload: CreateMetopenCpmkPayload): Promise<MetopenCpmk> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS_CREATE), {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
+    return parseResponse<MetopenCpmk>(response, 'Gagal menambah CPMK Metopel');
+};
+
+export const createCriteria = async (payload: CreateCriteriaPayload): Promise<MetopenAssessmentCriteria> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CRITERIA), {
         method: 'POST',
         body: JSON.stringify(payload),
     });
-    return parseResponse<AssessmentCriteria>(response, 'Gagal menambah kriteria Metopel');
+    return parseResponse<MetopenAssessmentCriteria>(response, 'Gagal menambah kriteria Metopel');
 };
 
-export const updateCriteria = async (criteriaId: string, payload: UpdateCriteriaPayload): Promise<AssessmentCriteria> => {
+export const updateCriteria = async (criteriaId: string, payload: UpdateCriteriaPayload): Promise<MetopenAssessmentCriteria> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CRITERIA_BY_ID(criteriaId)), {
         method: 'PATCH',
         body: JSON.stringify(payload),
     });
-    return parseResponse<AssessmentCriteria>(response, 'Gagal mengubah kriteria Metopel');
+    return parseResponse<MetopenAssessmentCriteria>(response, 'Gagal mengubah kriteria Metopel');
 };
 
 export const deleteCriteria = async (criteriaId: string): Promise<void> => {
@@ -119,20 +145,20 @@ export const removeCpmkMetopenConfig = async (cpmkId: string, role: MetopenRole)
     }
 };
 
-export const createRubric = async (criteriaId: string, payload: CreateRubricPayload): Promise<AssessmentRubric> => {
+export const createRubric = async (criteriaId: string, payload: CreateRubricPayload): Promise<MetopenAssessmentRubric> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CRITERIA_RUBRICS(criteriaId)), {
         method: 'POST',
         body: JSON.stringify(payload),
     });
-    return parseResponse<AssessmentRubric>(response, 'Gagal menambah level rubrik Metopel');
+    return parseResponse<MetopenAssessmentRubric>(response, 'Gagal menambah level rubrik Metopel');
 };
 
-export const updateRubric = async (rubricId: string, payload: UpdateRubricPayload): Promise<AssessmentRubric> => {
+export const updateRubric = async (rubricId: string, payload: UpdateRubricPayload): Promise<MetopenAssessmentRubric> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.RUBRIC_BY_ID(rubricId)), {
         method: 'PATCH',
         body: JSON.stringify(payload),
     });
-    return parseResponse<AssessmentRubric>(response, 'Gagal mengubah komponen rubrik Metopel');
+    return parseResponse<MetopenAssessmentRubric>(response, 'Gagal mengubah komponen rubrik Metopel');
 };
 
 export const deleteRubric = async (rubricId: string): Promise<void> => {

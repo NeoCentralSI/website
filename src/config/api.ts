@@ -73,6 +73,8 @@ export const API_CONFIG = {
     },
     RUBRIC_METOPEN: {
       CPMKS: (role: string) => `/rubric-metopen/cpmks?role=${role}`,
+      CPMKS_ALL: '/rubric-metopen/cpmks/all',
+      CPMKS_CREATE: '/rubric-metopen/cpmks',
       CRITERIA: '/rubric-metopen/criteria',
       CRITERIA_BY_ID: (criteriaId: string) => `/rubric-metopen/criteria/${criteriaId}`,
       CPMK_CONFIG: (cpmkId: string, role: string) => `/rubric-metopen/cpmk/${cpmkId}?role=${role}`,

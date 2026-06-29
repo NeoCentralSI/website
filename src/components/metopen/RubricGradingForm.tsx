@@ -154,9 +154,9 @@ export function RubricGradingForm({
         if (!criteria) return;
         for (const criterion of criteria) {
             const kind = resolveCriteriaRubricKind(
-                criterion.name ?? criterion.cpmk?.description ?? null,
+                criterion.name ?? criterion.metopenCpmk?.description ?? null,
                 criterion.maxScore,
-                criterion.cpmk?.code,
+                criterion.metopenCpmk?.code,
             );
             if (kind !== "konten-sub") continue;
 
@@ -548,12 +548,12 @@ function CriterionSection({
     onSubLevelSelect,
 }: CriterionSectionProps) {
     const maxWeight = criterion.maxScore ?? 100;
-    const cpmkCode = criterion.cpmk?.code ?? null;
-    const cpmkDesc = criterion.cpmk?.description ?? null;
+    const cpmkCode = criterion.metopenCpmk?.code ?? null;
+    const cpmkDesc = criterion.metopenCpmk?.description ?? null;
     const label = criterion.name ?? cpmkDesc ?? `Kriteria ${index + 1}`;
     const kind = resolveCriteriaRubricKind(label, criterion.maxScore, cpmkCode);
 
-    const dbRubrics = criterion.assessmentRubrics ?? [];
+    const dbRubrics = criterion.metopenAssessmentRubrics ?? [];
     const officialLevels = getRubricLevelsByKind(kind);
 
     // Merge: bila official levels tersedia (resmi PDF), pasangkan dengan DB
@@ -632,7 +632,7 @@ function DbRubricSelector({
     selectedScore,
     onSelect,
 }: {
-    rubrics: NonNullable<RubricCriteriaItem["assessmentRubrics"]>;
+    rubrics: NonNullable<RubricCriteriaItem["metopenAssessmentRubrics"]>;
     selectedRubricId: string | null;
     selectedScore: number | null;
     onSelect: (rubricId: string, score: number) => void;

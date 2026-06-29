@@ -116,9 +116,9 @@ export type StudentArchiveScoreDetail = {
     id: string;
     name: string | null;
     maxScore: number | null;
-    cpmk?: { code?: string | null; description?: string | null; type?: string | null } | null;
+    metopenCpmk?: { code?: string | null; description?: string | null } | null;
   };
-  assessmentRubric: {
+  assessmentRubric?: {
     id: string;
     minScore: number;
     maxScore: number;

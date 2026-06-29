@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
     getCpmksWithRubrics,
+    getAllMetopenCpmks,
+    createMetopenCpmk,
     createCriteria,
     updateCriteria,
     deleteCriteria,
@@ -17,9 +19,11 @@ import {
     type UpdateCriteriaPayload,
     type CreateRubricPayload,
     type UpdateRubricPayload,
+    type CreateMetopenCpmkPayload,
 } from '@/services/rubricMetopen.service';
 
 const CPMKS_KEY = 'rubric-metopen-cpmks';
+const ALL_CPMKS_KEY = 'rubric-metopen-all-cpmks';
 const WEIGHT_KEY = 'rubric-metopen-weight';
 
 export function useRubricMetopen(role: MetopenRole) {
@@ -27,6 +31,7 @@ export function useRubricMetopen(role: MetopenRole) {
 
     const invalidateAll = () => {
         queryClient.invalidateQueries({ queryKey: [CPMKS_KEY, role] });
+        queryClient.invalidateQueries({ queryKey: [ALL_CPMKS_KEY] });
         queryClient.invalidateQueries({ queryKey: [WEIGHT_KEY, role] });
         const otherRole: MetopenRole = role === 'supervisor' ? 'default' : 'supervisor';
         queryClient.invalidateQueries({ queryKey: [WEIGHT_KEY, otherRole] });
@@ -48,6 +53,22 @@ export function useRubricMetopen(role: MetopenRole) {
     } = useQuery({
         queryKey: [WEIGHT_KEY, role],
         queryFn: () => getWeightSummary(role),
+    });
+
+    const {
+        data: allMetopenCpmks,
+    } = useQuery({
+        queryKey: [ALL_CPMKS_KEY],
+        queryFn: getAllMetopenCpmks,
+    });
+
+    const createCpmkMutation = useMutation({
+        mutationFn: createMetopenCpmk,
+        onSuccess: () => {
+            invalidateAll();
+            toast.success('CPMK Metopel berhasil ditambahkan');
+        },
+        onError: (error: Error) => { toast.error(error.message); },
     });
 
     const createCriteriaMutation = useMutation({
@@ -132,11 +153,15 @@ export function useRubricMetopen(role: MetopenRole) {
 
     return {
         cpmks: cpmks ?? [],
+        allMetopenCpmks: allMetopenCpmks ?? [],
         weightSummary: weightSummary ?? null,
         isLoading,
         isWeightLoading,
         isFetching,
         refetch,
+
+        createCpmk: (data: CreateMetopenCpmkPayload) => createCpmkMutation.mutateAsync(data),
+        isCreatingCpmk: createCpmkMutation.isPending,
 
         createCriteria: (data: CreateCriteriaPayload) => createCriteriaMutation.mutateAsync(data),
         updateCriteria: (criteriaId: string, data: UpdateCriteriaPayload) =>

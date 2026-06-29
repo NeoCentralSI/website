@@ -468,7 +468,7 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
                   {ta03aDetails.map((d) => (
                     <div key={`${d.researchMethodScoreId}-${d.assessmentCriteriaId}`} className="rounded-md border bg-muted/30 p-2.5 text-xs">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium">{d.criteria?.cpmk?.code ? `${d.criteria.cpmk.code} — ` : ''}{d.criteria?.name ?? 'Kriteria'}</p>
+                        <p className="font-medium">{d.criteria?.metopenCpmk?.code ? `${d.criteria.metopenCpmk.code} — ` : ''}{d.criteria?.name ?? 'Kriteria'}</p>
                         <Badge variant="outline" className="text-[10px]">
                           {d.score}/{d.criteria?.maxScore ?? '?'}
                         </Badge>
@@ -504,7 +504,7 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
                   {ta03bDetails.map((d) => (
                     <div key={`${d.researchMethodScoreId}-${d.assessmentCriteriaId}`} className="rounded-md border bg-muted/30 p-2.5 text-xs">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium">{d.criteria?.cpmk?.code ? `${d.criteria.cpmk.code} — ` : ''}{d.criteria?.name ?? 'Kriteria'}</p>
+                        <p className="font-medium">{d.criteria?.metopenCpmk?.code ? `${d.criteria.metopenCpmk.code} — ` : ''}{d.criteria?.name ?? 'Kriteria'}</p>
                         <Badge variant="outline" className="text-[10px]">
                           {d.score}/{d.criteria?.maxScore ?? '?'}
                         </Badge>
@@ -729,7 +729,7 @@ function RubricHistoryItem({
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-medium">
-                    {detail.criteria?.cpmk?.code ? `${detail.criteria.cpmk.code} - ` : ""}
+                    {detail.criteria?.metopenCpmk?.code ? `${detail.criteria.metopenCpmk.code} - ` : ""}
                     {detail.criteria?.name ?? "Kriteria"}
                   </p>
                   <Badge variant="outline" className="text-[10px]">

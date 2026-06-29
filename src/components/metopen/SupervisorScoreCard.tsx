@@ -699,9 +699,9 @@ function Ta03bRubricDetailCard({
                                 <p className="text-sm font-medium">
                                     {row.criteria?.name ?? "Kriteria"}
                                 </p>
-                                {row.criteria?.cpmk?.code ? (
+                                {row.criteria?.metopenCpmk?.code ? (
                                     <p className="text-[11px] text-muted-foreground">
-                                        {row.criteria.cpmk.code}
+                                        {row.criteria.metopenCpmk.code}
                                     </p>
                                 ) : null}
                             </div>

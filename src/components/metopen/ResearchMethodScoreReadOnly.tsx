@@ -215,12 +215,12 @@ function RubricDetailSection({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-0.5">
                   <p className="text-sm font-medium">
-                    {detail.criteria?.cpmk?.code ? `${detail.criteria.cpmk.code} - ` : ""}
+                    {detail.criteria?.metopenCpmk?.code ? `${detail.criteria.metopenCpmk.code} - ` : ""}
                     {detail.criteria?.name ?? "Kriteria"}
                   </p>
-                  {detail.criteria?.cpmk?.description ? (
+                  {detail.criteria?.metopenCpmk?.description ? (
                     <p className="text-[11px] text-muted-foreground">
-                      {detail.criteria.cpmk.description}
+                      {detail.criteria.metopenCpmk.description}
                     </p>
                   ) : null}
                 </div>

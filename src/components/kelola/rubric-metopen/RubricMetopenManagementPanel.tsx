@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useRubricMetopen } from '@/hooks/master-data/useRubricMetopen';
-import { useCpmk } from '@/hooks/master-data/useCpmk';
 import { MetopenCriteriaTable } from '@/components/kelola/rubric-metopen/MetopenCriteriaTable';
 import { MetopenCriteriaFormDialog } from '@/components/kelola/rubric-metopen/MetopenCriteriaFormDialog';
 import {
@@ -10,9 +9,11 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Plus } from 'lucide-react';
 import type {
-    AssessmentCriteria, CpmkWithRubrics, UpdateCriteriaPayload, MetopenRole,
+    MetopenAssessmentCriteria, MetopenCpmkWithRubrics, UpdateCriteriaPayload, MetopenRole,
 } from '@/services/rubricMetopen.service';
 
 const ROLE_OPTIONS: { value: MetopenRole; label: string; cap: number }[] = [
@@ -24,20 +25,22 @@ export function RubricMetopenManagementPanel() {
     const [selectedRole, setSelectedRole] = useState<MetopenRole>('supervisor');
 
     const {
-        cpmks, weightSummary, isLoading, isFetching, refetch,
+        cpmks, allMetopenCpmks, weightSummary, isLoading, isFetching, refetch,
+        createCpmk, isCreatingCpmk,
         createCriteria, updateCriteria, deleteCriteria, removeCpmkConfig,
         createRubric, updateRubric, deleteRubric,
         isDeletingCriteria, isRemovingCpmkConfig, isDeletingRubric,
         reorderCriteria, reorderRubrics,
     } = useRubricMetopen(selectedRole);
 
-    const { cpmks: allCpmks } = useCpmk();
-
     const [addCpmkOpen, setAddCpmkOpen] = useState(false);
+    const [addCpmkMode, setAddCpmkMode] = useState<'select' | 'create'>('select');
     const [selectedAddCpmkId, setSelectedAddCpmkId] = useState<string>('');
+    const [newCpmkCode, setNewCpmkCode] = useState('');
+    const [newCpmkDescription, setNewCpmkDescription] = useState('');
     const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false);
-    const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<CpmkWithRubrics | null>(null);
-    const [editCriteria, setEditCriteria] = useState<AssessmentCriteria | null>(null);
+    const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<MetopenCpmkWithRubrics | null>(null);
+    const [editCriteria, setEditCriteria] = useState<MetopenAssessmentCriteria | null>(null);
     const [localCpmkIds, setLocalCpmkIds] = useState<Record<MetopenRole, string[]>>({
         supervisor: [],
         default: [],
@@ -48,31 +51,26 @@ export function RubricMetopenManagementPanel() {
     const roleTotalScore = weightSummary?.totalScore ?? 0;
     const remainingScore = roleOption.cap - roleTotalScore;
 
-    const activeResearchCpmks = useMemo(
-        () => allCpmks.filter((cpmk) => cpmk.type === 'research_method'),
-        [allCpmks],
-    );
-
     const currentLocalIds = localCpmkIds[selectedRole];
 
     const mergedCpmks = useMemo(() => {
         const backendIds = new Set(cpmks.map((cpmk) => cpmk.id));
-        const localContainers = activeResearchCpmks
+        const localContainers = allMetopenCpmks
             .filter((cpmk) => currentLocalIds.includes(cpmk.id) && !backendIds.has(cpmk.id))
             .map((cpmk) => ({
                 id: cpmk.id,
                 code: cpmk.code,
                 description: cpmk.description,
                 displayOrder: 0,
-                assessmentCriterias: [] as AssessmentCriteria[],
+                metopenAssessmentCriterias: [] as MetopenAssessmentCriteria[],
             }));
         return [...cpmks, ...localContainers].sort((a, b) => a.code.localeCompare(b.code));
-    }, [activeResearchCpmks, cpmks, currentLocalIds]);
+    }, [allMetopenCpmks, cpmks, currentLocalIds]);
 
     const usedCpmkIds = useMemo(() => new Set(mergedCpmks.map((c) => c.id)), [mergedCpmks]);
     const availableForAdd = useMemo(
-        () => activeResearchCpmks.filter((c) => !usedCpmkIds.has(c.id)),
-        [activeResearchCpmks, usedCpmkIds],
+        () => allMetopenCpmks.filter((c) => !usedCpmkIds.has(c.id)),
+        [allMetopenCpmks, usedCpmkIds],
     );
 
     const handleOpenAddCriteria = (cpmkId: string) => {
@@ -81,7 +79,7 @@ export function RubricMetopenManagementPanel() {
         setCriteriaDialogOpen(true);
     };
 
-    const handleEditCriteria = (criteria: AssessmentCriteria, cpmk: CpmkWithRubrics) => {
+    const handleEditCriteria = (criteria: MetopenAssessmentCriteria, cpmk: MetopenCpmkWithRubrics) => {
         setCriteriaTargetCpmk(cpmk);
         setEditCriteria(criteria);
         setCriteriaDialogOpen(true);
@@ -94,6 +92,19 @@ export function RubricMetopenManagementPanel() {
             [selectedRole]: [...prev[selectedRole], selectedAddCpmkId],
         }));
         setSelectedAddCpmkId('');
+        setAddCpmkOpen(false);
+    };
+
+    const handleCreateCpmk = async () => {
+        if (!newCpmkCode.trim() || !newCpmkDescription.trim()) return;
+        const created = await createCpmk({ code: newCpmkCode.trim(), description: newCpmkDescription.trim() });
+        setLocalCpmkIds((prev) => ({
+            ...prev,
+            [selectedRole]: [...prev[selectedRole], created.id],
+        }));
+        setNewCpmkCode('');
+        setNewCpmkDescription('');
+        setAddCpmkMode('select');
         setAddCpmkOpen(false);
     };
 
@@ -189,29 +200,56 @@ export function RubricMetopenManagementPanel() {
                     : createCriteria}
             />
 
-            <Dialog open={addCpmkOpen} onOpenChange={setAddCpmkOpen}>
+            <Dialog open={addCpmkOpen} onOpenChange={(open) => { setAddCpmkOpen(open); if (!open) setAddCpmkMode('select'); }}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Tambah CPMK ke Metopel ({roleOption.label})</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-2">
-                        <Select value={selectedAddCpmkId} onValueChange={setSelectedAddCpmkId}>
-                            <SelectTrigger><SelectValue placeholder="Pilih CPMK Metode Penelitian..." /></SelectTrigger>
-                            <SelectContent>
-                                {availableForAdd.map((cpmk) => (
-                                    <SelectItem key={cpmk.id} value={cpmk.id}>{cpmk.code} — {cpmk.description}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {availableForAdd.length === 0 && (
-                            <p className="text-xs text-muted-foreground">Semua CPMK Metode Penelitian sudah digunakan untuk role ini.</p>
-                        )}
-                    </div>
+
+                    {addCpmkMode === 'select' ? (
+                        <div className="space-y-3">
+                            <Select value={selectedAddCpmkId} onValueChange={setSelectedAddCpmkId}>
+                                <SelectTrigger><SelectValue placeholder="Pilih CPMK Metode Penelitian..." /></SelectTrigger>
+                                <SelectContent>
+                                    {availableForAdd.map((cpmk) => (
+                                        <SelectItem key={cpmk.id} value={cpmk.id}>{cpmk.code} — {cpmk.description}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {availableForAdd.length === 0 && (
+                                <p className="text-xs text-muted-foreground">Semua CPMK Metode Penelitian sudah digunakan untuk role ini.</p>
+                            )}
+                            <Button variant="link" className="px-0 text-xs" onClick={() => setAddCpmkMode('create')}>
+                                + Buat CPMK baru
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="new-cpmk-code">Kode CPMK</Label>
+                                <Input id="new-cpmk-code" placeholder="cth: CPMK-01" value={newCpmkCode} onChange={(e) => setNewCpmkCode(e.target.value)} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="new-cpmk-desc">Deskripsi</Label>
+                                <Input id="new-cpmk-desc" placeholder="Deskripsi CPMK..." value={newCpmkDescription} onChange={(e) => setNewCpmkDescription(e.target.value)} />
+                            </div>
+                            <Button variant="link" className="px-0 text-xs" onClick={() => setAddCpmkMode('select')}>
+                                Pilih dari CPMK yang sudah ada
+                            </Button>
+                        </div>
+                    )}
+
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setAddCpmkOpen(false)}>Batal</Button>
-                        <Button onClick={handleAddCpmk} disabled={!selectedAddCpmkId}>
-                            <Plus className="mr-2 h-4 w-4" /> Tambahkan
-                        </Button>
+                        {addCpmkMode === 'select' ? (
+                            <Button onClick={handleAddCpmk} disabled={!selectedAddCpmkId}>
+                                <Plus className="mr-2 h-4 w-4" /> Tambahkan
+                            </Button>
+                        ) : (
+                            <Button onClick={handleCreateCpmk} disabled={!newCpmkCode.trim() || !newCpmkDescription.trim() || isCreatingCpmk}>
+                                <Plus className="mr-2 h-4 w-4" /> Buat &amp; Tambahkan
+                            </Button>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

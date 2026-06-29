@@ -14,12 +14,13 @@ export interface AssessmentCriteriaItem {
   maxScore: number | null;
   displayOrder: number;
   description?: string;
-  cpmk: { id: string; code: string; description: string } | null;
-  assessmentRubrics: AssessmentRubricItem[];
+  metopenCpmk: { id: string; code: string; description: string } | null;
+  metopenAssessmentRubrics: AssessmentRubricItem[];
 }
 
 export interface AssessmentRubricItem {
   id: string;
+  metopenAssessmentCriteriaId: string;
   minScore: number;
   maxScore: number;
   description: string;
@@ -119,7 +120,7 @@ export interface ResearchMethodScoreDetailItem {
     /** Pembeda form: 'supervisor' = TA-03A, 'default' = TA-03B. */
     role?: string | null;
     displayOrder?: number | null;
-    cpmk?: { code?: string | null; description?: string | null } | null;
+    metopenCpmk?: { code?: string | null; description?: string | null } | null;
   } | null;
   assessmentRubric?: {
     id: string;
