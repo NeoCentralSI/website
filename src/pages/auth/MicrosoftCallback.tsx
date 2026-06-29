@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveAuthTokens } from '@/services/auth.service';
 import { useAuth } from '@/hooks/shared';
@@ -7,16 +7,22 @@ import { toast } from 'sonner';
 import { toTitleCaseName } from '@/lib/text';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 
+let processed = false;
+
 export default function MicrosoftCallback() {
   const navigate = useNavigate();
   const { setUserDirectly } = useAuth();
-  const processedRef = useRef(false);
 
   useEffect(() => {
-    if (processedRef.current) return;
+    if (processed) {
+      navigate('/login', { replace: true });
+      return;
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const exchangeCode = urlParams.get('code');
+
+    window.history.replaceState({}, document.title, '/auth/microsoft/callback');
 
     const handleCallback = async () => {
       try {
@@ -25,7 +31,7 @@ export default function MicrosoftCallback() {
           return;
         }
 
-        processedRef.current = true;
+        processed = true;
 
         const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.MICROSOFT_EXCHANGE), {
           method: 'POST',
@@ -52,7 +58,6 @@ export default function MicrosoftCallback() {
         navigate('/dashboard', { replace: true });
       } catch (error) {
         console.error('Callback error:', error);
-        processedRef.current = true;
         navigate('/login', { replace: true });
       }
     };
