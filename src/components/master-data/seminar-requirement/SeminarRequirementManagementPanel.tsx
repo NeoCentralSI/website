@@ -72,7 +72,7 @@ export function SeminarRequirementManagementPanel() {
             });
             setCopyDialogOpen(false);
             setSourceAcademicYearId('');
-        } catch (error) {
+        } catch {
             // Error is handled by the hook
         }
     };

@@ -70,7 +70,7 @@ export function SeminarRequirementFormDialog({
             await onSubmit(values);
             onOpenChange(false);
             form.reset();
-        } catch (error) {
+        } catch {
             // Error handled by mutation
         }
     };

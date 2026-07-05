@@ -84,7 +84,7 @@ export function CurriculumFormDialog({
         try {
             await onSubmit(values as CreateCurriculumPayload);
             onOpenChange(false);
-        } catch (error) {
+        } catch {
             // Error is handled by mutation
         }
     };

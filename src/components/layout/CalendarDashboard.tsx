@@ -229,17 +229,12 @@ export function CalendarDashboard({
 
         const isMatch = timeMatch && titleMatch;
 
-        if (isMatch) {
-        }
-
         return isMatch;
       });
 
       if (!isDuplicate) {
         // Cast to any to bypass strict type check since we're displaying only
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         allEvents.push(outlookEvent as any);
-      } else {
       }
     });
 

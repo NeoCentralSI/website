@@ -72,7 +72,7 @@ export function DefenceRequirementManagementPanel() {
             });
             setCopyDialogOpen(false);
             setSourceAcademicYearId('');
-        } catch (error) {
+        } catch {
             // Error is handled by the hook
         }
     };
