@@ -1,4 +1,5 @@
 import { getApiUrl } from '@/config/api';
+import { unwrapApiArray } from '@/lib/apiResponse';
 
 export interface User {
   id: string;
@@ -923,7 +924,8 @@ export const getScienceGroupsAPI = async (): Promise<{ data: ScienceGroup[] }> =
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Gagal memuat Kelompok Keilmuan');
   }
-  return response.json();
+  const result: unknown = await response.json();
+  return { data: unwrapApiArray<ScienceGroup>(result, ['scienceGroups']) };
 };
 
 export const createScienceGroupAPI = async (data: { name: string }): Promise<{ data: ScienceGroup }> => {

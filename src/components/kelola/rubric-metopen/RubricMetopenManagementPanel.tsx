@@ -25,7 +25,7 @@ export function RubricMetopenManagementPanel() {
     const [selectedRole, setSelectedRole] = useState<MetopenRole>('supervisor');
 
     const {
-        cpmks, allMetopenCpmks, weightSummary, isLoading, isFetching, refetch,
+        cpmks = [], allMetopenCpmks = [], weightSummary, isLoading, isFetching, refetch,
         createCpmk, isCreatingCpmk,
         createCriteria, updateCriteria, deleteCriteria, removeCpmkConfig,
         createRubric, updateRubric, deleteRubric,

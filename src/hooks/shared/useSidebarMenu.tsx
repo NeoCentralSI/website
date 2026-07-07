@@ -5,6 +5,7 @@ import {
   Database,
   FileText,
   SquareTerminal,
+  Wrench,
   GraduationCap,
   type LucideIcon,
 } from "lucide-react";
@@ -14,6 +15,7 @@ import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useAdvisorAccessState } from "./useAdvisorAccessState";
 import { useStudentEligibility } from "./useStudentEligibility";
+import { ENV } from "@/config/env";
 
 type SidebarLeafItem = { title: string; url: string };
 type SidebarNavItem = {
@@ -570,6 +572,16 @@ export const useSidebarMenu = () => {
               },
             ],
           },
+          ...(ENV.ENABLE_DEV_TOOLS
+            ? [
+                {
+                  title: "Development",
+                  url: "/admin/dev-tools",
+                  icon: Wrench,
+                  items: [],
+                },
+              ]
+            : []),
         ],
         navSecondary: [],
       };

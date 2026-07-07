@@ -67,7 +67,8 @@ export function TopicManagementPanel() {
   });
   const scienceGroupsQuery = useQuery({
     queryKey: ["science-groups"],
-    queryFn: async () => (await getScienceGroupsAPI()).data,
+    queryFn: getScienceGroupsAPI,
+    select: (response) => response.data,
   });
 
   // Mutations

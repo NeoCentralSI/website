@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import { ENV } from '@/config/env'
 import { Loading } from '@/components/ui/spinner'
 import { AuthProvider, NotificationProvider } from '@/hooks/shared'
 import { Toaster } from './components/ui/sonner'
@@ -94,6 +95,8 @@ const TugasAkhirOverviewPage = lazy(() => import('./pages/tugas-akhir/Overview')
 // Tugas Akhir - Monitoring
 const MonitoringDashboard = lazy(() => import('./pages/tugas-akhir/monitoring/MonitoringDashboard'))
 const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/StudentProgressDetail'))
+// Dev Tools (development/staging only)
+const DevToolsPage = lazy(() => import('./pages/dev-tools/DevTools'))
 // Master Data
 const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
 const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
@@ -417,6 +420,10 @@ function App() {
                   <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
                   <Route path="/master-data/ruangan" element={<RoomPage />} />
                   <Route path="/master-data/kuota-bimbingan" element={<KuotaBimbinganPage />} />
+                  {/* DevTools simulator: only registered when explicitly enabled outside production. */}
+                  {ENV.ENABLE_DEV_TOOLS && (
+                    <Route path="/admin/dev-tools" element={<DevToolsPage />} />
+                  )}
                 </Route>
               </Route>
 

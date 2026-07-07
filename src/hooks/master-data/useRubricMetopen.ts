@@ -151,9 +151,12 @@ export function useRubricMetopen(role: MetopenRole) {
         onError: (error: Error) => { toast.error(error.message); },
     });
 
+    const cpmkList = Array.isArray(cpmks) ? cpmks : [];
+    const allMetopenCpmkList = Array.isArray(allMetopenCpmks) ? allMetopenCpmks : [];
+
     return {
-        cpmks: cpmks ?? [],
-        allMetopenCpmks: allMetopenCpmks ?? [],
+        cpmks: cpmkList,
+        allMetopenCpmks: allMetopenCpmkList,
         weightSummary: weightSummary ?? null,
         isLoading,
         isWeightLoading,

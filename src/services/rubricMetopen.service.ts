@@ -1,5 +1,6 @@
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from './auth.service';
+import { unwrapApiArray, unwrapApiValue } from '@/lib/apiResponse';
 
 export type MetopenRole = 'supervisor' | 'default';
 
@@ -87,18 +88,27 @@ async function parseResponse<T>(response: Response, fallbackMsg: string): Promis
         const error = await response.json().catch(() => ({ message: fallbackMsg }));
         throw new Error(error.message || fallbackMsg);
     }
-    const result = await response.json();
-    return result.data;
+    const result: unknown = await response.json();
+    return unwrapApiValue<T>(result);
+}
+
+async function parseArrayResponse<T>(response: Response, fallbackMsg: string, keys: string[] = []): Promise<T[]> {
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: fallbackMsg }));
+        throw new Error(error.message || fallbackMsg);
+    }
+    const result: unknown = await response.json();
+    return unwrapApiArray<T>(result, keys);
 }
 
 export const getCpmksWithRubrics = async (role: MetopenRole): Promise<MetopenCpmkWithRubrics[]> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS(role)));
-    return parseResponse<MetopenCpmkWithRubrics[]>(response, 'Gagal mengambil data CPMK rubrik Metopel');
+    return parseArrayResponse<MetopenCpmkWithRubrics>(response, 'Gagal mengambil data CPMK rubrik Metopel', ['cpmks']);
 };
 
 export const getAllMetopenCpmks = async (): Promise<MetopenCpmk[]> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS_ALL));
-    return parseResponse<MetopenCpmk[]>(response, 'Gagal mengambil daftar CPMK Metopel');
+    return parseArrayResponse<MetopenCpmk>(response, 'Gagal mengambil daftar CPMK Metopel', ['cpmks', 'metopenCpmks']);
 };
 
 export const createMetopenCpmk = async (payload: CreateMetopenCpmkPayload): Promise<MetopenCpmk> => {
