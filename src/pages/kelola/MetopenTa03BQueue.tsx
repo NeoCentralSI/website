@@ -197,9 +197,10 @@ export default function MetopenTa03BQueue() {
                                 </CardTitle>
                                 <CardDescription className="text-xs">
                                     Antrean Koordinator untuk rubrik TA-03B (maks 25). Penilaian berjalan
-                                    paralel setelah proposal final tersedia; form manual akan memeriksa
-                                    presensi Metopel terbaru sebelum submit. Setelah dinilai, proposal
-                                    pindah ke riwayat read-only dengan detail rubrik dan versi proposal.
+                                    paralel setelah TA-04 awal terbit dan proposal final tersedia; form
+                                    manual akan memeriksa presensi Metopel terbaru sebelum submit. Setelah
+                                    dinilai, proposal pindah ke riwayat read-only dengan detail rubrik dan
+                                    versi proposal.
                                 </CardDescription>
                             </div>
                         </div>
@@ -270,7 +271,7 @@ export default function MetopenTa03BQueue() {
                         <p className="mt-1 text-xs text-muted-foreground">
                             {activeTab === "history"
                                 ? "Proposal yang sudah memiliki skor Koordinator atau auto-zero presensi akan tampil di sini."
-                                : "Proposal akan masuk ke antrean ini setelah mahasiswa submit proposal final. Jika presensi Metopel belum tersedia atau kurang dari 75%, form akan menahan input manual sesuai BR-28."}
+                                : "Proposal akan masuk ke antrean ini setelah TA-04 awal terbit dan mahasiswa submit proposal final. Jika presensi Metopel belum tersedia atau kurang dari 75%, form akan menahan input manual sesuai BR-28."}
                         </p>
                     </CardContent>
                 </Card>

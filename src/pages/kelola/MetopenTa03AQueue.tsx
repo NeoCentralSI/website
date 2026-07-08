@@ -206,11 +206,11 @@ export default function MetopenTa03AQueue() {
                                 Antrean Penilaian Pembimbing
                             </CardTitle>
                             <CardDescription className="text-xs">
-                                Antrean terbuka setelah mahasiswa submit proposal final dan presensi
-                                Metopel terbaru sudah diunggah Koordinator. Pembimbing 1 mengisi rubrik
-                                0-75; Pembimbing 2 memberi co-sign konsensus. Mahasiswa dengan presensi
-                                &lt;75% otomatis mendapat nilai 0 (BR-28). Penilaian terkunci permanen
-                                setelah submit + co-sign + TA-03B (BR-21).
+                                Antrean terbuka setelah TA-04 awal terbit, mahasiswa submit proposal final,
+                                dan presensi Metopel terbaru sudah diunggah Koordinator. Pembimbing 1
+                                mengisi rubrik 0-75; Pembimbing 2 memberi co-sign konsensus. Mahasiswa
+                                dengan presensi &lt;75% otomatis mendapat nilai 0 (BR-28). Penilaian
+                                terkunci permanen setelah submit + co-sign + TA-03B (BR-21).
                             </CardDescription>
                         </div>
                     </div>
@@ -252,7 +252,7 @@ export default function MetopenTa03AQueue() {
                         <p className="mt-1 text-xs text-muted-foreground">
                             {activeTab === "history"
                                 ? "Proposal yang sudah pernah memiliki skor, co-sign, finalisasi, atau auto-zero akan tampil di sini."
-                                : "Proposal akan masuk ke antrean ini setelah mahasiswa bimbingan Anda submit proposal final dan presensi Metopel terbaru tersedia."}
+                                : "Proposal akan masuk ke antrean ini setelah TA-04 awal terbit, mahasiswa bimbingan Anda submit proposal final, dan presensi Metopel terbaru tersedia."}
                         </p>
                     </CardContent>
                 </Card>
