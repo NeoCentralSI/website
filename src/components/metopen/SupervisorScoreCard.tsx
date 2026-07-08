@@ -202,7 +202,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                                 ? "Pembimbing 2 (akan co-sign setelah Anda submit)"
                                 : "diri sendiri (thesis hanya 1 pembimbing)"}
                             . Setelah submit, sistem menunggu {hasP2 ? "co-sign P2 + " : ""}TA-03B
-                            Koordinator Metopen untuk auto-finalisasi → memicu antrean TA-04 ke KaDep.
+                            Koordinator Metopen untuk auto-finalisasi dan promosi aktif setelah KRS TA terkonfirmasi.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -215,7 +215,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                         <AlertDescription className="text-blue-700">
                             Rubrik TA-03A sekarang read-only di sisi Anda. Siklus penilaian tinggal menunggu{" "}
                             {hasP2 && !coSignedAt ? "co-sign Pembimbing 2" : "kelengkapan TA-03B Koordinator Metopen"}{" "}
-                            sebelum nilai akhir TA-03 dikunci permanen dan masuk antrean TA-04.
+                            sebelum nilai akhir TA-03 dikunci permanen untuk promosi aktif otomatis.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -230,8 +230,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                         }
                         submitConfirmText={
                             hasP2
-                                ? "Setelah submit, Pembimbing 2 perlu co-sign untuk finalisasi. Pasca finalisasi, nilai akan dikunci permanen dan memicu antrean TA-04 ke KaDep otomatis."
-                                : "Setelah submit + TA-03B masuk, nilai akan dikunci permanen dan memicu antrean TA-04 ke KaDep otomatis. Pastikan rubrik sudah benar."
+                                ? "Setelah submit, Pembimbing 2 perlu co-sign untuk finalisasi. Pasca finalisasi, nilai akan dikunci permanen dan dipakai promosi aktif otomatis setelah KRS TA terkonfirmasi."
+                                : "Setelah submit + TA-03B masuk, nilai akan dikunci permanen dan dipakai promosi aktif otomatis setelah KRS TA terkonfirmasi. Pastikan rubrik sudah benar."
                         }
                     />
                 )}
@@ -307,7 +307,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                                         <AlertDialogDescription>
                                             Setelah co-sign tercatat, nilai TA-03A tidak dapat direvisi
                                             (canon §5.7.2). Bila TA-03B juga sudah masuk, sistem akan
-                                            auto-finalisasi dan memicu antrean TA-04 ke KaDep. Pastikan
+                                            auto-finalisasi dan memakai nilai itu untuk promosi aktif setelah KRS TA terkonfirmasi. Pastikan
                                             Anda sudah berdiskusi konsensus dengan Pembimbing 1.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>

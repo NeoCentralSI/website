@@ -9,6 +9,7 @@ export type AdvisorStatusCategory =
   | "pending_kadep"
   | "active_pre_ta04"
   | "active_official"
+  | "released"
   | "revision"
   | "rejected"
   | "withdrawn"
@@ -47,6 +48,9 @@ export interface MonitoringAdvisorRequest {
   acceptedOverNormal: boolean;
   forwardedToKadepAt: string | null;
   withdrawnAt: string | null;
+  releasedAt: string | null;
+  releaseReason: string | null;
+  ta04AssignmentIssuedAt: string | null;
   lastUpdatedAt: string | null;
 }
 

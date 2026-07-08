@@ -145,7 +145,7 @@ export default function LecturerMyStudentDetailPage() {
                     <div className="ml-2 w-full">
                         <AlertTitle className="text-blue-800">Proposal Tugas Akhir Diajukan</AlertTitle>
                         <AlertDescription className="text-blue-700 mt-1">
-                            Pembimbing dapat melanjutkan review melalui bimbingan dan penilaian TA-03. Aktivasi resmi proposal diputuskan pada TA-04 oleh KaDep.
+                            Pembimbing dapat melanjutkan review melalui bimbingan dan penilaian TA-03. Aktivasi beban aktif berjalan otomatis setelah TA-03 final dan KRS Tugas Akhir terkonfirmasi.
                         </AlertDescription>
                     </div>
                 </Alert>

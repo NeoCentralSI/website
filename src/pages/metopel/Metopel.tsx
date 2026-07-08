@@ -64,13 +64,13 @@ export default function Metopel() {
   const renderContent = () => {
     switch (activeTabKey) {
       case "search":
-        return <CariPembimbing readOnly={isMetopenReadOnly} />;
+        return <CariPembimbing readOnly={isMetopenReadOnly} advisorAccess={advisorAccess} />;
       case "proposal":
         return <MetopenProposalTab readOnly={isMetopenReadOnly} />;
       case "logbook":
         return <MetopenInformalLogbookTab readOnly={isMetopenReadOnly} />;
       default:
-        return <MetopelOverviewTab readOnly={isMetopenReadOnly} />;
+        return <MetopelOverviewTab readOnly={isMetopenReadOnly} advisorAccess={advisorAccess} />;
     }
   };
 

@@ -271,11 +271,14 @@ function RequestHistorySection() {
     );
 }
 
+type AdvisorAccessState = NonNullable<ReturnType<typeof useAdvisorAccessState>["data"]>;
+
 interface CariPembimbingProps {
     readOnly?: boolean;
+    advisorAccess?: AdvisorAccessState;
 }
 
-export default function CariPembimbing({ readOnly = false }: CariPembimbingProps) {
+export default function CariPembimbing({ readOnly = false, advisorAccess: advisorAccessFromParent }: CariPembimbingProps) {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
@@ -288,9 +291,10 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
     const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
     const [withdrawUnderReviewConfirmed, setWithdrawUnderReviewConfirmed] = useState(false);
     const {
-        data: advisorAccess,
+        data: queriedAdvisorAccess,
         isLoading: accessLoading,
-    } = useAdvisorAccessState();
+    } = useAdvisorAccessState(!advisorAccessFromParent);
+    const advisorAccess = advisorAccessFromParent ?? queriedAdvisorAccess;
     const canViewCatalog = advisorAccess?.canViewCatalog ?? false;
     const canBrowseCatalog = advisorAccess?.canBrowseCatalog ?? false;
     // readOnly overrides canSubmitRequest — archived students cannot submit new requests
@@ -696,7 +700,7 @@ export default function CariPembimbing({ readOnly = false }: CariPembimbingProps
                             )}
                             {isBookingApproved && (
                                 <p className="text-emerald-700 text-sm leading-relaxed">
-                                    Booking pembimbing Anda sudah disetujui pada fase pra-TA. Slot ini sudah masuk booking dan akan menjadi aktif resmi saat TA-04 atau pengesahan proposal terbit.
+                                    Booking pembimbing Anda sudah disetujui pada fase pra-TA. Slot ini tetap booking meskipun TA-04 awal terbit, lalu menjadi beban aktif setelah TA-03 final dan KRS Tugas Akhir terkonfirmasi.
                                 </p>
                             )}
                             {isUnderReview && !isTimeLocked && (

@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAdvisorAccessState, useRole } from "@/hooks/shared";
 import { metopenTitleService } from "@/services/metopenTitle.service";
 import type { StudentArchiveData, StudentArchiveScoreDetail } from "@/services/metopenTitle.service";
@@ -13,12 +12,15 @@ import { toast } from "sonner";
 import { formatDateId } from "@/lib/text";
 import { formatAdvisorRouteCode, formatAdvisorRouteProcessing } from "@/lib/advisorRoute";
 
+type AdvisorAccessState = NonNullable<ReturnType<typeof useAdvisorAccessState>["data"]>;
+
 interface MetopelOverviewTabProps {
   /**
-   * BR-23 (canon §5.13): readOnly = true menandai mode arsip pasca TA-04.
+   * BR-23 (canon §5.13): readOnly = true menandai mode arsip pasca promosi aktif TA.
    * Mode arsip wajib menampilkan substansi awal + detail rubrik + dokumen TA-04.
    */
   readOnly?: boolean;
+  advisorAccess?: AdvisorAccessState;
 }
 
 type ProposalStatus = "accepted" | "submitted" | "rejected" | null;
@@ -42,12 +44,16 @@ type SeminarEligibilitySnapshot = {
 function buildProposalStatusUi(
   proposalStatus: ProposalStatus,
   queueReadiness: ProposalQueueReadiness,
+  ta04IssuedAt?: string | null,
 ) {
   if (proposalStatus === "accepted") {
-    return { label: "Disahkan", variant: "default" as const };
+    return { label: "Beban Aktif TA", variant: "default" as const };
+  }
+  if (ta04IssuedAt) {
+    return { label: "TA-04 Terbit, Booking", variant: "secondary" as const };
   }
   if (proposalStatus === "submitted") {
-    return { label: "Menunggu Review KaDep", variant: "secondary" as const };
+    return { label: "Legacy Review KaDep", variant: "secondary" as const };
   }
   if (proposalStatus === "rejected") {
     return { label: "Ditolak", variant: "outline" as const };
@@ -66,44 +72,56 @@ function buildProposalStatusUi(
     case null:
     case undefined:
       return queueReadiness?.ready
-        ? { label: "Siap Masuk Antrean", variant: "secondary" as const }
-        : { label: "Belum Masuk Antrean", variant: "outline" as const };
+        ? { label: "Siap Promosi Aktif", variant: "secondary" as const }
+        : { label: "Belum Siap Promosi", variant: "outline" as const };
     default:
-      return { label: "Belum Masuk Antrean", variant: "outline" as const };
+      return { label: "Belum Siap Promosi", variant: "outline" as const };
   }
 }
 
 function getProposalQueueDescription(
   proposalStatus: ProposalStatus,
   queueReadiness: ProposalQueueReadiness,
+  ta04IssuedAt?: string | null,
 ) {
   if (proposalStatus === "accepted") {
-    return "Judul/proposal sudah disahkan oleh KaDep. Dokumen TA-04 tersedia di arsip Metopel setelah berhasil dibuat.";
+    return "TA-03 final dan KRS Tugas Akhir sudah terkonfirmasi. Status pembimbing sudah menjadi beban aktif TA.";
+  }
+  if (ta04IssuedAt) {
+    return "Formulir TA-04 awal sudah terbit sebagai SK penugasan pembimbing. Anda tetap berada di fase Metopel sampai TA-03 final dan KRS Tugas Akhir terkonfirmasi dari SIA.";
   }
   if (proposalStatus === "submitted") {
-    return "Judul/proposal sudah masuk antrean KaDep untuk pengesahan TA-04.";
+    return "Judul/proposal masuk antrean legacy KaDep. Proses baru memakai TA-04 awal dan promosi otomatis.";
   }
 
   switch (queueReadiness?.block) {
     case "ta_course_not_confirmed":
-      return "Nilai TA-03 sudah final, tetapi antrean TA-04 belum dibuka karena snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir.";
+      return "Nilai TA-03 sudah final, tetapi promosi aktif belum berjalan karena snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir.";
     case "scores_not_finalized":
-      return "Antrean TA-04 dibuka setelah TA-03A, co-sign Pembimbing 2 bila ada, dan TA-03B sudah difinalisasi.";
+      return "Promosi aktif menunggu TA-03A, co-sign Pembimbing 2 bila ada, dan TA-03B difinalisasi.";
     case "missing_scores":
-      return "Antrean TA-04 dibuka setelah nilai TA-03A dan TA-03B tersedia.";
+      return "Promosi aktif menunggu nilai TA-03A dan TA-03B tersedia.";
     case "metopel_auto_zeroed":
-      return "Presensi Metopel kurang dari 75%, sehingga TA-04 tidak dapat diproses pada siklus ini.";
+      return "Presensi Metopel kurang dari 75%, sehingga booking TA-04 awal akan dilepas pada siklus ini.";
     case "proposal_final_not_submitted":
       return "Submit proposal final terlebih dahulu agar TA-03A dan TA-03B dapat dinilai.";
     default:
-      return "KaDep mengesahkan judul setelah proposal final, nilai TA-03A/TA-03B, dan konfirmasi ambil mata kuliah TA terpenuhi.";
+      return "TA-04 awal diterbitkan batch oleh KaDep setelah booking pembimbing disetujui. Beban aktif berpindah otomatis setelah TA-03 final dan snapshot KRS TA.";
   }
 }
 
-export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps) {
+export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAccessFromParent }: MetopelOverviewTabProps) {
   const { isStudent } = useRole();
-  const { data: advisorAccess, isLoading } = useAdvisorAccessState(isStudent());
-  const queryClient = useQueryClient();
+  const {
+    data: queriedAdvisorAccess,
+    isLoading,
+  } = useAdvisorAccessState(isStudent() && !advisorAccessFromParent);
+  const advisorAccess = advisorAccessFromParent ?? queriedAdvisorAccess;
+  const hasLifecycleContext = Boolean(
+    advisorAccess?.hasOfficialSupervisor ||
+    advisorAccess?.thesisId ||
+    readOnly,
+  );
 
   const { data: proposalApproval } = useQuery({
     queryKey: ["metopel-proposal-approval"],
@@ -111,37 +129,8 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
       const response = await metopenTitleService.getMyProposalApproval();
       return response.data.thesis;
     },
-    enabled: !!advisorAccess?.hasOfficialSupervisor,
+    enabled: hasLifecycleContext,
   });
-
-  const {
-    mutate: syncProposalQueue,
-    isPending: isSyncingProposalQueue,
-  } = useMutation({
-    mutationFn: () => metopenTitleService.syncMyProposalQueue(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["metopel-proposal-approval"] });
-      queryClient.invalidateQueries({ queryKey: ["metopel-seminar-eligibility"] });
-      queryClient.invalidateQueries({ queryKey: ["pending-title-reports"] });
-    },
-  });
-
-  useEffect(() => {
-    const shouldSync =
-      proposalApproval?.proposalStatus == null &&
-      proposalApproval?.queueReadiness?.ready === true &&
-      proposalApproval?.queueReadiness?.proposalStatus === "ready";
-
-    if (shouldSync && !isSyncingProposalQueue) {
-      syncProposalQueue();
-    }
-  }, [
-    isSyncingProposalQueue,
-    proposalApproval?.proposalStatus,
-    proposalApproval?.queueReadiness?.proposalStatus,
-    proposalApproval?.queueReadiness?.ready,
-    syncProposalQueue,
-  ]);
 
   const { data: seminarEligibility } = useQuery({
     queryKey: ["metopel-seminar-eligibility"],
@@ -149,7 +138,7 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
       const response = await metopenTitleService.getMySeminarEligibilitySnapshot();
       return response.data as SeminarEligibilitySnapshot;
     },
-    enabled: !!advisorAccess?.hasOfficialSupervisor,
+    enabled: !!advisorAccess?.hasOfficialSupervisor || readOnly,
   });
 
   // Riwayat TA-03 untuk masa transisi setelah dinilai, sebelum TA-04/arsip aktif.
@@ -163,15 +152,22 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
   const { data: archive } = useQuery({
     queryKey: ["metopel-archive-detail"],
     queryFn: async () => (await metopenTitleService.getMyArchive()).data,
-    enabled: readOnly && !!advisorAccess?.hasOfficialSupervisor,
+    enabled: readOnly && hasLifecycleContext,
   });
 
-  if (isLoading) return <Loading />;
+  const downloadTa04Mutation = useMutation({
+    mutationFn: () => metopenTitleService.downloadMyTitleApprovalDocument(),
+    onSuccess: () => toast.success("Formulir TA-04 berhasil diunduh."),
+    onError: (err: Error) => toast.error(err.message || "Gagal mengunduh Formulir TA-04."),
+  });
+
+  if (!advisorAccessFromParent && isLoading) return <Loading />;
 
   const proposalStatus = (proposalApproval?.proposalStatus ?? null) as ProposalStatus;
   const queueReadiness = proposalApproval?.queueReadiness ?? null;
-  const proposalStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness);
-  const proposalQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness);
+  const ta04IssuedAt = proposalApproval?.ta04AssignmentIssuedAt ?? null;
+  const proposalStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness, ta04IssuedAt);
+  const proposalQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness, ta04IssuedAt);
 
   // Canon §5.2 (audit F-6.1): escalated = TA-01 (Path C), bukan TA-02. Pakai helper terpusat.
   const initialRouteCode = formatAdvisorRouteCode(advisorAccess?.blockingRequest?.routeType);
@@ -216,7 +212,7 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
       icon: FileCheck2,
       status: !advisorAccess?.hasOfficialSupervisor
         ? "Menunggu pembimbing resmi"
-        : proposalStatus === "submitted" || proposalStatus === "accepted"
+        : proposalStatus === "submitted" || proposalStatus === "accepted" || Boolean(ta04IssuedAt)
           ? "Proposal final masuk alur KaDep"
           : "Submit versi proposal final",
       description:
@@ -239,7 +235,7 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
     },
     {
       code: "TA-04",
-      title: "Pengesahan Judul",
+      title: "TA-04 Awal & Promosi Aktif",
       icon: Stamp,
       status: proposalStatusUi.label,
       description: proposalQueueDescription,
@@ -252,6 +248,7 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
     const isApproved = proposalStatus === 'accepted';
 
     if (isApproved) return 'completed';
+    if (ta04IssuedAt) return index <= 2 ? 'completed' : 'current';
     if (hasScore) return index <= 2 ? 'completed' : 'current';
     if (proposalStatus === 'submitted') return index <= 1 ? 'completed' : index === 2 ? 'current' : 'upcoming';
     if (hasAdvisor) return index === 0 ? 'completed' : index === 1 ? 'current' : 'upcoming';
@@ -310,17 +307,17 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
         })}
       </div>
 
-      {advisorAccess?.hasOfficialSupervisor && (
+      {hasLifecycleContext && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Status Pengesahan Judul</CardTitle>
+            <CardTitle className="text-sm">Status TA-04 Awal</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
               <div>
                 <p className="text-xs text-muted-foreground">Judul saat ini</p>
                 <p className="font-medium">
-                  {proposalApproval?.title || advisorAccess.thesisTitle || "Judul belum tersedia"}
+                  {proposalApproval?.title || advisorAccess?.thesisTitle || "Judul belum tersedia"}
                 </p>
               </div>
               <Badge variant={proposalStatusUi.variant} className="text-xs">
@@ -334,12 +331,34 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
               </div>
             )}
 
+            {proposalApproval?.titleApprovalDocument && (
+              <div className="flex flex-col gap-2 rounded-md border bg-background px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Formulir TA-04 awal</p>
+                  <p className="truncate text-sm font-medium">{proposalApproval.titleApprovalDocument.fileName}</p>
+                  {proposalApproval.ta04AssignmentIssuedAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Diterbitkan {formatDateId(proposalApproval.ta04AssignmentIssuedAt)}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadTa04Mutation.mutate()}
+                  disabled={downloadTa04Mutation.isPending}
+                >
+                  <Download className="mr-1 h-3.5 w-3.5" />
+                  {downloadTa04Mutation.isPending ? "Mengunduh..." : "Unduh PDF"}
+                </Button>
+              </div>
+            )}
+
             {/* P1-13 (canon §5.10): Tombol "Sinkronkan Status" dihapus karena
-                bertentangan dengan canon — antrean TA-04 KaDep auto-enqueue oleh
-                sistem setelah TA-03A + TA-03B finalisasi. Mahasiswa tidak perlu
-                lapor manual. UI cukup info pasif. */}
+                lifecycle TA-04/promosi aktif berjalan otomatis dari SIA sync dan
+                nilai TA-03 final. Mahasiswa tidak perlu lapor manual. */}
             <p className="text-xs text-muted-foreground">
-              {proposalQueueDescription} Antrean pengesahan TA-04 ke KaDep dikelola otomatis oleh sistem (canon §5.10); Anda tidak perlu melakukan sinkronisasi manual.
+              {proposalQueueDescription}
             </p>
           </CardContent>
         </Card>
@@ -349,7 +368,7 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
         <AssessmentHistorySection history={assessmentHistory} />
       )}
 
-      {/* BR-23 (canon §5.13): Arsip Metopel pasca TA-04 — read-only single source of truth.
+      {/* BR-23 (canon §5.13): Arsip Metopel pasca promosi aktif — read-only single source of truth.
           4 kategori: substansi awal TA-01/02, detail rubrik TA-03A & TA-03B, Formulir TA-04. */}
       {readOnly && archive && <ArchiveSection archive={archive} />}
     </div>
@@ -357,7 +376,7 @@ export function MetopelOverviewTab({ readOnly = false }: MetopelOverviewTabProps
 }
 
 /**
- * BR-23: Surface arsip Metopel pasca TA-04. Read-only.
+ * BR-23: Surface arsip Metopel pasca promosi aktif TA. Read-only.
  */
 function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> }) {
   const { advisorRequests, score, titleApproval } = archive;
@@ -569,8 +588,8 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
 }
 
 /**
- * Riwayat TA-03 sebelum TA-04: read-only agar mahasiswa melihat hasil penilaian
- * begitu skor tercatat, tanpa menunggu Formulir TA-04 batch difinalisasi.
+ * Riwayat TA-03 sebelum arsip aktif: read-only agar mahasiswa melihat hasil
+ * penilaian begitu skor tercatat, tanpa menunggu promosi beban aktif.
  */
 function AssessmentHistorySection({ history }: { history: NonNullable<StudentArchiveData> }) {
   const score = history.score;
@@ -591,7 +610,7 @@ function AssessmentHistorySection({ history }: { history: NonNullable<StudentArc
           <div className="space-y-1">
             <CardTitle className="text-base">Riwayat Penilaian Proposal TA-03</CardTitle>
             <CardDescription>
-              Nilai TA-03A/TA-03B sudah tersimpan. Detail ini read-only dan akan menjadi bagian arsip Metopel setelah TA-04 disahkan.
+              Nilai TA-03A/TA-03B sudah tersimpan. Detail ini read-only dan menjadi bagian arsip Metopel setelah promosi beban aktif TA.
             </CardDescription>
           </div>
         </div>

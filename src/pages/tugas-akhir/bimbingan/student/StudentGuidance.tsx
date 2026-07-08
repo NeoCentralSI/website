@@ -45,7 +45,7 @@ export default function StudentGuidancePage() {
     queryKey: ["my-thesis-detail"],
     queryFn: getMyThesisDetail,
   });
-  // Logbook phase: setelah TA-04 disahkan / thesis bukan lagi fase proposal → logbook tugas akhir penuh.
+  // Logbook phase: setelah promosi aktif / thesis bukan lagi fase proposal -> logbook tugas akhir penuh.
   const guidancePhase: 'proposal' | 'thesis' =
     thesisDetail?.proposalStatus === 'accepted' || thesisDetail?.isProposal === false
       ? 'thesis'

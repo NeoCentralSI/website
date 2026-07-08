@@ -15,7 +15,7 @@ async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
 }
 
 /**
- * P0-05 + BR-18 + P1-11: Snapshot 5 syarat TA-04 untuk UI KaDep checklist.
+ * Legacy manual review: snapshot prasyarat lama untuk UI KaDep checklist.
  * Re-validasi `takingThesisCourse` tetap dilakukan di backend pada accept-time.
  */
 export type Ta04Requirements = {
@@ -34,14 +34,14 @@ export type PendingTitleReportRow = {
   supervisors: string;
   submittedAt: string;
   academicYear: { id: string; year: string | null; semester: string } | null;
-  /** P0-05/P1-11: 5 syarat checklist TA-04. */
+  /** Legacy manual review: deprecated prerequisite checklist. */
   requirements?: Ta04Requirements;
   finalScore?: number | null;
   isFinalized?: boolean;
   hasP2?: boolean;
 };
 
-/** F-5.2: baris thesis TA-04 accepted yang belum terhubung ke Formulir TA-04 batch resmi. */
+/** F-5.2: baris booking TA-01/TA-02 yang belum terhubung ke Formulir TA-04 batch resmi. */
 export type MissingTitleDocumentRow = {
   thesisId: string;
   title: string | null;
@@ -51,7 +51,7 @@ export type MissingTitleDocumentRow = {
   academicYear: { id: string; year: string | null; semester: string } | null;
 };
 
-/** Riwayat keputusan TA-04 (accepted/rejected) untuk dashboard KaDep. */
+/** Riwayat TA-04 awal + legacy accepted/rejected untuk dashboard KaDep. */
 export type TitleApprovalDocumentKind = 'batch' | 'legacy';
 
 export type TitleReportHistoryRow = {
@@ -60,7 +60,11 @@ export type TitleReportHistoryRow = {
   studentName: string;
   studentNim: string;
   supervisors: string;
-  proposalStatus: 'accepted' | 'rejected';
+  proposalStatus: 'accepted' | 'rejected' | 'submitted' | null;
+  isProposal?: boolean;
+  ta04AssignmentIssuedAt?: string | null;
+  activeAcademicYear?: { id: string; year: string | null; semester: string } | null;
+  activePromotedAt?: string | null;
   reviewedAt: string | null;
   reviewedByName: string | null;
   reviewNotes: string | null;
@@ -74,7 +78,13 @@ export type TitleReportHistoryRow = {
 export type StudentProposalThesis = {
   id: string;
   title: string | null;
+  isProposal?: boolean;
   proposalStatus: string | null;
+  ta04AssignmentIssuedAt?: string | null;
+  ta04AssignmentTitle?: string | null;
+  ta04AssignmentSupervisorNames?: string | null;
+  activeAcademicYearId?: string | null;
+  activePromotedAt?: string | null;
   queueReadiness?: {
     ready: boolean;
     block: string | null;
@@ -88,7 +98,7 @@ export type StudentProposalThesis = {
 } | null;
 
 /**
- * BR-23 (canon §5.13): Detail arsip Metopel mahasiswa pasca TA-04.
+ * BR-23 (canon §5.13): Detail arsip Metopel mahasiswa pasca promosi aktif.
  * 4 kategori: substansi awal, detail rubrik TA-03A, detail rubrik TA-03B, Formulir TA-04.
  */
 export type StudentArchiveAdvisorRequest = {
@@ -174,7 +184,7 @@ export const metopenTitleService = {
     return parseResponse(response);
   },
 
-  /** F-5.2: thesis TA-04 accepted yang belum terhubung ke Formulir TA-04 batch resmi. */
+  /** F-5.2: thesis aktif/TA-04 awal yang belum terhubung ke Formulir TA-04 batch resmi. */
   getMissingTitleDocuments: async (
     academicYearId?: string,
   ): Promise<ApiResponse<MissingTitleDocumentRow[]>> => {

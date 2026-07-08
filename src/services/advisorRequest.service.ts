@@ -279,39 +279,9 @@ async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
 export const advisorRequestService = {
   // Student
   getAccessState: async (): Promise<ApiResponse<AdvisorAccessState>> => {
-    // Disabled for now: backend route /advisorRequest/access-state is not available yet.
-    // const url = getApiUrl('/advisorRequest/access-state');
-    // const response = await apiRequest(url);
-    // return parseResponse<AdvisorAccessState>(response);
-    return {
-      success: true,
-      data: {
-        studentId: '',
-        thesisId: null,
-        thesisTitle: null,
-        thesisStatus: null,
-        eligibleMetopen: null,
-        hasExternalEligibility: false,
-        metopenEligibilitySource: null,
-        metopenEligibilityUpdatedAt: null,
-        metopenReadOnly: false,
-        gateConfigured: false,
-        gateOpen: false,
-        gates: [],
-        supervisors: [],
-        hasOfficialSupervisor: false,
-        hasBlockingRequest: false,
-        blockingRequest: null,
-        latestRequest: null,
-        requestStatus: null,
-        canBrowseCatalog: false,
-        canViewCatalog: false,
-        canSubmitRequest: false,
-        canOpenLogbook: false,
-        reason: 'Fitur pengajuan pembimbing belum tersedia.',
-        nextStep: '',
-      },
-    };
+    const url = getApiUrl('/advisorRequest/access-state');
+    const response = await apiRequest(url);
+    return parseResponse<AdvisorAccessState>(response);
   },
 
   getCatalog: async (academicYearId?: string): Promise<ApiResponse<LecturerCatalogItem[]>> => {

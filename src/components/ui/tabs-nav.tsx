@@ -69,8 +69,8 @@ export function LocalTabsNav({
   onTabChange: (value: string) => void;
 }) {
   return (
-    <div className="border-b mb-4">
-      <nav className="flex gap-2">
+    <div className="border-b mb-4 whitespace-nowrap overflow-x-auto overflow-y-hidden" style={{ scrollbarWidth: 'none' }}>
+      <nav className="flex min-w-max gap-2">
         {tabs.map((t) => {
           const isActive = activeTab === t.value;
           return (
@@ -78,7 +78,7 @@ export function LocalTabsNav({
               key={t.value}
               type="button"
               onClick={() => onTabChange(t.value)}
-              className={`px-3 py-2 text-sm rounded-t-md border-b-2 -mb-px ${
+              className={`shrink-0 px-3 py-2 text-sm rounded-t-md border-b-2 -mb-px ${
                 isActive
                   ? "border-primary text-primary font-medium"
                   : "border-transparent text-muted-foreground hover:text-foreground"

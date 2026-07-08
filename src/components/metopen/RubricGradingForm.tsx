@@ -503,7 +503,7 @@ export function RubricGradingForm({
                                                 </div>
                                                 <p>
                                                     {submitConfirmText ??
-                                                        "Setelah submit + cycle penilaian lengkap, nilai akan dikunci permanen (canon §5.7.2) dan memicu antrean TA-04 ke KaDep otomatis. Pastikan rubrik sudah benar."}
+                                                        "Setelah submit + cycle penilaian lengkap, nilai akan dikunci permanen (canon §5.7.2) dan dipakai untuk promosi aktif otomatis setelah KRS TA terkonfirmasi. Pastikan rubrik sudah benar."}
                                                 </p>
                                             </div>
                                         </AlertDialogDescription>

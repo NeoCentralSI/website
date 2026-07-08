@@ -43,8 +43,8 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
     <SidebarProvider>
       <AppSidebar data={sidebarData} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4 mx-4 mt-4 border-b border-gray-200">
-          <div className="flex items-center gap-2">
+        <header className="flex h-16 min-w-0 shrink-0 items-center gap-2 px-4 mx-4 mt-4 border-b border-gray-200">
+          <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger className="-ml-1 text-gray-500 hover:text-primary hover:bg-primary/5" />
             <Separator
               orientation="vertical"
@@ -73,12 +73,12 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
               <h1 className="text-lg font-semibold">{title}</h1>
             ) : null}
           </div>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-3">
             <ActiveAcademicYearBadge />
             <NotificationBell />
           </div>
         </header>
-        <div className="flex flex-1 flex-col mx-4 mb-4">
+        <div className="flex min-w-0 flex-1 flex-col mx-4 mb-4">
           <Suspense fallback={
             <div className="flex flex-1 items-center justify-center p-8">
               <Loading size="lg" text="Memuat halaman..." />

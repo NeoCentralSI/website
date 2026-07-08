@@ -67,10 +67,10 @@ import { PendingApprovalCard } from "@/components/thesis/PendingApprovalCard";
 import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 
 function getProposalStatusLabel(status: string | null | undefined) {
-    if (status === "accepted") return "TA-04 disahkan";
-    if (status === "submitted") return "Menunggu review KaDep";
+    if (status === "accepted") return "Beban aktif TA";
+    if (status === "submitted") return "Legacy review KaDep";
     if (status === "rejected") return "Ditolak KaDep";
-    return "Belum masuk antrean TA-04";
+    return "Belum promosi aktif";
 }
 
 export default function TugasAkhirOverviewPage() {
@@ -298,7 +298,7 @@ export default function TugasAkhirOverviewPage() {
         {
             key: "ta04",
             icon: Stamp,
-            title: "5. Pengesahan TA-04 oleh KaDep",
+            title: "5. Promosi Aktif Tugas Akhir",
             status: ta04StatusLabel,
             state: ta04Accepted
                 ? "completed"
@@ -308,7 +308,7 @@ export default function TugasAkhirOverviewPage() {
                         ? "pending"
                         : "active",
             description:
-                "KaDep mengesahkan TA-04 setelah pembimbing resmi + proposal final + TA-03A + TA-03B + SIA mengonfirmasi MK Tugas Akhir.",
+                "TA-04 awal diterbitkan saat booking disetujui. Fase Tugas Akhir penuh aktif otomatis setelah TA-03 final dan SIA mengonfirmasi MK Tugas Akhir.",
         },
     ];
 
@@ -416,8 +416,8 @@ export default function TugasAkhirOverviewPage() {
                         </div>
                     )}
 
-                    {/* P1-14 (canon §5.10): Banner sukses TA-04 disahkan dengan CTA download SK PDF.
-                        Tampil hanya saat proposalStatus = "accepted" (KaDep sudah sahkan) dan thesis aktif. */}
+                    {/* P1-14 (canon §5.10): Banner sukses promosi aktif dengan CTA download SK PDF.
+                        Tampil hanya saat proposalStatus = "accepted" dan thesis aktif. */}
                     {isThesisActive && ta04Accepted && (
                         <Card className="w-full border-emerald-200 bg-emerald-50/70">
                             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -708,7 +708,7 @@ export default function TugasAkhirOverviewPage() {
                                         <div className="rounded-lg border border-blue-200 bg-blue-50/70 p-4 text-sm text-blue-900">
                                             <p className="font-medium">Catatan transisi</p>
                                             <p className="mt-1 text-blue-800">
-                                                Tugas atau milestone Metopen tidak lagi menjadi syarat operasional. Jalur aktif: submit proposal final, penilaian TA-03A &amp; TA-03B paralel, lalu TA-04 setelah SIA mengonfirmasi pengambilan mata kuliah Tugas Akhir. Bimbingan dilakukan secara berkala (kualitatif) — minimal 8 sesi (TA-06) baru berlaku di Seminar Hasil, bukan di SIMPTA.
+                                                Tugas atau milestone Metopen tidak lagi menjadi syarat operasional. TA-04 awal terbit setelah booking pembimbing disetujui; fase Tugas Akhir penuh aktif otomatis setelah TA-03A/TA-03B final dan SIA mengonfirmasi MK Tugas Akhir. Bimbingan dilakukan secara berkala (kualitatif) — minimal 8 sesi (TA-06) baru berlaku di Seminar Hasil, bukan di SIMPTA.
                                             </p>
                                         </div>
                                     </CardContent>

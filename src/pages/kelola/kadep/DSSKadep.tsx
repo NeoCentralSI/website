@@ -39,7 +39,7 @@ export default function DSSKadep() {
     const [loadingAlts, setLoadingAlts] = useState(false);
     const [kadepNotes, setKadepNotes] = useState('');
     const initialTab: TabKey = location.pathname.endsWith('/pengesahan-judul')
-        ? 'titles'
+        ? 'history'
         : 'ta01_overquota';
     const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
     const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; action: ConfirmAction; targetId?: string; targetName?: string }>({
@@ -86,8 +86,8 @@ export default function DSSKadep() {
         ta01_overquota: 'TA-01 Overquota',
         ta02_penetapan: 'TA-02 Penetapan Dosen',
         assignment: 'Finalisasi Booking',
-        titles: 'Pengesahan TA-04',
-        history: 'Riwayat Pengesahan',
+        titles: 'Legacy Review TA-04',
+        history: 'Batch TA-04 Awal',
         supervisor2: 'Pembimbing 2',
     };
 
@@ -136,7 +136,7 @@ export default function DSSKadep() {
             metopenTitleService.reviewTitleReport(thesisId, { action, notes }),
         onSuccess: (_data, vars) => {
             if (vars.action === 'accept') {
-                toast.success('Judul TA disahkan. Mahasiswa & pembimbing telah dinotifikasi. Mahasiswa masuk fase Tugas Akhir; Formulir TA-04 batch periode perlu difinalisasi di tab Riwayat.');
+                toast.success('Judul TA disahkan lewat jalur legacy. Happy path baru memakai batch TA-04 awal dan promosi otomatis.');
             } else {
                 toast.success('Judul TA ditolak. Mahasiswa telah dinotifikasi dengan catatan revisi.');
             }
@@ -151,7 +151,7 @@ export default function DSSKadep() {
         },
         onError: (err: Error) => toast.error(err.message),
     });
-    // Riwayat keputusan TA-04 (accepted/rejected) antar-periode.
+    // Riwayat TA-04 awal + legacy accepted/rejected antar-periode.
     // staleTime:0 + refetchOnMount:'always' supaya switch tab "Riwayat" langsung
     // refetch (mencegah stale cache ketika KaDep baru saja accept di tab "titles").
     const {
@@ -204,24 +204,23 @@ export default function DSSKadep() {
         mutationFn: (academicYearId: string) => advisorRequestService.finalizeBatchTA04(academicYearId),
         onSuccess: (res) => {
             const data = res.data;
-            toast.success(`Formulir TA-04 difinalisasi (${data.thesisCount} mahasiswa, ${data.academicYear}). Dokumen resmi terhubung ke seluruh thesis periode ini.`);
+            toast.success(`Formulir TA-04 awal difinalisasi (${data.thesisCount} mahasiswa, ${data.academicYear}). Dokumen terhubung tanpa mengubah beban aktif dosen.`);
             queryClient.invalidateQueries({ queryKey: ['kadep-title-report-history'] });
             setFinalizeBatchTarget(null);
         },
         onError: (err: Error) => toast.error(err.message || 'Gagal finalisasi Formulir TA-04.'),
     });
     // Status finalisasi batch per academic year: sudah sinkron jika semua thesis
-    // accepted DAN batch-eligible di periode itu menunjuk ke dokumen batch resmi
-    // yang sama. Thesis accepted tapi tidak batch-eligible (data legacy/tidak
-    // lengkap) TIDAK dimasukkan ke dokumen batch — hanya yang eligible.
+    // booking/TA-04-issued dan batch-eligible di periode itu menunjuk ke dokumen
+    // batch resmi yang sama.
     const batchStatusByAcademicYear = historyAcademicYears.map((ay) => {
         const rows = titleReportHistory.filter(
-            (r) => r.academicYear?.id === ay.id && r.proposalStatus === 'accepted',
+            (r) => r.academicYear?.id === ay.id,
         );
-        const acceptedCount = rows.length;
+        const assignmentCount = rows.length;
         const eligibleRows = rows.filter((r) => r.ta04BatchEligible !== false);
         const batchEligibleCount = eligibleRows.length;
-        const ineligibleCount = acceptedCount - batchEligibleCount;
+        const ineligibleCount = assignmentCount - batchEligibleCount;
         const batchRows = eligibleRows.filter((r) => r.documentKind === 'batch');
         const finalizedCount = batchRows.length;
         const notLinkedCount = eligibleRows.filter((r) => r.documentKind !== 'batch').length;
@@ -237,7 +236,7 @@ export default function DSSKadep() {
         return {
             academicYear: ay,
             label: `${ay.semester === 'genap' ? 'Genap' : 'Ganjil'} ${ay.year ?? '-'}`,
-            acceptedCount,
+            assignmentCount,
             batchEligibleCount,
             ineligibleCount,
             finalizedCount,
@@ -247,17 +246,43 @@ export default function DSSKadep() {
             isFinalized,
             hasPartialFinalization: finalizedCount > 0 && !isFinalized,
         };
-    }).filter((s) => s.acceptedCount > 0);
+    }).filter((s) => s.assignmentCount > 0);
 
     const getHistoryDocumentLabel = (row: TitleReportHistoryRow) => {
         if (row.documentKind === 'batch') return 'Unduh Formulir TA-04';
         return 'Belum Tersedia';
     };
 
+    const getHistoryStatus = (row: TitleReportHistoryRow) => {
+        if (row.activePromotedAt || row.proposalStatus === 'accepted') {
+            return {
+                label: 'Beban aktif TA',
+                className: 'bg-emerald-50 text-emerald-700 border-emerald-200 text-xs',
+            };
+        }
+        if (row.proposalStatus === 'rejected') {
+            return {
+                label: 'Ditolak',
+                className: 'bg-red-50 text-red-700 border-red-200 text-xs',
+            };
+        }
+        if (row.ta04AssignmentIssuedAt) {
+            return {
+                label: 'TA-04 terbit, booking',
+                className: 'bg-blue-50 text-blue-700 border-blue-200 text-xs',
+            };
+        }
+        return {
+            label: 'Booking belum batch',
+            className: 'bg-muted text-muted-foreground border-border text-xs',
+        };
+    };
+
     const ta04BatchBlockLabel: Record<string, string> = {
         proposal_final_not_submitted: 'Proposal final belum disubmit',
         ta_course_not_confirmed: 'SIA belum konfirmasi MK Tugas Akhir',
         no_active_pembimbing_1: 'Tidak ada Pembimbing 1 aktif',
+        booking_not_approved: 'Booking pembimbing belum disetujui',
         missing_scores: 'Nilai TA-03 belum lengkap',
         scores_not_finalized: 'Nilai TA-03 belum final',
         metopel_auto_zeroed: 'Gagal presensi Metopel (auto-zero)',
@@ -323,12 +348,13 @@ export default function DSSKadep() {
         },
     ];
 
-    // P0-04: deep-link path mapping (existing legacy: /pembimbing → ta01_overquota,
-    // /pengesahan-judul → titles). Auto-flip tab logic dihapus per P1-05 agar
+    // P0-04: deep-link path mapping. /pengesahan-judul now opens the v2.6
+    // early TA-04 batch surface; legacy manual review remains a separate tab.
+    // Auto-flip tab logic dihapus per P1-05 agar
     // tab tidak berpindah sendiri ketika antrean kosong (perilaku lama membingungkan).
     useEffect(() => {
         if (location.pathname.endsWith('/pengesahan-judul')) {
-            setActiveTab('titles');
+            setActiveTab('history');
         } else if (location.pathname.endsWith('/pembimbing')) {
             setActiveTab('ta01_overquota');
         }
@@ -357,7 +383,7 @@ export default function DSSKadep() {
         <div className="p-6 space-y-6">
             <div>
                 <h1 className="text-base font-semibold tracking-tight sm:text-lg">Kelola TA-01 s.d. TA-04</h1>
-                <p className="text-xs text-muted-foreground sm:text-sm">{tabLabels[activeTab]} — pisahkan flow TA-01 (overquota) vs TA-02 (penetapan dosen) vs Finalisasi Booking vs Pengesahan TA-04.</p>
+                <p className="text-xs text-muted-foreground sm:text-sm">{tabLabels[activeTab]} — pisahkan flow TA-01 (overquota), TA-02 (penetapan dosen), finalisasi booking, batch TA-04 awal, dan promosi otomatis beban aktif.</p>
             </div>
 
             <LocalTabsNav tabs={tabItems} activeTab={activeTab} onTabChange={(v) => setActiveTab(v as TabKey)} />
@@ -554,9 +580,9 @@ export default function DSSKadep() {
                 <div className="space-y-4 mt-4">
                     <div className="flex items-center justify-between gap-3">
                         <div>
-                            <h2 className="text-sm font-semibold">Riwayat Pengesahan TA-04</h2>
+                            <h2 className="text-sm font-semibold">Batch TA-04 Awal</h2>
                             <p className="text-xs text-muted-foreground">
-                                Daftar keputusan TA-04 (disahkan/ditolak) antar-periode.
+                                Finalisasi atau refresh SK penugasan TA-04 awal untuk booking TA-01/TA-02; promosi beban aktif berjalan otomatis setelah TA-03 final dan KRS TA.
                             </p>
                         </div>
                         <Select
@@ -584,10 +610,10 @@ export default function DSSKadep() {
                             <CardHeader className="pb-2">
                                 <CardTitle className="flex items-center gap-2 text-sm text-blue-900">
                                     <FileText className="h-4 w-4" />
-                                    Formulir TA-04 per Periode
+                                    Formulir TA-04 Awal per Periode
                                 </CardTitle>
                                 <CardDescription className="text-xs">
-                                    Panduan TA-04 memakai format tabel batch per periode. Dokumen resmi sistem hanya Formulir TA-04 batch; mahasiswa dapat mengunduhnya dari arsip Metode Penelitian setelah KaDep memfinalisasi batch periode.
+                                    Dokumen ini adalah SK penugasan awal. Mahasiswa tetap berada di fase Metopel dan kuota dosen tetap booking sampai sistem mempromosikan otomatis dari TA-03 final + snapshot KRS TA.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-2">
@@ -599,7 +625,7 @@ export default function DSSKadep() {
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium">{s.label}</p>
                                             <p className="text-xs text-muted-foreground">
-                                                {s.batchEligibleCount} siap batch dari {s.acceptedCount} disahkan
+                                                {s.batchEligibleCount} siap batch dari {s.assignmentCount} booking/penugasan
                                                 {s.ineligibleCount > 0 && (
                                                     <span className="text-amber-600"> ({s.ineligibleCount} tidak memenuhi syarat batch)</span>
                                                 )}
@@ -612,7 +638,7 @@ export default function DSSKadep() {
                                             <div className="mt-1 flex flex-wrap items-center gap-1.5">
                                                 {s.isFinalized ? (
                                                     <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-                                                        <CheckCircle2 className="h-3 w-3 mr-1" /> Formulir TA-04 tersedia
+                                                        <CheckCircle2 className="h-3 w-3 mr-1" /> Formulir TA-04 awal tersedia
                                                     </Badge>
                                                 ) : s.hasPartialFinalization ? (
                                                     <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
@@ -620,7 +646,7 @@ export default function DSSKadep() {
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[10px]">
-                                                        Belum difinalisasi batch
+                                                        Belum difinalisasi batch awal
                                                     </Badge>
                                                 )}
                                                 {s.ineligibleCount > 0 && (
@@ -667,7 +693,7 @@ export default function DSSKadep() {
                                                     ? 'Batch Sudah Sinkron'
                                                     : s.hasPartialFinalization
                                                         ? 'Perbarui Formulir TA-04'
-                                                        : 'Finalisasi Formulir TA-04'}
+                                                        : 'Finalisasi TA-04 Awal'}
                                             </Button>
                                         </div>
                                     </div>
@@ -678,16 +704,18 @@ export default function DSSKadep() {
 
                     {isLoadingHistory ? (
                         <div className="flex h-40 items-center justify-center">
-                            <Loading text="Memuat riwayat pengesahan..." />
+                            <Loading text="Memuat batch TA-04 awal..." />
                         </div>
                     ) : filteredHistory.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                             <Stamp className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                            <p>Belum ada riwayat pengesahan TA-04{historyAcademicYearFilter !== 'all' ? ' untuk periode ini' : ''}.</p>
+                            <p>Belum ada batch TA-04 awal{historyAcademicYearFilter !== 'all' ? ' untuk periode ini' : ''}.</p>
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {filteredHistory.map((row: TitleReportHistoryRow) => (
+                            {filteredHistory.map((row: TitleReportHistoryRow) => {
+                                const historyStatus = getHistoryStatus(row);
+                                return (
                                 <Card key={row.thesisId}>
                                     <CardContent className="space-y-3 p-4">
                                         <div className="flex items-center justify-between">
@@ -698,15 +726,11 @@ export default function DSSKadep() {
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 <Badge
                                                     variant="outline"
-                                                    className={
-                                                        row.proposalStatus === 'accepted'
-                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-xs'
-                                                            : 'bg-red-50 text-red-700 border-red-200 text-xs'
-                                                    }
+                                                    className={historyStatus.className}
                                                 >
-                                                    {row.proposalStatus === 'accepted' ? 'Disahkan' : 'Ditolak'}
+                                                    {historyStatus.label}
                                                 </Badge>
-                                                {row.proposalStatus === 'accepted' && row.ta04BatchEligible === false && (
+                                                {row.ta04BatchEligible === false && (
                                                     <Badge
                                                         variant="outline"
                                                         className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]"
@@ -732,7 +756,7 @@ export default function DSSKadep() {
                                         </div>
                                         <div className="grid gap-2 text-xs sm:grid-cols-2">
                                             <div>
-                                                <p className="text-muted-foreground">Tanggal keputusan</p>
+                                                <p className="text-muted-foreground">Tanggal TA-04 awal</p>
                                                 <p className="font-medium">{row.reviewedAt ? formatDateId(row.reviewedAt) : '-'}</p>
                                             </div>
                                             <div>
@@ -746,7 +770,7 @@ export default function DSSKadep() {
                                                 <p className="text-xs bg-muted/30 rounded-md p-2 whitespace-pre-wrap">{row.reviewNotes}</p>
                                             </div>
                                         )}
-                                        {row.proposalStatus === 'accepted' && (
+                                        {row.ta04AssignmentIssuedAt && (
                                             <div className="flex flex-col gap-2 rounded-md border bg-background p-2.5 sm:flex-row sm:items-center sm:justify-between">
                                                 <div className="min-w-0">
                                                     {row.ta04BatchEligible === false ? (
@@ -758,21 +782,21 @@ export default function DSSKadep() {
                                                                 {row.ta04BatchBlock
                                                                     ? `Alasan: ${ta04BatchBlockLabel[row.ta04BatchBlock] ?? row.ta04BatchBlock}. `
                                                                     : 'Data thesis tidak lengkap. '}
-                                                                Thesis ini tetap berstatus disahkan, tetapi tidak dimasukkan ke dokumen batch periode karena tidak memenuhi syarat kelengkapan data.
+                                                                Thesis ini tidak dimasukkan ke dokumen batch periode karena belum memenuhi syarat booking batch.
                                                             </p>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <p className="text-xs font-medium">
                                                                 {row.documentKind === 'batch'
-                                                                    ? 'Termasuk Formulir TA-04 periode'
+                                                                    ? 'Termasuk Formulir TA-04 awal periode'
                                                                     : row.documentKind === 'legacy'
                                                                         ? 'Perlu perbarui Formulir TA-04 batch'
                                                                         : 'Belum masuk Formulir TA-04 batch'}
                                                             </p>
                                                             <p className="mt-0.5 text-xs text-muted-foreground">
                                                                 {row.documentKind === 'batch'
-                                                                    ? 'Unduhan mahasiswa dan KaDep mengarah ke Formulir TA-04 periode.'
+                                                                    ? 'Unduhan mahasiswa dan KaDep mengarah ke Formulir TA-04 awal periode.'
                                                                     : row.documentKind === 'legacy'
                                                                         ? 'Ada dokumen lama non-batch pada data, tetapi output resmi harus diterbitkan ulang lewat finalisasi batch.'
                                                                         : 'Finalisasi batch periode diperlukan sebelum mahasiswa dapat mengunduh Formulir TA-04.'}
@@ -807,7 +831,8 @@ export default function DSSKadep() {
                                         )}
                                     </CardContent>
                                 </Card>
-                            ))}
+                            );
+                            })}
                         </div>
                     )}
                 </div>
@@ -817,9 +842,9 @@ export default function DSSKadep() {
                 <div className="space-y-4 mt-4">
                     <div className="flex items-center justify-between gap-3">
                         <div>
-                            <h2 className="text-sm font-semibold">Antrean Pengesahan TA-04</h2>
+                            <h2 className="text-sm font-semibold">Legacy Review TA-04 Manual</h2>
                             <p className="text-xs text-muted-foreground">
-                                Data diperbarui otomatis setiap 30 detik.
+                                Jalur lama dipertahankan untuk kompatibilitas data. Happy path baru ada di tab Batch TA-04 Awal.
                             </p>
                         </div>
                         <Button
@@ -838,18 +863,18 @@ export default function DSSKadep() {
                     </div>
                 {isLoadingTitleReports ? (
                     <div className="flex h-40 items-center justify-center">
-                        <Loading size="lg" text="Memuat antrean pengesahan TA-04..." />
+                        <Loading size="lg" text="Memuat antrean legacy TA-04..." />
                     </div>
                 ) : titleReports.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                         <Stamp className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                        <p>Tidak ada pengesahan TA-04 menunggu review</p>
+                        <p>Tidak ada review TA-04 manual menunggu keputusan</p>
                     </div>
                 ) : (
                     <div className="space-y-3">
                         <Card className="border-blue-200 bg-blue-50/50">
                             <CardContent className="p-3 text-xs text-blue-900">
-                                Pengesahan TA-04 (canon §5.8 + BR-18). Pastikan semua 5 syarat tercapai sebelum sahkan. Sistem akan re-cek <strong>taking_thesis_course</strong> dari SIA pada saat Anda klik Sahkan — bila SIA berubah, transaksi akan ditolak.
+                                Jalur legacy ini mempromosikan mahasiswa secara manual. Untuk proses baru, finalisasi TA-04 awal dilakukan pada tab Batch TA-04 Awal dan beban aktif dipromosikan otomatis oleh SIA sync.
                             </CardContent>
                         </Card>
                         {titleReports.map((report: PendingTitleReportRow) => {
@@ -892,7 +917,7 @@ export default function DSSKadep() {
                                 {
                                     label: '5. SIA mengonfirmasi MK Tugas Akhir',
                                     met: r.takingThesisCourse,
-                                    hint: 'Snapshot students.taking_thesis_course = true. Akan di-revalidasi otomatis saat Anda klik Sahkan.',
+                                    hint: 'Snapshot students.taking_thesis_course = true. Jalur legacy akan re-validasi saat klik Sahkan.',
                                 },
                             ];
                             return (
@@ -926,7 +951,7 @@ export default function DSSKadep() {
                                             )}
                                         </div>
 
-                                        {/* P0-05 + P1-11: Checklist 5 syarat TA-04 visual */}
+                                        {/* Legacy manual-review checklist. Happy path v2.6 is early TA-04 batch. */}
                                         <div className="space-y-1.5 rounded-md border bg-background p-3">
                                             {checklistRows.map((row) => (
                                                 <div key={row.label} className="flex items-start gap-2 text-xs">
@@ -956,7 +981,7 @@ export default function DSSKadep() {
                                                 disabled={!allMet}
                                             >
                                                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                                                Sahkan TA-04
+                                                Sahkan Legacy
                                             </Button>
                                             <Button
                                                 size="sm"
@@ -972,7 +997,7 @@ export default function DSSKadep() {
                                             </Button>
                                             {!allMet && (
                                                 <p className="self-center text-xs text-muted-foreground">
-                                                    Tombol Sahkan aktif setelah semua 5 syarat terpenuhi.
+                                                    Tombol legacy aktif setelah seluruh prasyarat lama terpenuhi.
                                                 </p>
                                             )}
                                         </div>
@@ -988,19 +1013,18 @@ export default function DSSKadep() {
             <Dialog open={!!titleReviewTarget} onOpenChange={(open) => !open && setTitleReviewTarget(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Sahkan Pengesahan TA-04</DialogTitle>
+                        <DialogTitle>Sahkan Manual Legacy</DialogTitle>
                         <DialogDescription>
-                            Anda akan mengesahkan judul TA dan mahasiswa masuk fase Tugas Akhir penuh. Formulir TA-04 resmi baru dapat diunduh setelah batch periode difinalisasi pada tab riwayat.
+                            Jalur deprecated ini hanya dipertahankan untuk data lama. Happy path v2.6 adalah finalisasi batch TA-04 awal dan promosi otomatis setelah TA-03 final + KRS TA.
                         </DialogDescription>
                     </DialogHeader>
-                    {/* P0-05 (BR-18): tampilkan ringkasan 5 syarat termasuk warning re-validasi
-                        taking_thesis_course pada saat klik Sahkan. */}
+                    {/* Legacy checklist, termasuk revalidasi taking_thesis_course pada saat klik. */}
                     {titleReviewTarget && (() => {
                         const target = titleReports.find((r) => r.thesisId === titleReviewTarget);
                         const r = target?.requirements;
                         return (
                             <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1.5">
-                                <p className="font-medium text-foreground">Verifikasi 5 syarat TA-04 (canon §5.8):</p>
+                                <p className="font-medium text-foreground">Verifikasi prasyarat jalur legacy:</p>
                                 <ul className="space-y-1">
                                     <li className={r?.supervisorAssigned ? 'text-emerald-700' : 'text-red-700'}>
                                         {r?.supervisorAssigned ? '✓' : '✗'} Pembimbing resmi
@@ -1015,7 +1039,7 @@ export default function DSSKadep() {
                                         {r?.ta03bComplete ? '✓' : '✗'} TA-03B (Koordinator)
                                     </li>
                                     <li className={r?.takingThesisCourse ? 'text-emerald-700' : 'text-red-700'}>
-                                        {r?.takingThesisCourse ? '✓' : '✗'} MK Tugas Akhir SIA <span className="text-muted-foreground">(akan di-revalidasi saat klik Sahkan)</span>
+                                        {r?.takingThesisCourse ? '✓' : '✗'} MK Tugas Akhir SIA <span className="text-muted-foreground">(revalidasi legacy)</span>
                                     </li>
                                 </ul>
                             </div>
@@ -1048,7 +1072,7 @@ export default function DSSKadep() {
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Tolak Pengesahan TA-04 / Minta Revisi</AlertDialogTitle>
+                        <AlertDialogTitle>Tolak TA-04 Manual Legacy / Minta Revisi</AlertDialogTitle>
                         <AlertDialogDescription>
                             Mahasiswa akan dinotifikasi (in-app + push) dengan catatan di bawah. Proposal masuk status <span className="font-medium">rejected</span>; mahasiswa dapat merevisi proposal sesuai catatan lalu pembimbing menyetujui revisi untuk masuk antrean kembali (canon §5.8.2).
                         </AlertDialogDescription>
@@ -1146,15 +1170,15 @@ export default function DSSKadep() {
                 </DialogContent>
             </Dialog>
 
-            {/* Konfirmasi finalisasi Formulir TA-04 per periode.
+            {/* Konfirmasi finalisasi Formulir TA-04 awal per periode.
                 Finalisasi menerbitkan satu dokumen batch resmi (format tabel panduan)
-                dan mengaitkannya ke seluruh thesis accepted di periode itu. */}
+                dan mengaitkannya ke seluruh booking TA-01/TA-02 yang valid. */}
             <AlertDialog open={!!finalizeBatchTarget} onOpenChange={(open) => !open && setFinalizeBatchTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Finalisasi Formulir TA-04 {finalizeBatchTarget?.label}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Anda akan menerbitkan satu Formulir TA-04 batch untuk {finalizeBatchTarget?.thesisCount} mahasiswa yang sudah disahkan dan memenuhi syarat kelengkapan data pada periode {finalizeBatchTarget?.label}. Thesis accepted dengan data tidak lengkap tidak dimasukkan ke dokumen batch. Aksi ini dapat diulang untuk memperbarui batch jika ada mahasiswa baru disahkan kemudian.
+                            Anda akan menerbitkan satu Formulir TA-04 awal untuk {finalizeBatchTarget?.thesisCount} mahasiswa dengan booking TA-01/TA-02 yang sudah disetujui pada periode {finalizeBatchTarget?.label}. Snapshot judul dan pembimbing lama tetap dipakai, sedangkan mahasiswa baru dapat ditambahkan lewat refresh batch.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

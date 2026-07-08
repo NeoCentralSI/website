@@ -428,11 +428,11 @@ export const API_CONFIG = {
       ME_PROPOSAL_APPROVAL: '/metopen/me/proposal-approval',
       /** Mahasiswa: snapshot eligibility seminar tanpa side effect sync. */
       ME_SEMINAR_ELIGIBILITY: '/metopen/me/seminar-eligibility',
-      /** Mahasiswa: sinkron antre KaDep + ringkasan status. */
+      /** Mahasiswa: sinkron promosi/release TA-04 awal + ringkasan status. */
       ME_PROPOSAL_QUEUE_SYNC: '/metopen/me/proposal-queue/sync',
       /** Mahasiswa: riwayat penilaian TA-03 sejak skor tersedia, termasuk sebelum TA-04. */
       ME_ASSESSMENT_HISTORY: '/metopen/me/assessment-history',
-      /** BR-23: Arsip Metopel mahasiswa pasca TA-04 — read-only single source of truth. */
+      /** BR-23: Arsip Metopel mahasiswa pasca promosi aktif — read-only single source of truth. */
       ME_ARCHIVE: '/metopen/me/archive',
       /** FR-ARC-05: Mahasiswa unduh Formulir TA-04 PDF (stream terautentikasi). */
       ME_TITLE_APPROVAL_DOCUMENT: '/metopen/me/archive/title-approval-document',
@@ -443,12 +443,12 @@ export const API_CONFIG = {
           : '/metopen/kadep/title-reports/pending',
       KADEP_TITLE_REPORT_REVIEW: (thesisId: string) =>
         `/metopen/kadep/thesis/${thesisId}/title-report/review`,
-      /** Legacy: thesis TA-04 accepted yang belum terhubung ke Formulir TA-04 batch resmi. */
+      /** Legacy: thesis aktif/TA-04 awal yang belum terhubung ke Formulir TA-04 batch resmi. */
       KADEP_TITLE_REPORTS_MISSING_DOCUMENT: (academicYearId?: string) =>
         academicYearId
           ? `/metopen/kadep/title-reports/missing-document?academicYearId=${academicYearId}`
           : '/metopen/kadep/title-reports/missing-document',
-      /** Riwayat keputusan TA-04 (accepted/rejected) antar-periode. */
+      /** Riwayat TA-04 awal + legacy accepted/rejected antar-periode. */
       KADEP_TITLE_REPORTS_HISTORY: (academicYearId?: string) =>
         academicYearId
           ? `/metopen/kadep/title-reports/history?academicYearId=${academicYearId}`
