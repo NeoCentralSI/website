@@ -14,6 +14,7 @@ export interface AssessmentCriteriaItem {
   maxScore: number | null;
   displayOrder: number;
   description?: string;
+  role?: 'supervisor' | 'default';
   metopenCpmk: { id: string; code: string; description: string } | null;
   metopenAssessmentRubrics: AssessmentRubricItem[];
 }

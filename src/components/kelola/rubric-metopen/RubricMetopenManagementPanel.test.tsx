@@ -3,19 +3,15 @@ import { vi } from 'vitest';
 
 import { RubricMetopenManagementPanel } from './RubricMetopenManagementPanel';
 import { useRubricMetopen } from '@/hooks/master-data/useRubricMetopen';
-import { useCpmk } from '@/hooks/master-data/useCpmk';
 
 vi.mock('@/hooks/master-data/useRubricMetopen', () => ({
     useRubricMetopen: vi.fn(),
 }));
 
-vi.mock('@/hooks/master-data/useCpmk', () => ({
-    useCpmk: vi.fn(),
-}));
-
 function mockHookDefaults(overrides = {}) {
     vi.mocked(useRubricMetopen).mockReturnValue({
         cpmks: [],
+        allMetopenCpmks: [],
         weightSummary: {
             totalScore: 0,
             isComplete: false,
@@ -26,6 +22,12 @@ function mockHookDefaults(overrides = {}) {
         isWeightLoading: false,
         isFetching: false,
         refetch: vi.fn(),
+        createCpmk: vi.fn(),
+        isCreatingCpmk: false,
+        updateCpmk: vi.fn(),
+        isUpdatingCpmk: false,
+        deleteCpmkMaster: vi.fn(),
+        isDeletingCpmkMaster: false,
         createCriteria: vi.fn(),
         updateCriteria: vi.fn(),
         deleteCriteria: vi.fn(),
@@ -40,19 +42,10 @@ function mockHookDefaults(overrides = {}) {
         reorderRubrics: vi.fn(),
         ...overrides,
     } as unknown as ReturnType<typeof useRubricMetopen>);
+}
 
-    vi.mocked(useCpmk).mockReturnValue({
-        cpmks: [],
-        isLoading: false,
-        isFetching: false,
-        refetch: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        remove: vi.fn(),
-        isCreating: false,
-        isUpdating: false,
-        isDeleting: false,
-    } as unknown as ReturnType<typeof useCpmk>);
+function openConfigTab() {
+    fireEvent.click(screen.getByRole('button', { name: /2\. Konfigurasi Rubrik/i }));
 }
 
 describe('RubricMetopenManagementPanel', () => {
@@ -61,15 +54,28 @@ describe('RubricMetopenManagementPanel', () => {
         mockHookDefaults();
     });
 
-    it('renders both role tabs', () => {
+    it('starts on katalog tab with clear next-step tabs', () => {
         render(<RubricMetopenManagementPanel />);
 
-        expect(screen.getByText('Pembimbing (TA-03A)')).toBeInTheDocument();
-        expect(screen.getByText('Koordinator Metopen (TA-03B)')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /1\. Katalog CPMK/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /2\. Konfigurasi Rubrik/i })).toBeInTheDocument();
+        expect(screen.getByText('Daftar capaian pembelajaran')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^Tambah CPMK$/i })).toBeInTheDocument();
     });
 
-    it('shows weight banner with correct target for supervisor (75)', () => {
+    it('shows role tabs and weight status on konfigurasi tab', () => {
         mockHookDefaults({
+            allMetopenCpmks: [
+                {
+                    id: 'c1',
+                    code: 'CPMK-01',
+                    description: 'Presentasi proposal',
+                    academicYearId: null,
+                    createdAt: '',
+                    updatedAt: '',
+                    _count: { metopenAssessmentCriterias: 0 },
+                },
+            ],
             weightSummary: {
                 totalScore: 55,
                 isComplete: true,
@@ -81,28 +87,87 @@ describe('RubricMetopenManagementPanel', () => {
         });
 
         render(<RubricMetopenManagementPanel />);
+        openConfigTab();
 
-        expect(screen.getByText('80 / 100')).toBeInTheDocument();
-        expect(screen.getByText('55 / 75')).toBeInTheDocument();
+        expect(screen.getByText('Pembimbing (TA-03A)')).toBeInTheDocument();
+        expect(screen.getByText('Koordinator Metopen (TA-03B)')).toBeInTheDocument();
+        expect(screen.getByText('80')).toBeInTheDocument();
+        expect(screen.getByText('/ 100')).toBeInTheDocument();
+        expect(screen.getByText('55')).toBeInTheDocument();
+        expect(screen.getByText('/ 75')).toBeInTheDocument();
     });
 
-    it('switches to TA-03B tab and re-initializes hook with default role', () => {
+    it('switches to TA-03B and re-initializes hook with default role', () => {
+        mockHookDefaults({
+            allMetopenCpmks: [
+                {
+                    id: 'c1',
+                    code: 'CPMK-01',
+                    description: 'Presentasi proposal',
+                    academicYearId: null,
+                    createdAt: '',
+                    updatedAt: '',
+                    _count: { metopenAssessmentCriterias: 0 },
+                },
+            ],
+        });
+
         render(<RubricMetopenManagementPanel />);
+        openConfigTab();
 
         fireEvent.click(screen.getByText('Koordinator Metopen (TA-03B)'));
 
         expect(useRubricMetopen).toHaveBeenCalledWith('default');
     });
 
-    it('shows empty state for CPMK Metode Penelitian', () => {
+    it('guides user to katalog when config is empty and catalog is empty', () => {
         render(<RubricMetopenManagementPanel />);
+        openConfigTab();
 
-        expect(screen.getByText(/Belum ada CPMK bertipe Metode Penelitian/)).toBeInTheDocument();
+        expect(screen.getByText(/Katalog masih kosong/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Buka Katalog CPMK/i })).toBeInTheDocument();
+        expect(screen.queryByText(/tab Metodologi Penelitian/i)).not.toBeInTheDocument();
     });
 
-    it('shows "Tambah CPMK" button', () => {
+    it('shows Masukkan CPMK on konfigurasi when catalog has items', () => {
+        mockHookDefaults({
+            allMetopenCpmks: [
+                {
+                    id: 'c1',
+                    code: 'CPMK-01',
+                    description: 'Presentasi proposal',
+                    academicYearId: null,
+                    createdAt: '',
+                    updatedAt: '',
+                    _count: { metopenAssessmentCriterias: 0 },
+                },
+            ],
+        });
+
+        render(<RubricMetopenManagementPanel />);
+        openConfigTab();
+
+        expect(screen.getByRole('button', { name: /Masukkan CPMK/i })).toBeInTheDocument();
+    });
+
+    it('marks invalid catalog codes for cleanup', () => {
+        mockHookDefaults({
+            allMetopenCpmks: [
+                {
+                    id: 'junk',
+                    code: 'ssa',
+                    description: 's',
+                    academicYearId: null,
+                    createdAt: '',
+                    updatedAt: '',
+                    _count: { metopenAssessmentCriterias: 0 },
+                },
+            ],
+        });
+
         render(<RubricMetopenManagementPanel />);
 
-        expect(screen.getByText('Tambah CPMK')).toBeInTheDocument();
+        expect(screen.getByText('ssa')).toBeInTheDocument();
+        expect(screen.getByText('Perlu diperbaiki')).toBeInTheDocument();
     });
 });

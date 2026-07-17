@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload } from "lucide-react";
 
@@ -18,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricAction } from "@/components/metopen/MetricAction";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
@@ -32,6 +34,7 @@ function formatPercent(value?: number | null) {
 
 export function MetopenAttendanceUploadCard() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   // F-4.2: simpan hasil pratinjau + buka dialog konfirmasi yang menampilkan dampak.
@@ -147,22 +150,33 @@ export function MetopenAttendanceUploadCard() {
               <p className="text-xs text-muted-foreground">Threshold</p>
               <p className="font-medium">{formatPercent(latestImport.thresholdPercent)}</p>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Matched</p>
-              <p className="font-medium">{latestImport.matchedRows} / {latestImport.totalRows}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Eligible</p>
-              <p className="font-medium text-emerald-700">{latestImport.eligibleRows}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Kurang 75%</p>
-              <p className="font-medium text-destructive">{latestImport.ineligibleRows}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Auto-zero</p>
-              <p className="font-medium">{latestImport.autoZeroedCount}</p>
-            </div>
+            <MetricAction
+              label="Matched"
+              value={`${latestImport.matchedRows} / ${latestImport.totalRows}`}
+              className="min-h-0 p-2"
+              onClick={() => navigate("/kelola/metopen/monitoring?import=in_import")}
+            />
+            <MetricAction
+              label="Eligible"
+              value={latestImport.eligibleRows}
+              tone="emerald"
+              className="min-h-0 p-2"
+              onClick={() => navigate("/kelola/metopen/monitoring?attendance=eligible")}
+            />
+            <MetricAction
+              label="Kurang 75%"
+              value={latestImport.ineligibleRows}
+              tone="rose"
+              className="min-h-0 p-2"
+              onClick={() => navigate("/kelola/metopen/monitoring?attendance=ineligible")}
+            />
+            <MetricAction
+              label="Nilai otomatis 0"
+              value={latestImport.autoZeroedCount}
+              tone="rose"
+              className="min-h-0 p-2"
+              onClick={() => navigate("/kelola/metopen/monitoring?score=auto_zero")}
+            />
           </div>
         ) : null}
 
@@ -200,12 +214,12 @@ export function MetopenAttendanceUploadCard() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
-              Konfirmasi proses presensi &amp; auto-zero permanen
+              Konfirmasi proses presensi &amp; nilai otomatis 0 permanen
             </AlertDialogTitle>
             <AlertDialogDescription>
               Pratinjau di bawah belum mengubah data apa pun. Mahasiswa dengan presensi{" "}
-              <strong>&lt;75%</strong> akan mendapat nilai TA-03 = <strong>0 secara permanen</strong>{" "}
-              (canon §5.7.3 — tidak dapat dibatalkan walau presensi diperbaiki kemudian).
+              <strong>kurang dari 75%</strong> akan mendapat nilai TA-03 = <strong>0 secara permanen</strong>.
+              Nilai ini tidak dapat dibatalkan walau presensi diperbaiki kemudian.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -225,7 +239,7 @@ export function MetopenAttendanceUploadCard() {
                   <p className="font-medium text-emerald-700">{preview.totals.eligibleRows}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Akan di-auto-zero</p>
+                  <p className="text-xs text-muted-foreground">Akan dinilai otomatis 0</p>
                   <p className="font-medium text-destructive">{preview.totals.willAutoZeroCount}</p>
                 </div>
               </div>
@@ -233,7 +247,7 @@ export function MetopenAttendanceUploadCard() {
               {preview.willAutoZero.length > 0 ? (
                 <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
                   <p className="mb-1.5 text-xs font-semibold text-destructive">
-                    {preview.willAutoZero.length} mahasiswa akan di-auto-zero PERMANEN:
+                    {preview.willAutoZero.length} mahasiswa akan dinilai otomatis 0 PERMANEN:
                   </p>
                   <ul className="max-h-40 space-y-1 overflow-y-auto text-xs">
                     {preview.willAutoZero.map((s) => (
@@ -248,13 +262,13 @@ export function MetopenAttendanceUploadCard() {
                 </div>
               ) : (
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
-                  Tidak ada mahasiswa yang akan di-auto-zero dari file ini.
+                  Tidak ada mahasiswa yang akan dinilai otomatis 0 dari file ini.
                 </p>
               )}
 
               {preview.totals.willSkipFinalizedCount > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {preview.totals.willSkipFinalizedCount} mahasiswa dilewati (nilai TA-03 sudah final, BR-21).
+                  {preview.totals.willSkipFinalizedCount} mahasiswa dilewati karena nilai TA-03 sudah final.
                 </p>
               )}
               {preview.totals.unmatchedRows > 0 && (

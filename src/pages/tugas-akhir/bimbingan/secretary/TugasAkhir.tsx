@@ -7,13 +7,13 @@ import { DataMasterTaPanel } from "@/components/kelola/DataMasterTaPanel";
 import { ThesisCpmkManagementPanel as CpmkManagementPanel } from "@/components/master-data/thesis-cpmk/ThesisCpmkManagementPanel";
 import { SeminarRubricManagementPanel as RubricSeminarManagementPanel } from '@/components/master-data/seminar-rubric/SeminarRubricManagementPanel';
 import { DefenceRubricManagementPanel as RubricDefenceManagementPanel } from '@/components/master-data/defence-rubric/DefenceRubricManagementPanel';
-import { RubricMetopenManagementPanel } from '@/components/kelola/rubric-metopen/RubricMetopenManagementPanel';
+
+/** Master TA penuh (seminar/sidang). CPMK+rubrik Metopen ada di /kelola/metopen/cpmk-rubrik. */
 const TAB_ITEMS: TabItem[] = [
   { label: "Kelola Topik", to: "/kelola/tugas-akhir/topik" },
-  { label: "Kelola CPMK", to: "/kelola/tugas-akhir/cpmk" },
+  { label: "Kelola CPMK Seminar & Sidang", to: "/kelola/tugas-akhir/cpmk" },
   { label: "Kelola Rubrik Seminar", to: "/kelola/tugas-akhir/rubrik-seminar" },
   { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" },
-  { label: "Kelola Rubrik Metopel", to: "/kelola/tugas-akhir/rubrik-metopen" },
   { label: "Data Master Tugas Akhir", to: "/kelola/tugas-akhir/master-data" },
 ];
 
@@ -50,7 +50,7 @@ export default function KelolaTugasAkhirPage() {
       return <DataMasterTaPanel />;
     }
 
-    if (activeTab.label === "Kelola CPMK") {
+    if (activeTab.label === "Kelola CPMK Seminar & Sidang") {
       return <CpmkManagementPanel />;
     }
 
@@ -60,10 +60,6 @@ export default function KelolaTugasAkhirPage() {
 
     if (activeTab.label === "Kelola Rubrik Sidang") {
       return <RubricDefenceManagementPanel />;
-    }
-
-    if (activeTab.label === "Kelola Rubrik Metopel") {
-      return <RubricMetopenManagementPanel />;
     }
 
     return (
@@ -78,8 +74,11 @@ export default function KelolaTugasAkhirPage() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Kelola Tugas Akhir</h1>
-          <p className="text-gray-500">Manajemen topik, rubrik penilaian, dan data master tugas akhir</p>
+          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Kelola Tugas Akhir</h1>
+          <p className="text-xs text-muted-foreground sm:text-sm">
+            Manajemen topik, CPMK seminar/sidang, rubrik seminar/sidang, dan data master tugas akhir.
+            CPMK serta rubrik Metode Penelitian (TA-03) dikelola di menu Metode Penelitian.
+          </p>
         </div>
       </div>
 

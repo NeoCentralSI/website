@@ -475,3 +475,30 @@ export async function getStudentProposalVersions(
   const response = await apiRequest(url);
   return handleJson(response);
 }
+
+/** FR-LOG-08: P1/P2 read-only Metopel informal notes (same item shape as student list). */
+export interface InformalLogItem {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  document: {
+    id: string;
+    fileName: string | null;
+    url: string | null;
+    fileSize: number | null;
+    mimeType: string | null;
+  } | null;
+}
+
+export async function getStudentInformalLogs(
+  thesisId: string,
+): Promise<{ thesisId: string; items: InformalLogItem[] }> {
+  const url = getApiUrl(EP.STUDENT_INFORMAL_LOGS(thesisId));
+  const response = await apiRequest(url);
+  const json = await handleJson<{
+    success: boolean;
+    data: { thesisId: string; items: InformalLogItem[] };
+  }>(response);
+  return json.data;
+}

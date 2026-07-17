@@ -16,7 +16,7 @@ export type AdvisorRouteType = "normal" | "escalated" | "dept";
 export function formatAdvisorRouteCode(routeType?: string | null): string {
   switch (routeType) {
     case "escalated":
-      return "TA-01 (Escalated)";
+      return "TA-01 (Di Atas Kuota)";
     case "dept":
       return "TA-02";
     case "normal":
@@ -30,7 +30,7 @@ export function formatAdvisorRouteCode(routeType?: string | null): string {
 export function formatAdvisorRouteProcessing(routeType?: string | null): string {
   switch (routeType) {
     case "escalated":
-      return "Jalur escalated TA-01 sedang diproses";
+      return "Jalur TA-01 di atas kuota sedang diproses";
     case "dept":
       return "Jalur TA-02 (departemen) sedang diproses";
     case "normal":

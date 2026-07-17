@@ -39,12 +39,20 @@ export interface MetopenCpmk {
     academicYearId: string | null;
     createdAt: string;
     updatedAt: string;
+    _count?: {
+        metopenAssessmentCriterias: number;
+    };
 }
 
 export interface CreateMetopenCpmkPayload {
     code: string;
     description: string;
     academicYearId?: string;
+}
+
+export interface UpdateMetopenCpmkPayload {
+    code?: string;
+    description?: string;
 }
 
 export interface CreateCriteriaPayload {
@@ -117,6 +125,27 @@ export const createMetopenCpmk = async (payload: CreateMetopenCpmkPayload): Prom
         body: JSON.stringify(payload),
     });
     return parseResponse<MetopenCpmk>(response, 'Gagal menambah CPMK Metopel');
+};
+
+export const updateMetopenCpmk = async (
+    cpmkId: string,
+    payload: UpdateMetopenCpmkPayload,
+): Promise<MetopenCpmk> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMK_BY_ID(cpmkId)), {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+    });
+    return parseResponse<MetopenCpmk>(response, 'Gagal mengubah CPMK Metopel');
+};
+
+export const deleteMetopenCpmk = async (cpmkId: string): Promise<void> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMK_BY_ID(cpmkId)), {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Gagal menghapus CPMK Metopel' }));
+        throw new Error(error.message || 'Gagal menghapus CPMK Metopel');
+    }
 };
 
 export const createCriteria = async (payload: CreateCriteriaPayload): Promise<MetopenAssessmentCriteria> => {

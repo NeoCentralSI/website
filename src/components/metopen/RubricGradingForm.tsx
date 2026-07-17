@@ -157,6 +157,7 @@ export function RubricGradingForm({
                 criterion.name ?? criterion.metopenCpmk?.description ?? null,
                 criterion.maxScore,
                 criterion.metopenCpmk?.code,
+                criterion.role ?? formCode,
             );
             if (kind !== "konten-sub") continue;
 
@@ -416,6 +417,7 @@ export function RubricGradingForm({
                         <CriterionSection
                             key={criterion.id}
                             index={idx}
+                            formCode={formCode}
                             criterion={criterion}
                             scoreState={scores[criterion.id] ?? null}
                             subScoreState={subScores[criterion.id] ?? null}
@@ -503,7 +505,7 @@ export function RubricGradingForm({
                                                 </div>
                                                 <p>
                                                     {submitConfirmText ??
-                                                        "Setelah submit + cycle penilaian lengkap, nilai akan dikunci permanen (canon §5.7.2) dan dipakai untuk promosi aktif otomatis setelah KRS TA terkonfirmasi. Pastikan rubrik sudah benar."}
+                                                        "Setelah submit dan siklus penilaian lengkap, nilai akan dikunci permanen dan dipakai untuk promosi aktif otomatis setelah KRS TA terkonfirmasi. Pastikan rubrik sudah benar."}
                                                 </p>
                                             </div>
                                         </AlertDialogDescription>
@@ -511,7 +513,7 @@ export function RubricGradingForm({
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Batal</AlertDialogCancel>
                                         <AlertDialogAction onClick={handleSubmitConfirmed}>
-                                            Ya, Submit Penilaian
+                                            Ya, serahkan penilaian
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -530,6 +532,7 @@ export function RubricGradingForm({
 
 interface CriterionSectionProps {
     index: number;
+    formCode: "TA-03A" | "TA-03B";
     criterion: RubricCriteriaItem;
     scoreState: CriteriaScoreState | null;
     subScoreState: Record<string, SubScoreState> | null;
@@ -540,6 +543,7 @@ interface CriterionSectionProps {
 
 function CriterionSection({
     index,
+    formCode,
     criterion,
     scoreState,
     subScoreState,
@@ -551,7 +555,12 @@ function CriterionSection({
     const cpmkCode = criterion.metopenCpmk?.code ?? null;
     const cpmkDesc = criterion.metopenCpmk?.description ?? null;
     const label = criterion.name ?? cpmkDesc ?? `Kriteria ${index + 1}`;
-    const kind = resolveCriteriaRubricKind(label, criterion.maxScore, cpmkCode);
+    const kind = resolveCriteriaRubricKind(
+        label,
+        criterion.maxScore,
+        cpmkCode,
+        criterion.role ?? formCode,
+    );
 
     const dbRubrics = criterion.metopenAssessmentRubrics ?? [];
     const officialLevels = getRubricLevelsByKind(kind);

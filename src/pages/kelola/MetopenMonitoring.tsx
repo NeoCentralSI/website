@@ -1,21 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import {
     AlertTriangle,
     CheckCircle2,
     ClipboardList,
     FileSpreadsheet,
-    Search,
     UserMinus,
     Users,
 } from "lucide-react";
 
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
+import CustomTable, { type Column } from "@/components/layout/CustomTable";
+import { MetricAction } from "@/components/metopen/MetricAction";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
     Select,
     SelectContent,
@@ -24,14 +25,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Loading } from "@/components/ui/spinner";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { assessmentService } from "@/services/assessment.service";
 import type {
     AdvisorStatusCategory,
@@ -52,6 +45,7 @@ const QUERY_KEY = ["assessment-metopen-monitoring"] as const;
 type AdvisorFilter = "all" | AdvisorStatusCategory;
 type ScoreFilter = "all" | ScoreCompleteness;
 type ImportFilter = "all" | "in_import" | "missing_import";
+type AttendanceFilter = "all" | "eligible" | "ineligible" | "no_record";
 
 const ADVISOR_FILTERS: { value: AdvisorFilter; label: string }[] = [
     { value: "all", label: "Semua status pembimbing" },
@@ -73,7 +67,7 @@ const SCORE_FILTERS: { value: ScoreFilter; label: string }[] = [
     { value: "partial_ta03b", label: "TA-03B saja" },
     { value: "complete_pending", label: "Lengkap (belum publish)" },
     { value: "published", label: "Final published" },
-    { value: "auto_zero", label: "Auto-zero (presensi <75%)" },
+    { value: "auto_zero", label: "Nilai otomatis 0 (presensi <75%)" },
 ];
 
 const IMPORT_FILTERS: { value: ImportFilter; label: string }[] = [
@@ -81,6 +75,28 @@ const IMPORT_FILTERS: { value: ImportFilter; label: string }[] = [
     { value: "in_import", label: "Hadir di import presensi" },
     { value: "missing_import", label: "Belum ada di import" },
 ];
+
+const ATTENDANCE_FILTERS: { value: AttendanceFilter; label: string }[] = [
+    { value: "all", label: "Semua status presensi" },
+    { value: "eligible", label: "Eligible (≥75%)" },
+    { value: "ineligible", label: "Kurang dari 75%" },
+    { value: "no_record", label: "Belum ada data presensi" },
+];
+
+function readFilter<T extends string>(
+    params: URLSearchParams,
+    key: string,
+    options: ReadonlyArray<{ value: T }>,
+    fallback: T,
+): T {
+    const value = params.get(key);
+    return options.some((option) => option.value === value) ? (value as T) : fallback;
+}
+
+function setOptionalParam(params: URLSearchParams, key: string, value: string) {
+    if (value === "all") params.delete(key);
+    else params.set(key, value);
+}
 
 // ────────────────────────────────────────────────────────────
 // Format helpers
@@ -118,7 +134,7 @@ const SCORE_BADGE_VARIANTS: Record<ScoreCompleteness, { label: string; className
         className: "bg-blue-50 text-blue-800 border-blue-200",
     },
     published: { label: "Final", className: "bg-emerald-100 text-emerald-900 border-emerald-300" },
-    auto_zero: { label: "Auto-zero", className: "bg-rose-100 text-rose-900 border-rose-300" },
+    auto_zero: { label: "Nilai otomatis 0", className: "bg-rose-100 text-rose-900 border-rose-300" },
 };
 
 // ────────────────────────────────────────────────────────────
@@ -127,10 +143,52 @@ const SCORE_BADGE_VARIANTS: Record<ScoreCompleteness, { label: string; className
 
 export default function MetopenMonitoring() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [search, setSearch] = useState("");
-    const [advisorFilter, setAdvisorFilter] = useState<AdvisorFilter>("all");
-    const [scoreFilter, setScoreFilter] = useState<ScoreFilter>("all");
-    const [importFilter, setImportFilter] = useState<ImportFilter>("all");
+    const [advisorFilter, setAdvisorFilter] = useState<AdvisorFilter>(() => readFilter(searchParams, "advisor", ADVISOR_FILTERS, "all"));
+    const [scoreFilter, setScoreFilter] = useState<ScoreFilter>(() => readFilter(searchParams, "score", SCORE_FILTERS, "all"));
+    const [importFilter, setImportFilter] = useState<ImportFilter>(() => readFilter(searchParams, "import", IMPORT_FILTERS, "all"));
+    const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilter>(() => readFilter(searchParams, "attendance", ATTENDANCE_FILTERS, "all"));
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const unmatchedRef = useRef<HTMLDivElement | null>(null);
+    const studentsTableRef = useRef<HTMLDivElement | null>(null);
+
+    const commitFilters = ({
+        advisor = advisorFilter,
+        score = scoreFilter,
+        importStatus = importFilter,
+        attendance = attendanceFilter,
+        clearSearch = false,
+    }: {
+        advisor?: AdvisorFilter;
+        score?: ScoreFilter;
+        importStatus?: ImportFilter;
+        attendance?: AttendanceFilter;
+        clearSearch?: boolean;
+    }) => {
+        setAdvisorFilter(advisor);
+        setScoreFilter(score);
+        setImportFilter(importStatus);
+        setAttendanceFilter(attendance);
+        if (clearSearch) setSearch("");
+        setPage(1);
+
+        const next = new URLSearchParams(searchParams);
+        setOptionalParam(next, "advisor", advisor);
+        setOptionalParam(next, "score", score);
+        setOptionalParam(next, "import", importStatus);
+        setOptionalParam(next, "attendance", attendance);
+        setSearchParams(next, { replace: true });
+    };
+
+    /** Filter lalu scroll ke tabel mahasiswa (CTA MetricAction "Lihat data" / ProgressMetric). */
+    const revealStudentsTable = (filters: Parameters<typeof commitFilters>[0]) => {
+        commitFilters(filters);
+        requestAnimationFrame(() => {
+            studentsTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    };
 
     useEffect(() => {
         setBreadcrumbs([
@@ -140,7 +198,15 @@ export default function MetopenMonitoring() {
         setTitle("Monitoring Kelas Metopen");
     }, [setBreadcrumbs, setTitle]);
 
-    const { data, isLoading, isError, error } = useQuery<MonitoringResponse>({
+    useEffect(() => {
+        setAdvisorFilter(readFilter(searchParams, "advisor", ADVISOR_FILTERS, "all"));
+        setScoreFilter(readFilter(searchParams, "score", SCORE_FILTERS, "all"));
+        setImportFilter(readFilter(searchParams, "import", IMPORT_FILTERS, "all"));
+        setAttendanceFilter(readFilter(searchParams, "attendance", ATTENDANCE_FILTERS, "all"));
+        setPage(1);
+    }, [searchParams]);
+
+    const { data, isLoading, isError, error, isFetching } = useQuery<MonitoringResponse>({
         queryKey: QUERY_KEY,
         queryFn: () => assessmentService.getMetopenMonitoring(),
     });
@@ -161,19 +227,224 @@ export default function MetopenMonitoring() {
             if (scoreFilter !== "all" && row.score.completeness !== scoreFilter) return false;
             if (importFilter === "in_import" && !row.isInImport) return false;
             if (importFilter === "missing_import" && row.isInImport) return false;
+            if (attendanceFilter === "eligible" && row.attendance?.isEligible !== true) return false;
+            if (attendanceFilter === "ineligible" && row.attendance?.isEligible !== false) return false;
+            if (attendanceFilter === "no_record" && row.attendance !== null) return false;
             return true;
         });
-    }, [data?.students, search, advisorFilter, scoreFilter, importFilter]);
+    }, [data?.students, search, advisorFilter, scoreFilter, importFilter, attendanceFilter]);
+
+    const paginatedStudents = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return filteredStudents.slice(start, start + pageSize);
+    }, [filteredStudents, page, pageSize]);
 
     const hasActiveFilter =
         Boolean(search.trim()) ||
         advisorFilter !== "all" ||
         scoreFilter !== "all" ||
-        importFilter !== "all";
+        importFilter !== "all" ||
+        attendanceFilter !== "all";
+
+    const studentColumns = useMemo<Column<MonitoringStudentRow>[]>(
+        () => [
+            {
+                key: "no",
+                header: "No",
+                width: 48,
+                className: "align-top",
+                render: (row) => <span className="text-xs">{row.rowNumber}</span>,
+            },
+            {
+                key: "mahasiswa",
+                header: "Mahasiswa",
+                className: "align-top min-w-[180px]",
+                render: (row) => (
+                    <div className="min-w-0 space-y-0.5">
+                        <p className="text-sm font-medium leading-tight break-words">
+                            {toTitleCaseName(row.fullName ?? "-")}
+                        </p>
+                        <p className="font-mono text-xs text-muted-foreground">{row.identityNumber}</p>
+                        {row.advisorRequest.proposedTitle ? (
+                            <p
+                                className="text-xs text-muted-foreground line-clamp-2 break-words"
+                                title={row.advisorRequest.proposedTitle}
+                            >
+                                <span className="font-medium">Judul:</span>{" "}
+                                {row.advisorRequest.proposedTitle}
+                            </p>
+                        ) : null}
+                    </div>
+                ),
+            },
+            {
+                key: "presensi",
+                header: "Presensi",
+                width: 140,
+                className: "align-top",
+                render: (row) => <AttendanceCell row={row} />,
+            },
+            {
+                key: "advisor",
+                header: "Status Pembimbing",
+                width: 160,
+                className: "align-top",
+                render: (row) => (
+                    <div className="space-y-1">
+                        <AdvisorStatusBadge row={row} />
+                        {row.advisorRequest.routeLabel ? (
+                            <p className="text-xs text-muted-foreground break-words">
+                                {row.advisorRequest.routeLabel}
+                            </p>
+                        ) : null}
+                        {row.advisorRequest.acceptedOverNormal ? (
+                            <Badge
+                                variant="outline"
+                                className="border-amber-200 bg-amber-50 text-amber-800 text-xs"
+                            >
+                                Overquota sah
+                            </Badge>
+                        ) : null}
+                    </div>
+                ),
+            },
+            {
+                key: "supervisors",
+                header: "Pembimbing 1 / 2",
+                className: "align-top min-w-[150px]",
+                render: (row) => (
+                    <div className="space-y-0.5 min-w-0">
+                        <p className="text-xs break-words">
+                            <span className="font-medium">P1:</span>{" "}
+                            {row.supervisors.pembimbing1.fullName
+                                ? toTitleCaseName(row.supervisors.pembimbing1.fullName)
+                                : "—"}
+                        </p>
+                        <p className="text-xs break-words">
+                            <span className="font-medium">P2:</span>{" "}
+                            {row.supervisors.pembimbing2.fullName
+                                ? toTitleCaseName(row.supervisors.pembimbing2.fullName)
+                                : "—"}
+                        </p>
+                    </div>
+                ),
+            },
+            {
+                key: "presentasi",
+                header: () => (
+                    <span className="text-right block">
+                        Pres
+                        <br />
+                        <span className="text-[10px] font-normal text-muted-foreground">/20</span>
+                    </span>
+                ),
+                className: "text-right align-top",
+                width: 56,
+                render: (row) => <ScoreValue value={row.score.presentasi} />,
+            },
+            {
+                key: "konten",
+                header: () => (
+                    <span className="text-right block">
+                        Kont
+                        <br />
+                        <span className="text-[10px] font-normal text-muted-foreground">/40</span>
+                    </span>
+                ),
+                className: "text-right align-top",
+                width: 56,
+                render: (row) => <ScoreValue value={row.score.proposalKonten} />,
+            },
+            {
+                key: "struktur",
+                header: () => (
+                    <span className="text-right block">
+                        Strk
+                        <br />
+                        <span className="text-[10px] font-normal text-muted-foreground">/25</span>
+                    </span>
+                ),
+                className: "text-right align-top",
+                width: 56,
+                render: (row) => <ScoreValue value={row.score.proposalStruktur} />,
+            },
+            {
+                key: "respon",
+                header: () => (
+                    <span className="text-right block">
+                        Resp
+                        <br />
+                        <span className="text-[10px] font-normal text-muted-foreground">/15</span>
+                    </span>
+                ),
+                className: "text-right align-top",
+                width: 56,
+                render: (row) => <ScoreValue value={row.score.kemampuanRespon} />,
+            },
+            {
+                key: "final",
+                header: () => (
+                    <span className="text-right block">
+                        Final
+                        <br />
+                        <span className="text-[10px] font-normal text-muted-foreground">/100</span>
+                    </span>
+                ),
+                className: "text-right align-top",
+                width: 64,
+                render: (row) => (
+                    <span className="text-sm font-semibold tabular-nums">
+                        {formatScore(row.score.finalScore)}
+                    </span>
+                ),
+            },
+            {
+                key: "scoreStatus",
+                header: "Status Nilai",
+                width: 120,
+                className: "align-top",
+                render: (row) => <ScoreCompletenessBadge row={row} />,
+            },
+        ],
+        [],
+    );
+
+    const unmatchedColumns = useMemo<Column<MonitoringUnmatchedRow & { _idx: number }>[]>(
+        () => [
+            {
+                key: "no",
+                header: "No",
+                width: 48,
+                render: (row) => <span className="text-xs">{row._idx + 1}</span>,
+            },
+            {
+                key: "nim",
+                header: "NIM",
+                width: 140,
+                render: (row) => (
+                    <span className="font-mono text-xs">{row.identityNumber}</span>
+                ),
+            },
+            {
+                key: "nama",
+                header: "Nama (dari xlsx)",
+                render: (row) => (
+                    <span className="text-sm">{toTitleCaseName(row.fullName ?? "-")}</span>
+                ),
+            },
+            {
+                key: "presensi",
+                header: "Presensi",
+                width: 160,
+                render: (row) => <AttendanceCell row={row} />,
+            },
+        ],
+        [],
+    );
 
     if (isLoading) {
         return (
-            <div className="py-12">
+            <div className="flex h-[calc(100vh-200px)] items-center justify-center p-6">
                 <Loading size="lg" text="Memuat dashboard monitoring Metopen..." />
             </div>
         );
@@ -181,59 +452,118 @@ export default function MetopenMonitoring() {
 
     if (isError) {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Monitoring gagal dimuat</CardTitle>
-                    <CardDescription>
-                        {error instanceof Error ? error.message : "Terjadi kesalahan tidak terduga."}
-                    </CardDescription>
-                </CardHeader>
-            </Card>
+            <div className="p-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Monitoring gagal dimuat</CardTitle>
+                        <CardDescription>
+                            {error instanceof Error ? error.message : "Terjadi kesalahan tidak terduga."}
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
         );
     }
 
     if (!data) return null;
 
     const { attendanceImport, stats, unmatchedRecords } = data;
+    const unmatchedWithIndex = unmatchedRecords.map((row, idx) => ({ ...row, _idx: idx }));
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="space-y-5 sm:space-y-6">
+            <div>
+                <h1 className="text-base font-semibold tracking-tight sm:text-lg">Monitoring Kelas Metopen</h1>
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                    Pantau progress per mahasiswa eligible SIA: pencarian pembimbing dan rincian nilai
+                    TA-03 sesuai layout template SIA.
+                </p>
+            </div>
+
             <HeroCard
                 totalEligible={stats.totalEligibleSia}
                 totalInImport={stats.totalInImport}
                 attendanceEligible={stats.attendanceEligible}
                 hasImport={Boolean(attendanceImport)}
+                onShowMissing={() =>
+                    revealStudentsTable({
+                        advisor: "all",
+                        score: "all",
+                        importStatus: "missing_import",
+                        attendance: "all",
+                        clearSearch: true,
+                    })
+                }
+                onShowEligible={() =>
+                    revealStudentsTable({
+                        advisor: "all",
+                        score: "all",
+                        importStatus: "all",
+                        attendance: "eligible",
+                        clearSearch: true,
+                    })
+                }
             />
 
             {/* Stat cards: 1→2→4 cols fluid ─────────────── */}
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard
+                <MetricAction
                     icon={<Users className="h-4 w-4" />}
                     label="Eligible SIA"
                     value={stats.totalEligibleSia}
                     hint={`${stats.totalInImport} di import · ${stats.missingFromImport} belum di import`}
-                    accent="muted"
+                    active={!hasActiveFilter}
+                    onClick={() =>
+                        revealStudentsTable({
+                            advisor: "all",
+                            score: "all",
+                            importStatus: "all",
+                            attendance: "all",
+                            clearSearch: true,
+                        })
+                    }
                 />
-                <StatCard
+                <MetricAction
                     icon={<CheckCircle2 className="h-4 w-4 text-emerald-700" />}
                     label="Presensi eligible (≥75%)"
                     value={stats.attendanceEligible}
                     hint={`${stats.attendanceIneligible} ineligible`}
-                    accent="emerald"
+                    tone="emerald"
+                    active={attendanceFilter === "eligible"}
+                    onClick={() =>
+                        revealStudentsTable({
+                            advisor: "all",
+                            score: "all",
+                            importStatus: "all",
+                            attendance: "eligible",
+                            clearSearch: true,
+                        })
+                    }
                 />
-                <StatCard
+                <MetricAction
                     icon={<UserMinus className="h-4 w-4 text-amber-700" />}
                     label="Belum mencari pembimbing"
                     value={stats.advisorByCategory.no_advisor}
                     hint={`${stats.advisorByCategory.pending_review} menunggu dosen · ${stats.advisorByCategory.pending_kadep} menunggu KaDep`}
-                    accent="amber"
+                    tone="amber"
+                    active={advisorFilter === "no_advisor"}
+                    onClick={() =>
+                        revealStudentsTable({
+                            advisor: "no_advisor",
+                            score: "all",
+                            importStatus: "all",
+                            attendance: "all",
+                            clearSearch: true,
+                        })
+                    }
                 />
-                <StatCard
+                <MetricAction
                     icon={<AlertTriangle className="h-4 w-4 text-rose-700" />}
                     label="Unmatched di import"
                     value={stats.unmatchedInImport}
                     hint="NIM di xlsx tidak ditemukan di SIA"
-                    accent="rose"
+                    tone="rose"
+                    onClick={() => unmatchedRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 />
             </div>
 
@@ -275,7 +605,7 @@ export default function MetopenMonitoring() {
                                 tone="rose"
                             />
                             <Field
-                                label="Auto-zero"
+                                label="Nilai otomatis 0"
                                 value={String(attendanceImport.autoZeroedCount)}
                                 tone="rose"
                             />
@@ -290,8 +620,8 @@ export default function MetopenMonitoring() {
                 <Card className="border-amber-200 bg-amber-50/60">
                     <CardContent className="py-6 text-sm text-amber-900">
                         Belum ada import presensi Metopel. Unggah file melalui halaman{" "}
-                        <strong>Penilaian TA-03B</strong> untuk membuka gating BR-28 dan menampilkan kolom
-                        presensi di tabel di bawah.
+                        <strong>Penilaian TA-03B</strong> untuk membuka penilaian berbasis presensi dan
+                        menampilkan kolom presensi di tabel di bawah.
                     </CardContent>
                 </Card>
             )}
@@ -300,15 +630,12 @@ export default function MetopenMonitoring() {
             <Card>
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between gap-2">
-                        <CardTitle className="text-sm">Filter &amp; Pencarian</CardTitle>
+                        <CardTitle className="text-sm">Filter Status</CardTitle>
                         {hasActiveFilter ? (
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setSearch("");
-                                    setAdvisorFilter("all");
-                                    setScoreFilter("all");
-                                    setImportFilter("all");
+                                    commitFilters({ advisor: "all", score: "all", importStatus: "all", attendance: "all", clearSearch: true });
                                 }}
                                 className="text-xs text-primary hover:underline"
                             >
@@ -318,163 +645,97 @@ export default function MetopenMonitoring() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-12">
-                        <div className="space-y-1.5 sm:col-span-2 lg:col-span-3 xl:col-span-5">
-                            <Label htmlFor="monitoring-search">Cari NIM, nama, atau judul</Label>
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    id="monitoring-search"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Ketik untuk filter..."
-                                    className="pl-8"
-                                />
-                            </div>
-                        </div>
-                        <div className="xl:col-span-3">
-                            <FilterSelect
-                                label="Status pembimbing"
-                                value={advisorFilter}
-                                options={ADVISOR_FILTERS}
-                                onChange={(v) => setAdvisorFilter(v as AdvisorFilter)}
-                            />
-                        </div>
-                        <div className="xl:col-span-2">
-                            <FilterSelect
-                                label="Status nilai"
-                                value={scoreFilter}
-                                options={SCORE_FILTERS}
-                                onChange={(v) => setScoreFilter(v as ScoreFilter)}
-                            />
-                        </div>
-                        <div className="xl:col-span-2">
-                            <FilterSelect
-                                label="Sumber data"
-                                value={importFilter}
-                                options={IMPORT_FILTERS}
-                                onChange={(v) => setImportFilter(v as ImportFilter)}
-                            />
-                        </div>
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+                        <FilterSelect
+                            label="Status pembimbing"
+                            value={advisorFilter}
+                            options={ADVISOR_FILTERS}
+                            onChange={(v) => {
+                                commitFilters({ advisor: v as AdvisorFilter });
+                            }}
+                        />
+                        <FilterSelect
+                            label="Status nilai"
+                            value={scoreFilter}
+                            options={SCORE_FILTERS}
+                            onChange={(v) => {
+                                commitFilters({ score: v as ScoreFilter });
+                            }}
+                        />
+                        <FilterSelect
+                            label="Sumber data"
+                            value={importFilter}
+                            options={IMPORT_FILTERS}
+                            onChange={(v) => {
+                                commitFilters({ importStatus: v as ImportFilter });
+                            }}
+                        />
+                        <FilterSelect
+                            label="Status presensi"
+                            value={attendanceFilter}
+                            options={ATTENDANCE_FILTERS}
+                            onChange={(v) => commitFilters({ attendance: v as AttendanceFilter })}
+                        />
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Student list ──────────────────────────────── */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                        <CardTitle className="text-sm">
-                            Mahasiswa Eligible Metopen ({filteredStudents.length})
-                        </CardTitle>
-                        <p className="text-xs text-muted-foreground">
-                            Menampilkan {filteredStudents.length} dari {stats.totalEligibleSia} mahasiswa
-                        </p>
-                    </div>
-                </CardHeader>
-                <CardContent className="px-0 pb-4">
-                    {/* Mobile, tablet, lg desktop — card list (sampai <1280px) */}
-                    <div className="space-y-2.5 px-4 xl:hidden">
-                        {filteredStudents.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">
-                                Tidak ada mahasiswa yang cocok dengan filter saat ini.
-                            </p>
-                        ) : (
-                            filteredStudents.map((row) => (
-                                <StudentRowMobile key={row.studentId} row={row} />
-                            ))
-                        )}
-                    </div>
-
-                    {/* xl+ — tabel padat (≥1280px viewport, area konten ≥~1024px setelah sidebar) */}
-                    <div className="hidden xl:block">
-                        <Table>
-                            <TableHeader className="sticky top-0 z-10 bg-card">
-                                <TableRow>
-                                    <TableHead className="w-10">No</TableHead>
-                                    <TableHead className="min-w-[180px]">Mahasiswa</TableHead>
-                                    <TableHead className="w-32">Presensi</TableHead>
-                                    <TableHead className="w-40">Status Pembimbing</TableHead>
-                                    <TableHead className="min-w-[150px]">Pembimbing 1 / 2</TableHead>
-                                    <TableHead className="text-right w-12">Pres<br /><span className="text-[10px] font-normal text-muted-foreground">/20</span></TableHead>
-                                    <TableHead className="text-right w-12">Kont<br /><span className="text-[10px] font-normal text-muted-foreground">/40</span></TableHead>
-                                    <TableHead className="text-right w-12">Strk<br /><span className="text-[10px] font-normal text-muted-foreground">/25</span></TableHead>
-                                    <TableHead className="text-right w-12">Resp<br /><span className="text-[10px] font-normal text-muted-foreground">/15</span></TableHead>
-                                    <TableHead className="text-right w-14">Final<br /><span className="text-[10px] font-normal text-muted-foreground">/100</span></TableHead>
-                                    <TableHead className="w-28">Status Nilai</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredStudents.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={11}
-                                            className="py-8 text-center text-sm text-muted-foreground"
-                                        >
-                                            Tidak ada mahasiswa yang cocok dengan filter saat ini.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    filteredStudents.map((row) => (
-                                        <StudentRowDesktop key={row.studentId} row={row} />
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+            <div ref={studentsTableRef} className="scroll-mt-6 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                    <p className="text-sm font-medium">
+                        Mahasiswa Eligible Metopen ({filteredStudents.length})
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        dari {stats.totalEligibleSia} mahasiswa eligible SIA
+                    </p>
+                </div>
+                <CustomTable<MonitoringStudentRow>
+                    columns={studentColumns}
+                    data={paginatedStudents}
+                    loading={false}
+                    isRefreshing={isFetching && !isLoading}
+                    total={filteredStudents.length}
+                    page={page}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                    onPageSizeChange={(size) => {
+                        setPageSize(size);
+                        setPage(1);
+                    }}
+                    searchValue={search}
+                    onSearchChange={(value) => {
+                        setSearch(value);
+                        setPage(1);
+                    }}
+                    emptyText="Tidak ada mahasiswa yang cocok dengan filter saat ini."
+                    rowKey={(row) => row.studentId}
+                />
+            </div>
 
             {/* Unmatched records ─────────────────────────── */}
-            {unmatchedRecords.length > 0 ? (
-                <Card className="border-rose-200">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-sm">
-                            <AlertTriangle className="h-4 w-4 text-rose-700" />
-                            Unmatched di Import Presensi ({unmatchedRecords.length})
-                        </CardTitle>
-                        <CardDescription>
-                            NIM berikut muncul di file xlsx upload tapi tidak ditemukan di SIA. Periksa
-                            kembali format file presensi atau lakukan sinkronisasi data SIA.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="px-0 pb-4">
-                        <div className="space-y-2 px-4 md:hidden">
-                            {unmatchedRecords.map((row, idx) => (
-                                <UnmatchedRowMobile key={`${row.identityNumber}-${idx}`} row={row} />
-                            ))}
+                <div ref={unmatchedRef} className="scroll-mt-6 space-y-2">
+                    <div className="flex items-start gap-2 px-1">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-700" />
+                        <div>
+                            <p className="text-sm font-medium">
+                                Unmatched di Import Presensi ({unmatchedRecords.length})
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                NIM berikut muncul di file xlsx upload tapi tidak ditemukan di SIA.
+                            </p>
                         </div>
-                        <div className="hidden md:block">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-10">No</TableHead>
-                                        <TableHead className="w-36">NIM</TableHead>
-                                        <TableHead>Nama (dari xlsx)</TableHead>
-                                        <TableHead className="w-40">Presensi</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {unmatchedRecords.map((row, idx) => (
-                                        <TableRow key={`${row.identityNumber}-${idx}`}>
-                                            <TableCell className="text-xs">{idx + 1}</TableCell>
-                                            <TableCell className="font-mono text-xs">
-                                                {row.identityNumber}
-                                            </TableCell>
-                                            <TableCell className="text-sm">
-                                                {toTitleCaseName(row.fullName ?? "-")}
-                                            </TableCell>
-                                            <TableCell>
-                                                <AttendanceCell row={row} />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : null}
+                    </div>
+                    <CustomTable<MonitoringUnmatchedRow & { _idx: number }>
+                        columns={unmatchedColumns}
+                        data={unmatchedWithIndex}
+                        total={unmatchedWithIndex.length}
+                        page={1}
+                        pageSize={Math.max(unmatchedWithIndex.length, 10)}
+                        onPageChange={() => undefined}
+                        emptyText="Tidak ada data unmatched."
+                        rowKey={(row) => `${row.identityNumber}-${row._idx}`}
+                    />
+                </div>
         </div>
     );
 }
@@ -488,11 +749,15 @@ function HeroCard({
     totalInImport,
     attendanceEligible,
     hasImport,
+    onShowMissing,
+    onShowEligible,
 }: {
     totalEligible: number;
     totalInImport: number;
     attendanceEligible: number;
     hasImport: boolean;
+    onShowMissing: () => void;
+    onShowEligible: () => void;
 }) {
     const importCoverage =
         totalEligible > 0 ? Math.round((totalInImport / totalEligible) * 100) : 0;
@@ -505,11 +770,9 @@ function HeroCard({
                 <div className="flex items-start gap-3">
                     <ClipboardList className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
                     <div className="space-y-1">
-                        <CardTitle className="text-base">Monitoring Kelas Metopen</CardTitle>
+                        <CardTitle className="text-base">Ringkasan Cakupan Kelas</CardTitle>
                         <CardDescription className="text-xs">
-                            Pantau progress per mahasiswa eligible SIA: pencarian pembimbing dan
-                            rincian nilai TA-03 sesuai layout template SIA (Presentasi 20 + Konten 40 +
-                            Struktur 25 + Respons 15 = 100).
+                            Presentasi 20 + Konten 40 + Struktur 25 + Respons 15 = 100 (template SIA).
                         </CardDescription>
                     </div>
                 </div>
@@ -525,13 +788,17 @@ function HeroCard({
                                 : "Belum ada import presensi."
                         }
                         tone="blue"
+                        actionLabel="Lihat yang belum di-import"
+                        onClick={onShowMissing}
                     />
                     <ProgressMetric
-                        label="Eligible BR-28 vs di import"
+                        label="Memenuhi ambang 75% vs di import"
                         valueLabel={`${attendanceEligible} / ${totalInImport} mahasiswa`}
                         percent={attendanceCoverage}
                         helper="Mahasiswa dengan presensi ≥75% terhadap yang sudah di-import."
                         tone="emerald"
+                        actionLabel="Lihat mahasiswa eligible"
+                        onClick={onShowEligible}
                     />
                 </CardContent>
         </Card>
@@ -544,67 +811,40 @@ function ProgressMetric({
     percent,
     helper,
     tone,
+    actionLabel,
+    onClick,
 }: {
     label: string;
     valueLabel: string;
     percent: number;
     helper: string;
     tone: "blue" | "emerald";
+    actionLabel: string;
+    onClick: () => void;
 }) {
     return (
-        <div className="rounded-md border bg-background/80 px-3 py-2.5">
+        <button
+            type="button"
+            onClick={onClick}
+            className="w-full rounded-md border bg-background/80 px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
             <div className="flex items-baseline justify-between gap-2">
                 <p className="text-xs font-medium text-muted-foreground">{label}</p>
                 <p className="text-xs font-semibold tabular-nums">{percent}%</p>
             </div>
             <p className="mt-1 text-sm font-medium tabular-nums">{valueLabel}</p>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                    className={cn(
-                        "h-full transition-all",
-                        tone === "blue" ? "bg-blue-500" : "bg-emerald-500",
-                    )}
-                    style={{ width: `${percent}%` }}
-                />
-            </div>
+            <Progress
+                value={percent}
+                className={cn(
+                    "mt-2 h-1.5 bg-muted",
+                    tone === "blue"
+                        ? "[&_[data-slot=progress-indicator]]:bg-blue-500"
+                        : "[&_[data-slot=progress-indicator]]:bg-emerald-500",
+                )}
+            />
             <p className="mt-1.5 text-[11px] text-muted-foreground">{helper}</p>
-        </div>
-    );
-}
-
-const STAT_CARD_ACCENTS: Record<"muted" | "emerald" | "amber" | "rose", string> = {
-    muted: "border-border",
-    emerald: "border-emerald-200/80 bg-emerald-50/30",
-    amber: "border-amber-200/80 bg-amber-50/30",
-    rose: "border-rose-200/80 bg-rose-50/30",
-};
-
-function StatCard({
-    icon,
-    label,
-    value,
-    hint,
-    accent = "muted",
-}: {
-    icon: React.ReactNode;
-    label: string;
-    value: number;
-    hint?: string;
-    accent?: keyof typeof STAT_CARD_ACCENTS;
-}) {
-    return (
-        <Card className={cn(STAT_CARD_ACCENTS[accent])}>
-            <CardContent className="space-y-1 p-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {icon}
-                    <span>{label}</span>
-                </div>
-                <p className="text-2xl font-semibold tabular-nums">{value}</p>
-                {hint ? (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{hint}</p>
-                ) : null}
-            </CardContent>
-        </Card>
+            <p className="mt-2 text-[11px] font-medium text-primary">{actionLabel}</p>
+        </button>
     );
 }
 
@@ -734,7 +974,7 @@ function AttendanceCell({
             <Badge
                 variant="outline"
                 className={cn(
-                    "text-[10px]",
+                    "text-xs",
                     isEligible
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                         : "border-rose-200 bg-rose-50 text-rose-700",
@@ -746,208 +986,15 @@ function AttendanceCell({
     );
 }
 
-function StudentRowDesktop({ row }: { row: MonitoringStudentRow }) {
+function ScoreValue({ value }: { value: number | null | undefined }) {
     return (
-        <TableRow>
-            <TableCell className="text-xs align-top">{row.rowNumber}</TableCell>
-            <TableCell className="align-top whitespace-normal">
-                <div className="min-w-0 space-y-0.5">
-                    <p className="text-sm font-medium leading-tight break-words">
-                        {toTitleCaseName(row.fullName ?? "-")}
-                    </p>
-                    <p className="font-mono text-xs text-muted-foreground">{row.identityNumber}</p>
-                    {row.advisorRequest.proposedTitle ? (
-                        <p
-                            className="text-xs text-muted-foreground line-clamp-2 break-words"
-                            title={row.advisorRequest.proposedTitle}
-                        >
-                            <span className="font-medium">Judul:</span>{" "}
-                            {row.advisorRequest.proposedTitle}
-                        </p>
-                    ) : null}
-                </div>
-            </TableCell>
-            <TableCell className="align-top">
-                <AttendanceCell row={row} />
-            </TableCell>
-            <TableCell className="align-top whitespace-normal">
-                <div className="space-y-1">
-                    <AdvisorStatusBadge row={row} />
-                    {row.advisorRequest.routeLabel ? (
-                        <p className="text-xs text-muted-foreground break-words">{row.advisorRequest.routeLabel}</p>
-                    ) : null}
-                    {row.advisorRequest.acceptedOverNormal ? (
-                        <Badge
-                            variant="outline"
-                            className="border-amber-200 bg-amber-50 text-amber-800 text-[10px]"
-                        >
-                            Overquota sah
-                        </Badge>
-                    ) : null}
-                </div>
-            </TableCell>
-            <TableCell className="align-top whitespace-normal">
-                <div className="space-y-0.5 min-w-0">
-                    <p className="text-xs break-words">
-                        <span className="font-medium">P1:</span>{" "}
-                        {row.supervisors.pembimbing1.fullName
-                            ? toTitleCaseName(row.supervisors.pembimbing1.fullName)
-                            : "—"}
-                    </p>
-                    <p className="text-xs break-words">
-                        <span className="font-medium">P2:</span>{" "}
-                        {row.supervisors.pembimbing2.fullName
-                            ? toTitleCaseName(row.supervisors.pembimbing2.fullName)
-                            : "—"}
-                    </p>
-                </div>
-            </TableCell>
-            <ScoreCell value={row.score.presentasi} />
-            <ScoreCell value={row.score.proposalKonten} />
-            <ScoreCell value={row.score.proposalStruktur} />
-            <ScoreCell value={row.score.kemampuanRespon} />
-            <TableCell className="text-right text-sm font-semibold tabular-nums align-top">
-                {formatScore(row.score.finalScore)}
-            </TableCell>
-            <TableCell className="align-top">
-                <ScoreCompletenessBadge row={row} />
-            </TableCell>
-        </TableRow>
-    );
-}
-
-function ScoreCell({ value }: { value: number | null | undefined }) {
-    return (
-        <TableCell
+        <span
             className={cn(
-                "text-right text-sm tabular-nums align-top",
+                "text-sm tabular-nums",
                 value == null ? "text-muted-foreground" : "",
             )}
         >
             {formatScore(value)}
-        </TableCell>
-    );
-}
-
-function StudentRowMobile({ row }: { row: MonitoringStudentRow }) {
-    return (
-        <div className="rounded-lg border bg-card p-3">
-            <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                    <p className="text-sm font-medium leading-tight">
-                        #{row.rowNumber} · {toTitleCaseName(row.fullName ?? "-")}
-                    </p>
-                    <p className="font-mono text-[11px] text-muted-foreground">
-                        {row.identityNumber}
-                    </p>
-                </div>
-                <ScoreCompletenessBadge row={row} />
-            </div>
-
-            {row.advisorRequest.proposedTitle ? (
-                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
-                    {row.advisorRequest.proposedTitle}
-                </p>
-            ) : null}
-
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        Status pembimbing
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-1">
-                        <AdvisorStatusBadge row={row} />
-                        {row.advisorRequest.acceptedOverNormal ? (
-                            <Badge
-                                variant="outline"
-                                className="border-amber-200 bg-amber-50 text-amber-800 text-[10px]"
-                            >
-                                Overquota sah
-                            </Badge>
-                        ) : null}
-                    </div>
-                </div>
-                <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        Presensi Metopel
-                    </p>
-                    <div className="mt-1">
-                        <AttendanceCell row={row} />
-                    </div>
-                </div>
-            </div>
-
-            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-                <p>
-                    <span className="font-medium">P1:</span>{" "}
-                    {row.supervisors.pembimbing1.fullName
-                        ? toTitleCaseName(row.supervisors.pembimbing1.fullName)
-                        : "—"}
-                </p>
-                <p>
-                    <span className="font-medium">P2:</span>{" "}
-                    {row.supervisors.pembimbing2.fullName
-                        ? toTitleCaseName(row.supervisors.pembimbing2.fullName)
-                        : "—"}
-                </p>
-            </div>
-
-            <div className="mt-2 grid grid-cols-5 gap-1 rounded-md border bg-muted/20 p-2 text-center">
-                <ScoreChip label="Pres" value={row.score.presentasi} max={20} />
-                <ScoreChip label="Kont" value={row.score.proposalKonten} max={40} />
-                <ScoreChip label="Strk" value={row.score.proposalStruktur} max={25} />
-                <ScoreChip label="Resp" value={row.score.kemampuanRespon} max={15} />
-                <ScoreChip label="Final" value={row.score.finalScore} max={100} bold />
-            </div>
-        </div>
-    );
-}
-
-function ScoreChip({
-    label,
-    value,
-    max,
-    bold = false,
-}: {
-    label: string;
-    value: number | null;
-    max: number;
-    bold?: boolean;
-}) {
-    return (
-        <div>
-            <p className="text-[9px] uppercase text-muted-foreground tracking-wide">{label}</p>
-            <p
-                className={cn(
-                    "tabular-nums",
-                    bold ? "text-sm font-semibold" : "text-xs",
-                    value == null ? "text-muted-foreground" : "",
-                )}
-            >
-                {value == null ? "—" : value}
-                <span className="text-[9px] text-muted-foreground">/{max}</span>
-            </p>
-        </div>
-    );
-}
-
-function UnmatchedRowMobile({ row }: { row: MonitoringUnmatchedRow }) {
-    return (
-        <div className="rounded-lg border bg-card p-3">
-            <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                    <p className="font-mono text-xs text-muted-foreground">{row.identityNumber}</p>
-                    <p className="text-sm font-medium leading-tight">
-                        {toTitleCaseName(row.fullName ?? "-")}
-                    </p>
-                </div>
-                <Badge variant="outline" className="border-rose-200 bg-rose-50 text-rose-700 text-[10px]">
-                    Unmatched
-                </Badge>
-            </div>
-            <div className="mt-2">
-                <AttendanceCell row={row} />
-            </div>
-        </div>
+        </span>
     );
 }

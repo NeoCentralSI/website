@@ -119,7 +119,7 @@ export function CplStudentScoreFormDialog({
 
                     {isSiaData && (
                         <p className="text-xs text-muted-foreground">
-                            Data dari SIA bersifat immutable dan tidak dapat diubah manual.
+                            Data dari SIA bersifat tetap dan tidak dapat diubah manual.
                         </p>
                     )}
 

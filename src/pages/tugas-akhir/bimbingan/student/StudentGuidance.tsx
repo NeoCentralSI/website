@@ -209,7 +209,7 @@ export default function StudentGuidancePage() {
   // proposal (pra-TA-04) atau logbook tugas akhir penuh (pasca-TA-04).
   const phaseLabel = guidancePhase === 'proposal' ? 'Logbook Proposal' : 'Logbook Tugas Akhir';
   const phaseDescription = guidancePhase === 'proposal'
-    ? 'Sesi bimbingan untuk fase pra-TA-04 (penyusunan & revisi proposal). Tidak ada minimum jumlah sesi (canon §5.5).'
+    ? 'Sesi bimbingan untuk fase pra-TA-04 (penyusunan & revisi proposal). Tidak ada minimum jumlah sesi.'
     : 'Sesi bimbingan untuk fase Tugas Akhir penuh (pasca-pengesahan TA-04 oleh KaDep).';
 
   return (
@@ -256,7 +256,7 @@ export default function StudentGuidancePage() {
                 {
                   label: "Pembimbing resmi tercatat di SIMPTA",
                   met: false,
-                  description: "Pembimbing resmi tercatat setelah TA-01 disetujui dosen atau TA-02 difinalisasi KaDep (canon §5.4).",
+                  description: "Pembimbing resmi tercatat setelah TA-01 disetujui dosen atau TA-02 difinalisasi KaDep.",
                 },
               ]}
               homeUrl="/metopel"

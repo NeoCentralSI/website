@@ -24,6 +24,7 @@ export interface LecturerQuota {
   pendingKadepCount: number;
   normalAvailable: number;
   overquotaAmount: number;
+  overquotaSahCount: number;
   notes: string | null;
   remaining: number;
   isNearLimit: boolean;

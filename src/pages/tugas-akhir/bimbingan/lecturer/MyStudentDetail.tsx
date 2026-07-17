@@ -26,6 +26,7 @@ import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/Guidan
 import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
+import { InformalLogReadonlyList } from "@/components/metopen/InformalLogReadonlyList";
 
 export default function LecturerMyStudentDetailPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -242,6 +243,13 @@ export default function LecturerMyStudentDetailPage() {
                             {thesisId && (
                                 <div className="mb-4">
                                     <ProposalVersionHistory thesisId={thesisId} compact readOnly />
+                                </div>
+                            )}
+
+                            {/* FR-LOG-08: Catatan informal Metopel read-only */}
+                            {thesisId && (
+                                <div className="mb-4">
+                                    <InformalLogReadonlyList thesisId={thesisId} compact />
                                 </div>
                             )}
 

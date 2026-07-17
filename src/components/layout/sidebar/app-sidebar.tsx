@@ -73,16 +73,14 @@ export const AppSidebar = React.memo(function AppSidebar({ data, ...props }: App
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild>
-                <a>
-                  <div className="bg-transparent text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <img src={logoImage} alt="Neo Central Logo" />
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">Neo Central</span>
-                    <span className="truncate text-xs">Sistem Informasi</span>
-                  </div>
-                </a>
+              <SidebarMenuButton size="lg" className="pointer-events-none">
+                <div className="bg-transparent text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <img src={logoImage} alt="Neo Central Logo" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">Neo Central</span>
+                  <span className="truncate text-xs">Sistem Informasi</span>
+                </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

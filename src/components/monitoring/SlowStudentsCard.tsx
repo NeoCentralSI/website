@@ -1,8 +1,9 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChevronRight, Mail, Copy, Bell, CheckCircle2, ExternalLink } from "lucide-react";
+import { Loading, Spinner } from "@/components/ui/spinner";
+import EmptyState from "@/components/ui/empty-state";
+import { AlertTriangle, ChevronRight, Mail, Copy, Bell, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useRole } from "@/hooks/shared/useRole";
@@ -71,24 +72,15 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading, show
             <Card className="h-full">
                 <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                        <Skeleton className="h-6 w-6 rounded-full" />
-                        <Skeleton className="h-6 w-48" />
+                        <AlertTriangle className="h-5 w-5 text-orange-500" />
+                        Progress Lambat & Berisiko
                     </CardTitle>
-                    <Skeleton className="h-4 w-64 mt-1" />
+                    <CardDescription>
+                        Daftar mahasiswa yang memerlukan perhatian segera
+                    </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="p-4 border rounded-xl space-y-3">
-                            <div className="flex justify-between">
-                                <Skeleton className="h-5 w-40" />
-                                <Skeleton className="h-6 w-20" />
-                            </div>
-                            <Skeleton className="h-4 w-full" />
-                            <div className="flex gap-2">
-                                <Skeleton className="h-4 w-32" />
-                            </div>
-                        </div>
-                    ))}
+                <CardContent className="flex h-64 items-center justify-center">
+                    <Loading text="Memuat progress lambat..." />
                 </CardContent>
             </Card>
         );
@@ -121,7 +113,11 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading, show
                                             onClick={handleBatchWarning}
                                             disabled={sending}
                                         >
-                                            <Bell className={cn("h-4 w-4", sending && "animate-bounce")} />
+                                            {sending ? (
+                                                <Spinner className="h-4 w-4" />
+                                            ) : (
+                                                <Bell className="h-4 w-4" />
+                                            )}
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -135,7 +131,7 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading, show
                                 variant="outline"
                                 size="sm"
                                 className="h-9 rounded-full bg-white"
-                                onClick={() => navigate("/monitoring/slow")}
+                                onClick={() => navigate("/tugas-akhir/monitoring?rating=SLOW")}
                             >
                                 Lihat Semua
                                 <ChevronRight className="h-4 w-4 ml-1" />
@@ -146,13 +142,11 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading, show
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-hidden">
                 {displayStudents.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                        <div className="bg-green-50 p-4 rounded-full mb-4">
-                            <CheckCircle2 className="h-10 w-10 text-green-500" />
-                        </div>
-                        <p className="font-semibold text-slate-800">Semua Terkendali!</p>
-                        <p className="text-sm text-slate-500 mt-1">Tidak ada mahasiswa dengan progress lambat saat ini.</p>
-                    </div>
+                    <EmptyState
+                        size="sm"
+                        title="Semua terkendali"
+                        description="Tidak ada mahasiswa dengan progress lambat saat ini."
+                    />
                 ) : (
                     <div className="h-[400px] overflow-y-auto px-4 py-4 custom-scrollbar bg-slate-50/20">
                         <div className="space-y-3">

@@ -75,6 +75,7 @@ export const API_CONFIG = {
       CPMKS: (role: string) => `/rubric-metopen/cpmks?role=${role}`,
       CPMKS_ALL: '/rubric-metopen/cpmks/all',
       CPMKS_CREATE: '/rubric-metopen/cpmks',
+      CPMK_BY_ID: (cpmkId: string) => `/rubric-metopen/cpmks/${cpmkId}`,
       CRITERIA: '/rubric-metopen/criteria',
       CRITERIA_BY_ID: (criteriaId: string) => `/rubric-metopen/criteria/${criteriaId}`,
       CPMK_CONFIG: (cpmkId: string, role: string) => `/rubric-metopen/cpmk/${cpmkId}?role=${role}`,
@@ -219,6 +220,8 @@ export const API_CONFIG = {
     KADEP_SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/approve`,
     KADEP_SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/reject`,
         STUDENT_PROPOSAL_VERSIONS: (thesisId: string) => `/thesisGuidance/lecturer/students/${thesisId}/proposal/versions`,
+        STUDENT_INFORMAL_LOGS: (thesisId: string) =>
+          `/thesisGuidance/lecturer/students/${thesisId}/metopen/informal-logs`,
       },
     THESIS_MONITORING: {
       DASHBOARD: '/thesisGuidance/monitoring/dashboard',
@@ -434,7 +437,7 @@ export const API_CONFIG = {
       ME_ASSESSMENT_HISTORY: '/metopen/me/assessment-history',
       /** BR-23: Arsip Metopel mahasiswa pasca promosi aktif — read-only single source of truth. */
       ME_ARCHIVE: '/metopen/me/archive',
-      /** FR-ARC-05: Mahasiswa unduh Formulir TA-04 PDF (stream terautentikasi). */
+      /** KC-20260709-06: endpoint tetap ada tetapi menolak unduh mahasiswa (403). */
       ME_TITLE_APPROVAL_DOCUMENT: '/metopen/me/archive/title-approval-document',
       /** KaDep/Admin: antre judul menunggu pengesahan. */
       KADEP_PENDING_TITLE_REPORTS: (academicYearId?: string) =>

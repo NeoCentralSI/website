@@ -175,7 +175,7 @@ describe("useSidebarMenu", () => {
     );
     const itemTitles = metopenMenu?.items.map((item) => item.title) ?? [];
 
-    expect(itemTitles).toContain("Overview");
+    expect(itemTitles).toContain("Ringkasan");
     expect(itemTitles).toContain("Cari Pembimbing");
   });
 
@@ -197,7 +197,7 @@ describe("useSidebarMenu", () => {
     );
     const itemTitles = metopenMenu?.items.map((item) => item.title) ?? [];
 
-    expect(itemTitles).toContain("Overview");
+    expect(itemTitles).toContain("Ringkasan");
     expect(itemTitles).not.toContain("Cari Pembimbing");
   });
 
@@ -306,11 +306,9 @@ describe("useSidebarMenu", () => {
     ]);
   });
 
-  // BR-24 (canon §4 + §5.8 + audit P0-06/P1-06):
-  // Sekdep role saja BUKAN dosen pembimbing operasional.
-  // Sekdep BUKAN co-approver TA-04 → menu "Tugas Akhir" hanya monitoring read-only,
-  // tanpa Bimbingan / Seminar / Sidang.
-  it("does not expose operational Metode Penelitian menu to Sekdep-only accounts (BR-24)", () => {
+  // BR-24: Sekdep-only tidak mendapat antrean operasional (TA-03A/B, inbox).
+  // Master CPMK & rubrik Metopen tetap wajib karena kewenangan Sekdep (FR-SCR / persona).
+  it("exposes Metopen master CPMK menu to Sekdep-only without operational queues (BR-24)", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
     mockRole({ isDosen: true, isSekdep: true });
 
@@ -319,7 +317,14 @@ describe("useSidebarMenu", () => {
     const metopenMenu = result.current.navMain.find(
       (item) => item.title === "Metode Penelitian",
     );
-    expect(metopenMenu).toBeUndefined();
+    expect(metopenMenu?.items).toEqual([
+      { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
+    ]);
+    const titles = metopenMenu?.items.map((item) => item.title) ?? [];
+    expect(titles).not.toContain("Penilaian TA-03A");
+    expect(titles).not.toContain("Penilaian TA-03B");
+    expect(titles).not.toContain("Monitoring Kelas");
+    expect(titles).not.toContain("Inbox Pembimbing");
   });
 
   it("limits Sekdep Tugas Akhir menu to Monitoring read-only (BR-24)", () => {
@@ -362,6 +367,7 @@ describe("useSidebarMenu", () => {
       (item) => item.title === "Metode Penelitian",
     );
     expect(metopenMenu?.items).toEqual([
+      { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
       { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
     ]);
@@ -382,6 +388,7 @@ describe("useSidebarMenu", () => {
       (item) => item.title === "Metode Penelitian",
     );
     expect(metopenMenu?.items).toEqual([
+      { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
       { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
       { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },

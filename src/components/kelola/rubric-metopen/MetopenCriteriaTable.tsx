@@ -34,12 +34,15 @@ interface MetopenCriteriaTableProps {
     isDeletingCriteria: boolean;
     isRemovingCpmk: boolean;
     isDeletingRubric: boolean;
+    onGoToCatalog?: () => void;
+    catalogCount?: number;
 }
 
 export function MetopenCriteriaTable({
     data, isLoading, isFetching, onRefresh, onAddCriteria, onEditCriteria,
     onDeleteCriteria, onDeleteCpmk, onCreateRubric, onUpdateRubric, onDeleteRubric,
     onReorderCriteria, onReorderRubrics, isDeletingCriteria, isRemovingCpmk, isDeletingRubric,
+    onGoToCatalog, catalogCount = 0,
 }: MetopenCriteriaTableProps) {
     const [deleteCpmkId, setDeleteCpmkId] = useState<string | null>(null);
     const [deleteCriteriaId, setDeleteCriteriaId] = useState<string | null>(null);
@@ -95,19 +98,33 @@ export function MetopenCriteriaTable({
     };
 
     if (isLoading) {
-        return (<div className="flex h-64 items-center justify-center"><Loading size="lg" text="Memuat data rubrik Metopel..." /></div>);
+        return (<div className="flex h-64 items-center justify-center"><Loading size="lg" text="Memuat konfigurasi rubrik..." /></div>);
     }
 
     return (
         <>
             <div className="flex items-center justify-between mb-3">
-                <p className="text-sm text-muted-foreground">{configuredCount} dari {data.length} CPMK sudah dikonfigurasi</p>
+                <p className="text-sm text-muted-foreground">
+                    {data.length === 0
+                        ? "Belum ada CPMK di konfigurasi role ini"
+                        : `${configuredCount} dari ${data.length} CPMK sudah punya kriteria`}
+                </p>
                 <RefreshButton onClick={onRefresh} isRefreshing={isFetching && !isLoading} />
             </div>
 
             {data.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                    Belum ada CPMK bertipe Metode Penelitian. Tambahkan CPMK terlebih dahulu di menu &quot;Kelola CPMK&quot; (tab Metodologi Penelitian).
+                <div className="rounded-lg border border-dashed px-6 py-8 text-center space-y-2">
+                    <p className="text-sm font-medium">Belum ada CPMK di konfigurasi</p>
+                    <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                        {catalogCount > 0
+                            ? "Gunakan tombol Masukkan CPMK untuk memilih dari katalog, lalu isi kriteria dan level skor."
+                            : "Buat CPMK di tab Katalog terlebih dahulu."}
+                    </p>
+                    {catalogCount === 0 && onGoToCatalog ? (
+                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={onGoToCatalog}>
+                            Buka Katalog CPMK
+                        </Button>
+                    ) : null}
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -148,8 +165,8 @@ export function MetopenCriteriaTable({
                                                         <Plus className="mr-1 h-3 w-3" /> Kriteria
                                                     </Button>
                                                     <Button variant="outline" size="sm" className="h-7 text-xs text-destructive hover:text-destructive"
-                                                        onClick={() => setDeleteCpmkId(cpmk.id)} disabled={cpmk.metopenAssessmentCriterias.length === 0}>
-                                                        <Trash2 className="mr-1 h-3 w-3" /> Hapus CPMK
+                                                        onClick={() => setDeleteCpmkId(cpmk.id)}>
+                                                        <Trash2 className="mr-1 h-3 w-3" /> Lepas dari penilaian
                                                     </Button>
                                                 </div>
                                             </div>
@@ -247,13 +264,16 @@ export function MetopenCriteriaTable({
 
             <AlertDialog open={!!deleteCpmkId} onOpenChange={(open: boolean) => !open && setDeleteCpmkId(null)}>
                 <AlertDialogContent><AlertDialogHeader>
-                    <AlertDialogTitle>Hapus Konfigurasi CPMK Metopel</AlertDialogTitle>
-                    <AlertDialogDescription>Semua kriteria dan rubrik Metopel pada CPMK ini akan dihapus untuk role yang dipilih. Data master CPMK tetap tersimpan.</AlertDialogDescription>
+                    <AlertDialogTitle>Lepas CPMK dari penilaian?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Kriteria dan level rubrik untuk role ini akan dihapus. CPMK tetap ada di
+                        katalog dan dapat dimasukkan lagi nanti.
+                    </AlertDialogDescription>
                 </AlertDialogHeader><AlertDialogFooter>
                     <AlertDialogCancel>Batal</AlertDialogCancel>
                     <AlertDialogAction onClick={async () => { if (deleteCpmkId) { await onDeleteCpmk(deleteCpmkId); setDeleteCpmkId(null); } }}
                         disabled={isRemovingCpmk} className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90">
-                        {isRemovingCpmk ? (<><Spinner className="mr-2 h-4 w-4" />Menghapus...</>) : 'Hapus'}
+                        {isRemovingCpmk ? (<><Spinner className="mr-2 h-4 w-4" />Melepas...</>) : 'Lepas'}
                     </AlertDialogAction>
                 </AlertDialogFooter></AlertDialogContent>
             </AlertDialog>

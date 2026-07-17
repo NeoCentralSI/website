@@ -240,10 +240,10 @@ export default function KuotaBimbingan() {
             render: (row) => <span className="font-semibold">{row.normalAvailable}</span>,
         },
         {
-            key: 'overquotaAmount',
-            header: () => <span className="text-center block w-full">Overquota</span>,
+            key: 'overquotaSahCount',
+            header: () => <span className="text-center block w-full">Overquota Sah</span>,
             className: 'text-center',
-            render: (row) => <span className={`font-semibold ${row.overquotaAmount > 0 ? 'text-red-600' : ''}`}>{row.overquotaAmount}</span>,
+            render: (row) => <span className={`font-semibold ${(row.overquotaSahCount ?? 0) > 0 ? 'text-red-600' : ''}`}>{row.overquotaSahCount ?? 0}</span>,
         },
         {
             key: 'status',

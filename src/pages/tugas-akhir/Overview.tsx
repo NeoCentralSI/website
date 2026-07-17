@@ -68,7 +68,7 @@ import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHisto
 
 function getProposalStatusLabel(status: string | null | undefined) {
     if (status === "accepted") return "Beban aktif TA";
-    if (status === "submitted") return "Legacy review KaDep";
+    if (status === "submitted") return "Menunggu review KaDep";
     if (status === "rejected") return "Ditolak KaDep";
     return "Belum promosi aktif";
 }
@@ -218,7 +218,8 @@ export default function TugasAkhirOverviewPage() {
     ];
 
     const finalProposalVersion = proposalSubmissionStatus?.finalProposalVersion ?? null;
-    const hasOfficialSupervisor = (thesisDetail?.supervisors?.length ?? 0) > 0;
+    const hasBookedSupervisor = proposalSubmissionStatus?.hasBookedSupervisor ?? (thesisDetail?.supervisors?.length ?? 0) > 0;
+    const hasOfficialSupervisor = proposalSubmissionStatus?.hasOfficialSupervisor ?? false;
     const hasUploadedVersion = !!proposalSubmissionStatus?.latestVersion;
     const hasFinalProposal = !!finalProposalVersion;
     const ta04Status = proposalApproval?.proposalStatus as "accepted" | "submitted" | "rejected" | null | undefined;
@@ -250,24 +251,26 @@ export default function TugasAkhirOverviewPage() {
         {
             key: "supervisor",
             icon: GraduationCap,
-            title: "1. Pembimbing Resmi",
-            status: hasOfficialSupervisor ? "Pembimbing sudah ditetapkan" : "Tunggu penetapan TA-01/TA-02",
+            title: "1. Penugasan Pembimbing",
+            status: hasOfficialSupervisor
+                ? "TA-04 sudah terbit"
+                : hasBookedSupervisor
+                    ? "Booking disetujui, menunggu TA-04"
+                    : "Tunggu penetapan TA-01/TA-02",
             state: hasOfficialSupervisor ? "completed" : "active",
             description:
-                "Mahasiswa baru diizinkan ke fase proposal setelah pembimbing resmi tercatat di thesis_participants (BR-01).",
+                "Booking mereservasi pembimbing dan kuota. Bimbingan proposal yang tercatat sistem baru berwenang setelah TA-04 batch difinalisasi KaDep.",
         },
         {
             key: "upload-version",
             icon: FileText,
-            title: "2. Upload Versi Proposal",
+            title: "2. Unggah versi proposal",
             status: hasUploadedVersion ? "Setidaknya 1 versi tersimpan" : "Belum ada versi diunggah",
-            state: !hasOfficialSupervisor
-                ? "pending"
-                : hasUploadedVersion
+            state: hasUploadedVersion
                     ? "completed"
                     : "active",
             description:
-                "Bimbingan dilakukan secara berkala. Tidak ada batas minimum jumlah sesi (canon §5.5) — fokus kualitas, bukan kuota.",
+                "Draf proposal pribadi dapat disimpan sebelum TA-04. Bimbingan tercatat dan submit proposal final baru dibuka setelah TA-04.",
         },
         {
             key: "proposal-final",
@@ -293,7 +296,7 @@ export default function TugasAkhirOverviewPage() {
                     ? "completed"
                     : "active",
             description:
-                "TA-03A oleh Pembimbing 1 (master) + Pembimbing 2 (co-sign konsensus). TA-03B oleh Koordinator Metopen. Berjalan paralel; nilai immutable pasca submit (canon §5.7).",
+                "TA-03A oleh Pembimbing 1 (pengisi utama) + Pembimbing 2 (persetujuan konsensus). TA-03B oleh Koordinator Metopen. Berjalan paralel; nilai tidak dapat diubah setelah disubmit.",
         },
         {
             key: "ta04",
@@ -416,8 +419,7 @@ export default function TugasAkhirOverviewPage() {
                         </div>
                     )}
 
-                    {/* P1-14 (canon §5.10): Banner sukses promosi aktif dengan CTA download SK PDF.
-                        Tampil hanya saat proposalStatus = "accepted" dan thesis aktif. */}
+                    {/* Banner sukses promosi aktif — status sistem, tanpa unduh PDF. */}
                     {isThesisActive && ta04Accepted && (
                         <Card className="w-full border-emerald-200 bg-emerald-50/70">
                             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -427,10 +429,10 @@ export default function TugasAkhirOverviewPage() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-emerald-900">
-                                            Selamat! Judul TA Anda sudah disahkan KaDep.
+                                            Selamat! Anda sudah di fase Tugas Akhir penuh.
                                         </p>
                                         <p className="text-sm text-emerald-800">
-                                            Anda kini berada di fase Tugas Akhir penuh. Formulir TA-04 resmi dapat diunduh dari Arsip Metopel setelah batch periode difinalisasi KaDep.
+                                            Penugasan pembimbing dan judul tercatat di sistem. Dokumen cetak TA-04 dikelola departemen — bukan bukti keputusan di aplikasi.
                                         </p>
                                     </div>
                                 </div>
@@ -657,7 +659,7 @@ export default function TugasAkhirOverviewPage() {
                                     <CardHeader>
                                         <CardTitle className="text-lg">Stepper Alur Proposal &rarr; TA-04</CardTitle>
                                         <CardDescription>
-                                            Lima step kualitatif dari pembimbing resmi sampai pengesahan TA-04 oleh KaDep. Tidak ada gate kuantitatif &ldquo;minimum N sesi&rdquo; (canon §5.5 + Q3).
+                                            Lima step kualitatif dari pembimbing resmi sampai pengesahan TA-04 oleh KaDep. Tidak ada syarat kuantitatif minimum jumlah sesi bimbingan.
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-3">

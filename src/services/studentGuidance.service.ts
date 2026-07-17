@@ -564,6 +564,14 @@ export interface FinalProposalVersionStatus {
 export interface ProposalSubmissionStatus {
   thesisId: string;
   hasSupervisor: boolean;
+  /** Booking P1/P2 sudah ada; belum berarti bimbingan proposal berwenang. */
+  hasBookedSupervisor: boolean;
+  /** Hanya benar setelah TA-04 batch difinalisasi KaDep. */
+  hasOfficialSupervisor: boolean;
+  /** Draf pribadi tetap boleh diunggah; submit final menunggu gate ini. */
+  canSubmitFinalProposal: boolean;
+  guidanceGateOpen: boolean;
+  guidanceGateReason: string | null;
   proposalStatus: string | null;
   uploadLocked: boolean;
   uploadLockedReason: string | null;

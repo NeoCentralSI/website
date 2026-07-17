@@ -78,7 +78,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
     const coSignMutation = useMutation({
         mutationFn: (note: string | null) => assessmentService.coSignSupervisorScore(thesisId, note),
         onSuccess: () => {
-            toast.success("Co-sign Pembimbing 2 berhasil dicatat. Penilaian TA-03A finalisasi konsensus.");
+            toast.success("Persetujuan Pembimbing 2 berhasil dicatat. Penilaian TA-03A finalisasi konsensus.");
             queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-score-detail", thesisId] });
             queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-queue"] });
             queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-history"] });
@@ -91,7 +91,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
             setCoSignNote("");
         },
         onError: (err: Error) => {
-            toast.error(err.message || "Gagal melakukan co-sign");
+            toast.error(err.message || "Gagal mencatat persetujuan");
         },
     });
 
@@ -153,9 +153,9 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                 Penilaian sudah final dan tidak dapat direvisi
             </AlertTitle>
             <AlertDescription className="text-emerald-700">
-                Sesuai canon §5.7.2, nilai TA-03A {hasP2 ? "(termasuk co-sign Pembimbing 2)" : ""} dan TA-03B
-                terkunci permanen pasca submit. Revisi konten proposal hanya berlaku di fase bimbingan
-                informal pra-submit final.
+                Nilai TA-03A {hasP2 ? "(termasuk persetujuan Pembimbing 2)" : ""} dan TA-03B terkunci permanen
+                setelah disubmit. Revisi konten proposal hanya berlaku di fase bimbingan informal
+                sebelum submit proposal final.
             </AlertDescription>
         </Alert>
     ) : null;
@@ -193,15 +193,15 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                     <Alert className="border-blue-200 bg-blue-50">
                         <FileSignature className="h-5 w-5 text-blue-600" />
                         <AlertTitle className="text-blue-800">
-                            Anda Pembimbing 1 — master pengisi TA-03A
+                            Anda Pembimbing 1 — pengisi utama TA-03A
                         </AlertTitle>
                         <AlertDescription className="text-blue-700">
                             Anda mengisi rubrik penilaian utuh (maks 75 poin) atas <strong>konsensus</strong>{" "}
                             dengan{" "}
                             {hasP2
-                                ? "Pembimbing 2 (akan co-sign setelah Anda submit)"
+                                ? "Pembimbing 2 (akan memberi persetujuan setelah Anda serahkan penilaian)"
                                 : "diri sendiri (thesis hanya 1 pembimbing)"}
-                            . Setelah submit, sistem menunggu {hasP2 ? "co-sign P2 + " : ""}TA-03B
+                            . Setelah serahkan penilaian, sistem menunggu {hasP2 ? "persetujuan P2 + " : ""}TA-03B
                             Koordinator Metopen untuk auto-finalisasi dan promosi aktif setelah KRS TA terkonfirmasi.
                         </AlertDescription>
                     </Alert>
@@ -210,11 +210,11 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                     <Alert className="border-blue-200 bg-blue-50">
                         <FileSignature className="h-5 w-5 text-blue-600" />
                         <AlertTitle className="text-blue-800">
-                            TA-03A sudah disubmit oleh Pembimbing 1
+                            TA-03A sudah diserahkan oleh Pembimbing 1
                         </AlertTitle>
                         <AlertDescription className="text-blue-700">
                             Rubrik TA-03A sekarang read-only di sisi Anda. Siklus penilaian tinggal menunggu{" "}
-                            {hasP2 && !coSignedAt ? "co-sign Pembimbing 2" : "kelengkapan TA-03B Koordinator Metopen"}{" "}
+                            {hasP2 && !coSignedAt ? "persetujuan Pembimbing 2" : "kelengkapan TA-03B Koordinator Metopen"}{" "}
                             sebelum nilai akhir TA-03 dikunci permanen untuk promosi aktif otomatis.
                         </AlertDescription>
                     </Alert>
@@ -225,13 +225,13 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                         formCode="TA-03A"
                         submitButtonLabel={
                             hasP2
-                                ? "Submit Penilaian (atas konsensus dengan P2)"
-                                : "Submit Penilaian TA-03A"
+                                ? "Serahkan penilaian (atas konsensus dengan P2)"
+                                : "Serahkan penilaian TA-03A"
                         }
                         submitConfirmText={
                             hasP2
-                                ? "Setelah submit, Pembimbing 2 perlu co-sign untuk finalisasi. Pasca finalisasi, nilai akan dikunci permanen dan dipakai promosi aktif otomatis setelah KRS TA terkonfirmasi."
-                                : "Setelah submit + TA-03B masuk, nilai akan dikunci permanen dan dipakai promosi aktif otomatis setelah KRS TA terkonfirmasi. Pastikan rubrik sudah benar."
+                                ? "Setelah serahkan penilaian, Pembimbing 2 perlu memberi persetujuan untuk finalisasi. Pasca finalisasi, nilai akan dikunci permanen dan dipakai promosi aktif otomatis setelah KRS TA terkonfirmasi."
+                                : "Setelah serahkan penilaian + TA-03B masuk, nilai akan dikunci permanen dan dipakai promosi aktif otomatis setelah KRS TA terkonfirmasi. Pastikan rubrik sudah benar."
                         }
                     />
                 )}
@@ -251,11 +251,11 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                     <Alert className="border-violet-200 bg-violet-50">
                         <FileSignature className="h-5 w-5 text-violet-600" />
                         <AlertTitle className="text-violet-800">
-                            Anda Pembimbing 2 — co-sign TA-03A
+                            Anda Pembimbing 2 — persetujuan TA-03A
                         </AlertTitle>
                         <AlertDescription className="text-violet-700">
-                            Pembimbing 1 yang mengisi rubrik utuh; Anda berperan sebagai{" "}
-                            <strong>co-sign</strong> persetujuan konsensus. Co-sign tidak mengubah nilai —
+                            Pembimbing 1 yang mengisi rubrik utuh; Anda berperan memberikan{" "}
+                            <strong>persetujuan</strong> konsensus. Persetujuan tidak mengubah nilai —
                             hanya menambah audit trail bahwa kedua pembimbing setuju. Selaras formulir
                             TA-03A cetak yang punya satu blok tanda tangan tunggal &ldquo;Dosen
                             Pembimbing&rdquo;.
@@ -265,7 +265,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                 {!isFinalized && needsCoSign && (
                     <Card className="border-violet-200">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Berikan Co-sign Konsensus</CardTitle>
+                            <CardTitle className="text-base">Berikan persetujuan konsensus</CardTitle>
                             <CardDescription>
                                 Anda menyetujui penilaian TA-03A yang diisi Pembimbing 1. Catatan opsional,
                                 misalnya ringkasan diskusi konsensus.
@@ -273,7 +273,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-2">
-                                <Label htmlFor="cosign-note">Catatan Co-sign (opsional)</Label>
+                                <Label htmlFor="cosign-note">Catatan persetujuan (opsional)</Label>
                                 <Textarea
                                     id="cosign-note"
                                     placeholder="Mis. Saya setuju dengan penilaian rubrik ini setelah berdiskusi dengan Pembimbing 1."
@@ -291,24 +291,24 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                                         {coSignMutation.isPending ? (
                                             <>
                                                 <Spinner className="mr-2 h-4 w-4" />
-                                                Mencatat co-sign...
+                                                Mencatat persetujuan...
                                             </>
                                         ) : (
                                             <>
                                                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                                                Saya menyetujui penilaian ini (Co-sign)
+                                                Berikan persetujuan
                                             </>
                                         )}
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Konfirmasi Co-sign Pembimbing 2</AlertDialogTitle>
+                                        <AlertDialogTitle>Konfirmasi persetujuan Pembimbing 2</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Setelah co-sign tercatat, nilai TA-03A tidak dapat direvisi
-                                            (canon §5.7.2). Bila TA-03B juga sudah masuk, sistem akan
-                                            auto-finalisasi dan memakai nilai itu untuk promosi aktif setelah KRS TA terkonfirmasi. Pastikan
-                                            Anda sudah berdiskusi konsensus dengan Pembimbing 1.
+                                            Setelah persetujuan tercatat, nilai TA-03A tidak dapat direvisi.
+                                            Bila TA-03B juga sudah masuk, sistem akan auto-finalisasi dan
+                                            memakai nilai itu untuk promosi aktif setelah KRS TA terkonfirmasi.
+                                            Pastikan Anda sudah berdiskusi konsensus dengan Pembimbing 1.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -316,7 +316,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                                         <AlertDialogAction
                                             onClick={() => coSignMutation.mutate(coSignNote.trim() || null)}
                                         >
-                                            Ya, Berikan Co-sign
+                                            Ya, berikan persetujuan
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -328,8 +328,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                     <Alert className="border-amber-200 bg-amber-50">
                         <AlertTriangle className="h-5 w-5 text-amber-600" />
                         <AlertDescription className="text-amber-700">
-                            Pembimbing 1 belum mengisi rubrik TA-03A. Tombol co-sign akan aktif setelah
-                            Pembimbing 1 submit.
+                            Pembimbing 1 belum mengisi rubrik TA-03A. Tombol persetujuan akan aktif setelah
+                            Pembimbing 1 serahkan penilaian.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -348,8 +348,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
             <Alert className="border-border bg-muted/30">
                 <FileSignature className="h-5 w-5 text-muted-foreground" />
                 <AlertDescription className="text-muted-foreground">
-                    Anda bukan pembimbing aktif untuk thesis ini. Hanya Pembimbing 1 (master pengisi) dan
-                    Pembimbing 2 (co-sign) yang dapat berinteraksi dengan rubrik TA-03A.
+                    Anda bukan pembimbing aktif untuk thesis ini. Hanya Pembimbing 1 (pengisi utama) dan
+                    Pembimbing 2 (persetujuan) yang dapat berinteraksi dengan rubrik TA-03A.
                 </AlertDescription>
             </Alert>
         </div>
@@ -469,7 +469,7 @@ function SummaryCard({
             <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <ScoreStatBlock
-                        label={`TA-03A · Pembimbing${hasP2 ? " + co-sign" : ""}`}
+                        label={`TA-03A · Pembimbing${hasP2 ? " + persetujuan" : ""}`}
                         score={summary.supervisorScore}
                         max={75}
                         accent="blue"
@@ -494,7 +494,7 @@ function SummaryCard({
                         {summary.coSignedAt ? (
                             <p>
                                 <CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-emerald-600" />
-                                Co-sign Pembimbing 2{summary.coSignerName ? ` · ${summary.coSignerName}` : ""}{" "}
+                                Persetujuan Pembimbing 2{summary.coSignerName ? ` · ${summary.coSignerName}` : ""}{" "}
                                 pada {formatDateId(summary.coSignedAt)}.
                                 {summary.coSignNote ? (
                                     <span className="ml-1 text-muted-foreground">
@@ -504,12 +504,12 @@ function SummaryCard({
                             </p>
                         ) : isP1Submitted ? (
                             <p className="text-amber-700">
-                                Pembimbing 2 belum melakukan co-sign. Penilaian TA-03A baru dianggap final
-                                konsensus setelah co-sign tercatat.
+                                Pembimbing 2 belum memberi persetujuan. Penilaian TA-03A baru dianggap final
+                                konsensus setelah persetujuan tercatat.
                             </p>
                         ) : (
                             <p className="text-muted-foreground">
-                                Pembimbing 2 akan dapat co-sign setelah Pembimbing 1 submit penilaian.
+                                Pembimbing 2 akan dapat memberi persetujuan setelah Pembimbing 1 serahkan penilaian.
                             </p>
                         )}
                     </div>

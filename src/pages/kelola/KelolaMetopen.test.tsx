@@ -59,14 +59,14 @@ describe("KelolaMetopen", () => {
     );
   });
 
-  it("redirects Sekdep users to the thesis management surface", () => {
+  it("redirects Sekdep users to Metopen CPMK & rubric master", () => {
     mockRole({ isSekdep: true });
 
     render(<KelolaMetopen />);
 
     expect(screen.getByTestId("navigate")).toHaveAttribute(
       "data-to",
-      "/kelola/tugas-akhir",
+      "/kelola/metopen/cpmk-rubrik",
     );
   });
 

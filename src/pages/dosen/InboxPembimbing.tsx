@@ -7,38 +7,35 @@ import {
 } from '@/services/advisorRequest.service';
 import { toast } from 'sonner';
 import { useState, useEffect, type ReactNode } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { Inbox, CheckCircle2, XCircle, Clock, History, Eye, AlertTriangle } from 'lucide-react';
+import { ArrowRight, CheckCircle2, XCircle, Clock, Eye, AlertTriangle, Gauge, UserCheck, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
+import { MetricAction } from '@/components/metopen/MetricAction';
 import { Loading } from '@/components/ui/spinner';
 import { Separator } from '@/components/ui/separator';
+import EmptyState from '@/components/ui/empty-state';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-    pending: { label: 'Menunggu', className: 'bg-blue-500/15 text-blue-700 border-blue-200' },
-    under_review: { label: 'Sedang Ditinjau', className: 'bg-indigo-500/15 text-indigo-700 border-indigo-200' },
-    pending_kadep: { label: 'Menunggu KaDep', className: 'bg-purple-500/15 text-purple-700 border-purple-200' },
-    booking_approved: { label: 'Booking Disetujui', className: 'bg-emerald-500/15 text-emerald-700 border-emerald-200' },
-    active_official: { label: 'Aktif Resmi', className: 'bg-green-500/15 text-green-700 border-green-200' },
-    rejected_by_dosen: { label: 'Ditolak Dosen', className: 'bg-red-500/15 text-red-700 border-red-200' },
-    rejected_by_kadep: { label: 'Ditolak KaDep', className: 'bg-red-500/15 text-red-700 border-red-200' },
-    canceled: { label: 'Dibatalkan', className: 'bg-gray-500/15 text-muted-foreground border-border' },
-    escalated: { label: 'Eskalasi Legacy', className: 'bg-purple-500/15 text-purple-700 border-purple-200' },
-    approved: { label: 'Disetujui Legacy', className: 'bg-green-500/15 text-green-700 border-green-200' },
-    rejected: { label: 'Ditolak Legacy', className: 'bg-red-500/15 text-red-700 border-red-200' },
-    override_approved: { label: 'Override Legacy', className: 'bg-green-500/15 text-green-700 border-green-200' },
-    redirected: { label: 'Dialihkan', className: 'bg-amber-500/15 text-amber-700 border-amber-200' },
-    withdrawn: { label: 'Ditarik', className: 'bg-gray-500/15 text-muted-foreground border-border' },
-    assigned: { label: 'Ditetapkan', className: 'bg-green-500/15 text-green-700 border-green-200' },
-};
+import {
+    getAdvisorRequestStatus,
+} from '@/lib/metopen/statusBadge';
 
 const researchPermitStatusLabel: Record<string, string> = {
     approved: 'Izin disetujui',
@@ -50,6 +47,14 @@ const requestTypeLabel: Record<string, string> = {
     ta_01: 'TA-01 - Pengajuan calon pembimbing',
     ta_02: 'TA-02 - Penetapan pembimbing oleh departemen',
 };
+
+function requestShortLabel(request: AdvisorRequest) {
+    return request.requestType === 'ta_02' ? 'TA-02' : 'TA-01';
+}
+
+function isPathCRequest(request: AdvisorRequest) {
+    return request.routeType === 'escalated';
+}
 
 function formatDate(d: string) {
     return formatDateId(d);
@@ -80,26 +85,20 @@ function DetailSection({ title, children }: { title: string; children: ReactNode
     );
 }
 
-function renderEmpty(icon: ReactNode, title: string, subtitle: string) {
-    return (
-        <div className="text-center py-16 text-muted-foreground">
-            {icon}
-            <p className="text-lg font-medium">{title}</p>
-            <p className="text-sm">{subtitle}</p>
-        </div>
-    );
+function renderEmpty(title: string, subtitle: string) {
+    return <EmptyState size="sm" title={title} description={subtitle} />;
 }
 
 function EntryCard({ entry, tone }: { entry: AdvisorQuotaEntry; tone: 'active' | 'booking' | 'pending'; }) {
-    const toneClass = tone === 'active'
-        ? 'border-green-200 bg-green-50/40'
+    const toneLabel = tone === 'active'
+        ? 'Beban aktif'
         : tone === 'booking'
-            ? 'border-emerald-200 bg-emerald-50/40'
-            : 'border-purple-200 bg-purple-50/40';
+            ? 'Booking'
+            : 'Menunggu KaDep';
 
     return (
-        <Card className={toneClass}>
-            <CardContent className="p-4 space-y-2">
+        <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
                 <div className="flex items-start gap-3">
                     <Avatar className="h-10 w-10 shrink-0">
                         <AvatarImage src={entry.studentAvatarUrl ?? undefined} />
@@ -108,22 +107,32 @@ function EntryCard({ entry, tone }: { entry: AdvisorQuotaEntry; tone: 'active' |
                         </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
                             <div className="min-w-0">
                                 <p className="font-semibold text-sm truncate">{entry.studentName}</p>
                                 <p className="text-xs text-muted-foreground">{entry.studentIdentityNumber || '-'}</p>
                             </div>
-                            <Badge variant="outline" className={`text-xs ${statusConfig[entry.requestStatus]?.className ?? ''}`}>
-                                {statusConfig[entry.requestStatus]?.label ?? entry.requestStatus}
-                            </Badge>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                    {toneLabel}
+                                </Badge>
+                                <Badge variant="outline" className={`text-xs ${getAdvisorRequestStatus(entry.requestStatus).className}`}>
+                                    {getAdvisorRequestStatus(entry.requestStatus).label}
+                                </Badge>
+                            </div>
                         </div>
-                        <div className="mt-1 space-y-1 text-xs text-muted-foreground">
-                            <p>Judul: {entry.thesisTitle || '-'}</p>
-                            <p>Topik: {entry.topicName || '-'}</p>
-                            {entry.roleName && <p>Role: {entry.roleName}</p>}
-                            {entry.lecturerApprovalNote && <p>Catatan dosen: {entry.lecturerApprovalNote}</p>}
-                            {entry.kadepNotes && <p>Catatan KaDep: {entry.kadepNotes}</p>}
+                        <p className="mt-2 line-clamp-2 text-sm font-medium leading-relaxed">
+                            {entry.thesisTitle || 'Judul belum tersedia'}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            <span>{entry.topicName || 'Topik belum tersedia'}</span>
+                            {entry.roleName && <span>{entry.roleName}</span>}
                         </div>
+                        {(entry.lecturerApprovalNote || entry.kadepNotes) && (
+                            <p className="mt-2 border-l-2 border-border pl-2 text-xs leading-relaxed text-muted-foreground">
+                                {entry.kadepNotes || entry.lecturerApprovalNote}
+                            </p>
+                        )}
                     </div>
                 </div>
             </CardContent>
@@ -133,6 +142,7 @@ function EntryCard({ entry, tone }: { entry: AdvisorQuotaEntry; tone: 'active' |
 
 export default function InboxPembimbing() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+    const [searchParams, setSearchParams] = useSearchParams();
     useEffect(() => {
         setBreadcrumbs([{ label: 'Inbox Pembimbing' }]);
         setTitle(undefined);
@@ -148,7 +158,20 @@ export default function InboxPembimbing() {
     });
     const [rejectionReason, setRejectionReason] = useState('');
     const [approvalNote, setApprovalNote] = useState('');
-    const [activeTab, setActiveTab] = useState('pending');
+    const activeTab = ['pending', 'portfolio', 'history'].includes(searchParams.get('tab') ?? '')
+        ? (searchParams.get('tab') as 'pending' | 'portfolio' | 'history')
+        : 'pending';
+    const portfolioFocus = ['active', 'booking', 'pending', 'overquota'].includes(searchParams.get('focus') ?? '')
+        ? (searchParams.get('focus') as 'active' | 'booking' | 'pending' | 'overquota')
+        : null;
+
+    const applyView = (tab: 'pending' | 'portfolio' | 'history', focus?: typeof portfolioFocus) => {
+        const next = new URLSearchParams(searchParams);
+        next.set('tab', tab);
+        if (tab === 'portfolio' && focus) next.set('focus', focus);
+        else next.delete('focus');
+        setSearchParams(next, { replace: true });
+    };
 
     const { data: inboxData, isLoading: inboxLoading } = useQuery({
         queryKey: ['dosen-inbox'],
@@ -173,6 +196,9 @@ export default function InboxPembimbing() {
         bookings: [],
         pendingKadep: [],
     };
+    const overquotaEntries = [...inbox.activeOfficial, ...inbox.bookings]
+        .filter((entry) => entry.acceptedOverNormal);
+    const overquotaSahCount = inbox.summary?.overquotaSahCount ?? overquotaEntries.length;
 
     const respondMutation = useMutation({
         mutationFn: ({ id, action, approvalNote: nextApprovalNote, lecturerOverquotaReason, rejectionReason: nextReason }: { id: string; action: 'accept' | 'reject'; approvalNote?: string; lecturerOverquotaReason?: string; rejectionReason?: string }) =>
@@ -226,7 +252,7 @@ export default function InboxPembimbing() {
             );
             if (!hasStudentJustification) {
                 toast.error(
-                    'Kuota normal Anda penuh dan pengajuan ini belum memuat justifikasi akademik mahasiswa. Minta mahasiswa mengajukan ulang lewat jalur escalated TA-01 (dosen kuota merah) agar dapat diteruskan ke KaDep.',
+                    'Kuota normal Anda penuh dan pengajuan ini belum memuat justifikasi akademik mahasiswa. Minta mahasiswa mengajukan ulang lewat TA-01 saat kuota penuh (dosen dengan kuota merah) agar dapat diteruskan ke KaDep.',
                 );
                 return;
             }
@@ -264,141 +290,125 @@ export default function InboxPembimbing() {
 
     const handleOpenDetail = (request: AdvisorRequest, showActions: boolean) => {
         setDetailDialog({ open: true, request, showActions });
-        if (showActions && request.status === 'pending') {
-            markReviewMutation.mutate(request.id);
-        }
     };
 
     const renderRequestCard = (request: AdvisorRequest, showActions: boolean) => {
-        const cfg = statusConfig[request.status] ?? { label: request.status, className: '' };
+        const cfg = getAdvisorRequestStatus(request.status);
         const isQuotaWarning = (inbox.summary?.normalAvailable ?? 0) <= 0;
+        const isUnderReview = request.status === 'under_review';
 
         return (
-            <Card key={request.id} className="transition-shadow hover:shadow-md">
-                <CardContent className="p-4 sm:p-5 space-y-3">
-                    <div className="flex items-start gap-3">
-                        <Avatar className="h-10 w-10 shrink-0 sm:h-11 sm:w-11">
-                            <AvatarImage src={request.student?.user?.avatarUrl ?? undefined} />
-                            <AvatarFallback>
-                                {request.student?.user?.fullName?.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0 space-y-1">
-                            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                                <div className="min-w-0">
-                                    <p className="font-semibold text-sm truncate">{request.student?.user?.fullName}</p>
-                                    <p className="text-xs text-muted-foreground">{request.student?.user?.identityNumber}</p>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                    {!showActions && (
+            <Card key={request.id} className="overflow-hidden border-border/70 shadow-none transition-colors hover:border-primary/30">
+                <CardContent className="p-0">
+                    <div className="space-y-4 p-4 sm:p-5">
+                        <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/60 sm:h-11 sm:w-11">
+                                <AvatarImage src={request.student?.user?.avatarUrl ?? undefined} />
+                                <AvatarFallback>
+                                    {request.student?.user?.fullName?.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                                    <div className="min-w-0">
+                                        <p className="font-semibold text-sm truncate">{request.student?.user?.fullName}</p>
+                                        <p className="text-xs text-muted-foreground">{request.student?.user?.identityNumber}</p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center justify-end gap-1.5">
                                         <Badge variant="outline" className={`text-xs ${cfg.className}`}>
                                             {cfg.label}
                                         </Badge>
-                                    )}
-                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                        <Clock className="h-3.5 w-3.5" />
-                                        {formatDate(request.createdAt)}
+                                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                                            {requestShortLabel(request)}
+                                        </Badge>
+                                        {isPathCRequest(request) && (
+                                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-xs text-amber-800">
+                                                Di atas kuota
+                                            </Badge>
+                                        )}
                                     </div>
                                 </div>
+                                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5" />
+                                        Diajukan {formatDate(request.createdAt)}
+                                    </span>
+                                    <span>{request.topic?.name || 'Topik belum dipilih'}</span>
+                                </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 text-xs">
-                                <Badge variant="secondary">{request.topic?.name}</Badge>
-                                {request.proposedTitle && (
-                                    <span className="text-muted-foreground truncate max-w-[200px] sm:max-w-none">"{request.proposedTitle}"</span>
-                                )}
-                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <p className="text-sm font-semibold leading-snug">
+                                {request.proposedTitle || 'Judul belum tersedia'}
+                            </p>
                             {request.backgroundSummary && (
-                                <p className="text-xs text-muted-foreground line-clamp-2">{request.backgroundSummary}</p>
+                                <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                                    {request.backgroundSummary}
+                                </p>
                             )}
                             {(request.researchObject || request.researchPermitStatus) && (
-                                <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                     {request.researchObject && <span>Objek: {request.researchObject}</span>}
                                     {request.researchPermitStatus && (
-                                        <span>
-                                            {researchPermitStatusLabel[request.researchPermitStatus] || request.researchPermitStatus}
-                                        </span>
+                                        <span>{researchPermitStatusLabel[request.researchPermitStatus] || request.researchPermitStatus}</span>
                                     )}
                                 </div>
                             )}
-                            {(request.studentJustification || request.justificationText) && (
-                                <p className="text-xs text-muted-foreground">Justifikasi mahasiswa: {request.studentJustification || request.justificationText}</p>
-                            )}
-                            {request.rejectionReason && (
-                                <p className="text-xs text-red-600">Alasan ditolak: {request.rejectionReason}</p>
-                            )}
                         </div>
+
+                        {(request.studentJustification || request.justificationText) && (
+                            <div className="border-l-2 border-amber-400 pl-3 text-xs leading-relaxed">
+                                <p className="font-medium text-foreground">Alasan memilih dosen ini</p>
+                                <p className="mt-1 line-clamp-3 text-muted-foreground">
+                                    {request.studentJustification || request.justificationText}
+                                </p>
+                            </div>
+                        )}
+
+                        {request.rejectionReason && (
+                            <p className="text-xs text-destructive">Alasan ditolak: {request.rejectionReason}</p>
+                        )}
+
+                        {showActions && isQuotaWarning && (
+                            <div className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+                                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                <span>Kuota normal penuh. Penerimaan membutuhkan proyeksi lulus sebelum diteruskan ke KaDep.</span>
+                            </div>
+                        )}
                     </div>
 
-                    {showActions && isQuotaWarning && (
-                        <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                            <span>Kuota normal Anda sedang penuh. Jika menerima pengajuan ini, sistem akan meminta alasan lalu meneruskannya ke validasi KaDep.</span>
-                        </div>
-                    )}
-
-                    {showActions && (
-                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleOpenDetail(request, true)}
-                                disabled={respondMutation.isPending || markReviewMutation.isPending}
-                            >
-                                <Eye className="h-3.5 w-3.5 mr-1" />
-                                Tinjau Detail
-                            </Button>
-                            <Button
-                                size="sm"
-                                onClick={() => handleAccept(request)}
-                                disabled={respondMutation.isPending || markReviewMutation.isPending}
-                                className="bg-emerald-600 hover:bg-emerald-700"
-                            >
-                                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                                Terima
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600 border-red-200 hover:bg-red-50"
-                                onClick={() => setRejectDialog({ open: true, request })}
-                                disabled={respondMutation.isPending || markReviewMutation.isPending}
-                            >
-                                <XCircle className="h-3.5 w-3.5 mr-1" />
-                                Tolak
-                            </Button>
-                            {request.status === 'pending' && (
+                    <div className="flex flex-col gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                        <p className="text-xs text-muted-foreground">
+                            {showActions
+                                ? isUnderReview
+                                    ? 'Pengajuan sudah ditandai sedang ditinjau.'
+                                    : 'Tinjau substansi sebelum memberi keputusan.'
+                                : 'Keputusan dan catatan tersimpan dalam riwayat.'}
+                        </p>
+                        <div className="grid grid-cols-1 gap-2 sm:flex sm:items-center">
+                            {showActions && request.status === 'pending' && (
                                 <Button
                                     size="sm"
-                                    variant="outline"
-                                    className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                                    variant="ghost"
                                     onClick={() => markReviewMutation.mutate(request.id)}
                                     disabled={respondMutation.isPending || markReviewMutation.isPending}
                                 >
-                                    <Eye className="h-3.5 w-3.5 mr-1" />
-                                    {markReviewMutation.isPending ? 'Menandai...' : 'Sedang Ditinjau'}
+                                    <Eye className="mr-1.5 h-3.5 w-3.5" />
+                                    {markReviewMutation.isPending ? 'Menandai...' : 'Tandai sedang ditinjau'}
                                 </Button>
                             )}
-                            {request.status === 'under_review' && (
-                                <Badge variant="outline" className="text-xs bg-indigo-500/15 text-indigo-700 border-indigo-200">
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    Anda sedang meninjau
-                                </Badge>
-                            )}
-                        </div>
-                    )}
-
-                    {!showActions && (
-                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t">
                             <Button
                                 size="sm"
-                                variant="outline"
-                                onClick={() => handleOpenDetail(request, false)}
+                                variant={showActions ? 'default' : 'outline'}
+                                onClick={() => handleOpenDetail(request, showActions)}
+                                disabled={respondMutation.isPending || markReviewMutation.isPending}
                             >
-                                <Eye className="h-3.5 w-3.5 mr-1" />
-                                Lihat Detail
+                                {showActions ? (isUnderReview ? 'Lanjutkan tinjauan' : 'Tinjau') : 'Lihat detail'}
+                                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                             </Button>
                         </div>
-                    )}
+                    </div>
                 </CardContent>
             </Card>
         );
@@ -408,13 +418,13 @@ export default function InboxPembimbing() {
         title: string,
         subtitle: string,
         items: AdvisorQuotaEntry[],
-        tone: 'active' | 'booking' | 'pending',
+        tone: 'active' | 'booking' | 'pending' | null,
         emptyText: string,
     ) => (
         <div className="space-y-3">
             <div>
                 <h3 className="text-sm font-semibold">{title}</h3>
-                <p className="text-xs text-muted-foreground">{subtitle}</p>
+                <p className="text-xs text-muted-foreground">{items.length} mahasiswa · {subtitle}</p>
             </div>
             {items.length === 0 ? (
                 <Card>
@@ -423,7 +433,11 @@ export default function InboxPembimbing() {
             ) : (
                 <div className="space-y-3">
                     {items.map((entry) => (
-                        <EntryCard key={entry.id} entry={entry} tone={tone} />
+                        <EntryCard
+                            key={entry.id}
+                            entry={entry}
+                            tone={tone ?? (entry.bucket === 'active' ? 'active' : entry.bucket === 'pendingKadep' ? 'pending' : 'booking')}
+                        />
                     ))}
                 </div>
             )}
@@ -437,56 +451,74 @@ export default function InboxPembimbing() {
     ];
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="space-y-5 sm:space-y-6">
             <div>
                 <h1 className="text-base font-semibold tracking-tight sm:text-lg">
                     Inbox Permintaan Bimbingan
                 </h1>
-                <p className="text-xs text-muted-foreground sm:text-sm">
+                <p className="text-sm text-muted-foreground">
                     Permintaan bimbingan dari mahasiswa beserta snapshot kuota Anda saat ini.
                 </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                <Card>
-                    <CardContent className="p-4">
-                        <p className="text-xs text-muted-foreground">Kuota Maksimal</p>
-                        <p className="mt-1 text-2xl font-semibold tabular-nums">{inbox.summary?.quotaMax ?? 0}</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <p className="text-xs text-muted-foreground">Beban Aktif</p>
-                        <p className="mt-1 text-2xl font-semibold tabular-nums">{inbox.summary?.activeCount ?? 0}</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <p className="text-xs text-muted-foreground">Booking</p>
-                        <p className="mt-1 text-2xl font-semibold tabular-nums">{inbox.summary?.bookingCount ?? 0}</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <p className="text-xs text-muted-foreground">Pending KaDep</p>
-                        <p className="mt-1 text-2xl font-semibold tabular-nums">{inbox.summary?.pendingKadepCount ?? 0}</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <p className="text-xs text-muted-foreground">Sisa Normal</p>
-                        <p className="mt-1 text-2xl font-semibold tabular-nums">{inbox.summary?.normalAvailable ?? 0}</p>
-                    </CardContent>
-                </Card>
-                <Card className={(inbox.summary?.overquotaAmount ?? 0) > 0 ? 'border-red-200 bg-red-50/40' : ''}>
-                    <CardContent className="p-4">
-                        <p className="text-xs text-muted-foreground">Overquota Sah</p>
-                        <p className="mt-1 text-2xl font-semibold tabular-nums">{inbox.summary?.overquotaAmount ?? 0}</p>
-                    </CardContent>
-                </Card>
-            </div>
+            <Card className="overflow-hidden border-border/70 shadow-none">
+                <CardContent className="p-0">
+                    <div className="grid lg:grid-cols-[minmax(220px,0.8fr)_minmax(0,2fr)]">
+                        <div className="border-b bg-muted/25 p-5 lg:border-b-0 lg:border-r">
+                            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                <Gauge className="h-4 w-4" />
+                                Kapasitas bimbingan
+                            </div>
+                            <div className="mt-3 flex items-end gap-2">
+                                <span className="text-3xl font-semibold tabular-nums">{inbox.summary?.normalAvailable ?? 0}</span>
+                                <span className="pb-1 text-sm text-muted-foreground">sisa kuota normal</span>
+                            </div>
+                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                                Dari batas {inbox.summary?.quotaMax ?? 0} mahasiswa. Pengajuan di atas batas normal memerlukan validasi KaDep.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+                            <MetricAction
+                                icon={<UserCheck className="h-3.5 w-3.5" />}
+                                label="Beban aktif"
+                                value={inbox.summary?.activeCount ?? 0}
+                                tone="emerald"
+                                active={activeTab === 'portfolio' && portfolioFocus === 'active'}
+                                onClick={() => applyView('portfolio', 'active')}
+                            />
+                            <MetricAction
+                                icon={<UsersRound className="h-3.5 w-3.5" />}
+                                label="Booking"
+                                value={inbox.summary?.bookingCount ?? 0}
+                                tone="blue"
+                                active={activeTab === 'portfolio' && portfolioFocus === 'booking'}
+                                onClick={() => applyView('portfolio', 'booking')}
+                            />
+                            <MetricAction
+                                label="Menunggu KaDep"
+                                value={inbox.summary?.pendingKadepCount ?? 0}
+                                tone="amber"
+                                active={activeTab === 'portfolio' && portfolioFocus === 'pending'}
+                                onClick={() => applyView('portfolio', 'pending')}
+                            />
+                            <MetricAction
+                                label="Overquota sah"
+                                value={overquotaSahCount}
+                                tone="rose"
+                                hint="Disetujui melalui jalur di atas kuota normal"
+                                active={activeTab === 'portfolio' && portfolioFocus === 'overquota'}
+                                onClick={() => applyView('portfolio', 'overquota')}
+                            />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
-            <LocalTabsNav tabs={tabItems} activeTab={activeTab} onTabChange={setActiveTab} />
+            <LocalTabsNav
+                tabs={tabItems}
+                activeTab={activeTab}
+                onTabChange={(value) => applyView(value as 'pending' | 'portfolio' | 'history')}
+            />
 
             {activeTab === 'pending' && (
                 <>
@@ -496,7 +528,6 @@ export default function InboxPembimbing() {
                         </div>
                     ) : inbox.pendingRequests.length === 0 ? (
                         renderEmpty(
-                            <Inbox className="h-14 w-14 mx-auto mb-3 opacity-30" />,
                             'Tidak ada permintaan baru',
                             'Permintaan bimbingan mahasiswa akan muncul di sini.'
                         )
@@ -510,26 +541,40 @@ export default function InboxPembimbing() {
 
             {activeTab === 'portfolio' && (
                 <div className="space-y-6">
-                    {renderPortfolioSection(
+                    {portfolioFocus && (
+                        <div className="flex justify-end">
+                            <Button variant="outline" size="sm" onClick={() => applyView('portfolio')}>
+                                Tampilkan seluruh komposisi kuota
+                            </Button>
+                        </div>
+                    )}
+                    {(!portfolioFocus || portfolioFocus === 'active') && renderPortfolioSection(
                         'Aktif Resmi',
                         'Mahasiswa yang sudah masuk beban bimbingan resmi aktif.',
                         inbox.activeOfficial,
                         'active',
                         'Belum ada bimbingan resmi aktif.'
                     )}
-                    {renderPortfolioSection(
+                    {(!portfolioFocus || portfolioFocus === 'booking') && renderPortfolioSection(
                         'Booking Pra-TA',
                         'Mahasiswa yang sudah disetujui dosen pada fase Metopen tetapi belum resmi TA-04.',
                         inbox.bookings,
                         'booking',
                         'Belum ada booking pembimbing aktif.'
                     )}
-                    {renderPortfolioSection(
+                    {(!portfolioFocus || portfolioFocus === 'pending') && renderPortfolioSection(
                         'Pending Validasi KaDep',
                         'Pengajuan yang Anda terima di atas kuota normal dan masih menunggu keputusan KaDep.',
                         inbox.pendingKadep,
                         'pending',
                         'Tidak ada pengajuan yang menunggu validasi KaDep.'
+                    )}
+                    {portfolioFocus === 'overquota' && renderPortfolioSection(
+                        'Overquota Sah',
+                        'Mahasiswa yang disetujui melalui jalur di atas kuota normal.',
+                        overquotaEntries,
+                        null,
+                        'Tidak ada mahasiswa overquota sah pada komposisi kuota saat ini.'
                     )}
                 </div>
             )}
@@ -542,7 +587,6 @@ export default function InboxPembimbing() {
                         </div>
                     ) : history.length === 0 ? (
                         renderEmpty(
-                            <History className="h-14 w-14 mx-auto mb-3 opacity-30" />,
                             'Belum ada riwayat',
                             'Riwayat pengajuan yang sudah Anda respon akan muncul di sini.'
                         )
@@ -576,12 +620,13 @@ export default function InboxPembimbing() {
                             onChange={(e) => setApprovalNote(e.target.value)}
                             rows={4}
                         />
+                        <p className="text-xs text-muted-foreground">{approvalNote.trim().length}/10 karakter minimum</p>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setAcceptDialog({ open: false, request: null })}>
                             Batal
                         </Button>
-                        <Button onClick={handleAcceptSubmit} disabled={respondMutation.isPending}>
+                        <Button onClick={handleAcceptSubmit} disabled={respondMutation.isPending || approvalNote.trim().length < 10}>
                             {respondMutation.isPending ? 'Memproses...' : 'Terima & Kirim ke KaDep'}
                         </Button>
                     </DialogFooter>
@@ -605,7 +650,7 @@ export default function InboxPembimbing() {
                                             <DetailField label="Nama" value={toTitleCaseName(detailDialog.request.student?.user?.fullName)} />
                                             <DetailField label="NIM" value={detailDialog.request.student?.user?.identityNumber} />
                                             <DetailField label="Tanggal submit" value={formatDateId(detailDialog.request.createdAt)} />
-                                            <DetailField label="Status" value={statusConfig[detailDialog.request.status]?.label ?? detailDialog.request.status} />
+                                            <DetailField label="Status" value={getAdvisorRequestStatus(detailDialog.request.status).label} />
                                             <DetailField label="Jenis pengajuan" value={requestTypeLabel[detailDialog.request.requestType] ?? detailDialog.request.requestType} />
                                         </div>
                                     </DetailSection>
@@ -653,48 +698,48 @@ export default function InboxPembimbing() {
                         <>
                             <Separator />
                             <DialogFooter className="px-5 py-4">
-                                <Button variant="outline" onClick={() => setDetailDialog({ open: false, request: null, showActions: false })}>
-                                    Tutup
-                                </Button>
-                                {detailDialog.showActions && (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            className="text-red-600 border-red-200 hover:bg-red-50"
-                                            onClick={() => {
-                                                setRejectDialog({ open: true, request: detailDialog.request });
-                                                setDetailDialog({ open: false, request: null, showActions: false });
-                                            }}
-                                            disabled={respondMutation.isPending || markReviewMutation.isPending}
-                                        >
-                                            <XCircle className="h-3.5 w-3.5 mr-1" />
-                                            Tolak
-                                        </Button>
-                                        <Button
-                                            onClick={() => handleAccept(detailDialog.request!)}
-                                            disabled={respondMutation.isPending || markReviewMutation.isPending}
-                                            className="bg-emerald-600 hover:bg-emerald-700"
-                                        >
-                                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                                            Terima
-                                        </Button>
-                                    </>
-                                )}
+                                <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <Button variant="outline" onClick={() => setDetailDialog({ open: false, request: null, showActions: false })}>
+                                        Tutup
+                                    </Button>
+                                    {detailDialog.showActions && (
+                                        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                                            <Button
+                                                variant="destructive"
+                                                onClick={() => {
+                                                    setRejectDialog({ open: true, request: detailDialog.request });
+                                                    setDetailDialog({ open: false, request: null, showActions: false });
+                                                }}
+                                                disabled={respondMutation.isPending || markReviewMutation.isPending}
+                                            >
+                                                <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                                                Tolak
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleAccept(detailDialog.request!)}
+                                                disabled={respondMutation.isPending || markReviewMutation.isPending}
+                                            >
+                                                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                                                Terima
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
                             </DialogFooter>
                         </>
                     )}
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={rejectDialog.open} onOpenChange={(open) => { if (!open) { setRejectDialog({ open: false, request: null }); setRejectionReason(''); } }}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Tolak Pengajuan</DialogTitle>
-                        <DialogDescription>
+            <AlertDialog open={rejectDialog.open} onOpenChange={(open) => { if (!open) { setRejectDialog({ open: false, request: null }); setRejectionReason(''); } }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Tolak Pengajuan</AlertDialogTitle>
+                        <AlertDialogDescription>
                             Tolak pengajuan dari <strong>{rejectDialog.request?.student?.user?.fullName}</strong>.
                             Alasan penolakan akan terlihat oleh mahasiswa dan KaDep.
-                        </DialogDescription>
-                    </DialogHeader>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
                     <div className="py-2">
                         <Label>Alasan Penolakan *</Label>
                         <Textarea
@@ -705,16 +750,23 @@ export default function InboxPembimbing() {
                             className="mt-2"
                         />
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setRejectDialog({ open: false, request: null })}>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setRejectDialog({ open: false, request: null })}>
                             Batal
-                        </Button>
-                        <Button variant="destructive" onClick={handleRejectSubmit} disabled={respondMutation.isPending}>
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(event) => {
+                                event.preventDefault();
+                                handleRejectSubmit();
+                            }}
+                            disabled={respondMutation.isPending || rejectionReason.trim().length < 5}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
                             {respondMutation.isPending ? 'Menolak...' : 'Tolak Pengajuan'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

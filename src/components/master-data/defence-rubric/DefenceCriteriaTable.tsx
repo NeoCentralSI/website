@@ -182,7 +182,7 @@ export function DefenceCriteriaTable({
             {data.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
                     Belum ada CPMK yang tersedia.
-                    Silakan tambahkan CPMK terlebih dahulu di menu &quot;Kelola CPMK&quot;.
+                    Silakan tambahkan CPMK terlebih dahulu di menu &quot;Kelola CPMK Seminar &amp; Sidang&quot;.
                 </div>
             ) : (
                 <div className="space-y-3">

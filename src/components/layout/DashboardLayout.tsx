@@ -78,7 +78,7 @@ export default function DashboardLayout({ children, breadcrumbs, title }: Dashbo
             <NotificationBell />
           </div>
         </header>
-        <div className="flex min-w-0 flex-1 flex-col mx-4 mb-4">
+        <div className="mx-4 mb-4 flex min-w-0 flex-1 flex-col pt-5">
           <Suspense fallback={
             <div className="flex flex-1 items-center justify-center p-8">
               <Loading size="lg" text="Memuat halaman..." />

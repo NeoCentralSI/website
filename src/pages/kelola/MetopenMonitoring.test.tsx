@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { vi } from "vitest";
 
@@ -16,6 +16,15 @@ vi.mock("@/services/assessment.service", () => ({
   assessmentService: {
     getMetopenMonitoring: vi.fn(),
   },
+}));
+
+vi.mock("@/components/ui/empty-state", () => ({
+  default: ({ title, description }: { title?: string; description?: string }) => (
+    <div>
+      <p>{title}</p>
+      <p>{description}</p>
+    </div>
+  ),
 }));
 
 function renderWithLayout(children: ReactNode) {
@@ -202,5 +211,18 @@ describe("MetopenMonitoring", () => {
 
     expect(screen.getAllByText("TA-04 terbit, booking").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Beban aktif TA").length).toBeGreaterThan(0);
+  });
+
+  it("uses a zero-valued metric as a real filter with an explicit empty state", async () => {
+    renderWithLayout(<MetopenMonitoring />);
+
+    const metric = await screen.findByRole("button", { name: /Belum mencari pembimbing.*0/i });
+    fireEvent.click(metric);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Mahasiswa Booking")).not.toBeInTheDocument();
+      expect(screen.queryByText("Mahasiswa Aktif")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Tidak ada mahasiswa yang cocok dengan filter saat ini.")).toBeInTheDocument();
   });
 });

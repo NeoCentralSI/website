@@ -95,7 +95,7 @@ describe("MetopelOverviewTab", () => {
     expect(
       screen.getByText(/TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing/i),
     ).toBeInTheDocument();
-    expect(screen.getByText("Submit Proposal Final")).toBeInTheDocument();
+    expect(screen.getByText("Ajukan proposal final")).toBeInTheDocument();
     expect(screen.getByText("Proposal Final")).toBeInTheDocument();
     expect(
       screen.queryByText("Pengajuan Calon Pembimbing"),
@@ -103,6 +103,74 @@ describe("MetopelOverviewTab", () => {
     expect(
       screen.queryByText("Penetapan Topik dan Rencana Judul"),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps private drafts available but explains that booking waits for TA-04", async () => {
+    vi.mocked(useRole).mockReturnValue({
+      isStudent: () => true,
+    } as unknown as ReturnType<typeof useRole>);
+
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        studentId: "student-booked",
+        thesisId: "thesis-booked",
+        thesisTitle: "Judul Draf",
+        thesisStatus: "Metopel",
+        gateConfigured: true,
+        gateOpen: true,
+        gates: [],
+        supervisors: [],
+        hasBookedSupervisor: true,
+        hasOfficialSupervisor: false,
+        guidanceGateOpen: false,
+        guidanceGateReason:
+          "Booking pembimbing sudah disetujui, tetapi TA-04 belum difinalisasi KaDep.",
+        hasBlockingRequest: true,
+        blockingRequest: null,
+        requestStatus: "booking_approved",
+        canBrowseCatalog: false,
+        canViewCatalog: true,
+        canSubmitRequest: false,
+        canOpenLogbook: false,
+        reason: "Booking pembimbing sudah disetujui, menunggu TA-04.",
+        nextStep: "wait_ta04_assignment",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    vi.mocked(metopenTitleService.getMyProposalApproval).mockResolvedValue({
+      success: true,
+      data: {
+        thesis: {
+          id: "thesis-booked",
+          title: "Judul Draf",
+          proposalStatus: null,
+          hasBookedSupervisor: true,
+          hasOfficialSupervisor: false,
+          canUploadProposal: true,
+          canSubmitFinalProposal: false,
+          canUseInformalLog: false,
+          guidanceGateOpen: false,
+          guidanceGateReason:
+            "Booking pembimbing sudah disetujui, tetapi TA-04 belum difinalisasi KaDep.",
+          queueReadiness: { ready: false, block: "ta04_not_issued", proposalStatus: null },
+          titleApprovalDocumentId: null,
+          proposalReviewNotes: null,
+          proposalReviewedAt: null,
+          updatedAt: "2026-07-10T08:00:00.000Z",
+          titleApprovalDocument: null,
+        },
+      },
+    });
+
+    render(<MetopelOverviewTab />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Booking disetujui, menunggu TA-04")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Menunggu TA-04 KaDep")).toBeInTheDocument();
+    expect(screen.getAllByText(/draf proposal pribadi boleh disimpan/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Boleh unggah proposal final")).not.toBeInTheDocument();
   });
 
   it("shows TA-04 status without manual sync or title-report CTA", async () => {
@@ -129,7 +197,10 @@ describe("MetopelOverviewTab", () => {
             role: "Pembimbing 1",
           },
         ],
+        hasBookedSupervisor: true,
         hasOfficialSupervisor: true,
+        guidanceGateOpen: true,
+        guidanceGateReason: null,
         hasBlockingRequest: false,
         blockingRequest: null,
         requestStatus: null,
@@ -150,6 +221,13 @@ describe("MetopelOverviewTab", () => {
           id: "thesis-1",
           title: "Judul Uji",
           proposalStatus: "submitted",
+          hasBookedSupervisor: true,
+          hasOfficialSupervisor: true,
+          canUploadProposal: true,
+          canSubmitFinalProposal: true,
+          canUseInformalLog: true,
+          guidanceGateOpen: true,
+          guidanceGateReason: null,
           queueReadiness: {
             ready: true,
             block: null,
@@ -184,13 +262,13 @@ describe("MetopelOverviewTab", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getAllByText("Legacy Review KaDep")).toHaveLength(2);
+      expect(screen.getAllByText("Menunggu Review KaDep")).toHaveLength(2);
     });
 
     expect(
       screen.queryByRole("button", { name: /Sinkronkan Status/i }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Proposal final masuk alur KaDep")).toBeInTheDocument();
+    expect(screen.getByText("Boleh unggah proposal final")).toBeInTheDocument();
     expect(screen.queryByText("Lapor Judul TA")).not.toBeInTheDocument();
   });
 
@@ -218,7 +296,10 @@ describe("MetopelOverviewTab", () => {
             role: "Pembimbing 1",
           },
         ],
+        hasBookedSupervisor: true,
         hasOfficialSupervisor: true,
+        guidanceGateOpen: true,
+        guidanceGateReason: null,
         hasBlockingRequest: false,
         blockingRequest: null,
         requestStatus: null,
@@ -239,6 +320,13 @@ describe("MetopelOverviewTab", () => {
           id: "thesis-1",
           title: "Judul Uji",
           proposalStatus: null,
+          hasBookedSupervisor: true,
+          hasOfficialSupervisor: true,
+          canUploadProposal: true,
+          canSubmitFinalProposal: true,
+          canUseInformalLog: true,
+          guidanceGateOpen: true,
+          guidanceGateReason: null,
           queueReadiness: {
             ready: false,
             block: "ta_course_not_confirmed",
@@ -283,7 +371,7 @@ describe("MetopelOverviewTab", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows early TA-04 document while Metopel remains active", async () => {
+  it("shows early TA-04 system status without PDF download while Metopel remains active", async () => {
     vi.mocked(useRole).mockReturnValue({
       isStudent: () => true,
     } as unknown as ReturnType<typeof useRole>);
@@ -307,7 +395,10 @@ describe("MetopelOverviewTab", () => {
             role: "Pembimbing 1",
           },
         ],
+        hasBookedSupervisor: true,
         hasOfficialSupervisor: true,
+        guidanceGateOpen: true,
+        guidanceGateReason: null,
         hasBlockingRequest: false,
         blockingRequest: null,
         requestStatus: null,
@@ -329,6 +420,13 @@ describe("MetopelOverviewTab", () => {
           title: "Judul Berjalan",
           isProposal: true,
           proposalStatus: null,
+          hasBookedSupervisor: true,
+          hasOfficialSupervisor: true,
+          canUploadProposal: true,
+          canSubmitFinalProposal: true,
+          canUseInformalLog: true,
+          guidanceGateOpen: true,
+          guidanceGateReason: null,
           ta04AssignmentIssuedAt: "2026-07-07T08:00:00.000Z",
           ta04AssignmentTitle: "Judul Frozen TA-04",
           ta04AssignmentSupervisorNames: "Dosen Pembimbing",
@@ -339,15 +437,11 @@ describe("MetopelOverviewTab", () => {
             block: "scores_not_finalized",
             proposalStatus: null,
           },
-          titleApprovalDocumentId: "doc-ta04",
+          titleApprovalDocumentId: null,
           proposalReviewNotes: null,
           proposalReviewedAt: null,
           updatedAt: "2026-07-07T08:00:00.000Z",
-          titleApprovalDocument: {
-            id: "doc-ta04",
-            fileName: "TA04_BATCH_2025-2026_Genap.pdf",
-            filePath: "uploads/documents/ta04/TA04_BATCH_2025-2026_Genap.pdf",
-          },
+          titleApprovalDocument: null,
         },
       },
     });
@@ -369,9 +463,9 @@ describe("MetopelOverviewTab", () => {
       expect(screen.getAllByText("TA-04 Terbit, Booking").length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByText("Formulir TA-04 awal")).toBeInTheDocument();
-    expect(screen.getByText("TA04_BATCH_2025-2026_Genap.pdf")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Unduh PDF/i })).toBeInTheDocument();
+    expect(screen.getByText(/Penugasan awal dicatat di sistem/i)).toBeInTheDocument();
+    expect(screen.queryByText("TA04_BATCH_2025-2026_Genap.pdf")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Unduh PDF/i })).not.toBeInTheDocument();
     expect(metopenTitleService.getMyArchive).not.toHaveBeenCalled();
   });
 
@@ -399,7 +493,10 @@ describe("MetopelOverviewTab", () => {
             role: "Pembimbing 1",
           },
         ],
+        hasBookedSupervisor: true,
         hasOfficialSupervisor: true,
+        guidanceGateOpen: true,
+        guidanceGateReason: null,
         hasBlockingRequest: false,
         blockingRequest: null,
         requestStatus: null,
@@ -420,6 +517,13 @@ describe("MetopelOverviewTab", () => {
           id: "thesis-dimas",
           title: "Judul Dimas",
           proposalStatus: null,
+          hasBookedSupervisor: true,
+          hasOfficialSupervisor: true,
+          canUploadProposal: true,
+          canSubmitFinalProposal: true,
+          canUseInformalLog: true,
+          guidanceGateOpen: true,
+          guidanceGateReason: null,
           queueReadiness: {
             ready: true,
             block: null,

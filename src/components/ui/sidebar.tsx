@@ -535,9 +535,14 @@ function SidebarMenuButton({
     }
   }
 
+  // Wrap in span so TooltipTrigger's Slot does not compose refs onto a nested
+  // Slot (asChild SidebarMenuButton → Link/<a>), which causes infinite
+  // update-depth loops under React 19.
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipTrigger asChild>
+        <span className="contents">{button}</span>
+      </TooltipTrigger>
       <TooltipContent
         side="right"
         align="center"

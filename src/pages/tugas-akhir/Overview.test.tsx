@@ -108,6 +108,11 @@ describe("TugasAkhirOverviewPage", () => {
     vi.mocked(getProposalSubmissionStatus).mockResolvedValue({
       thesisId: "thesis-1",
       hasSupervisor: true,
+      hasBookedSupervisor: true,
+      hasOfficialSupervisor: true,
+      canSubmitFinalProposal: true,
+      guidanceGateOpen: true,
+      guidanceGateReason: null,
       proposalStatus: null,
       uploadLocked: false,
       uploadLockedReason: null,

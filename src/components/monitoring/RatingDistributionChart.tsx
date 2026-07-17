@@ -41,7 +41,7 @@ export function RatingDistributionChart({ ratingDistribution, isLoading }: Ratin
     );
   }
 
-  const data = ratingDistribution ?? [];
+  const data = (ratingDistribution ?? []).filter((rating) => rating.count > 0);
   const total = data.reduce((sum, r) => sum + r.count, 0);
 
   const chartConfig: ChartConfig = {};
@@ -78,7 +78,9 @@ export function RatingDistributionChart({ ratingDistribution, isLoading }: Ratin
                 outerRadius={80}
                 innerRadius={40}
                 paddingAngle={2}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={data.length > 1
+                  ? ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`
+                  : false}
                 labelLine={false}
                 fontSize={11}
               >

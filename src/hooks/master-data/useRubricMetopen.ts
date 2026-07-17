@@ -4,6 +4,8 @@ import {
     getCpmksWithRubrics,
     getAllMetopenCpmks,
     createMetopenCpmk,
+    updateMetopenCpmk,
+    deleteMetopenCpmk,
     createCriteria,
     updateCriteria,
     deleteCriteria,
@@ -20,6 +22,7 @@ import {
     type CreateRubricPayload,
     type UpdateRubricPayload,
     type CreateMetopenCpmkPayload,
+    type UpdateMetopenCpmkPayload,
 } from '@/services/rubricMetopen.service';
 
 const CPMKS_KEY = 'rubric-metopen-cpmks';
@@ -67,6 +70,25 @@ export function useRubricMetopen(role: MetopenRole) {
         onSuccess: () => {
             invalidateAll();
             toast.success('CPMK Metopel berhasil ditambahkan');
+        },
+        onError: (error: Error) => { toast.error(error.message); },
+    });
+
+    const updateCpmkMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: UpdateMetopenCpmkPayload }) =>
+            updateMetopenCpmk(id, data),
+        onSuccess: () => {
+            invalidateAll();
+            toast.success('CPMK Metopel berhasil diubah');
+        },
+        onError: (error: Error) => { toast.error(error.message); },
+    });
+
+    const deleteCpmkMutation = useMutation({
+        mutationFn: deleteMetopenCpmk,
+        onSuccess: () => {
+            invalidateAll();
+            toast.success('CPMK Metopel berhasil dihapus dari katalog');
         },
         onError: (error: Error) => { toast.error(error.message); },
     });
@@ -165,6 +187,11 @@ export function useRubricMetopen(role: MetopenRole) {
 
         createCpmk: (data: CreateMetopenCpmkPayload) => createCpmkMutation.mutateAsync(data),
         isCreatingCpmk: createCpmkMutation.isPending,
+        updateCpmk: (id: string, data: UpdateMetopenCpmkPayload) =>
+            updateCpmkMutation.mutateAsync({ id, data }),
+        isUpdatingCpmk: updateCpmkMutation.isPending,
+        deleteCpmkMaster: deleteCpmkMutation.mutateAsync,
+        isDeletingCpmkMaster: deleteCpmkMutation.isPending,
 
         createCriteria: (data: CreateCriteriaPayload) => createCriteriaMutation.mutateAsync(data),
         updateCriteria: (criteriaId: string, data: UpdateCriteriaPayload) =>

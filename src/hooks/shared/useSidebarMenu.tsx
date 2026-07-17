@@ -66,6 +66,8 @@ export const useSidebarMenu = () => {
      *   Pembimbing 1 / Pembimbing 2. Role struktural seperti Sekdep/GKM tidak
      *   boleh menutupi kemampuan pembimbing bila user yang sama memang
      *   multi-role, tetapi juga tidak boleh memberi inbox ke user non-pembimbing.
+     * - "CPMK & Rubrik Penilaian" khusus Sekdep (master MetopenCpmk + rubrik
+     *   TA-03). Bukan operasional antrean; bukan bagian Kelola Tugas Akhir.
      * - "Penilaian TA-03A" untuk Pembimbing 1 master + Pembimbing 2 co-sign
      *   (BR-20). Antrean menggabungkan P1 pending input + P2 pending co-sign
      *   supaya konsensus mufakat satu jendela navigasi.
@@ -86,6 +88,13 @@ export const useSidebarMenu = () => {
       includeInboxPembimbing?: boolean;
     } = {}): SidebarLeafItem[] => {
       const items: SidebarLeafItem[] = [];
+
+      if (role.sekdep) {
+        items.push({
+          title: "CPMK & Rubrik Penilaian",
+          url: "/kelola/metopen/cpmk-rubrik",
+        });
+      }
 
       if (coordinatorLabel && coordinatorUrl) {
         items.push({ title: coordinatorLabel, url: coordinatorUrl });
@@ -155,7 +164,7 @@ export const useSidebarMenu = () => {
       ];
 
       if (canAccessMetopel) {
-        const metopenItems = [{ title: "Overview", url: "/metopel" }];
+        const metopenItems = [{ title: "Ringkasan", url: "/metopel" }];
         const canOpenAdvisorSearch =
           !isMetopenReadOnly &&
           !(advisorAccess?.hasOfficialSupervisor ?? false) &&
@@ -165,11 +174,16 @@ export const useSidebarMenu = () => {
           metopenItems.push({ title: "Cari Pembimbing", url: "/metopel/cari-pembimbing" });
         }
 
-        const showMetopenProposalLogbook =
+        const showMetopenProposal =
+          isMetopenOnlyTrack &&
+          (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+        const showMetopenInformalLogbook =
           isMetopenOnlyTrack &&
           (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
-        if (showMetopenProposalLogbook) {
+        if (showMetopenProposal) {
           metopenItems.push({ title: "Proposal", url: "/metopel/proposal" });
+        }
+        if (showMetopenInformalLogbook) {
           metopenItems.push({ title: "Catatan informal", url: "/metopel/logbook" });
         }
 
@@ -615,6 +629,7 @@ export const useSidebarMenu = () => {
     avatarBlobUrl,
     advisorAccess?.canBrowseCatalog,
     advisorAccess?.hasBlockingRequest,
+    advisorAccess?.hasBookedSupervisor,
     advisorAccess?.hasOfficialSupervisor,
     canAccessMetopel,
     isMetopenReadOnly,

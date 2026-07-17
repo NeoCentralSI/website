@@ -1,13 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loading } from "@/components/ui/spinner";
+import EmptyState from "@/components/ui/empty-state";
 import { GraduationCap, CheckCircle2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import type { ReadyForSeminarStudent } from "@/services/monitoring.service";
-import Lottie from "lottie-react";
-import emptyAnimation from "@/assets/lottie/empty.json";
 
 interface ReadyForSeminarCardProps {
   students: ReadyForSeminarStudent[] | undefined;
@@ -28,16 +27,8 @@ export function ReadyForSeminarCard({ students, isLoading, showViewAll = true }:
           </CardTitle>
           <CardDescription>Mahasiswa yang siap mengikuti seminar</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-              <div className="space-y-1">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-20" />
-              </div>
-              <Skeleton className="h-6 w-16" />
-            </div>
-          ))}
+        <CardContent className="flex h-48 items-center justify-center">
+          <Loading text="Memuat mahasiswa siap seminar..." />
         </CardContent>
       </Card>
     );
@@ -60,7 +51,7 @@ export function ReadyForSeminarCard({ students, isLoading, showViewAll = true }:
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => navigate("/monitoring/ready-seminar")}
+              onClick={() => navigate("/tugas-akhir/monitoring")}
             >
               Lihat Semua
               <ChevronRight className="h-4 w-4 ml-1" />
@@ -70,14 +61,11 @@ export function ReadyForSeminarCard({ students, isLoading, showViewAll = true }:
       </CardHeader>
       <CardContent className="max-h-80 overflow-y-auto">
         {displayStudents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6">
-            <Lottie 
-              animationData={emptyAnimation} 
-              loop 
-              className="w-24 h-24 opacity-70" 
-            />
-            <p className="text-sm text-muted-foreground mt-2">Belum ada mahasiswa siap seminar</p>
-          </div>
+          <EmptyState
+            size="sm"
+            title="Belum ada mahasiswa siap seminar"
+            description="Mahasiswa yang sudah mendapat persetujuan seminar akan muncul di sini."
+          />
         ) : (
           <div className="space-y-3 pr-2">
             {displayStudents.map((student) => (

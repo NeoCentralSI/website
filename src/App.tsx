@@ -112,6 +112,7 @@ const RoomPage = lazy(() => import('./pages/master-data/Room'))
 const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvailability'))
 // Kelola
 const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
+const MetopenCpmkRubricPage = lazy(() => import('./pages/kelola/MetopenCpmkRubric'))
 const MetopenTa03AQueuePage = lazy(() => import('./pages/kelola/MetopenTa03AQueue'))
 const MetopenTa03BQueuePage = lazy(() => import('./pages/kelola/MetopenTa03BQueue'))
 const MetopenMonitoringPage = lazy(() => import('./pages/kelola/MetopenMonitoring'))
@@ -319,7 +320,7 @@ function App() {
                   <Route path="/kelola/kelompok-keilmuan" element={<ScienceGroupPage />} />
                 </Route>
 
-                {/* Kelola Tugas Akhir (topik, CPMK, rubrik Metopen TA-03, dll.) — Sekdep, Kadep, Koordinator Metopen */}
+                {/* Kelola Tugas Akhir (topik, CPMK seminar/sidang, rubrik seminar/sidang) — modul TA penuh */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.KOORDINATOR_METOPEN]} />}>
                   <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                   <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
@@ -328,7 +329,8 @@ function App() {
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
-                  <Route path="/kelola/tugas-akhir/rubrik-metopen" element={<SecretaryKelolaTugasAkhirPage />} />
+                  {/* Legacy bookmark: rubrik Metopen pindah ke surface Metopen (KC-20260717-04). */}
+                  <Route path="/kelola/tugas-akhir/rubrik-metopen" element={<Navigate to="/kelola/metopen/cpmk-rubrik" replace />} />
                   <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 </Route>
 
@@ -341,6 +343,10 @@ function App() {
                 {/* Kelola Metopen - Koordinator Metopen, Sekdep, Kadep (canon v2.1 BR-19) */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METOPEN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/kelola/metopen" element={<KelolaMetopenPage />} />
+                </Route>
+                {/* Master CPMK + rubrik TA-03 — Sekdep only (selaras routes/rubric-metopen.route.js). */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN]} />}>
+                  <Route path="/kelola/metopen/cpmk-rubrik" element={<MetopenCpmkRubricPage />} />
                 </Route>
                 {/* TA-03A: penilaian Pembimbing — bagian rangkaian Metopen (BR-20). RBAC = SUPERVISOR_ROLES (P1+P2). */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.PEMBIMBING_1, ROLES.PEMBIMBING_2]} />}>

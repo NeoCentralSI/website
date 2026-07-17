@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import {
     Ban,
     CheckCircle2,
@@ -12,7 +12,9 @@ import {
 } from "lucide-react";
 
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
+import { MetricAction } from "@/components/metopen/MetricAction";
 import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
+import { InformalLogReadonlyList } from "@/components/metopen/InformalLogReadonlyList";
 import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Loading } from "@/components/ui/spinner";
 import { LocalTabsNav, type LocalTabItem } from "@/components/ui/tabs-nav";
+import EmptyState from "@/components/ui/empty-state";
 import {
     assessmentService,
     type SupervisorScoringQueueItem,
@@ -49,16 +52,16 @@ const TAB_ITEMS: LocalTabItem[] = [
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
     { value: "needs_action", label: "Perlu aksi saya" },
     { value: "waiting", label: "Menunggu rekan / TA-03B" },
-    { value: "auto_zeroed", label: "Auto-zero presensi <75%" },
+    { value: "auto_zeroed", label: "Nilai otomatis 0 presensi <75%" },
     { value: "all", label: "Semua proposal" },
 ];
 
 const ACTION_LABELS: Record<Ta03AActionStatus, { label: string; tone: "amber" | "violet" | "blue" | "emerald" | "muted" | "destructive" }> = {
     p1_pending: { label: "Perlu input rubrik", tone: "amber" },
-    p2_pending_cosign: { label: "Perlu co-sign", tone: "violet" },
+    p2_pending_cosign: { label: "Perlu persetujuan", tone: "violet" },
     p1_waiting_cosign: { label: "Menunggu rekan / TA-03B", tone: "blue" },
     p2_waiting_p1: { label: "Menunggu Pembimbing 1 submit", tone: "muted" },
-    auto_zeroed: { label: "Presensi <75% (auto-zero)", tone: "destructive" },
+    auto_zeroed: { label: "Presensi <75% (nilai otomatis 0)", tone: "destructive" },
     finalized: { label: "Final dan terkunci", tone: "emerald" },
 };
 
@@ -80,10 +83,22 @@ const ACTION_LABELS: Record<Ta03AActionStatus, { label: string; tone: "amber" | 
  */
 export default function MetopenTa03AQueue() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-    const [activeTab, setActiveTab] = useState<TabKey>("active");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab: TabKey = searchParams.get("tab") === "history" ? "history" : "active";
+    const statusParam = searchParams.get("status");
+    const statusFilter: StatusFilter = STATUS_FILTERS.some((item) => item.value === statusParam)
+        ? (statusParam as StatusFilter)
+        : "needs_action";
     const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>("needs_action");
+
+    const updateView = (tab: TabKey, status: StatusFilter = "all") => {
+        const next = new URLSearchParams(searchParams);
+        next.set("tab", tab);
+        next.set("status", status);
+        setSearchParams(next, { replace: true });
+        setSelectedThesisId(null);
+    };
 
     useEffect(() => {
         setBreadcrumbs([
@@ -112,7 +127,6 @@ export default function MetopenTa03AQueue() {
     } = useQuery({
         queryKey: TA03A_HISTORY_KEY,
         queryFn: () => assessmentService.getSupervisorScoringHistory(),
-        enabled: activeTab === "history",
         refetchInterval: 30_000,
     });
 
@@ -129,9 +143,9 @@ export default function MetopenTa03AQueue() {
         const waiting = queue.filter((item) =>
             isWaitingStatus(item.actionStatus),
         ).length;
-        const autoZeroed = queue.filter((item) => item.actionStatus === "auto_zeroed").length;
+        const autoZeroed = history.filter((item) => item.actionStatus === "auto_zeroed").length;
         return { total, needsAction, waiting, autoZeroed, history: history.length };
-    }, [history.length, queue]);
+    }, [history, queue]);
 
     const filteredQueue = useMemo(() => {
         const q = search.trim().toLowerCase();
@@ -142,6 +156,11 @@ export default function MetopenTa03AQueue() {
                 if (statusFilter === "waiting" && !isWaitingStatus(item.actionStatus)) return false;
                 if (statusFilter === "auto_zeroed" && item.actionStatus !== "auto_zeroed") return false;
             }
+            if (
+                activeTab === "history" &&
+                statusFilter === "auto_zeroed" &&
+                item.actionStatus !== "auto_zeroed"
+            ) return false;
             if (q) {
                 const matches =
                     (item.student?.fullName ?? "").toLowerCase().includes(q) ||
@@ -196,38 +215,65 @@ export default function MetopenTa03AQueue() {
     }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="space-y-5 sm:space-y-6">
+            <div>
+                <h1 className="text-base font-semibold tracking-tight sm:text-lg">Antrean Penilaian Pembimbing</h1>
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                    Antrean terbuka setelah TA-04 awal terbit, mahasiswa submit proposal final,
+                    dan presensi Metopel terbaru sudah diunggah Koordinator. Pembimbing 1
+                    mengisi rubrik 0-75; Pembimbing 2 memberi co-sign konsensus.
+                </p>
+            </div>
+
             <Card>
                 <CardHeader className="pb-4">
                     <div className="flex items-start gap-3">
                         <ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
                         <div className="space-y-1">
-                            <CardTitle className="text-base">
-                                Antrean Penilaian Pembimbing
-                            </CardTitle>
+                            <CardTitle className="text-base">Ringkasan Antrean TA-03A</CardTitle>
                             <CardDescription className="text-xs">
-                                Antrean terbuka setelah TA-04 awal terbit, mahasiswa submit proposal final,
-                                dan presensi Metopel terbaru sudah diunggah Koordinator. Pembimbing 1
-                                mengisi rubrik 0-75; Pembimbing 2 memberi co-sign konsensus. Mahasiswa
-                                dengan presensi &lt;75% otomatis mendapat nilai 0 (BR-28). Penilaian
-                                terkunci permanen setelah submit + co-sign + TA-03B (BR-21).
+                                Mahasiswa dengan presensi kurang dari 75% otomatis mendapat nilai 0 tanpa
+                                penilaian proposal. Setelah disubmit pembimbing (termasuk co-sign jika ada)
+                                dan dinilai Koordinator Metopen, nilai terkunci permanen dan tidak dapat diubah.
                             </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
 
-                <CardContent className="grid gap-3 sm:grid-cols-4">
-                    <StatCard label="Total dalam antrean" value={stats.total} tone="muted" />
-                    <StatCard label="Perlu aksi saya" value={stats.needsAction} tone="amber" />
-                    <StatCard
+                <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <MetricAction
+                        label="Total dalam antrean"
+                        value={stats.total}
+                        active={activeTab === "active" && statusFilter === "all"}
+                        onClick={() => updateView("active", "all")}
+                    />
+                    <MetricAction
+                        label="Perlu aksi saya"
+                        value={stats.needsAction}
+                        tone="amber"
+                        active={activeTab === "active" && statusFilter === "needs_action"}
+                        onClick={() => updateView("active", "needs_action")}
+                    />
+                    <MetricAction
                         label="Menunggu rekan / TA-03B"
                         value={stats.waiting}
                         tone="blue"
+                        active={activeTab === "active" && statusFilter === "waiting"}
+                        onClick={() => updateView("active", "waiting")}
                     />
-                    <StatCard
+                    <MetricAction
+                        label="Nilai otomatis 0 presensi"
+                        value={isHistoryLoading ? "—" : stats.autoZeroed}
+                        tone="rose"
+                        active={activeTab === "history" && statusFilter === "auto_zeroed"}
+                        onClick={() => updateView("history", "auto_zeroed")}
+                    />
+                    <MetricAction
                         label="Riwayat dinilai"
-                        value={stats.history}
+                        value={isHistoryLoading ? "—" : stats.history}
                         tone="emerald"
+                        active={activeTab === "history" && statusFilter === "all"}
+                        onClick={() => updateView("history", "all")}
                     />
                 </CardContent>
             </Card>
@@ -236,26 +282,25 @@ export default function MetopenTa03AQueue() {
                 tabs={TAB_ITEMS}
                 activeTab={activeTab}
                 onTabChange={(value) => {
-                    setActiveTab(value as TabKey);
-                    setSelectedThesisId(null);
+                    const tab = value as TabKey;
+                    updateView(tab, tab === "active" ? "needs_action" : "all");
                 }}
             />
 
             {visibleItems.length === 0 ? (
-                <Card>
-                    <CardContent className="py-16 text-center">
-                        <p className="text-sm text-muted-foreground">
-                            {activeTab === "history"
-                                ? "Belum ada riwayat proposal yang sudah dinilai TA-03A."
-                                : "Belum ada proposal yang menunggu penilaian TA-03A."}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                            {activeTab === "history"
-                                ? "Proposal yang sudah pernah memiliki skor, co-sign, finalisasi, atau auto-zero akan tampil di sini."
-                                : "Proposal akan masuk ke antrean ini setelah TA-04 awal terbit, mahasiswa bimbingan Anda submit proposal final, dan presensi Metopel terbaru tersedia."}
-                        </p>
-                    </CardContent>
-                </Card>
+                <EmptyState
+                    size="sm"
+                    title={
+                        activeTab === "history"
+                            ? "Belum ada riwayat proposal yang sudah dinilai TA-03A."
+                            : "Belum ada proposal yang menunggu penilaian TA-03A."
+                    }
+                    description={
+                        activeTab === "history"
+                            ? "Proposal yang sudah pernah memiliki skor, persetujuan, finalisasi, atau nilai otomatis 0 akan tampil di sini."
+                            : "Antrean ini hanya terbuka setelah KaDep memfinalisasi batch TA-04 awal (SK PDF) dan mahasiswa bimbingan Anda submit proposal final. Jika proposal sudah final tetapi belum muncul, pastikan status mahasiswa sudah 'TA-04 terbit, booking' di halaman KaDep."
+                    }
+                />
             ) : (
                 <div className="grid gap-5 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
                     <Card className="self-start lg:sticky lg:top-4">
@@ -276,14 +321,17 @@ export default function MetopenTa03AQueue() {
                                         className="h-9 pl-8 text-sm"
                                     />
                                 </div>
-                                {activeTab === "active" && (
+                                {(activeTab === "active" || statusFilter === "auto_zeroed") && (
                                     <div className="space-y-1">
                                         <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
                                             Status
                                         </Label>
                                         <Select
                                             value={statusFilter}
-                                            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+                                            onValueChange={(v) => {
+                                                const nextStatus = v as StatusFilter;
+                                                updateView(nextStatus === "auto_zeroed" ? "history" : activeTab, nextStatus);
+                                            }}
                                         >
                                             <SelectTrigger className="h-9 text-sm">
                                                 <SelectValue />
@@ -325,6 +373,7 @@ export default function MetopenTa03AQueue() {
                             <>
                                 <ProposalSummaryCard item={selectedItem} />
                                 <ProposalVersionHistory thesisId={selectedItem.thesisId} compact readOnly />
+                                <InformalLogReadonlyList thesisId={selectedItem.thesisId} compact />
                                 <SupervisorScoreCard
                                     thesisId={selectedItem.thesisId}
                                     scoreData={{
@@ -338,9 +387,12 @@ export default function MetopenTa03AQueue() {
                             </>
                         ) : (
                             <Card>
-                                <CardContent className="py-16 text-center text-sm text-muted-foreground">
-                                    Pilih proposal pada antrean di sebelah kiri untuk membuka rubrik
-                                    TA-03A atau tombol co-sign konsensus.
+                                <CardContent className="py-8">
+                                    <EmptyState
+                                        size="sm"
+                                        title="Belum ada proposal dipilih"
+                                        description="Pilih proposal pada antrean di sebelah kiri untuk membuka rubrik TA-03A atau tombol persetujuan konsensus."
+                                    />
                                 </CardContent>
                             </Card>
                         )}
@@ -366,30 +418,6 @@ function isWaitingStatus(status: Ta03AActionStatus): boolean {
 // ────────────────────────────────────────────────────────────
 // Sub-components
 // ────────────────────────────────────────────────────────────
-
-function StatCard({
-    label,
-    value,
-    tone,
-}: {
-    label: string;
-    value: number;
-    tone: "muted" | "amber" | "blue" | "emerald" | "destructive";
-}) {
-    const toneClass: Record<typeof tone, string> = {
-        muted: "border-slate-200 bg-slate-50/60",
-        amber: "border-amber-200 bg-amber-50/60",
-        blue: "border-blue-200 bg-blue-50/60",
-        emerald: "border-emerald-200 bg-emerald-50/60",
-        destructive: "border-destructive/30 bg-destructive/5",
-    };
-    return (
-        <div className={cn("rounded-md border px-3 py-2.5", toneClass[tone])}>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="mt-0.5 text-2xl font-semibold tabular-nums">{value}</p>
-        </div>
-    );
-}
 
 const ROLE_BADGE: Record<"P1" | "P2", { label: string; className: string }> = {
     P1: {
@@ -536,7 +564,7 @@ function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
                         Peran Anda · Partner
                     </p>
                     <p className="font-medium">
-                        {item.actorRole === "P1" ? "Pembimbing 1 (master)" : "Pembimbing 2 (co-sign)"}
+                        {item.actorRole === "P1" ? "Pembimbing 1 (pengisi utama)" : "Pembimbing 2 (persetujuan)"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                         Partner:{" "}
@@ -556,7 +584,7 @@ function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
                         <span className="text-xs text-muted-foreground">/ 75</span>
                     </p>
                     {item.coSignedAt ? (
-                        <p className="mt-0.5 text-[11px] text-emerald-700">Co-sign tercatat</p>
+                        <p className="mt-0.5 text-[11px] text-emerald-700">Persetujuan tercatat</p>
                     ) : null}
                 </div>
 

@@ -94,7 +94,7 @@ function UploadDialog({ open, onOpenChange, onUpload, isUploading }: UploadDialo
         <Dialog open={open} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Upload Versi Proposal Baru</DialogTitle>
+                    <DialogTitle>Unggah versi proposal baru</DialogTitle>
                     <DialogDescription>
                         Unggah file PDF proposal terbaru. Versi sebelumnya tetap tersimpan sebagai riwayat.
                     </DialogDescription>
@@ -264,7 +264,7 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
             );
         },
         onError: (error: Error) => {
-            toast.error(error.message || "Gagal submit proposal final");
+            toast.error(error.message || "Gagal mengajukan proposal final");
         },
     });
 
@@ -273,7 +273,10 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
     const hasMore = compact && versions.length > 3 && !showAll;
     const latestVersionId = submissionStatus?.latestVersion?.id ?? null;
     const activeFinalVersionId = submissionStatus?.finalProposalVersion?.id ?? null;
-    const canSubmitFinal = !readOnly && !!submissionStatus?.latestVersion && submissionStatus?.hasSupervisor;
+    const canSubmitFinal =
+        !readOnly &&
+        !!submissionStatus?.latestVersion &&
+        submissionStatus?.canSubmitFinalProposal === true;
     const finalStatusLabel = submissionStatus?.finalProposalVersion
         ? `Proposal final aktif: v${submissionStatus.finalProposalVersion.version}`
         : "Belum ada proposal final yang diajukan";
@@ -306,12 +309,12 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
                                         variant="outline"
                                         disabled={!canSubmitFinal || submitFinalMutation.isPending || activeFinalVersionId === latestVersionId}
                                     >
-                                        {submitFinalMutation.isPending ? "Memproses..." : "Submit Proposal Final"}
+                                        {submitFinalMutation.isPending ? "Memproses..." : "Ajukan proposal final"}
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Submit proposal final?</AlertDialogTitle>
+                                        <AlertDialogTitle>Ajukan proposal final?</AlertDialogTitle>
                                         <AlertDialogDescription>
                                             Versi terbaru
                                             {submissionStatus?.latestVersion?.version
@@ -325,7 +328,7 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Batal</AlertDialogCancel>
                                         <AlertDialogAction onClick={() => submitFinalMutation.mutate()}>
-                                            Ya, Submit Final
+                                            Ya, ajukan final
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -336,7 +339,7 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
                                 disabled={submissionStatus?.uploadLocked}
                                 title={submissionStatus?.uploadLockedReason ?? undefined}
                             >
-                                <Upload className="mr-2 h-3.5 w-3.5" /> Upload Versi Baru
+                                <Upload className="mr-2 h-3.5 w-3.5" /> Unggah versi baru
                             </Button>
                         </div>
                     )}
@@ -351,9 +354,14 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
                                 {finalStatusLabel}
                             </p>
                         )}
-                        {!readOnly && submissionStatus && !submissionStatus.hasSupervisor && (
+                        {!readOnly && submissionStatus && !submissionStatus.hasBookedSupervisor && (
                             <p className="text-xs text-amber-700">
-                                Submit proposal final baru tersedia setelah dosen pembimbing resmi ditetapkan.
+                                Ajukan proposal final baru tersedia setelah booking pembimbing disetujui.
+                            </p>
+                        )}
+                        {!readOnly && submissionStatus?.hasBookedSupervisor && !submissionStatus.guidanceGateOpen && (
+                            <p className="text-xs text-amber-700">
+                                {submissionStatus.guidanceGateReason ?? "Draf proposal pribadi tetap dapat disimpan, tetapi submit final menunggu TA-04 difinalisasi KaDep."}
                             </p>
                         )}
                         {!readOnly && submissionStatus?.uploadLocked && (
@@ -371,7 +379,7 @@ export function ProposalVersionHistory({ thesisId, compact = false, readOnly = f
                         <p className="text-sm text-muted-foreground">
                             {readOnly
                                 ? "Belum ada dokumen proposal yang diunggah"
-                                : "Belum ada dokumen proposal. Upload versi pertama untuk mulai melacak perubahan."}
+                                : "Belum ada dokumen proposal. Unggah versi pertama untuk mulai melacak perubahan."}
                         </p>
                     </div>
                 ) : (

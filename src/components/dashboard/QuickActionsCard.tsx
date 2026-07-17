@@ -181,7 +181,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
         },
         {
           id: "kadep-title-reports",
-          title: "Legacy Review TA-04",
+          title: "Review Judul TA-04",
           description: "Jalur lama; batch TA-04 awal ada di Kelola KaDep",
           count: pendingTitleReportCount,
           icon: Send,

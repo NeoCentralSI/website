@@ -26,7 +26,7 @@ export default function KelolaMetopen() {
   }
 
   if (isSekdep()) {
-    return <Navigate to="/kelola/tugas-akhir" replace />;
+    return <Navigate to="/kelola/metopen/cpmk-rubrik" replace />;
   }
 
   return <Navigate to="/dashboard" replace />;

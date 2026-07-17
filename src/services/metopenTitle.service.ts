@@ -53,10 +53,17 @@ export type MissingTitleDocumentRow = {
 
 /** Riwayat TA-04 awal + legacy accepted/rejected untuk dashboard KaDep. */
 export type TitleApprovalDocumentKind = 'batch' | 'legacy';
+export type Ta04BatchBlock =
+  | 'already_promoted'
+  | 'rejected'
+  | 'booking_not_approved'
+  | 'no_active_pembimbing_1';
 
 export type TitleReportHistoryRow = {
   thesisId: string;
   title: string | null;
+  topicName?: string | null;
+  topicScienceGroupName?: string | null;
   studentName: string;
   studentNim: string;
   supervisors: string;
@@ -72,7 +79,11 @@ export type TitleReportHistoryRow = {
   titleApprovalDocument: { id: string; fileName: string } | null;
   documentKind: TitleApprovalDocumentKind | null;
   ta04BatchEligible?: boolean;
-  ta04BatchBlock?: string | null;
+  ta04BatchBlock?: Ta04BatchBlock | string | null;
+  /** Data booking rusak tetap terlihat untuk tindak lanjut KaDep, tetapi tidak dapat masuk batch. */
+  repairRequired?: boolean;
+  /** batch_cohort = dihitung ke PDF/sinkron; history_* = riwayat saja */
+  listSection?: 'batch_cohort' | 'history_active' | 'history_rejected' | 'history_other';
 };
 
 export type StudentProposalThesis = {
@@ -83,8 +94,19 @@ export type StudentProposalThesis = {
   ta04AssignmentIssuedAt?: string | null;
   ta04AssignmentTitle?: string | null;
   ta04AssignmentSupervisorNames?: string | null;
+  hasBookedSupervisor?: boolean;
+  hasOfficialSupervisor?: boolean;
   activeAcademicYearId?: string | null;
   activePromotedAt?: string | null;
+  canUploadProposal?: boolean;
+  canSubmitFinalProposal?: boolean;
+  canUseInformalLog?: boolean;
+  ta04Issued?: boolean;
+  guidanceGateOpen?: boolean;
+  guidanceGateReason?: string | null;
+  ta03GateOpen?: boolean;
+  ta03GateReason?: string | null;
+  activePromotionState?: 'pre_booking' | 'booking_pre_ta04' | 'booking_ta04_issued' | 'active_promoted' | string;
   queueReadiness?: {
     ready: boolean;
     block: string | null;
@@ -211,10 +233,9 @@ export const metopenTitleService = {
     return parseResponse<TitleReportHistoryRow[]>(response);
   },
 
-  /** FR-ARC-05: Mahasiswa mengunduh Formulir TA-04 PDF miliknya (stream terautentikasi). */
+  /** Unduh PDF TA-04 mahasiswa dinonaktifkan (KC-20260709-06) — status sistem saja. */
   downloadMyTitleApprovalDocument: async (): Promise<void> => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.METOPEN.ME_TITLE_APPROVAL_DOCUMENT);
-    await downloadPdfStream(url, 'Formulir-TA-04.pdf');
+    throw new Error('Dokumen cetak TA-04 dikelola departemen. Mahasiswa melihat status penugasan TA-04 di overview/arsip Metopel.');
   },
 
   /** KaDep mengunduh Formulir TA-04 PDF untuk thesis yang sudah terhubung ke batch. */

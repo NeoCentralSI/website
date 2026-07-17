@@ -43,15 +43,16 @@ export default function MonitoringDashboard() {
   const academicYearFilter = selectedAcademicYear === "all" ? undefined : selectedAcademicYear;
   const { data, isLoading, isFetching, refetch } = useMonitoringDashboard(academicYearFilter);
   const { data: filterOptions } = useFilterOptions();
-  const { setBreadcrumbs } = useOutletContext<LayoutContext>();
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
 
   useEffect(() => {
+    setTitle("Monitoring Tugas Akhir");
     setBreadcrumbs([
       { label: "Tugas Akhir" },
       { label: "Monitoring" },
     ]);
-  }, [setBreadcrumbs]);
+  }, [setBreadcrumbs, setTitle]);
 
   // Check if any operation is in progress
   const isLoadingAny = isLoading || isFetching || isSyncing;
@@ -112,7 +113,7 @@ export default function MonitoringDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header with Academic Year Filter and Reload */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

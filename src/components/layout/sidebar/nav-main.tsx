@@ -47,6 +47,7 @@ export function NavMain({
   // Keep menus with active children or matching parent URL open when route changes
   React.useEffect(() => {
     setOpenMenus((prev) => {
+      let changed = false
       const next = { ...prev }
       items.forEach((item) => {
         const explicitMatch = item.isActive || item.items?.some((subItem) => subItem.isActive)
@@ -55,13 +56,19 @@ export function NavMain({
         const childMatch = item.items?.some(
           (s) => pathname === s.url || pathname.startsWith(s.url + "/")
         )
-        if (hasExplicitActive) {
-          next[item.title] = Boolean(explicitMatch)
-        } else if (parentMatch || childMatch) {
+        const shouldOpen = hasExplicitActive
+          ? Boolean(explicitMatch)
+          : Boolean(parentMatch || childMatch)
+
+        if (shouldOpen && !next[item.title]) {
           next[item.title] = true
+          changed = true
+        } else if (hasExplicitActive && next[item.title] !== Boolean(explicitMatch)) {
+          next[item.title] = Boolean(explicitMatch)
+          changed = true
         }
       })
-      return next
+      return changed ? next : prev
     })
   }, [pathname, items, hasExplicitActive])
 

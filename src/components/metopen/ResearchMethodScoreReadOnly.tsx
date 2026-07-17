@@ -88,7 +88,7 @@ export function ResearchMethodScoreReadOnly({
 
           <div className="grid gap-2 text-xs sm:grid-cols-2">
             <div className="rounded-md border bg-muted/20 px-3 py-2">
-              <p className="text-muted-foreground">Status Co-sign Pembimbing 2</p>
+              <p className="text-muted-foreground">Status Persetujuan Pembimbing 2</p>
               {score.coSignedAt ? (
                 <p className="mt-1 text-foreground">
                   <CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-emerald-600" />

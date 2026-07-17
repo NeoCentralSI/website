@@ -41,6 +41,15 @@ vi.mock("@/services/advisorRequest.service", () => ({
   },
 }));
 
+vi.mock("@/components/ui/empty-state", () => ({
+  default: ({ title, description }: { title?: string; description?: string }) => (
+    <div>
+      <p>{title}</p>
+      {description ? <p>{description}</p> : null}
+    </div>
+  ),
+}));
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -136,7 +145,7 @@ describe("CariPembimbing", () => {
     render(<CariPembimbing />, { wrapper: createWrapper() });
     fireEvent.click(await screen.findByRole("button", { name: /^Pilihan Dosen$/i }));
 
-    const departmentRouteButton = await screen.findByRole("button", { name: /Ajukan TA-02/i });
+    const departmentRouteButton = await screen.findByRole("button", { name: /Gunakan jalur TA-02/i });
     expect(departmentRouteButton).toBeInTheDocument();
     expect(
       screen.getByText(/belum punya calon dosen pembimbing/i),
@@ -233,7 +242,7 @@ describe("CariPembimbing", () => {
 
     render(<CariPembimbing />, { wrapper: createWrapper() });
     fireEvent.click(await screen.findByRole("button", { name: /^Pilihan Dosen$/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /Ajukan TA-02/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /Gunakan jalur TA-02/i }));
 
     fireEvent.change(await screen.findByPlaceholderText(/Judul rencana tugas akhir/i), {
       target: { value: "Sistem Pakar Penjadwalan" },
@@ -254,7 +263,7 @@ describe("CariPembimbing", () => {
     );
   });
 
-  it("should surface direct KaDep routing for red-quota lecturers", async () => {
+  it("should explain dosen-first Path C routing for red-quota lecturers", async () => {
     vi.mocked(useAdvisorAccessState).mockReturnValue({
       data: {
         studentId: "student-1",
@@ -317,9 +326,9 @@ describe("CariPembimbing", () => {
     render(<CariPembimbing />, { wrapper: createWrapper() });
     fireEvent.click(await screen.findByRole("button", { name: /^Pilihan Dosen$/i }));
 
-    expect(await screen.findByRole("button", { name: /Eskalasi ke KaDep \(TA-01\)/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Ajukan dengan justifikasi/i })).toBeInTheDocument();
     expect(
-      screen.getByText(/Pengajuan ke dosen ini akan diproses melalui jalur departemen/i),
+      screen.getByText(/Dosen meninjau justifikasi Anda terlebih dahulu/i),
     ).toBeInTheDocument();
   });
 
@@ -374,5 +383,48 @@ describe("CariPembimbing", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Dosen Pembimbing")).toBeInTheDocument();
     expect(screen.queryByText("Kembali ke Overview")).not.toBeInTheDocument();
+  });
+
+  it("should hide withdraw after TA-04 assignment is issued", async () => {
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        studentId: "student-1",
+        thesisId: "thesis-1",
+        thesisTitle: "Judul Uji",
+        thesisStatus: "Metopel",
+        eligibleMetopen: true,
+        hasExternalEligibility: true,
+        metopenReadOnly: false,
+        supervisors: [],
+        hasOfficialSupervisor: false,
+        hasBookedSupervisor: true,
+        ta04AssignmentIssued: true,
+        hasBlockingRequest: true,
+        blockingRequest: {
+          id: "request-1",
+          status: "booking_approved",
+          lecturerId: "lecturer-1",
+          createdAt: "2026-07-10T00:00:00.000Z",
+          lecturer: { user: { fullName: "Dosen Pembimbing" } },
+        },
+        latestRequest: null,
+        canBrowseCatalog: false,
+        canViewCatalog: true,
+        canSubmitRequest: false,
+        reason: "TA-04 sudah diterbitkan.",
+        nextStep: "open_logbook",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+    vi.mocked(advisorRequestService.getMyRequests).mockResolvedValue({
+      success: true,
+      data: [],
+    });
+
+    render(<CariPembimbing />, { wrapper: createWrapper() });
+
+    expect(await screen.findByText("Penugasan TA-04 terkunci")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Tarik Pengajuan/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/perubahan pembimbing masuk ranah TA-05/i)).toBeInTheDocument();
   });
 });

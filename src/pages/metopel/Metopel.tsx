@@ -23,15 +23,22 @@ export default function Metopel() {
   const { data: advisorAccess } = useAdvisorAccessState(isStudentUser);
   const { isMetopenOnlyTrack, isMetopenReadOnly } = useStudentEligibility();
 
-  const showMetopenProposalLogbookTabs =
+  const showMetopenProposalTab =
+    isStudentUser &&
+    isMetopenOnlyTrack &&
+    (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+  const showMetopenInformalLogbookTab =
     isStudentUser &&
     isMetopenOnlyTrack &&
     (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
 
   const tabs = useMemo(() => {
     const items = [...BASE_TAB_ITEMS];
-    if (showMetopenProposalLogbookTabs) {
-      items.push(PROPOSAL_TAB, LOGBOOK_TAB);
+    if (showMetopenProposalTab) {
+      items.push(PROPOSAL_TAB);
+    }
+    if (showMetopenInformalLogbookTab) {
+      items.push(LOGBOOK_TAB);
     }
     const canOpenAdvisorSearchTab =
       Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest);
@@ -46,7 +53,8 @@ export default function Metopel() {
     advisorAccess?.hasBlockingRequest,
     advisorAccess?.hasOfficialSupervisor,
     isMetopenReadOnly,
-    showMetopenProposalLogbookTabs,
+    showMetopenProposalTab,
+    showMetopenInformalLogbookTab,
   ]);
 
   const activeTabKey = useMemo(() => {
@@ -86,23 +94,20 @@ export default function Metopel() {
         </div>
       )}
 
-      <section className="rounded-xl border bg-background px-3 py-3 shadow-sm sm:px-4 sm:py-4">
-        <div className="mb-3 space-y-1 sm:mb-4">
-          <h1 className="text-base font-semibold tracking-tight sm:text-lg">
-            Metodologi Penelitian
-          </h1>
-          <p className="text-xs text-muted-foreground sm:text-sm">
-            {isMetopenReadOnly
-              ? "Ringkasan arsip fase Metode Penelitian sebelum Anda masuk ke proses Tugas Akhir."
-              : "Kelola pengajuan pembimbing, judul awal, penilaian proposal, dan status pengesahan judul pada fase Metode Penelitian."}
-          </p>
-        </div>
-        <TabsNav tabs={tabs} />
-      </section>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Metodologi Penelitian</h1>
+        <p className="text-muted-foreground">
+          {isMetopenReadOnly
+            ? "Ringkasan arsip fase Metode Penelitian sebelum Anda masuk ke proses Tugas Akhir."
+            : "Kelola pengajuan pembimbing, judul awal, penilaian proposal, dan status pengesahan judul pada fase Metode Penelitian."}
+        </p>
+      </div>
 
-      <section className="rounded-xl border bg-background p-3 shadow-sm animate-in fade-in duration-300 sm:p-4 lg:p-5">
+      <TabsNav tabs={tabs} />
+
+      <div className="space-y-6 animate-in fade-in duration-300">
         {renderContent()}
-      </section>
+      </div>
     </div>
   );
 }

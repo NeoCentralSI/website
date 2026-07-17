@@ -36,9 +36,13 @@ export interface LecturerQuotaSnapshot {
   pendingKadepCount: number;
   normalAvailable: number;
   overquotaAmount: number;
+  overquotaSahCount?: number;
   trafficLight: 'green' | 'yellow' | 'red';
   isNearLimit: boolean;
   isFull: boolean;
+  activeOfficialEntries?: AdvisorQuotaEntry[];
+  bookingEntries?: AdvisorQuotaEntry[];
+  pendingKadepEntries?: AdvisorQuotaEntry[];
 }
 
 export interface AdvisorQuotaEntry {
@@ -67,6 +71,7 @@ export interface AdvisorQuotaEntry {
   updatedAt: string | null;
   proposalStatus?: string | null;
   thesisStatus?: string | null;
+  acceptedOverNormal?: boolean;
 }
 
 export interface DosenInboxPayload {
@@ -196,7 +201,11 @@ export interface AdvisorAccessState {
   gateOpen: boolean;
   gates: AdvisorAccessGate[];
   supervisors: AdvisorSupervisorSummary[];
+  hasBookedSupervisor: boolean;
   hasOfficialSupervisor: boolean;
+  ta04AssignmentIssued?: boolean;
+  guidanceGateOpen: boolean;
+  guidanceGateReason: string | null;
   hasBlockingRequest: boolean;
   blockingRequest: AdvisorRequest | null;
   latestRequest: AdvisorRequest | null;

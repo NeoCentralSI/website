@@ -5,16 +5,10 @@
  * - guide/TA-03 A_PENILAIAN PROPOSAL TUGAS AKHIR OLEH PEMBIMBING_FIX.pdf
  * - guide/TA-03 B_PENILAIAN PROPOSAL TUGAS AKHIR OLEH PENGAMPU MATA KULIAH METODE PENELITIAN_FIX.pdf
  *
- * Catatan kontrak DB:
- * - Backend (`services/src/services/assessment.service.js`) menerima 1 score
- *   integer per `assessmentCriteriaId`, dengan validasi `score <= maxScore`
- *   dan rubricId wajib bila kriteria punya `assessmentRubrics`.
- * - Saat ini DB hanya menyimpan 4 `AssessmentCriteria` (Presentasi 20,
- *   Konten 40, Struktur 25, Respon 15) tanpa `AssessmentRubric` record.
- * - File ini menyediakan rubrik level deskriptif sebagai *UI hint* dan
- *   sub-kriteria CPMK-02 (4 × 0-10) sebagai breakdown UI yang dijumlahkan
- *   menjadi 1 score 0-40 sebelum submit. Sub-rubrik tidak dipersist ke DB
- *   (DB tetap simpan 1 row scalar untuk kriteria parent "Konten").
+ * Kontrak DB (master CPMK/kriteria dikelola lewat Kelola Rubrik Metopel):
+ * - 4 kriteria master: Presentasi 20, Konten 40, Respon 15 (supervisor) + Struktur 25 (default)
+ * - Sub-kriteria CPMK-02 (a)–(d) hanya di UI; submit menyimpan total 0–40
+ * - Level deskripsi resmi dipakai sebagai UI hint; di-merge ke rubricId DB bila rentang cocok
  */
 
 export type RubricLevelTier = "very-low" | "low" | "fair" | "good" | "excellent";
@@ -412,8 +406,8 @@ export const TA03B_STRUKTUR_LEVELS: RubricLevel[] = [
 // ────────────────────────────────────────────────────────────
 
 /**
- * Identifikasi tipe rubrik kriteria dari nama (server-side `AssessmentCriteria.name`)
- * + max score. Resolusi by name + maxScore stabil terhadap variasi naming.
+ * Identifikasi tipe rubrik kriteria dari kode CPMK + bobot + role/form,
+ * dengan fallback nama. Selaras form TA-03 resmi + export SIA §5.7.4.
  */
 export type CriteriaRubricKind =
     | "presentasi"
@@ -422,26 +416,85 @@ export type CriteriaRubricKind =
     | "respon"
     | "unknown";
 
+function normalizeCpmkCode(cpmkCode?: string | null) {
+    return (cpmkCode ?? "").toUpperCase().replace(/\s+/g, "-");
+}
+
+function codeHasGroup(code: string, group: "01" | "02" | "03") {
+    return code.includes(group);
+}
+
+/**
+ * @param formOrRole - `TA-03A` | `TA-03B` | `supervisor` | `default`
+ */
 export function resolveCriteriaRubricKind(
     name: string | null | undefined,
     maxScore: number | null | undefined,
     cpmkCode?: string | null,
+    formOrRole?: string | null,
 ): CriteriaRubricKind {
     const lower = (name ?? "").toLowerCase();
-    const code = (cpmkCode ?? "").toUpperCase();
+    const code = normalizeCpmkCode(cpmkCode);
+    const context = (formOrRole ?? "").toLowerCase();
+    const isTa03b =
+        context === "ta-03b" ||
+        context === "default" ||
+        context.includes("koordinator");
+    const isTa03a =
+        context === "ta-03a" ||
+        context === "supervisor" ||
+        context.includes("pembimbing");
 
-    if (lower.includes("presentasi") || (code === "CPMK-01" && maxScore === 20)) {
+    if (
+        maxScore === 20 &&
+        (codeHasGroup(code, "01") || lower.includes("presentasi"))
+    ) {
         return "presentasi";
     }
-    if (lower.includes("konten") && maxScore === 40) {
+
+    if (
+        maxScore === 40 &&
+        (codeHasGroup(code, "02") || lower.includes("konten"))
+    ) {
         return "konten-sub";
     }
-    if (lower.includes("struktur") && maxScore === 25) {
+
+    if (
+        maxScore === 25 &&
+        (codeHasGroup(code, "02") ||
+            lower.includes("struktur") ||
+            isTa03b)
+    ) {
         return "struktur";
     }
-    if (lower.includes("respon") || lower.includes("merespon") || (code === "CPMK-03" && maxScore === 15)) {
+
+    if (
+        maxScore === 15 &&
+        (codeHasGroup(code, "03") ||
+            lower.includes("respon") ||
+            lower.includes("merespon"))
+    ) {
         return "respon";
     }
+
+    // Fallback nama tanpa mengandalkan maxScore (data master yang belum lengkap)
+    if (lower.includes("presentasi") || (codeHasGroup(code, "01") && isTa03a)) {
+        return "presentasi";
+    }
+    if (lower.includes("konten") || (codeHasGroup(code, "02") && maxScore === 40)) {
+        return "konten-sub";
+    }
+    if (lower.includes("struktur") || (codeHasGroup(code, "02") && isTa03b)) {
+        return "struktur";
+    }
+    if (
+        lower.includes("respon") ||
+        lower.includes("merespon") ||
+        codeHasGroup(code, "03")
+    ) {
+        return "respon";
+    }
+
     return "unknown";
 }
 

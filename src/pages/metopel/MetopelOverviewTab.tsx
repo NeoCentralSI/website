@@ -1,14 +1,14 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAdvisorAccessState, useRole } from "@/hooks/shared";
 import { metopenTitleService } from "@/services/metopenTitle.service";
 import type { StudentArchiveData, StudentArchiveScoreDetail } from "@/services/metopenTitle.service";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { MetricAction } from "@/components/metopen/MetricAction";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/spinner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CheckCircle2, ClipboardList, FileCheck2, Stamp, Users, FileText, Download, Archive, ScrollText } from "lucide-react";
-import { toast } from "sonner";
+import { CheckCircle2, ClipboardList, FileCheck2, Stamp, Users, FileText, Archive, ScrollText, Info } from "lucide-react";
 import { formatDateId } from "@/lib/text";
 import { formatAdvisorRouteCode, formatAdvisorRouteProcessing } from "@/lib/advisorRoute";
 
@@ -17,7 +17,8 @@ type AdvisorAccessState = NonNullable<ReturnType<typeof useAdvisorAccessState>["
 interface MetopelOverviewTabProps {
   /**
    * BR-23 (canon §5.13): readOnly = true menandai mode arsip pasca promosi aktif TA.
-   * Mode arsip wajib menampilkan substansi awal + detail rubrik + dokumen TA-04.
+   * Mode arsip menampilkan substansi awal + detail rubrik + status penugasan TA-04
+   * (PDF cetak dikelola departemen — bukan artefak keputusan mahasiswa).
    */
   readOnly?: boolean;
   advisorAccess?: AdvisorAccessState;
@@ -53,7 +54,7 @@ function buildProposalStatusUi(
     return { label: "TA-04 Terbit, Booking", variant: "secondary" as const };
   }
   if (proposalStatus === "submitted") {
-    return { label: "Legacy Review KaDep", variant: "secondary" as const };
+    return { label: "Menunggu Review KaDep", variant: "secondary" as const };
   }
   if (proposalStatus === "rejected") {
     return { label: "Ditolak", variant: "outline" as const };
@@ -88,23 +89,23 @@ function getProposalQueueDescription(
     return "TA-03 final dan KRS Tugas Akhir sudah terkonfirmasi. Status pembimbing sudah menjadi beban aktif TA.";
   }
   if (ta04IssuedAt) {
-    return "Formulir TA-04 awal sudah terbit sebagai SK penugasan pembimbing. Anda tetap berada di fase Metopel sampai TA-03 final dan KRS Tugas Akhir terkonfirmasi dari SIA.";
+    return "Penugasan pembimbing awal (TA-04) sudah dicatat di sistem oleh KaDep. Dokumen cetak dikelola departemen. Anda tetap di fase Metopel sampai TA-03 final dan KRS Tugas Akhir terkonfirmasi dari SIA.";
   }
   if (proposalStatus === "submitted") {
-    return "Judul/proposal masuk antrean legacy KaDep. Proses baru memakai TA-04 awal dan promosi otomatis.";
+    return "Judul/proposal masuk antrean peninjauan KaDep. Proses baru memakai TA-04 awal dan promosi otomatis.";
   }
 
   switch (queueReadiness?.block) {
     case "ta_course_not_confirmed":
       return "Nilai TA-03 sudah final, tetapi promosi aktif belum berjalan karena snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir.";
     case "scores_not_finalized":
-      return "Promosi aktif menunggu TA-03A, co-sign Pembimbing 2 bila ada, dan TA-03B difinalisasi.";
+      return "Promosi aktif menunggu TA-03A, persetujuan Pembimbing 2 bila ada, dan TA-03B difinalisasi.";
     case "missing_scores":
       return "Promosi aktif menunggu nilai TA-03A dan TA-03B tersedia.";
     case "metopel_auto_zeroed":
       return "Presensi Metopel kurang dari 75%, sehingga booking TA-04 awal akan dilepas pada siklus ini.";
     case "proposal_final_not_submitted":
-      return "Submit proposal final terlebih dahulu agar TA-03A dan TA-03B dapat dinilai.";
+      return "Ajukan proposal final terlebih dahulu agar TA-03A dan TA-03B dapat dinilai.";
     default:
       return "TA-04 awal diterbitkan batch oleh KaDep setelah booking pembimbing disetujui. Beban aktif berpindah otomatis setelah TA-03 final dan snapshot KRS TA.";
   }
@@ -148,17 +149,11 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
     enabled: !readOnly && !!advisorAccess?.hasOfficialSupervisor,
   });
 
-  // BR-23: Arsip Metopel — fetch hanya saat mode arsip aktif (TA-04 sudah disahkan).
+  // BR-23: Arsip Metopel — fetch hanya saat mode arsip aktif (promosi beban aktif).
   const { data: archive } = useQuery({
     queryKey: ["metopel-archive-detail"],
     queryFn: async () => (await metopenTitleService.getMyArchive()).data,
     enabled: readOnly && hasLifecycleContext,
-  });
-
-  const downloadTa04Mutation = useMutation({
-    mutationFn: () => metopenTitleService.downloadMyTitleApprovalDocument(),
-    onSuccess: () => toast.success("Formulir TA-04 berhasil diunduh."),
-    onError: (err: Error) => toast.error(err.message || "Gagal mengunduh Formulir TA-04."),
   });
 
   if (!advisorAccessFromParent && isLoading) return <Loading />;
@@ -166,14 +161,37 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
   const proposalStatus = (proposalApproval?.proposalStatus ?? null) as ProposalStatus;
   const queueReadiness = proposalApproval?.queueReadiness ?? null;
   const ta04IssuedAt = proposalApproval?.ta04AssignmentIssuedAt ?? null;
+  const canUploadProposal = proposalApproval?.canUploadProposal === true;
+  const canSubmitFinalProposal = proposalApproval?.canSubmitFinalProposal === true;
+  const canUseInformalLog = proposalApproval?.canUseInformalLog === true;
+  const guidanceGateOpen = proposalApproval?.guidanceGateOpen === true;
+  const guidanceGateReason = proposalApproval?.guidanceGateReason ?? null;
+  const ta03GateOpen = proposalApproval?.ta03GateOpen === true;
+  const ta03GateReason = proposalApproval?.ta03GateReason ?? null;
+  const activePromotionState = proposalApproval?.activePromotionState ?? null;
   const proposalStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness, ta04IssuedAt);
   const proposalQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness, ta04IssuedAt);
+  const workflowClarityItems = [
+    advisorAccess?.hasBookedSupervisor && !guidanceGateOpen
+      ? guidanceGateReason ?? "Booking pembimbing sudah disetujui dan menunggu TA-04 difinalisasi KaDep. Anda hanya dapat menyimpan draf pribadi."
+      : null,
+    guidanceGateOpen && (canSubmitFinalProposal || canUseInformalLog)
+      ? "TA-04 awal sudah terbit; bimbingan proposal tercatat, catatan informal, dan ajukan proposal final dapat digunakan."
+      : null,
+    guidanceGateOpen
+      ? "Bimbingan formal Tugas Akhir tetap menunggu KRS Tugas Akhir dan memakai modul Tugas Akhir, bukan catatan informal Metopel."
+      : null,
+  ].filter((item): item is string => Boolean(item));
 
   // Canon §5.2 (audit F-6.1): escalated = TA-01 (Path C), bukan TA-02. Pakai helper terpusat.
   const initialRouteCode = formatAdvisorRouteCode(advisorAccess?.blockingRequest?.routeType);
 
-  const initialRouteStatus = advisorAccess?.hasOfficialSupervisor
+  const initialRouteStatus = readOnly
     ? "Pembimbing sudah ditetapkan"
+    : advisorAccess?.hasOfficialSupervisor
+    ? "Pembimbing sudah ditetapkan"
+    : advisorAccess?.hasBookedSupervisor
+      ? "Booking disetujui, menunggu TA-04"
     : advisorAccess?.hasBlockingRequest
       ? formatAdvisorRouteProcessing(advisorAccess.blockingRequest?.routeType)
       : "Pilih jalur yang sesuai";
@@ -191,7 +209,7 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
 
   const initialRouteDescription =
     advisorAccess?.blockingRequest?.routeType === "escalated"
-      ? `Escalated TA-01 dipakai saat mahasiswa tetap kokoh memilih dosen yang kuota normalnya penuh; KaDep memutuskan setelah dosen memberi proyeksi lulus.${thesisTitleSummary}`
+      ? `TA-01 di atas kuota dipakai saat mahasiswa tetap kokoh memilih dosen yang kuota normalnya penuh; KaDep memutuskan setelah dosen memberi proyeksi lulus.${thesisTitleSummary}`
       : advisorAccess?.blockingRequest?.routeType === "dept"
         ? `TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing — departemen meninjau usulan dan menetapkan dosen pembimbing.${thesisTitleSummary}`
         : advisorAccess?.blockingRequest?.routeType === "normal"
@@ -208,15 +226,29 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
     },
     {
       code: "Proposal Final",
-      title: "Submit Proposal Final",
+      title: "Ajukan proposal final",
       icon: FileCheck2,
-      status: !advisorAccess?.hasOfficialSupervisor
-        ? "Menunggu pembimbing resmi"
-        : proposalStatus === "submitted" || proposalStatus === "accepted" || Boolean(ta04IssuedAt)
-          ? "Proposal final masuk alur KaDep"
-          : "Submit versi proposal final",
+      status: readOnly
+        ? "Proposal final tersimpan"
+        : !advisorAccess?.hasBookedSupervisor
+        ? "Menunggu booking pembimbing"
+        : !advisorAccess?.hasOfficialSupervisor
+          ? "Menunggu TA-04 KaDep"
+        : proposalStatus === "accepted"
+          ? "Sudah promosi beban aktif"
+          : canUploadProposal && !canSubmitFinalProposal
+            ? "Boleh simpan draf pribadi"
+            : canUploadProposal
+              ? "Boleh unggah proposal final"
+            : proposalStatus === "submitted" || Boolean(ta04IssuedAt)
+              ? "Proposal final masuk alur TA-03"
+              : "Ajukan versi proposal final",
       description:
-        "Setelah pembimbing resmi ditetapkan, mahasiswa mengunggah versi proposal dan menetapkan satu versi sebagai proposal final aktif.",
+        readOnly
+          ? "Proposal final dan riwayat versinya tersedia sebagai arsip read-only setelah fase Metode Penelitian selesai."
+          : canSubmitFinalProposal
+          ? "Setelah TA-04 awal terbit, mahasiswa dapat mengunggah dan menetapkan versi proposal final aktif untuk alur penilaian."
+          : "Draf proposal pribadi boleh disimpan. Ajukan proposal final dan akses bimbingan baru terbuka setelah TA-04 awal difinalisasi KaDep.",
     },
     {
       code: "TA-03A / TA-03B",
@@ -226,12 +258,17 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
       // bicara skor agregat (75+25). UI cukup tampilkan skor dan status finalisasi.
       status: seminarRequirements?.metopelScore != null
         ? `Skor akhir ${seminarRequirements.metopelScore}/100`
-        : advisorAccess?.hasOfficialSupervisor
-          ? "Menunggu penilaian proposal"
-          : "Menunggu pembimbing resmi",
+        : ta03GateOpen
+          ? "Gate TA-03 terbuka"
+          : ta03GateReason
+            ? ta03GateReason
+            : advisorAccess?.hasOfficialSupervisor
+              ? "Menunggu penilaian proposal"
+              : "Menunggu pembimbing resmi",
       description:
         seminarEligibility?.reason ??
-        "TA-03A diisi Pembimbing 1 (master) + co-sign Pembimbing 2 (jika ada). TA-03B diisi Koordinator Metopen. Berjalan paralel; nilai immutable pasca submit.",
+        ta03GateReason ??
+        "TA-03A diisi Pembimbing 1 (pengisi utama) + persetujuan Pembimbing 2 (jika ada). TA-03B diisi Koordinator Metopen. Berjalan paralel; nilai tidak dapat diubah setelah disubmit.",
     },
     {
       code: "TA-04",
@@ -258,54 +295,81 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="space-y-2 p-4 text-sm">
-          <p className="font-medium text-blue-900">Status Tahap Awal Tugas Akhir</p>
-          <p className="text-blue-800">
-            {advisorAccess?.reason ??
-              "Pantau pembimbing, judul awal, penilaian proposal, dan pengesahan judul sebelum lanjut ke fase Tugas Akhir penuh."}
-          </p>
-          {metopenAccessSummary && <p className="text-xs text-blue-700">{metopenAccessSummary}</p>}
+      <div className="rounded-lg border bg-muted/25 px-4 py-4 sm:px-5">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Info className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-semibold">Status tahap awal Tugas Akhir</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {advisorAccess?.reason ??
+                "Pantau pembimbing, judul awal, penilaian proposal, dan status penugasan TA-04 di sistem sebelum lanjut ke fase Tugas Akhir penuh."}
+            </p>
+            {metopenAccessSummary && <p className="text-xs text-muted-foreground">{metopenAccessSummary}</p>}
+          </div>
+        </div>
+        {workflowClarityItems.length > 0 && (
+          <div className="ml-12 mt-3 space-y-1.5 border-l-2 border-border pl-3 text-xs leading-relaxed text-muted-foreground">
+            {workflowClarityItems.map((item) => (
+              <p key={item}>{item}</p>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Card className="border-border/70 shadow-none">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Alur proses Metode Penelitian</CardTitle>
+          <CardDescription>
+            Setiap tahap ditampilkan dalam satu alur agar posisi saat ini dan langkah berikutnya mudah dipahami.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div>
+            {stepCards.map((step, index) => {
+              const Icon = step.icon;
+              const status = getStepStatus(index);
+              const isCompleted = status === 'completed';
+              const isCurrent = status === 'current';
+              return (
+                <div key={step.code} className="relative grid grid-cols-[2.25rem_minmax(0,1fr)] gap-3 py-4 first:pt-2 last:pb-1">
+                  {index < stepCards.length - 1 && (
+                    <span className="absolute bottom-0 left-[1.1rem] top-10 w-px bg-border" aria-hidden="true" />
+                  )}
+                  <div
+                    className={
+                      isCompleted
+                        ? 'relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700'
+                        : isCurrent
+                          ? 'relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground ring-4 ring-primary/10'
+                          : 'relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground'
+                    }
+                  >
+                    {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                  </div>
+                  <div className="min-w-0 pt-0.5">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold">{step.title}</p>
+                          <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">
+                            {step.code}
+                          </Badge>
+                        </div>
+                        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{step.description}</p>
+                      </div>
+                      <Badge variant={isCurrent ? 'default' : 'secondary'} className="w-fit shrink-0 text-xs">
+                        {step.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {stepCards.map((step, index) => {
-          const Icon = step.icon;
-          const status = getStepStatus(index);
-          const cardClass =
-            status === 'completed'
-              ? 'border-emerald-200 bg-emerald-50/30'
-              : status === 'current'
-                ? 'border-primary/50 ring-1 ring-primary/20'
-                : '';
-          return (
-            <Card key={step.code} className={cardClass}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    {status === 'completed' ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    ) : (
-                      <Icon className="h-4 w-4" />
-                    )}
-                    {step.title}
-                  </CardTitle>
-                  <Badge variant="outline" className="text-[10px]">
-                    {step.code}
-                  </Badge>
-                </div>
-                <Badge variant="secondary" className="text-xs w-fit mt-1">
-                  {step.status}
-                </Badge>
-              </CardHeader>
-              <CardContent className="text-sm">
-                <p className="text-muted-foreground">{step.description}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
       {hasLifecycleContext && (
         <Card>
@@ -331,28 +395,40 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
               </div>
             )}
 
-            {proposalApproval?.titleApprovalDocument && (
-              <div className="flex flex-col gap-2 rounded-md border bg-background px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Formulir TA-04 awal</p>
-                  <p className="truncate text-sm font-medium">{proposalApproval.titleApprovalDocument.fileName}</p>
-                  {proposalApproval.ta04AssignmentIssuedAt && (
-                    <p className="text-xs text-muted-foreground">
-                      Diterbitkan {formatDateId(proposalApproval.ta04AssignmentIssuedAt)}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => downloadTa04Mutation.mutate()}
-                  disabled={downloadTa04Mutation.isPending}
-                >
-                  <Download className="mr-1 h-3.5 w-3.5" />
-                  {downloadTa04Mutation.isPending ? "Mengunduh..." : "Unduh PDF"}
-                </Button>
+            {ta04IssuedAt && (
+              <div className="rounded-md border bg-background px-3 py-2 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground">Penugasan awal dicatat di sistem</p>
+                <p className="mt-0.5">
+                  Dicatat {formatDateId(ta04IssuedAt)}. Keputusan KaDep berlaku lewat status sistem ini;
+                  dokumen cetak TA-04 dikelola departemen (bukan bukti keputusan di aplikasi).
+                </p>
               </div>
             )}
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
+                <p className="font-medium text-foreground">Proposal &amp; catatan informal</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  {guidanceGateOpen
+                    ? "Bimbingan tercatat dan catatan informal dapat berjalan karena TA-04 sudah terbit."
+                    : canUploadProposal
+                      ? "Draf pribadi boleh disimpan, tetapi bimbingan dan catatan informal menunggu TA-04 KaDep."
+                    : activePromotionState === "active_promoted"
+                      ? "Fase Metopel sudah promosi ke beban aktif Tugas Akhir."
+                      : "Menunggu pembimbing resmi atau status proposal yang sesuai."}
+                </p>
+              </div>
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
+                <p className="font-medium text-foreground">Gate TA-03</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  {readOnly && seminarRequirements?.metopelScore != null
+                    ? `Selesai: skor TA-03 final ${seminarRequirements.metopelScore}/100 dan tersimpan sebagai arsip.`
+                    : ta03GateOpen
+                      ? "Terbuka: proposal final dan TA-04 awal sudah tersedia."
+                      : ta03GateReason ?? "Menunggu prasyarat penilaian proposal."}
+                </p>
+              </div>
+            </div>
 
             {/* P1-13 (canon §5.10): Tombol "Sinkronkan Status" dihapus karena
                 lifecycle TA-04/promosi aktif berjalan otomatis dari SIA sync dan
@@ -368,8 +444,8 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
         <AssessmentHistorySection history={assessmentHistory} />
       )}
 
-      {/* BR-23 (canon §5.13): Arsip Metopel pasca promosi aktif — read-only single source of truth.
-          4 kategori: substansi awal TA-01/02, detail rubrik TA-03A & TA-03B, Formulir TA-04. */}
+      {/* BR-23 (canon §5.13): Arsip Metopel pasca promosi aktif — read-only.
+          Substansi awal + rubrik TA-03 + status penugasan TA-04 (tanpa PDF mahasiswa). */}
       {readOnly && archive && <ArchiveSection archive={archive} />}
     </div>
   );
@@ -380,15 +456,6 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
  */
 function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> }) {
   const { advisorRequests, score, titleApproval } = archive;
-  const ta04Document = titleApproval?.document;
-
-  // FR-ARC-05: Unduh Formulir TA-04 via endpoint stream terautentikasi (bukan <a href>
-  // ke /uploads/documents yang tidak disajikan statis + tidak melampirkan token).
-  const downloadSkMutation = useMutation({
-    mutationFn: () => metopenTitleService.downloadMyTitleApprovalDocument(),
-    onSuccess: () => toast.success("Formulir TA-04 berhasil diunduh."),
-    onError: (err: Error) => toast.error(err.message || "Gagal mengunduh Formulir TA-04."),
-  });
 
   const { ta03aDetails, ta03bDetails } = splitScoreDetails(score);
 
@@ -398,9 +465,9 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
         <div className="flex items-center gap-2">
           <Archive className="h-5 w-5 text-emerald-700" />
           <div>
-            <CardTitle className="text-base">Arsip Penilaian Proposal &amp; Dokumen TA-04</CardTitle>
+            <CardTitle className="text-base">Arsip Penilaian Proposal &amp; Status TA-04</CardTitle>
             <CardDescription>
-              Sesuai canon §5.13, SIMPTA dirancang sebagai Single Source of Truth — Anda berhak melihat substansi pengajuan awal, feedback rubrik detail, dan mengunduh Formulir TA-04 setelah batch periode difinalisasi.
+              Ringkasan substansi pengajuan awal, feedback rubrik, dan status penugasan pembimbing di sistem. Dokumen cetak TA-04 dikelola departemen.
             </CardDescription>
           </div>
         </div>
@@ -468,17 +535,17 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
             <AccordionContent className="px-4 pb-3 space-y-2">
               {score?.supervisorName && (
                 <p className="text-xs">
-                  <strong>Pembimbing 1 (master):</strong> {score.supervisorName}
+                  <strong>Pembimbing 1 (pengisi utama):</strong> {score.supervisorName}
                 </p>
               )}
               {score?.coSignerName && (
                 <p className="text-xs">
-                  <strong>Pembimbing 2 (co-sign):</strong> {score.coSignerName}
+                  <strong>Pembimbing 2 (persetujuan):</strong> {score.coSignerName}
                   {score.coSignedAt ? ` · ${formatDateId(score.coSignedAt)}` : ''}
                 </p>
               )}
               {score?.coSignNote && (
-                <p className="text-xs text-muted-foreground">Catatan co-sign: {score.coSignNote}</p>
+                <p className="text-xs text-muted-foreground">Catatan persetujuan: {score.coSignNote}</p>
               )}
               {ta03aDetails.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Detail rubrik TA-03A belum tersedia.</p>
@@ -538,43 +605,28 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
             </AccordionContent>
           </AccordionItem>
 
-          {/* (4) Formulir TA-04 PDF */}
+          {/* (4) Status penugasan TA-04 — tanpa PDF (keputusan = status sistem) */}
           <AccordionItem value="ta04-doc" className="rounded-lg border bg-background">
             <AccordionTrigger className="px-4 text-sm">
               <span className="flex items-center gap-2">
-                <FileText className="h-4 w-4" /> 4. Formulir Penugasan Dosen Pembimbing (TA-04)
+                <FileText className="h-4 w-4" /> 4. Status Penugasan Pembimbing (TA-04)
               </span>
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-3 space-y-2">
-              {ta04Document ? (
-                <>
-                  <div className="flex items-center justify-between rounded-md border bg-muted/30 p-3 text-xs">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{ta04Document.fileName}</p>
-                      {titleApproval.reviewedAt && (
-                        <p className="text-muted-foreground">Diterbitkan {formatDateId(titleApproval.reviewedAt)}</p>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadSkMutation.mutate()}
-                      disabled={downloadSkMutation.isPending}
-                    >
-                      <Download className="mr-1 h-3.5 w-3.5" />
-                      {downloadSkMutation.isPending ? "Mengunduh..." : "Unduh PDF"}
-                    </Button>
-                  </div>
-                  {titleApproval.documentKind === 'batch' && (
-                    <p className="text-xs rounded-md border border-emerald-200 bg-emerald-50/60 p-2 text-emerald-800">
-                      Dokumen ini adalah <strong>Formulir TA-04 resmi</strong> per periode (sesuai panduan TA-04: tabel seluruh mahasiswa semester ini).
-                    </p>
-                  )}
-                </>
+              {titleApproval?.reviewedAt ? (
+                <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+                  <p className="font-medium text-foreground">Penugasan awal sudah dicatat di sistem</p>
+                  <p className="text-muted-foreground">
+                    Dicatat {formatDateId(titleApproval.reviewedAt)}. Keputusan KaDep berlaku lewat status ini;
+                    dokumen cetak dikelola departemen.
+                  </p>
+                </div>
               ) : (
-                <p className="text-xs text-muted-foreground">Formulir TA-04 belum tersedia. Dokumen dapat diunduh setelah KaDep memfinalisasi batch periode mahasiswa yang mengambil mata kuliah Tugas Akhir.</p>
+                <p className="text-xs text-muted-foreground">
+                  Status penugasan TA-04 belum tercatat. Setelah KaDep memfinalisasi batch di sistem, status akan muncul di sini.
+                </p>
               )}
-              {titleApproval.reviewNotes && (
+              {titleApproval?.reviewNotes && (
                 <p className="text-xs text-muted-foreground">
                   <strong>Catatan KaDep:</strong> {titleApproval.reviewNotes}
                 </p>
@@ -593,6 +645,8 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
  */
 function AssessmentHistorySection({ history }: { history: NonNullable<StudentArchiveData> }) {
   const score = history.score;
+  const ta03aRef = useRef<HTMLDivElement | null>(null);
+  const ta03bRef = useRef<HTMLDivElement | null>(null);
   if (!score) return null;
 
   const { ta03aDetails, ta03bDetails } = splitScoreDetails(score);
@@ -617,14 +671,33 @@ function AssessmentHistorySection({ history }: { history: NonNullable<StudentArc
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-2 sm:grid-cols-3">
-          <ScoreSummaryBox label="TA-03A Pembimbing" value={score.supervisorScore} max={75} tone="blue" />
-          <ScoreSummaryBox label="TA-03B Koordinator" value={score.lecturerScore} max={25} tone="violet" />
-          <ScoreSummaryBox label="Total Final" value={finalScore} max={100} tone="emerald" />
+          <MetricAction
+            label="TA-03A Pembimbing"
+            value={`${score.supervisorScore ?? "-"} / 75`}
+            tone="blue"
+            actionLabel="Lihat detail rubrik"
+            onClick={() => ta03aRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+          />
+          <MetricAction
+            label="TA-03B Koordinator"
+            value={`${score.lecturerScore ?? "-"} / 25`}
+            tone="violet"
+            actionLabel="Lihat detail rubrik"
+            onClick={() => ta03bRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+          />
+          <MetricAction
+            label="Total Final"
+            value={`${finalScore ?? "-"} / 100`}
+            tone="emerald"
+            hint="TA-03A (maks. 75) + TA-03B (maks. 25)"
+            actionLabel="Lihat komponen nilai"
+            onClick={() => ta03aRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+          />
         </div>
 
         <div className="grid gap-2 text-xs sm:grid-cols-2">
           <div className="rounded-md border bg-background px-3 py-2">
-            <p className="text-muted-foreground">Pembimbing 1 / master penilai</p>
+            <p className="text-muted-foreground">Pembimbing 1 / pengisi utama</p>
             <p className="mt-1 font-medium">{score.supervisorName || "-"}</p>
           </div>
           <div className="rounded-md border bg-background px-3 py-2">
@@ -632,7 +705,7 @@ function AssessmentHistorySection({ history }: { history: NonNullable<StudentArc
             <p className="mt-1 font-medium">{score.lecturerAssessorName || "-"}</p>
           </div>
           <div className="rounded-md border bg-background px-3 py-2">
-            <p className="text-muted-foreground">Co-sign Pembimbing 2</p>
+            <p className="text-muted-foreground">Persetujuan Pembimbing 2</p>
             {score.coSignedAt ? (
               <p className="mt-1">
                 <CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-emerald-600" />
@@ -649,20 +722,24 @@ function AssessmentHistorySection({ history }: { history: NonNullable<StudentArc
         </div>
 
         <Accordion type="multiple" defaultValue={["ta03a", "ta03b"]} className="space-y-2">
-          <RubricHistoryItem
-            value="ta03a"
-            title="Feedback Rubrik TA-03A (Pembimbing)"
-            scoreLabel={score.supervisorScore != null ? `${score.supervisorScore}/75` : "-"}
-            details={ta03aDetails}
-            emptyText="Detail rubrik TA-03A belum tersedia."
-          />
-          <RubricHistoryItem
-            value="ta03b"
-            title="Feedback Rubrik TA-03B (Koordinator Metopen)"
-            scoreLabel={score.lecturerScore != null ? `${score.lecturerScore}/25` : "-"}
-            details={ta03bDetails}
-            emptyText="Detail rubrik TA-03B belum tersedia."
-          />
+          <div ref={ta03aRef} className="scroll-mt-6">
+            <RubricHistoryItem
+              value="ta03a"
+              title="Feedback Rubrik TA-03A (Pembimbing)"
+              scoreLabel={score.supervisorScore != null ? `${score.supervisorScore}/75` : "-"}
+              details={ta03aDetails}
+              emptyText="Detail rubrik TA-03A belum tersedia."
+            />
+          </div>
+          <div ref={ta03bRef} className="scroll-mt-6">
+            <RubricHistoryItem
+              value="ta03b"
+              title="Feedback Rubrik TA-03B (Koordinator Metopen)"
+              scoreLabel={score.lecturerScore != null ? `${score.lecturerScore}/25` : "-"}
+              details={ta03bDetails}
+              emptyText="Detail rubrik TA-03B belum tersedia."
+            />
+          </div>
         </Accordion>
       </CardContent>
     </Card>
@@ -684,33 +761,6 @@ function splitScoreDetails(score: StudentArchiveScore | null | undefined) {
   });
 
   return { ta03aDetails, ta03bDetails };
-}
-
-function ScoreSummaryBox({
-  label,
-  value,
-  max,
-  tone,
-}: {
-  label: string;
-  value: number | null;
-  max: number;
-  tone: "blue" | "violet" | "emerald";
-}) {
-  const toneClass = {
-    blue: "border-blue-200 bg-blue-50/60",
-    violet: "border-violet-200 bg-violet-50/60",
-    emerald: "border-emerald-200 bg-emerald-50/60",
-  }[tone];
-
-  return (
-    <div className={`rounded-md border px-3 py-2 ${toneClass}`}>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-2xl font-semibold tabular-nums">
-        {value ?? "-"} <span className="text-xs text-muted-foreground">/ {max}</span>
-      </p>
-    </div>
-  );
 }
 
 function RubricHistoryItem({
