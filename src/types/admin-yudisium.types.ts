@@ -103,7 +103,7 @@ export type VerifyDocumentResponse = {
 
 export type CplScoreItem = {
   cplId: string;
-  code: string | null;
+  code: string;
   description: string;
   score: number | null;
   oldScore: number | null;

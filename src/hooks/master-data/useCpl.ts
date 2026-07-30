@@ -15,10 +15,10 @@ import {
 
 const QUERY_KEY = ['cpls'];
 
-export function useCpl() {
+export function useCpl(initialCurriculumId = '') {
     const queryClient = useQueryClient();
     const [params, setParams] = useState<GetCplsParams>({
-        curriculumId: '',
+        curriculumId: initialCurriculumId,
         status: 'active',
         search: '',
         page: 1,
@@ -28,6 +28,7 @@ export function useCpl() {
     const { data: cpls, isLoading, isFetching, refetch } = useQuery({
         queryKey: [...QUERY_KEY, params],
         queryFn: () => getCpls(params),
+        enabled: Boolean(params.curriculumId),
     });
 
     const createMutation = useMutation({

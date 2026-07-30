@@ -4,7 +4,11 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useCurriculum } from '@/hooks/master-data/useCurriculum';
 import { CurriculumTable } from '@/components/master-data/curriculum/CurriculumTable';
 import { CurriculumFormDialog } from '@/components/master-data/curriculum/CurriculumFormDialog';
-import { useRole } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared/useRole';
+import type {
+    CreateCurriculumPayload,
+    UpdateCurriculumPayload,
+} from '@/services/master-data/curriculum.service';
 
 export default function MasterDataCurriculum() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -75,7 +79,9 @@ export default function MasterDataCurriculum() {
             <CurriculumFormDialog
                 open={createCurriculumOpen}
                 onOpenChange={setCreateCurriculumOpen}
-                onSubmit={async (data) => { await createCurriculum(data as any); }}
+                onSubmit={async (data) => {
+                    await createCurriculum(data as CreateCurriculumPayload);
+                }}
             />
 
             <CurriculumFormDialog
@@ -85,7 +91,10 @@ export default function MasterDataCurriculum() {
                     if (!open) setSelectedCurriculumId(null);
                 }}
                 initialData={selectedCurriculumData}
-                onSubmit={async (data) => { await updateCurriculum(selectedCurriculumId as string, data as any); }}
+                onSubmit={async (data) => {
+                    if (!selectedCurriculumId) return;
+                    await updateCurriculum(selectedCurriculumId, data as UpdateCurriculumPayload);
+                }}
             />
         </div>
     );

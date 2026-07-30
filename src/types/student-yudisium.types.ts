@@ -95,7 +95,7 @@ export type StudentYudisiumOverviewResponse = {
   allChecklistMet: boolean;
   allCplVerified: boolean;
   cplScores: {
-    code: string | null;
+    code: string;
     description: string;
     score: number | null;
     minimalScore: number;

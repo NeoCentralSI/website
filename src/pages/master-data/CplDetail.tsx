@@ -8,7 +8,7 @@ import { CplStudentScoreTable } from '@/components/master-data/cpl/CplStudentSco
 import { CplStudentScoreFormDialog } from '@/components/master-data/cpl/CplStudentScoreFormDialog';
 import { CplStudentScoreImportDialog } from '@/components/master-data/cpl/CplStudentScoreImportDialog';
 import type { CplStudentScore } from '@/services/master-data/cpl.service';
-import { useRole } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared/useRole';
 
 export default function CplDetailPage() {
     const { id = '' } = useParams();
@@ -45,9 +45,11 @@ export default function CplDetailPage() {
         () => [
             { label: 'Kelola' },
             { label: 'Kurikulum', href: '/kelola/cpl' },
-            { label: cpl?.curriculum?.name || 'Memuat...' },
-            { label: cpl?.code || 'CPL', href: cpl?.curriculumId ? `/kelola/cpl/${cpl.curriculumId}/cpls` : '/kelola/cpl' },
-            { label: 'Detail' },
+            {
+                label: cpl?.curriculum?.name || 'Memuat...',
+                href: cpl?.curriculumId ? `/kelola/cpl/${cpl.curriculumId}/cpls` : '/kelola/cpl',
+            },
+            { label: cpl?.code || 'CPL' },
         ],
         [cpl?.curriculumId, cpl?.curriculum?.name, cpl?.code]
     );

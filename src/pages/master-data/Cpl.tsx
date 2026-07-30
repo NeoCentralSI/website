@@ -1,29 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useCpl } from '@/hooks/master-data/useCpl';
-import { useCurriculum } from '@/hooks/master-data/useCurriculum';
 import { CplTable } from '@/components/master-data/cpl/CplTable';
 import { CplFormDialog } from '@/components/master-data/cpl/CplFormDialog';
-import { useRole } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared/useRole';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { getCurriculumById } from '@/services/master-data/curriculum.service';
 
 export default function MasterDataCpl() {
     const { curriculumId } = useParams();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
     const navigate = useNavigate();
 
-    const { curriculums } = useCurriculum();
-    const selectedCurriculum = useMemo(() => 
-        curriculums.find(c => c.id === curriculumId), 
-    [curriculums, curriculumId]);
+    const { data: selectedCurriculum } = useQuery({
+        queryKey: ['curriculums', 'detail', curriculumId],
+        queryFn: () => getCurriculumById(curriculumId as string),
+        enabled: Boolean(curriculumId),
+    });
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kelola' },
         { label: 'Kurikulum', href: '/kelola/cpl' },
         { label: selectedCurriculum?.name || 'Memuat...' },
-        { label: 'CPL' },
     ], [selectedCurriculum]);
 
     useEffect(() => {
@@ -47,7 +48,7 @@ export default function MasterDataCpl() {
         isToggling,
         isDeleting,
         isExportingAllScores,
-    } = useCpl();
+    } = useCpl(curriculumId);
 
     // Pastikan list difilter berdasarkan curriculumId
     useEffect(() => {

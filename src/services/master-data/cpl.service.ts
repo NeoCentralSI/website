@@ -3,13 +3,13 @@ import { apiRequest } from '@/services/auth.service';
 
 export interface Cpl {
     id: string;
-    curriculumId?: string;
-    curriculum?: {
+    curriculumId: string;
+    curriculum: {
         id: string;
         name: string;
         startYear: number;
         endYear: number | null;
-    } | null;
+    };
     code: string;
     description: string;
     minimalScore: number;
@@ -57,7 +57,7 @@ export interface CplStudentScore {
     } | null;
     cpl: {
         id: string;
-        code: string | null;
+        code: string;
         description: string;
         minimalScore: number;
         isActive: boolean;
@@ -102,7 +102,7 @@ export interface CplStudentImportResult {
 const downloadResponseAsFile = async (response: Response, fallbackFileName: string): Promise<void> => {
     const blob = await response.blob();
     const header = response.headers.get('content-disposition') || '';
-    const fileNameMatch = header.match(/filename="?([^\";]+)"?/i);
+    const fileNameMatch = header.match(/filename="?([^";]+)"?/i);
     const fileName = fileNameMatch?.[1] || fallbackFileName;
 
     const url = URL.createObjectURL(blob);
