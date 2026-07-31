@@ -37,7 +37,7 @@ export function CplFormDialog({
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
     const [minimalScore, setMinimalScore] = useState<number | ''>('');
-    const [isActive, setIsActive] = useState(true);
+    const [isActive, setIsActive] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
@@ -53,7 +53,7 @@ export function CplFormDialog({
             setCode('');
             setDescription('');
             setMinimalScore('');
-            setIsActive(true);
+            setIsActive(false);
         }
     }, [editData, open, defaultCurriculumId]);
 
@@ -65,8 +65,6 @@ export function CplFormDialog({
         try {
             if (isEdit && editData) {
                 const payload: UpdateCplPayload = {
-                    curriculumId,
-                    code,
                     description,
                     minimalScore: Number(minimalScore),
                 };
@@ -100,6 +98,11 @@ export function CplFormDialog({
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {isEdit && editData && (
+                        <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                            Versi <span className="font-semibold">v{editData.version}</span>
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <Label htmlFor="code">Kode CPL</Label>
                         <Input
@@ -107,8 +110,14 @@ export function CplFormDialog({
                             placeholder="Contoh: CPL-01"
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
+                            disabled={isEdit}
                             required
                         />
+                        {isEdit && (
+                            <p className="text-xs text-muted-foreground">
+                                Kode adalah identitas versi CPL dan tidak dapat diubah.
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -149,10 +158,10 @@ export function CplFormDialog({
                             />
                             <div className="space-y-0.5">
                                 <Label htmlFor="isActive" className="cursor-pointer font-medium">
-                                    Aktif
+                                    Aktifkan versi ini
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Nonaktifkan jika ini adalah data CPL lama yang diarsipkan.
+                                    Versi ditentukan otomatis. Biarkan tidak aktif sampai data versi baru selesai diperiksa.
                                 </p>
                             </div>
                         </div>

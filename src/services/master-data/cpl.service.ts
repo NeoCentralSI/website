@@ -13,6 +13,7 @@ export interface Cpl {
     code: string;
     description: string;
     minimalScore: number;
+    version: number;
     isActive: boolean;
     hasRelatedScores: boolean;
     studentCplScoreCount: number;
@@ -60,6 +61,7 @@ export interface CplStudentScore {
         code: string;
         description: string;
         minimalScore: number;
+        version: number;
         isActive: boolean;
     } | null;
     finalizedAt: string | null;
@@ -305,7 +307,8 @@ export const exportCplStudentScores = async (cplId: string): Promise<void> => {
         throw new Error(message);
     }
 
-    await downloadResponseAsFile(response, `nilai-cpl-${cplId}.xlsx`);
+    const exportDate = new Date().toISOString().slice(0, 10);
+    await downloadResponseAsFile(response, `Nilai CPL Mahasiswa - ${exportDate}.xlsx`);
 };
 
 export const exportAllCplStudentScores = async (): Promise<void> => {
@@ -321,5 +324,6 @@ export const exportAllCplStudentScores = async (): Promise<void> => {
         throw new Error(message);
     }
 
-    await downloadResponseAsFile(response, 'nilai-cpl-semua.xlsx');
+    const exportDate = new Date().toISOString().slice(0, 10);
+    await downloadResponseAsFile(response, `Rekap Nilai CPL - Semua Mahasiswa - ${exportDate}.xlsx`);
 };

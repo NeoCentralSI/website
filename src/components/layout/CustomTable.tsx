@@ -31,9 +31,15 @@ type ColumnFilterControl = {
 	kind?: "control";
 	type?: "text" | "select";
 	value?: string;
+	defaultValue?: string;
 	onChange?: (value: string) => void;
 	options?: Array<{ label: string; value: string }>;
 	placeholder?: string;
+};
+
+const hasActiveColumnFilter = (filter: ColumnFilterControl) => {
+	const value = filter.value ?? "";
+	return value !== "" && value !== (filter.defaultValue ?? "");
 };
 
 export type Column<T> = {
@@ -84,7 +90,7 @@ function buildPages(current: number, total: number): (number | "ellipsis")[] {
 	return pages;
 }
 
-export function CustomTable<T extends Record<string, any>>({
+export function CustomTable<T extends object>({
 	columns,
 	data,
 	loading,
@@ -170,10 +176,10 @@ export function CustomTable<T extends Record<string, any>>({
 																<Button
 																	variant="ghost"
 																	size="icon"
-																	className={cn(
-																		"h-6 w-6 shrink-0",
-																		(col.filter as any)?.value ? "text-primary" : undefined
-																	)}
+													className={cn(
+														"h-6 w-6 shrink-0",
+														hasActiveColumnFilter(col.filter as ColumnFilterControl) ? "text-primary" : undefined
+													)}
 																>
 																	<FilterIcon className="size-3.5" />
 																</Button>
@@ -215,10 +221,10 @@ export function CustomTable<T extends Record<string, any>>({
 																<Button
 																	variant="ghost"
 																	size="icon"
-																	className={cn(
-																		"h-6 w-6 shrink-0",
-																		(col.filter as any)?.value ? "text-primary" : undefined
-																	)}
+													className={cn(
+														"h-6 w-6 shrink-0",
+														hasActiveColumnFilter(col.filter as ColumnFilterControl) ? "text-primary" : undefined
+													)}
 																>
 																	<FilterIcon className="size-3.5" />
 																</Button>
@@ -265,7 +271,8 @@ export function CustomTable<T extends Record<string, any>>({
 								</TableRow>
 							) : (
 								data.map((row, idx) => {
-									const key = rowKey?.(row, idx) ?? (row.id as string) ?? String(idx);
+									const key = rowKey?.(row, idx)
+										?? ("id" in row ? String(row.id) : String(idx));
 									return (
 										<TableRow key={key}>
 											{columns.map((col) => {
@@ -274,7 +281,7 @@ export function CustomTable<T extends Record<string, any>>({
 													: typeof col.accessor === "function"
 														? col.accessor(row, idx)
 														: col.accessor
-															? (row[col.accessor as keyof T] as any)
+																? (row[col.accessor as keyof T] as React.ReactNode)
 															: null;
 												const cellProps = col.onCell ? col.onCell(row, idx) : {};
 												return <TableCell key={col.key} {...cellProps} className={cn(col.className, cellProps.className)}>{content}</TableCell>;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -43,6 +43,12 @@ export default function CplDetailPage() {
         isExporting,
     } = useCplStudents(resolvedCplId);
 
+    const parentCurriculumId = cpl?.curriculumId
+        || (curriculumId && curriculumId !== 'detail' ? curriculumId : '');
+    const cplListPath = parentCurriculumId
+        ? `/kelola/cpl/${parentCurriculumId}`
+        : null;
+
     // Normalize legacy URLs and mismatched curriculum context to the canonical route.
     useEffect(() => {
         if (!cpl?.curriculumId || !resolvedCplId) return;
@@ -57,11 +63,11 @@ export default function CplDetailPage() {
             { label: 'CPL', href: '/kelola/cpl' },
             {
                 label: cpl?.curriculum?.name || 'Memuat...',
-                href: cpl?.curriculumId ? `/kelola/cpl/${cpl.curriculumId}` : '/kelola/cpl',
+                href: cplListPath || undefined,
             },
-            { label: cpl?.code || 'CPL' },
+            { label: cpl?.code ? `${cpl.code} (Versi ${cpl.version})` : 'CPL' },
         ],
-        [cpl?.curriculumId, cpl?.curriculum?.name, cpl?.code]
+        [cpl?.curriculum?.name, cpl?.code, cpl?.version, cplListPath]
     );
 
     useEffect(() => {
@@ -73,10 +79,15 @@ export default function CplDetailPage() {
         <div className="p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" asChild className="shrink-0">
-                        <Link to={cpl?.curriculumId ? `/kelola/cpl/${cpl.curriculumId}` : '/kelola/cpl'}>
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        disabled={!cplListPath}
+                        onClick={() => cplListPath && navigate(cplListPath)}
+                        aria-label="Kembali ke daftar CPL"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">

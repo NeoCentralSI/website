@@ -19,7 +19,7 @@ export function useCpl(initialCurriculumId = '') {
     const queryClient = useQueryClient();
     const [params, setParams] = useState<GetCplsParams>({
         curriculumId: initialCurriculumId,
-        status: 'active',
+        status: 'all',
         search: '',
         page: 1,
         limit: 10,

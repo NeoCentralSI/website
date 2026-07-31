@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import type { Cpl, UpdateCplPayload } from '@/services/master-data/cpl.service';
+import type { Cpl, GetCplsParams, UpdateCplPayload } from '@/services/master-data/cpl.service';
 import { CplFormDialog } from '@/components/master-data/cpl/CplFormDialog';
 
 interface CplTableProps {
@@ -34,8 +34,8 @@ interface CplTableProps {
     isDeleting: boolean;
     isExportingAllScores?: boolean;
     isManagement?: boolean;
-    params: any;
-    onParamsChange: (params: any) => void;
+    params: GetCplsParams;
+    onParamsChange: (params: GetCplsParams) => void;
 }
 
 export function CplTable({
@@ -74,7 +74,9 @@ export function CplTable({
             width: 50,
             className: 'text-center',
             render: (_item, index) => (
-                <span className="text-sm text-muted-foreground">{(params.page - 1) * params.limit + index + 1}</span>
+                <span className="text-sm text-muted-foreground">
+                    {((params.page ?? 1) - 1) * (params.limit ?? 10) + index + 1}
+                </span>
             ),
         },
         {
@@ -83,6 +85,15 @@ export function CplTable({
             width: 110,
             render: (item) => (
                 <span className="font-medium">{item.code || '-'}</span>
+            ),
+        },
+        {
+            key: 'version',
+            header: 'Versi',
+            width: 80,
+            className: 'text-center',
+            render: (item) => (
+                <Badge variant="outline">{item.version}</Badge>
             ),
         },
         {
@@ -123,8 +134,13 @@ export function CplTable({
             filter: {
                 type: 'select',
                 value: params.status,
+                defaultValue: 'all',
                 onChange: (value: string) => {
-                    onParamsChange({ ...params, status: value, page: 1 });
+                    onParamsChange({
+                        ...params,
+                        status: value as GetCplsParams['status'],
+                        page: 1,
+                    });
                 },
                 options: [
                     { label: 'Aktif', value: 'active' },
@@ -168,7 +184,7 @@ export function CplTable({
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
                             onClick={() => setEditItem(item)}
                             disabled={item.hasRelatedScores}
-                            title={item.hasRelatedScores ? 'CPL yang sudah memiliki nilai mahasiswa tidak dapat diubah' : 'Edit'}
+                            title={item.hasRelatedScores ? 'Versi CPL yang sudah memiliki nilai mahasiswa tidak dapat diubah' : `Edit CPL ${item.code} versi ${item.version}`}
                         >
                             <Pencil className="h-4 w-4" />
                         </Button>
@@ -183,7 +199,7 @@ export function CplTable({
                                 }`}
                             onClick={() => onToggle(item.id)}
                             disabled={isToggling}
-                            title={item.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                            title={item.isActive ? `Nonaktifkan ${item.code} versi ${item.version}` : `Aktifkan ${item.code} versi ${item.version}`}
                         >
                             <Power className="h-4 w-4" />
                         </Button>
@@ -203,7 +219,7 @@ export function CplTable({
                 </div>
             ),
         },
-    ], [isToggling, isDeleting, onToggle, params, isManagement]);
+    ], [isToggling, isDeleting, onToggle, onDetail, onParamsChange, params, isManagement]);
 
     return (
         <>
@@ -213,11 +229,11 @@ export function CplTable({
                 loading={isLoading}
                 isRefreshing={isFetching && !isLoading}
                 total={total}
-                page={params.page}
-                pageSize={params.limit}
+                page={params.page ?? 1}
+                pageSize={params.limit ?? 10}
                 onPageChange={(p) => onParamsChange({ ...params, page: p })}
                 onPageSizeChange={(s) => onParamsChange({ ...params, limit: s })}
-                searchValue={params.search}
+                searchValue={params.search ?? ''}
                 onSearchChange={(s) => onParamsChange({ ...params, search: s, page: 1 })}
                 enableColumnFilters
                 emptyText="Belum ada data CPL"
@@ -245,7 +261,7 @@ export function CplTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Data CPL</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Apakah Anda yakin ingin menghapus data CPL ini? Lanjutkan
+                            Apakah Anda yakin ingin menghapus versi CPL ini? Tindakan ini tidak dapat dibatalkan.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

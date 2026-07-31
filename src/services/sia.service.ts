@@ -6,6 +6,13 @@ export interface SiaCourse {
   credits?: number;
 }
 
+export interface SiaCplScore {
+  code: string;
+  description: string;
+  score: number;
+  inputAt: string;
+}
+
 export interface SiaStudent {
   nim: string;
   name: string;
@@ -13,6 +20,7 @@ export interface SiaStudent {
   currentSemester?: number;
   internshipCompleted?: boolean;
   currentSemesterCourses?: SiaCourse[];
+  cplScores?: SiaCplScore[];
 }
 
 export const getCachedStudentsFromSia = async (): Promise<SiaStudent[]> => {
