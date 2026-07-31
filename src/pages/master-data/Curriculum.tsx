@@ -15,12 +15,12 @@ export default function MasterDataCurriculum() {
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kelola' },
-        { label: 'Kurikulum' },
+        { label: 'CPL' },
     ], []);
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle('Kurikulum');
+        setTitle('Kelola CPL');
     }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
     const {
@@ -53,7 +53,7 @@ export default function MasterDataCurriculum() {
     return (
         <div className="p-6 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">Kurikulum</h1>
+                <h1 className="text-2xl font-bold">Kelola CPL</h1>
                 <p className="text-muted-foreground">Pilih kurikulum untuk melihat dan mengelola data CPL</p>
             </div>
 
@@ -69,7 +69,7 @@ export default function MasterDataCurriculum() {
                 }}
                 onCreate={() => setCreateCurriculumOpen(true)}
                 onRefresh={() => refetchCurriculums()}
-                onDetail={(id) => navigate(`/kelola/cpl/${id}/cpls`)}
+                onDetail={(id) => navigate(`/kelola/cpl/${id}`)}
                 isDeleting={isDeletingCurriculum}
                 isManagement={isManagement}
                 params={curriculumParams}

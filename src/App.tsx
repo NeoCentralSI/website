@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import { Navigate, Route, BrowserRouter as Router, Routes, useParams } from 'react-router-dom'
 import Lottie from 'lottie-react'
 import serverErrorAnimation from '@/assets/lottie/server_eror.json'
 import { Button } from '@/components/ui/button'
@@ -131,6 +131,12 @@ const FieldAssessmentLogin = lazy(() => import('./pages/kerja-praktik/public/fie
 const FieldAssessmentLayout = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentLayout'))
 const FieldAssessmentLogbook = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentLogbook'))
 const FieldAssessmentForm = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentForm'))
+
+function LegacyCplListRedirect() {
+  const { curriculumId } = useParams()
+
+  return <Navigate to={`/kelola/cpl/${curriculumId ?? ''}`} replace />
+}
 
 function App() {
   const [showServerError, setShowServerError] = useState(false);
@@ -320,7 +326,11 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.GKM]} />}>
                   {/* CPL & Curriculum Routes */}
                   <Route path="/kelola/cpl" element={<CurriculumPage />} />
-                  <Route path="/kelola/cpl/:curriculumId/cpls" element={<Cpl />} />
+                  <Route path="/kelola/cpl/:curriculumId" element={<Cpl />} />
+                  <Route path="/kelola/cpl/:curriculumId/:cplId" element={<CplDetailPage />} />
+
+                  {/* Temporary redirects for bookmarks using the previous route structure */}
+                  <Route path="/kelola/cpl/:curriculumId/cpls" element={<LegacyCplListRedirect />} />
                   <Route path="/kelola/cpl/detail/:id" element={<CplDetailPage />} />
                 </Route>
 

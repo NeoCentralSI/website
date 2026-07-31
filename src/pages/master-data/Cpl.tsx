@@ -23,7 +23,7 @@ export default function MasterDataCpl() {
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kelola' },
-        { label: 'Kurikulum', href: '/kelola/cpl' },
+        { label: 'CPL', href: '/kelola/cpl' },
         { label: selectedCurriculum?.name || 'Memuat...' },
     ], [selectedCurriculum]);
 
@@ -88,7 +88,7 @@ export default function MasterDataCpl() {
                 onUpdate={update}
                 onCreate={() => setCreateCplOpen(true)}
                 onRefresh={() => refetch()}
-                onDetail={(id) => navigate(`/kelola/cpl/detail/${id}`)}
+                onDetail={(id) => navigate(`/kelola/cpl/${curriculumId}/${id}`)}
                 onExportAllScores={exportAllScores}
                 isToggling={isToggling}
                 isDeleting={isDeleting}
