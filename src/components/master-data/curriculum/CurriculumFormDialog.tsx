@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { LockKeyhole } from 'lucide-react';
 import type { Curriculum, CreateCurriculumPayload, UpdateCurriculumPayload } from '@/services/master-data/curriculum.service';
 
 const curriculumSchema = z.object({
@@ -51,6 +52,7 @@ export function CurriculumFormDialog({
     onSubmit,
 }: CurriculumFormDialogProps) {
     const isEditing = !!initialData;
+    const yearFieldsLocked = isEditing && Boolean(initialData?.hasRelatedScores);
 
     const form = useForm<CurriculumFormValues>({
         resolver: zodResolver(curriculumSchema),
@@ -81,7 +83,7 @@ export function CurriculumFormDialog({
 
     const handleSubmit = async (values: CurriculumFormValues) => {
         try {
-            await onSubmit(values);
+            await onSubmit(yearFieldsLocked ? { name: values.name } : values);
             onOpenChange(false);
         } catch {
             // Error is handled by mutation
@@ -131,6 +133,7 @@ export function CurriculumFormDialog({
                                                 onBlur={field.onBlur}
                                                 name={field.name}
                                                 ref={field.ref}
+                                                disabled={yearFieldsLocked}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -149,6 +152,7 @@ export function CurriculumFormDialog({
                                                 value={value || ''}
                                                 onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
                                                 placeholder="Kosongkan jika masih berlaku"
+                                                disabled={yearFieldsLocked}
                                                 {...field}
                                             />
                                         </FormControl>
@@ -157,6 +161,15 @@ export function CurriculumFormDialog({
                                 )}
                             />
                         </div>
+
+                        {yearFieldsLocked && (
+                            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                                <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" />
+                                <p>
+                                    Tahun berlaku dikunci karena CPL pada kurikulum ini sudah memiliki nilai mahasiswa. Nama kurikulum masih dapat diubah.
+                                </p>
+                            </div>
+                        )}
 
                         <div className="flex justify-end gap-2 pt-4">
                             <Button

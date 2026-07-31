@@ -144,7 +144,11 @@ export function CurriculumTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
                             onClick={() => onUpdate(item.id)}
-                            title="Edit"
+                            title={
+                                item.hasRelatedScores
+                                    ? 'Edit nama kurikulum; tahun berlaku sudah dikunci karena memiliki nilai mahasiswa'
+                                    : 'Edit kurikulum'
+                            }
                         >
                             <Edit2 className="h-4 w-4" />
                         </Button>
