@@ -29,6 +29,7 @@ interface SeminarRequirementTableProps {
     isDeleting: boolean;
     onCopyTemplate?: () => void;
     isCopyingTemplate?: boolean;
+    isDisabled?: boolean;
     extraActions?: React.ReactNode;
 }
 
@@ -44,6 +45,7 @@ export function SeminarRequirementTable({
     isDeleting,
     onCopyTemplate,
     isCopyingTemplate,
+    isDisabled = false,
     extraActions,
 }: SeminarRequirementTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -74,6 +76,17 @@ export function SeminarRequirementTable({
 
     const columns: Column<SeminarRequirement>[] = [
         {
+            key: 'no',
+            header: 'No',
+            width: 50,
+            className: 'text-center',
+            render: (_row, index) => (
+                <span className="text-sm text-muted-foreground">
+                    {(page - 1) * pageSize + index + 1}
+                </span>
+            ),
+        },
+        {
             key: 'name',
             header: 'Nama Persyaratan',
             accessor: 'name',
@@ -94,8 +107,9 @@ export function SeminarRequirementTable({
             render: (row) => {
                 const id = row.id;
                 const index = filteredData.findIndex(r => r.id === row.id);
-                const isFirst = page === 1 && index === 0;
-                const isLast = page === Math.ceil(filteredData.length / pageSize) && index === filteredData.length - 1;
+                const isFirst = index === 0;
+                const isLast = index === filteredData.length - 1;
+                const isReorderDisabled = isDisabled || Boolean(search);
 
                 const handleMoveUp = async () => {
                     if (isFirst) return;
@@ -118,7 +132,7 @@ export function SeminarRequirementTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
                             onClick={handleMoveUp}
-                            disabled={isFirst}
+                            disabled={isReorderDisabled || isFirst}
                             title="Geser ke Atas"
                         >
                             <ArrowUp className="h-4 w-4" />
@@ -128,7 +142,7 @@ export function SeminarRequirementTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary disabled:opacity-30"
                             onClick={handleMoveDown}
-                            disabled={isLast}
+                            disabled={isReorderDisabled || isLast}
                             title="Geser ke Bawah"
                         >
                             <ArrowDown className="h-4 w-4" />
@@ -138,6 +152,7 @@ export function SeminarRequirementTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
                             onClick={() => setEditItem(row)}
+                            disabled={isDisabled}
                             title="Edit Persyaratan"
                         >
                             <Pencil className="h-4 w-4" />
@@ -147,7 +162,7 @@ export function SeminarRequirementTable({
                             size="icon"
                             className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => setDeleteId(id)}
-                            disabled={isDeleting || row.hasRelatedData}
+                            disabled={isDisabled || isDeleting || row.hasRelatedData}
                             title={row.hasRelatedData ? "Persyaratan tidak dapat dihapus karena sudah memiliki dokumen yang diunggah" : "Hapus Persyaratan"}
                         >
                             {isDeleting && deleteId === id ? (
@@ -166,7 +181,7 @@ export function SeminarRequirementTable({
         <div className="space-y-4">
             <CustomTable
                 data={paginatedData}
-                columns={columns as any}
+                columns={columns}
                 searchValue={search}
                 onSearchChange={setSearch}
                 page={page}
@@ -185,7 +200,7 @@ export function SeminarRequirementTable({
                                 variant="outline"
                                 size="sm"
                                 onClick={onCopyTemplate}
-                                disabled={isCopyingTemplate}
+                                disabled={isDisabled || isCopyingTemplate}
                             >
                                 {isCopyingTemplate ? (
                                     <>
@@ -197,7 +212,7 @@ export function SeminarRequirementTable({
                                 )}
                             </Button>
                         )}
-                        <Button variant="outline" size="sm" onClick={onCreate}>
+                        <Button variant="outline" size="sm" onClick={onCreate} disabled={isDisabled}>
                             <Plus className="mr-2 h-4 w-4" /> Tambah
                         </Button>
                         <RefreshButton 

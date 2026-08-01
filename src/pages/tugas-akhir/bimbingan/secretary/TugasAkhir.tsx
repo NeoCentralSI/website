@@ -16,8 +16,8 @@ const TAB_ITEMS: TabItem[] = [
   { label: "Kelola CPMK", to: "/kelola/tugas-akhir/cpmk" },
   { label: "Kelola Rubrik Seminar", to: "/kelola/tugas-akhir/rubrik-seminar" },
   { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" },
-  { label: "Syarat Seminar Hasil", to: "/kelola/tugas-akhir/syarat-seminar" },
-  { label: "Syarat Sidang TA", to: "/kelola/tugas-akhir/syarat-sidang" }
+  { label: "Kelola Syarat Seminar", to: "/kelola/tugas-akhir/syarat-seminar" },
+  { label: "Kelola Syarat Sidang", to: "/kelola/tugas-akhir/syarat-sidang" }
 ];
 
 const PLACEHOLDER_COPY: Record<string, string> = {
@@ -25,8 +25,8 @@ const PLACEHOLDER_COPY: Record<string, string> = {
   "Kelola Milestone": "Kelola daftar milestone tugas akhir, termasuk pembuatan dan pembaruan jadwal.",
   "Kelola Rubrik Seminar": "Atur rubrik penilaian untuk seminar tugas akhir di sini.",
   "Kelola Rubrik Sidang": "Atur rubrik penilaian untuk sidang tugas akhir di sini.",
-  "Syarat Seminar Hasil": "Kelola persyaratan dokumen untuk pendaftaran Seminar Hasil.",
-  "Syarat Sidang TA": "Kelola persyaratan dokumen untuk pendaftaran Sidang Tugas Akhir.",
+  "Kelola Syarat Seminar": "Kelola persyaratan dokumen untuk pendaftaran Seminar Hasil.",
+  "Kelola Syarat Sidang": "Kelola persyaratan dokumen untuk pendaftaran Sidang Tugas Akhir.",
 };
 
 export default function KelolaTugasAkhirPage() {
@@ -68,11 +68,11 @@ export default function KelolaTugasAkhirPage() {
       return <DefenceRubricManagementPanel />;
     }
 
-    if (activeTab.label === "Syarat Seminar Hasil") {
+    if (activeTab.label === "Kelola Syarat Seminar") {
       return <SeminarRequirementManagementPanel />;
     }
 
-    if (activeTab.label === "Syarat Sidang TA") {
+    if (activeTab.label === "Kelola Syarat Sidang") {
       return <DefenceRequirementManagementPanel />;
     }
 

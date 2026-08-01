@@ -19,17 +19,19 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
-import type { DefenceRequirement, CreateDefenceRequirementPayload, UpdateDefenceRequirementPayload } from '@/services/master-data/defence-requirement.service';
+import type { DefenceRequirement } from '@/services/master-data/defence-requirement.service';
 
 const formSchema = z.object({
-    name: z.string().min(1, 'Nama persyaratan harus diisi'),
+    name: z.string().trim().min(1, 'Nama persyaratan harus diisi').max(255, 'Nama persyaratan maksimal 255 karakter'),
     description: z.string().optional(),
 });
+
+type RequirementFormValues = z.infer<typeof formSchema>;
 
 interface DefenceRequirementFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (data: CreateDefenceRequirementPayload | UpdateDefenceRequirementPayload) => Promise<unknown>;
+    onSubmit: (data: RequirementFormValues) => Promise<unknown>;
     initialData?: DefenceRequirement | null;
 }
 
@@ -41,7 +43,7 @@ export function DefenceRequirementFormDialog({
 }: DefenceRequirementFormDialogProps) {
     const isEditing = !!initialData;
 
-    const form = useForm<any>({
+    const form = useForm<RequirementFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: '',
@@ -65,12 +67,12 @@ export function DefenceRequirementFormDialog({
         }
     }, [open, initialData, form]);
 
-    const handleSubmit = async (values: any) => {
+    const handleSubmit = async (values: RequirementFormValues) => {
         try {
             await onSubmit(values);
             onOpenChange(false);
             form.reset();
-        } catch (error) {
+        } catch {
             // Error handled by mutation
         }
     };
@@ -87,21 +89,30 @@ export function DefenceRequirementFormDialog({
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                         <FormField
-                            control={form.control as any}
+                            control={form.control}
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Nama Persyaratan</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Contoh: Laporan Tugas Akhir Final" {...field} />
+                                        <Input
+                                            placeholder="Contoh: Laporan Tugas Akhir Final"
+                                            disabled={Boolean(initialData?.hasRelatedData)}
+                                            {...field}
+                                        />
                                     </FormControl>
+                                    {initialData?.hasRelatedData && (
+                                            <p className="text-xs text-muted-foreground">
+                                                Nama dikunci karena persyaratan ini sudah memiliki dokumen mahasiswa.
+                                            </p>
+                                        )}
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
                         <FormField
-                            control={form.control as any}
+                            control={form.control}
                             name="description"
                             render={({ field }) => (
                                 <FormItem>
