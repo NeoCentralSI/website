@@ -93,6 +93,7 @@ export function useAdminThesisSeminarFormOptions() {
     lecturerOptions: results[1].data ?? [],
     roomOptions: results[2].data ?? [],
     isLoading: results.some((result) => result.isLoading),
+    error: results.find((result) => result.error)?.error ?? null,
   };
 }
 
