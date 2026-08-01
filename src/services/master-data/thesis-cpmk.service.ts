@@ -14,20 +14,17 @@ export interface ThesisCpmk {
     description: string;
     createdAt: string;
     updatedAt: string;
-    _count?: {
-        thesisSeminarAssessmentCriterias: number;
-        thesisDefenceExaminerAssessmentCriterias: number;
-    };
-    hasAssessmentDetails?: boolean;
+    hasAssessmentDetails: boolean;
 }
 
 export interface CreateThesisCpmkPayload {
-    academicYearId?: string;
+    academicYearId: string;
     code: string;
     description: string;
 }
 
-export type UpdateThesisCpmkPayload = Partial<CreateThesisCpmkPayload>;
+export type ThesisCpmkFormValues = Pick<CreateThesisCpmkPayload, 'code' | 'description'>;
+export type UpdateThesisCpmkPayload = Partial<ThesisCpmkFormValues>;
 
 export const getThesisCpmks = async (params?: { academicYearId?: string }): Promise<ThesisCpmk[]> => {
     const queryParams = new URLSearchParams();

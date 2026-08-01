@@ -18,11 +18,9 @@ export interface AssessmentRubric {
 
 export interface AssessmentCriteria {
     id: string;
-    cpmkId: string;
-    name: string | null;
-    maxScore: number | null;
-    appliesTo: 'seminar' | 'defence' | 'proposal';
-    role: 'default' | 'examiner' | 'supervisor';
+    thesisCpmkId: string;
+    name: string;
+    maxScore: number;
     displayOrder: number;
     hasAssessmentDetails?: boolean;
     hasSubmittedScores?: boolean;
@@ -33,7 +31,6 @@ export interface CpmkWithRubrics {
     id: string;
     code: string;
     description: string;
-    displayOrder: number;
     hasAssessmentDetails?: boolean;
     assessmentCriterias: AssessmentCriteria[];
 }
@@ -48,7 +45,7 @@ export interface QuickAddRubricPayload {
 
 export interface CreateCriteriaPayload {
     cpmkId: string;
-    name?: string;
+    name: string;
     maxScore: number;
 }
 
@@ -280,9 +277,9 @@ export const getWeightSummary = async (params?: { academicYearId?: string }): Pr
 };
 
 export const updateMinimumScore = async (
-    payload: { academicYearId?: string; minimumScore: number }
+    payload: { academicYearId: string; minimumScore: number }
 ): Promise<void> => {
-    const yearId = payload.academicYearId || 'active';
+    const yearId = payload.academicYearId;
     const response = await apiRequest(
         getApiUrl(`/seminar-rubrics/academic-years/${yearId}/minimum-score`),
         {

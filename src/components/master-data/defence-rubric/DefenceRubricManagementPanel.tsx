@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDefenceRubric } from '@/hooks/master-data/useDefenceRubric';
 import { useThesisCpmk } from '@/hooks/master-data/useThesisCpmk';
-import { getActiveAcademicYearAPI } from '@/services/admin.service';
+import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.service';
 import { DefenceCriteriaTable } from '@/components/master-data/defence-rubric/DefenceCriteriaTable';
 import { DefenceCriteriaFormDialog } from '@/components/master-data/defence-rubric/DefenceCriteriaFormDialog';
 import { MinimumScoreDialog } from '@/components/master-data/MinimumScoreDialog';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Card,
     CardContent,
@@ -28,14 +29,20 @@ const ROLE_OPTIONS: { value: DefenceRole; label: string }[] = [
 ];
 
 export function DefenceRubricManagementPanel() {
+    const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string>();
     const [selectedRole, setSelectedRole] = useState<DefenceRole>('examiner');
 
-    const { data: activeAcademicYearData } = useQuery({
+    const { data: academicYearsData, isLoading: isAcademicYearsLoading } = useQuery({
+        queryKey: ['defence-rubric-academic-years'],
+        queryFn: () => getAcademicYearsAPI({ page: 1, pageSize: 100 }),
+    });
+
+    const { data: activeAcademicYearData, isLoading: isActiveAcademicYearLoading } = useQuery({
         queryKey: ['defence-rubric-active-academic-year'],
         queryFn: getActiveAcademicYearAPI,
     });
 
-    const activeAcademicYearId = activeAcademicYearData?.academicYear?.id;
+    const effectiveAcademicYearId = selectedAcademicYearId || activeAcademicYearData?.academicYear?.id;
     const {
         cpmks,
         weightSummary,
@@ -56,9 +63,9 @@ export function DefenceRubricManagementPanel() {
         isRemovingCpmkConfig,
         updateMinimumScore,
         isUpdatingMinimumScore,
-    } = useDefenceRubric(selectedRole);
+    } = useDefenceRubric(selectedRole, effectiveAcademicYearId);
 
-    const { thesisCpmks: allCpmks } = useThesisCpmk(activeAcademicYearId);
+    const { thesisCpmks: allCpmks } = useThesisCpmk(effectiveAcademicYearId);
 
     const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false);
     const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<CpmkWithRubrics | null>(null);
@@ -88,7 +95,6 @@ export function DefenceRubricManagementPanel() {
                     id: cpmk.id,
                     code: cpmk.code,
                     description: cpmk.description,
-                    displayOrder: 0,
                     hasAssessmentDetails: false,
                     assessmentCriterias: [],
                 } as CpmkWithRubrics;
@@ -120,6 +126,21 @@ export function DefenceRubricManagementPanel() {
                         <CardDescription>
                             Kelola kriteria dan rubrik penilaian sidang tugas akhir berdasarkan CPMK dan peran.
                         </CardDescription>
+                        <div className="mt-3 w-full sm:w-[240px]">
+                            <Select value={effectiveAcademicYearId || ''} onValueChange={setSelectedAcademicYearId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih tahun ajaran" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {(academicYearsData?.academicYears ?? []).map((item) => (
+                                        <SelectItem key={item.id} value={item.id}>
+                                            {(item.semester === 'ganjil' ? 'Ganjil' : 'Genap') + ' ' + (item.year || '')}
+                                            {item.isActive ? ' (Aktif)' : ''}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     {weightSummary && (
                         <div className={`flex items-center gap-3 rounded-lg border px-4 py-2 text-sm h-fit ${combinedTotal === 100
@@ -184,7 +205,7 @@ export function DefenceRubricManagementPanel() {
                 </div>
                 <DefenceCriteriaTable
                     data={mergedCpmks}
-                    isLoading={isLoading}
+                    isLoading={isLoading || isAcademicYearsLoading || isActiveAcademicYearLoading}
                     isFetching={isFetching}
                     onRefresh={() => refetch()}
                     onAddCriteria={handleOpenAddCriteria}
@@ -224,10 +245,11 @@ export function DefenceRubricManagementPanel() {
                 onOpenChange={setMinScoreDialogOpen}
                 currentScore={weightSummary?.minimumScore || 0}
                 isLoading={isUpdatingMinimumScore}
-                onSubmit={(score) => updateMinimumScore({ 
-                    academicYearId: activeAcademicYearId, 
-                    minimumScore: score 
-                })}
+                onSubmit={(score) => {
+                    if (effectiveAcademicYearId) {
+                        void updateMinimumScore({ academicYearId: effectiveAcademicYearId, minimumScore: score });
+                    }
+                }}
             />
         </Card>
     );

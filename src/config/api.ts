@@ -65,12 +65,12 @@ export const API_CONFIG = {
     DEFENCE_RUBRIC: {
       CPMKS: (role: string) => `/defence-rubrics/cpmks?role=${role}`,
       CRITERIA: '/defence-rubrics/criteria',
-      CRITERIA_BY_ID: (criteriaId: string) => `/defence-rubrics/criteria/${criteriaId}`,
+      CRITERIA_BY_ID: (criteriaId: string, role: string) => `/defence-rubrics/criteria/${criteriaId}?role=${role}`,
       CPMK_CONFIG: (cpmkId: string, role: string) => `/defence-rubrics/cpmk/${cpmkId}?role=${role}`,
-      CRITERIA_RUBRICS: (criteriaId: string) => `/defence-rubrics/criteria/${criteriaId}/rubrics`,
-      RUBRIC_BY_ID: (rubricId: string) => `/defence-rubrics/rubrics/${rubricId}`,
-      CRITERIA_REORDER: '/defence-rubrics/criteria/reorder',
-      RUBRICS_REORDER: '/defence-rubrics/rubrics/reorder',
+      CRITERIA_RUBRICS: (criteriaId: string, role: string) => `/defence-rubrics/criteria/${criteriaId}/rubrics?role=${role}`,
+      RUBRIC_BY_ID: (rubricId: string, role: string) => `/defence-rubrics/rubrics/${rubricId}?role=${role}`,
+      CRITERIA_REORDER: (role: string) => `/defence-rubrics/criteria/reorder?role=${role}`,
+      RUBRICS_REORDER: (role: string) => `/defence-rubrics/rubrics/reorder?role=${role}`,
       WEIGHT_SUMMARY: (role: string) => `/defence-rubrics/weight-summary?role=${role}`,
     },
     EXIT_SURVEY: {

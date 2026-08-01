@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useThesisCpmk } from '@/hooks/master-data/useThesisCpmk';
 import { ThesisCpmkTable } from '@/components/master-data/thesis-cpmk/ThesisCpmkTable';
 import { ThesisCpmkFormDialog } from '@/components/master-data/thesis-cpmk/ThesisCpmkFormDialog';
-import type { CreateThesisCpmkPayload } from '@/services/master-data/thesis-cpmk.service';
+import type { ThesisCpmkFormValues } from '@/services/master-data/thesis-cpmk.service';
 import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.service';
 import {
     Select,
@@ -30,12 +30,12 @@ function academicYearLabel(semester?: string, year?: string | null) {
 export function ThesisCpmkManagementPanel() {
     const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | undefined>(undefined);
 
-    const { data: academicYearsData } = useQuery({
+    const { data: academicYearsData, isLoading: isAcademicYearsLoading } = useQuery({
         queryKey: ['cpmk-academic-years'],
         queryFn: () => getAcademicYearsAPI({ page: 1, pageSize: 100 }),
     });
 
-    const { data: activeAcademicYearData } = useQuery({
+    const { data: activeAcademicYearData, isLoading: isActiveAcademicYearLoading } = useQuery({
         queryKey: ['cpmk-active-academic-year'],
         queryFn: getActiveAcademicYearAPI,
     });
@@ -61,6 +61,7 @@ export function ThesisCpmkManagementPanel() {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [copyDialogOpen, setCopyDialogOpen] = useState(false);
     const [sourceAcademicYearId, setSourceAcademicYearId] = useState<string>('');
+    const canManage = Boolean(effectiveAcademicYearId);
 
     const availableSourceYears = (academicYearsData?.academicYears ?? [])
         .filter((item) => item.id !== effectiveAcademicYearId);
@@ -74,16 +75,23 @@ export function ThesisCpmkManagementPanel() {
             });
             setCopyDialogOpen(false);
             setSourceAcademicYearId('');
-        } catch (error) {
+        } catch {
             // Error is handled by the hook
         }
+    };
+
+    const handleCreate = (payload: ThesisCpmkFormValues) => {
+        if (!effectiveAcademicYearId) {
+            return Promise.reject(new Error('Pilih tahun ajaran terlebih dahulu'));
+        }
+        return create({ ...payload, academicYearId: effectiveAcademicYearId });
     };
 
     return (
         <div className="space-y-4">
             <ThesisCpmkTable
                 data={thesisCpmksData}
-                isLoading={isLoading}
+                isLoading={isLoading || isAcademicYearsLoading || isActiveAcademicYearLoading}
                 isFetching={isFetching}
                 onDelete={remove}
                 onUpdate={update}
@@ -92,6 +100,7 @@ export function ThesisCpmkManagementPanel() {
                 isDeleting={isDeleting}
                 onCopyTemplate={() => setCopyDialogOpen(true)}
                 isCopyingTemplate={isCopyingTemplate}
+                actionsDisabled={!canManage}
                 extraActions={
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <Label className="text-xs text-muted-foreground">Tahun Ajaran</Label>
@@ -117,7 +126,7 @@ export function ThesisCpmkManagementPanel() {
             <ThesisCpmkFormDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                onSubmit={(payload: CreateThesisCpmkPayload) => create({ ...payload, academicYearId: effectiveAcademicYearId })}
+                onSubmit={handleCreate}
             />
 
             <Dialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen}>

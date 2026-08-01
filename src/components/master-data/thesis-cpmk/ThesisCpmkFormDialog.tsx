@@ -11,13 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import type { ThesisCpmk, CreateThesisCpmkPayload, UpdateThesisCpmkPayload } from '@/services/master-data/thesis-cpmk.service';
+import type { ThesisCpmk, ThesisCpmkFormValues, UpdateThesisCpmkPayload } from '@/services/master-data/thesis-cpmk.service';
 
 interface ThesisCpmkFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editData?: ThesisCpmk | null;
-    onSubmit: ((data: CreateThesisCpmkPayload) => Promise<unknown>) | ((id: string, data: UpdateThesisCpmkPayload) => Promise<unknown>);
+    onSubmit: ((data: ThesisCpmkFormValues) => Promise<unknown>) | ((id: string, data: UpdateThesisCpmkPayload) => Promise<unknown>);
 }
 
 export function ThesisCpmkFormDialog({
@@ -31,7 +31,7 @@ export function ThesisCpmkFormDialog({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
-    const isCodeLocked = Boolean(isEdit && editData?._count && (editData._count.thesisSeminarAssessmentCriterias > 0 || editData._count.thesisDefenceExaminerAssessmentCriterias > 0));
+    const isCodeLocked = Boolean(isEdit && editData?.hasAssessmentDetails);
 
     useEffect(() => {
         if (editData) {
@@ -57,11 +57,11 @@ export function ThesisCpmkFormDialog({
                     };
                 await (onSubmit as (id: string, data: UpdateThesisCpmkPayload) => Promise<unknown>)(editData.id, payload);
             } else {
-                const payload: CreateThesisCpmkPayload = {
+                const payload: ThesisCpmkFormValues = {
                     code,
                     description,
                 };
-                await (onSubmit as (data: CreateThesisCpmkPayload) => Promise<unknown>)(payload);
+                await (onSubmit as (data: ThesisCpmkFormValues) => Promise<unknown>)(payload);
             }
             onOpenChange(false);
         } catch {
@@ -88,7 +88,7 @@ export function ThesisCpmkFormDialog({
                             id="code"
                             placeholder="Contoh: CPMK-01"
                             value={code}
-                            onChange={(e) => setCode(e.target.value)}
+                            onChange={(e) => setCode(e.target.value.toUpperCase())}
                             required
                             disabled={isCodeLocked}
                         />
