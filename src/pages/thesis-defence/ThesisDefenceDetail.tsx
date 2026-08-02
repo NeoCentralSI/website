@@ -73,24 +73,25 @@ export default function ThesisDefenceDetailPage() {
   }
 
   const d = detail as any;
+  const isArchive = d.registeredAt === null || d.isArchive === true;
 
   const isUserAdmin = isAdmin();
   const isUserStudent = isStudent() && !!user?.student?.id && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
   const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
   const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
-  const showScheduling = isUserAdmin && !['registered', 'verified'].includes(d.status);
+  const showScheduling = isUserAdmin && !isArchive && !['registered', 'verified'].includes(d.status);
 
   const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
   const isAssessmentFinalized = allowedAssessmentStatuses.includes(d.status);
   const isAssessmentOngoing = d.status === 'ongoing';
 
   let showAssessment = false;
-  if (isAssessmentOngoing) {
+  if (isAssessmentOngoing && !isArchive) {
     if (isUserExaminer || isUserSupervisor || isUserAdmin || _isKadep) {
       showAssessment = true;
     }
-  } else if (isAssessmentFinalized) {
+  } else if (isAssessmentFinalized && !isArchive) {
     if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor || _isKadep) {
       showAssessment = true;
     }

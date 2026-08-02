@@ -511,7 +511,7 @@ export interface DefenceAssessmentFormResponse {
     scheduledAt: string | null;
     invitationLetterNo: string | null;
   };
-  assessorRole: 'examiner' | 'supervisor';
+  assessorRole: 'examiner' | 'supervisor' | 'viewer';
   examiner: {
     id: string;
     order: number;
@@ -526,6 +526,7 @@ export interface DefenceAssessmentFormResponse {
     assessmentSubmittedAt: string | null;
   } | null;
   criteriaGroups: DefenceAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface SubmitDefenceAssessmentPayload {
@@ -618,6 +619,7 @@ export interface DefenceFinalizationDataResponse {
   allExaminerSubmitted: boolean;
   supervisorAssessmentSubmitted: boolean;
   recommendationUnlocked: boolean;
+  minimumPassingScore: number;
 }
 
 export interface FinalizeDefencePayload {

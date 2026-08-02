@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle2, Download } from 'lucide-react';
+import { ChevronDown, ChevronRight, CheckCircle2, AlertCircle, XCircle, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth, useRole } from '@/hooks/shared';
 
@@ -489,12 +489,14 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
 
   const canFinalize = isSupervisor && !!finalData.recommendationUnlocked && !isFinalized;
 
+  const isBelowThreshold = (finalData.averageScore || 0) < finalData.minimumPassingScore;
+
   const handleFinalize = async () => {
-    if (!canFinalize) return;
+    if (!canFinalize || finalizeMutation.isPending) return;
     try {
       await finalizeMutation.mutateAsync({
         seminarId,
-        payload: { recommendRevision },
+        payload: { recommendRevision: isBelowThreshold ? false : recommendRevision },
       });
       toast.success('Hasil seminar berhasil ditetapkan.');
     } catch (err) {
@@ -514,7 +516,15 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               )}
             </span>
             <div className="flex items-center gap-3">
-              <Badge variant="success">
+              <Badge
+                variant={
+                  finalData.seminar?.status === 'passed'
+                    ? 'success'
+                    : finalData.seminar?.status === 'passed_with_revision'
+                      ? 'warning'
+                      : 'destructive'
+                }
+              >
                 {finalData.seminar?.status === 'passed' 
                   ? 'Lulus' 
                   : finalData.seminar?.status === 'passed_with_revision' 
@@ -755,12 +765,36 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
             {FINAL_RECOMMENDATIONS.map((option) => {
               const isSelected = finalData.seminar?.status === option.value;
               if (!isSelected) return null;
+              const isPassed = option.value === 'passed';
+              const isRevision = option.value === 'passed_with_revision';
+
+              const cardClasses = isPassed
+                ? 'border-green-200 bg-green-50/70 text-green-900'
+                : isRevision
+                  ? 'border-amber-200 bg-amber-50/70 text-amber-900'
+                  : 'border-red-200 bg-red-50/70 text-red-900';
+
+              const textHeaderClasses = isPassed
+                ? 'text-green-800'
+                : isRevision
+                  ? 'text-amber-800'
+                  : 'text-red-800';
+
+              const textDescClasses = isPassed
+                ? 'text-green-700'
+                : isRevision
+                  ? 'text-amber-700'
+                  : 'text-red-700';
+
+              const Icon = isPassed ? CheckCircle2 : isRevision ? AlertCircle : XCircle;
+              const iconColor = isPassed ? 'text-green-600' : isRevision ? 'text-amber-600' : 'text-red-600';
+
               return (
-                <div key={option.value} className="flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 p-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                <div key={option.value} className={`flex items-start gap-3 rounded-lg border p-3.5 ${cardClasses}`}>
+                  <Icon className={`h-5 w-5 ${iconColor} mt-0.5 shrink-0`} />
                   <div>
-                    <p className="font-bold text-green-700">{option.label}</p>
-                    <p className="text-xs text-green-600">{option.desc}</p>
+                    <p className={`font-bold ${textHeaderClasses}`}>{option.label}</p>
+                    <p className={`text-xs ${textDescClasses} mt-0.5`}>{option.desc}</p>
                   </div>
                 </div>
               );
@@ -819,9 +853,15 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
           <div className="flex justify-end">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button disabled={!canFinalize || finalizeMutation.isPending}>
+                <Button
+                  disabled={!canFinalize || finalizeMutation.isPending}
+                  className="bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold px-6 py-5 text-sm"
+                >
                   {finalizeMutation.isPending ? (
-                    <><Spinner className="mr-2 h-4 w-4" />Menetapkan...</>
+                    <>
+                      <Spinner className="mr-2 h-4 w-4" />
+                      Menetapkan...
+                    </>
                   ) : (
                     'Tetapkan Hasil Seminar'
                   )}
@@ -829,14 +869,27 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+                  <AlertDialogTitle>Apakah Anda yakin menetapkan hasil seminar?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tindakan ini akan menetapkan hasil akhir seminar secara permanen dan tidak dapat diubah lagi.
+                    {isBelowThreshold
+                      ? `Rata-rata nilai (${finalData.averageScore?.toFixed(2)}) berada di bawah batas minimum (${finalData.minimumPassingScore}). Seminar akan ditetapkan sebagai TIDAK LULUS.`
+                      : `Rata-rata nilai (${finalData.averageScore?.toFixed(2)}) memenuhi batas kelulusan. Seminar akan ditetapkan sebagai ${
+                          recommendRevision ? 'LULUS DENGAN REVISI' : 'LULUS'
+                        }.`}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Batal</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => void handleFinalize()}>Ya, Tetapkan</AlertDialogAction>
+                  <AlertDialogCancel disabled={finalizeMutation.isPending}>Batal</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={finalizeMutation.isPending}
+                    className="bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      void handleFinalize();
+                    }}
+                  >
+                    {finalizeMutation.isPending ? 'Menetapkan...' : 'Ya, Tetapkan Hasil'}
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

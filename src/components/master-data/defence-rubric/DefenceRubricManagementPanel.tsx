@@ -6,8 +6,9 @@ import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.
 import { DefenceCriteriaTable } from '@/components/master-data/defence-rubric/DefenceCriteriaTable';
 import { DefenceCriteriaFormDialog } from '@/components/master-data/defence-rubric/DefenceCriteriaFormDialog';
 import { MinimumScoreDialog } from '@/components/master-data/MinimumScoreDialog';
+import { DefenceRubricPreviewDialog } from '@/components/master-data/defence-rubric/DefenceRubricPreviewDialog';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Eye, Settings } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Card,
@@ -71,6 +72,7 @@ export function DefenceRubricManagementPanel() {
     const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<CpmkWithRubrics | null>(null);
     const [editCriteria, setEditCriteria] = useState<AssessmentCriteria | null>(null);
     const [minScoreDialogOpen, setMinScoreDialogOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const examinerTotal = weightSummary?.examinerTotal ?? 0;
     const supervisorTotal = weightSummary?.supervisorTotal ?? 0;
@@ -142,24 +144,37 @@ export function DefenceRubricManagementPanel() {
                             </Select>
                         </div>
                     </div>
-                    {weightSummary && (
-                        <div className={`flex items-center gap-3 rounded-lg border px-4 py-2 text-sm h-fit ${combinedTotal === 100
-                            ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                            : combinedTotal > 100
-                                ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
-                                : 'bg-muted/30'
-                            }`}>
-                            <span className="text-muted-foreground font-medium">Total Skor Gabungan:</span>
-                            <span className={`text-lg font-bold ${combinedTotal === 100
-                                ? 'text-green-600 dark:text-green-400'
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-fit py-2"
+                            onClick={() => setPreviewOpen(true)}
+                            disabled={!mergedCpmks.some((cpmk) => cpmk.assessmentCriterias.length > 0)}
+                        >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Preview Form Penilaian
+                        </Button>
+                        {weightSummary && (
+                            <div className={`flex items-center gap-3 rounded-lg border px-4 py-2 text-sm h-fit ${combinedTotal === 100
+                                ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
                                 : combinedTotal > 100
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : ''
+                                    ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+                                    : 'bg-muted/30'
                                 }`}>
-                                {combinedTotal} / 100
-                            </span>
-                        </div>
-                    )}
+                                <span className="text-muted-foreground font-medium">Total Skor Gabungan:</span>
+                                <span className={`text-lg font-bold ${combinedTotal === 100
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : combinedTotal > 100
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : ''
+                                    }`}>
+                                    {combinedTotal} / 100
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -251,6 +266,14 @@ export function DefenceRubricManagementPanel() {
                     }
                 }}
             />
+            <DefenceRubricPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                cpmks={mergedCpmks}
+                role={selectedRole}
+                minimumPassingScore={weightSummary?.minimumScore ?? 0}
+            />
         </Card>
     );
 }
+
