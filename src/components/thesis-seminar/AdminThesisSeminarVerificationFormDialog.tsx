@@ -50,7 +50,7 @@ export function AdminThesisSeminarVerificationModal({ seminar, open, onOpenChang
   // Build ordered document list (match docTypes order)
   const orderedDocs = detail
     ? detail.documentTypes.map((dt) => {
-      const doc = detail.documents.find((d) => d.documentTypeId === dt.id);
+      const doc = detail.documents.find((d) => d.requirementId === dt.id);
       return { docType: dt, doc: doc || null };
     })
     : [];
@@ -120,7 +120,7 @@ export function AdminThesisSeminarVerificationModal({ seminar, open, onOpenChang
       verifyMutation.mutate(
         {
           seminarId: seminar.id,
-          documentTypeId: currentDocType.id,
+          requirementId: currentDocType.id,
           payload: { action, notes: notes.trim() || undefined },
         },
         {

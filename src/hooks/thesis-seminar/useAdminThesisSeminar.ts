@@ -119,13 +119,13 @@ export function useVerifyAdminThesisSeminarDocument() {
   return useMutation({
     mutationFn: ({
       seminarId,
-      documentTypeId,
+      requirementId,
       payload,
     }: {
       seminarId: string;
-      documentTypeId: string;
+      requirementId: string;
       payload: VerifyDocumentPayload;
-    }) => verifySeminarDocument(seminarId, documentTypeId, payload),
+    }) => verifySeminarDocument(seminarId, requirementId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'verification'] });
       queryClient.invalidateQueries({ queryKey: ['admin-thesis-seminar', 'detail', variables.seminarId] });

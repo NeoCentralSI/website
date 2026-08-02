@@ -90,15 +90,15 @@ export function useUploadSeminarDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ file, documentTypeName }: { file: File; documentTypeName: string }) =>
-      uploadSeminarDocument(file, documentTypeName),
+    mutationFn: ({ file, requirementId }: { file: File; requirementId: string }) =>
+      uploadSeminarDocument(file, requirementId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: seminarKeys.documents() });
       queryClient.invalidateQueries({ queryKey: seminarKeys.overview() });
-      toast.success('Dokumen berhasil diupload');
+      toast.success('Dokumen berhasil diunggah');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Gagal mengupload dokumen');
+      toast.error(error.message || 'Gagal mengunggah dokumen');
     },
   });
 }
