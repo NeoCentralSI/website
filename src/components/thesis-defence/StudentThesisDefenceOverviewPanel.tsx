@@ -3,10 +3,10 @@ import { StudentThesisDefenceIdentityCard } from './StudentThesisDefenceIdentity
 import { StudentThesisDefenceChecklistRequirementsCard } from './StudentThesisDefenceChecklistRequirementsCard';
 import { StudentThesisDefenceDocumentCard } from './StudentThesisDefenceDocumentCard';
 import { StudentThesisDefenceHistoryCard } from './StudentThesisDefenceHistoryCard';
-import type { StudentDefenceOverview, StudentDefenceHistoryItem } from '@/types/defence.types';
+import type { StudentDefenceHistoryItem, DefenceOverviewResponse } from '@/types/defence.types';
 
 interface OverviewPanelProps {
-  overview: StudentDefenceOverview;
+  overview: DefenceOverviewResponse;
   history: StudentDefenceHistoryItem[];
   onDetailClick: (id: string) => void;
 }
@@ -35,7 +35,6 @@ export const StudentThesisDefenceOverviewPanel = ({
         <div className="self-stretch">
           <StudentThesisDefenceStatusCard
             status={defenceStatus}
-            allChecklistMet={overview.allChecklistMet}
             milestones={overview.milestones}
           />
         </div>
@@ -44,48 +43,49 @@ export const StudentThesisDefenceOverviewPanel = ({
         <div className="flex flex-col gap-[14px]">
           <StudentThesisDefenceChecklistRequirementsCard checklist={overview.checklist} />
           <StudentThesisDefenceDocumentCard
-            allChecklistMet={overview.allChecklistMet}
-            documents={overview.defence?.documents ?? []}
+            requirements={overview.requirements}
+            canUpload={overview.canUpload}
+            configuration={overview.requirementConfiguration}
+            uploadConfig={overview.uploadConfig}
           />
         </div>
       </div>
 
       {/* Riwayat percobaan — single card with table rows */}
-      {historyItems.length > 0 && (
-        <div className="bg-card border border-gray-200 rounded-[10px] p-[16px_18px]">
-          {/* Card header */}
-          <div className="flex items-center justify-between mb-[14px]">
-            <div className="text-base font-semibold text-foreground">Riwayat Percobaan</div>
-            <span className="text-xs text-muted-foreground font-medium">
-              {historyItems.length} percobaan sebelumnya
+      {historyItems.length > 0 ? (
+        <section className="overflow-hidden rounded-lg border border-gray-200 bg-card">
+          <div className="flex items-center justify-between gap-4 px-5 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Riwayat Percobaan</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Sidang tugas akhir yang tidak lulus atau dibatalkan sebelumnya
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              {historyItems.length} Percobaan
             </span>
           </div>
 
-          {/* Column headers */}
-          <div className="grid grid-cols-[40px_1.5fr_1fr_1fr_1fr_1fr_auto] gap-2 px-[10px] py-[6px] mb-[6px]">
-            {['#', 'Dosen Penguji', 'Tanggal', 'Ruangan', 'Skor', 'Status', ''].map((col, i) => (
-              <span
-                key={i}
-                className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-              >
-                {col}
-              </span>
-            ))}
-          </div>
+          <div className="overflow-x-auto">
+            <div className="grid min-w-[820px] grid-cols-[48px_minmax(200px,1.5fr)_minmax(150px,1fr)_minmax(120px,0.8fr)_80px_minmax(145px,1fr)_104px] items-center gap-4 border-y border-gray-200 bg-muted/40 px-4 py-2.5">
+              {['No', 'Dosen Penguji', 'Tanggal', 'Ruangan', 'Nilai', 'Status', 'Aksi'].map((column) => (
+                <span key={column} className="text-xs font-medium text-muted-foreground">
+                  {column}
+                </span>
+              ))}
+            </div>
 
-          {/* Rows */}
-          <div className="flex flex-col gap-2">
-            {historyItems.map((item, idx) => (
+            {historyItems.map((item, index) => (
               <StudentThesisDefenceHistoryCard
                 key={item.id}
-                index={idx + 1}
+                index={index + 1}
                 item={item}
                 onClick={() => onDetailClick(item.id)}
               />
             ))}
           </div>
-        </div>
-      )}
+        </section>
+      ) : null}
     </div>
   );
 };

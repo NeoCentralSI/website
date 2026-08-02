@@ -302,6 +302,7 @@ export const API_CONFIG = {
       DOCUMENT_TYPES: '/thesis-defences/documents/types',
       DOCUMENTS: (id: string) => `/thesis-defences/${id}/documents`,
       DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}`,
+      DOCUMENT_FILE: (id: string, reqId: string) => `/thesis-defences/${id}/documents/${reqId}/file`,
       VERIFY_DOCUMENT: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}/verify`,
 
       // --- Examiners & Assignment ---

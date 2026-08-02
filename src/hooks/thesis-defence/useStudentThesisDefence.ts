@@ -100,16 +100,16 @@ export function useUploadDefenceDocument() {
   const defenceId = overview?.defence?.id;
 
   return useMutation({
-    mutationFn: ({ file, documentTypeName }: { file: File; documentTypeName: string }) => {
-      return uploadDefenceDocument(file, documentTypeName, defenceId);
+    mutationFn: ({ file, requirementId }: { file: File; requirementId: string }) => {
+      return uploadDefenceDocument(file, requirementId, defenceId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: defenceKeys.documents(defenceId) });
       queryClient.invalidateQueries({ queryKey: defenceKeys.overview() });
-      toast.success('Dokumen berhasil diupload');
+      toast.success('Dokumen berhasil diunggah');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Gagal mengupload dokumen');
+      toast.error(error.message || 'Gagal mengunggah dokumen');
     },
   });
 }

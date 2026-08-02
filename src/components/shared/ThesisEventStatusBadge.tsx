@@ -19,7 +19,7 @@ interface StatusConfig {
 
 const STATUS_MAP: Record<ThesisEventStatus, StatusConfig> = {
   registered: {
-    label: 'Menunggu Validasi',
+    label: 'Menunggu Verifikasi',
     variant: 'warning',
   },
   verified: {
@@ -127,7 +127,7 @@ export function getThesisEventStatusFilterOptions(options?: { includeOngoing?: b
 
   const result = [
     { label: 'Semua', value: '' },
-    { label: 'Menunggu Validasi', value: 'registered' },
+    { label: 'Menunggu Verifikasi', value: 'registered' },
     { label: 'Menunggu Penetapan Penguji', value: 'verified' },
     { label: 'Menunggu Jadwal', value: 'examiner_assigned' },
     { label: 'Terjadwalkan', value: 'scheduled' },

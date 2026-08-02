@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,9 +15,7 @@ import { toTitleCaseName, formatDateId } from '@/lib/text';
 import { ExternalLink, CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AdminDefenceListItem, DocumentSubmitStatus } from '@/types/defence.types';
-import { openProtectedFile } from '@/lib/protected-file';
-import { apiRequest } from '@/services/auth.service';
-import { ENV } from '@/config/env';
+import { fetchDefenceDocumentBlob } from '@/services/thesis-defence/doc.service';
 
 interface AdminThesisDefenceVerificationFormDialogProps {
   defence: AdminDefenceListItem | null;
@@ -46,11 +45,12 @@ export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpen
   const [notes, setNotes] = useState('');
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [isFileLoading, setIsFileLoading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   // Build ordered document list (match docTypes order)
   const orderedDocs = detail
     ? detail.documentTypes.map((dt) => {
-      const doc = detail.documents.find((d) => d.documentTypeId === dt.id);
+      const doc = detail.documents.find((d) => d.requirementId === dt.id);
       return { docType: dt, doc: doc || null };
     })
     : [];
@@ -74,46 +74,43 @@ export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpen
 
   // Fetch and create blob URL for PDF preview
   useEffect(() => {
-    if (!currentDoc?.filePath) {
+    if (!defence?.id || !currentDocType?.id || !currentDoc) {
       setBlobUrl(null);
+      setFileError(null);
       return;
     }
 
     let active = true;
     setIsFileLoading(true);
+    setFileError(null);
 
     const fetchFile = async () => {
       try {
-        const normalized = currentDoc.filePath!.replace(/^\/+/, '');
-        const fileUrl = `${ENV.API_BASE_URL}/${normalized}`;
-
-        const res = await apiRequest(fileUrl, { method: 'GET' });
-        if (!res.ok) throw new Error();
-
-        const blob = await res.blob();
+        const blob = await fetchDefenceDocumentBlob(defence.id, currentDocType.id);
         if (active) {
           const url = URL.createObjectURL(blob);
           setBlobUrl(url);
         }
-      } catch {
-        if (active) toast.error('Gagal memuat preview dokumen');
+      } catch (err) {
+        if (active) {
+          setBlobUrl(null);
+          setFileError(err instanceof Error ? err.message : 'Gagal memuat preview dokumen');
+        }
       } finally {
         if (active) setIsFileLoading(false);
       }
     };
 
-    const cleanup = () => {
+    fetchFile();
+
+    return () => {
       active = false;
       setBlobUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
     };
-
-    fetchFile();
-
-    return cleanup;
-  }, [currentDoc?.filePath]);
+  }, [defence?.id, currentDocType?.id, currentDoc?.submittedAt]);
 
   const handleVerify = useCallback(
     (action: 'approve' | 'decline') => {
@@ -122,7 +119,7 @@ export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpen
       verifyMutation.mutate(
         {
           defenceId: defence.id,
-          documentTypeId: currentDocType.id,
+          requirementId: currentDocType.id,
           payload: { action, notes: notes.trim() || undefined },
         },
         {
@@ -138,14 +135,13 @@ export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpen
               const nextIdx = orderedDocs.findIndex(
                 (entry, i) => i > activeDocIndex && entry.doc?.status === 'submitted'
               );
-              if (nextIdx >= 0) {
+              if (nextIdx !== -1) {
                 setActiveDocIndex(nextIdx);
               }
             }
-            setNotes('');
           },
-          onError: (err) => {
-            toast.error(err.message || 'Gagal memverifikasi dokumen');
+          onError: (error) => {
+            toast.error(error.message || 'Gagal memverifikasi dokumen');
           },
         }
       );
@@ -154,13 +150,15 @@ export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpen
   );
 
   const canVerify = currentDoc?.status === 'submitted';
-  const canDownload = !!currentDoc?.filePath;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Verifikasi Dokumen Sidang TA</DialogTitle>
+          <DialogDescription className="sr-only">
+            Form verifikasi dokumen persyaratan sidang tugas akhir mahasiswa
+          </DialogDescription>
           {detail && (
             <div className="text-sm text-muted-foreground mt-1">
               {toTitleCaseName(detail.student.name)} — {detail.student.nim}
@@ -233,22 +231,24 @@ export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpen
                   <div className="flex items-center gap-3 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="truncate">{currentDoc.fileName || 'File'}</span>
-                    {canDownload && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            await openProtectedFile(currentDoc!.filePath!, currentDoc?.fileName || undefined);
-                          } catch (error) {
-                            toast.error((error as Error).message || 'Gagal membuka dokumen');
-                          }
-                        }}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                        Buka di Tab Baru
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        if (!defence?.id || !currentDocType?.id) return;
+                        try {
+                          const blob = await fetchDefenceDocumentBlob(defence.id, currentDocType.id);
+                          const url = URL.createObjectURL(blob);
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                          setTimeout(() => URL.revokeObjectURL(url), 30_000);
+                        } catch (error) {
+                          toast.error((error as Error).message || 'Gagal membuka dokumen');
+                        }
+                      }}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                      Buka di Tab Baru
+                    </Button>
                   </div>
 
                   {/* PDF preview */}
@@ -265,7 +265,7 @@ export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpen
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                        Preview tidak tersedia
+                        {fileError || 'Preview tidak tersedia'}
                       </div>
                     )}
                   </div>
@@ -337,14 +337,14 @@ export function AdminThesisDefenceVerificationFormDialog({ defence, open, onOpen
                 </>
               ) : (
                 <div className="text-sm text-muted-foreground py-4 text-center">
-                  Dokumen belum diunggah oleh mahasiswa.
+                  Mahasiswa belum mengunggah dokumen persyaratan sidang ini.
                 </div>
               )}
             </div>
           </div>
         ) : (
           <div className="text-sm text-muted-foreground py-8 text-center">
-            Tidak ada dokumen untuk diverifikasi.
+            Syarat dokumen sidang untuk tahun akademik yang berlaku belum dikonfigurasi.
           </div>
         )}
       </DialogContent>
