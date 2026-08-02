@@ -6,8 +6,9 @@ import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.
 import { CriteriaTable } from '@/components/master-data/seminar-rubric/CriteriaTable';
 import { CriteriaFormDialog } from '@/components/master-data/seminar-rubric/CriteriaFormDialog';
 import { MinimumScoreDialog } from '@/components/master-data/MinimumScoreDialog';
+import { SeminarRubricPreviewDialog } from '@/components/master-data/seminar-rubric/SeminarRubricPreviewDialog';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Eye, Settings } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Card,
@@ -63,6 +64,7 @@ export function SeminarRubricManagementPanel() {
     const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<CpmkWithRubrics | null>(null);
     const [editCriteria, setEditCriteria] = useState<AssessmentCriteria | null>(null);
     const [minScoreDialogOpen, setMinScoreDialogOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const currentTotalScore = weightSummary?.totalScore ?? 0;
     const remainingScore = 100 - currentTotalScore;
@@ -131,6 +133,16 @@ export function SeminarRubricManagementPanel() {
                     </div>
                     
                     <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-fit py-2"
+                            onClick={() => setPreviewOpen(true)}
+                            disabled={!mergedCpmks.some((cpmk) => cpmk.assessmentCriterias.length > 0)}
+                        >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Preview Form Penilaian
+                        </Button>
                         {weightSummary && (
                             <Button 
                                 variant="outline" 
@@ -210,6 +222,12 @@ export function SeminarRubricManagementPanel() {
                         void updateMinimumScore({ academicYearId: effectiveAcademicYearId, minimumScore: score });
                     }
                 }}
+            />
+            <SeminarRubricPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                cpmks={mergedCpmks}
+                minimumPassingScore={weightSummary?.minimumScore ?? 0}
             />
         </Card>
     );

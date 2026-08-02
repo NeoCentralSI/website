@@ -372,6 +372,9 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
           <Badge className="mt-4 font-semibold" variant={isSubmitted ? 'success' : isDraft ? 'warning' : 'secondary'}>
             {isSubmitted ? 'Sudah Submit' : isDraft ? 'Draf' : 'Belum diisi'}
           </Badge>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Batas kelulusan akhir (rata-rata nilai penguji): <span className="font-semibold text-foreground">{form.minimumPassingScore}</span>
+          </p>
         </Card>
 
         <Card className="p-4 flex flex-col gap-3">
@@ -521,7 +524,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               <span className="text-muted-foreground">
                 Rata-rata: <span className="font-bold text-foreground">{finalData.seminar?.finalScore?.toFixed(2)}</span>
               </span>
-              <span className="text-[10px] text-muted-foreground">Batas kelulusan: 55</span>
+              <span className="text-[10px] text-muted-foreground">Batas kelulusan: {finalData.minimumPassingScore}</span>
             </div>
           </div>
           
@@ -676,8 +679,8 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                 {finalData.averageScore !== null ? (
                   <div className="flex items-center justify-end gap-2">
                     <span>{finalData.averageScore?.toFixed(2)}<span className="text-muted-foreground font-normal">/{totalMaxScore}</span></span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${(finalData.averageScore || 0) >= 55 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                      {(finalData.averageScore || 0) >= 55 ? '✓ LULUS' : '✕ TIDAK LULUS'}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${(finalData.averageScore || 0) >= finalData.minimumPassingScore ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                      {(finalData.averageScore || 0) >= finalData.minimumPassingScore ? '✓ LULUS' : '✕ TIDAK LULUS'}
                     </span>
                   </div>
                 ) : (
@@ -735,6 +738,9 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
 
       <div className="flex items-center justify-between gap-4">
         <h3 className="text-base font-bold text-foreground">Hasil Keputusan Seminar</h3>
+        <p className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+          Batas kelulusan: minimum rata-rata <span className="font-bold text-foreground">{finalData.minimumPassingScore}</span>
+        </p>
       </div>
 
       {!finalData.recommendationUnlocked && !isFinalized && (
@@ -772,7 +778,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               <span className="text-muted-foreground">
                 Rata-rata: <span className="font-bold text-foreground">{finalData.seminar?.finalScore?.toFixed(2)}</span>
               </span>
-              <span className="text-[10px] text-muted-foreground">Batas kelulusan: 55</span>
+              <span className="text-[10px] text-muted-foreground">Batas kelulusan: {finalData.minimumPassingScore}</span>
             </div>
           </div>
         </div>
@@ -784,12 +790,12 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                 <h4 className="font-bold text-sm">Status Kelulusan Otomatis</h4>
                 <p className="text-xs text-muted-foreground">Berdasarkan akumulasi nilai rata-rata penguji.</p>
               </div>
-              <Badge variant={(finalData.averageScore || 0) < 55 ? 'destructive' : 'success'} className="px-3 py-1">
-                {(finalData.averageScore || 0) < 55 ? 'GAGAL (Tidak Lulus)' : 'LULUS'}
+              <Badge variant={(finalData.averageScore || 0) < finalData.minimumPassingScore ? 'destructive' : 'success'} className="px-3 py-1">
+                {(finalData.averageScore || 0) < finalData.minimumPassingScore ? 'GAGAL (Tidak Lulus)' : 'LULUS'}
               </Badge>
             </div>
 
-            {(finalData.averageScore || 0) >= 55 ? (
+            {(finalData.averageScore || 0) >= finalData.minimumPassingScore ? (
               <div className="flex items-center space-x-2 pt-2 border-t border-primary/10">
                 <Checkbox 
                   id="recommend-revision" 
@@ -805,7 +811,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               </div>
             ) : (
               <div className="text-xs text-red-600 pt-2 border-t border-primary/10 font-medium italic">
-                Rata-rata nilai di bawah 55. Mahasiswa dinyatakan Tidak Lulus.
+                Rata-rata nilai di bawah {finalData.minimumPassingScore}. Mahasiswa dinyatakan Tidak Lulus.
               </div>
             )}
           </div>

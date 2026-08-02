@@ -535,6 +535,7 @@ export interface ExaminerAssessmentFormResponse {
     assessmentSubmittedAt: string | null;
   };
   criteriaGroups: SeminarAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface SubmitExaminerAssessmentPayload {
@@ -592,6 +593,8 @@ export interface SupervisorFinalizationDataResponse {
   averageScore: number | null;
   averageGrade: string | null;
   recommendationUnlocked: boolean;
+  criteriaGroups: SeminarAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface FinalizeSeminarPayload {
