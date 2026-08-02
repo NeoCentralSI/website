@@ -97,7 +97,7 @@ export default function ThesisDefenceDetailPage() {
     }
   }
 
-  const showRevisions = (isUserStudent || isUserSupervisor) && d.status === 'passed_with_revision';
+  const showRevisions = (isUserStudent || isUserSupervisor || isUserAdmin) && d.status === 'passed_with_revision' && !isArchive;
 
   const tabs = [{ label: 'Identitas', value: 'identitas' }];
   if (showScheduling) tabs.push({ label: 'Penjadwalan', value: 'penjadwalan' });

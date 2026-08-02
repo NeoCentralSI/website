@@ -33,10 +33,12 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -237,46 +239,70 @@ function RevisionBoardSection({
   const canFinalizeBoard = !isRevisionFinalized && revisions.length > 0 && revisions.every((revision) => revision.isFinished);
 
   const handleCreate = async () => {
-    if (!selectedExaminerId || !newDescription.trim()) return;
-    await createMutation.mutateAsync({
-      seminarId,
-      payload: {
-        seminarExaminerId: selectedExaminerId,
-        description: newDescription.trim(),
-        revisionAction: newRevisionAction.trim() || undefined,
-      }
-    });
-    setCreateOpen(false);
-    setSelectedExaminerId('');
-    setNewDescription('');
-    setNewRevisionAction('');
-    refetch();
-    await onRefresh();
+    if (!selectedExaminerId || !newDescription.trim() || createMutation.isPending) return;
+    try {
+      await createMutation.mutateAsync({
+        seminarId,
+        payload: {
+          seminarExaminerId: selectedExaminerId,
+          description: newDescription.trim(),
+          revisionAction: newRevisionAction.trim() || undefined,
+        }
+      });
+      toast.success('Item revisi berhasil ditambahkan.');
+      setCreateOpen(false);
+      setSelectedExaminerId('');
+      setNewDescription('');
+      setNewRevisionAction('');
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal menambahkan item revisi.');
+    }
   };
 
   const handleSaveEdit = async () => {
-    if (!editingId || !editDescription.trim()) return;
-    await saveMutation.mutateAsync({
-      seminarId,
-      revisionId: editingId,
-      payload: { description: editDescription.trim(), revisionAction: editRevisionAction.trim() || undefined },
-    });
-    setEditOpen(false);
-    setEditingId(null);
-    refetch();
-    await onRefresh();
+    if (!editingId || !editDescription.trim() || saveMutation.isPending) return;
+    try {
+      await saveMutation.mutateAsync({
+        seminarId,
+        revisionId: editingId,
+        payload: { description: editDescription.trim(), revisionAction: editRevisionAction.trim() || undefined },
+      });
+      toast.success('Revisi berhasil diperbarui.');
+      setEditOpen(false);
+      setEditingId(null);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal memperbarui revisi.');
+    }
   };
 
   const handleFinalizeRevisions = async () => {
-    await finalizeRevisionsMutation.mutateAsync({ seminarId });
-    setFinalizeConfirmOpen(false);
-    await onRefresh();
+    if (finalizeRevisionsMutation.isPending) return;
+    try {
+      await finalizeRevisionsMutation.mutateAsync({ seminarId });
+      toast.success('Seluruh revisi seminar berhasil difinalisasi.');
+      setFinalizeConfirmOpen(false);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal memfinalisasi revisi.');
+    }
   };
 
   const handleUnfinalizeRevisions = async () => {
-    await unfinalizeRevisionsMutation.mutateAsync({ seminarId });
-    setUnfinalizeConfirmOpen(false);
-    await onRefresh();
+    if (unfinalizeRevisionsMutation.isPending) return;
+    try {
+      await unfinalizeRevisionsMutation.mutateAsync({ seminarId });
+      toast.success('Finalisasi revisi seminar berhasil dibatalkan.');
+      setUnfinalizeConfirmOpen(false);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal membatalkan finalisasi.');
+    }
   };
 
   const columns = useMemo<Column<any>[]>(() => {

@@ -12,6 +12,7 @@ import {
   Trash2,
   ChevronRight,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { CustomTable, type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -61,11 +63,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface Props {
-  defenceId: string;
-  detail: any;
-  onRefresh: () => Promise<unknown> | unknown;
-  isRefreshing?: boolean;
+const REVISION_NOTE_PREVIEW_LIMIT = 160;
+
+function getRevisionNotePreview(note: string): string {
+  if (!note) return '-';
+  if (note.length <= REVISION_NOTE_PREVIEW_LIMIT) return note;
+  return `${note.slice(0, REVISION_NOTE_PREVIEW_LIMIT).trimEnd()}...`;
 }
 
 export function ThesisDefenceDetailRevisionPanel({
@@ -121,9 +124,9 @@ function ExaminerNotesSection({ detail }: { detail: any }) {
             open={isExpanded}
             onOpenChange={(open) => setExpandedNotes(prev => ({ ...prev, [idx]: open }))}
           >
-            <Card className="bg-muted/10">
+            <Card className="gap-0 border-gray-200 bg-card py-0 shadow-none">
               <CollapsibleTrigger asChild>
-                <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between cursor-pointer hover:bg-muted/20 transition-colors">
+                <CardHeader className="flex cursor-pointer flex-row items-center justify-between border-b border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50">
                   <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                     <MessageSquareText className="h-4 w-4 text-muted-foreground" />
                     Catatan — Penguji {note.examinerOrder} ({toTitleCaseName(note.lecturerName)})
@@ -206,7 +209,7 @@ function RevisionBoardSection({
 
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
-    const visibleItems = showStudentActions ? revisions : revisions.filter(r => r.studentSubmittedAt || r.isFinished);
+    const visibleItems = showStudentActions || showSupervisorActions ? revisions : revisions.filter(r => r.studentSubmittedAt || r.isFinished);
     const items = !term ? visibleItems : visibleItems.filter(
       (r) =>
         r.description.toLowerCase().includes(term) ||
@@ -216,7 +219,7 @@ function RevisionBoardSection({
 
     // CRITICAL: Sort by examinerOrder to ensure adjacency for merging
     return [...items].sort((a, b) => (a.examinerOrder || 0) - (b.examinerOrder || 0));
-  }, [revisions, search, showStudentActions]);
+  }, [revisions, search, showStudentActions, showSupervisorActions]);
 
   const paginatedData = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -229,47 +232,69 @@ function RevisionBoardSection({
     pendingApproval: revisions.filter((r: any) => r.studentSubmittedAt && !r.isFinished).length,
   };
 
-  const hasSubmittedItems = revisions.some((r: any) => r.studentSubmittedAt || r.isFinished);
-  const allSubmittedApproved = revisions.every((r: any) => !r.studentSubmittedAt || r.isFinished);
-  const canFinalizeBoard = !isRevisionFinalized && revisions.length > 0 && hasSubmittedItems && allSubmittedApproved;
+  const canFinalizeBoard = !isRevisionFinalized && revisions.length > 0 && revisions.every((r: any) => r.isFinished);
 
   const handleCreate = async () => {
-    if (!selectedExaminerId || !newDescription.trim()) return;
-    await createMutation.mutateAsync({
-      defenceExaminerId: selectedExaminerId,
-      description: newDescription.trim(),
-      revisionAction: newRevisionAction.trim() || undefined,
-    });
-    setCreateOpen(false);
-    setSelectedExaminerId('');
-    setNewDescription('');
-    setNewRevisionAction('');
-    refetch();
-    await onRefresh();
+    if (!selectedExaminerId || !newDescription.trim() || createMutation.isPending) return;
+    try {
+      await createMutation.mutateAsync({
+        defenceExaminerId: selectedExaminerId,
+        description: newDescription.trim(),
+        revisionAction: newRevisionAction.trim() || undefined,
+      });
+      toast.success('Item revisi berhasil ditambahkan.');
+      setCreateOpen(false);
+      setSelectedExaminerId('');
+      setNewDescription('');
+      setNewRevisionAction('');
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal menambahkan item revisi.');
+    }
   };
 
   const handleSaveEdit = async () => {
-    if (!editingId || !editDescription.trim()) return;
-    await saveMutation.mutateAsync({
-      revisionId: editingId,
-      payload: { description: editDescription.trim(), revisionAction: editRevisionAction.trim() || undefined },
-    });
-    setEditOpen(false);
-    setEditingId(null);
-    refetch();
-    await onRefresh();
+    if (!editingId || !editDescription.trim() || saveMutation.isPending) return;
+    try {
+      await saveMutation.mutateAsync({
+        revisionId: editingId,
+        payload: { description: editDescription.trim(), revisionAction: editRevisionAction.trim() || undefined },
+      });
+      toast.success('Revisi berhasil diperbarui.');
+      setEditOpen(false);
+      setEditingId(null);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal memperbarui revisi.');
+    }
   };
 
   const handleFinalize = async () => {
-    await finalizeMutation.mutateAsync({ defenceId });
-    setFinalizeConfirmOpen(false);
-    await onRefresh();
+    if (finalizeMutation.isPending) return;
+    try {
+      await finalizeMutation.mutateAsync({ defenceId });
+      toast.success('Seluruh revisi sidang berhasil difinalisasi.');
+      setFinalizeConfirmOpen(false);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal memfinalisasi revisi.');
+    }
   };
 
   const handleUnfinalize = async () => {
-    await unfinalizeMutation.mutateAsync({ defenceId });
-    setUnfinalizeConfirmOpen(false);
-    await onRefresh();
+    if (unfinalizeMutation.isPending) return;
+    try {
+      await unfinalizeMutation.mutateAsync({ defenceId });
+      toast.success('Finalisasi revisi sidang berhasil dibatalkan.');
+      setUnfinalizeConfirmOpen(false);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal membatalkan finalisasi.');
+    }
   };
 
   const columns = useMemo<Column<any>[]>(() => {
@@ -298,7 +323,7 @@ function RevisionBoardSection({
           const key = `${row.examinerOrder}-${row.examinerId}`;
           const span = examinerRowSpans.get(`${index}-${key}`);
           if (span === undefined) return { className: 'sr-only !p-0 !border-0 hidden' };
-          return { rowSpan: span, className: 'align-top font-semibold bg-muted/5' };
+          return { rowSpan: span, className: 'align-top bg-gray-50/70 font-semibold' };
         },
         render: (row, index) => {
           const key = `${row.examinerOrder}-${row.examinerId}`;
@@ -315,14 +340,24 @@ function RevisionBoardSection({
       {
         key: 'description',
         header: 'Catatan',
-        render: (row) => <p className="text-sm whitespace-pre-wrap break-words max-w-[200px]">{row.description}</p>,
+        render: (row) => (
+          <p
+            className="max-w-[280px] whitespace-pre-wrap break-words text-sm"
+            title={row.description}
+          >
+            {getRevisionNotePreview(row.description)}
+          </p>
+        ),
       },
       {
         key: 'revisionAction',
         header: 'Perbaikan',
         render: (row) => (
-          <p className="text-sm whitespace-pre-wrap break-words max-w-[200px] text-muted-foreground">
-            {row.revisionAction || '-'}
+          <p
+            className="max-w-[280px] whitespace-pre-wrap break-words text-sm text-muted-foreground"
+            title={row.revisionAction || '-'}
+          >
+            {getRevisionNotePreview(row.revisionAction || '')}
           </p>
         ),
       },
@@ -332,7 +367,7 @@ function RevisionBoardSection({
         width: 110,
         render: (row) => {
           if (row.isFinished) return <Badge variant="success" className="text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Disetujui</Badge>;
-          if (row.studentSubmittedAt) return <Badge variant="default" className="text-xs gap-1"><Send className="h-3 w-3" /> Diajukan</Badge>;
+          if (row.studentSubmittedAt) return <Badge variant="secondary" className="text-xs gap-1"><Send className="h-3 w-3" /> Diajukan</Badge>;
           return <Badge variant="warning" className="text-xs gap-1"><Clock className="h-3 w-3" /> Diproses</Badge>;
         },
       },
@@ -356,7 +391,7 @@ function RevisionBoardSection({
                         setEditRevisionAction(row.revisionAction || '');
                         setEditOpen(true);
                       }}
-                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground"
                       title="Edit"
                     >
                       <Pencil className="h-4 w-4" />
@@ -366,7 +401,7 @@ function RevisionBoardSection({
                         variant="ghost"
                         size="icon"
                         onClick={() => setSubmitConfirmId(row.id)}
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground"
                         title="Ajukan"
                       >
                         <Send className="h-4 w-4" />
@@ -383,17 +418,33 @@ function RevisionBoardSection({
                     </Button>
                   </>
                 ) : (
-                  <Button variant="ghost" size="icon" onClick={() => setCancelSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Pengajuan"><RotateCcw className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => setCancelSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground" title="Batalkan Pengajuan"><RotateCcw className="h-4 w-4" /></Button>
                 )}
               </div>
             )}
             {showSupervisorActions && row.studentSubmittedAt && !row.isFinished && !isRevisionFinalized && (
-              <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ defenceId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Setujui">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={async () => {
+                  try {
+                    await approveMutation.mutateAsync({ defenceId, revisionId: row.id });
+                    toast.success('Item revisi berhasil disetujui.');
+                    refetch();
+                    onRefresh();
+                  } catch (err) {
+                    toast.error((err as Error).message || 'Gagal menyetujui revisi.');
+                  }
+                }}
+                disabled={approveMutation.isPending}
+                className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground"
+                title="Setujui"
+              >
                 {approveMutation.isPending ? <Spinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
               </Button>
             )}
             {showSupervisorActions && row.isFinished && !isRevisionFinalized && (
-              <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Persetujuan">
+              <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground" title="Batalkan Persetujuan">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             )}
@@ -405,17 +456,17 @@ function RevisionBoardSection({
         ),
       },
     ];
-  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, defenceId, paginatedData]);
+  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, defenceId, paginatedData, refetch, onRefresh]);
 
   if (isLoading) return <Loading size="lg" text="Memuat board revisi..." />;
 
   return (
     <div className="space-y-4">
       {showStudentActions && !isRevisionFinalized && revisions.length > 0 && (
-        <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 flex items-start gap-3">
-          <MessageSquareText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-card px-4 py-3">
+          <MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
           <div className="text-xs text-foreground/80 leading-relaxed">
-            <p className="font-bold text-primary mb-1">Informasi Perbaikan</p>
+            <p className="mb-1 font-bold text-foreground">Informasi Perbaikan</p>
             Daftar perbaikan di bawah ini telah dibuat secara otomatis berdasarkan catatan dari para penguji.
             Silakan lengkapi kolom <b>&quot;Perbaikan&quot;</b> untuk setiap item, lalu klik ikon <b>&quot;Ajukan&quot;</b> (<Send className="h-3 w-3 inline" />) agar dapat diperiksa oleh Pembimbing.
           </div>
@@ -467,7 +518,7 @@ function RevisionBoardSection({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                    className="border-gray-200 text-foreground hover:bg-gray-50"
                     onClick={() => setUnfinalizeConfirmOpen(true)}
                     disabled={unfinalizeMutation.isPending}
                   >
@@ -495,8 +546,11 @@ function RevisionBoardSection({
 
       {/* Create/Edit Dialogs */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Tambah Item Revisi</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Tambah Item Revisi</DialogTitle>
+            <DialogDescription>Tambahkan catatan revisi baru untuk dosen penguji sidang.</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Dosen Penguji</Label>
@@ -524,21 +578,28 @@ function RevisionBoardSection({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Batal</Button>
-            <Button onClick={handleCreate} disabled={!selectedExaminerId || !newDescription.trim() || createMutation.isPending}>Simpan</Button>
+            <Button onClick={handleCreate} disabled={!selectedExaminerId || !newDescription.trim() || createMutation.isPending}>
+              {createMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Revisi</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Revisi</DialogTitle>
+            <DialogDescription>Ubah catatan revisi atau perbaikan yang telah dituliskan.</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><Label>Catatan Revisi</Label><Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} /></div>
             <div className="space-y-2"><Label>Perbaikan Yang Dilakukan</Label><Textarea value={editRevisionAction} onChange={(e) => setEditRevisionAction(e.target.value)} rows={4} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveEdit} disabled={!editDescription.trim() || saveMutation.isPending}>Simpan</Button>
+            <Button onClick={handleSaveEdit} disabled={!editDescription.trim() || saveMutation.isPending}>
+              {saveMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -546,48 +607,160 @@ function RevisionBoardSection({
       {/* Confirmation Modals */}
       <AlertDialog open={!!submitConfirmId} onOpenChange={open => !open && setSubmitConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Ajukan Perbaikan?</AlertDialogTitle><AlertDialogDescription>Perbaikan akan menunggu persetujuan pembimbing.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { 
-            await submitMutation.mutateAsync(submitConfirmId!);
-            setSubmitConfirmId(null); 
-            refetch(); 
-            onRefresh(); 
-          }}>Ajukan</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ajukan Perbaikan?</AlertDialogTitle>
+            <AlertDialogDescription>Perbaikan akan menunggu persetujuan pembimbing.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitMutation.isPending}
+              onClick={async (e) => { 
+                e.preventDefault();
+                try {
+                  await submitMutation.mutateAsync(submitConfirmId!);
+                  toast.success('Perbaikan berhasil diajukan.');
+                  setSubmitConfirmId(null); 
+                  refetch(); 
+                  onRefresh();
+                } catch (err) {
+                  toast.error((err as Error).message || 'Gagal mengajukan perbaikan.');
+                }
+              }}
+            >
+              {submitMutation.isPending ? 'Mengajukan...' : 'Ajukan'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle><AlertDialogDescription>Data akan dihapus permanen.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={async () => { await deleteMutation.mutateAsync(deleteConfirmId!); setDeleteConfirmId(null); refetch(); onRefresh(); }}>Hapus</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle>
+            <AlertDialogDescription>Data akan dihapus permanen.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  await deleteMutation.mutateAsync(deleteConfirmId!);
+                  toast.success('Item revisi berhasil dihapus.');
+                  setDeleteConfirmId(null);
+                  refetch();
+                  onRefresh();
+                } catch (err) {
+                  toast.error((err as Error).message || 'Gagal menghapus item revisi.');
+                }
+              }}
+            >
+              {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Menandai seluruh revisi selesai dan siap untuk yudisium.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={handleFinalize}>Ya, Finalisasi</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalisasi Revisi?</AlertDialogTitle>
+            <AlertDialogDescription>Menandai seluruh revisi selesai dan siap untuk yudisium.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={finalizeMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={finalizeMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleFinalize();
+              }}
+            >
+              {finalizeMutation.isPending ? 'Menyimpan...' : 'Ya, Finalisasi'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={!!unapproveConfirmId} onOpenChange={open => !open && setUnapproveConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Batalkan Persetujuan?</AlertDialogTitle><AlertDialogDescription>Status item revisi ini akan kembali menjadi "Diajukan".</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await unapproveMutation.mutateAsync({ defenceId, revisionId: unapproveConfirmId! }); setUnapproveConfirmId(null); refetch(); onRefresh(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Batalkan Persetujuan?</AlertDialogTitle>
+            <AlertDialogDescription>Status item revisi ini akan kembali menjadi "Diajukan".</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unapproveMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={unapproveMutation.isPending}
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  await unapproveMutation.mutateAsync({ defenceId, revisionId: unapproveConfirmId! });
+                  toast.success('Persetujuan revisi dibatalkan.');
+                  setUnapproveConfirmId(null);
+                  refetch();
+                  onRefresh();
+                } catch (err) {
+                  toast.error((err as Error).message || 'Gagal membatalkan persetujuan.');
+                }
+              }}
+            >
+              {unapproveMutation.isPending ? 'Memproses...' : 'Ya, Batalkan'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={!!cancelSubmitConfirmId} onOpenChange={open => !open && setCancelSubmitConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Batalkan Pengajuan?</AlertDialogTitle><AlertDialogDescription>Status akan kembali menjadi "Diproses" dan Anda dapat mengeditnya kembali.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await cancelSubmitMutation.mutateAsync(cancelSubmitConfirmId!); setCancelSubmitConfirmId(null); refetch(); onRefresh(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Batalkan Pengajuan?</AlertDialogTitle>
+            <AlertDialogDescription>Status akan kembali menjadi "Diproses" dan Anda dapat mengeditnya kembali.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelSubmitMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={cancelSubmitMutation.isPending}
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  await cancelSubmitMutation.mutateAsync(cancelSubmitConfirmId!);
+                  toast.success('Pengajuan perbaikan dibatalkan.');
+                  setCancelSubmitConfirmId(null);
+                  refetch();
+                  onRefresh();
+                } catch (err) {
+                  toast.error((err as Error).message || 'Gagal membatalkan pengajuan.');
+                }
+              }}
+            >
+              {cancelSubmitMutation.isPending ? 'Memproses...' : 'Ya, Batalkan'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={unfinalizeConfirmOpen} onOpenChange={setUnfinalizeConfirmOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Batal Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Anda akan dapat mengubah status persetujuan item revisi kembali.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={handleUnfinalize}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Batal Finalisasi Revisi?</AlertDialogTitle>
+            <AlertDialogDescription>Anda akan dapat mengubah status persetujuan item revisi kembali.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unfinalizeMutation.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={unfinalizeMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleUnfinalize();
+              }}
+            >
+              {unfinalizeMutation.isPending ? 'Memproses...' : 'Ya, Batalkan'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
