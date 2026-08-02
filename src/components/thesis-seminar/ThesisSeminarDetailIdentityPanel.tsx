@@ -34,6 +34,24 @@ interface Props {
   detail: any;
 }
 
+interface SeminarRequirement {
+  id: string;
+  name: string;
+}
+
+interface SeminarRequirementDocument {
+  id?: string;
+  requirementId?: string;
+  requirementName?: string;
+  documentTypeId?: string;
+  documentTypeName?: string;
+  fileName?: string | null;
+  filePath?: string | null;
+  status: DocumentSubmitStatus;
+  submittedAt?: string | null;
+  notes?: string | null;
+}
+
 export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
   const supervisors: any[] = [...(detail.supervisors || (detail.thesis?.supervisors || []).map((s: any) => ({
     name: s.lecturerName || s.name,
@@ -41,8 +59,22 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
   })))].sort((a, b) => (a.role || '').localeCompare(b.role || ''));
 
   const examiners: any[] = detail.examiners ?? [];
-  const documentTypes: any[] = detail.documentTypes ?? [];
-  const documents: any[] = detail.documents ?? [];
+  const documents = (detail.documents ?? []) as SeminarRequirementDocument[];
+  const requirements: SeminarRequirement[] = detail.requirements?.length
+    ? detail.requirements
+    : detail.documentTypes?.length
+      ? detail.documentTypes
+      : Array.from(
+        new Map(
+          documents.map((document) => {
+            const requirementId = document.requirementId || document.documentTypeId || document.id || '';
+            return [
+              requirementId,
+              { id: requirementId, name: document.requirementName || document.documentTypeName || 'Dokumen' },
+            ];
+          }),
+        ).values(),
+      );
 
   const handleDownload = async (filePath: string, fileName?: string | null) => {
     try {
@@ -56,14 +88,14 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Informasi Seminar */}
-        <Card className="lg:col-span-1 h-full flex flex-col">
-          <CardHeader className="border-b pb-4">
+        <Card className="lg:col-span-1 h-full gap-4 py-6">
+          <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               Informasi Seminar
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4 flex-1">
+          <CardContent className="space-y-4 flex-1">
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-muted-foreground">Nama Mahasiswa</p>
@@ -124,14 +156,14 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
         {/* Right Column - Informasi Tugas Akhir & Dokumen Seminar */}
         <div className="lg:col-span-2 space-y-6">
           {/* Informasi Tugas Akhir */}
-          <Card>
-            <CardHeader className="border-b pb-4">
+          <Card className="gap-4 py-6">
+            <CardHeader>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
                 Informasi Tugas Akhir
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="space-y-4">
               <div>
                 <p className="text-xs text-muted-foreground">Judul</p>
                 <p className="text-sm font-medium mt-0.5 leading-snug">{detail.thesis?.title}</p>
@@ -150,27 +182,26 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
           </Card>
 
           {/* Dokumen Seminar */}
-          {(documentTypes.length > 0 || documents.length > 0) && (
-            <Card>
-              <CardHeader className="border-b pb-4">
+          {requirements.length > 0 && (
+            <Card className="gap-4 py-6">
+              <CardHeader>
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   Dokumen Seminar
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-6 space-y-3">
-                {documentTypes.length > 0 ? (
-                  documentTypes.map((dt: any) => {
-                    const doc = documents.find((d: any) => d.documentTypeId === dt.id);
+              <CardContent className="space-y-3">
+                {requirements.map((dt) => {
+                    const doc = documents.find((d) => (d.requirementId || d.documentTypeId) === dt.id);
                     const statusDisplay = doc ? getDocStatusDisplay(doc.status) : null;
                     const docName = dt.name;
                     const fileName = doc ? (doc.fileName || 'File') : 'Belum diunggah';
-                    const fileDate = doc ? formatDateShortId(doc.submittedAt) : '';
+                    const fileDate = doc?.submittedAt ? formatDateShortId(doc.submittedAt) : '';
 
                     return (
                       <div
                         key={dt.id}
-                        className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl shadow-sm hover:border-border transition-colors"
+                        className="flex items-center justify-between gap-4 rounded-lg border bg-muted/10 p-4 transition-colors hover:bg-muted/20"
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div
@@ -203,7 +234,7 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                               variant="ghost"
                               size="icon"
                               className="h-9 w-9 border rounded-lg hover:bg-accent shrink-0"
-                              onClick={() => handleDownload(doc.filePath, doc.fileName)}
+                              onClick={() => handleDownload(doc.filePath!, doc.fileName)}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -211,63 +242,7 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                         </div>
                       </div>
                     );
-                  })
-                ) : (
-                  documents.map((doc: any) => {
-                    const docName = doc.documentTypeName || 'Dokumen';
-                    const fileName = doc.fileName || 'File';
-                    const fileDate = formatDateShortId(doc.submittedAt);
-
-                    return (
-                      <div
-                        key={doc.documentTypeId || doc.id}
-                        className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl shadow-sm hover:border-border transition-colors"
-                      >
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div className="p-2.5 rounded-lg shrink-0 bg-emerald-50 text-emerald-600">
-                            <FileText className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="font-medium text-sm text-foreground block">
-                              {docName}
-                            </span>
-                            <span className="text-xs text-muted-foreground block mt-0.5 truncate">
-                              {fileName} • {fileDate}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <Badge
-                            variant={
-                              doc.status === 'approved'
-                                ? 'success'
-                                : doc.status === 'declined'
-                                  ? 'destructive'
-                                  : 'warning'
-                            }
-                            className="rounded-md font-medium px-2.5 py-0.5"
-                          >
-                            {doc.status === 'approved'
-                              ? 'Disetujui'
-                              : doc.status === 'declined'
-                                ? 'Ditolak'
-                                : 'Menunggu'}
-                          </Badge>
-                          {doc.filePath && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 border rounded-lg hover:bg-accent shrink-0"
-                              onClick={() => handleDownload(doc.filePath, doc.fileName)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                  })}
               </CardContent>
             </Card>
           )}
