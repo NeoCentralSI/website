@@ -138,6 +138,11 @@ export interface ResearchMethodScoreWithDetails extends ResearchMethodScoreResul
     user?: { id: string; fullName?: string | null } | null;
   } | null;
   attendanceRecord?: MetopenAttendanceRecord | null;
+  /** Batas poin TA-03A dari komposisi tahun akademik thesis. */
+  ta03aCap?: number;
+  /** Batas poin TA-03B dari komposisi tahun akademik thesis. */
+  ta03bCap?: number;
+  academicYearId?: string | null;
 }
 
 export type MetopenAttendanceEligibilityStatus =
@@ -170,13 +175,30 @@ export interface MetopenAttendanceRecord {
 
 export interface MetopenAttendanceImportSummary {
   id: string;
-  academicYearId?: string | null;
+  academicYearId: string;
+  academicYear?: {
+    id: string;
+    year: string;
+    semester: 'ganjil' | 'genap';
+    startDate: string;
+    endDate: string;
+  } | null;
   documentId?: string | null;
   classCode?: string | null;
   courseName?: string | null;
   semesterLabel?: string | null;
   filterLabel?: string | null;
   lecturerNames?: string[] | null;
+  sourceFiles?: Array<{
+    originalName?: string | null;
+    fileName?: string | null;
+    filePath?: string | null;
+    fileHash?: string | null;
+    classCode?: string | null;
+    courseName?: string | null;
+    semesterLabel?: string | null;
+    rowCount?: number;
+  }> | null;
   thresholdPercent: number;
   totalRows: number;
   matchedRows: number;
@@ -212,6 +234,14 @@ export interface MetopenAttendanceEligibility {
   message: string;
 }
 
+export interface MetopenAttendanceSourceFileSummary {
+  originalName?: string | null;
+  classCode?: string | null;
+  courseName?: string | null;
+  semesterLabel?: string | null;
+  rowCount?: number;
+}
+
 export interface MetopenAttendanceUploadResult {
   import: MetopenAttendanceImportSummary;
   totals: {
@@ -222,7 +252,9 @@ export interface MetopenAttendanceUploadResult {
     ineligibleRows: number;
     autoZeroedCount: number;
     skippedFinalizedCount: number;
+    sourceFileCount?: number;
   };
+  sourceFiles?: MetopenAttendanceSourceFileSummary[];
   unmatchedRows: Array<{
     identityNumber: string;
     studentName?: string | null;
@@ -238,6 +270,22 @@ export interface MetopenAttendanceUploadResult {
   }>;
 }
 
+export interface MetopenAttendanceNimConflict {
+  identityNumber: string;
+  studentName?: string | null;
+  sources: Array<{
+    fileName?: string | null;
+    classCode?: string | null;
+    attendancePercentage: number;
+  }>;
+}
+
+export interface MetopenAttendanceApiError extends Error {
+  details?: {
+    conflicts?: MetopenAttendanceNimConflict[];
+  };
+}
+
 /** F-4.2: hasil dry-run pratinjau presensi sebelum commit (tidak menulis DB). */
 export interface MetopenAttendanceImpactTarget {
   identityNumber: string;
@@ -247,11 +295,19 @@ export interface MetopenAttendanceImpactTarget {
 }
 
 export interface MetopenAttendancePreviewResult {
+  academicYear: {
+    id: string;
+    year: string;
+    semester: 'ganjil' | 'genap';
+    startDate: string;
+    endDate: string;
+  };
   metadata: {
     classCode?: string | null;
     courseName?: string | null;
     semesterLabel?: string | null;
   } | null;
+  sourceFiles?: MetopenAttendanceSourceFileSummary[];
   thresholdPercent: number;
   totals: {
     totalRows: number;
@@ -261,6 +317,7 @@ export interface MetopenAttendancePreviewResult {
     ineligibleRows: number;
     willAutoZeroCount: number;
     willSkipFinalizedCount: number;
+    sourceFileCount?: number;
   };
   willAutoZero: MetopenAttendanceImpactTarget[];
   willSkipFinalized: MetopenAttendanceImpactTarget[];
@@ -304,9 +361,13 @@ type QueueApiItem = {
   lecturerScore?: number | null;
 };
 
-type CriteriaApiResponse = {
+export type CriteriaApiResponse = {
   formCode: 'TA-03A' | 'TA-03B';
   criteria: RubricCriteriaItem[];
+  cap?: number;
+  ta03aCap?: number;
+  ta03bCap?: number;
+  academicYearId?: string | null;
 };
 
 function mapQueueItem(
@@ -332,22 +393,29 @@ export const assessmentService = {
   // Get assessment criteria by form code (TA-03A or TA-03B)
   getCriteria: async (
     formCode: 'TA-03A' | 'TA-03B',
-  ): Promise<RubricCriteriaItem[]> => {
-    const res = await apiRequest(getApiUrl(E.CRITERIA(formCode)));
+    academicYearId?: string | null,
+  ): Promise<CriteriaApiResponse> => {
+    const qs = academicYearId
+      ? `?academicYearId=${encodeURIComponent(academicYearId)}`
+      : '';
+    const res = await apiRequest(getApiUrl(`${E.CRITERIA(formCode)}${qs}`));
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message || 'Gagal memuat kriteria penilaian');
     }
     const json = await res.json() as { data: CriteriaApiResponse };
-    return json.data.criteria;
+    return json.data;
   },
 
   // BR-20: Antrean penilaian TA-03A untuk dosen pembimbing (P1 + P2).
   // Mengembalikan item kaya konteks (actorRole, actionStatus, partnerName)
   // supaya halaman queue bisa menampilkan badge + filter per status tanpa
   // permintaan tambahan ke endpoint context.
-  getSupervisorScoringQueue: async (): Promise<SupervisorScoringQueueItem[]> => {
-    const res = await apiRequest(getApiUrl(E.SUPERVISOR_SCORING_QUEUE));
+  getSupervisorScoringQueue: async (
+    academicYearId: string,
+  ): Promise<SupervisorScoringQueueItem[]> => {
+    const query = new URLSearchParams({ academicYearId });
+    const res = await apiRequest(`${getApiUrl(E.SUPERVISOR_SCORING_QUEUE)}?${query}`);
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message || 'Gagal memuat antrean penilaian TA-03A');
@@ -356,8 +424,11 @@ export const assessmentService = {
     return json.data ?? [];
   },
 
-  getSupervisorScoringHistory: async (): Promise<SupervisorScoringHistoryItem[]> => {
-    const res = await apiRequest(getApiUrl(E.SUPERVISOR_SCORING_HISTORY));
+  getSupervisorScoringHistory: async (
+    academicYearId: string,
+  ): Promise<SupervisorScoringHistoryItem[]> => {
+    const query = new URLSearchParams({ academicYearId });
+    const res = await apiRequest(`${getApiUrl(E.SUPERVISOR_SCORING_HISTORY)}?${query}`);
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message || 'Gagal memuat riwayat penilaian TA-03A');
@@ -427,8 +498,9 @@ export const assessmentService = {
   },
 
   // Metopen Lecturer: get queue (TA-03B)
-  getMetopenScoringQueue: async (): Promise<ScoringQueueItem[]> => {
-    const res = await apiRequest(getApiUrl(E.METOPEN_SCORING_QUEUE));
+  getMetopenScoringQueue: async (academicYearId: string): Promise<ScoringQueueItem[]> => {
+    const query = new URLSearchParams({ academicYearId });
+    const res = await apiRequest(`${getApiUrl(E.METOPEN_SCORING_QUEUE)}?${query}`);
     if (!res.ok) throw new Error('Gagal memuat antrian penilaian Metopen');
     const json = await res.json();
     return (json.data as QueueApiItem[]).map((item) =>
@@ -436,8 +508,11 @@ export const assessmentService = {
     );
   },
 
-  getMetopenScoringHistory: async (): Promise<MetopenScoringHistoryItem[]> => {
-    const res = await apiRequest(getApiUrl(E.METOPEN_SCORING_HISTORY));
+  getMetopenScoringHistory: async (
+    academicYearId: string,
+  ): Promise<MetopenScoringHistoryItem[]> => {
+    const query = new URLSearchParams({ academicYearId });
+    const res = await apiRequest(`${getApiUrl(E.METOPEN_SCORING_HISTORY)}?${query}`);
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message || 'Gagal memuat riwayat penilaian TA-03B');
@@ -454,8 +529,11 @@ export const assessmentService = {
     }));
   },
 
-  getMetopenAttendanceLatest: async (): Promise<MetopenAttendanceImportSummary | null> => {
-    const res = await apiRequest(getApiUrl(E.METOPEN_ATTENDANCE_LATEST));
+  getMetopenAttendanceLatest: async (
+    academicYearId: string,
+  ): Promise<MetopenAttendanceImportSummary | null> => {
+    const query = new URLSearchParams({ academicYearId });
+    const res = await apiRequest(`${getApiUrl(E.METOPEN_ATTENDANCE_LATEST)}?${query}`);
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message || 'Gagal memuat presensi Metopel terbaru');
@@ -464,34 +542,56 @@ export const assessmentService = {
     return json.data;
   },
 
-  /** F-4.2: dry-run pratinjau dampak auto-zero (permanen) sebelum commit. */
-  previewMetopenAttendance: async (file: File): Promise<MetopenAttendancePreviewResult> => {
+  /** F-4.2: dry-run pratinjau dampak auto-zero (permanen) sebelum commit. 1–2 xlsx. */
+  previewMetopenAttendance: async (
+    files: File | File[],
+    academicYearId: string,
+  ): Promise<MetopenAttendancePreviewResult> => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('academicYearId', academicYearId);
+    const list = Array.isArray(files) ? files : [files];
+    if (list.length === 1) {
+      formData.append('file', list[0]);
+    } else {
+      list.forEach((file) => formData.append('files', file));
+    }
 
     const res = await apiRequest(getApiUrl(E.METOPEN_ATTENDANCE_PREVIEW), {
       method: 'POST',
       body: formData,
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Gagal memproses pratinjau presensi Metopel');
+      const err = await res.json() as { message?: string; details?: MetopenAttendanceApiError['details'] };
+      const error = new Error(err.message || 'Gagal memproses pratinjau presensi Metopel') as MetopenAttendanceApiError;
+      error.details = err.details;
+      throw error;
     }
     const json = await res.json() as { data: MetopenAttendancePreviewResult };
     return json.data;
   },
 
-  uploadMetopenAttendance: async (file: File): Promise<MetopenAttendanceUploadResult> => {
+  uploadMetopenAttendance: async (
+    files: File | File[],
+    academicYearId: string,
+  ): Promise<MetopenAttendanceUploadResult> => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('academicYearId', academicYearId);
+    const list = Array.isArray(files) ? files : [files];
+    if (list.length === 1) {
+      formData.append('file', list[0]);
+    } else {
+      list.forEach((file) => formData.append('files', file));
+    }
 
     const res = await apiRequest(getApiUrl(E.METOPEN_ATTENDANCE_UPLOAD), {
       method: 'POST',
       body: formData,
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Gagal mengunggah presensi Metopel');
+      const err = await res.json() as { message?: string; details?: MetopenAttendanceApiError['details'] };
+      const error = new Error(err.message || 'Gagal mengunggah presensi Metopel') as MetopenAttendanceApiError;
+      error.details = err.details;
+      throw error;
     }
     const json = await res.json() as { data: MetopenAttendanceUploadResult };
     return json.data;
@@ -512,8 +612,9 @@ export const assessmentService = {
    * pembimbing + rincian nilai 4 bucket. Mirror semantik xlsx download tapi
    * dalam JSON untuk UI table interaktif.
    */
-  getMetopenMonitoring: async (): Promise<MonitoringResponse> => {
-    const res = await apiRequest(getApiUrl(E.METOPEN_MONITORING));
+  getMetopenMonitoring: async (academicYearId: string): Promise<MonitoringResponse> => {
+    const query = new URLSearchParams({ academicYearId });
+    const res = await apiRequest(`${getApiUrl(E.METOPEN_MONITORING)}?${query}`);
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message || 'Gagal memuat monitoring Metopen');
@@ -571,12 +672,13 @@ export const assessmentService = {
    * berwenang. Tanpa `attendanceImportId` service pakai import terbaru.
    */
   downloadMetopenScoresXlsx: async (
+    academicYearId: string,
     attendanceImportId?: string,
   ): Promise<void> => {
     const base = getApiUrl(E.METOPEN_SCORES_EXPORT);
-    const url = attendanceImportId
-      ? `${base}?attendanceImportId=${encodeURIComponent(attendanceImportId)}`
-      : base;
+    const query = new URLSearchParams({ academicYearId });
+    if (attendanceImportId) query.set('attendanceImportId', attendanceImportId);
+    const url = `${base}?${query}`;
 
     const res = await apiRequest(url, { method: 'GET' });
     if (!res.ok) {

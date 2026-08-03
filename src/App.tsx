@@ -344,6 +344,10 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METOPEN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
                   <Route path="/kelola/metopen" element={<KelolaMetopenPage />} />
                 </Route>
+                {/* Monitoring kuota internal — KaDep/Sekdep read-only; mutasi tetap Admin-only. */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.KETUA_DEPARTEMEN, ROLES.SEKRETARIS_DEPARTEMEN]} />}>
+                  <Route path="/kelola/metopen/kuota-dosen" element={<KuotaBimbinganPage readOnly />} />
+                </Route>
                 {/* Master CPMK + rubrik TA-03 — Sekdep only (selaras routes/rubric-metopen.route.js). */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN]} />}>
                   <Route path="/kelola/metopen/cpmk-rubrik" element={<MetopenCpmkRubricPage />} />

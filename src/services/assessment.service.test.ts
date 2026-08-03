@@ -46,7 +46,7 @@ describe("assessmentService.downloadMetopenScoresXlsx", () => {
       }),
     );
 
-    await assessmentService.downloadMetopenScoresXlsx();
+    await assessmentService.downloadMetopenScoresXlsx("ay-1");
 
     expect(mockedApiRequest).toHaveBeenCalledWith(
       expect.stringContaining("/assessment/metopen/scores/export"),
@@ -60,7 +60,7 @@ describe("assessmentService.downloadMetopenScoresXlsx", () => {
   it("appends attendanceImportId as query parameter when provided", async () => {
     mockedApiRequest.mockResolvedValueOnce(makeXlsxResponse());
 
-    await assessmentService.downloadMetopenScoresXlsx("import-123");
+    await assessmentService.downloadMetopenScoresXlsx("ay-1", "import-123");
 
     const [calledUrl] = mockedApiRequest.mock.calls[0];
     expect(calledUrl).toContain("attendanceImportId=import-123");
@@ -74,7 +74,7 @@ describe("assessmentService.downloadMetopenScoresXlsx", () => {
       }),
     );
 
-    await expect(assessmentService.downloadMetopenScoresXlsx()).rejects.toThrow(
+    await expect(assessmentService.downloadMetopenScoresXlsx("ay-1")).rejects.toThrow(
       /Belum ada import presensi/,
     );
     expect(createUrlSpy).not.toHaveBeenCalled();

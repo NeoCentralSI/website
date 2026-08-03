@@ -17,6 +17,10 @@ vi.mock("@/services/assessment.service", () => ({
   },
 }));
 
+vi.mock("@/hooks/shared/useActiveAcademicYear", () => ({
+  useActiveAcademicYear: () => ({ academicYear: { id: "ay-active" } }),
+}));
+
 vi.mock("@/components/metopen/SupervisorScoreCard", () => ({
   SupervisorScoreCard: ({ thesisId }: { thesisId: string }) => <div>Detail {thesisId}</div>,
 }));
@@ -86,7 +90,9 @@ describe("MetopenTa03AQueue metric drill-down", () => {
 
     renderPage();
 
-    await waitFor(() => expect(assessmentService.getSupervisorScoringHistory).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(assessmentService.getSupervisorScoringHistory).toHaveBeenCalledWith("ay-active"),
+    );
     const metric = await screen.findByRole("button", { name: /Nilai otomatis 0 presensi.*1/i });
     fireEvent.click(metric);
 

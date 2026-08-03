@@ -153,6 +153,13 @@ export interface MonitoringStats {
 }
 
 export interface MonitoringResponse {
+  academicYear: {
+    id: string;
+    year: string;
+    semester: "ganjil" | "genap";
+    startDate: string;
+    endDate: string;
+  };
   attendanceImport: MonitoringAttendanceImport | null;
   stats: MonitoringStats;
   students: MonitoringStudentRow[];

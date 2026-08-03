@@ -29,15 +29,15 @@ const CPMKS_KEY = 'rubric-metopen-cpmks';
 const ALL_CPMKS_KEY = 'rubric-metopen-all-cpmks';
 const WEIGHT_KEY = 'rubric-metopen-weight';
 
-export function useRubricMetopen(role: MetopenRole) {
+export function useRubricMetopen(role: MetopenRole, academicYearId?: string | null) {
     const queryClient = useQueryClient();
 
     const invalidateAll = () => {
-        queryClient.invalidateQueries({ queryKey: [CPMKS_KEY, role] });
-        queryClient.invalidateQueries({ queryKey: [ALL_CPMKS_KEY] });
-        queryClient.invalidateQueries({ queryKey: [WEIGHT_KEY, role] });
+        queryClient.invalidateQueries({ queryKey: [CPMKS_KEY, role, academicYearId] });
+        queryClient.invalidateQueries({ queryKey: [ALL_CPMKS_KEY, academicYearId] });
+        queryClient.invalidateQueries({ queryKey: [WEIGHT_KEY, role, academicYearId] });
         const otherRole: MetopenRole = role === 'supervisor' ? 'default' : 'supervisor';
-        queryClient.invalidateQueries({ queryKey: [WEIGHT_KEY, otherRole] });
+        queryClient.invalidateQueries({ queryKey: [WEIGHT_KEY, otherRole, academicYearId] });
     };
 
     const {
@@ -46,23 +46,26 @@ export function useRubricMetopen(role: MetopenRole) {
         isFetching,
         refetch,
     } = useQuery({
-        queryKey: [CPMKS_KEY, role],
-        queryFn: () => getCpmksWithRubrics(role),
+        queryKey: [CPMKS_KEY, role, academicYearId],
+        queryFn: () => getCpmksWithRubrics(role, academicYearId!),
+        enabled: Boolean(academicYearId),
     });
 
     const {
         data: weightSummary,
         isLoading: isWeightLoading,
     } = useQuery({
-        queryKey: [WEIGHT_KEY, role],
-        queryFn: () => getWeightSummary(role),
+        queryKey: [WEIGHT_KEY, role, academicYearId],
+        queryFn: () => getWeightSummary(role, academicYearId!),
+        enabled: Boolean(academicYearId),
     });
 
     const {
         data: allMetopenCpmks,
     } = useQuery({
-        queryKey: [ALL_CPMKS_KEY],
-        queryFn: getAllMetopenCpmks,
+        queryKey: [ALL_CPMKS_KEY, academicYearId],
+        queryFn: () => getAllMetopenCpmks(academicYearId!),
+        enabled: Boolean(academicYearId),
     });
 
     const createCpmkMutation = useMutation({
@@ -185,7 +188,12 @@ export function useRubricMetopen(role: MetopenRole) {
         isFetching,
         refetch,
 
-        createCpmk: (data: CreateMetopenCpmkPayload) => createCpmkMutation.mutateAsync(data),
+        createCpmk: (data: Omit<CreateMetopenCpmkPayload, 'academicYearId'>) => {
+            if (!academicYearId) {
+                return Promise.reject(new Error('Pilih periode akademik terlebih dahulu'));
+            }
+            return createCpmkMutation.mutateAsync({ ...data, academicYearId });
+        },
         isCreatingCpmk: createCpmkMutation.isPending,
         updateCpmk: (id: string, data: UpdateMetopenCpmkPayload) =>
             updateCpmkMutation.mutateAsync({ id, data }),

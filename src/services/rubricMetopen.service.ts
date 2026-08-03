@@ -36,7 +36,7 @@ export interface MetopenCpmk {
     id: string;
     code: string;
     description: string;
-    academicYearId: string | null;
+    academicYearId: string;
     createdAt: string;
     updatedAt: string;
     _count?: {
@@ -47,7 +47,7 @@ export interface MetopenCpmk {
 export interface CreateMetopenCpmkPayload {
     code: string;
     description: string;
-    academicYearId?: string;
+    academicYearId: string;
 }
 
 export interface UpdateMetopenCpmkPayload {
@@ -89,6 +89,28 @@ export interface WeightSummary {
     isComplete: boolean;
     globalTotalScore: number;
     details: WeightSummaryDetail[];
+    ta03aCap?: number;
+    ta03bCap?: number;
+    academicYearId?: string | null;
+}
+
+export interface MetopenScoreComposition {
+    academicYearId: string;
+    ta03aCap: number;
+    ta03bCap: number;
+    isLocked: boolean;
+    finalizedScoreCount: number;
+    academicYear?: {
+        id: string;
+        year: string | null;
+        semester: string;
+        isActive: boolean;
+    };
+}
+
+export interface UpdateScoreCompositionPayload {
+    ta03aCap: number;
+    ta03bCap: number;
 }
 
 async function parseResponse<T>(response: Response, fallbackMsg: string): Promise<T> {
@@ -109,13 +131,22 @@ async function parseArrayResponse<T>(response: Response, fallbackMsg: string, ke
     return unwrapApiArray<T>(result, keys);
 }
 
-export const getCpmksWithRubrics = async (role: MetopenRole): Promise<MetopenCpmkWithRubrics[]> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS(role)));
+export const getCpmksWithRubrics = async (
+    role: MetopenRole,
+    academicYearId: string,
+): Promise<MetopenCpmkWithRubrics[]> => {
+    const base = getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS(role));
+    const response = await apiRequest(
+        `${base}&academicYearId=${encodeURIComponent(academicYearId)}`,
+    );
     return parseArrayResponse<MetopenCpmkWithRubrics>(response, 'Gagal mengambil data CPMK rubrik Metopel', ['cpmks']);
 };
 
-export const getAllMetopenCpmks = async (): Promise<MetopenCpmk[]> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS_ALL));
+export const getAllMetopenCpmks = async (academicYearId: string): Promise<MetopenCpmk[]> => {
+    const query = new URLSearchParams({ academicYearId });
+    const response = await apiRequest(
+        `${getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS_ALL)}?${query}`,
+    );
     return parseArrayResponse<MetopenCpmk>(response, 'Gagal mengambil daftar CPMK Metopel', ['cpmks', 'metopenCpmks']);
 };
 
@@ -232,7 +263,42 @@ export const reorderRubrics = async (criteriaId: string, orderedIds: string[]): 
     }
 };
 
-export const getWeightSummary = async (role: MetopenRole): Promise<WeightSummary> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.WEIGHT_SUMMARY(role)));
+export const getWeightSummary = async (
+    role: MetopenRole,
+    academicYearId: string,
+): Promise<WeightSummary> => {
+    const base = getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.WEIGHT_SUMMARY(role));
+    const response = await apiRequest(
+        `${base}&academicYearId=${encodeURIComponent(academicYearId)}`,
+    );
     return parseResponse<WeightSummary>(response, 'Gagal mengambil ringkasan bobot Metopel');
+};
+
+export const getScoreComposition = async (
+    academicYearId: string,
+): Promise<MetopenScoreComposition> => {
+    const response = await apiRequest(
+        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.COMPOSITION(academicYearId)),
+    );
+    return parseResponse<MetopenScoreComposition>(
+        response,
+        'Gagal mengambil komposisi penilaian TA-03',
+    );
+};
+
+export const updateScoreComposition = async (
+    academicYearId: string,
+    payload: UpdateScoreCompositionPayload,
+): Promise<MetopenScoreComposition> => {
+    const response = await apiRequest(
+        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.COMPOSITION(academicYearId)),
+        {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+        },
+    );
+    return parseResponse<MetopenScoreComposition>(
+        response,
+        'Gagal menyimpan komposisi penilaian TA-03',
+    );
 };

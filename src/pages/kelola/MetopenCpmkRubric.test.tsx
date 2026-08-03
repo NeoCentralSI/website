@@ -40,7 +40,7 @@ describe("MetopenCpmkRubric", () => {
       screen.getByRole("heading", { name: /CPMK & Rubrik Penilaian/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/TA-03A maks 75, TA-03B maks 25/i),
+      screen.getByText(/komposisi batas poin TA-03A\/TA-03B per/i),
     ).toBeInTheDocument();
     expect(screen.getByTestId("rubric-metopen-panel")).toBeInTheDocument();
   });

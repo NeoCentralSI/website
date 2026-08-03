@@ -16,6 +16,7 @@ interface MetopenCriteriaFormDialogProps {
     role: MetopenRole;
     editData?: MetopenAssessmentCriteria | null;
     remainingScore?: number;
+    roleCap?: number;
     onSubmit:
         | ((data: CreateCriteriaPayload) => Promise<unknown>)
         | ((data: UpdateCriteriaPayload) => Promise<unknown>);
@@ -26,10 +27,8 @@ const ROLE_LABEL: Record<MetopenRole, string> = {
     default: 'Koordinator Metopen (TA-03B)',
 };
 
-const ROLE_CAP: Record<MetopenRole, number> = { supervisor: 75, default: 25 };
-
 export function MetopenCriteriaFormDialog({
-    open, onOpenChange, cpmkId, cpmkCode, role, editData, remainingScore, onSubmit,
+    open, onOpenChange, cpmkId, cpmkCode, role, editData, remainingScore, roleCap = 75, onSubmit,
 }: MetopenCriteriaFormDialogProps) {
     const [name, setName] = useState('');
     const [maxScore, setMaxScore] = useState('');
@@ -68,7 +67,7 @@ export function MetopenCriteriaFormDialog({
     };
 
     const parsed = parseInt(maxScore, 10);
-    const effectiveMax = remainingScore != null ? remainingScore : ROLE_CAP[role];
+    const effectiveMax = remainingScore != null ? remainingScore : roleCap;
     const isValid = maxScore.trim() && !isNaN(parsed) && parsed >= 1 && parsed <= effectiveMax;
 
     return (
@@ -95,8 +94,8 @@ export function MetopenCriteriaFormDialog({
                             value={maxScore} onChange={(e) => setMaxScore(e.target.value)} required autoFocus />
                         <p className="text-xs text-muted-foreground">
                             {remainingScore != null
-                                ? `Sisa skor tersedia: ${remainingScore} dari ${ROLE_CAP[role]} (${ROLE_LABEL[role]})`
-                                : `Skor maksimal untuk ${ROLE_LABEL[role]} (total maks ${ROLE_CAP[role]}).`}
+                                ? `Sisa skor tersedia: ${remainingScore} dari ${roleCap} (${ROLE_LABEL[role]})`
+                                : `Skor maksimal untuk ${ROLE_LABEL[role]} (total maks ${roleCap}).`}
                         </p>
                         {maxScore.trim() && !isNaN(parsed) && parsed > effectiveMax && (
                             <p className="text-xs text-destructive">Skor ({parsed}) melebihi sisa yang tersedia ({effectiveMax}).</p>

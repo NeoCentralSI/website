@@ -37,6 +37,7 @@ import {
 } from "@/services/assessment.service";
 import { toTitleCaseName } from "@/lib/text";
 import { cn } from "@/lib/utils";
+import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
 
 const TA03A_QUEUE_KEY = ["assessment-supervisor-queue"];
 const TA03A_HISTORY_KEY = ["assessment-supervisor-history"];
@@ -91,6 +92,7 @@ export default function MetopenTa03AQueue() {
         : "needs_action";
     const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
+    const { academicYear } = useActiveAcademicYear();
 
     const updateView = (tab: TabKey, status: StatusFilter = "all") => {
         const next = new URLSearchParams(searchParams);
@@ -114,8 +116,9 @@ export default function MetopenTa03AQueue() {
         isError,
         error,
     } = useQuery({
-        queryKey: TA03A_QUEUE_KEY,
-        queryFn: () => assessmentService.getSupervisorScoringQueue(),
+        queryKey: [...TA03A_QUEUE_KEY, academicYear?.id],
+        queryFn: () => assessmentService.getSupervisorScoringQueue(academicYear!.id),
+        enabled: Boolean(academicYear?.id),
         refetchInterval: 30_000,
     });
 
@@ -125,8 +128,9 @@ export default function MetopenTa03AQueue() {
         isError: isHistoryError,
         error: historyError,
     } = useQuery({
-        queryKey: TA03A_HISTORY_KEY,
-        queryFn: () => assessmentService.getSupervisorScoringHistory(),
+        queryKey: [...TA03A_HISTORY_KEY, academicYear?.id],
+        queryFn: () => assessmentService.getSupervisorScoringHistory(academicYear!.id),
+        enabled: Boolean(academicYear?.id),
         refetchInterval: 30_000,
     });
 
@@ -221,7 +225,7 @@ export default function MetopenTa03AQueue() {
                 <p className="text-xs text-muted-foreground sm:text-sm">
                     Antrean terbuka setelah TA-04 awal terbit, mahasiswa submit proposal final,
                     dan presensi Metopel terbaru sudah diunggah Koordinator. Pembimbing 1
-                    mengisi rubrik 0-75; Pembimbing 2 memberi co-sign konsensus.
+                    mengisi rubrik TA-03A; Pembimbing 2 memberi co-sign konsensus.
                 </p>
             </div>
 
@@ -579,9 +583,8 @@ function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                     <p className="text-xs text-muted-foreground">Skor TA-03A (Pembimbing)</p>
-                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
-                        {item.supervisorScore ?? "—"}{" "}
-                        <span className="text-xs text-muted-foreground">/ 75</span>
+                    <p className="text-base font-semibold tabular-nums">
+                        {item.supervisorScore ?? "—"}
                     </p>
                     {item.coSignedAt ? (
                         <p className="mt-0.5 text-[11px] text-emerald-700">Persetujuan tercatat</p>
@@ -590,9 +593,8 @@ function ProposalSummaryCard({ item }: { item: SupervisorScoringQueueItem }) {
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                     <p className="text-xs text-muted-foreground">Skor TA-03B (Koordinator)</p>
-                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
-                        {item.lecturerScore ?? "—"}{" "}
-                        <span className="text-xs text-muted-foreground">/ 25</span>
+                    <p className="text-base font-semibold tabular-nums">
+                        {item.lecturerScore ?? "—"}
                     </p>
                 </div>
             </CardContent>

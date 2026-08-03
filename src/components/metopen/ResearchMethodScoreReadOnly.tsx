@@ -50,6 +50,8 @@ export function ResearchMethodScoreReadOnly({
       ? score.supervisorScore + score.lecturerScore
       : null);
   const isAutoZero = score.attendanceAutoZeroedAt != null;
+  const ta03aCap = score.ta03aCap ?? 75;
+  const ta03bCap = score.ta03bCap ?? 25;
 
   return (
     <div className="space-y-4">
@@ -81,8 +83,8 @@ export function ResearchMethodScoreReadOnly({
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-2 sm:grid-cols-3">
-            <ScoreBox label="TA-03A Pembimbing" value={score.supervisorScore ?? null} max={75} tone="blue" />
-            <ScoreBox label="TA-03B Koordinator" value={score.lecturerScore ?? null} max={25} tone="violet" />
+            <ScoreBox label="TA-03A Pembimbing" value={score.supervisorScore ?? null} max={ta03aCap} tone="blue" />
+            <ScoreBox label="TA-03B Koordinator" value={score.lecturerScore ?? null} max={ta03bCap} tone="violet" />
             <ScoreBox label="Total Final" value={finalScore} max={100} tone="emerald" prominent />
           </div>
 
@@ -125,14 +127,14 @@ export function ResearchMethodScoreReadOnly({
       <RubricDetailSection
         title="Detail Rubrik TA-03A"
         description="Diisi Pembimbing 1 sebagai master pengisi; Pembimbing 2 memberi co-sign bila ada."
-        maxScore={75}
+        maxScore={ta03aCap}
         details={detailGroups.ta03a}
         emptyText="Detail rubrik TA-03A belum tersedia."
       />
       <RubricDetailSection
         title="Detail Rubrik TA-03B"
         description="Diisi Koordinator Matkul Metopen untuk sistematika/struktur proposal."
-        maxScore={25}
+        maxScore={ta03bCap}
         details={detailGroups.ta03b}
         emptyText="Detail rubrik TA-03B belum tersedia."
       />

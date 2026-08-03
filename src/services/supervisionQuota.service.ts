@@ -10,11 +10,12 @@ export interface SupervisionQuotaDefault {
 }
 
 export interface LecturerQuota {
-  id: string;
+  id: string | null;
   lecturerId: string;
+  academicYearId: string;
   fullName: string;
   identityNumber: string;
-  email: string;
+  email: string | null;
   scienceGroup: string | null;
   quotaMax: number;
   quotaSoftLimit: number;
@@ -29,6 +30,31 @@ export interface LecturerQuota {
   remaining: number;
   isNearLimit: boolean;
   isFull: boolean;
+}
+
+export interface LecturerQuotaEntry {
+  id: string;
+  source: 'request' | 'supervisor';
+  requestId: string | null;
+  supervisorId: string | null;
+  bucket: 'active' | 'booking' | 'pendingKadep';
+  studentId: string | null;
+  studentName: string;
+  studentIdentityNumber: string;
+  thesisId: string | null;
+  thesisTitle: string | null;
+  roleName: string | null;
+  requestStatus: string | null;
+  routeType: string | null;
+  acceptedOverNormal: boolean;
+  createdAt: string | null;
+}
+
+export interface LecturerQuotaDetail extends LecturerQuota {
+  activeOfficialEntries: LecturerQuotaEntry[];
+  bookingEntries: LecturerQuotaEntry[];
+  pendingKadepEntries: LecturerQuotaEntry[];
+  overquotaSahEntries: LecturerQuotaEntry[];
 }
 
 export interface SetDefaultQuotaRequest {
@@ -98,6 +124,28 @@ export async function getLecturerQuotasAPI(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Gagal mengambil data kuota dosen');
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+export async function getLecturerQuotaDetailAPI(
+  lecturerId: string,
+  academicYearId: string
+): Promise<LecturerQuotaDetail> {
+  const { accessToken } = getAuthTokens();
+  const res = await fetch(
+    getApiUrl(`/supervision-quota/lecturers/${lecturerId}/${academicYearId}`),
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal mengambil rincian kuota dosen');
   }
   const json = await res.json();
   return json.data;

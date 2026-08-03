@@ -3,6 +3,7 @@ import {
   getDefaultQuotaAPI,
   setDefaultQuotaAPI,
   getLecturerQuotasAPI,
+  getLecturerQuotaDetailAPI,
   updateLecturerQuotaAPI,
   type SetDefaultQuotaRequest,
   type UpdateLecturerQuotaRequest,
@@ -12,6 +13,13 @@ import { toast } from 'sonner';
 const KEYS = {
   defaultQuota: (ayId: string) => ['supervision-quota', 'default', ayId],
   lecturerQuotas: (ayId: string, search?: string) => ['supervision-quota', 'lecturers', ayId, search],
+  lecturerQuotaDetail: (lecturerId: string, ayId: string) => [
+    'supervision-quota',
+    'lecturers',
+    lecturerId,
+    ayId,
+    'detail',
+  ],
 };
 
 export function useDefaultQuota(academicYearId: string | undefined) {
@@ -46,6 +54,18 @@ export function useLecturerQuotas(academicYearId: string | undefined, search?: s
     queryKey: KEYS.lecturerQuotas(academicYearId ?? '', search),
     queryFn: () => getLecturerQuotasAPI(academicYearId!, search),
     enabled: !!academicYearId,
+  });
+}
+
+export function useLecturerQuotaDetail(
+  lecturerId: string | undefined,
+  academicYearId: string | undefined,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: KEYS.lecturerQuotaDetail(lecturerId ?? '', academicYearId ?? ''),
+    queryFn: () => getLecturerQuotaDetailAPI(lecturerId!, academicYearId!),
+    enabled: enabled && !!lecturerId && !!academicYearId,
   });
 }
 

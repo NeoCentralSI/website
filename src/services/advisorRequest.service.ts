@@ -249,14 +249,19 @@ export interface AlternativeLecturer {
   currentCount: number;
   remaining: number;
   activeTheses: number;
+  bookingCount?: number;
   sameTopicCount: number;
-  trafficLight: 'green' | 'yellow';
+  trafficLight: 'green' | 'yellow' | 'red';
   score: number;
 }
 
 export interface RecommendationResponse {
   alternatives: AlternativeLecturer[];
   message?: string;
+}
+
+export interface AssignableLecturersResponse {
+  lecturers: AlternativeLecturer[];
 }
 
 export interface KadepQueue {
@@ -403,6 +408,12 @@ export const advisorRequestService = {
     return parseResponse<RecommendationResponse>(response);
   },
 
+  getAssignableLecturers: async (id: string): Promise<ApiResponse<AssignableLecturersResponse>> => {
+    const url = getApiUrl(`/advisorRequest/${id}/assignable-lecturers`);
+    const response = await apiRequest(url);
+    return parseResponse<AssignableLecturersResponse>(response);
+  },
+
   decideRequest: async (id: string, data: { action: 'approve' | 'reject' | 'override' | 'redirect' | 'request_revision'; targetLecturerId?: string; notes?: string }): Promise<ApiResponse<AdvisorRequest>> => {
     const url = getApiUrl(`/advisorRequest/${id}/decide`);
     const response = await apiRequest(url, {
@@ -413,10 +424,12 @@ export const advisorRequestService = {
     return parseResponse<AdvisorRequest>(response);
   },
 
-  assignAdvisor: async (id: string): Promise<ApiResponse<{ message: string; thesisId: string; assignedLecturerId: string }>> => {
-    const url = getApiUrl(`/advisorRequest/${id}/assign`);
-    const response = await apiRequest(url, { method: 'POST' });
-    return parseResponse<{ message: string; thesisId: string; assignedLecturerId: string }>(response);
+  /** @deprecated Always throws; promosi aktif hanya via jalur TA-04 batch + otomatis. */
+  assignAdvisor: async (_id: string): Promise<ApiResponse<{ message: string; thesisId: string; assignedLecturerId: string }>> => {
+    void _id;
+    throw new Error(
+      'Penetapan pembimbing mandiri sudah dinonaktifkan. Gunakan keputusan KaDep lalu finalisasi Formulir TA-04 batch.',
+    );
   },
 
   getDetail: async (id: string): Promise<ApiResponse<AdvisorRequest>> => {

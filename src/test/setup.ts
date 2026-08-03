@@ -21,3 +21,10 @@ if (!window.matchMedia) {
     }),
   });
 }
+
+if (!Element.prototype.scrollIntoView) {
+  Object.defineProperty(Element.prototype, "scrollIntoView", {
+    writable: true,
+    value: () => {},
+  });
+}

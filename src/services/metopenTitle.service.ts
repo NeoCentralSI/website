@@ -163,6 +163,10 @@ export type StudentArchiveData = {
   thesisTitle: string | null;
   proposalStatus: string | null;
   advisorRequests: StudentArchiveAdvisorRequest[];
+  /** Cap TA-03A dari MetopenScoreComposition (default 75). */
+  ta03aCap?: number;
+  /** Cap TA-03B dari MetopenScoreComposition (default 25). */
+  ta03bCap?: number;
   score: {
     supervisorScore: number | null;
     lecturerScore: number | null;
@@ -187,23 +191,22 @@ export type StudentArchiveData = {
 } | null;
 
 export const metopenTitleService = {
+  /** @deprecated Manual queue removed; always empty from API. Prefer Batch TA-04 Awal. */
   getPendingTitleReports: async (academicYearId?: string): Promise<ApiResponse<PendingTitleReportRow[]>> => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.METOPEN.KADEP_PENDING_TITLE_REPORTS(academicYearId));
-    const response = await apiRequest(url);
-    return parseResponse<PendingTitleReportRow[]>(response);
+    void academicYearId;
+    return { success: true, data: [] };
   },
 
+  /** @deprecated Manual accept/reject disabled server-side. */
   reviewTitleReport: async (
     thesisId: string,
     body: { action: 'accept' | 'reject'; notes?: string | null },
   ): Promise<ApiResponse<{ thesisId: string; proposalStatus: string; notes?: string | null }>> => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.METOPEN.KADEP_TITLE_REPORT_REVIEW(thesisId));
-    const response = await apiRequest(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    return parseResponse(response);
+    void thesisId;
+    void body;
+    throw new Error(
+      'Review TA-04 manual sudah dinonaktifkan. Gunakan Finalisasi / Perbarui Formulir TA-04 pada tab Batch TA-04 Awal.',
+    );
   },
 
   /** F-5.2: thesis aktif/TA-04 awal yang belum terhubung ke Formulir TA-04 batch resmi. */
@@ -215,13 +218,14 @@ export const metopenTitleService = {
     return parseResponse<MissingTitleDocumentRow[]>(response);
   },
 
-  /** Legacy endpoint; Formulir TA-04 resmi diterbitkan melalui finalisasi batch periode. */
+  /** @deprecated Always throws; Formulir TA-04 hanya via finalisasi batch. */
   regenerateTitleReport: async (
     thesisId: string,
   ): Promise<ApiResponse<{ thesisId: string; document: { id: string; fileName: string } | null }>> => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.METOPEN.KADEP_TITLE_REPORT_REGENERATE(thesisId));
-    const response = await apiRequest(url, { method: 'POST' });
-    return parseResponse(response);
+    void thesisId;
+    throw new Error(
+      'Formulir TA-04 hanya diterbitkan melalui finalisasi batch periode. Gunakan tab Batch TA-04 Awal.',
+    );
   },
 
   /** Riwayat keputusan TA-04 (accepted/rejected) antar-periode untuk KaDep. */

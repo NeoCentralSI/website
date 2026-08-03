@@ -85,9 +85,11 @@ export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
 export function useAcademicYearForm() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingYear, setEditingYear] = useState<AcademicYear | null>(null);
+  const currentYear = new Date().getFullYear();
+  const defaultAcademicYear = `${currentYear}/${currentYear + 1}`;
   const [formData, setFormData] = useState<CreateAcademicYearRequest | UpdateAcademicYearRequest>({
     semester: 'ganjil',
-    year: new Date().getFullYear().toString(),
+    year: defaultAcademicYear,
     startDate: '',
     endDate: '',
   });
@@ -96,7 +98,7 @@ export function useAcademicYearForm() {
     setEditingYear(null);
     setFormData({
       semester: 'ganjil',
-      year: new Date().getFullYear().toString(),
+      year: defaultAcademicYear,
       startDate: '',
       endDate: '',
     });

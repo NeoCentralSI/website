@@ -34,6 +34,7 @@ import { LocalTabsNav, type LocalTabItem } from "@/components/ui/tabs-nav";
 import EmptyState from "@/components/ui/empty-state";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { assessmentService, type ScoringQueueItem } from "@/services/assessment.service";
+import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
 import { toTitleCaseName } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,7 @@ export default function MetopenTa03BQueue() {
         : "pending";
     const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
+    const { academicYear } = useActiveAcademicYear();
 
     const updateView = (tab: TabKey, status: StatusFilter = "all") => {
         const next = new URLSearchParams(searchParams);
@@ -92,8 +94,9 @@ export default function MetopenTa03BQueue() {
         isError,
         error,
     } = useQuery({
-        queryKey: METOPEN_TA03B_QUEUE_KEY,
-        queryFn: () => assessmentService.getMetopenScoringQueue(),
+        queryKey: [...METOPEN_TA03B_QUEUE_KEY, academicYear?.id],
+        queryFn: () => assessmentService.getMetopenScoringQueue(academicYear!.id),
+        enabled: Boolean(academicYear?.id),
     });
 
     const {
@@ -102,8 +105,9 @@ export default function MetopenTa03BQueue() {
         isError: isHistoryError,
         error: historyError,
     } = useQuery({
-        queryKey: METOPEN_TA03B_HISTORY_KEY,
-        queryFn: () => assessmentService.getMetopenScoringHistory(),
+        queryKey: [...METOPEN_TA03B_HISTORY_KEY, academicYear?.id],
+        queryFn: () => assessmentService.getMetopenScoringHistory(academicYear!.id),
+        enabled: Boolean(academicYear?.id),
         refetchInterval: 30_000,
     });
 
@@ -113,7 +117,10 @@ export default function MetopenTa03BQueue() {
     const currentErrorValue = activeTab === "history" ? historyError : error;
 
     const downloadMutation = useMutation({
-        mutationFn: () => assessmentService.downloadMetopenScoresXlsx(),
+        mutationFn: () => {
+            if (!academicYear?.id) throw new Error("Periode akademik aktif belum tersedia");
+            return assessmentService.downloadMetopenScoresXlsx(academicYear.id);
+        },
         onSuccess: () => {
             toast.success("Rekap nilai TA-03 sedang diunduh.");
         },
@@ -209,7 +216,7 @@ export default function MetopenTa03BQueue() {
                 <div>
                     <h1 className="text-base font-semibold tracking-tight sm:text-lg">Penilaian Proposal TA-03B</h1>
                     <p className="text-xs text-muted-foreground sm:text-sm">
-                        Antrean Koordinator untuk rubrik TA-03B (maks 25). Penilaian berjalan
+                        Antrean Koordinator untuk rubrik TA-03B. Penilaian berjalan
                         paralel setelah TA-04 awal terbit dan proposal final tersedia.
                     </p>
                 </div>
@@ -219,7 +226,7 @@ export default function MetopenTa03BQueue() {
                     size="sm"
                     className="self-start border-violet-300 bg-background text-violet-800 hover:bg-violet-100"
                     onClick={() => downloadMutation.mutate()}
-                    disabled={downloadMutation.isPending}
+                    disabled={downloadMutation.isPending || !academicYear?.id}
                     title="Unduh rekap nilai TA-03A + TA-03B kelas Metopel terbaru dalam format SIA."
                 >
                     {downloadMutation.isPending ? (
@@ -551,17 +558,15 @@ function ProposalSummaryCard({ item }: { item: ScoringQueueItem }) {
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                     <p className="text-xs text-muted-foreground">Nilai TA-03A (Pembimbing)</p>
-                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
-                        {item.supervisorScore ?? "—"}{" "}
-                        <span className="text-xs text-muted-foreground">/ 75</span>
+                    <p className="text-base font-semibold tabular-nums">
+                        {item.supervisorScore ?? "—"}
                     </p>
                 </div>
 
                 <div className="rounded-md border bg-muted/20 px-3 py-2">
                     <p className="text-xs text-muted-foreground">Nilai TA-03B (Anda)</p>
-                    <p className="flex flex-wrap items-baseline gap-x-1 text-base font-semibold tabular-nums">
-                        {item.existingScore ?? "—"}{" "}
-                        <span className="text-xs text-muted-foreground">/ 25</span>
+                    <p className="text-base font-semibold tabular-nums">
+                        {item.existingScore ?? "—"}
                     </p>
                 </div>
             </CardContent>

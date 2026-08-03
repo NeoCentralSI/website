@@ -223,6 +223,7 @@ describe("MetopelOverviewTab", () => {
           proposalStatus: "submitted",
           hasBookedSupervisor: true,
           hasOfficialSupervisor: true,
+          ta04AssignmentIssuedAt: "2026-04-07T07:00:00.000Z",
           canUploadProposal: true,
           canSubmitFinalProposal: true,
           canUseInformalLog: true,
@@ -262,13 +263,13 @@ describe("MetopelOverviewTab", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getAllByText("Menunggu Review KaDep")).toHaveLength(2);
+      expect(screen.getAllByText("TA-04 Terbit, Booking").length).toBeGreaterThan(0);
     });
 
     expect(
       screen.queryByRole("button", { name: /Sinkronkan Status/i }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Boleh unggah proposal final")).toBeInTheDocument();
+    expect(screen.getByText("Penugasan awal dicatat di sistem")).toBeInTheDocument();
     expect(screen.queryByText("Lapor Judul TA")).not.toBeInTheDocument();
   });
 

@@ -14,6 +14,9 @@ vi.mock("@/services/assessment.service", () => ({
     downloadMetopenScoresXlsx: vi.fn(),
   },
 }));
+vi.mock("@/hooks/shared/useActiveAcademicYear", () => ({
+  useActiveAcademicYear: () => ({ academicYear: { id: "ay-active" } }),
+}));
 vi.mock("@/components/metopen/MetopenAttendanceUploadCard", () => ({
   MetopenAttendanceUploadCard: () => null,
 }));
@@ -82,7 +85,9 @@ describe("MetopenTa03BQueue metric drill-down", () => {
 
     renderPage();
 
-    await waitFor(() => expect(assessmentService.getMetopenScoringHistory).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(assessmentService.getMetopenScoringHistory).toHaveBeenCalledWith("ay-active"),
+    );
     const metric = await screen.findByRole("button", { name: /Nilai otomatis 0 presensi.*1/i });
     fireEvent.click(metric);
 

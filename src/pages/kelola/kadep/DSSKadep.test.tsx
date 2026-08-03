@@ -13,7 +13,8 @@ vi.mock("@/services/advisorRequest.service", () => ({
   advisorRequestService: {
     getKadepQueue: vi.fn(),
     decideRequest: vi.fn(),
-    assignAdvisor: vi.fn(),
+    getRecommendations: vi.fn(),
+    getAssignableLecturers: vi.fn(),
     getBatchTA04: vi.fn(),
     finalizeBatchTA04: vi.fn(),
   },
@@ -94,6 +95,14 @@ describe("DSSKadep", () => {
         pendingAssignment: [],
       },
     });
+    vi.mocked(advisorRequestService.getRecommendations).mockResolvedValue({
+      success: true,
+      data: { alternatives: [] },
+    } as Awaited<ReturnType<typeof advisorRequestService.getRecommendations>>);
+    vi.mocked(advisorRequestService.getAssignableLecturers).mockResolvedValue({
+      success: true,
+      data: { lecturers: [] },
+    } as Awaited<ReturnType<typeof advisorRequestService.getAssignableLecturers>>);
     vi.mocked(getSupervisor2KadepRequests).mockResolvedValue([]);
     vi.mocked(metopenTitleService.getPendingTitleReports).mockResolvedValue({
       success: true,
@@ -178,6 +187,7 @@ describe("DSSKadep", () => {
     });
 
     expect(screen.getAllByText("Batch TA-04 Awal").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Finalisasi Booking")).not.toBeInTheDocument();
     expect(screen.getByText("Daftar Batch Aktif")).toBeInTheDocument();
     expect(screen.getByText("Booking belum batch")).toBeInTheDocument();
     expect(screen.getByText("TA-04 terbit, booking")).toBeInTheDocument();
@@ -185,6 +195,17 @@ describe("DSSKadep", () => {
     expect(screen.queryByRole("button", { name: /Unduh Pratinjau Batch/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Perbarui Formulir TA-04/i })).toBeEnabled();
     expect(screen.queryByRole("button", { name: /Batch Sudah Sinkron/i })).not.toBeInTheDocument();
+    const downloadButtons = screen.getAllByRole("button", { name: /Unduh \(perlu perbarui\)/i });
+    expect(downloadButtons.length).toBeGreaterThan(0);
+    expect(downloadButtons.every((button) => !(button as HTMLButtonElement).disabled)).toBe(true);
+    expect(screen.getByText(/Batch belum sinkron/i)).toBeInTheDocument();
+
+    fireEvent.click(downloadButtons[0]);
+    await waitFor(() => {
+      expect(screen.getByText(/Batch belum diperbarui/i)).toBeInTheDocument();
+    });
+    expect(metopenTitleService.downloadKadepTitleApprovalDocument).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /Perbarui Formulir TA-04/i })).toBeInTheDocument();
   });
 
   it("requires two-step modal preview before finalize", async () => {
@@ -254,5 +275,79 @@ describe("DSSKadep", () => {
     expect(screen.getByText(/P1 aktif belum tercatat/i)).toBeInTheDocument();
     expect(screen.queryByText("Daftar Batch Aktif")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Finalisasi TA-04 Awal/i })).not.toBeInTheDocument();
+  });
+
+  it("shows full TA-02 form fields instead of Path C quota hero on Penetapan Dosen tab", async () => {
+    vi.mocked(advisorRequestService.getKadepQueue).mockResolvedValue({
+      success: true,
+      data: {
+        escalated: [
+          {
+            id: "req-ta02-1",
+            studentId: "student-1",
+            lecturerId: null,
+            topicId: "topic-1",
+            proposedTitle: "Rancang Bangun Modul Proposal",
+            backgroundSummary: "Latar belakang singkat untuk pengujian TA-02 KaDep.",
+            problemStatement: "Tujuan permasalahan yang diajukan mahasiswa pada TA-02.",
+            proposedSolution: "Rencana solusi yang diajukan pada formulir TA-02.",
+            researchObject: "Objek penelitian TA-02",
+            researchPermitStatus: "in_process",
+            justificationText: null,
+            studentJustification: null,
+            requestType: "ta_02",
+            status: "pending_kadep",
+            routeType: "dept",
+            rejectionReason: null,
+            kadepNotes: null,
+            createdAt: "2026-07-20T00:00:00.000Z",
+            updatedAt: "2026-07-20T00:00:00.000Z",
+            withdrawnAt: null,
+            withdrawCount: 0,
+            reviewedAt: null,
+            lecturerRespondedAt: null,
+            student: {
+              id: "student-1",
+              user: { id: "user-mhs", fullName: "Mahasiswa TA Dua", identityNumber: "2211522000" },
+            },
+            lecturer: null,
+            topic: {
+              id: "topic-1",
+              name: "Sistem Informasi",
+              scienceGroup: { id: "kbk-1", name: "KBK SI" },
+            },
+            quotaSnapshot: null,
+            quotaPreview: null,
+          },
+        ],
+        pendingAssignment: [],
+      },
+    } as Awaited<ReturnType<typeof advisorRequestService.getKadepQueue>>);
+
+    renderWithRoute(<DSSKadep />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /TA-02 Penetapan Dosen/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /TA-02 Penetapan Dosen/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Rancang Bangun Modul Proposal")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Mahasiswa TA Dua"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Isi Formulir Pengajuan TA-02")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Latar belakang singkat untuk pengujian TA-02 KaDep.")).toBeInTheDocument();
+    expect(screen.getByText("Tujuan permasalahan yang diajukan mahasiswa pada TA-02.")).toBeInTheDocument();
+    expect(screen.getByText("Rencana solusi yang diajukan pada formulir TA-02.")).toBeInTheDocument();
+    expect(screen.getByText("Objek penelitian TA-02")).toBeInTheDocument();
+    expect(screen.getByText("Rekomendasi Dosen Pembimbing")).toBeInTheDocument();
+    expect(screen.queryByText("Justifikasi Akademik Mahasiswa")).not.toBeInTheDocument();
+    expect(screen.queryByText("Snapshot Kuota Dosen")).not.toBeInTheDocument();
   });
 });

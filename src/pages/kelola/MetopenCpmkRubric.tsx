@@ -26,8 +26,8 @@ export default function MetopenCpmkRubric() {
           CPMK &amp; Rubrik Penilaian
         </h1>
         <p className="text-xs text-muted-foreground sm:text-sm">
-          Atur capaian pembelajaran Metode Penelitian, lalu susun rubrik penilaian proposal
-          (TA-03A maks 75, TA-03B maks 25).
+          Atur capaian pembelajaran Metode Penelitian, komposisi batas poin TA-03A/TA-03B per
+          tahun akademik, lalu susun rubrik penilaian proposal.
         </p>
       </div>
 

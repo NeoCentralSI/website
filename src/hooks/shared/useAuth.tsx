@@ -103,9 +103,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
       navigate('/dashboard');
     } catch (error) {
-      // If account is not verified, redirect to account-inactive page
+      // If account is not verified, redirect to the registered inactive page
+      // Route di App.tsx: /auth/inactive (bukan /account-inactive — path lama
+      // jatuh ke catch-all NotFound meski API sudah benar mengembalikan 403).
       if ((error as any)?.code === 'NOT_VERIFIED') {
-        navigate('/account-inactive', { state: { email } });
+        navigate('/auth/inactive', { state: { email } });
         return;
       }
       throw error;

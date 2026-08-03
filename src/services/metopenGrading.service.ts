@@ -22,7 +22,10 @@ export const metopenGradingService = {
 	},
 
 	getRubricCriteria: async (role: 'supervisor' | 'default'): Promise<RubricCriteriaItem[]> => {
-		return assessmentService.getCriteria(role === 'supervisor' ? 'TA-03A' : 'TA-03B');
+		const bundle = await assessmentService.getCriteria(
+			role === 'supervisor' ? 'TA-03A' : 'TA-03B',
+		);
+		return bundle.criteria;
 	},
 
 	inputSupervisorScore: async (payload: {

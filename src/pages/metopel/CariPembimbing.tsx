@@ -26,6 +26,17 @@ import {
     getTrafficLightConfig,
 } from '@/lib/metopen/statusBadge';
 
+const STUDENT_OVERQUOTA_REASON_OPTIONS = [
+    { code: 'topic_match', label: 'Topik atau riset sangat cocok dengan keahlian dosen ini' },
+    { code: 'prior_guidance', label: 'Sudah pernah bimbingan atau diskusi topik dengan dosen ini' },
+    { code: 'lecturer_recommend', label: 'Direkomendasikan dosen atau pembimbing sebelumnya' },
+    { code: 'research_continue', label: 'Kelanjutan penelitian atau proyek terkait dengan dosen ini' },
+    { code: 'kbk_limited', label: 'Pilihan dosen di KBK atau topik terkait sangat terbatas' },
+    { code: 'other', label: 'Lainnya (tulis alasan konkret)' },
+] as const;
+
+type StudentOverquotaReasonCode = (typeof STUDENT_OVERQUOTA_REASON_OPTIONS)[number]['code'] | '';
+
 interface SubmitFormData {
     lecturerId: string;
     topicId: string;
@@ -37,6 +48,10 @@ interface SubmitFormData {
     researchPermitStatus: 'approved' | 'in_process' | 'not_approved' | '';
     justificationText?: string;
     studentJustification: string;
+    justificationReasonCode: StudentOverquotaReasonCode;
+    studentJustificationDetail: string;
+    /** Draft teks opsi Lainnya — tidak hilang saat user sempat klik preset lain. */
+    otherJustificationDraft: string;
 }
 
 const EMPTY_FORM_DATA: SubmitFormData = {
@@ -49,6 +64,9 @@ const EMPTY_FORM_DATA: SubmitFormData = {
     researchObject: '',
     researchPermitStatus: '',
     studentJustification: '',
+    justificationReasonCode: '',
+    studentJustificationDetail: '',
+    otherJustificationDraft: '',
 };
 
 const DRAFT_SAVE_DEBOUNCE_MS = 700;
@@ -100,8 +118,64 @@ function toResearchPermitStatus(value: unknown): ResearchPermitStatus {
         : '';
 }
 
+function resolveJustificationReasonFromText(text: string): {
+    justificationReasonCode: StudentOverquotaReasonCode;
+    studentJustificationDetail: string;
+} {
+    const trimmed = text.trim();
+    if (!trimmed) {
+        return { justificationReasonCode: '', studentJustificationDetail: '' };
+    }
+
+    for (const option of STUDENT_OVERQUOTA_REASON_OPTIONS) {
+        if (option.code === 'other') continue;
+        if (trimmed === option.label) {
+            return { justificationReasonCode: option.code, studentJustificationDetail: '' };
+        }
+        const prefix = `${option.label}. `;
+        if (trimmed.startsWith(prefix)) {
+            return {
+                justificationReasonCode: option.code,
+                studentJustificationDetail: trimmed.slice(prefix.length).trim(),
+            };
+        }
+    }
+
+    return { justificationReasonCode: 'other', studentJustificationDetail: trimmed };
+}
+
+function composeStudentJustification(
+    reasonCode: StudentOverquotaReasonCode,
+    detail: string,
+): string {
+    const cleanDetail = detail.trim();
+    if (!reasonCode) return cleanDetail;
+    if (reasonCode === 'other') return cleanDetail;
+
+    const option = STUDENT_OVERQUOTA_REASON_OPTIONS.find((item) => item.code === reasonCode);
+    if (!option) return cleanDetail;
+    return cleanDetail ? `${option.label}. ${cleanDetail}` : option.label;
+}
+
 function normalizeFormData(data?: FormDataInput): SubmitFormData {
     const studentJustification = toFormString(data?.studentJustification ?? data?.justificationText);
+    const fromExtended = data as Partial<SubmitFormData> | null | undefined;
+    const explicitCode = fromExtended?.justificationReasonCode;
+    const explicitDetail = fromExtended?.studentJustificationDetail;
+    const explicitOtherDraft = fromExtended?.otherJustificationDraft;
+    const resolved =
+        explicitCode !== undefined || explicitDetail !== undefined
+            ? {
+                  justificationReasonCode: (explicitCode ?? '') as StudentOverquotaReasonCode,
+                  studentJustificationDetail: toFormString(explicitDetail),
+              }
+            : resolveJustificationReasonFromText(studentJustification);
+    const otherJustificationDraft =
+        explicitOtherDraft !== undefined
+            ? toFormString(explicitOtherDraft)
+            : resolved.justificationReasonCode === 'other'
+                ? resolved.studentJustificationDetail
+                : '';
 
     return {
         lecturerId: toFormString(data?.lecturerId),
@@ -114,6 +188,9 @@ function normalizeFormData(data?: FormDataInput): SubmitFormData {
         researchPermitStatus: toResearchPermitStatus(data?.researchPermitStatus),
         justificationText: studentJustification,
         studentJustification,
+        justificationReasonCode: resolved.justificationReasonCode,
+        studentJustificationDetail: resolved.studentJustificationDetail,
+        otherJustificationDraft,
     };
 }
 
@@ -143,6 +220,9 @@ function isSameFormData(left: FormDataInput, right: FormDataInput) {
         normalizedLeft.proposedSolution === normalizedRight.proposedSolution &&
         normalizedLeft.researchObject === normalizedRight.researchObject &&
         normalizedLeft.researchPermitStatus === normalizedRight.researchPermitStatus &&
+        normalizedLeft.justificationReasonCode === normalizedRight.justificationReasonCode &&
+        normalizedLeft.studentJustificationDetail === normalizedRight.studentJustificationDetail &&
+        normalizedLeft.otherJustificationDraft === normalizedRight.otherJustificationDraft &&
         normalizedLeft.studentJustification === normalizedRight.studentJustification
     );
 }
@@ -356,7 +436,12 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
     const submitMutation = useMutation({
         mutationFn: (data: SubmitFormData) => {
             const normalizedData = normalizeFormData(data);
-            const studentJustification = trimFormText(normalizedData.studentJustification);
+            const studentJustification = trimFormText(
+                composeStudentJustification(
+                    normalizedData.justificationReasonCode,
+                    normalizedData.studentJustificationDetail,
+                ) || normalizedData.studentJustification,
+            );
 
             return advisorRequestService.submitRequest({
                 lecturerId: trimOrNull(normalizedData.lecturerId),
@@ -393,7 +478,12 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
     const saveDraftMutation = useMutation({
         mutationFn: async (data: SubmitFormData) => {
             const normalizedData = normalizeFormData(data);
-            const studentJustification = trimOrNull(normalizedData.studentJustification);
+            const studentJustification = trimOrNull(
+                composeStudentJustification(
+                    normalizedData.justificationReasonCode,
+                    normalizedData.studentJustificationDetail,
+                ) || normalizedData.studentJustification,
+            );
 
             const res = await advisorRequestService.saveDraft({
                 lecturerId: trimOrNull(normalizedData.lecturerId),
@@ -501,7 +591,11 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
         const problemStatement = trimFormText(currentFormData.problemStatement);
         const proposedSolution = trimFormText(currentFormData.proposedSolution);
         const researchObject = trimFormText(currentFormData.researchObject);
-        const studentJustification = trimFormText(currentFormData.studentJustification);
+        const composedJustification = composeStudentJustification(
+            currentFormData.justificationReasonCode,
+            currentFormData.studentJustificationDetail,
+        );
+        const studentJustification = trimFormText(composedJustification);
 
         if (!trimFormText(currentFormData.topicId)) {
             toast.error('Pilih topik penelitian');
@@ -560,12 +654,26 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
             toast.error('Status izin penelitian wajib dipilih');
             return;
         }
-        if (
-            lecturerForDialog?.trafficLight === 'red' &&
-            studentJustification.length < RED_QUOTA_JUSTIFICATION_MIN_LENGTH
-        ) {
-            toast.error(`Justifikasi akademik mahasiswa untuk pengajuan TA-01 saat kuota penuh minimal ${RED_QUOTA_JUSTIFICATION_MIN_LENGTH} karakter`);
-            return;
+        if (lecturerForDialog?.trafficLight === 'red') {
+            if (!currentFormData.justificationReasonCode) {
+                toast.error('Pilih alasan akademik terlebih dahulu');
+                return;
+            }
+            if (
+                currentFormData.justificationReasonCode === 'other' &&
+                studentJustification.length < RED_QUOTA_JUSTIFICATION_MIN_LENGTH
+            ) {
+                toast.error(
+                    `Untuk opsi Lainnya, tulis alasan konkret minimal ${RED_QUOTA_JUSTIFICATION_MIN_LENGTH} karakter`,
+                );
+                return;
+            }
+            if (studentJustification.length < RED_QUOTA_JUSTIFICATION_MIN_LENGTH) {
+                toast.error(
+                    `Justifikasi akademik mahasiswa untuk pengajuan TA-01 saat kuota penuh minimal ${RED_QUOTA_JUSTIFICATION_MIN_LENGTH} karakter`,
+                );
+                return;
+            }
         }
         submitMutation.mutate({
             ...currentFormData,
@@ -608,7 +716,7 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                     <AlertDescription className="space-y-2 text-green-800">
                         <p>{advisorAccess.reason}</p>
                         <p>
-                            TA-04 sudah diterbitkan sehingga pengajuan tidak dapat ditarik lagi dari modul ini. Perubahan pembimbing masuk ranah TA-05 yang masih di luar scope SIMPTA aktif.
+                            TA-04 sudah diterbitkan sehingga pengajuan tidak dapat ditarik lagi dari modul ini. Perubahan pembimbing masuk ranah TA-05 yang masih di luar scope modul pengelolaan proposal.
                         </p>
                         <Badge variant="outline" className="border-green-300 bg-green-100 text-green-800">
                             Penugasan TA-04 terkunci
@@ -718,7 +826,7 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                             {isBookingApproved && (
                                 <p className="text-emerald-700 text-sm leading-relaxed">
                                     {isTa04IssuedBooking
-                                        ? 'TA-04 sudah diterbitkan sehingga pengajuan tidak dapat ditarik lagi dari modul ini. Perubahan pembimbing masuk ranah TA-05 yang masih di luar scope SIMPTA aktif.'
+                                        ? 'TA-04 sudah diterbitkan sehingga pengajuan tidak dapat ditarik lagi dari modul ini. Perubahan pembimbing masuk ranah TA-05 yang masih di luar scope modul pengelolaan proposal.'
                                         : 'Booking pembimbing Anda sudah disetujui dan reservasi kuota tetap tercatat. Anda masih dapat membatalkan booking sebelum TA-04 difinalisasi KaDep. Draf proposal pribadi boleh disimpan, tetapi bimbingan yang tercatat sistem dan submit proposal final menunggu TA-04.'}
                                 </p>
                             )}
@@ -1269,7 +1377,7 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                                 <AlertCircle className="h-4 w-4 text-amber-600" />
                                 <AlertDescription className="text-amber-800 text-sm">
                                     <p>
-                                        Kuota normal dosen ini sedang penuh. SIMPTA akan mengirim usulan ini ke <strong>dosen target</strong> sebagai <strong>pengajuan TA-01 di atas kuota normal</strong>. Jika dosen setuju dengan proyeksi lulus mahasiswa bimbingannya, pengajuan diteruskan ke <strong>Kepala Departemen</strong> untuk keputusan akhir.
+                                        Kuota normal dosen ini sedang penuh. Sistem akan mengirim usulan ini ke <strong>dosen target</strong> sebagai <strong>pengajuan TA-01 di atas kuota normal</strong>. Jika dosen setuju dengan proyeksi lulus mahasiswa bimbingannya, pengajuan diteruskan ke <strong>Kepala Departemen</strong> untuk keputusan akhir.
                                     </p>
                                     <p className="mt-2">
                                         Bila Anda <strong>fleksibel</strong> terhadap penetapan dosen siapa pun, batalkan dialog ini lalu pakai <strong>Ajukan TA-02 jalur departemen</strong> di banner atas — kedua jalur sama-sama sah dan berdiri sendiri.
@@ -1375,15 +1483,107 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                         </div>
 
                         {lecturerForDialog?.trafficLight === 'red' && (
-                            <div className="space-y-2">
-                                <Label className="text-amber-700">Justifikasi Akademik Mahasiswa *</Label>
-                                <Textarea
-                                    placeholder={`Jelaskan alasan akademik memilih dosen ini meskipun kuota normalnya penuh (minimal ${RED_QUOTA_JUSTIFICATION_MIN_LENGTH} karakter).`}
-                                    value={formData.studentJustification}
-                                    onChange={(e) => setFormData((p) => ({ ...p, studentJustification: e.target.value }))}
-                                    rows={4}
-                                    className="border-amber-200 focus-visible:ring-amber-400"
-                                />
+                            <div className="space-y-3 rounded-md border border-amber-200 bg-amber-50/40 p-3">
+                                <div className="space-y-1">
+                                    <Label className="text-amber-800">Alasan Akademik Memilih Dosen Ini *</Label>
+                                    <p className="text-xs text-amber-800/80">
+                                        Pilih alasan yang paling sesuai terlebih dahulu. Opsi Lainnya dipakai hanya jika alasan Anda benar-benar spesifik.
+                                    </p>
+                                </div>
+                                <div className="space-y-2">
+                                    {STUDENT_OVERQUOTA_REASON_OPTIONS.map((option) => {
+                                        const selected = formData.justificationReasonCode === option.code;
+                                        return (
+                                            <label
+                                                key={option.code}
+                                                className={cn(
+                                                    'flex cursor-pointer items-start gap-2 rounded-md border bg-background px-3 py-2 text-sm transition-colors',
+                                                    selected
+                                                        ? 'border-amber-400 ring-1 ring-amber-300'
+                                                        : 'border-border hover:bg-muted/40',
+                                                )}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="student-overquota-reason"
+                                                    className="mt-1"
+                                                    checked={selected}
+                                                    onChange={() =>
+                                                        setFormData((p) => {
+                                                            const leavingOther =
+                                                                p.justificationReasonCode === 'other' &&
+                                                                option.code !== 'other';
+                                                            const enteringOther = option.code === 'other';
+                                                            const nextOtherDraft = leavingOther
+                                                                ? p.studentJustificationDetail
+                                                                : p.otherJustificationDraft;
+                                                            const nextDetail = enteringOther
+                                                                ? nextOtherDraft
+                                                                : '';
+                                                            return {
+                                                                ...p,
+                                                                justificationReasonCode: option.code,
+                                                                otherJustificationDraft: nextOtherDraft,
+                                                                studentJustificationDetail: nextDetail,
+                                                                studentJustification: composeStudentJustification(
+                                                                    option.code,
+                                                                    nextDetail,
+                                                                ),
+                                                            };
+                                                        })
+                                                    }
+                                                />
+                                                <span>{option.label}</span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                {formData.justificationReasonCode === 'other' && (
+                                    <div className="space-y-2">
+                                        <Label className="text-amber-700">Jelaskan alasan konkret *</Label>
+                                        <Textarea
+                                            placeholder={`Tulis alasan akademik yang spesifik (minimal ${RED_QUOTA_JUSTIFICATION_MIN_LENGTH} karakter). Hindari jawaban generik.`}
+                                            value={formData.studentJustificationDetail}
+                                            onChange={(e) =>
+                                                setFormData((p) => ({
+                                                    ...p,
+                                                    studentJustificationDetail: e.target.value,
+                                                    otherJustificationDraft: e.target.value,
+                                                    studentJustification: composeStudentJustification(
+                                                        'other',
+                                                        e.target.value,
+                                                    ),
+                                                }))
+                                            }
+                                            rows={4}
+                                            className="border-amber-200 focus-visible:ring-amber-400"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            {formData.studentJustificationDetail.trim().length}/{RED_QUOTA_JUSTIFICATION_MIN_LENGTH} karakter minimal
+                                        </p>
+                                    </div>
+                                )}
+                                {formData.justificationReasonCode &&
+                                    formData.justificationReasonCode !== 'other' && (
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Tambahan (opsional)</Label>
+                                            <Textarea
+                                                placeholder="Tambahkan detail singkat bila perlu, misalnya topik spesifik yang sudah didiskusikan."
+                                                value={formData.studentJustificationDetail}
+                                                onChange={(e) =>
+                                                    setFormData((p) => ({
+                                                        ...p,
+                                                        studentJustificationDetail: e.target.value,
+                                                        studentJustification: composeStudentJustification(
+                                                            p.justificationReasonCode,
+                                                            e.target.value,
+                                                        ),
+                                                    }))
+                                                }
+                                                rows={2}
+                                            />
+                                        </div>
+                                    )}
                             </div>
                         )}
                         </div>

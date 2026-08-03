@@ -18,6 +18,19 @@ vi.mock("@/services/assessment.service", () => ({
   },
 }));
 
+vi.mock("@/hooks/shared/useActiveAcademicYear", () => ({
+  useActiveAcademicYear: () => ({
+    academicYear: {
+      id: "ay-1",
+      year: "2025/2026",
+      semester: "genap",
+    },
+    label: "Genap 2025/2026",
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 vi.mock("@/components/ui/empty-state", () => ({
   default: ({ title, description }: { title?: string; description?: string }) => (
     <div>
@@ -98,6 +111,13 @@ describe("MetopenMonitoring", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     const payload: MonitoringResponse = {
+      academicYear: {
+        id: "ay-1",
+        year: "2025/2026",
+        semester: "genap",
+        startDate: "2026-01-13T00:00:00.000Z",
+        endDate: "2026-07-31T23:59:59.999Z",
+      },
       attendanceImport: null,
       stats: {
         totalEligibleSia: 2,

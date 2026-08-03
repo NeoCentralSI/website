@@ -257,6 +257,7 @@ describe("useSidebarMenu", () => {
         title: "Keputusan TA-01 s.d. TA-04",
         url: "/kelola/tugas-akhir/kadep",
       },
+      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
     ]);
   });
 
@@ -276,6 +277,10 @@ describe("useSidebarMenu", () => {
     expect(metopenMenu?.items).toContainEqual({
       title: "Keputusan TA-01 s.d. TA-04",
       url: "/kelola/tugas-akhir/kadep",
+    });
+    expect(metopenMenu?.items).toContainEqual({
+      title: "Kuota Dosen",
+      url: "/kelola/metopen/kuota-dosen",
     });
     expect(kelolaMenu?.items).toContainEqual({
       title: "Master Tugas Akhir",
@@ -301,6 +306,7 @@ describe("useSidebarMenu", () => {
         title: "Keputusan TA-01 s.d. TA-04",
         url: "/kelola/tugas-akhir/kadep",
       },
+      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
       { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
       { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
     ]);
@@ -319,6 +325,7 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
+      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
     ]);
     const titles = metopenMenu?.items.map((item) => item.title) ?? [];
     expect(titles).not.toContain("Penilaian TA-03A");
@@ -368,6 +375,7 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
+      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
       { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
     ]);
@@ -389,6 +397,7 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
+      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
       { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
       { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },

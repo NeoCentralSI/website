@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link2, Plus } from "lucide-react";
 
 import { useRubricMetopen } from "@/hooks/master-data/useRubricMetopen";
 import { MetopenCriteriaTable } from "@/components/kelola/rubric-metopen/MetopenCriteriaTable";
 import { MetopenCriteriaFormDialog } from "@/components/kelola/rubric-metopen/MetopenCriteriaFormDialog";
 import { MetopenCpmkCatalog } from "@/components/kelola/rubric-metopen/MetopenCpmkCatalog";
+import { MetopenScoreCompositionCard } from "@/components/kelola/rubric-metopen/MetopenScoreCompositionCard";
 import { LocalTabsNav, type LocalTabItem } from "@/components/ui/tabs-nav";
 import {
   Dialog,
@@ -28,6 +29,7 @@ import type {
   MetopenCpmkWithRubrics,
   UpdateCriteriaPayload,
   MetopenRole,
+  MetopenScoreComposition,
 } from "@/services/rubricMetopen.service";
 import { cn } from "@/lib/utils";
 
@@ -38,9 +40,9 @@ const PANEL_TABS: LocalTabItem[] = [
   { label: "2. Konfigurasi Rubrik", value: "konfigurasi" },
 ];
 
-const ROLE_OPTIONS: { value: MetopenRole; label: string; short: string; cap: number }[] = [
-  { value: "supervisor", label: "Pembimbing (TA-03A)", short: "TA-03A", cap: 75 },
-  { value: "default", label: "Koordinator Metopen (TA-03B)", short: "TA-03B", cap: 25 },
+const ROLE_META: { value: MetopenRole; label: string; short: string }[] = [
+  { value: "supervisor", label: "Pembimbing (TA-03A)", short: "TA-03A" },
+  { value: "default", label: "Koordinator Metopen (TA-03B)", short: "TA-03B" },
 ];
 
 function WeightStatus({
@@ -113,6 +115,11 @@ function WeightStatus({
 export function RubricMetopenManagementPanel() {
   const [activeTab, setActiveTab] = useState<PanelTab>("katalog");
   const [selectedRole, setSelectedRole] = useState<MetopenRole>("supervisor");
+  const [composition, setComposition] = useState<MetopenScoreComposition | null>(null);
+
+  const handleCompositionChange = useCallback((next: MetopenScoreComposition | null) => {
+    setComposition(next);
+  }, []);
 
   const {
     cpmks = [],
@@ -139,7 +146,7 @@ export function RubricMetopenManagementPanel() {
     isDeletingRubric,
     reorderCriteria,
     reorderRubrics,
-  } = useRubricMetopen(selectedRole);
+  } = useRubricMetopen(selectedRole, composition?.academicYearId);
 
   const [addCpmkOpen, setAddCpmkOpen] = useState(false);
   const [selectedAddCpmkId, setSelectedAddCpmkId] = useState("");
@@ -153,10 +160,17 @@ export function RubricMetopenManagementPanel() {
     default: [],
   });
 
-  const roleOption = ROLE_OPTIONS.find((r) => r.value === selectedRole)!;
+  useEffect(() => {
+    setLocalCpmkIds({ supervisor: [], default: [] });
+  }, [composition?.academicYearId]);
+
+  const ta03aCap = composition?.ta03aCap ?? weightSummary?.ta03aCap ?? 75;
+  const ta03bCap = composition?.ta03bCap ?? weightSummary?.ta03bCap ?? 25;
+  const roleCap = selectedRole === "supervisor" ? ta03aCap : ta03bCap;
+  const roleOption = ROLE_META.find((r) => r.value === selectedRole)!;
   const globalTotalScore = weightSummary?.globalTotalScore ?? 0;
   const roleTotalScore = weightSummary?.totalScore ?? 0;
-  const remainingScore = roleOption.cap - roleTotalScore;
+  const remainingScore = roleCap - roleTotalScore;
   const currentLocalIds = localCpmkIds[selectedRole];
 
   const mergedCpmks = useMemo(() => {
@@ -234,6 +248,8 @@ export function RubricMetopenManagementPanel() {
         onTabChange={(value) => setActiveTab(value as PanelTab)}
       />
 
+      <MetopenScoreCompositionCard onCompositionChange={handleCompositionChange} />
+
       {activeTab === "katalog" ? (
         <div className="space-y-4">
           <MetopenCpmkCatalog
@@ -291,7 +307,7 @@ export function RubricMetopenManagementPanel() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Role penilaian:</span>
                 <div className="flex gap-1 rounded-lg border bg-muted/30 p-1">
-                  {ROLE_OPTIONS.map((opt) => (
+                  {ROLE_META.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
@@ -308,7 +324,7 @@ export function RubricMetopenManagementPanel() {
                   ))}
                 </div>
                 <Badge variant="secondary" className="text-[10px]">
-                  Maks {roleOption.cap}
+                  Maks {roleCap}
                 </Badge>
               </div>
 
@@ -317,7 +333,7 @@ export function RubricMetopenManagementPanel() {
                   globalTotal={globalTotalScore}
                   roleTotal={roleTotalScore}
                   roleLabel={roleOption.short}
-                  roleCap={roleOption.cap}
+                  roleCap={roleCap}
                   cpmkCount={weightSummary.details.length}
                   criteriaCount={criteriaCount}
                 />
@@ -354,6 +370,7 @@ export function RubricMetopenManagementPanel() {
         cpmkId={criteriaTargetCpmk?.id ?? ""}
         cpmkCode={criteriaTargetCpmk?.code ?? "-"}
         role={selectedRole}
+        roleCap={roleCap}
         editData={editCriteria}
         remainingScore={
           editCriteria ? remainingScore + (editCriteria.maxScore || 0) : remainingScore

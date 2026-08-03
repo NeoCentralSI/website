@@ -196,7 +196,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                             Anda Pembimbing 1 — pengisi utama TA-03A
                         </AlertTitle>
                         <AlertDescription className="text-blue-700">
-                            Anda mengisi rubrik penilaian utuh (maks 75 poin) atas <strong>konsensus</strong>{" "}
+                            Anda mengisi rubrik penilaian utuh (maks {summary.ta03aCap} poin) atas{" "}
+                            <strong>konsensus</strong>{" "}
                             dengan{" "}
                             {hasP2
                                 ? "Pembimbing 2 (akan memberi persetujuan setelah Anda serahkan penilaian)"
@@ -375,6 +376,8 @@ interface ScoreSummary {
         presentCount: number;
         totalMeetings: number;
     } | null;
+    ta03aCap: number;
+    ta03bCap: number;
     bucket: {
         presentasi: number | null;
         konten: number | null;
@@ -428,6 +431,8 @@ function buildScoreSummary(
         attendanceAutoZeroedAt,
         attendanceAutoZeroReason,
         attendanceRecord,
+        ta03aCap: detail?.ta03aCap ?? 75,
+        ta03bCap: detail?.ta03bCap ?? 25,
         bucket,
     };
 }
@@ -460,7 +465,8 @@ function SummaryCard({
                     <div className="min-w-0">
                         <CardTitle className="text-base">Ringkasan Penilaian Proposal</CardTitle>
                         <CardDescription>
-                            TA-03A Pembimbing maks 75 · TA-03B Koordinator Metopen maks 25 · Total maks 100
+                            TA-03A Pembimbing maks {summary.ta03aCap} · TA-03B Koordinator Metopen maks{" "}
+                            {summary.ta03bCap} · Total maks 100
                         </CardDescription>
                     </div>
                     {statusBadge}
@@ -471,13 +477,13 @@ function SummaryCard({
                     <ScoreStatBlock
                         label={`TA-03A · Pembimbing${hasP2 ? " + persetujuan" : ""}`}
                         score={summary.supervisorScore}
-                        max={75}
+                        max={summary.ta03aCap}
                         accent="blue"
                     />
                     <ScoreStatBlock
                         label="TA-03B · Koordinator"
                         score={summary.lecturerScore}
-                        max={25}
+                        max={summary.ta03bCap}
                         accent="violet"
                     />
                     <ScoreStatBlock
@@ -684,7 +690,7 @@ function Ta03bRubricDetailCard({
                     Rincian Rubrik TA-03B (Koordinator Metopen)
                 </CardTitle>
                 <CardDescription>
-                    Penilaian sistematika penulisan proposal (maks 25). Read-only untuk pembimbing —
+                    Penilaian sistematika penulisan proposal (TA-03B). Read-only untuk pembimbing —
                     diisi oleh Koordinator Matkul Metopen.
                 </CardDescription>
             </CardHeader>

@@ -1,10 +1,15 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload } from "lucide-react";
 
-import { assessmentService, type MetopenAttendancePreviewResult } from "@/services/assessment.service";
+import {
+  assessmentService,
+  type MetopenAttendanceApiError,
+  type MetopenAttendanceNimConflict,
+  type MetopenAttendancePreviewResult,
+} from "@/services/assessment.service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,9 +28,11 @@ import { MetricAction } from "@/components/metopen/MetricAction";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
 import { formatDateId } from "@/lib/text";
 
-const LATEST_ATTENDANCE_KEY = ["metopen-attendance-latest"];
+const LATEST_ATTENDANCE_KEY = ["metopen-attendance-latest"] as const;
+const MAX_ATTENDANCE_FILES = 2;
 
 function formatPercent(value?: number | null) {
   if (value == null) return "-";
@@ -36,37 +43,62 @@ export function MetopenAttendanceUploadCard() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  // F-4.2: simpan hasil pratinjau + buka dialog konfirmasi yang menampilkan dampak.
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [preview, setPreview] = useState<MetopenAttendancePreviewResult | null>(null);
+  const [conflicts, setConflicts] = useState<MetopenAttendanceNimConflict[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const {
+    academicYear,
+    label: academicYearLabel,
+    isLoading: isAcademicYearLoading,
+    error: academicYearError,
+  } = useActiveAcademicYear();
+  const academicYearId = academicYear?.id ?? null;
 
-  const { data: latestImport, isLoading } = useQuery({
-    queryKey: LATEST_ATTENDANCE_KEY,
-    queryFn: () => assessmentService.getMetopenAttendanceLatest(),
+  const { data: latestImport, isLoading: isLatestLoading } = useQuery({
+    queryKey: [...LATEST_ATTENDANCE_KEY, academicYearId],
+    queryFn: () => assessmentService.getMetopenAttendanceLatest(academicYearId!),
+    enabled: Boolean(academicYearId),
   });
 
-  // Langkah 1: dry-run pratinjau (tidak menulis DB) → tampilkan daftar yang akan di-auto-zero.
   const previewMutation = useMutation({
-    mutationFn: (file: File) => assessmentService.previewMetopenAttendance(file),
+    mutationFn: (files: File[]) => {
+      if (!academicYearId) throw new Error("Periode akademik aktif belum tersedia");
+      return assessmentService.previewMetopenAttendance(files, academicYearId);
+    },
     onSuccess: (result) => {
+      setConflicts([]);
       setPreview(result);
       setConfirmOpen(true);
     },
-    onError: (err: Error) => {
+    onError: (err: MetopenAttendanceApiError) => {
+      const conflictList = err.details?.conflicts ?? [];
+      if (conflictList.length > 0) {
+        setConflicts(conflictList);
+        setConflictOpen(true);
+        setPreview(null);
+        return;
+      }
       toast.error(err.message || "Gagal memproses pratinjau presensi Metopel");
     },
   });
 
-  // Langkah 2: commit upload (auto-zero permanen dijalankan di backend).
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => assessmentService.uploadMetopenAttendance(file),
+    mutationFn: (files: File[]) => {
+      if (!academicYearId) throw new Error("Periode akademik aktif belum tersedia");
+      return assessmentService.uploadMetopenAttendance(files, academicYearId);
+    },
     onSuccess: (result) => {
+      const fileLabel = result.totals.sourceFileCount && result.totals.sourceFileCount > 1
+        ? `${result.totals.sourceFileCount} file digabung`
+        : "1 file";
       toast.success(
-        `Presensi Metopel diproses: ${result.totals.eligibleRows} eligible, ${result.totals.ineligibleRows} tidak eligible, ${result.totals.autoZeroedCount} di-auto-zero.`,
+        `Presensi Metopel diproses (${fileLabel}): ${result.totals.eligibleRows} eligible, ${result.totals.ineligibleRows} tidak eligible, ${result.totals.autoZeroedCount} di-auto-zero.`,
       );
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setPreview(null);
+      setConflicts([]);
       setConfirmOpen(false);
       if (inputRef.current) inputRef.current.value = "";
       queryClient.invalidateQueries({ queryKey: LATEST_ATTENDANCE_KEY });
@@ -78,25 +110,51 @@ export function MetopenAttendanceUploadCard() {
       queryClient.invalidateQueries({ queryKey: ["assessment-supervisor-history"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-kadep-title-reports"] });
     },
-    onError: (err: Error) => {
+    onError: (err: MetopenAttendanceApiError) => {
+      const conflictList = err.details?.conflicts ?? [];
+      if (conflictList.length > 0) {
+        setConfirmOpen(false);
+        setConflicts(conflictList);
+        setConflictOpen(true);
+        return;
+      }
       toast.error(err.message || "Gagal mengunggah presensi Metopel");
     },
   });
 
-  const handlePreview = () => {
-    if (!selectedFile) {
-      toast.error("Pilih file XLSX presensi Metopel terlebih dahulu");
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const next = Array.from(event.target.files ?? []);
+    if (next.length > MAX_ATTENDANCE_FILES) {
+      toast.error(`Maksimal ${MAX_ATTENDANCE_FILES} file kelas Metopel per unggahan`);
+      if (inputRef.current) inputRef.current.value = "";
+      setSelectedFiles([]);
       return;
     }
-    previewMutation.mutate(selectedFile);
+    setSelectedFiles(next);
+    setConflicts([]);
+  };
+
+  const handlePreview = () => {
+    if (!academicYearId) {
+      toast.error("Periode akademik aktif belum tersedia");
+      return;
+    }
+    if (selectedFiles.length === 0) {
+      toast.error("Pilih 1–2 file XLSX/XLS presensi Metopel terlebih dahulu");
+      return;
+    }
+    previewMutation.mutate(selectedFiles);
   };
 
   const handleConfirmUpload = () => {
-    if (!selectedFile) return;
-    uploadMutation.mutate(selectedFile);
+    if (selectedFiles.length === 0) return;
+    uploadMutation.mutate(selectedFiles);
   };
 
   const isBusy = previewMutation.isPending || uploadMutation.isPending;
+  const isLoading = isAcademicYearLoading || isLatestLoading;
+  const sourceFileCount = latestImport?.sourceFiles?.length
+    ?? (latestImport?.classCode?.includes(" + ") ? 2 : latestImport ? 1 : 0);
 
   return (
     <Card>
@@ -108,7 +166,8 @@ export function MetopenAttendanceUploadCard() {
               Presensi Metopel
             </CardTitle>
             <CardDescription>
-              Unggah report peserta kelas Metode Penelitian untuk membuka penilaian TA-03A/TA-03B. Minimal presensi 75%.
+              Unggah 1–2 report peserta kelas Metode Penelitian (digabung jadi satu import aktif).
+              Minimal presensi 75%. Unggah ulang mengganti seluruh set aktif, bukan menambah kelas terpisah.
             </CardDescription>
           </div>
           {latestImport ? (
@@ -122,6 +181,16 @@ export function MetopenAttendanceUploadCard() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {academicYearError || (!academicYear && !isAcademicYearLoading) ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Periode akademik aktif tidak tersedia</AlertTitle>
+            <AlertDescription>
+              Presensi tidak dapat diproses sebelum rentang periode akademik aktif dikonfigurasi.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         {!latestImport && !isLoading ? (
           <Alert className="border-amber-200 bg-amber-50">
             <AlertTriangle className="h-4 w-4 text-amber-700" />
@@ -135,6 +204,10 @@ export function MetopenAttendanceUploadCard() {
         {latestImport ? (
           <div className="grid gap-3 rounded-md border bg-muted/20 p-3 text-sm sm:grid-cols-4">
             <div>
+              <p className="text-xs text-muted-foreground">Periode</p>
+              <p className="font-medium">{academicYearLabel || "-"}</p>
+            </div>
+            <div>
               <p className="text-xs text-muted-foreground">Kelas</p>
               <p className="font-medium">{latestImport.classCode || "-"}</p>
             </div>
@@ -145,6 +218,10 @@ export function MetopenAttendanceUploadCard() {
             <div>
               <p className="text-xs text-muted-foreground">Diunggah</p>
               <p className="font-medium">{formatDateId(latestImport.uploadedAt)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">File sumber</p>
+              <p className="font-medium">{sourceFileCount || 1}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Threshold</p>
@@ -182,17 +259,26 @@ export function MetopenAttendanceUploadCard() {
 
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <div className="space-y-2">
-            <Label htmlFor="metopen-attendance-file">File presensi XLSX/XLS</Label>
+            <Label htmlFor="metopen-attendance-file">File presensi XLSX/XLS (1–2 kelas)</Label>
             <Input
               ref={inputRef}
               id="metopen-attendance-file"
               type="file"
               accept=".xlsx,.xls"
-              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+              multiple
+              disabled={!academicYearId || isBusy}
+              onChange={handleFileChange}
             />
+            {selectedFiles.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Dipilih: {selectedFiles.map((file) => file.name).join(", ")}
+              </p>
+            ) : null}
           </div>
-          {/* F-4.2: pratinjau dulu (dry-run) sebelum commit — auto-zero <75% PERMANEN (canon §5.7.3). */}
-          <Button disabled={!selectedFile || isBusy} onClick={handlePreview}>
+          <Button
+            disabled={selectedFiles.length === 0 || !academicYearId || isBusy}
+            onClick={handlePreview}
+          >
             {previewMutation.isPending ? (
               <>
                 <Spinner className="mr-2 h-4 w-4" />
@@ -208,7 +294,42 @@ export function MetopenAttendanceUploadCard() {
         </div>
       </CardContent>
 
-      {/* F-4.2: dialog konfirmasi menampilkan DAMPAK auto-zero permanen sebelum commit. */}
+      <AlertDialog open={conflictOpen} onOpenChange={setConflictOpen}>
+        <AlertDialogContent className="max-h-[85vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              NIM bentrok antar file kelas
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Unggah ditolak. NIM yang sama tidak boleh muncul di dua file kelas sekaligus.
+              Sistem tidak memilih persentase secara otomatis. Perbaiki data SIA lalu unggah ulang.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="max-h-56 space-y-2 overflow-y-auto text-xs">
+            {conflicts.map((conflict) => (
+              <li key={conflict.identityNumber} className="rounded-md border p-2">
+                <p className="font-medium">
+                  {conflict.studentName || "-"}{" "}
+                  <span className="text-muted-foreground">({conflict.identityNumber})</span>
+                </p>
+                <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                  {conflict.sources.map((source, index) => (
+                    <li key={`${conflict.identityNumber}-${index}`}>
+                      {source.fileName || "file"}{source.classCode ? ` · ${source.classCode}` : ""} ·{" "}
+                      {formatPercent(source.attendancePercentage)}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setConflictOpen(false)}>Mengerti</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={confirmOpen} onOpenChange={(open) => !uploadMutation.isPending && setConfirmOpen(open)}>
         <AlertDialogContent className="max-h-[85vh] overflow-y-auto">
           <AlertDialogHeader>
@@ -218,14 +339,21 @@ export function MetopenAttendanceUploadCard() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Pratinjau di bawah belum mengubah data apa pun. Mahasiswa dengan presensi{" "}
-              <strong>kurang dari 75%</strong> akan mendapat nilai TA-03 = <strong>0 secara permanen</strong>.
-              Nilai ini tidak dapat dibatalkan walau presensi diperbaiki kemudian.
+              <strong>kurang dari 75%</strong> akan mendapat nilai TA-03 = <strong>0 secara permanen</strong>
+              {selectedFiles.length > 1
+                ? " setelah kedua file digabung menjadi satu import aktif."
+                : "."}{" "}
+              Unggah ulang berikutnya mengganti seluruh set aktif.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           {preview && (
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-2 rounded-md border bg-muted/20 p-3 sm:grid-cols-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">File digabung</p>
+                  <p className="font-medium">{preview.totals.sourceFileCount ?? selectedFiles.length}</p>
+                </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total baris</p>
                   <p className="font-medium">{preview.totals.totalRows}</p>
@@ -243,6 +371,15 @@ export function MetopenAttendanceUploadCard() {
                   <p className="font-medium text-destructive">{preview.totals.willAutoZeroCount}</p>
                 </div>
               </div>
+
+              {preview.sourceFiles && preview.sourceFiles.length > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Sumber:{" "}
+                  {preview.sourceFiles
+                    .map((file) => `${file.originalName || "file"}${file.classCode ? ` (${file.classCode})` : ""}`)
+                    .join("; ")}
+                </p>
+              ) : null}
 
               {preview.willAutoZero.length > 0 ? (
                 <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
@@ -262,7 +399,7 @@ export function MetopenAttendanceUploadCard() {
                 </div>
               ) : (
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
-                  Tidak ada mahasiswa yang akan dinilai otomatis 0 dari file ini.
+                  Tidak ada mahasiswa yang akan dinilai otomatis 0 dari unggahan ini.
                 </p>
               )}
 

@@ -84,6 +84,7 @@ export const API_CONFIG = {
       CRITERIA_REORDER: '/rubric-metopen/criteria/reorder',
       RUBRICS_REORDER: '/rubric-metopen/rubrics/reorder',
       WEIGHT_SUMMARY: (role: string) => `/rubric-metopen/weight-summary?role=${role}`,
+      COMPOSITION: (academicYearId: string) => `/rubric-metopen/composition/${academicYearId}`,
     },
     EXIT_SURVEY: {
       BASE: '/exit-surveys',
@@ -500,6 +501,7 @@ export const API_CONFIG = {
       DETAIL: (id: string) => `/advisorRequest/${id}`,
       LECTURER_DECISION: (id: string) => `/advisorRequest/${id}/respond`,
       KADEP_DECISION: (id: string) => `/advisorRequest/${id}/decide`,
+      /** @deprecated Backend selalu 400; jangan panggil dari UI baru. */
       ASSIGN: (id: string) => `/advisorRequest/${id}/assign`,
     },
     QUOTA: {

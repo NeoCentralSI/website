@@ -22,8 +22,8 @@ export interface AcademicYear {
   id: string;
   semester: 'ganjil' | 'genap';
   year: string | number;
-  startDate?: string;
-  endDate?: string;
+  startDate: string;
+  endDate: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -61,9 +61,9 @@ export interface UpdateUserRequest {
 
 export interface CreateAcademicYearRequest {
   semester: 'ganjil' | 'genap';
-  year?: string;
-  startDate?: string;
-  endDate?: string;
+  year: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface UpdateAcademicYearRequest {
@@ -516,16 +516,26 @@ export const triggerSiaSyncAPI = async (): Promise<{
     cplUnmatchedCodes?: number;
   };
 }> => {
-  const response = await fetch(getApiUrl('/sia/sync'), {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(getApiUrl('/sia/sync'), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+    });
+  } catch {
+    throw new Error(
+      'Gagal menghubungi server sinkronisasi SIA (failed to fetch). Pastikan backend berjalan dan untuk UAT lokal SIA_MOCK=true di services/.env.',
+    );
+  }
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal menjalankan sync SIA');
+    const errorData = await response.json().catch(() => ({} as { message?: string }));
+    throw new Error(
+      errorData.message ||
+        `Gagal menjalankan sync SIA (HTTP ${response.status}). Untuk UAT lokal aktifkan SIA_MOCK=true.`,
+    );
   }
 
   return response.json();

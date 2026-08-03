@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Loading } from "@/components/ui/spinner";
 import { assessmentService } from "@/services/assessment.service";
+import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
 import type {
     AdvisorStatusCategory,
     MonitoringResponse,
@@ -153,6 +154,13 @@ export default function MetopenMonitoring() {
     const [pageSize, setPageSize] = useState(20);
     const unmatchedRef = useRef<HTMLDivElement | null>(null);
     const studentsTableRef = useRef<HTMLDivElement | null>(null);
+    const {
+        academicYear,
+        label: academicYearLabel,
+        isLoading: isAcademicYearLoading,
+        error: academicYearError,
+    } = useActiveAcademicYear();
+    const academicYearId = academicYear?.id ?? null;
 
     const commitFilters = ({
         advisor = advisorFilter,
@@ -207,8 +215,9 @@ export default function MetopenMonitoring() {
     }, [searchParams]);
 
     const { data, isLoading, isError, error, isFetching } = useQuery<MonitoringResponse>({
-        queryKey: QUERY_KEY,
-        queryFn: () => assessmentService.getMetopenMonitoring(),
+        queryKey: [...QUERY_KEY, academicYearId],
+        queryFn: () => assessmentService.getMetopenMonitoring(academicYearId!),
+        enabled: Boolean(academicYearId),
     });
 
     const filteredStudents = useMemo(() => {
@@ -442,7 +451,7 @@ export default function MetopenMonitoring() {
         [],
     );
 
-    if (isLoading) {
+    if (isLoading || isAcademicYearLoading) {
         return (
             <div className="flex h-[calc(100vh-200px)] items-center justify-center p-6">
                 <Loading size="lg" text="Memuat dashboard monitoring Metopen..." />
@@ -450,14 +459,18 @@ export default function MetopenMonitoring() {
         );
     }
 
-    if (isError) {
+    if (isError || academicYearError || !academicYearId) {
         return (
             <div className="p-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Monitoring gagal dimuat</CardTitle>
                         <CardDescription>
-                            {error instanceof Error ? error.message : "Terjadi kesalahan tidak terduga."}
+                            {error instanceof Error
+                                ? error.message
+                                : academicYearError instanceof Error
+                                  ? academicYearError.message
+                                  : "Periode akademik aktif belum tersedia."}
                         </CardDescription>
                     </CardHeader>
                 </Card>
@@ -476,7 +489,7 @@ export default function MetopenMonitoring() {
                 <h1 className="text-base font-semibold tracking-tight sm:text-lg">Monitoring Kelas Metopen</h1>
                 <p className="text-xs text-muted-foreground sm:text-sm">
                     Pantau progress per mahasiswa eligible SIA: pencarian pembimbing dan rincian nilai
-                    TA-03 sesuai layout template SIA.
+                    TA-03 sesuai layout template SIA untuk periode {academicYearLabel ?? "-"}.
                 </p>
             </div>
 

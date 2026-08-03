@@ -8,6 +8,19 @@ vi.mock('@/hooks/master-data/useRubricMetopen', () => ({
     useRubricMetopen: vi.fn(),
 }));
 
+vi.mock('./MetopenScoreCompositionCard', () => ({
+    MetopenScoreCompositionCard: ({
+        onCompositionChange,
+    }: {
+        onCompositionChange?: (c: { ta03aCap: number; ta03bCap: number; isLocked: boolean; finalizedScoreCount: number; academicYearId: string } | null) => void;
+    }) => {
+        // Caps are applied via weightSummary defaults in panel; avoid calling
+        // onCompositionChange during render (infinite setState loop).
+        void onCompositionChange;
+        return <div data-testid="composition-card">Komposisi penilaian TA-03</div>;
+    },
+}));
+
 function mockHookDefaults(overrides = {}) {
     vi.mocked(useRubricMetopen).mockReturnValue({
         cpmks: [],
@@ -80,6 +93,8 @@ describe('RubricMetopenManagementPanel', () => {
                 totalScore: 55,
                 isComplete: true,
                 globalTotalScore: 80,
+                ta03aCap: 75,
+                ta03bCap: 25,
                 details: [
                     { cpmkId: 'c1', cpmkCode: 'CPMK-01', cpmkDescription: 'X', criteriaCount: 3, criteriaScoreSum: 55, rubricCount: 6 },
                 ],
@@ -117,7 +132,7 @@ describe('RubricMetopenManagementPanel', () => {
 
         fireEvent.click(screen.getByText('Koordinator Metopen (TA-03B)'));
 
-        expect(useRubricMetopen).toHaveBeenCalledWith('default');
+        expect(useRubricMetopen).toHaveBeenCalledWith('default', undefined);
     });
 
     it('guides user to katalog when config is empty and catalog is empty', () => {

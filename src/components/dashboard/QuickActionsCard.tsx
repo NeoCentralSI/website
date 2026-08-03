@@ -10,7 +10,6 @@ import {
   ArrowRight,
   ClipboardCheck,
   FileCheck,
-  Send,
   ShieldCheck,
   UserPlus,
 } from "lucide-react";
@@ -23,9 +22,9 @@ import {
 } from "@/services/lecturerGuidance.service";
 import { assessmentService } from "@/services/assessment.service";
 import { advisorRequestService } from "@/services/advisorRequest.service";
-import { metopenTitleService } from "@/services/metopenTitle.service";
 import { useLottie } from 'lottie-react';
 import completeAnimation from '@/assets/lottie/complete.json';
+import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
 
 const completeLottieOptions = {
   animationData: completeAnimation,
@@ -63,6 +62,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const { isKadep, isPembimbing } = useRole();
   const showKadepActions = isKadep();
   const showSupervisorActions = isPembimbing();
+  const { academicYear } = useActiveAcademicYear();
 
   const { data: supervisor2RequestsData, isLoading: loadingSupervisor2 } = useQuery({
     queryKey: ["supervisor2-requests-count"],
@@ -83,9 +83,9 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   });
 
   const { data: supervisorScoringQueue, isLoading: loadingSupervisorScoring } = useQuery({
-    queryKey: ["supervisor-scoring-queue"],
-    queryFn: () => assessmentService.getSupervisorScoringQueue(),
-    enabled: showSupervisorActions,
+    queryKey: ["supervisor-scoring-queue", academicYear?.id],
+    queryFn: () => assessmentService.getSupervisorScoringQueue(academicYear!.id),
+    enabled: showSupervisorActions && Boolean(academicYear?.id),
   });
 
   const { data: kadepQueue, isLoading: loadingKadepQueue } = useQuery({
@@ -94,21 +94,11 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     enabled: showKadepActions,
   });
 
-  const { data: pendingTitleReports = [], isLoading: loadingTitleReports } = useQuery({
-    queryKey: ["dashboard-kadep-title-reports"],
-    queryFn: async () => (await metopenTitleService.getPendingTitleReports()).data,
-    enabled: showKadepActions,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchInterval: 30_000,
-  });
-
   const pendingSupervisor2Count = supervisor2RequestsData?.length || 0;
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
   const pendingSupervisorScoringCount = supervisorScoringQueue?.length || 0;
   const pendingKadepEscalatedCount = kadepQueue?.escalated?.length || 0;
-  const pendingTitleReportCount = pendingTitleReports.length;
 
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
   const firstSupervisorScoringThesisId = supervisorScoringQueue?.[0]?.thesisId;
@@ -178,17 +168,6 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           bgColor: "bg-amber-50",
           link: "/kelola/tugas-akhir/kadep/pembimbing",
           loading: loadingKadepQueue,
-        },
-        {
-          id: "kadep-title-reports",
-          title: "Review Judul TA-04",
-          description: "Jalur lama; batch TA-04 awal ada di Kelola KaDep",
-          count: pendingTitleReportCount,
-          icon: Send,
-          color: "text-blue-600",
-          bgColor: "bg-blue-50",
-          link: "/kelola/tugas-akhir/kadep/pengesahan-judul",
-          loading: loadingTitleReports,
         },
       ]
     : [];

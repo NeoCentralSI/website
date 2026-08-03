@@ -100,6 +100,10 @@ export const useSidebarMenu = () => {
         items.push({ title: coordinatorLabel, url: coordinatorUrl });
       }
 
+      if (role.kadep || role.sekdep) {
+        items.push({ title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" });
+      }
+
       if (role.pembimbing) {
         // BR-20: antrean penilaian TA-03A — P1 input rubrik + P2 co-sign.
         items.push({ title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" });

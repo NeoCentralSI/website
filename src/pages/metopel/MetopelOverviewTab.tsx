@@ -11,6 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { CheckCircle2, ClipboardList, FileCheck2, Stamp, Users, FileText, Archive, ScrollText, Info } from "lucide-react";
 import { formatDateId } from "@/lib/text";
 import { formatAdvisorRouteCode, formatAdvisorRouteProcessing } from "@/lib/advisorRoute";
+import { getAdvisorRequestStatus } from "@/lib/metopen/statusBadge";
 
 type AdvisorAccessState = NonNullable<ReturnType<typeof useAdvisorAccessState>["data"]>;
 
@@ -54,7 +55,7 @@ function buildProposalStatusUi(
     return { label: "TA-04 Terbit, Booking", variant: "secondary" as const };
   }
   if (proposalStatus === "submitted") {
-    return { label: "Menunggu Review KaDep", variant: "secondary" as const };
+    return { label: "Proposal Final Dikirim", variant: "secondary" as const };
   }
   if (proposalStatus === "rejected") {
     return { label: "Ditolak", variant: "outline" as const };
@@ -92,7 +93,7 @@ function getProposalQueueDescription(
     return "Penugasan pembimbing awal (TA-04) sudah dicatat di sistem oleh KaDep. Dokumen cetak dikelola departemen. Anda tetap di fase Metopel sampai TA-03 final dan KRS Tugas Akhir terkonfirmasi dari SIA.";
   }
   if (proposalStatus === "submitted") {
-    return "Judul/proposal masuk antrean peninjauan KaDep. Proses baru memakai TA-04 awal dan promosi otomatis.";
+    return "Proposal final sudah dikirim. Penilaian TA-03 dan promosi beban aktif berjalan otomatis setelah syarat terpenuhi; penugasan pembimbing memakai TA-04 awal batch KaDep.";
   }
 
   switch (queueReadiness?.block) {
@@ -216,6 +217,20 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
           ? `TA-01 dipakai saat mahasiswa sudah memiliki calon dosen pembimbing yang bersedia dan mengajukan awal judul melalui SIMPTA.${thesisTitleSummary}`
           : `TA-01 dipakai saat mahasiswa sudah memiliki calon dosen pembimbing yang bersedia. TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing atau saat usulan perlu diproses melalui departemen.${thesisTitleSummary}`;
 
+  // Status kartu promosi tanpa short-circuit ta04IssuedAt (TA-04 adalah langkah terpisah).
+  const promotionStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness, null);
+  const promotionQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness, null);
+
+  const ta04GateStatus = readOnly || Boolean(ta04IssuedAt)
+    ? "Penugasan awal terbit"
+    : advisorAccess?.hasBookedSupervisor || advisorAccess?.hasOfficialSupervisor
+      ? "Menunggu finalisasi KaDep"
+      : "Menunggu booking pembimbing";
+
+  const ta04GateDescription = readOnly || Boolean(ta04IssuedAt)
+    ? "Penugasan pembimbing awal (TA-04) sudah dicatat KaDep. Ini membuka gerbang ajukan proposal final, bimbingan tercatat, dan penilaian TA-03 — bukan menandai keduanya selesai."
+    : "TA-04 awal diterbitkan batch oleh KaDep setelah booking pembimbing disetujui. Setelah terbit, mahasiswa dapat mengajukan proposal final dan memasuki penilaian.";
+
   const stepCards = [
     {
       code: initialRouteCode,
@@ -225,30 +240,37 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
       description: initialRouteDescription,
     },
     {
+      code: "TA-04",
+      title: "TA-04 Awal",
+      icon: Stamp,
+      status: ta04GateStatus,
+      description: ta04GateDescription,
+    },
+    {
       code: "Proposal Final",
       title: "Ajukan proposal final",
       icon: FileCheck2,
       status: readOnly
         ? "Proposal final tersimpan"
         : !advisorAccess?.hasBookedSupervisor
-        ? "Menunggu booking pembimbing"
-        : !advisorAccess?.hasOfficialSupervisor
-          ? "Menunggu TA-04 KaDep"
-        : proposalStatus === "accepted"
-          ? "Sudah promosi beban aktif"
-          : canUploadProposal && !canSubmitFinalProposal
-            ? "Boleh simpan draf pribadi"
-            : canUploadProposal
-              ? "Boleh unggah proposal final"
-            : proposalStatus === "submitted" || Boolean(ta04IssuedAt)
-              ? "Proposal final masuk alur TA-03"
-              : "Ajukan versi proposal final",
+          ? "Menunggu booking pembimbing"
+          : !ta04IssuedAt
+            ? "Menunggu TA-04 KaDep"
+            : proposalStatus === "accepted"
+              ? "Sudah promosi beban aktif"
+              : proposalStatus === "submitted"
+                ? "Proposal final masuk alur TA-03"
+                : canSubmitFinalProposal
+                  ? "Boleh unggah proposal final"
+                  : canUploadProposal
+                    ? "Boleh simpan draf pribadi"
+                    : "Ajukan versi proposal final",
       description:
         readOnly
           ? "Proposal final dan riwayat versinya tersedia sebagai arsip read-only setelah fase Metode Penelitian selesai."
           : canSubmitFinalProposal
-          ? "Setelah TA-04 awal terbit, mahasiswa dapat mengunggah dan menetapkan versi proposal final aktif untuk alur penilaian."
-          : "Draf proposal pribadi boleh disimpan. Ajukan proposal final dan akses bimbingan baru terbuka setelah TA-04 awal difinalisasi KaDep.",
+            ? "Setelah TA-04 awal terbit, mahasiswa dapat mengunggah dan menetapkan versi proposal final aktif untuk alur penilaian."
+            : "Draf proposal pribadi boleh disimpan. Ajukan proposal final dan akses bimbingan baru terbuka setelah TA-04 awal difinalisasi KaDep.",
     },
     {
       code: "TA-03A / TA-03B",
@@ -262,35 +284,49 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
           ? "Gate TA-03 terbuka"
           : ta03GateReason
             ? ta03GateReason
-            : advisorAccess?.hasOfficialSupervisor
+            : ta04IssuedAt
               ? "Menunggu penilaian proposal"
-              : "Menunggu pembimbing resmi",
+              : "Menunggu TA-04 awal",
       description:
         seminarEligibility?.reason ??
         ta03GateReason ??
         "TA-03A diisi Pembimbing 1 (pengisi utama) + persetujuan Pembimbing 2 (jika ada). TA-03B diisi Koordinator Metopen. Berjalan paralel; nilai tidak dapat diubah setelah disubmit.",
     },
     {
-      code: "TA-04",
-      title: "TA-04 Awal & Promosi Aktif",
-      icon: Stamp,
-      status: proposalStatusUi.label,
-      description: proposalQueueDescription,
+      code: "Promosi Aktif",
+      title: "Promosi Aktif Tugas Akhir",
+      icon: Archive,
+      status: promotionStatusUi.label,
+      description: promotionQueueDescription,
     },
   ];
 
-  const getStepStatus = (index: number): 'completed' | 'current' | 'upcoming' => {
-    const hasAdvisor = !!advisorAccess?.hasOfficialSupervisor;
-    const hasScore = seminarEligibility?.requirements?.metopelScore != null;
-    const isApproved = proposalStatus === 'accepted';
+  // Status per predikat aktual — jangan asumsikan "index sebelum N = selesai"
+  // (bug lama: ta04IssuedAt menandai proposal final & penilaian sebagai completed).
+  const getStepStatus = (index: number): "completed" | "current" | "upcoming" => {
+    const bookingDone = Boolean(
+      advisorAccess?.hasBookedSupervisor || advisorAccess?.hasOfficialSupervisor,
+    );
+    const ta04Done = Boolean(ta04IssuedAt);
+    const proposalDone =
+      proposalStatus === "submitted" ||
+      proposalStatus === "accepted" ||
+      Boolean(seminarRequirements?.metopelScore != null);
+    const assessmentDone =
+      seminarRequirements?.metopelScore != null ||
+      seminarEligibility?.eligible === true ||
+      proposalStatus === "accepted";
+    const promotionDone = proposalStatus === "accepted";
 
-    if (isApproved) return 'completed';
-    if (ta04IssuedAt) return index <= 2 ? 'completed' : 'current';
-    if (hasScore) return index <= 2 ? 'completed' : 'current';
-    if (proposalStatus === 'submitted') return index <= 1 ? 'completed' : index === 2 ? 'current' : 'upcoming';
-    if (hasAdvisor) return index === 0 ? 'completed' : index === 1 ? 'current' : 'upcoming';
-    if (advisorAccess?.hasBlockingRequest) return index === 0 ? 'current' : 'upcoming';
-    return index === 0 ? 'current' : 'upcoming';
+    const doneFlags = [bookingDone, ta04Done, proposalDone, assessmentDone, promotionDone];
+
+    if (promotionDone) return "completed";
+
+    const firstIncomplete = doneFlags.findIndex((done) => !done);
+    if (firstIncomplete === -1) return "completed";
+    if (index < firstIncomplete) return "completed";
+    if (index === firstIncomplete) return "current";
+    return "upcoming";
   };
 
   return (
@@ -456,6 +492,8 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
  */
 function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> }) {
   const { advisorRequests, score, titleApproval } = archive;
+  const ta03aCap = archive.ta03aCap ?? 75;
+  const ta03bCap = archive.ta03bCap ?? 25;
 
   const { ta03aDetails, ta03bDetails } = splitScoreDetails(score);
 
@@ -494,7 +532,12 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
                       <Badge variant="outline" className="text-[10px]">
                         {req.requestType === 'ta_02' ? 'TA-02 Jalur Dept' : 'TA-01'} · {formatDateId(req.createdAt)}
                       </Badge>
-                      <Badge variant="outline" className="text-[10px]">{req.status}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] ${getAdvisorRequestStatus(req.status, "student").className}`}
+                      >
+                        {getAdvisorRequestStatus(req.status, "student").label}
+                      </Badge>
                     </div>
                     <p><strong>Judul:</strong> {req.proposedTitle || '-'}</p>
                     {req.lecturer?.user?.fullName && (
@@ -528,7 +571,7 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
               <span className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" /> 2. Feedback Rubrik TA-03A (Pembimbing)
                 <Badge variant="outline" className="text-[10px]">
-                  {score?.supervisorScore != null ? `${score.supervisorScore}/75` : '-'}
+                  {score?.supervisorScore != null ? `${score.supervisorScore}/${ta03aCap}` : '-'}
                 </Badge>
               </span>
             </AccordionTrigger>
@@ -575,7 +618,7 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
               <span className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" /> 3. Feedback Rubrik TA-03B (Koordinator Metopen)
                 <Badge variant="outline" className="text-[10px]">
-                  {score?.lecturerScore != null ? `${score.lecturerScore}/25` : '-'}
+                  {score?.lecturerScore != null ? `${score.lecturerScore}/${ta03bCap}` : '-'}
                 </Badge>
               </span>
             </AccordionTrigger>
@@ -645,6 +688,9 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
  */
 function AssessmentHistorySection({ history }: { history: NonNullable<StudentArchiveData> }) {
   const score = history.score;
+  const ta03aCap = history.ta03aCap ?? 75;
+  const ta03bCap = history.ta03bCap ?? 25;
+  const totalCap = ta03aCap + ta03bCap;
   const ta03aRef = useRef<HTMLDivElement | null>(null);
   const ta03bRef = useRef<HTMLDivElement | null>(null);
   if (!score) return null;
@@ -673,23 +719,23 @@ function AssessmentHistorySection({ history }: { history: NonNullable<StudentArc
         <div className="grid gap-2 sm:grid-cols-3">
           <MetricAction
             label="TA-03A Pembimbing"
-            value={`${score.supervisorScore ?? "-"} / 75`}
+            value={`${score.supervisorScore ?? "-"} / ${ta03aCap}`}
             tone="blue"
             actionLabel="Lihat detail rubrik"
             onClick={() => ta03aRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
           />
           <MetricAction
             label="TA-03B Koordinator"
-            value={`${score.lecturerScore ?? "-"} / 25`}
+            value={`${score.lecturerScore ?? "-"} / ${ta03bCap}`}
             tone="violet"
             actionLabel="Lihat detail rubrik"
             onClick={() => ta03bRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
           />
           <MetricAction
             label="Total Final"
-            value={`${finalScore ?? "-"} / 100`}
+            value={`${finalScore ?? "-"} / ${totalCap}`}
             tone="emerald"
-            hint="TA-03A (maks. 75) + TA-03B (maks. 25)"
+            hint={`TA-03A (maks. ${ta03aCap}) + TA-03B (maks. ${ta03bCap})`}
             actionLabel="Lihat komponen nilai"
             onClick={() => ta03aRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
           />
@@ -726,7 +772,7 @@ function AssessmentHistorySection({ history }: { history: NonNullable<StudentArc
             <RubricHistoryItem
               value="ta03a"
               title="Feedback Rubrik TA-03A (Pembimbing)"
-              scoreLabel={score.supervisorScore != null ? `${score.supervisorScore}/75` : "-"}
+              scoreLabel={score.supervisorScore != null ? `${score.supervisorScore}/${ta03aCap}` : "-"}
               details={ta03aDetails}
               emptyText="Detail rubrik TA-03A belum tersedia."
             />
@@ -735,7 +781,7 @@ function AssessmentHistorySection({ history }: { history: NonNullable<StudentArc
             <RubricHistoryItem
               value="ta03b"
               title="Feedback Rubrik TA-03B (Koordinator Metopen)"
-              scoreLabel={score.lecturerScore != null ? `${score.lecturerScore}/25` : "-"}
+              scoreLabel={score.lecturerScore != null ? `${score.lecturerScore}/${ta03bCap}` : "-"}
               details={ta03bDetails}
               emptyText="Detail rubrik TA-03B belum tersedia."
             />

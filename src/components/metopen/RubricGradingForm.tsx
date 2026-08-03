@@ -43,6 +43,7 @@ import {
     type SubCriterion,
 } from "@/lib/metopenRubric";
 import { cn } from "@/lib/utils";
+import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
 
 // ────────────────────────────────────────────────────────────
 // Types & helpers
@@ -92,6 +93,7 @@ export function RubricGradingForm({
     submitConfirmText,
 }: RubricGradingFormProps) {
     const queryClient = useQueryClient();
+    const { academicYear } = useActiveAcademicYear();
 
     /** Score per criteria.id (DB-level). */
     const [scores, setScores] = useState<Record<string, CriteriaScoreState>>({});
@@ -100,10 +102,17 @@ export function RubricGradingForm({
      *  Outer key = criteriaId DB, inner = sub key (pendahuluan dst). */
     const [subScores, setSubScores] = useState<Record<string, Record<string, SubScoreState>>>({});
 
-    const { data: criteria, isLoading } = useQuery({
-        queryKey: ["assessment-criteria", formCode],
-        queryFn: () => assessmentService.getCriteria(formCode),
+    const { data: criteriaBundle, isLoading } = useQuery({
+        queryKey: ["assessment-criteria", formCode, academicYear?.id],
+        queryFn: () => assessmentService.getCriteria(formCode, academicYear!.id),
+        enabled: Boolean(academicYear?.id),
     });
+    const criteria = criteriaBundle?.criteria;
+    const formCap =
+        criteriaBundle?.cap ??
+        (formCode === "TA-03A"
+            ? (criteriaBundle?.ta03aCap ?? 75)
+            : (criteriaBundle?.ta03bCap ?? 25));
 
     const {
         data: attendanceEligibility,
@@ -359,13 +368,13 @@ export function RubricGradingForm({
         formCode === "TA-03A"
             ? {
                   title: "Penilaian Pembimbing — TA-03A",
-                  subtitle: "Maksimum 75 poin (Presentasi 20 + Konten 40 + Respons 15)",
+                  subtitle: `Maksimum ${formCap} poin`,
                   accent: "from-blue-500/10 to-sky-500/5",
                   border: "border-blue-200",
               }
             : {
                   title: "Penilaian Koordinator Metopen — TA-03B",
-                  subtitle: "Maksimum 25 poin (Penulisan sistematis proposal)",
+                  subtitle: `Maksimum ${formCap} poin`,
                   accent: "from-violet-500/10 to-fuchsia-500/5",
                   border: "border-violet-200",
               };

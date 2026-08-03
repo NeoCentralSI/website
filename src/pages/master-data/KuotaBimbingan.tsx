@@ -2,7 +2,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useQuery } from '@tanstack/react-query';
-import { getAcademicYearsAPI } from '@/services/admin.service';
+import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.service';
+import {
+    LecturerQuotaDetailDialog,
+    QuotaMetricButton,
+    type QuotaDetailSelection,
+    type QuotaMetricKey,
+} from '@/components/master-data/LecturerQuotaDetailDialog';
 import {
     useDefaultQuota,
     useSetDefaultQuota,
@@ -11,6 +17,7 @@ import {
 } from '@/hooks/master-data/useSupervisionQuota';
 import type { LecturerQuota } from '@/services/supervisionQuota.service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +46,7 @@ import {
     ShieldCheck,
     AlertTriangle,
     XCircle,
+    Eye,
 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { toTitleCaseName } from '@/lib/text';
@@ -53,7 +61,11 @@ interface AcademicYear {
     isActive: boolean;
 }
 
-export default function KuotaBimbingan() {
+interface KuotaBimbinganProps {
+    readOnly?: boolean;
+}
+
+export default function KuotaBimbingan({ readOnly = false }: KuotaBimbinganProps) {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
     const [selectedAyId, setSelectedAyId] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -62,6 +74,7 @@ export default function KuotaBimbingan() {
     const [defaultDialogOpen, setDefaultDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<LecturerQuota | null>(null);
+    const [quotaDetailSelection, setQuotaDetailSelection] = useState<QuotaDetailSelection | null>(null);
 
     // Form state for default quota
     const [defaultMax, setDefaultMax] = useState(10);
@@ -77,6 +90,10 @@ export default function KuotaBimbingan() {
         queryKey: ['academic-years', { pageSize: 100 }],
         queryFn: () => getAcademicYearsAPI({ pageSize: 100 }),
     });
+    const { data: operationalYear } = useQuery({
+        queryKey: ['academic-years', 'active'],
+        queryFn: getActiveAcademicYearAPI,
+    });
 
     const academicYears: AcademicYear[] = useMemo(() => {
         if (!ayData) return [];
@@ -89,26 +106,38 @@ export default function KuotaBimbingan() {
         }));
     }, [ayData]);
 
-    // Auto-select active academic year
+    // Auto-select operational cohort (same resolver as dosen quota), not merely
+    // the first year in the list when all date windows look inactive.
     useEffect(() => {
-        if (academicYears.length > 0 && !selectedAyId) {
-            const active = academicYears.find((ay) => ay.isActive);
-            setSelectedAyId(active?.id || academicYears[0].id);
-        }
-    }, [academicYears, selectedAyId]);
+        if (academicYears.length === 0 || selectedAyId) return;
+        const active = academicYears.find((ay) => ay.isActive);
+        const operationalId = operationalYear?.academicYear?.id;
+        const operational = operationalId
+            ? academicYears.find((ay) => ay.id === operationalId)
+            : undefined;
+        setSelectedAyId(active?.id || operational?.id || academicYears[0].id);
+    }, [academicYears, operationalYear, selectedAyId]);
 
     const selectedAy = academicYears.find((ay) => ay.id === selectedAyId);
 
     // Breadcrumbs & title
-    const breadcrumbs = useMemo(() => [
-        { label: 'Master Data' },
-        { label: 'Kuota Bimbingan' },
-    ], []);
+    const breadcrumbs = useMemo(
+        () => readOnly
+            ? [
+                { label: 'Metode Penelitian', href: '/kelola/metopen' },
+                { label: 'Kuota Dosen' },
+            ]
+            : [
+                { label: 'Master Data' },
+                { label: 'Kuota Bimbingan' },
+            ],
+        [readOnly],
+    );
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle('Kuota Bimbingan');
-    }, [setBreadcrumbs, setTitle, breadcrumbs]);
+        setTitle(readOnly ? 'Monitoring Kuota Dosen' : 'Kuota Bimbingan');
+    }, [setBreadcrumbs, setTitle, breadcrumbs, readOnly]);
 
     // Fetch default quota and lecturer quotas
     const { data: defaultQuota } = useDefaultQuota(selectedAyId || undefined);
@@ -186,6 +215,17 @@ export default function KuotaBimbingan() {
         setPage(1);
     }, [searchQuery]);
 
+    const openQuotaDetail = (
+        lecturer: LecturerQuota,
+        metric: QuotaMetricKey,
+    ) => {
+        setQuotaDetailSelection({
+            lecturerId: lecturer.lecturerId,
+            lecturerName: lecturer.fullName,
+            metric,
+        });
+    };
+
     const columns: Column<LecturerQuota>[] = [
         {
             key: 'no',
@@ -213,19 +253,40 @@ export default function KuotaBimbingan() {
             key: 'activeCount',
             header: () => <span className="text-center block w-full">Aktif</span>,
             className: 'text-center',
-            render: (row) => <span className="font-semibold">{row.activeCount}</span>,
+            render: (row) => (
+                <QuotaMetricButton
+                    label="Beban Aktif"
+                    lecturerName={row.fullName}
+                    value={row.activeCount}
+                    onClick={() => openQuotaDetail(row, 'active')}
+                />
+            ),
         },
         {
             key: 'bookingCount',
             header: () => <span className="text-center block w-full">Booking</span>,
             className: 'text-center',
-            render: (row) => row.bookingCount,
+            render: (row) => (
+                <QuotaMetricButton
+                    label="Booking"
+                    lecturerName={row.fullName}
+                    value={row.bookingCount}
+                    onClick={() => openQuotaDetail(row, 'booking')}
+                />
+            ),
         },
         {
             key: 'pendingKadepCount',
             header: () => <span className="text-center block w-full">Pending KaDep</span>,
             className: 'text-center',
-            render: (row) => row.pendingKadepCount,
+            render: (row) => (
+                <QuotaMetricButton
+                    label="Pending KaDep"
+                    lecturerName={row.fullName}
+                    value={row.pendingKadepCount}
+                    onClick={() => openQuotaDetail(row, 'pendingKadep')}
+                />
+            ),
         },
         {
             key: 'quotaMax',
@@ -243,7 +304,15 @@ export default function KuotaBimbingan() {
             key: 'overquotaSahCount',
             header: () => <span className="text-center block w-full">Overquota Sah</span>,
             className: 'text-center',
-            render: (row) => <span className={`font-semibold ${(row.overquotaSahCount ?? 0) > 0 ? 'text-red-600' : ''}`}>{row.overquotaSahCount ?? 0}</span>,
+            render: (row) => (
+                <QuotaMetricButton
+                    label="Overquota Sah"
+                    lecturerName={row.fullName}
+                    value={row.overquotaSahCount ?? 0}
+                    tone="danger"
+                    onClick={() => openQuotaDetail(row, 'overquotaSah')}
+                />
+            ),
         },
         {
             key: 'status',
@@ -251,26 +320,35 @@ export default function KuotaBimbingan() {
             className: 'text-center',
             render: (row) => getStatusBadge(row),
         },
-        {
+    ];
+    if (!readOnly) {
+        columns.push({
             key: 'actions',
             header: () => <span className="text-center block w-full">Aksi</span>,
             className: 'text-center',
             render: (row) => (
-                <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(row)}>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Edit kuota ${toTitleCaseName(row.fullName)}`}
+                    onClick={() => handleOpenEdit(row)}
+                >
                     <Pencil className="h-4 w-4" />
                 </Button>
             ),
-        },
-    ];
+        });
+    }
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="space-y-5 sm:space-y-6">
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-base font-semibold tracking-tight sm:text-lg">Kuota Bimbingan Dosen</h1>
                     <p className="text-xs text-muted-foreground sm:text-sm">
-                        Kelola kuota bimbingan dosen per tahun ajaran
+                        {readOnly
+                            ? 'Pantau beban aktif, booking, pending KaDep, dan overquota sah per dosen'
+                            : 'Kelola kuota bimbingan dosen per tahun ajaran'}
                     </p>
                 </div>
 
@@ -290,6 +368,17 @@ export default function KuotaBimbingan() {
                     </Select>
                 </div>
             </div>
+
+            {readOnly ? (
+                <Alert>
+                    <Eye className="h-4 w-4" />
+                    <AlertTitle>Mode monitoring read-only</AlertTitle>
+                    <AlertDescription>
+                        KaDep dan Sekdep dapat menelusuri mahasiswa di balik setiap angka.
+                        Perubahan default dan override kuota tetap menjadi kewenangan Admin.
+                    </AlertDescription>
+                </Alert>
+            ) : null}
 
             {/* Stats Row */}
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -362,165 +451,170 @@ export default function KuotaBimbingan() {
                 emptyText={
                     !selectedAyId
                         ? 'Pilih tahun ajaran terlebih dahulu'
-                        : 'Belum ada data kuota. Klik "Set Default Kuota" untuk memulai.'
+                        : readOnly
+                            ? 'Belum ada data kuota dosen pada periode ini.'
+                            : 'Belum ada data kuota. Klik "Set Default Kuota" untuk memulai.'
                 }
-                rowKey={(row) => row.id}
+                rowKey={(row) => row.lecturerId}
                 actions={
                     <>
                         <RefreshButton
                             onClick={() => refetchQuotas()}
                             isRefreshing={quotasFetching && !quotasLoading}
                         />
-                        <Dialog open={defaultDialogOpen} onOpenChange={setDefaultDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button onClick={handleOpenDefault} disabled={!selectedAyId}>
-                            <Settings className="mr-2 h-4 w-4" />
-                            Set Default Kuota
-                        </Button>
-                    </DialogTrigger>
+                        {!readOnly ? (
+                            <Dialog open={defaultDialogOpen} onOpenChange={setDefaultDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button onClick={handleOpenDefault} disabled={!selectedAyId}>
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        Set Default Kuota
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Set Default Kuota Bimbingan</DialogTitle>
+                                        <DialogDescription>
+                                            Kuota default akan diterapkan ke seluruh dosen di tahun ajaran{' '}
+                                            <strong>
+                                                {selectedAy ? (selectedAy.label ?? `${selectedAy.year} ${selectedAy.semester === 'ganjil' ? 'Ganjil' : 'Genap'}`) : ''}
+                                            </strong>
+                                            . Dosen baru akan dibuatkan kuotanya, dan dosen yang sudah ada akan diperbarui sesuai nilai default ini.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="defaultMax">Hard Limit (Kuota Maksimum)</Label>
+                                            <Input
+                                                id="defaultMax"
+                                                type="number"
+                                                min={1}
+                                                max={100}
+                                                value={defaultMax}
+                                                onChange={(e) => setDefaultMax(Number(e.target.value))}
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Jumlah mahasiswa bimbingan maksimal yang diizinkan
+                                            </p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="defaultSoft">Soft Limit (Batas Peringatan)</Label>
+                                            <Input
+                                                id="defaultSoft"
+                                                type="number"
+                                                min={0}
+                                                max={100}
+                                                value={defaultSoft}
+                                                onChange={(e) => setDefaultSoft(Number(e.target.value))}
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Saat jumlah bimbingan mencapai ini, dosen ditandai "hampir penuh"
+                                            </p>
+                                        </div>
+                                        {defaultSoft > defaultMax && (
+                                            <p className="text-sm text-destructive">
+                                                Soft limit tidak boleh lebih besar dari hard limit
+                                            </p>
+                                        )}
+                                    </div>
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => setDefaultDialogOpen(false)}>
+                                            Batal
+                                        </Button>
+                                        <Button
+                                            onClick={handleSetDefault}
+                                            disabled={defaultSoft > defaultMax || setDefaultMutation.isPending}
+                                        >
+                                            {setDefaultMutation.isPending ? (
+                                                <>
+                                                    <Spinner className="mr-2 h-4 w-4" />
+                                                    Menyimpan...
+                                                </>
+                                            ) : (
+                                                'Simpan & Generate'
+                                            )}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        ) : null}
+                    </>
+                }
+            />
+
+            {/* Edit Lecturer Quota Dialog */}
+            {!readOnly ? (
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Set Default Kuota Bimbingan</DialogTitle>
+                            <DialogTitle>Edit Kuota — {editTarget ? toTitleCaseName(editTarget.fullName) : ''}</DialogTitle>
                             <DialogDescription>
-                                Kuota default akan diterapkan ke seluruh dosen di tahun ajaran{' '}
-                                <strong>
-                                    {selectedAy ? (selectedAy.label ?? `${selectedAy.year} ${selectedAy.semester === 'ganjil' ? 'Ganjil' : 'Genap'}`) : ''}
-                                </strong>
-                                . Dosen baru akan dibuatkan kuotanya, dan dosen yang sudah ada akan diperbarui sesuai nilai default ini.
+                                Override kuota bimbingan individual untuk dosen ini (NIP: {editTarget?.identityNumber}).
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
+                            {editTarget && (
+                                <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm space-y-1">
+                                    <p>
+                                        <span className="text-muted-foreground">Beban total saat ini: </span>
+                                        <span className="font-semibold tabular-nums">{editTarget.currentCount}</span>
+                                        <span className="text-muted-foreground"> (aktif {editTarget.activeCount}, booking {editTarget.bookingCount})</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Pending validasi KaDep saat ini:{' '}
+                                        <span className="font-medium text-foreground tabular-nums">
+                                            {editTarget.pendingKadepCount}
+                                        </span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Sisa normal jika hard limit = nilai di bawah:{' '}
+                                        <span className="font-medium text-foreground tabular-nums">
+                                            {Math.max(0, editMax - editTarget.currentCount)}
+                                        </span>
+                                    </p>
+                                </div>
+                            )}
                             <div className="grid gap-2">
-                                <Label htmlFor="defaultMax">Hard Limit (Kuota Maksimum)</Label>
+                                <Label htmlFor="editMax">Hard Limit</Label>
                                 <Input
-                                    id="defaultMax"
-                                    type="number"
-                                    min={1}
-                                    max={100}
-                                    value={defaultMax}
-                                    onChange={(e) => setDefaultMax(Number(e.target.value))}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Jumlah mahasiswa bimbingan maksimal yang diizinkan
-                                </p>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="defaultSoft">Soft Limit (Batas Peringatan)</Label>
-                                <Input
-                                    id="defaultSoft"
+                                    id="editMax"
                                     type="number"
                                     min={0}
                                     max={100}
-                                    value={defaultSoft}
-                                    onChange={(e) => setDefaultSoft(Number(e.target.value))}
+                                    value={editMax}
+                                    onChange={(e) => setEditMax(Number(e.target.value))}
                                 />
-                                <p className="text-xs text-muted-foreground">
-                                    Saat jumlah bimbingan mencapai ini, dosen ditandai "hampir penuh"
-                                </p>
                             </div>
-                            {defaultSoft > defaultMax && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="editSoft">Soft Limit</Label>
+                                <Input
+                                    id="editSoft"
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={editSoft}
+                                    onChange={(e) => setEditSoft(Number(e.target.value))}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="editNotes">Catatan (Opsional)</Label>
+                                <Textarea
+                                    id="editNotes"
+                                    placeholder="Mis: Sedang cuti, kuota dikurangi"
+                                    value={editNotes}
+                                    onChange={(e) => setEditNotes(e.target.value)}
+                                    rows={2}
+                                />
+                            </div>
+                            {editSoft > editMax && (
                                 <p className="text-sm text-destructive">
                                     Soft limit tidak boleh lebih besar dari hard limit
                                 </p>
                             )}
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setDefaultDialogOpen(false)}>
+                            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                                 Batal
                             </Button>
-                            <Button
-                                onClick={handleSetDefault}
-                                disabled={defaultSoft > defaultMax || setDefaultMutation.isPending}
-                            >
-                                {setDefaultMutation.isPending ? (
-                                    <>
-                                        <Spinner className="mr-2 h-4 w-4" />
-                                        Menyimpan...
-                                    </>
-                                ) : (
-                                    'Simpan & Generate'
-                                )}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-                    </>
-                }
-            />
-
-            {/* Edit Lecturer Quota Dialog */}
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit Kuota — {editTarget ? toTitleCaseName(editTarget.fullName) : ''}</DialogTitle>
-                        <DialogDescription>
-                            Override kuota bimbingan individual untuk dosen ini (NIP: {editTarget?.identityNumber}).
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        {editTarget && (
-                            <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm space-y-1">
-                                <p>
-                                    <span className="text-muted-foreground">Beban total saat ini: </span>
-                                    <span className="font-semibold tabular-nums">{editTarget.currentCount}</span>
-                                    <span className="text-muted-foreground"> (aktif {editTarget.activeCount}, booking {editTarget.bookingCount})</span>
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Pending validasi KaDep saat ini:{' '}
-                                    <span className="font-medium text-foreground tabular-nums">
-                                        {editTarget.pendingKadepCount}
-                                    </span>
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Sisa normal jika hard limit = nilai di bawah:{' '}
-                                    <span className="font-medium text-foreground tabular-nums">
-                                        {Math.max(0, editMax - editTarget.currentCount)}
-                                    </span>
-                                </p>
-                            </div>
-                        )}
-                        <div className="grid gap-2">
-                            <Label htmlFor="editMax">Hard Limit</Label>
-                            <Input
-                                id="editMax"
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={editMax}
-                                onChange={(e) => setEditMax(Number(e.target.value))}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="editSoft">Soft Limit</Label>
-                            <Input
-                                id="editSoft"
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={editSoft}
-                                onChange={(e) => setEditSoft(Number(e.target.value))}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="editNotes">Catatan (Opsional)</Label>
-                            <Textarea
-                                id="editNotes"
-                                placeholder="Mis: Sedang cuti, kuota dikurangi"
-                                value={editNotes}
-                                onChange={(e) => setEditNotes(e.target.value)}
-                                rows={2}
-                            />
-                        </div>
-                        {editSoft > editMax && (
-                            <p className="text-sm text-destructive">
-                                Soft limit tidak boleh lebih besar dari hard limit
-                            </p>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                            Batal
-                        </Button>
                             <Button
                                 onClick={handleUpdateLecturer}
                                 disabled={editSoft > editMax || updateLecturerMutation.isPending}
@@ -534,9 +628,19 @@ export default function KuotaBimbingan() {
                                     'Simpan'
                                 )}
                             </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            ) : null}
+
+            <LecturerQuotaDetailDialog
+                selection={quotaDetailSelection}
+                academicYearId={selectedAyId || undefined}
+                academicYearLabel={selectedAy?.label}
+                onOpenChange={(open) => {
+                    if (!open) setQuotaDetailSelection(null);
+                }}
+            />
         </div>
     );
 }

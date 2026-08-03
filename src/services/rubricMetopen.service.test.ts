@@ -36,7 +36,9 @@ describe("rubricMetopen service", () => {
       jsonResponse({ success: true, data: { cpmks: [cpmk] } }),
     );
 
-    await expect(rubricMetopenService.getCpmksWithRubrics("supervisor")).resolves.toEqual([cpmk]);
+    await expect(
+      rubricMetopenService.getCpmksWithRubrics("supervisor", "ay-1"),
+    ).resolves.toEqual([cpmk]);
   });
 
   it("normalizes nested all-CPMK payloads", async () => {
@@ -44,7 +46,7 @@ describe("rubricMetopen service", () => {
       id: "cpmk-2",
       code: "CPMK-02",
       description: "Penulisan proposal",
-      academicYearId: null,
+      academicYearId: "ay-1",
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
@@ -52,7 +54,7 @@ describe("rubricMetopen service", () => {
       jsonResponse({ success: true, data: { metopenCpmks: [cpmk] } }),
     );
 
-    await expect(rubricMetopenService.getAllMetopenCpmks()).resolves.toEqual([cpmk]);
+    await expect(rubricMetopenService.getAllMetopenCpmks("ay-1")).resolves.toEqual([cpmk]);
   });
 
   it("unwraps nested criteria mutation payloads", async () => {

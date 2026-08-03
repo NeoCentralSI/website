@@ -43,7 +43,7 @@ function isValidCpmkForm(code: string, description: string) {
 
 interface MetopenCpmkCatalogProps {
   items: MetopenCpmk[];
-  onCreate: (data: CreateMetopenCpmkPayload) => Promise<unknown>;
+  onCreate: (data: Omit<CreateMetopenCpmkPayload, "academicYearId">) => Promise<unknown>;
   onUpdate: (id: string, data: UpdateMetopenCpmkPayload) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
   isCreating: boolean;
