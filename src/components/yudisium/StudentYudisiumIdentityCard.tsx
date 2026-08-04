@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Calendar, MapPin, Download, FileText, Award, Info } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, Download, Info } from 'lucide-react';
 import { formatDateOnlyId } from '@/lib/text';
 import { openProtectedFile } from '@/lib/protected-file';
 import { downloadStudentCertificate } from '@/services/yudisium/student.service';
@@ -156,8 +156,10 @@ export function StudentYudisiumIdentityCard({ overview }: StudentYudisiumIdentit
               size="sm"
               className="h-8 gap-1.5 border-gray-200 bg-card text-primary hover:bg-primary/5 text-xs font-medium shrink-0 shadow-none transition-colors"
               onClick={async () => {
+                const filePath = decreeDocument.filePath;
+                if (!filePath) return;
                 try {
-                  await openProtectedFile(decreeDocument.filePath, decreeDocument.fileName || 'SK-Yudisium.pdf');
+                  await openProtectedFile(filePath, decreeDocument.fileName || 'SK-Yudisium.pdf');
                 } catch (err) {
                   toast.error(err instanceof Error ? err.message : 'Gagal mengunduh SK');
                 }

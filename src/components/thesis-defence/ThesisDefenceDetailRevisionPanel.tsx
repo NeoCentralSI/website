@@ -71,6 +71,13 @@ function getRevisionNotePreview(note: string): string {
   return `${note.slice(0, REVISION_NOTE_PREVIEW_LIMIT).trimEnd()}...`;
 }
 
+interface Props {
+  defenceId: string;
+  detail: any;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+}
+
 export function ThesisDefenceDetailRevisionPanel({
   defenceId,
   detail,
@@ -95,7 +102,7 @@ export function ThesisDefenceDetailRevisionPanel({
       <RevisionBoardSection
         defenceId={defenceId}
         detail={detail}
-        onRefresh={onRefresh}
+        onRefresh={onRefresh || (() => {})}
         isRefreshing={isRefreshing}
         showStudentActions={showStudentActions}
         showSupervisorActions={showSupervisorActions}

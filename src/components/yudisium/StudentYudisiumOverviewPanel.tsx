@@ -7,17 +7,7 @@ import { StudentYudisiumChecklistRequirementsCard } from './StudentYudisiumCheck
 import { StudentYudisiumDocumentCard } from './StudentYudisiumDocumentCard';
 import { StudentYudisiumCplTable } from './StudentYudisiumCplTable';
 import { StudentYudisiumHistoryCard } from './StudentYudisiumHistoryCard';
-import type { StudentYudisiumOverviewResponse } from '@/types/student-yudisium.types';
-
-interface StudentYudisiumHistoryItem {
-  id: string;
-  yudisiumId: string;
-  yudisiumName: string;
-  registrationOpenDate: string | null;
-  registrationCloseDate: string | null;
-  eventDate: string | null;
-  status: string;
-}
+import type { StudentYudisiumOverviewResponse, StudentYudisiumHistoryItem } from '@/types/student-yudisium.types';
 
 interface OverviewPanelProps {
   overview: StudentYudisiumOverviewResponse;
@@ -119,7 +109,7 @@ export function StudentYudisiumOverviewPanel({
                 key={item.id}
                 index={index + 1}
                 item={item}
-                onClick={() => onDetailClick(item.id, item.yudisiumId)}
+                onClick={() => onDetailClick(item.id, item.yudisiumId || '')}
               />
             ))}
           </div>

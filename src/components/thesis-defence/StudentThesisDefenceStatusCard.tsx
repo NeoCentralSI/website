@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface DefenceStatusStepperProps {
   status: ThesisDefenceStatus | null;
-  allChecklistMet: boolean;
+  allChecklistMet?: boolean;
   milestones?: DefenceMilestone[];
 }
 

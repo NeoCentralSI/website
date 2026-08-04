@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, CheckCircle2, AlertCircle, XCircle, Download, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth, useRole } from '@/hooks/shared';
@@ -536,6 +536,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
       await finalizeMutation.mutateAsync({
         defenceId,
         payload: {
+          status: isBelowThreshold ? 'failed' : (recommendRevision ? 'passed_with_revision' : 'passed'),
           recommendRevision: isBelowThreshold ? false : recommendRevision,
         },
       });

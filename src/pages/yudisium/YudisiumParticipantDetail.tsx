@@ -13,11 +13,9 @@ import {
   Eye,
   Check, Plus, CheckCircle2,
   Download,
-  AlertCircle,
   Upload,
   X,
   User,
-  GraduationCap,
   BarChart3,
 } from 'lucide-react';
 import {

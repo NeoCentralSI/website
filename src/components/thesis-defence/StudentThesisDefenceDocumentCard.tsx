@@ -8,7 +8,6 @@ import type {
   DefenceRequirementConfiguration,
   DefenceUploadConfig,
 } from '@/types/defence.types';
-import { openProtectedFile } from '@/lib/protected-file';
 import { fetchDefenceDocumentBlob } from '@/services/thesis-defence/doc.service';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
