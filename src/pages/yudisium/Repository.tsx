@@ -31,8 +31,8 @@ export default function Repository() {
 
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true });
-    setPage(1); 
-    setTopicFilter(''); 
+    setPage(1);
+    setTopicFilter('');
   };
 
   useEffect(() => {
@@ -137,7 +137,7 @@ export default function Repository() {
         ]
       },
       render: (doc) => (
-        <Badge variant="outline" className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">
+        <Badge variant="outline" className="text-muted-foreground font-normal text-xs border-gray-200">
           {doc.topicName}
         </Badge>
       ),
@@ -164,18 +164,18 @@ export default function Repository() {
   return (
     <div className="p-6 space-y-6">
       {/* Page Header */}
-      <div className="rounded-2xl border border-border/60 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="rounded-lg border border-gray-200 bg-card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Repositori Karya Ilmiah</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Repositori Karya Ilmiah</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
               Pusat pencarian dokumen publik mahasiswa yang telah menyelesaikan proses yudisium.
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary">
-            <FileText className="h-4 w-4" />
-            {currentPanel?.documents.length ?? 0} dokumen
-          </div>
+          <Badge variant="outline" className="h-8 gap-1.5 border-gray-200 bg-card text-xs font-medium text-foreground shrink-0 w-fit">
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            {currentPanel?.documents.length ?? 0} Dokumen
+          </Badge>
         </div>
       </div>
 
@@ -190,10 +190,10 @@ export default function Repository() {
 
       {/* Content */}
       {!isLoading && tabs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-white p-10 text-center">
-          <FileText className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <h2 className="mt-4 text-base font-semibold text-foreground">Belum Ada Kategori Publik</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-gray-200 bg-card p-10 text-center space-y-2">
+          <FileText className="mx-auto h-10 w-10 text-muted-foreground/40" />
+          <h2 className="text-base font-semibold text-foreground">Belum Ada Kategori Publik</h2>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
             Repositori akan muncul setelah persyaratan yudisium ditandai publik dan memiliki dokumen dari peserta yang lulus.
           </p>
         </div>

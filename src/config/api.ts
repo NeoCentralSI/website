@@ -114,6 +114,8 @@ export const API_CONFIG = {
       DELETE_PARTICIPANT: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
       VERIFY_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/verify`,
+      REQUIREMENT_FILE: (yudisiumId: string, participantId: string, itemId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${itemId}/file`,
 
       // CPL (Lecturer / GKM)
       CPL_SCORES: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-scores`,

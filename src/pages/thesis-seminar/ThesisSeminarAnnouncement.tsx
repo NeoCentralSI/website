@@ -231,7 +231,7 @@ function SeminarCard({
           <div className="flex items-center gap-1.5 text-sm font-semibold tabular-nums">
             <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className={!seminar.startTime || !seminar.endTime ? 'text-[11px] leading-tight' : ''}>
-              {!seminar.startTime || !seminar.endTime 
+              {!seminar.startTime || !seminar.endTime
                 ? formatDateShortId(seminar.date)
                 : `${startTime} – ${endTime}`}
             </span>
@@ -445,12 +445,12 @@ export default function SeminarHasilAnnouncement() {
       </div>
 
       {/* Search + pagination bar */}
-      <div className="flex flex-col gap-3 rounded-2xl border bg-card/70 p-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:flex-1 sm:max-w-[65%]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Cari nama mahasiswa atau judul TA..."
-            className="pl-9"
+            className="pl-9 border-gray-200 bg-card text-xs"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -460,7 +460,7 @@ export default function SeminarHasilAnnouncement() {
             <Button
               size="sm"
               variant="outline"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 border-gray-200 text-xs"
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPage === 1}
             >
@@ -476,7 +476,7 @@ export default function SeminarHasilAnnouncement() {
                   key={item}
                   size="sm"
                   variant={currentPage === item ? 'default' : 'outline'}
-                  className="h-8 min-w-8 px-2 text-xs"
+                  className={cn("h-8 min-w-8 px-2 text-xs", currentPage !== item && "border-gray-200")}
                   onClick={() => setCurrentPage(item)}
                 >
                   {item}
@@ -486,7 +486,7 @@ export default function SeminarHasilAnnouncement() {
             <Button
               size="sm"
               variant="outline"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 border-gray-200 text-xs"
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
               disabled={currentPage === totalPages}
             >
@@ -525,7 +525,7 @@ export default function SeminarHasilAnnouncement() {
                   {items.length} seminar
                 </span>
               </div>
-              <Card className="overflow-hidden py-0">
+              <Card className="overflow-hidden py-0 border border-gray-200 bg-card rounded-lg shadow-none">
                 <CardContent className="p-0">
                   {items.map((seminar) => (
                     <SeminarCard

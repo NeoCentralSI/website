@@ -46,12 +46,19 @@ export function AdminThesisDefenceCancelDialog({
     );
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && !cancelMutation.isPending) {
+      setReason('');
+    }
+    onOpenChange(nextOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-destructive flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="gap-5 sm:max-w-xl">
+        <DialogHeader className="space-y-2 pr-8">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
+            <AlertCircle className="h-5 w-5 text-destructive" />
             Batalkan Sidang TA
           </DialogTitle>
           <DialogDescription>
@@ -60,11 +67,11 @@ export function AdminThesisDefenceCancelDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <Alert variant="destructive" className="bg-destructive/5 border-destructive/20">
+        <div className="space-y-5">
+          <Alert variant="destructive" className="border-red-200 bg-red-50/60 p-4">
             <AlertCircle className="h-4 w-4 text-destructive" />
             <AlertTitle className="text-destructive">Peringatan</AlertTitle>
-            <AlertDescription className="text-destructive/80 text-xs">
+            <AlertDescription className="text-sm leading-relaxed text-red-700">
               Tindakan ini akan mengubah status sidang menjadi "Dibatalkan". Mahasiswa harus mendaftar ulang jika ingin menjadwalkan kembali.
             </AlertDescription>
           </Alert>
@@ -76,13 +83,13 @@ export function AdminThesisDefenceCancelDialog({
               placeholder="Masukkan alasan mengapa sidang ini dibatalkan..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              rows={3}
+              rows={4}
             />
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={cancelMutation.isPending}>
+        <DialogFooter className="border-t border-gray-200 pt-4">
+          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={cancelMutation.isPending}>
             Kembali
           </Button>
           <Button

@@ -79,8 +79,7 @@ export type StudentYudisiumOverviewResponse = {
   } | null;
   participantStatus:
     | 'registered'
-    | 'verified'
-    | 'cpl_validated'
+    | 'eligible'
     | 'appointed'
     | 'rejected'
     | 'finalized'

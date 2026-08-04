@@ -21,6 +21,10 @@ export type AdminYudisiumParticipant = {
   id: string;
   status: string;
   registeredAt: string | null;
+  requirementVerifiedAt?: string | null;
+  cplValidatedAt?: string | null;
+  isRequirementVerified?: boolean;
+  isCplValidated?: boolean;
   notes: string | null;
   studentName: string;
   studentNim: string;

@@ -12,7 +12,8 @@ import {
   Loader2,
   Eye,
   Copy,
-  AlertCircle
+  AlertCircle,
+  Hash
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +32,7 @@ const QUESTION_TYPES: { label: string; value: ExitSurveyQuestionType }[] = [
   { label: 'Paragraf', value: 'paragraph' },
   { label: 'Pilihan Ganda', value: 'single_choice' },
   { label: 'Kotak Centang', value: 'multiple_choice' },
+  { label: 'Angka', value: 'number' },
   { label: 'Tanggal', value: 'date' },
 ];
 
@@ -204,6 +206,12 @@ const QuestionCard = ({
                   {localType === 'paragraph' && (
                       <div className="text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-[11px] italic">
                         Jawaban panjang
+                      </div>
+                  )}
+                  {localType === 'number' && (
+                      <div className="flex items-center gap-2 text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-[11px] italic">
+                        <Hash className="h-3 w-3" />
+                        Jawaban berupa angka (contoh: 10, 4.5)
                       </div>
                   )}
                   {localType === 'date' && (
