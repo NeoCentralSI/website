@@ -88,8 +88,7 @@ export default function Metopel() {
         <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Anda sudah melewati fase Metode Penelitian dan kini berada di fase Tugas Akhir.
-            Halaman ini ditampilkan sebagai <strong>arsip</strong> — data dapat dilihat tetapi tidak dapat diubah.
+            Halaman ini ditampilkan sebagai <strong>arsip</strong> (hanya lihat).
           </p>
         </div>
       )}

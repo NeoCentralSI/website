@@ -425,6 +425,7 @@ describe("CariPembimbing", () => {
 
     expect(await screen.findByText("Penugasan TA-04 terkunci")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Tarik Pengajuan/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/perubahan pembimbing masuk ranah TA-05/i)).toBeInTheDocument();
+    expect(screen.getByText(/Penugasan sudah terkunci/i)).toBeInTheDocument();
+    expect(screen.getByText(/Perubahan pembimbing menghubungi departemen/i)).toBeInTheDocument();
   });
 });

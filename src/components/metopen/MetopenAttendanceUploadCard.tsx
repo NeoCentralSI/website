@@ -166,8 +166,7 @@ export function MetopenAttendanceUploadCard() {
               Presensi Metopel
             </CardTitle>
             <CardDescription>
-              Unggah 1–2 report peserta kelas Metode Penelitian (digabung jadi satu import aktif).
-              Minimal presensi 75%. Unggah ulang mengganti seluruh set aktif, bukan menambah kelas terpisah.
+              Unggah 1–2 report peserta kelas Metode Penelitian. Minimal presensi 75%. Unggah ulang mengganti data aktif.
             </CardDescription>
           </div>
           {latestImport ? (

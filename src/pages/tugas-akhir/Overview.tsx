@@ -432,7 +432,7 @@ export default function TugasAkhirOverviewPage() {
                                             Selamat! Anda sudah di fase Tugas Akhir penuh.
                                         </p>
                                         <p className="text-sm text-emerald-800">
-                                            Penugasan pembimbing dan judul tercatat di sistem. Dokumen cetak TA-04 dikelola departemen — bukan bukti keputusan di aplikasi.
+                                            Penugasan pembimbing dan judul tercatat di sistem. Dokumen cetak dikelola departemen.
                                         </p>
                                     </div>
                                 </div>
@@ -659,7 +659,7 @@ export default function TugasAkhirOverviewPage() {
                                     <CardHeader>
                                         <CardTitle className="text-lg">Stepper Alur Proposal &rarr; TA-04</CardTitle>
                                         <CardDescription>
-                                            Lima step kualitatif dari pembimbing resmi sampai pengesahan TA-04 oleh KaDep. Tidak ada syarat kuantitatif minimum jumlah sesi bimbingan.
+                                            Alur dari pembimbing sampai penugasan TA-04.
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
@@ -707,12 +707,6 @@ export default function TugasAkhirOverviewPage() {
                                             );
                                         })}
 
-                                        <div className="rounded-lg border border-blue-200 bg-blue-50/70 p-4 text-sm text-blue-900">
-                                            <p className="font-medium">Catatan transisi</p>
-                                            <p className="mt-1 text-blue-800">
-                                                Tugas atau milestone Metopen tidak lagi menjadi syarat operasional. TA-04 awal terbit setelah booking pembimbing disetujui; fase Tugas Akhir penuh aktif otomatis setelah TA-03A/TA-03B final dan SIA mengonfirmasi MK Tugas Akhir. Bimbingan dilakukan secara berkala (kualitatif) — minimal 8 sesi (TA-06) baru berlaku di Seminar Hasil, bukan di SIMPTA.
-                                            </p>
-                                        </div>
                                     </CardContent>
                                 </Card>
                             </div>

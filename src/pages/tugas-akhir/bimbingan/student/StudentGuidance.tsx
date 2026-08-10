@@ -251,10 +251,10 @@ export default function StudentGuidancePage() {
           {(!thesisId || (thesisDetail?.supervisors?.length ?? 0) === 0) ? (
             <RequirementsNotMet
               title="Pembimbing Resmi Belum Ditetapkan"
-              description="Logbook bimbingan akan terbuka segera setelah pembimbing resmi tercatat di SIMPTA. Pastikan pengajuan TA-01/TA-02 Anda sudah disetujui."
+              description="Logbook bimbingan terbuka setelah pembimbing resmi tercatat. Pastikan pengajuan TA-01/TA-02 sudah disetujui."
               requirements={[
                 {
-                  label: "Pembimbing resmi tercatat di SIMPTA",
+                  label: "Pembimbing resmi tercatat",
                   met: false,
                   description: "Pembimbing resmi tercatat setelah TA-01 disetujui dosen atau TA-02 difinalisasi KaDep.",
                 },

@@ -216,8 +216,7 @@ export default function MetopenTa03BQueue() {
                 <div>
                     <h1 className="text-base font-semibold tracking-tight sm:text-lg">Penilaian Proposal TA-03B</h1>
                     <p className="text-xs text-muted-foreground sm:text-sm">
-                        Antrean Koordinator untuk rubrik TA-03B. Penilaian berjalan
-                        paralel setelah TA-04 awal terbit dan proposal final tersedia.
+                        Antrean penilaian rubrik TA-03B.
                     </p>
                 </div>
                 <Button
@@ -251,9 +250,7 @@ export default function MetopenTa03BQueue() {
                         <div className="space-y-1">
                             <CardTitle className="text-base">Ringkasan Antrean TA-03B</CardTitle>
                             <CardDescription className="text-xs">
-                                Form manual memeriksa presensi Metopel terbaru sebelum submit.
-                                Setelah dinilai, proposal pindah ke riwayat read-only dengan detail
-                                rubrik dan versi proposal.
+                                Presensi Metopel dicek sebelum submit. Setelah dinilai, nilai hanya dapat dilihat.
                             </CardDescription>
                         </div>
                     </div>
@@ -313,7 +310,7 @@ export default function MetopenTa03BQueue() {
                     description={
                         activeTab === "history"
                             ? "Proposal yang sudah memiliki skor Koordinator atau nilai otomatis 0 presensi akan tampil di sini."
-                            : "Antrean ini hanya terbuka setelah KaDep memfinalisasi batch TA-04 awal (SK PDF) dan mahasiswa submit proposal final. Jika proposal sudah final tetapi belum muncul, pastikan status mahasiswa sudah 'TA-04 terbit, booking' di halaman KaDep. Jika presensi Metopel belum tersedia atau kurang dari 75%, form penilaian akan diblokir otomatis."
+                            : "Belum ada antrean. Menunggu penugasan TA-04 dan proposal final. Presensi di bawah 75% memblokir penilaian."
                     }
                 />
             ) : (
@@ -612,7 +609,7 @@ function MetopenScoreDetailPanel({
         <ResearchMethodScoreReadOnly
             score={score}
             title="Detail Riwayat Penilaian TA-03"
-            description="Nilai TA-03A/TA-03B dan descriptor rubrik tersimpan dalam mode read-only; koreksi tidak dilakukan dari halaman antrean."
+            description="Nilai sudah tersimpan (hanya lihat)."
             emptyText="Detail rubrik untuk proposal ini belum tersedia."
         />
     );

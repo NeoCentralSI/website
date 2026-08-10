@@ -153,9 +153,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                 Penilaian sudah final dan tidak dapat direvisi
             </AlertTitle>
             <AlertDescription className="text-emerald-700">
-                Nilai TA-03A {hasP2 ? "(termasuk persetujuan Pembimbing 2)" : ""} dan TA-03B terkunci permanen
-                setelah disubmit. Revisi konten proposal hanya berlaku di fase bimbingan informal
-                sebelum submit proposal final.
+                Nilai TA-03A {hasP2 ? "(termasuk persetujuan Pembimbing 2)" : ""} dan TA-03B sudah terkunci.
             </AlertDescription>
         </Alert>
     ) : null;
@@ -196,14 +194,11 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                             Anda Pembimbing 1 — pengisi utama TA-03A
                         </AlertTitle>
                         <AlertDescription className="text-blue-700">
-                            Anda mengisi rubrik penilaian utuh (maks {summary.ta03aCap} poin) atas{" "}
-                            <strong>konsensus</strong>{" "}
-                            dengan{" "}
+                            Isi rubrik TA-03A (maks {summary.ta03aCap} poin)
                             {hasP2
-                                ? "Pembimbing 2 (akan memberi persetujuan setelah Anda serahkan penilaian)"
-                                : "diri sendiri (thesis hanya 1 pembimbing)"}
-                            . Setelah serahkan penilaian, sistem menunggu {hasP2 ? "persetujuan P2 + " : ""}TA-03B
-                            Koordinator Metopen untuk auto-finalisasi dan promosi aktif setelah KRS TA terkonfirmasi.
+                                ? ". Setelah diserahkan, Pembimbing 2 memberi persetujuan."
+                                : "."}{" "}
+                            Finalisasi menunggu{hasP2 ? " persetujuan P2 dan" : ""} nilai TA-03B.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -214,9 +209,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                             TA-03A sudah diserahkan oleh Pembimbing 1
                         </AlertTitle>
                         <AlertDescription className="text-blue-700">
-                            Rubrik TA-03A sekarang read-only di sisi Anda. Siklus penilaian tinggal menunggu{" "}
-                            {hasP2 && !coSignedAt ? "persetujuan Pembimbing 2" : "kelengkapan TA-03B Koordinator Metopen"}{" "}
-                            sebelum nilai akhir TA-03 dikunci permanen untuk promosi aktif otomatis.
+                            Rubrik TA-03A sudah diserahkan. Menunggu{" "}
+                            {hasP2 && !coSignedAt ? "persetujuan Pembimbing 2" : "nilai TA-03B"}.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -231,8 +225,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                         }
                         submitConfirmText={
                             hasP2
-                                ? "Setelah serahkan penilaian, Pembimbing 2 perlu memberi persetujuan untuk finalisasi. Pasca finalisasi, nilai akan dikunci permanen dan dipakai promosi aktif otomatis setelah KRS TA terkonfirmasi."
-                                : "Setelah serahkan penilaian + TA-03B masuk, nilai akan dikunci permanen dan dipakai promosi aktif otomatis setelah KRS TA terkonfirmasi. Pastikan rubrik sudah benar."
+                                ? "Setelah diserahkan, Pembimbing 2 perlu memberi persetujuan. Nilai tidak dapat diubah setelah final."
+                                : "Setelah TA-03B masuk, nilai tidak dapat diubah. Pastikan rubrik sudah benar."
                         }
                     />
                 )}
@@ -255,11 +249,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                             Anda Pembimbing 2 — persetujuan TA-03A
                         </AlertTitle>
                         <AlertDescription className="text-violet-700">
-                            Pembimbing 1 yang mengisi rubrik utuh; Anda berperan memberikan{" "}
-                            <strong>persetujuan</strong> konsensus. Persetujuan tidak mengubah nilai —
-                            hanya menambah audit trail bahwa kedua pembimbing setuju. Selaras formulir
-                            TA-03A cetak yang punya satu blok tanda tangan tunggal &ldquo;Dosen
-                            Pembimbing&rdquo;.
+                            Pembimbing 1 mengisi rubrik; Anda memberi <strong>persetujuan</strong>. Persetujuan tidak mengubah nilai.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -306,10 +296,8 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Konfirmasi persetujuan Pembimbing 2</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Setelah persetujuan tercatat, nilai TA-03A tidak dapat direvisi.
-                                            Bila TA-03B juga sudah masuk, sistem akan auto-finalisasi dan
-                                            memakai nilai itu untuk promosi aktif setelah KRS TA terkonfirmasi.
-                                            Pastikan Anda sudah berdiskusi konsensus dengan Pembimbing 1.
+                                            Setelah persetujuan tercatat, nilai TA-03A tidak dapat diubah.
+                                            Pastikan Anda sudah berdiskusi dengan Pembimbing 1.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -615,9 +603,9 @@ function ScoreBreakdownCard({ summary }: { summary: ScoreSummary }) {
     return (
         <Card>
             <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Rincian Skor per CPMK (Mirror Template SIA)</CardTitle>
+                <CardTitle className="text-sm">Rincian Skor per CPMK</CardTitle>
                 <CardDescription>
-                    Pemetaan 4 bucket sesuai kolom export xlsx Koordinator Metopen.
+                    Ringkasan skor per komponen penilaian.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -690,8 +678,7 @@ function Ta03bRubricDetailCard({
                     Rincian Rubrik TA-03B (Koordinator Metopen)
                 </CardTitle>
                 <CardDescription>
-                    Penilaian sistematika penulisan proposal (TA-03B). Read-only untuk pembimbing —
-                    diisi oleh Koordinator Matkul Metopen.
+                    Penilaian TA-03B oleh Koordinator Metopen (hanya lihat).
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">

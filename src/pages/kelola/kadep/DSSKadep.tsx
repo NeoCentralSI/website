@@ -888,7 +888,7 @@ export default function DSSKadep() {
                                     Formulir TA-04 Awal per Periode
                                 </CardTitle>
                                 <CardDescription className="text-xs">
-                                    Keputusan penugasan dicatat di sistem lewat tombol Finalisasi. PDF hanya bukti cetak tanpa TTD — pratinjau di modal sebelum konfirmasi; unduh resmi setelah final untuk cetak fisik.
+                                    Finalisasi mencatat penugasan di sistem. PDF untuk cetak setelah final.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-2">
@@ -924,7 +924,7 @@ export default function DSSKadep() {
                                             </div>
                                             {s.hasPartialFinalization && (
                                                 <p className="mt-1.5 text-xs text-amber-700">
-                                                    Batch belum sinkron. Klik unduh akan meminta perbarui dulu agar PDF memuat seluruh cohort terbaru, bukan dokumen batch lama.
+                                                    Batch belum sinkron. Perbarui formulir dulu sebelum mengunduh PDF terbaru.
                                                 </p>
                                             )}
                                         </div>
@@ -1015,14 +1015,14 @@ export default function DSSKadep() {
                         <EmptyState
                             size="sm"
                             title={`Belum ada booking TA-01/TA-02 siap batch${historyAcademicYearFilter !== 'all' ? ' untuk periode ini' : ''}`}
-                            description="Setelah dosen/KaDep menyetujui pengajuan pembimbing, mahasiswa muncul di sini. Data yang sudah beban aktif TA tidak ditampilkan di halaman ini."
+                            description="Mahasiswa dengan booking disetujui muncul di sini."
                         />
                     ) : (
                         <div className="space-y-3">
                             <div>
                                 <h3 className="text-sm font-semibold">Daftar Batch Aktif</h3>
                                 <p className="text-xs text-muted-foreground">
-                                    Hanya mahasiswa fase Metopel dengan booking disetujui. Yang sudah beban aktif TA tidak ditampilkan di sini.
+                                    Mahasiswa fase Metopel dengan booking disetujui.
                                 </p>
                             </div>
                             {filteredBatchCohort.map((row: TitleReportHistoryRow) => {
@@ -1133,7 +1133,7 @@ export default function DSSKadep() {
                         <AlertDialogTitle>Batch belum diperbarui</AlertDialogTitle>
                         <AlertDialogDescription>
                             Formulir TA-04 periode {blockedDownloadDialog?.label ?? '-'} masih partial.
-                            Unduh sekarang akan memakai PDF lama. Perbarui formulir dulu agar seluruh cohort terbaru masuk dokumen.
+                            Perbarui formulir dulu sebelum mengunduh PDF terbaru.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -1185,7 +1185,7 @@ export default function DSSKadep() {
                         agar audit trail seragam. */}
                     {(confirmDialog.action === 'reject' || confirmDialog.action === 'redirect' || confirmDialog.action === 'request_revision') && (
                         <p className="text-xs text-muted-foreground px-1">
-                            Catatan KaDep wajib minimal 10 karakter untuk audit trail keputusan negatif. Saat ini: {kadepNotes.trim().length} karakter.
+                            Catatan KaDep wajib minimal 10 karakter. Saat ini: {kadepNotes.trim().length} karakter.
                         </p>
                     )}
                     <DialogFooter>
@@ -1231,8 +1231,8 @@ export default function DSSKadep() {
                         </DialogTitle>
                         <DialogDescription>
                             {finalizeBatchDialog?.step === 1
-                                ? `Keputusan dicatat di sistem untuk ${finalizeBatchDialog.thesisCount} mahasiswa. PDF di bawah hanya bukti cetak tanpa TTD — bukan artefak keputusan mahasiswa.`
-                                : `Anda akan menerbitkan status penugasan awal di sistem untuk ${finalizeBatchDialog?.thesisCount ?? 0} mahasiswa. Mahasiswa melihat status sistem; PDF untuk cetak KaDep.`}
+                                ? `Keputusan dicatat di sistem untuk ${finalizeBatchDialog.thesisCount} mahasiswa. PDF di bawah untuk cetak.`
+                                : `Terbitkan penugasan awal untuk ${finalizeBatchDialog?.thesisCount ?? 0} mahasiswa. PDF untuk cetak.`}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1298,7 +1298,7 @@ export default function DSSKadep() {
                                 <strong>{finalizeBatchDialog.thesisCount}</strong> mahasiswa dalam batch.
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                Snapshot batch lama tetap tersimpan sebagai audit. Mahasiswa baru dan perubahan P2 memerlukan refresh batch dengan snapshot terbaru. Beban aktif dosen tidak berubah di langkah ini.
+                                Mahasiswa baru atau perubahan P2 memerlukan pembaruan batch. Beban aktif dosen tidak berubah di langkah ini.
                             </p>
                             <label className="flex cursor-pointer items-start gap-2 text-sm">
                                 <input
@@ -1312,8 +1312,8 @@ export default function DSSKadep() {
                                     }
                                 />
                                 <span>
-                                    Saya memahami ini menerbitkan penugasan awal di sistem untuk{' '}
-                                    {finalizeBatchDialog.thesisCount} mahasiswa, dan PDF hanya untuk cetak tanpa TTD digital.
+                                    Saya memahami ini menerbitkan penugasan awal untuk{' '}
+                                    {finalizeBatchDialog.thesisCount} mahasiswa. PDF untuk cetak.
                                 </span>
                             </label>
                         </div>

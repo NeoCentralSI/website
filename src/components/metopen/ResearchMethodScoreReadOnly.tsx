@@ -21,7 +21,7 @@ interface ResearchMethodScoreReadOnlyProps {
 export function ResearchMethodScoreReadOnly({
   score,
   title = "Riwayat Penilaian Proposal TA-03",
-  description = "Ringkasan nilai dan detail rubrik TA-03A/TA-03B dalam mode read-only.",
+  description = "Ringkasan nilai dan detail rubrik TA-03A/TA-03B (hanya lihat).",
   emptyText = "Detail penilaian belum tersedia.",
 }: ResearchMethodScoreReadOnlyProps) {
   const detailGroups = useMemo(() => {

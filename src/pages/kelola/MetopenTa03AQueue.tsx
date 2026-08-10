@@ -223,9 +223,7 @@ export default function MetopenTa03AQueue() {
             <div>
                 <h1 className="text-base font-semibold tracking-tight sm:text-lg">Antrean Penilaian Pembimbing</h1>
                 <p className="text-xs text-muted-foreground sm:text-sm">
-                    Antrean terbuka setelah TA-04 awal terbit, mahasiswa submit proposal final,
-                    dan presensi Metopel terbaru sudah diunggah Koordinator. Pembimbing 1
-                    mengisi rubrik TA-03A; Pembimbing 2 memberi co-sign konsensus.
+                    Pembimbing 1 mengisi rubrik TA-03A; Pembimbing 2 memberi persetujuan bila ada.
                 </p>
             </div>
 
@@ -236,9 +234,7 @@ export default function MetopenTa03AQueue() {
                         <div className="space-y-1">
                             <CardTitle className="text-base">Ringkasan Antrean TA-03A</CardTitle>
                             <CardDescription className="text-xs">
-                                Mahasiswa dengan presensi kurang dari 75% otomatis mendapat nilai 0 tanpa
-                                penilaian proposal. Setelah disubmit pembimbing (termasuk co-sign jika ada)
-                                dan dinilai Koordinator Metopen, nilai terkunci permanen dan tidak dapat diubah.
+                                Presensi kurang dari 75% mendapat nilai 0. Nilai yang sudah disubmit tidak dapat diubah.
                             </CardDescription>
                         </div>
                     </div>
@@ -302,7 +298,7 @@ export default function MetopenTa03AQueue() {
                     description={
                         activeTab === "history"
                             ? "Proposal yang sudah pernah memiliki skor, persetujuan, finalisasi, atau nilai otomatis 0 akan tampil di sini."
-                            : "Antrean ini hanya terbuka setelah KaDep memfinalisasi batch TA-04 awal (SK PDF) dan mahasiswa bimbingan Anda submit proposal final. Jika proposal sudah final tetapi belum muncul, pastikan status mahasiswa sudah 'TA-04 terbit, booking' di halaman KaDep."
+                            : "Belum ada antrean. Menunggu penugasan TA-04 dan proposal final."
                     }
                 />
             ) : (

@@ -22,10 +22,9 @@ export default function TopikSaya() {
   return (
     <div className="p-6 space-y-6">
       <Alert>
-        <AlertTitle>Publish topik dosen tidak aktif</AlertTitle>
+        <AlertTitle>Fitur tidak tersedia</AlertTitle>
         <AlertDescription>
-          Marketplace topik dosen yang dipublikasikan ke mahasiswa tidak menjadi bagian dari release
-          aktif SIMPTA ini. Penentuan pembimbing difokuskan pada alur TA-01 dan TA-02.
+          Publikasi topik dosen ke mahasiswa belum tersedia. Penentuan pembimbing memakai alur TA-01 dan TA-02.
         </AlertDescription>
       </Alert>
     </div>

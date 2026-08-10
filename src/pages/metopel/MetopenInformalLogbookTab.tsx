@@ -79,8 +79,7 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
         <AlertTitle>Catatan informal sudah ditutup</AlertTitle>
         <AlertDescription className="space-y-3">
           <p>
-            Snapshot SIA mencatat Anda sudah mengambil mata kuliah Tugas Akhir. Catatan informal
-            Metopen hanya dipakai pada fase proposal sebelum MK Tugas Akhir aktif.
+            Catatan informal sudah ditutup karena mata kuliah Tugas Akhir sudah tercatat di SIA.
           </p>
           <Button asChild size="sm" variant="outline">
             <Link to="/tugas-akhir/bimbingan">Buka Bimbingan Tugas Akhir</Link>
@@ -106,9 +105,7 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Catatan belum tersedia</AlertTitle>
         <AlertDescription>
-          Catatan informal terikat pada tugas akhir aktif Anda. Setelah TA-04 difinalisasi KaDep,
-          Anda dapat menambahkan catatan di sini. Pembimbing dapat membaca catatan ini (tanpa
-          persetujuan). Bukan pengganti logbook bimbingan formal setelah MK Tugas Akhir.
+          Catatan informal tersedia setelah TA-04 difinalisasi KaDep.
         </AlertDescription>
       </Alert>
     );
@@ -120,9 +117,7 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
         <CardHeader>
           <CardTitle className="text-base sm:text-lg">Catatan bimbingan informal</CardTitle>
           <CardDescription>
-            Catatan progres proposal dan lampiran ringan (PDF, DOC, DOCX). Pembimbing Anda dapat
-            membaca catatan ini setelah TA-04 terbit; tidak memerlukan persetujuan. Untuk bimbingan
-            formal gunakan modul Tugas Akhir setelah MK Tugas Akhir tercatat.
+            Catatan progres proposal dan lampiran (PDF, DOC, DOCX). Pembimbing dapat membaca setelah TA-04 terbit.
           </CardDescription>
         </CardHeader>
         {!readOnly && (

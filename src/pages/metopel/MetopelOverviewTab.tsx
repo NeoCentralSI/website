@@ -6,12 +6,14 @@ import type { StudentArchiveData, StudentArchiveScoreDetail } from "@/services/m
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MetricAction } from "@/components/metopen/MetricAction";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loading } from "@/components/ui/spinner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CheckCircle2, ClipboardList, FileCheck2, Stamp, Users, FileText, Archive, ScrollText, Info } from "lucide-react";
-import { formatDateId } from "@/lib/text";
+import { formatDateId, formatRoleName, toTitleCaseName } from "@/lib/text";
 import { formatAdvisorRouteCode, formatAdvisorRouteProcessing } from "@/lib/advisorRoute";
 import { getAdvisorRequestStatus } from "@/lib/metopen/statusBadge";
+import type { AdvisorSupervisorSummary } from "@/services/advisorRequest.service";
 
 type AdvisorAccessState = NonNullable<ReturnType<typeof useAdvisorAccessState>["data"]>;
 
@@ -81,34 +83,75 @@ function buildProposalStatusUi(
   }
 }
 
+type OverviewSupervisorCard = Pick<
+  AdvisorSupervisorSummary,
+  "id" | "name" | "email" | "avatarUrl" | "role"
+>;
+
+/**
+ * Surface read-only nama P1/P2 di Overview setelah booking/TA-04.
+ * Menu Cari Pembimbing sengaja hilang saat hasOfficialSupervisor, jadi Overview
+ * menjadi jalur navigasi tetap untuk melihat pembimbing (KC-20260808-03).
+ */
+function resolveOverviewSupervisors(advisorAccess?: AdvisorAccessState): OverviewSupervisorCard[] {
+  if (!advisorAccess) return [];
+
+  if (advisorAccess.supervisors.length > 0) {
+    return advisorAccess.supervisors.map((supervisor) => ({
+      id: supervisor.id,
+      name: supervisor.name,
+      email: supervisor.email,
+      avatarUrl: supervisor.avatarUrl,
+      role: supervisor.role,
+    }));
+  }
+
+  const request = advisorAccess.blockingRequest ?? advisorAccess.latestRequest;
+  if (!request) return [];
+
+  const lecturer = request.redirectTarget ?? request.lecturer;
+  const fullName = lecturer?.user?.fullName;
+  if (!fullName) return [];
+
+  return [
+    {
+      id: lecturer.id,
+      name: fullName,
+      email: null,
+      avatarUrl: lecturer.user && "avatarUrl" in lecturer.user ? (lecturer.user.avatarUrl ?? null) : null,
+      role: "Calon Pembimbing 1",
+    },
+  ];
+}
+
 function getProposalQueueDescription(
   proposalStatus: ProposalStatus,
   queueReadiness: ProposalQueueReadiness,
   ta04IssuedAt?: string | null,
 ) {
   if (proposalStatus === "accepted") {
-    return "TA-03 final dan KRS Tugas Akhir sudah terkonfirmasi. Status pembimbing sudah menjadi beban aktif TA.";
+    return "Pembimbing sudah menjadi beban aktif Tugas Akhir.";
   }
   if (ta04IssuedAt) {
-    return "Penugasan pembimbing awal (TA-04) sudah dicatat di sistem oleh KaDep. Dokumen cetak dikelola departemen. Anda tetap di fase Metopel sampai TA-03 final dan KRS Tugas Akhir terkonfirmasi dari SIA.";
+    return "Penugasan TA-04 sudah dicatat. Menunggu TA-03 final dan konfirmasi mata kuliah Tugas Akhir dari SIA.";
   }
   if (proposalStatus === "submitted") {
-    return "Proposal final sudah dikirim. Penilaian TA-03 dan promosi beban aktif berjalan otomatis setelah syarat terpenuhi; penugasan pembimbing memakai TA-04 awal batch KaDep.";
+    return "Proposal final sudah dikirim. Menunggu penilaian TA-03.";
   }
 
   switch (queueReadiness?.block) {
     case "ta_course_not_confirmed":
-      return "Nilai TA-03 sudah final, tetapi promosi aktif belum berjalan karena snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir.";
+      return "Nilai TA-03 sudah final. Menunggu SIA mencatat mata kuliah Tugas Akhir.";
     case "scores_not_finalized":
-      return "Promosi aktif menunggu TA-03A, persetujuan Pembimbing 2 bila ada, dan TA-03B difinalisasi.";
+      return "Menunggu finalisasi nilai TA-03A dan TA-03B.";
     case "missing_scores":
-      return "Promosi aktif menunggu nilai TA-03A dan TA-03B tersedia.";
+      return "Menunggu nilai TA-03A dan TA-03B.";
     case "metopel_auto_zeroed":
-      return "Presensi Metopel kurang dari 75%, sehingga booking TA-04 awal akan dilepas pada siklus ini.";
+      return "Presensi Metopel kurang dari 75%. Booking akan dilepas pada siklus ini.";
     case "proposal_final_not_submitted":
-      return "Ajukan proposal final terlebih dahulu agar TA-03A dan TA-03B dapat dinilai.";
+      return "Ajukan proposal final terlebih dahulu.";
     default:
-      return "TA-04 awal diterbitkan batch oleh KaDep setelah booking pembimbing disetujui. Beban aktif berpindah otomatis setelah TA-03 final dan snapshot KRS TA.";
+      return "Menunggu finalisasi TA-04 oleh KaDep setelah booking disetujui.";
   }
 }
 
@@ -174,13 +217,10 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
   const proposalQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness, ta04IssuedAt);
   const workflowClarityItems = [
     advisorAccess?.hasBookedSupervisor && !guidanceGateOpen
-      ? guidanceGateReason ?? "Booking pembimbing sudah disetujui dan menunggu TA-04 difinalisasi KaDep. Anda hanya dapat menyimpan draf pribadi."
+      ? guidanceGateReason ?? "Booking disetujui. Menunggu TA-04. Draf pribadi masih dapat disimpan."
       : null,
     guidanceGateOpen && (canSubmitFinalProposal || canUseInformalLog)
-      ? "TA-04 awal sudah terbit; bimbingan proposal tercatat, catatan informal, dan ajukan proposal final dapat digunakan."
-      : null,
-    guidanceGateOpen
-      ? "Bimbingan formal Tugas Akhir tetap menunggu KRS Tugas Akhir dan memakai modul Tugas Akhir, bukan catatan informal Metopel."
+      ? "TA-04 sudah terbit. Proposal final, catatan informal, dan bimbingan proposal dapat digunakan."
       : null,
   ].filter((item): item is string => Boolean(item));
 
@@ -198,8 +238,8 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
       : "Pilih jalur yang sesuai";
 
   const thesisTitleSummary = advisorAccess?.thesisTitle
-    ? ` Judul awal tercatat: ${advisorAccess.thesisTitle}.`
-    : " Judul awal belum tercatat di SIMPTA.";
+    ? ` Judul awal: ${advisorAccess.thesisTitle}.`
+    : " Judul awal belum tercatat.";
   const metopenAccessSummary =
     advisorAccess?.eligibleMetopen === true
       ? "Akses Metopen aktif dari sinkronisasi SIA."
@@ -210,12 +250,12 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
 
   const initialRouteDescription =
     advisorAccess?.blockingRequest?.routeType === "escalated"
-      ? `TA-01 di atas kuota dipakai saat mahasiswa tetap kokoh memilih dosen yang kuota normalnya penuh; KaDep memutuskan setelah dosen memberi proyeksi lulus.${thesisTitleSummary}`
+      ? `Pengajuan TA-01 di atas kuota. Menunggu keputusan KaDep.${thesisTitleSummary}`
       : advisorAccess?.blockingRequest?.routeType === "dept"
-        ? `TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing — departemen meninjau usulan dan menetapkan dosen pembimbing.${thesisTitleSummary}`
+        ? `Pengajuan TA-02 melalui departemen.${thesisTitleSummary}`
         : advisorAccess?.blockingRequest?.routeType === "normal"
-          ? `TA-01 dipakai saat mahasiswa sudah memiliki calon dosen pembimbing yang bersedia dan mengajukan awal judul melalui SIMPTA.${thesisTitleSummary}`
-          : `TA-01 dipakai saat mahasiswa sudah memiliki calon dosen pembimbing yang bersedia. TA-02 dipakai saat mahasiswa belum memiliki calon dosen pembimbing atau saat usulan perlu diproses melalui departemen.${thesisTitleSummary}`;
+          ? `Pengajuan TA-01 ke calon pembimbing.${thesisTitleSummary}`
+          : `Ajukan TA-01 ke calon pembimbing, atau TA-02 melalui departemen.${thesisTitleSummary}`;
 
   // Status kartu promosi tanpa short-circuit ta04IssuedAt (TA-04 adalah langkah terpisah).
   const promotionStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness, null);
@@ -228,8 +268,20 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
       : "Menunggu booking pembimbing";
 
   const ta04GateDescription = readOnly || Boolean(ta04IssuedAt)
-    ? "Penugasan pembimbing awal (TA-04) sudah dicatat KaDep. Ini membuka gerbang ajukan proposal final, bimbingan tercatat, dan penilaian TA-03 — bukan menandai keduanya selesai."
-    : "TA-04 awal diterbitkan batch oleh KaDep setelah booking pembimbing disetujui. Setelah terbit, mahasiswa dapat mengajukan proposal final dan memasuki penilaian.";
+    ? "Penugasan TA-04 sudah dicatat. Proposal final dan penilaian dapat dilanjutkan."
+    : "Menunggu finalisasi TA-04 oleh KaDep setelah booking disetujui.";
+
+  const overviewSupervisors = resolveOverviewSupervisors(advisorAccess);
+  const showSupervisorSection =
+    overviewSupervisors.length > 0 &&
+    Boolean(
+      advisorAccess?.hasOfficialSupervisor ||
+        advisorAccess?.hasBookedSupervisor ||
+        readOnly,
+    );
+  const supervisorBadgeLabel = advisorAccess?.hasOfficialSupervisor || readOnly || Boolean(ta04IssuedAt)
+    ? "Aktif"
+    : "Booking disetujui";
 
   const stepCards = [
     {
@@ -267,10 +319,10 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
                     : "Ajukan versi proposal final",
       description:
         readOnly
-          ? "Proposal final dan riwayat versinya tersedia sebagai arsip read-only setelah fase Metode Penelitian selesai."
+          ? "Proposal final tersimpan (hanya lihat)."
           : canSubmitFinalProposal
-            ? "Setelah TA-04 awal terbit, mahasiswa dapat mengunggah dan menetapkan versi proposal final aktif untuk alur penilaian."
-            : "Draf proposal pribadi boleh disimpan. Ajukan proposal final dan akses bimbingan baru terbuka setelah TA-04 awal difinalisasi KaDep.",
+            ? "Unggah dan tetapkan versi proposal final untuk penilaian."
+            : "Draf pribadi boleh disimpan. Ajukan proposal final setelah TA-04 terbit.",
     },
     {
       code: "TA-03A / TA-03B",
@@ -290,7 +342,7 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
       description:
         seminarEligibility?.reason ??
         ta03GateReason ??
-        "TA-03A diisi Pembimbing 1 (pengisi utama) + persetujuan Pembimbing 2 (jika ada). TA-03B diisi Koordinator Metopen. Berjalan paralel; nilai tidak dapat diubah setelah disubmit.",
+        "TA-03A diisi Pembimbing 1; Pembimbing 2 menyetujui bila ada. TA-03B diisi Koordinator Metopen. Nilai tidak dapat diubah setelah disubmit.",
     },
     {
       code: "Promosi Aktif",
@@ -354,12 +406,53 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
         )}
       </div>
 
+      {showSupervisorSection && (
+        <Card className="border-border/70 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Dosen Pembimbing</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {overviewSupervisors.map((supervisor) => {
+                const displayName = toTitleCaseName(supervisor.name);
+                const initials = displayName
+                  .split(" ")
+                  .map((part) => part[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("");
+                return (
+                  <div
+                    key={supervisor.id}
+                    className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-4"
+                  >
+                    <Avatar className="h-10 w-10 ring-1 ring-border">
+                      {supervisor.avatarUrl ? <AvatarImage src={supervisor.avatarUrl} alt={displayName} /> : null}
+                      <AvatarFallback>{initials || "DP"}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{displayName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatRoleName(supervisor.role) || "Pembimbing"}
+                      </p>
+                      {supervisor.email ? (
+                        <p className="truncate text-xs text-muted-foreground">{supervisor.email}</p>
+                      ) : null}
+                    </div>
+                    <Badge variant="outline" className="shrink-0">
+                      {supervisorBadgeLabel}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="border-border/70 shadow-none">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Alur proses Metode Penelitian</CardTitle>
-          <CardDescription>
-            Setiap tahap ditampilkan dalam satu alur agar posisi saat ini dan langkah berikutnya mudah dipahami.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div>
@@ -435,8 +528,7 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
               <div className="rounded-md border bg-background px-3 py-2 text-xs text-muted-foreground">
                 <p className="font-medium text-foreground">Penugasan awal dicatat di sistem</p>
                 <p className="mt-0.5">
-                  Dicatat {formatDateId(ta04IssuedAt)}. Keputusan KaDep berlaku lewat status sistem ini;
-                  dokumen cetak TA-04 dikelola departemen (bukan bukti keputusan di aplikasi).
+                  Dicatat {formatDateId(ta04IssuedAt)}. Dokumen cetak dikelola departemen.
                 </p>
               </div>
             )}
@@ -446,12 +538,12 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
                 <p className="font-medium text-foreground">Proposal &amp; catatan informal</p>
                 <p className="mt-0.5 text-muted-foreground">
                   {guidanceGateOpen
-                    ? "Bimbingan tercatat dan catatan informal dapat berjalan karena TA-04 sudah terbit."
+                    ? "Bimbingan tercatat dan catatan informal sudah dapat digunakan."
                     : canUploadProposal
-                      ? "Draf pribadi boleh disimpan, tetapi bimbingan dan catatan informal menunggu TA-04 KaDep."
+                      ? "Draf pribadi boleh disimpan. Bimbingan dan catatan informal menunggu TA-04."
                     : activePromotionState === "active_promoted"
-                      ? "Fase Metopel sudah promosi ke beban aktif Tugas Akhir."
-                      : "Menunggu pembimbing resmi atau status proposal yang sesuai."}
+                      ? "Sudah masuk beban aktif Tugas Akhir."
+                      : "Menunggu pembimbing atau status proposal yang sesuai."}
                 </p>
               </div>
               <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
@@ -505,7 +597,7 @@ function ArchiveSection({ archive }: { archive: NonNullable<StudentArchiveData> 
           <div>
             <CardTitle className="text-base">Arsip Penilaian Proposal &amp; Status TA-04</CardTitle>
             <CardDescription>
-              Ringkasan substansi pengajuan awal, feedback rubrik, dan status penugasan pembimbing di sistem. Dokumen cetak TA-04 dikelola departemen.
+              Ringkasan pengajuan awal, nilai, dan status penugasan pembimbing.
             </CardDescription>
           </div>
         </div>
@@ -710,7 +802,7 @@ function AssessmentHistorySection({ history }: { history: NonNullable<StudentArc
           <div className="space-y-1">
             <CardTitle className="text-base">Riwayat Penilaian Proposal TA-03</CardTitle>
             <CardDescription>
-              Nilai TA-03A/TA-03B sudah tersimpan. Detail ini read-only dan menjadi bagian arsip Metopel setelah promosi beban aktif TA.
+              Nilai sudah tersimpan (hanya lihat).
             </CardDescription>
           </div>
         </div>

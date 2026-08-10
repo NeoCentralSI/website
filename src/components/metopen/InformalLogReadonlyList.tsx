@@ -86,7 +86,7 @@ export function InformalLogReadonlyList({
           Catatan bimbingan informal (Metopel)
         </CardTitle>
         <CardDescription>
-          Read-only — tanpa persetujuan. Hanya Pembimbing 1/2 aktif setelah TA-04 terbit.
+          Hanya lihat. Tersedia untuk Pembimbing 1/2 setelah TA-04 terbit.
         </CardDescription>
       </CardHeader>
       <CardContent>{body}</CardContent>

@@ -716,7 +716,7 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                     <AlertDescription className="space-y-2 text-green-800">
                         <p>{advisorAccess.reason}</p>
                         <p>
-                            TA-04 sudah diterbitkan sehingga pengajuan tidak dapat ditarik lagi dari modul ini. Perubahan pembimbing masuk ranah TA-05 yang masih di luar scope modul pengelolaan proposal.
+                            Penugasan sudah terkunci. Perubahan pembimbing menghubungi departemen.
                         </p>
                         <Badge variant="outline" className="border-green-300 bg-green-100 text-green-800">
                             Penugasan TA-04 terkunci
@@ -826,7 +826,7 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                             {isBookingApproved && (
                                 <p className="text-emerald-700 text-sm leading-relaxed">
                                     {isTa04IssuedBooking
-                                        ? 'TA-04 sudah diterbitkan sehingga pengajuan tidak dapat ditarik lagi dari modul ini. Perubahan pembimbing masuk ranah TA-05 yang masih di luar scope modul pengelolaan proposal.'
+                                        ? 'Penugasan sudah terkunci. Perubahan pembimbing menghubungi departemen.'
                                         : 'Booking pembimbing Anda sudah disetujui dan reservasi kuota tetap tercatat. Anda masih dapat membatalkan booking sebelum TA-04 difinalisasi KaDep. Draf proposal pribadi boleh disimpan, tetapi bimbingan yang tercatat sistem dan submit proposal final menunggu TA-04.'}
                                 </p>
                             )}
@@ -1347,7 +1347,7 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                             <Alert className="border-blue-200 bg-blue-50">
                                 <AlertCircle className="h-4 w-4 text-blue-600" />
                                 <AlertDescription className="text-sm text-blue-800">
-                                    Draft awal otomatis diisi dari submission terakhir agar Anda bisa ganti dosen atau revisi tanpa mengulang dari nol.
+                                    Draft diisi dari pengajuan terakhir.
                                 </AlertDescription>
                             </Alert>
                         )}
@@ -1377,10 +1377,10 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                                 <AlertCircle className="h-4 w-4 text-amber-600" />
                                 <AlertDescription className="text-amber-800 text-sm">
                                     <p>
-                                        Kuota normal dosen ini sedang penuh. Sistem akan mengirim usulan ini ke <strong>dosen target</strong> sebagai <strong>pengajuan TA-01 di atas kuota normal</strong>. Jika dosen setuju dengan proyeksi lulus mahasiswa bimbingannya, pengajuan diteruskan ke <strong>Kepala Departemen</strong> untuk keputusan akhir.
+                                        Kuota normal dosen ini penuh. Pengajuan dikirim ke dosen sebagai <strong>TA-01 di atas kuota</strong>, lalu diteruskan ke <strong>Kepala Departemen</strong> jika dosen menyetujui.
                                     </p>
                                     <p className="mt-2">
-                                        Bila Anda <strong>fleksibel</strong> terhadap penetapan dosen siapa pun, batalkan dialog ini lalu pakai <strong>Ajukan TA-02 jalur departemen</strong> di banner atas — kedua jalur sama-sama sah dan berdiri sendiri.
+                                        Atau batalkan dan gunakan <strong>Ajukan TA-02 jalur departemen</strong>.
                                     </p>
                                 </AlertDescription>
                             </Alert>
@@ -1391,7 +1391,7 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                         <Alert className="border-blue-200 bg-blue-50/70">
                             <Clock className="h-4 w-4 text-blue-600" />
                             <AlertDescription className="text-blue-800 text-sm">
-                                Setelah submit, pengajuan akan <strong>dikunci sementara selama 72 jam pertama</strong> untuk menghormati waktu review dosen. Setelah 72 jam Anda berhak menarik pengajuan kapan saja — termasuk dari status <em>Sedang Ditinjau</em> — agar tidak tersandera birokrasi.
+                                Setelah submit, pengajuan <strong>dikunci 72 jam pertama</strong>. Setelah itu Anda dapat menarik pengajuan, termasuk dari status <em>Sedang Ditinjau</em>.
                             </AlertDescription>
                         </Alert>
 
