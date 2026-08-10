@@ -118,7 +118,10 @@ function resolveOverviewSupervisors(advisorAccess?: AdvisorAccessState): Overvie
       id: lecturer.id,
       name: fullName,
       email: null,
-      avatarUrl: lecturer.user && "avatarUrl" in lecturer.user ? (lecturer.user.avatarUrl ?? null) : null,
+      avatarUrl:
+        lecturer.user && "avatarUrl" in lecturer.user
+          ? ((lecturer.user as { avatarUrl?: string | null }).avatarUrl ?? null)
+          : null,
       role: "Calon Pembimbing 1",
     },
   ];

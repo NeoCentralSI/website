@@ -28,7 +28,7 @@ export interface CreateCurriculumPayload {
     endYear?: number | null;
 }
 
-export interface UpdateCurriculumPayload extends Partial<CreateCurriculumPayload> {}
+export type UpdateCurriculumPayload = Partial<CreateCurriculumPayload>;
 
 export const getCurriculums = async (params: GetCurriculumsParams = {}): Promise<GetCurriculumsResponse> => {
     const queryParams = new URLSearchParams();

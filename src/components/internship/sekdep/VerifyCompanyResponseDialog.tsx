@@ -69,7 +69,7 @@ export default function VerifyCompanyResponseDialog({
 
     const handleConfirm = () => {
         const acceptedMemberIds = Object.entries(selectedMembers)
-            .filter(([_, isSelected]) => isSelected)
+            .filter(([, isSelected]) => isSelected)
             .map(([id]) => id);
 
         onConfirm(notes, acceptedMemberIds);

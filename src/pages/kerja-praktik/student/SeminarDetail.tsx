@@ -159,7 +159,6 @@ export default function SeminarDetail() {
         );
     }
 
-    // @ts-ignore - roles can be compared with strings
     const isLecturer = user?.roles?.some(r => LECTURER_ROLES.includes(r as any));
     const isSupervisor = seminar.internship?.supervisor?.user?.id === user?.id;
     const canValidate = isLecturer && isSupervisor;

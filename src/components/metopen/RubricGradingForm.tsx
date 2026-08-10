@@ -181,7 +181,8 @@ export function RubricGradingForm({
                     return { ...prev, [criterion.id]: { score: subTotal } };
                 }
                 if (current == null) return prev;
-                const { [criterion.id]: _omit, ...rest } = prev;
+                const { [criterion.id]: _, ...rest } = prev;
+                void _;
                 return rest;
             });
         }
