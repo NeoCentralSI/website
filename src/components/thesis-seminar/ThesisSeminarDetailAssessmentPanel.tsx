@@ -258,6 +258,9 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
                       const isPlaceholder = !criterion.name || criterion.name.trim() === '-' || criterion.name.trim() === '';
                       const isOptionB = group.criteria.length === 1 && isPlaceholder;
                       const cLetter = String.fromCharCode(97 + cIdx); // a, b, c...
+                      const scoreVal = scores[criterion.id];
+                      const isInvalid = scoreVal !== undefined && (scoreVal < 0 || scoreVal > criterion.maxScore);
+
                       return (
                         <div key={criterion.id} className="px-4 py-3 flex flex-col gap-2">
                           <div className="flex items-start justify-between gap-4">
@@ -313,20 +316,30 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
                                 </Collapsible>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <Input
-                                type="number"
-                                min={0}
-                                max={criterion.maxScore}
-                                value={scores[criterion.id] ?? 0}
-                                disabled={isSubmitted}
-                                className="w-20 text-right text-sm font-semibold h-8"
-                                onChange={(e) => {
-                                  const value = Number(e.target.value || 0);
-                                  setScores((prev) => ({ ...prev, [criterion.id]: value }));
-                                }}
-                              />
-                              <span className="text-xs text-muted-foreground">/ {criterion.maxScore}</span>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={criterion.maxScore}
+                                  step="any"
+                                  value={scores[criterion.id] ?? 0}
+                                  disabled={isSubmitted}
+                                  className={`w-20 text-right text-sm font-semibold h-8 ${
+                                    isInvalid ? 'border-red-500 text-red-600 focus-visible:ring-red-500' : ''
+                                  }`}
+                                  onChange={(e) => {
+                                    const value = Number(e.target.value || 0);
+                                    setScores((prev) => ({ ...prev, [criterion.id]: value }));
+                                  }}
+                                />
+                                <span className="text-xs text-muted-foreground">/ {criterion.maxScore}</span>
+                              </div>
+                              {isInvalid && (
+                                <span className="text-[10px] text-red-600 font-medium">
+                                  Nilai 0-{criterion.maxScore}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
