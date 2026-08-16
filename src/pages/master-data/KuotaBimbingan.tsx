@@ -9,6 +9,7 @@ import {
     type QuotaDetailSelection,
     type QuotaMetricKey,
 } from '@/components/master-data/LecturerQuotaDetailDialog';
+import { KbkLoadSummaryCard } from '@/components/master-data/KbkLoadSummaryCard';
 import {
     useDefaultQuota,
     useSetDefaultQuota,
@@ -142,11 +143,12 @@ export default function KuotaBimbingan({ readOnly = false }: KuotaBimbinganProps
     // Fetch default quota and lecturer quotas
     const { data: defaultQuota } = useDefaultQuota(selectedAyId || undefined);
     const {
-        data: lecturerQuotas,
+        data: quotaList,
         isLoading: quotasLoading,
         isFetching: quotasFetching,
         refetch: refetchQuotas,
     } = useLecturerQuotas(selectedAyId || undefined, searchQuery || undefined);
+    const lecturerQuotas = quotaList?.lecturers;
 
     const setDefaultMutation = useSetDefaultQuota();
     const updateLecturerMutation = useUpdateLecturerQuota();
@@ -349,7 +351,11 @@ export default function KuotaBimbingan({ readOnly = false }: KuotaBimbinganProps
                         {readOnly
                             ? 'Pantau beban aktif, booking, pending KaDep, dan overquota sah per dosen'
                             : 'Kelola kuota bimbingan dosen per tahun ajaran'}
+                        {quotaList?.periodLabel ? ` · Periode ${quotaList.periodLabel}` : ''}
                     </p>
+                    {quotaList?.definitionLabel ? (
+                        <p className="mt-1 text-xs text-muted-foreground">{quotaList.definitionLabel}</p>
+                    ) : null}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -392,6 +398,15 @@ export default function KuotaBimbingan({ readOnly = false }: KuotaBimbinganProps
                         <p className="text-xs text-muted-foreground mt-1">
                             Soft limit: {defaultQuota?.quotaSoftLimit ?? '-'}
                         </p>
+                        {defaultQuota?.isFallback ? (
+                            <Badge variant="outline" className="mt-2 font-normal">
+                                Fallback keras {defaultQuota.quotaMax}/{defaultQuota.quotaSoftLimit}, belum disimpan
+                            </Badge>
+                        ) : defaultQuota ? (
+                            <Badge variant="secondary" className="mt-2 font-normal">
+                                Konfigurasi tersimpan
+                            </Badge>
+                        ) : null}
                     </CardContent>
                 </Card>
 
@@ -434,6 +449,8 @@ export default function KuotaBimbingan({ readOnly = false }: KuotaBimbinganProps
                     </CardContent>
                 </Card>
             </div>
+
+            <KbkLoadSummaryCard aggregation={quotaList?.kbkLoads} />
 
             {/* Table with CustomTable standard */}
             <CustomTable

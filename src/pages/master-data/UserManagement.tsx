@@ -9,9 +9,9 @@ import CustomTable from '@/components/layout/CustomTable';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
 import { createUserAPI, updateUserAPI, importStudentsCsvAPI, getUsersAPI } from '@/services/admin.service';
 import { toTitleCaseName } from '@/lib/text';
-import { formatRoleName, ROLES } from '@/lib/roles';
+import { assignableRoleOptions, formatRoleName, roleOptions, ROLES } from '@/lib/roles';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserFormDialog, ImportStudentDialog } from '@/components/master-data';
+import { UserFormDialog, ImportStudentDialog, AdminAuditLogCard } from '@/components/master-data';
 import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function UserManagementPage() {
@@ -121,7 +121,7 @@ export default function UserManagementPage() {
       setFormData({
         fullName: '',
         email: '',
-        roles: ['Mahasiswa'], // Default role for NIM
+        roles: [ROLES.MAHASISWA], // Default role for NIM
         identityNumber: '',
         identityType: 'NIM',
       });
@@ -170,20 +170,6 @@ export default function UserManagementPage() {
       setIsImporting(false);
     }
   };
-
-  // Role options for form - using ROLES constants from lib/roles.ts
-  const roleOptions = [
-    { value: ROLES.ADMIN, label: 'Admin' },
-    { value: ROLES.GKM, label: 'GKM' },
-    { value: ROLES.KETUA_DEPARTEMEN, label: 'Ketua Departemen' },
-    { value: ROLES.SEKRETARIS_DEPARTEMEN, label: 'Sekretaris Departemen' },
-    { value: ROLES.PEMBIMBING_1, label: 'Pembimbing 1' },
-    { value: ROLES.PEMBIMBING_2, label: 'Pembimbing 2' },
-    { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
-    { value: ROLES.PENGUJI, label: 'Penguji' },
-    { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
-    { value: ROLES.KOORDINATOR_METOPEN, label: 'Koordinator Matkul Metopen' },
-  ];
 
   const columns = [
     {
@@ -242,19 +228,9 @@ export default function UserManagementPage() {
         type: 'select',
         value: roleFilter,
         onChange: setRoleFilter,
-        options: [
-          { label: 'Semua', value: '' },
-          { label: 'Admin', value: ROLES.ADMIN },
-          { label: 'GKM', value: ROLES.GKM },
-          { label: 'Ketua Departemen', value: ROLES.KETUA_DEPARTEMEN },
-          { label: 'Sekretaris Departemen', value: ROLES.SEKRETARIS_DEPARTEMEN },
-          { label: 'Pembimbing 1', value: ROLES.PEMBIMBING_1 },
-          { label: 'Pembimbing 2', value: ROLES.PEMBIMBING_2 },
-          { label: 'Mahasiswa', value: ROLES.MAHASISWA },
-          { label: 'Penguji', value: ROLES.PENGUJI },
-          { label: 'Koordinator Yudisium', value: ROLES.KOORDINATOR_YUDISIUM },
-          { label: 'Koordinator Metopen', value: ROLES.KOORDINATOR_METOPEN },
-        ],
+        // Filter memakai daftar peran lengkap: user dengan peran Admin tetap
+        // perlu bisa dicari walaupun peran itu tidak bisa ditugaskan dari sini.
+        options: [{ label: 'Semua', value: '' }, ...roleOptions],
       },
     },
     {
@@ -352,7 +328,7 @@ export default function UserManagementPage() {
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleSubmit}
-        roleOptions={roleOptions}
+        roleOptions={assignableRoleOptions}
         isSubmitting={isSubmitting}
       />
 
@@ -364,6 +340,8 @@ export default function UserManagementPage() {
         onImport={handleImportCsv}
         isImporting={isImporting}
       />
+
+      <AdminAuditLogCard />
     </div>
   );
 }

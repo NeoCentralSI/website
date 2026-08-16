@@ -310,4 +310,86 @@ describe("InboxPembimbing", () => {
     expect(await screen.findByText("Mahasiswa Overquota")).toBeInTheDocument();
     expect(screen.getByText(/1 mahasiswa · Mahasiswa yang disetujui/i)).toBeInTheDocument();
   });
+
+  it("renders academic record already present on the inbox payload", async () => {
+    vi.mocked(advisorRequestService.getDosenInbox).mockResolvedValue({
+      success: true,
+      data: makeInbox({
+        pendingRequests: [
+          makeRequest({
+            student: {
+              id: "student-1",
+              enrollmentYear: 2022,
+              sksCompleted: 118,
+              currentSemester: 8,
+              eligibleMetopen: true,
+              takingThesisCourse: false,
+              user: {
+                id: "user-student-1",
+                fullName: "Mahasiswa Uji",
+                identityNumber: "2311523001",
+                avatarUrl: undefined,
+              },
+            },
+          }),
+        ],
+      }),
+    });
+
+    renderInbox();
+
+    await waitFor(() => {
+      expect(screen.getByText(/118 SKS/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Angkatan 2022/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Tinjau$/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Rekam jejak akademik/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText("Eligible Metopel")).toBeInTheDocument();
+  });
+
+  it("shows proposal status and period marker on the supervised student list", async () => {
+    const bookingEntry: AdvisorQuotaEntry = {
+      id: "booking-1",
+      source: "request",
+      requestId: "request-1",
+      supervisorId: null,
+      bucket: "booking",
+      lecturerId: "lecturer-1",
+      studentId: "student-2",
+      studentName: "Mahasiswa Bimbingan",
+      studentIdentityNumber: "2211520888",
+      studentAvatarUrl: null,
+      thesisId: "thesis-2",
+      thesisTitle: "Sistem Informasi Proposal",
+      topicName: "Data Mining",
+      roleName: "Pembimbing 1",
+      requestStatus: "booking_approved",
+      createdAt: "2026-08-01T00:00:00.000Z",
+      updatedAt: "2026-08-01T00:00:00.000Z",
+      proposalStatus: "submitted",
+      proposalVersion: 2,
+      hasFinalProposal: true,
+      academicYearLabel: "2026/2027 ganjil",
+      isCurrentPeriod: true,
+    };
+    vi.mocked(advisorRequestService.getDosenInbox).mockResolvedValue({
+      success: true,
+      data: makeInbox({
+        academicYearLabel: "2026/2027 ganjil",
+        summary: makeSummary({ bookingCount: 1, currentCount: 1, normalAvailable: 7, isFull: false }),
+        bookings: [bookingEntry],
+      }),
+    });
+
+    renderInbox();
+    fireEvent.click(await screen.findByRole("button", { name: /Kuota Aktif/i }));
+
+    expect(await screen.findByText("Mahasiswa Bimbingan")).toBeInTheDocument();
+    expect(screen.getByText("Proposal final")).toBeInTheDocument();
+    expect(screen.getByText(/Final v2/)).toBeInTheDocument();
+    expect(screen.getByText("2026/2027 ganjil")).toBeInTheDocument();
+  });
 });

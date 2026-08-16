@@ -1,24 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
+import { AlertCircle, History, Paperclip } from "lucide-react";
+import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/ui/spinner";
-import { getApiUrl } from "@/config/api";
-import { formatDateId } from "@/lib/text";
 import {
   getStudentInformalLogs,
   type InformalLogItem,
 } from "@/services/lecturerGuidance.service";
-import { AlertCircle, History, Paperclip } from "lucide-react";
+import { openAuthenticatedFile } from "@/lib/authenticatedFile";
+import { formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
-function getFileUrl(url: string | null): string {
-  if (!url) return "#";
-  const fullUrl = url.startsWith("http") ? url : getApiUrl(url);
-  const token = localStorage.getItem("accessToken");
-  if (token && url.includes("thesis/")) {
-    return fullUrl + (fullUrl.includes("?") ? "&" : "?") + `token=${token}`;
-  }
-  return fullUrl;
+function openInformalAttachment(url: string | null) {
+  void openAuthenticatedFile(url).catch(() => {
+    toast.error("Gagal membuka lampiran.");
+  });
 }
 
 interface InformalLogReadonlyListProps {
@@ -101,15 +98,14 @@ function InformalLogReadonlyItem({ item }: { item: InformalLogItem }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>{formatDateId(item.createdAt)}</span>
         {item.document?.url ? (
-          <a
-            href={getFileUrl(item.document.url)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => openInformalAttachment(item.document?.url ?? null)}
             className="inline-flex items-center gap-1 text-primary hover:underline"
           >
             <Paperclip className="h-3 w-3" />
             {item.document.fileName || "Lampiran"}
-          </a>
+          </button>
         ) : null}
       </div>
     </li>

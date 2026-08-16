@@ -20,6 +20,8 @@ import {
   UserPlus,
   BookOpen,
   GraduationCap,
+  CalendarRange,
+  RefreshCw,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -70,9 +72,12 @@ import {
   useDevToolsMutations,
   useDevToolsRoles,
   useDevToolsUsers,
+  useDevToolsAcademicYears,
 } from '@/hooks/dev-tools/useDevTools';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { triggerSiaSync } from '@/services/sia.service';
+import { toast } from 'sonner';
 import type {
   DevToolsMetopenEligibility,
   DevToolsThesisCourseEligibility,
@@ -80,6 +85,7 @@ import type {
   UpdateStudentDto,
   StudentStatus,
   CreateUserDto,
+  CloseMetopenPeriodResult,
 } from '@/types/devTools.types';
 
 const STUDENT_STATUSES: { value: StudentStatus; label: string }[] = [
@@ -310,17 +316,34 @@ function ThesisPanel({ studentId, studentName, onDeleteThesis, isSubmitting }: {
   studentId: string; studentName: string; onDeleteThesis: (id: string) => Promise<unknown>; isSubmitting: boolean;
 }) {
   const { data: theses, isLoading } = useDevToolsTheses(studentId);
+  const { data: years } = useDevToolsAcademicYears();
+  const mutations = useDevToolsMutations();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   if (isLoading) return <div className="flex justify-center py-4"><Spinner className="h-5 w-5" /></div>;
   if (!theses?.length) return <p className="text-sm text-muted-foreground py-2">Tidak ada data thesis.</p>;
   return (
     <>
       <Table>
-        <TableHeader><TableRow><TableHead>Judul</TableHead><TableHead>Status</TableHead><TableHead>Pembimbing</TableHead><TableHead className="w-20">Aksi</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>Judul</TableHead><TableHead>Status</TableHead><TableHead>Tahun ajaran</TableHead><TableHead>Pembimbing</TableHead><TableHead className="w-20">Aksi</TableHead></TableRow></TableHeader>
         <TableBody>{theses.map((t) => (
           <TableRow key={t.id}>
             <TableCell className="text-sm max-w-[200px] truncate">{t.title || '(tanpa judul)'}</TableCell>
             <TableCell><Badge variant="secondary">{t.status}</Badge></TableCell>
+            <TableCell className="min-w-[180px]">
+              <Select
+                value={t.academicYearId ?? ''}
+                onValueChange={(id) => { void mutations.setThesisAcademicYear(t.id, id); }}
+                disabled={isSubmitting || mutations.isSubmitting}
+              >
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t.academicYearLabel || 'Pilih tahun'} /></SelectTrigger>
+                <SelectContent>
+                  {(years ?? []).map((year) => (
+                    <SelectItem key={year.id} value={year.id}>{year.label}{year.isActive ? ' (Aktif)' : ''}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-[10px] text-muted-foreground">Rakit skenario. Bukan perbaikan data hidup.</p>
+            </TableCell>
             <TableCell className="text-sm">{t.supervisors.map((s) => `${s.lecturer.user.fullName} (${s.role.name})`).join(', ') || '-'}</TableCell>
             <TableCell><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setConfirmId(t.id)} disabled={isSubmitting}><Trash2 className="h-4 w-4" /></Button></TableCell>
           </TableRow>
@@ -493,6 +516,141 @@ function StudentRow({ student, isExpanded, onToggle, onEdit, onDelete, onResetSn
   );
 }
 
+function PeriodScenarioTab({ mutations }: { mutations: ReturnType<typeof useDevToolsMutations> }) {
+  const { data: years, isLoading } = useDevToolsAcademicYears();
+  const [closedYearId, setClosedYearId] = useState('');
+  const [result, setResult] = useState<CloseMetopenPeriodResult | null>(null);
+  const [forceOpen, setForceOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    if (!closedYearId && years?.length) {
+      const inactive = years.find((year) => !year.isActive) ?? years[0];
+      if (inactive) setClosedYearId(inactive.id);
+    }
+  }, [closedYearId, years]);
+
+  const selectedYear = years?.find((year) => year.id === closedYearId);
+  const selectedIsActive = Boolean(selectedYear?.isActive);
+
+  const runClose = async (dryRun: boolean, force = false) => {
+    if (!closedYearId) return;
+    if (!dryRun && selectedIsActive && !force) {
+      setForceOpen(true);
+      return;
+    }
+    const data = await mutations.closeMetopenPeriod(closedYearId, dryRun, force);
+    if (data) setResult(data);
+  };
+
+  const runSiaSync = async () => {
+    setSyncing(true);
+    try {
+      await triggerSiaSync();
+      toast.success('Sync SIA dijalankan lewat colokan observasi yang sama dengan produksi.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal menjalankan sync SIA');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <CalendarRange className="h-4 w-4" />
+            Skenario tutup periode Metopel
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <ol className="list-decimal space-y-1 pl-4 text-muted-foreground">
+            <li>Set eligible Metopen pada tab Mahasiswa (snapshot SIA tidak diubah oleh tutup periode).</li>
+            <li>Pastikan thesis in-flight terikat tahun lama (pilih tahun di panel thesis mahasiswa). Itu rakit skenario, bukan perbaikan hidup.</li>
+            <li>Jalankan dry-run, lalu eksekusi tutup periode. Job tahun ajaran memakai service yang sama dan mengulang close yang gagal.</li>
+            <li>Toggle MK TA pada tab Mahasiswa menempel ke tahun aktif. True + lulus Metopel = promosi TA, bukan menu arsip dari KRS saja.</li>
+          </ol>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" disabled={syncing || mutations.isSubmitting} onClick={() => void runSiaSync()}>
+              {syncing ? <Spinner className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Jalankan sync seperti SIA
+            </Button>
+          </div>
+          {isLoading ? <Spinner className="h-5 w-5" /> : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="space-y-1.5">
+                <Label>Tahun ajaran yang ditutup</Label>
+                <Select value={closedYearId} onValueChange={setClosedYearId}>
+                  <SelectTrigger className="w-full sm:w-72"><SelectValue placeholder="Pilih tahun" /></SelectTrigger>
+                  <SelectContent>
+                    {(years ?? []).map((year) => (
+                      <SelectItem key={year.id} value={year.id}>
+                        {year.label}{year.isActive ? ' (Aktif sekarang)' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedIsActive && (
+                  <p className="text-xs text-amber-700">Tahun aktif butuh force + konfirmasi kedua.</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" disabled={mutations.isSubmitting || !closedYearId} onClick={() => void runClose(true)}>
+                  Dry-run
+                </Button>
+                <Button disabled={mutations.isSubmitting || !closedYearId} onClick={() => void runClose(false)}>
+                  Tutup periode
+                </Button>
+              </div>
+            </div>
+          )}
+          {result && (
+            <div className="rounded-md border bg-muted/40 p-3 text-xs space-y-2">
+              <p>
+                {result.dryRun ? 'Dry-run' : 'Eksekusi'} {result.yearLabel}: diperiksa {result.counts.examined},
+                {' '}nilai 0 {result.counts.zeroed}
+                {typeof result.counts.ungradedFinal === 'number'
+                  ? ` (final belum dinilai ${result.counts.ungradedFinal}, belum submit final ${result.counts.noFinalProposal ?? 0})`
+                  : ''}
+                {', '}dilepas {result.counts.released}, ditutup {result.counts.closed},
+                dilewati {result.counts.skipped}.
+              </p>
+              {result.items.slice(0, 12).map((item, index) => (
+                <p key={`${item.thesisId}-${item.requestId ?? index}`}>
+                  {item.studentName || item.identityNumber || item.thesisId}: {item.currentStatus ?? '-'} → {item.nextStatus ?? item.skipReason ?? item.scoreAction}
+                </p>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <AlertDialog open={forceOpen} onOpenChange={setForceOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tutup tahun ajaran yang sedang aktif?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ini menutup penilaian in-flight pada tahun operasional. Hanya untuk merakit skenario.
+              Konfirmasi kedua ini mengirim force=true ke server.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setForceOpen(false);
+                void runClose(false, true);
+              }}
+            >
+              Force tutup tahun aktif
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 // ========== MAIN PAGE ==========
 export default function DevTools() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -533,6 +691,7 @@ export default function DevTools() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <TabsList>
             <TabsTrigger value="mahasiswa">Mahasiswa</TabsTrigger>
+            <TabsTrigger value="periode">Skenario Periode</TabsTrigger>
             <TabsTrigger value="users">Kelola User</TabsTrigger>
           </TabsList>
           <Button onClick={() => setCreateOpen(true)} size="sm"><UserPlus className="h-4 w-4 mr-1.5" />Buat User Baru</Button>
@@ -584,6 +743,10 @@ export default function DevTools() {
               </TableBody></Table></div>}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="periode" className="space-y-4 mt-4">
+          <PeriodScenarioTab mutations={mutations} />
         </TabsContent>
 
         {/* ========== TAB: KELOLA USER ========== */}

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AcademicYearFormDialog,
-  AcademicYearTable
+  AcademicYearTable,
+  MetopenSiaOperationsCard,
 } from '@/components/master-data';
 
 import { useAcademicYears, useAcademicYearForm } from '@/hooks/master-data';
@@ -101,6 +102,8 @@ export default function AcademicYearPage() {
           Tahun ajaran akan aktif jika tanggal hari ini berada dalam rentang periode tersebut.
         </AlertDescription>
       </Alert>
+
+      <MetopenSiaOperationsCard canMutate />
 
       <AcademicYearTable
         data={academicYears}

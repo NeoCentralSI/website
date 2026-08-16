@@ -1,4 +1,5 @@
 import { getApiUrl, API_CONFIG } from '@/config/api';
+import { toTitleCaseName } from '@/lib/text';
 import { apiRequest } from './auth.service';
 import type { MonitoringResponse } from '@/types/metopenMonitoring.types';
 
@@ -47,6 +48,11 @@ export interface ScoringQueueItem {
   supervisorScore?: number | null;
   existingScore?: number | null;
   isScored: boolean;
+  attendanceAutoZeroedAt?: string | null;
+  attendanceAutoZeroReason?: string | null;
+  periodClosedAt?: string | null;
+  periodClosedReason?: string | null;
+  ta03GateReason?: string | null;
 }
 
 /**
@@ -61,6 +67,7 @@ export type Ta03AActionStatus =
   | 'p2_pending_cosign' // P2: P1 sudah submit, perlu co-sign konsensus
   | 'p2_waiting_p1'     // P2: menunggu P1 submit dulu
   | 'auto_zeroed'       // BR-28: presensi <75% (immutable, no manual input)
+  | 'period_closed'     // BR-29: periode Metopel ditutup
   | 'finalized';        // Siklus TA-03 final dan read-only di riwayat
 
 export interface SupervisorScoringQueueItem {
@@ -81,6 +88,9 @@ export interface SupervisorScoringQueueItem {
   coSignedAt: string | null;
   attendanceAutoZeroedAt: string | null;
   attendanceAutoZeroReason: string | null;
+  periodClosedAt?: string | null;
+  periodClosedReason?: string | null;
+  ta03GateReason?: string | null;
 }
 
 export interface SupervisorScoringHistoryItem extends SupervisorScoringQueueItem {
@@ -108,6 +118,8 @@ export interface ResearchMethodScoreResult {
   attendanceRecordId?: string | null;
   attendanceAutoZeroedAt?: string | null;
   attendanceAutoZeroReason?: string | null;
+  periodClosedAt?: string | null;
+  periodClosedReason?: string | null;
 }
 
 export interface ResearchMethodScoreDetailItem {
@@ -337,6 +349,97 @@ export interface MetopenScoringHistoryItem extends ScoringQueueItem {
   attendanceAutoZeroReason: string | null;
 }
 
+export type Ta03EmptyReason =
+  | 'waiting_ta04'
+  | 'waiting_final_proposal'
+  | 'all_in_history'
+  | 'none_in_scope';
+
+export interface Ta03BlockedGateItem {
+  thesisId: string;
+  thesisTitle: string | null;
+  student: {
+    id?: string | null;
+    fullName?: string | null;
+    identityNumber?: string | null;
+  } | null;
+  ta03GateReason: string;
+}
+
+export interface Ta03OtherPeriodStudent {
+  fullName: string;
+  identityNumber: string;
+  thesisId: string;
+}
+
+export interface Ta03OtherPeriodHint {
+  academicYearId: string;
+  periodLabel: string;
+  students: Ta03OtherPeriodStudent[];
+}
+
+export interface Ta03QueueMeta {
+  emptyReason: Ta03EmptyReason | null;
+  emptyReasonText: string | null;
+  blockedByGate: Ta03BlockedGateItem[];
+  otherPeriods: Ta03OtherPeriodHint[];
+}
+
+export interface Ta03QueueResult<T> {
+  items: T[];
+  meta: Ta03QueueMeta;
+}
+
+const EMPTY_QUEUE_META: Ta03QueueMeta = {
+  emptyReason: null,
+  emptyReasonText: null,
+  blockedByGate: [],
+  otherPeriods: [],
+};
+
+export function isAttendanceAutoZeroed(
+  item: { attendanceAutoZeroedAt?: string | Date | null },
+): boolean {
+  return item.attendanceAutoZeroedAt != null;
+}
+
+export function formatOtherPeriodHint(
+  otherPeriods: Ta03OtherPeriodHint[] | undefined,
+): string | null {
+  if (!otherPeriods?.length) return null;
+  const parts = otherPeriods.flatMap((period) =>
+    period.students.map((student) => {
+      const name = toTitleCaseName(student.fullName?.trim() || 'Mahasiswa');
+      const nim = student.identityNumber ? ` (${student.identityNumber})` : '';
+      return `${name}${nim} di ${period.periodLabel}`;
+    }),
+  );
+  if (parts.length === 0) return null;
+  const shown = parts.slice(0, 5);
+  const more = parts.length > 5 ? ` dan ${parts.length - 5} lainnya` : '';
+  return `Ada mahasiswa proposal di periode lain: ${shown.join(', ')}${more}. Pilih tahun ajaran tersebut untuk melihat riwayat; penilaian hanya dapat diubah pada tahun ajaran operasional.`;
+}
+
+export function formatTa03EmptyDescription(
+  meta: Ta03QueueMeta | undefined,
+  fallback: string,
+): string {
+  const text = meta?.emptyReasonText?.trim() || fallback;
+  const blocked = meta?.blockedByGate ?? [];
+  const blockedSuffix = blocked.length === 0
+    ? ''
+    : (() => {
+        const names = blocked
+          .slice(0, 5)
+          .map((item) => toTitleCaseName(item.student?.fullName?.trim() || 'Mahasiswa'));
+        const more = blocked.length > 5 ? ` dan ${blocked.length - 5} lainnya` : '';
+        return ` Menunggu: ${names.join(', ')}${more}.`;
+      })();
+  const other = formatOtherPeriodHint(meta?.otherPeriods);
+  const otherSuffix = other ? ` ${other}` : '';
+  return `${text}${blockedSuffix}${otherSuffix}`;
+}
+
 /**
  * BR-20: Klasifikasi role pembimbing yang sedang membuka card.
  * - P1 → form full edit rubrik (master pengisi)
@@ -359,6 +462,11 @@ type QueueApiItem = {
   supervisorName?: string | null;
   supervisorScore?: number | null;
   lecturerScore?: number | null;
+  attendanceAutoZeroedAt?: string | null;
+  attendanceAutoZeroReason?: string | null;
+  periodClosedAt?: string | null;
+  periodClosedReason?: string | null;
+  ta03GateReason?: string | null;
 };
 
 export type CriteriaApiResponse = {
@@ -384,6 +492,20 @@ function mapQueueItem(
     supervisorScore: item.supervisorScore ?? null,
     existingScore: currentScore,
     isScored: currentScore != null,
+    attendanceAutoZeroedAt: item.attendanceAutoZeroedAt ?? null,
+    attendanceAutoZeroReason: item.attendanceAutoZeroReason ?? null,
+    periodClosedAt: item.periodClosedAt ?? null,
+    periodClosedReason: item.periodClosedReason ?? null,
+    ta03GateReason: item.ta03GateReason ?? null,
+  };
+}
+
+function readQueueMeta(json: { meta?: Partial<Ta03QueueMeta> | null }): Ta03QueueMeta {
+  return {
+    emptyReason: json.meta?.emptyReason ?? null,
+    emptyReasonText: json.meta?.emptyReasonText ?? null,
+    blockedByGate: json.meta?.blockedByGate ?? [],
+    otherPeriods: json.meta?.otherPeriods ?? [],
   };
 }
 
@@ -413,15 +535,21 @@ export const assessmentService = {
   // permintaan tambahan ke endpoint context.
   getSupervisorScoringQueue: async (
     academicYearId: string,
-  ): Promise<SupervisorScoringQueueItem[]> => {
+  ): Promise<Ta03QueueResult<SupervisorScoringQueueItem>> => {
     const query = new URLSearchParams({ academicYearId });
     const res = await apiRequest(`${getApiUrl(E.SUPERVISOR_SCORING_QUEUE)}?${query}`);
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message || 'Gagal memuat antrean penilaian TA-03A');
     }
-    const json = await res.json() as { data: SupervisorScoringQueueItem[] };
-    return json.data ?? [];
+    const json = await res.json() as {
+      data: SupervisorScoringQueueItem[];
+      meta?: Ta03QueueMeta;
+    };
+    return {
+      items: json.data ?? [],
+      meta: json.meta ? { ...EMPTY_QUEUE_META, ...readQueueMeta(json) } : EMPTY_QUEUE_META,
+    };
   },
 
   getSupervisorScoringHistory: async (
@@ -498,14 +626,17 @@ export const assessmentService = {
   },
 
   // Metopen Lecturer: get queue (TA-03B)
-  getMetopenScoringQueue: async (academicYearId: string): Promise<ScoringQueueItem[]> => {
+  getMetopenScoringQueue: async (
+    academicYearId: string,
+  ): Promise<Ta03QueueResult<ScoringQueueItem>> => {
     const query = new URLSearchParams({ academicYearId });
     const res = await apiRequest(`${getApiUrl(E.METOPEN_SCORING_QUEUE)}?${query}`);
     if (!res.ok) throw new Error('Gagal memuat antrian penilaian Metopen');
-    const json = await res.json();
-    return (json.data as QueueApiItem[]).map((item) =>
-      mapQueueItem(item, 'lecturerScore'),
-    );
+    const json = await res.json() as { data: QueueApiItem[]; meta?: Ta03QueueMeta };
+    return {
+      items: (json.data ?? []).map((item) => mapQueueItem(item, 'lecturerScore')),
+      meta: json.meta ? { ...EMPTY_QUEUE_META, ...readQueueMeta(json) } : EMPTY_QUEUE_META,
+    };
   },
 
   getMetopenScoringHistory: async (

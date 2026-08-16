@@ -201,6 +201,102 @@ describe("useSidebarMenu", () => {
     expect(itemTitles).not.toContain("Cari Pembimbing");
   });
 
+  it("does not retitle Metopel as archive when eligibility is read-only but TA is not promoted", () => {
+    vi.mocked(useStudentEligibility).mockReturnValue({
+      isLoading: false,
+      sks: 120,
+      hasTugasAkhirCourse: true,
+      canAccessKerjaPraktek: true,
+      canAccessTugasAkhir: true,
+      canAccessMetopel: true,
+      isMetopenReadOnly: true,
+      isMetopenOnlyTrack: false,
+      requirements: {
+        kerjaPraktek: { sks: { met: true, current: 120, required: 90 } },
+        tugasAkhir: {
+          course: { met: true, description: "OK" },
+          module: { met: true, description: "OK" },
+        },
+        metopel: { eligibility: { met: true, description: "OK" } },
+      },
+    } as unknown as ReturnType<typeof useStudentEligibility>);
+
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        canBrowseCatalog: true,
+        hasBlockingRequest: false,
+        hasOfficialSupervisor: false,
+        canOpenLogbook: false,
+        requestStatus: "booking_approved",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    const { result } = renderHook(() => useSidebarMenu());
+
+    const archiveMenu = result.current.navMain.find(
+      (item) => item.title === "Metode Penelitian (Arsip)",
+    );
+    const metopenMenu = result.current.navMain.find(
+      (item) => item.title === "Metode Penelitian",
+    );
+    const itemTitles = metopenMenu?.items.map((item) => item.title) ?? [];
+
+    expect(archiveMenu).toBeUndefined();
+    expect(metopenMenu).toBeDefined();
+    expect(itemTitles).toContain("Cari Pembimbing");
+  });
+
+  it("titles Metopel as archive after promotion to active_official", () => {
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        canBrowseCatalog: false,
+        hasBlockingRequest: false,
+        hasOfficialSupervisor: true,
+        canOpenLogbook: true,
+        requestStatus: "active_official",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    const { result } = renderHook(() => useSidebarMenu());
+
+    const metopenMenu = result.current.navMain.find(
+      (item) => item.title === "Metode Penelitian (Arsip)",
+    );
+    const itemTitles = metopenMenu?.items.map((item) => item.title) ?? [];
+
+    expect(metopenMenu).toBeDefined();
+    expect(itemTitles).toContain("Ringkasan");
+    expect(itemTitles).not.toContain("Cari Pembimbing");
+  });
+
+  it("does not title Metopel as archive after period-close even if KRS TA is true", () => {
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        canBrowseCatalog: true,
+        hasBlockingRequest: false,
+        hasOfficialSupervisor: false,
+        canOpenLogbook: false,
+        requestStatus: "released",
+        hasTakenMetopen: true,
+        takingThesisCourse: true,
+        isMetopenArchive: false,
+        metopenReadOnly: false,
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    const { result } = renderHook(() => useSidebarMenu());
+
+    expect(
+      result.current.navMain.find((item) => item.title === "Metode Penelitian (Arsip)"),
+    ).toBeUndefined();
+    expect(
+      result.current.navMain.find((item) => item.title === "Metode Penelitian"),
+    ).toBeDefined();
+  });
+
   it("shows Inbox Pembimbing for lecturers with supervisor roles", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isPembimbing: true });

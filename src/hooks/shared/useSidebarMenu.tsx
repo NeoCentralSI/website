@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useAdvisorAccessState } from "./useAdvisorAccessState";
 import { useStudentEligibility } from "./useStudentEligibility";
+import { isMetopenArchiveMode } from "@/lib/metopelArchive";
 import { ENV } from "@/config/env";
 
 type SidebarLeafItem = { title: string; url: string };
@@ -32,9 +33,17 @@ export const useSidebarMenu = () => {
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
   const isStudentUser = Boolean(authUser?.id) && isStudent();
-  const { canAccessMetopel, isMetopenReadOnly, hasTugasAkhirCourse, isMetopenOnlyTrack } =
+  const { canAccessMetopel, hasTugasAkhirCourse, isMetopenOnlyTrack } =
     useStudentEligibility();
   const { data: advisorAccess } = useAdvisorAccessState(isStudentUser && canAccessMetopel);
+  const isMetopenArchive = isMetopenArchiveMode({
+    isMetopenArchive: advisorAccess?.isMetopenArchive,
+    hasTakenMetopen: advisorAccess?.hasTakenMetopen,
+    takingThesisCourse: advisorAccess?.takingThesisCourse,
+    metopenReadOnly: advisorAccess?.metopenReadOnly,
+    requestStatus: advisorAccess?.requestStatus,
+    latestRequestStatus: advisorAccess?.latestRequest?.status,
+  });
 
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
@@ -170,7 +179,7 @@ export const useSidebarMenu = () => {
       if (canAccessMetopel) {
         const metopenItems = [{ title: "Ringkasan", url: "/metopel" }];
         const canOpenAdvisorSearch =
-          !isMetopenReadOnly &&
+          !isMetopenArchive &&
           !(advisorAccess?.hasOfficialSupervisor ?? false) &&
           (Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest));
 
@@ -180,10 +189,10 @@ export const useSidebarMenu = () => {
 
         const showMetopenProposal =
           isMetopenOnlyTrack &&
-          (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+          (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenArchive);
         const showMetopenInformalLogbook =
           isMetopenOnlyTrack &&
-          (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+          (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenArchive);
         if (showMetopenProposal) {
           metopenItems.push({ title: "Proposal", url: "/metopel/proposal" });
         }
@@ -192,7 +201,7 @@ export const useSidebarMenu = () => {
         }
 
         studentNav.splice(2, 0, {
-          title: isMetopenReadOnly ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
+          title: isMetopenArchive ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
           url: "#",
           icon: BookOpen,
           items: metopenItems,
@@ -371,10 +380,14 @@ export const useSidebarMenu = () => {
           title: "Kerja Praktik",
           url: "#",
           icon: Briefcase,
+          // "Seminar & Nilai" dihapus: /kelola/kerja-praktik/pendaftaran tidak
+          // terdaftar di App.tsx sehingga menghasilkan halaman kosong. Seminar dan
+          // nilai KP hanya ada sebagai tab per mahasiswa di bawah
+          // /kelola/kerja-praktik/mahasiswa/:internshipId, yang tetap dapat
+          // dicapai lewat menu Kelola > Kerja Praktik.
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
             { title: "Bimbingan", url: "/kelola/kerja-praktik/bimbingan" },
-            { title: "Seminar & Nilai", url: "/kelola/kerja-praktik/pendaftaran" },
           ],
         },
       ];
@@ -635,8 +648,12 @@ export const useSidebarMenu = () => {
     advisorAccess?.hasBlockingRequest,
     advisorAccess?.hasBookedSupervisor,
     advisorAccess?.hasOfficialSupervisor,
+    advisorAccess?.isMetopenArchive,
+    advisorAccess?.hasTakenMetopen,
+    advisorAccess?.takingThesisCourse,
+    advisorAccess?.metopenReadOnly,
     canAccessMetopel,
-    isMetopenReadOnly,
+    isMetopenArchive,
     hasTugasAkhirCourse,
     isMetopenOnlyTrack,
   ]);

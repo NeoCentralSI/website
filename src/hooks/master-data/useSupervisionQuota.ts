@@ -1,10 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query';
 import {
   getDefaultQuotaAPI,
   setDefaultQuotaAPI,
   getLecturerQuotasAPI,
   getLecturerQuotaDetailAPI,
   updateLecturerQuotaAPI,
+  recalculateQuotasAPI,
+  checkLecturerQuotaAPI,
+  type LecturerQuotaList,
+  type QuotaAvailability,
   type SetDefaultQuotaRequest,
   type UpdateLecturerQuotaRequest,
 } from '@/services/supervisionQuota.service';
@@ -50,7 +54,7 @@ export function useSetDefaultQuota() {
 }
 
 export function useLecturerQuotas(academicYearId: string | undefined, search?: string) {
-  return useQuery({
+  return useQuery<LecturerQuotaList, Error>({
     queryKey: KEYS.lecturerQuotas(academicYearId ?? '', search),
     queryFn: () => getLecturerQuotasAPI(academicYearId!, search),
     enabled: !!academicYearId,
@@ -87,6 +91,49 @@ export function useUpdateLecturerQuota() {
     },
     onError: (err: Error) => {
       toast.error(err.message || 'Gagal mengupdate kuota dosen');
+    },
+  });
+}
+
+export function useLecturerQuotaAvailability(lecturerIds: string[]) {
+  const unique = [...new Set(lecturerIds.filter(Boolean))];
+  const results = useQueries({
+    queries: unique.map((lecturerId) => ({
+      queryKey: ['quota-check', lecturerId],
+      queryFn: () => checkLecturerQuotaAPI(lecturerId),
+      retry: 1,
+    })),
+  });
+
+  const byLecturerId = new Map<
+    string,
+    { availability?: QuotaAvailability; isLoading: boolean; isError: boolean }
+  >();
+  unique.forEach((lecturerId, index) => {
+    const result = results[index];
+    byLecturerId.set(lecturerId, {
+      availability: result?.data,
+      isLoading: Boolean(result?.isLoading),
+      isError: Boolean(result?.isError),
+    });
+  });
+  return byLecturerId;
+}
+
+export function useRecalculateQuotas() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (academicYearId: string) => recalculateQuotasAPI(academicYearId),
+    onSuccess: (res) => {
+      toast.success(
+        res.repairedCount > 0
+          ? `Penghitung kuota diperbaiki pada ${res.repairedCount} dari ${res.recalculated} dosen.`
+          : `Penghitung kuota sudah sesuai untuk ${res.recalculated} dosen.`,
+      );
+      qc.invalidateQueries({ queryKey: ['supervision-quota'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Gagal menghitung ulang kuota dosen');
     },
   });
 }

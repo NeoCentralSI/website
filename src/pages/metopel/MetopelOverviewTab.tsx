@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAdvisorAccessState, useRole } from "@/hooks/shared";
 import { metopenTitleService } from "@/services/metopenTitle.service";
 import type { StudentArchiveData, StudentArchiveScoreDetail } from "@/services/metopenTitle.service";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MetricAction } from "@/components/metopen/MetricAction";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,21 +12,32 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { CheckCircle2, ClipboardList, FileCheck2, Stamp, Users, FileText, Archive, ScrollText, Info } from "lucide-react";
 import { formatDateId, formatRoleName, toTitleCaseName } from "@/lib/text";
 import { formatAdvisorRouteCode, formatAdvisorRouteProcessing } from "@/lib/advisorRoute";
+import { isMetopenArchiveMode, isPromotedToActiveOfficial } from "@/lib/metopelArchive";
+import { resolveSupervisorDisplayName } from "@/lib/supervisorDisplayName";
 import { getAdvisorRequestStatus } from "@/lib/metopen/statusBadge";
 import type { AdvisorSupervisorSummary } from "@/services/advisorRequest.service";
+
+export { isMetopenArchiveMode, isPromotedToActiveOfficial };
 
 type AdvisorAccessState = NonNullable<ReturnType<typeof useAdvisorAccessState>["data"]>;
 
 interface MetopelOverviewTabProps {
   /**
-   * BR-23 (canon §5.13): readOnly = true menandai mode arsip pasca promosi aktif TA.
-   * Mode arsip menampilkan substansi awal + detail rubrik + status penugasan TA-04
-   * (PDF cetak dikelola departemen — bukan artefak keputusan mahasiswa).
+   * Parent boleh mengirim readOnly. Mode arsip di tab ini memakai predikat
+   * resmi NeoCentral: `active_official` / thesis sudah keluar fase proposal.
+   * KRS TA SIA atau booking released saja tidak mengunci modul.
    */
   readOnly?: boolean;
   advisorAccess?: AdvisorAccessState;
 }
 
+/**
+ * Penanda promosi ke TA aktif. Field ini sudah dikirim ke tab:
+ * - access-state `requestStatus` (blocking request, termasuk `active_official`)
+ * - proposal-approval `activePromotionState`, `activePromotedAt`, `isProposal`
+ * Backend promosi (metopen.service syncBookingActivationForStudent) menulis
+ * keempatnya dalam satu transaksi. Jangan pakai `proposalStatus === "accepted"` saja.
+ */
 type ProposalStatus = "accepted" | "submitted" | "rejected" | null;
 type StudentArchiveScore = NonNullable<NonNullable<StudentArchiveData>["score"]>;
 type ProposalQueueReadiness = {
@@ -49,8 +60,9 @@ function buildProposalStatusUi(
   proposalStatus: ProposalStatus,
   queueReadiness: ProposalQueueReadiness,
   ta04IssuedAt?: string | null,
+  isPromoted = false,
 ) {
-  if (proposalStatus === "accepted") {
+  if (isPromoted) {
     return { label: "Beban Aktif TA", variant: "default" as const };
   }
   if (ta04IssuedAt) {
@@ -85,7 +97,7 @@ function buildProposalStatusUi(
 
 type OverviewSupervisorCard = Pick<
   AdvisorSupervisorSummary,
-  "id" | "name" | "email" | "avatarUrl" | "role"
+  "id" | "name" | "email" | "avatarUrl" | "role" | "identityNumber" | "expertise" | "assignedAt"
 >;
 
 /**
@@ -99,10 +111,13 @@ function resolveOverviewSupervisors(advisorAccess?: AdvisorAccessState): Overvie
   if (advisorAccess.supervisors.length > 0) {
     return advisorAccess.supervisors.map((supervisor) => ({
       id: supervisor.id,
-      name: supervisor.name,
+      name: resolveSupervisorDisplayName(supervisor.name, supervisor.lecturerId, advisorAccess),
       email: supervisor.email,
       avatarUrl: supervisor.avatarUrl,
       role: supervisor.role,
+      identityNumber: supervisor.identityNumber ?? null,
+      expertise: supervisor.expertise ?? supervisor.scienceGroup?.name ?? null,
+      assignedAt: supervisor.assignedAt ?? null,
     }));
   }
 
@@ -110,7 +125,7 @@ function resolveOverviewSupervisors(advisorAccess?: AdvisorAccessState): Overvie
   if (!request) return [];
 
   const lecturer = request.redirectTarget ?? request.lecturer;
-  const fullName = lecturer?.user?.fullName;
+  const fullName = resolveSupervisorDisplayName(lecturer?.user?.fullName, lecturer?.id, advisorAccess);
   if (!fullName) return [];
 
   return [
@@ -131,8 +146,9 @@ function getProposalQueueDescription(
   proposalStatus: ProposalStatus,
   queueReadiness: ProposalQueueReadiness,
   ta04IssuedAt?: string | null,
+  isPromoted = false,
 ) {
-  if (proposalStatus === "accepted") {
+  if (isPromoted) {
     return "Pembimbing sudah menjadi beban aktif Tugas Akhir.";
   }
   if (ta04IssuedAt) {
@@ -168,6 +184,7 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
   const hasLifecycleContext = Boolean(
     advisorAccess?.hasOfficialSupervisor ||
     advisorAccess?.thesisId ||
+    advisorAccess?.requestStatus === "active_official" ||
     readOnly,
   );
 
@@ -180,27 +197,39 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
     enabled: hasLifecycleContext,
   });
 
+  const isArchiveMode = isMetopenArchiveMode({
+    isMetopenArchive: advisorAccess?.isMetopenArchive,
+    hasTakenMetopen: advisorAccess?.hasTakenMetopen,
+    takingThesisCourse: advisorAccess?.takingThesisCourse,
+    metopenReadOnly: advisorAccess?.metopenReadOnly,
+    requestStatus: advisorAccess?.requestStatus,
+    latestRequestStatus: advisorAccess?.latestRequest?.status,
+    activePromotionState: proposalApproval?.activePromotionState,
+    activePromotedAt: proposalApproval?.activePromotedAt,
+    isProposal: proposalApproval?.isProposal,
+  });
+
   const { data: seminarEligibility } = useQuery({
     queryKey: ["metopel-seminar-eligibility"],
     queryFn: async () => {
       const response = await metopenTitleService.getMySeminarEligibilitySnapshot();
       return response.data as SeminarEligibilitySnapshot;
     },
-    enabled: !!advisorAccess?.hasOfficialSupervisor || readOnly,
+    enabled: !!advisorAccess?.hasOfficialSupervisor || isArchiveMode,
   });
 
   // Riwayat TA-03 untuk masa transisi setelah dinilai, sebelum TA-04/arsip aktif.
   const { data: assessmentHistory } = useQuery({
     queryKey: ["metopel-assessment-history"],
     queryFn: async () => (await metopenTitleService.getMyAssessmentHistory()).data,
-    enabled: !readOnly && !!advisorAccess?.hasOfficialSupervisor,
+    enabled: !isArchiveMode && !!advisorAccess?.hasOfficialSupervisor,
   });
 
   // BR-23: Arsip Metopel — fetch hanya saat mode arsip aktif (promosi beban aktif).
   const { data: archive } = useQuery({
     queryKey: ["metopel-archive-detail"],
     queryFn: async () => (await metopenTitleService.getMyArchive()).data,
-    enabled: readOnly && hasLifecycleContext,
+    enabled: isArchiveMode && hasLifecycleContext,
   });
 
   if (!advisorAccessFromParent && isLoading) return <Loading />;
@@ -216,8 +245,8 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
   const ta03GateOpen = proposalApproval?.ta03GateOpen === true;
   const ta03GateReason = proposalApproval?.ta03GateReason ?? null;
   const activePromotionState = proposalApproval?.activePromotionState ?? null;
-  const proposalStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness, ta04IssuedAt);
-  const proposalQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness, ta04IssuedAt);
+  const proposalStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness, ta04IssuedAt, isArchiveMode);
+  const proposalQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness, ta04IssuedAt, isArchiveMode);
   const workflowClarityItems = [
     advisorAccess?.hasBookedSupervisor && !guidanceGateOpen
       ? guidanceGateReason ?? "Booking disetujui. Menunggu TA-04. Draf pribadi masih dapat disimpan."
@@ -230,7 +259,7 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
   // Canon §5.2 (audit F-6.1): escalated = TA-01 (Path C), bukan TA-02. Pakai helper terpusat.
   const initialRouteCode = formatAdvisorRouteCode(advisorAccess?.blockingRequest?.routeType);
 
-  const initialRouteStatus = readOnly
+  const initialRouteStatus = isArchiveMode
     ? "Pembimbing sudah ditetapkan"
     : advisorAccess?.hasOfficialSupervisor
     ? "Pembimbing sudah ditetapkan"
@@ -261,28 +290,31 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
           : `Ajukan TA-01 ke calon pembimbing, atau TA-02 melalui departemen.${thesisTitleSummary}`;
 
   // Status kartu promosi tanpa short-circuit ta04IssuedAt (TA-04 adalah langkah terpisah).
-  const promotionStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness, null);
-  const promotionQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness, null);
+  const promotionStatusUi = buildProposalStatusUi(proposalStatus, queueReadiness, null, isArchiveMode);
+  const promotionQueueDescription = getProposalQueueDescription(proposalStatus, queueReadiness, null, isArchiveMode);
 
-  const ta04GateStatus = readOnly || Boolean(ta04IssuedAt)
+  const ta04GateStatus = isArchiveMode || Boolean(ta04IssuedAt)
     ? "Penugasan awal terbit"
     : advisorAccess?.hasBookedSupervisor || advisorAccess?.hasOfficialSupervisor
       ? "Menunggu finalisasi KaDep"
       : "Menunggu booking pembimbing";
 
-  const ta04GateDescription = readOnly || Boolean(ta04IssuedAt)
+  const ta04GateDescription = isArchiveMode || Boolean(ta04IssuedAt)
     ? "Penugasan TA-04 sudah dicatat. Proposal final dan penilaian dapat dilanjutkan."
     : "Menunggu finalisasi TA-04 oleh KaDep setelah booking disetujui.";
 
-  const overviewSupervisors = resolveOverviewSupervisors(advisorAccess);
+  const periodClosedBanner =
+    !isArchiveMode &&
+    advisorAccess?.latestRequest?.status === "released" &&
+    advisorAccess?.latestRequest?.releaseReason === "metopen_period_closed";
   const showSupervisorSection =
     overviewSupervisors.length > 0 &&
     Boolean(
       advisorAccess?.hasOfficialSupervisor ||
         advisorAccess?.hasBookedSupervisor ||
-        readOnly,
+        isArchiveMode,
     );
-  const supervisorBadgeLabel = advisorAccess?.hasOfficialSupervisor || readOnly || Boolean(ta04IssuedAt)
+  const supervisorBadgeLabel = advisorAccess?.hasOfficialSupervisor || isArchiveMode || Boolean(ta04IssuedAt)
     ? "Aktif"
     : "Booking disetujui";
 
@@ -305,23 +337,21 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
       code: "Proposal Final",
       title: "Ajukan proposal final",
       icon: FileCheck2,
-      status: readOnly
+      status: isArchiveMode
         ? "Proposal final tersimpan"
         : !advisorAccess?.hasBookedSupervisor
           ? "Menunggu booking pembimbing"
           : !ta04IssuedAt
             ? "Menunggu TA-04 KaDep"
-            : proposalStatus === "accepted"
-              ? "Sudah promosi beban aktif"
-              : proposalStatus === "submitted"
-                ? "Proposal final masuk alur TA-03"
-                : canSubmitFinalProposal
-                  ? "Boleh unggah proposal final"
-                  : canUploadProposal
-                    ? "Boleh simpan draf pribadi"
-                    : "Ajukan versi proposal final",
+            : proposalStatus === "submitted" || proposalStatus === "accepted"
+              ? "Proposal final masuk alur TA-03"
+              : canSubmitFinalProposal
+                ? "Boleh unggah proposal final"
+                : canUploadProposal
+                  ? "Boleh simpan draf pribadi"
+                  : "Ajukan versi proposal final",
       description:
-        readOnly
+        isArchiveMode
           ? "Proposal final tersimpan (hanya lihat)."
           : canSubmitFinalProposal
             ? "Unggah dan tetapkan versi proposal final untuk penilaian."
@@ -366,12 +396,13 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
     const proposalDone =
       proposalStatus === "submitted" ||
       proposalStatus === "accepted" ||
+      isArchiveMode ||
       Boolean(seminarRequirements?.metopelScore != null);
     const assessmentDone =
       seminarRequirements?.metopelScore != null ||
       seminarEligibility?.eligible === true ||
-      proposalStatus === "accepted";
-    const promotionDone = proposalStatus === "accepted";
+      isArchiveMode;
+    const promotionDone = isArchiveMode;
 
     const doneFlags = [bookingDone, ta04Done, proposalDone, assessmentDone, promotionDone];
 
@@ -409,6 +440,18 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
         )}
       </div>
 
+      {periodClosedBanner && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Periode Metode Penelitian ditutup</AlertTitle>
+          <AlertDescription>
+            Tahun ajaran Metopel Anda sudah ditutup. Nilai TA-03 yang belum final
+            dicatat 0. Ini bukan arsip Tugas Akhir; pengajuan ulang dapat dilakukan
+            pada periode berikutnya selama akses Metopen masih terbuka.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {showSupervisorSection && (
         <Card className="border-border/70 shadow-none">
           <CardHeader className="pb-2">
@@ -440,6 +483,17 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
                       </p>
                       {supervisor.email ? (
                         <p className="truncate text-xs text-muted-foreground">{supervisor.email}</p>
+                      ) : null}
+                      {supervisor.identityNumber ? (
+                        <p className="truncate text-xs text-muted-foreground">NIP {supervisor.identityNumber}</p>
+                      ) : null}
+                      {supervisor.expertise ? (
+                        <p className="truncate text-xs text-muted-foreground">{supervisor.expertise}</p>
+                      ) : null}
+                      {supervisor.assignedAt ? (
+                        <p className="truncate text-xs text-muted-foreground">
+                          Penugasan {formatDateId(supervisor.assignedAt)}
+                        </p>
                       ) : null}
                     </div>
                     <Badge variant="outline" className="shrink-0">
@@ -552,7 +606,7 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
               <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
                 <p className="font-medium text-foreground">Gate TA-03</p>
                 <p className="mt-0.5 text-muted-foreground">
-                  {readOnly && seminarRequirements?.metopelScore != null
+                  {isArchiveMode && seminarRequirements?.metopelScore != null
                     ? `Selesai: skor TA-03 final ${seminarRequirements.metopelScore}/100 dan tersimpan sebagai arsip.`
                     : ta03GateOpen
                       ? "Terbuka: proposal final dan TA-04 awal sudah tersedia."
@@ -571,13 +625,13 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
         </Card>
       )}
 
-      {!readOnly && assessmentHistory?.score && (
+      {!isArchiveMode && assessmentHistory?.score && (
         <AssessmentHistorySection history={assessmentHistory} />
       )}
 
       {/* BR-23 (canon §5.13): Arsip Metopel pasca promosi aktif — read-only.
           Substansi awal + rubrik TA-03 + status penugasan TA-04 (tanpa PDF mahasiswa). */}
-      {readOnly && archive && <ArchiveSection archive={archive} />}
+      {isArchiveMode && archive && <ArchiveSection archive={archive} />}
     </div>
   );
 }

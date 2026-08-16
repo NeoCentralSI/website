@@ -365,6 +365,126 @@ describe("MetopelOverviewTab", () => {
     expect(screen.getAllByText("Aktif").length).toBeGreaterThanOrEqual(2);
   });
 
+  it("falls back from snapshot role labels to live supervisor names on Overview", async () => {
+    vi.mocked(useRole).mockReturnValue({
+      isStudent: () => true,
+    } as unknown as ReturnType<typeof useRole>);
+
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        studentId: "student-snapshot-label",
+        thesisId: "thesis-snapshot-label",
+        thesisTitle: "Judul Snapshot",
+        thesisStatus: "Metopel",
+        gateConfigured: true,
+        gateOpen: true,
+        gates: [],
+        supervisors: [
+          {
+            id: "supervisor-p1",
+            lecturerId: "lecturer-live",
+            name: "Pembimbing 1",
+            email: "andi@example.com",
+            avatarUrl: null,
+            role: "Pembimbing 1",
+          },
+        ],
+        hasBookedSupervisor: true,
+        hasOfficialSupervisor: true,
+        guidanceGateOpen: true,
+        guidanceGateReason: null,
+        hasBlockingRequest: false,
+        blockingRequest: null,
+        latestRequest: {
+          id: "req-live",
+          studentId: "student-snapshot-label",
+          lecturerId: "lecturer-live",
+          topicId: null,
+          proposedTitle: "Judul Snapshot",
+          backgroundSummary: null,
+          problemStatement: null,
+          proposedSolution: null,
+          researchObject: null,
+          researchPermitStatus: null,
+          justificationText: null,
+          studentJustification: null,
+          requestType: "ta01",
+          status: "booking_approved",
+          routeType: "normal",
+          rejectionReason: null,
+          kadepNotes: null,
+          createdAt: "2026-08-01T08:00:00.000Z",
+          updatedAt: "2026-08-01T08:00:00.000Z",
+          withdrawnAt: null,
+          withdrawCount: 0,
+          reviewedAt: null,
+          lecturerRespondedAt: null,
+          student: {
+            id: "student-snapshot-label",
+            user: { id: "user-student", fullName: "Mahasiswa Uji", identityNumber: "2211522028" },
+          },
+          lecturer: {
+            id: "lecturer-live",
+            user: { id: "user-lecturer", fullName: "Dr. Andi Pembimbing" },
+          },
+          topic: null,
+        },
+        requestStatus: "booking_approved",
+        canBrowseCatalog: false,
+        canViewCatalog: true,
+        canSubmitRequest: false,
+        canOpenLogbook: true,
+        reason: "Anda sudah memiliki dosen pembimbing resmi.",
+        nextStep: "open_logbook",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    vi.mocked(metopenTitleService.getMyProposalApproval).mockResolvedValue({
+      success: true,
+      data: {
+        thesis: {
+          id: "thesis-snapshot-label",
+          title: "Judul Snapshot",
+          proposalStatus: null,
+          hasBookedSupervisor: true,
+          hasOfficialSupervisor: true,
+          ta04AssignmentIssuedAt: "2026-08-01T07:00:00.000Z",
+          canUploadProposal: true,
+          canSubmitFinalProposal: true,
+          canUseInformalLog: true,
+          guidanceGateOpen: true,
+          guidanceGateReason: null,
+          queueReadiness: { ready: false, block: "scores_not_finalized", proposalStatus: null },
+          titleApprovalDocumentId: null,
+          proposalReviewNotes: null,
+          proposalReviewedAt: null,
+          updatedAt: "2026-08-01T08:00:00.000Z",
+          titleApprovalDocument: null,
+        },
+      },
+    });
+
+    vi.mocked(metopenTitleService.getMySeminarEligibilitySnapshot).mockResolvedValue({
+      success: true,
+      data: { eligible: false, reason: "Menunggu TA-03 final." },
+    });
+
+    vi.mocked(metopenTitleService.getMyAssessmentHistory).mockResolvedValue({
+      success: true,
+      data: null,
+    });
+
+    render(<MetopelOverviewTab />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Dosen Pembimbing")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Dr. Andi Pembimbing")).toBeInTheDocument();
+    expect(screen.getByText("Dr. Andi Pembimbing")).toHaveClass("font-semibold");
+  });
+
   it("shows booked supervisor name on Overview while waiting for TA-04", async () => {
     vi.mocked(useRole).mockReturnValue({
       isStudent: () => true,
@@ -746,5 +866,210 @@ describe("MetopelOverviewTab", () => {
       expect(screen.getAllByText("Siap Promosi Aktif").length).toBeGreaterThan(0);
     });
     expect(metopenTitleService.syncMyProposalQueue).not.toHaveBeenCalled();
+  });
+
+  it("keeps the active Metopel surface when proposal is accepted but not yet promoted", async () => {
+    vi.mocked(useRole).mockReturnValue({
+      isStudent: () => true,
+    } as unknown as ReturnType<typeof useRole>);
+
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        studentId: "student-accepted",
+        thesisId: "thesis-accepted",
+        thesisTitle: "Judul Diterima",
+        thesisStatus: "Metopel",
+        gateConfigured: true,
+        gateOpen: true,
+        gates: [],
+        supervisors: [
+          {
+            id: "supervisor-1",
+            lecturerId: "lecturer-1",
+            name: "Dosen Pembimbing",
+            email: "lecturer@example.com",
+            avatarUrl: null,
+            role: "Pembimbing 1",
+          },
+        ],
+        hasBookedSupervisor: true,
+        hasOfficialSupervisor: true,
+        guidanceGateOpen: true,
+        guidanceGateReason: null,
+        hasBlockingRequest: true,
+        blockingRequest: null,
+        latestRequest: { status: "booking_approved" },
+        requestStatus: "booking_approved",
+        canBrowseCatalog: false,
+        canViewCatalog: true,
+        canSubmitRequest: false,
+        canOpenLogbook: true,
+        reason: "Booking pembimbing sudah disetujui.",
+        nextStep: "open_logbook",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    vi.mocked(metopenTitleService.getMyProposalApproval).mockResolvedValue({
+      success: true,
+      data: {
+        thesis: {
+          id: "thesis-accepted",
+          title: "Judul Diterima",
+          isProposal: true,
+          proposalStatus: "accepted",
+          hasBookedSupervisor: true,
+          hasOfficialSupervisor: true,
+          canUploadProposal: false,
+          canSubmitFinalProposal: false,
+          canUseInformalLog: true,
+          guidanceGateOpen: true,
+          guidanceGateReason: null,
+          ta04AssignmentIssuedAt: "2026-07-07T08:00:00.000Z",
+          activeAcademicYearId: null,
+          activePromotedAt: null,
+          activePromotionState: "booking_ta04_issued",
+          queueReadiness: {
+            ready: false,
+            block: "ta_course_not_confirmed",
+            proposalStatus: "accepted",
+          },
+          titleApprovalDocumentId: null,
+          proposalReviewNotes: null,
+          proposalReviewedAt: null,
+          updatedAt: "2026-08-13T08:00:00.000Z",
+          titleApprovalDocument: null,
+        },
+      },
+    });
+    vi.mocked(metopenTitleService.getMySeminarEligibilitySnapshot).mockResolvedValue({
+      success: true,
+      data: { eligible: false, reason: "Menunggu konfirmasi mata kuliah Tugas Akhir." },
+    });
+    vi.mocked(metopenTitleService.getMyAssessmentHistory).mockResolvedValue({
+      success: true,
+      data: null,
+    });
+
+    render(<MetopelOverviewTab readOnly />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getAllByText("TA-04 Terbit, Booking").length).toBeGreaterThan(0);
+    });
+
+    expect(screen.queryByText("Beban Aktif TA")).not.toBeInTheDocument();
+    expect(screen.queryByText("Arsip Penilaian Proposal & Status TA-04")).not.toBeInTheDocument();
+    expect(metopenTitleService.getMyArchive).not.toHaveBeenCalled();
+    expect(screen.getByText("Proposal final masuk alur TA-03")).toBeInTheDocument();
+  });
+
+  it("switches to archive mode only after promotion to active_official", async () => {
+    vi.mocked(useRole).mockReturnValue({
+      isStudent: () => true,
+    } as unknown as ReturnType<typeof useRole>);
+
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        studentId: "student-promoted",
+        thesisId: "thesis-promoted",
+        thesisTitle: "Judul Aktif",
+        thesisStatus: "Bimbingan",
+        gateConfigured: true,
+        gateOpen: true,
+        gates: [],
+        supervisors: [
+          {
+            id: "supervisor-1",
+            lecturerId: "lecturer-1",
+            name: "Dosen Pembimbing",
+            email: "lecturer@example.com",
+            avatarUrl: null,
+            role: "Pembimbing 1",
+          },
+        ],
+        hasBookedSupervisor: false,
+        hasOfficialSupervisor: true,
+        guidanceGateOpen: true,
+        guidanceGateReason: null,
+        hasBlockingRequest: true,
+        blockingRequest: null,
+        latestRequest: { status: "active_official" },
+        requestStatus: "active_official",
+        canBrowseCatalog: false,
+        canViewCatalog: true,
+        canSubmitRequest: false,
+        canOpenLogbook: true,
+        reason: "Fase Metopen sudah menjadi arsip.",
+        nextStep: "view_archive",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    vi.mocked(metopenTitleService.getMyProposalApproval).mockResolvedValue({
+      success: true,
+      data: {
+        thesis: {
+          id: "thesis-promoted",
+          title: "Judul Aktif",
+          isProposal: false,
+          proposalStatus: "accepted",
+          hasBookedSupervisor: false,
+          hasOfficialSupervisor: true,
+          canUploadProposal: false,
+          canSubmitFinalProposal: false,
+          canUseInformalLog: false,
+          guidanceGateOpen: true,
+          guidanceGateReason: null,
+          ta04AssignmentIssuedAt: "2026-07-07T08:00:00.000Z",
+          activeAcademicYearId: "ay-1",
+          activePromotedAt: "2026-08-13T08:00:00.000Z",
+          activePromotionState: "active_promoted",
+          queueReadiness: {
+            ready: false,
+            block: null,
+            proposalStatus: "accepted",
+          },
+          titleApprovalDocumentId: null,
+          proposalReviewNotes: null,
+          proposalReviewedAt: null,
+          updatedAt: "2026-08-13T08:00:00.000Z",
+          titleApprovalDocument: null,
+        },
+      },
+    });
+    vi.mocked(metopenTitleService.getMySeminarEligibilitySnapshot).mockResolvedValue({
+      success: true,
+      data: {
+        eligible: true,
+        requirements: { metopelPassed: true, metopelScore: 88, proposalAccepted: true, proposalStatus: "accepted" },
+      },
+    });
+    vi.mocked(metopenTitleService.getMyAssessmentHistory).mockResolvedValue({
+      success: true,
+      data: null,
+    });
+    vi.mocked(metopenTitleService.getMyArchive).mockResolvedValue({
+      success: true,
+      data: {
+        thesisId: "thesis-promoted",
+        thesisTitle: "Judul Aktif",
+        proposalStatus: "accepted",
+        advisorRequests: [],
+        score: null,
+        titleApproval: { reviewNotes: null, reviewedAt: "2026-07-07T08:00:00.000Z", document: null, documentKind: "batch" },
+        readOnly: true,
+      },
+    });
+
+    render(<MetopelOverviewTab />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Beban Aktif TA").length).toBeGreaterThan(0);
+    });
+
+    await waitFor(() => {
+      expect(metopenTitleService.getMyArchive).toHaveBeenCalled();
+    });
+    expect(screen.getByText("Arsip Penilaian Proposal & Status TA-04")).toBeInTheDocument();
   });
 });

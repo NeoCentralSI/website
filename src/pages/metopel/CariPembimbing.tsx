@@ -551,6 +551,10 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
     }, [dialogOpen, draftReady, formData, lastSavedFormData, saveDraftMutation]);
 
     const handleOpenDialog = (lecturer: LecturerCatalogItem | null = null) => {
+        if (lecturer && lecturer.acceptingRequests === false) {
+            toast.error('Dosen ini sedang tidak menerima pengajuan pembimbing.');
+            return;
+        }
         setSelectedLecturer(lecturer);
         setFormData((prev) => ({ ...normalizeFormData(prev), lecturerId: lecturer?.lecturerId ?? '' }));
         setDialogOpen(true);
@@ -1176,6 +1180,8 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {filtered.map((lecturer) => {
                         const config = getTrafficLightConfig(lecturer.trafficLight);
+                        const acceptsRequests = lecturer.acceptingRequests !== false;
+                        const canApplyToLecturer = canSubmitRequest && acceptsRequests;
                         return (
                             <Card key={lecturer.lecturerId} className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/30">
                                 <CardHeader className="flex flex-row items-start gap-3 pb-3">
@@ -1263,10 +1269,14 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                                                                 : '',
                                                         )}
                                                         variant={lecturer.trafficLight === 'red' ? 'outline' : 'default'}
-                                                        disabled={!canSubmitRequest}
+                                                        disabled={!canApplyToLecturer}
                                                         onClick={() => handleOpenDialog(lecturer)}
                                                     >
-                                                        {lecturer.trafficLight === 'red' ? 'Ajukan dengan justifikasi' : 'Ajukan TA-01'}
+                                                        {!acceptsRequests
+                                                            ? 'Tidak menerima pengajuan'
+                                                            : lecturer.trafficLight === 'red'
+                                                              ? 'Ajukan dengan justifikasi'
+                                                              : 'Ajukan TA-01'}
                                                         <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                                                     </Button>
                                                 </span>
@@ -1274,6 +1284,8 @@ export default function CariPembimbing({ readOnly = false, advisorAccess: adviso
                                             <TooltipContent side="top" className="max-w-xs">
                                                 {!canSubmitRequest ? (
                                                     <p>{advisorAccess?.reason ?? 'Anda belum memenuhi syarat untuk mengajukan.'}</p>
+                                                ) : !acceptsRequests ? (
+                                                    <p>Dosen ini sedang tidak menerima pengajuan pembimbing. Pilih dosen lain atau gunakan TA-02 jalur departemen.</p>
                                                 ) : lecturer.trafficLight === 'red' ? (
                                                     <p>
                                                         Dosen ini kuotanya penuh. Pilih jalur ini hanya bila Anda <strong>tetap kokoh</strong> ingin dibimbing oleh dosen ini. Dosen meninjau lebih dulu dan KaDep memutuskan bila dosen bersedia meneruskan. Bila fleksibel, gunakan <strong>TA-02</strong>.

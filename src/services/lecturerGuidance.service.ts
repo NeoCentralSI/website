@@ -270,6 +270,8 @@ export interface StudentDetail {
     isFinalized?: boolean;
     attendanceAutoZeroedAt?: string | null;
     attendanceAutoZeroReason?: string | null;
+    periodClosedAt?: string | null;
+    periodClosedReason?: string | null;
   } | null;
   student: {
     id?: string | null;

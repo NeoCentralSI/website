@@ -82,10 +82,47 @@ export interface ThesisRecord {
   status: string;
   createdAt: string;
   updatedAt: string;
+  academicYearId?: string | null;
+  academicYearLabel?: string | null;
   supervisors: {
     role: { name: string };
     lecturer: { user: { fullName: string } };
   }[];
+}
+
+export interface DevToolsAcademicYear {
+  id: string;
+  year: string | number;
+  semester: string;
+  isActive: boolean;
+  label: string;
+}
+
+export interface CloseMetopenPeriodResult {
+  dryRun: boolean;
+  closedAcademicYearId: string;
+  yearLabel: string;
+  items: Array<{
+    thesisId: string;
+    studentName?: string | null;
+    identityNumber?: string | null;
+    eligibleMetopen?: boolean | null;
+    requestId?: string | null;
+    currentStatus?: string | null;
+    nextStatus?: string | null;
+    scoreAction?: string | null;
+    skipReason?: string | null;
+    releaseReason?: string | null;
+  }>;
+  counts: {
+    examined: number;
+    zeroed: number;
+    ungradedFinal?: number;
+    noFinalProposal?: number;
+    released: number;
+    closed: number;
+    skipped: number;
+  };
 }
 
 export interface CreateUserDto {

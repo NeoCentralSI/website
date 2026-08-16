@@ -4,6 +4,7 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { useAdvisorAccessState, useRole } from "@/hooks/shared";
 import { useStudentEligibility } from "@/hooks/shared/useStudentEligibility";
+import { isMetopenArchiveMode } from "@/lib/metopelArchive";
 import { MetopelOverviewTab } from "./MetopelOverviewTab";
 import CariPembimbing from "./CariPembimbing";
 import { MetopenProposalTab } from "./MetopenProposalTab";
@@ -21,16 +22,24 @@ export default function Metopel() {
   const { isStudent } = useRole();
   const isStudentUser = isStudent();
   const { data: advisorAccess } = useAdvisorAccessState(isStudentUser);
-  const { isMetopenOnlyTrack, isMetopenReadOnly } = useStudentEligibility();
+  const { isMetopenOnlyTrack } = useStudentEligibility();
+  const isArchiveMode = isMetopenArchiveMode({
+    isMetopenArchive: advisorAccess?.isMetopenArchive,
+    hasTakenMetopen: advisorAccess?.hasTakenMetopen,
+    takingThesisCourse: advisorAccess?.takingThesisCourse,
+    metopenReadOnly: advisorAccess?.metopenReadOnly,
+    requestStatus: advisorAccess?.requestStatus,
+    latestRequestStatus: advisorAccess?.latestRequest?.status,
+  });
 
   const showMetopenProposalTab =
     isStudentUser &&
     isMetopenOnlyTrack &&
-    (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+    (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isArchiveMode);
   const showMetopenInformalLogbookTab =
     isStudentUser &&
     isMetopenOnlyTrack &&
-    (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+    (Boolean(advisorAccess?.hasOfficialSupervisor) || isArchiveMode);
 
   const tabs = useMemo(() => {
     const items = [...BASE_TAB_ITEMS];
@@ -43,7 +52,7 @@ export default function Metopel() {
     const canOpenAdvisorSearchTab =
       Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest);
 
-    if (!isMetopenReadOnly && !(advisorAccess?.hasOfficialSupervisor ?? false) && canOpenAdvisorSearchTab) {
+    if (!isArchiveMode && !(advisorAccess?.hasOfficialSupervisor ?? false) && canOpenAdvisorSearchTab) {
       items.push(SEARCH_TAB);
     }
 
@@ -52,7 +61,7 @@ export default function Metopel() {
     advisorAccess?.canBrowseCatalog,
     advisorAccess?.hasBlockingRequest,
     advisorAccess?.hasOfficialSupervisor,
-    isMetopenReadOnly,
+    isArchiveMode,
     showMetopenProposalTab,
     showMetopenInformalLogbookTab,
   ]);
@@ -72,19 +81,19 @@ export default function Metopel() {
   const renderContent = () => {
     switch (activeTabKey) {
       case "search":
-        return <CariPembimbing readOnly={isMetopenReadOnly} advisorAccess={advisorAccess} />;
+        return <CariPembimbing readOnly={isArchiveMode} advisorAccess={advisorAccess} />;
       case "proposal":
-        return <MetopenProposalTab readOnly={isMetopenReadOnly} />;
+        return <MetopenProposalTab readOnly={isArchiveMode} />;
       case "logbook":
-        return <MetopenInformalLogbookTab readOnly={isMetopenReadOnly} />;
+        return <MetopenInformalLogbookTab readOnly={isArchiveMode} />;
       default:
-        return <MetopelOverviewTab readOnly={isMetopenReadOnly} advisorAccess={advisorAccess} />;
+        return <MetopelOverviewTab readOnly={isArchiveMode} advisorAccess={advisorAccess} />;
     }
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {isMetopenReadOnly && (
+    <div className="space-y-5 sm:space-y-6">
+      {isArchiveMode && (
         <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
@@ -94,9 +103,9 @@ export default function Metopel() {
       )}
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Metodologi Penelitian</h1>
-        <p className="text-muted-foreground">
-          {isMetopenReadOnly
+        <h1 className="text-base font-semibold tracking-tight sm:text-lg">Metodologi Penelitian</h1>
+        <p className="text-xs text-muted-foreground sm:text-sm">
+          {isArchiveMode
             ? "Ringkasan arsip fase Metode Penelitian sebelum Anda masuk ke proses Tugas Akhir."
             : "Kelola pengajuan pembimbing, judul awal, penilaian proposal, dan status pengesahan judul pada fase Metode Penelitian."}
         </p>
@@ -104,7 +113,7 @@ export default function Metopel() {
 
       <TabsNav tabs={tabs} />
 
-      <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="space-y-5 sm:space-y-6 animate-in fade-in duration-300">
         {renderContent()}
       </div>
     </div>

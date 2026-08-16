@@ -28,8 +28,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
+import { Ta03ScoreSummary } from "./Ta03ScoreSummary";
+import { Ta04StatusBadge } from "./Ta04StatusBadge";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
 import { useRole } from "@/hooks/shared/useRole";
+import { getThesisStatusStyle } from "@/lib/monitoring/thesisStatus";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
@@ -41,25 +44,9 @@ import { RefreshButton } from "@/components/ui/refresh-button";
 
 
 
-// Status badge color mapping
-const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  "Bimbingan": "default",
-  "Acc Seminar": "secondary",
-  "Selesai": "secondary",
-  "Gagal": "destructive",
-};
-
 function getStatusBadge(status: string) {
-  const variant = statusVariants[status] || "outline";
-
-  if (status === "Acc Seminar") {
-    return <Badge className="bg-amber-100 text-amber-800">{status}</Badge>;
-  }
-  if (status === "Selesai") {
-    return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
-  }
-
-  return <Badge variant={variant}>{status}</Badge>;
+  const { label, className } = getThesisStatusStyle(status);
+  return <Badge className={cn("whitespace-nowrap", className)}>{label}</Badge>;
 }
 
 // Rating badge config
@@ -253,6 +240,16 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
       key: "status",
       header: "Status",
       render: (thesis) => getStatusBadge(thesis.status),
+    },
+    {
+      key: "ta04",
+      header: "TA-04",
+      render: (thesis) => <Ta04StatusBadge ta04={thesis.ta04} />,
+    },
+    {
+      key: "ta03",
+      header: "Nilai TA-03",
+      render: (thesis) => <Ta03ScoreSummary ta03={thesis.ta03} />,
     },
     {
       key: "progress",

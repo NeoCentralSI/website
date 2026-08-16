@@ -146,6 +146,8 @@ describe("DSSKadep", () => {
           ta04BatchEligible: true,
           ta04BatchBlock: null,
           listSection: "batch_cohort",
+          topicName: "Enterprise System",
+          topicScienceGroupName: "Sistem Enterprise",
         },
         {
           thesisId: "thesis-booking",
@@ -206,6 +208,16 @@ describe("DSSKadep", () => {
     });
     expect(metopenTitleService.downloadKadepTitleApprovalDocument).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /Perbarui Formulir TA-04/i })).toBeInTheDocument();
+  });
+
+  it("shows the stored kelompok keilmuan name without a KBK prefix", async () => {
+    renderWithRoute(<DSSKadep />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Topik: Enterprise System · Sistem Enterprise/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/KBK Sistem Enterprise/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/KBK KBK/)).not.toBeInTheDocument();
   });
 
   it("requires two-step modal preview before finalize", async () => {

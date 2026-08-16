@@ -40,7 +40,9 @@ import { cn } from "@/lib/utils";
 
 interface ComponentProps {
     thesisId: string;
+    academicYearId?: string | null;
     scoreData?: StudentDetail["researchMethodScore"];
+    lockMutations?: boolean;
 }
 
 /**
@@ -55,7 +57,7 @@ interface ComponentProps {
  * - Setelah `isFinalized = true`: TIDAK ADA tombol Edit/Submit/Cosign apa pun.
  *   Banner finalitas + breakdown 4 bucket wajib tampil.
  */
-export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
+export function SupervisorScoreCard({ thesisId, academicYearId, scoreData, lockMutations = false }: ComponentProps) {
     const queryClient = useQueryClient();
     const [coSignNote, setCoSignNote] = useState("");
 
@@ -119,7 +121,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
 
     const role = context?.role ?? null;
     const hasP2 = Boolean(context?.hasP2);
-    const isFinalized = summary.isFinalized;
+    const isFinalized = summary.isFinalized || lockMutations || Boolean(summary.periodClosedAt);
     const coSignedAt = summary.coSignedAt;
     const isP1Submitted = summary.supervisorScore != null;
     const needsCoSign = hasP2 && isP1Submitted && coSignedAt == null;
@@ -146,7 +148,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
         <Ta03bRubricDetailCard details={scoreDetail?.researchMethodScoreDetails} />
     );
 
-    const immutableBanner = isFinalized ? (
+    const immutableBanner = summary.isFinalized && !summary.periodClosedAt ? (
         <Alert className="border-emerald-200 bg-emerald-50">
             <ShieldCheck className="h-5 w-5 text-emerald-600" />
             <AlertTitle className="text-emerald-800">
@@ -154,6 +156,24 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
             </AlertTitle>
             <AlertDescription className="text-emerald-700">
                 Nilai TA-03A {hasP2 ? "(termasuk persetujuan Pembimbing 2)" : ""} dan TA-03B sudah terkunci.
+            </AlertDescription>
+        </Alert>
+    ) : null;
+
+    const periodClosedBanner = summary.periodClosedAt ? (
+        <Alert className="border-destructive/30 bg-destructive/5">
+            <Ban className="h-5 w-5 text-destructive" />
+            <AlertTitle>Periode Metode Penelitian ditutup</AlertTitle>
+            <AlertDescription>
+                Penilaian yang belum final pada periode ini diselesaikan dengan nilai 0. Form tidak dapat diubah.
+            </AlertDescription>
+        </Alert>
+    ) : lockMutations ? (
+        <Alert>
+            <Lock className="h-5 w-5" />
+            <AlertTitle>Riwayat tahun ajaran lama</AlertTitle>
+            <AlertDescription>
+                Penilaian hanya dapat diubah pada tahun ajaran operasional. Periode ini ditampilkan sebagai arsip.
             </AlertDescription>
         </Alert>
     ) : null;
@@ -185,6 +205,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                 {summarySection}
                 {breakdownSection}
                 {ta03bDetailSection}
+                {periodClosedBanner}
                 {attendanceAutoZeroBanner}
                 {immutableBanner}
                 {!isFinalized && !isP1Submitted && (
@@ -218,6 +239,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                     <RubricGradingForm
                         thesisId={thesisId}
                         formCode="TA-03A"
+                        academicYearId={academicYearId}
                         submitButtonLabel={
                             hasP2
                                 ? "Serahkan penilaian (atas konsensus dengan P2)"
@@ -240,6 +262,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
                 {summarySection}
                 {breakdownSection}
                 {ta03bDetailSection}
+                {periodClosedBanner}
                 {attendanceAutoZeroBanner}
                 {immutableBanner}
                 {!isFinalized && (
@@ -332,6 +355,7 @@ export function SupervisorScoreCard({ thesisId, scoreData }: ComponentProps) {
             {summarySection}
             {breakdownSection}
             {ta03bDetailSection}
+            {periodClosedBanner}
             {attendanceAutoZeroBanner}
             {immutableBanner}
             <Alert className="border-border bg-muted/30">
@@ -359,6 +383,7 @@ interface ScoreSummary {
     coSignNote: string | null;
     attendanceAutoZeroedAt: string | null;
     attendanceAutoZeroReason: string | null;
+    periodClosedAt: string | null;
     attendanceRecord: {
         attendancePercentage: number;
         presentCount: number;
@@ -392,6 +417,8 @@ function buildScoreSummary(
         detail?.attendanceAutoZeroedAt ?? scoreData?.attendanceAutoZeroedAt ?? null;
     const attendanceAutoZeroReason =
         detail?.attendanceAutoZeroReason ?? scoreData?.attendanceAutoZeroReason ?? null;
+    const periodClosedAt =
+        detail?.periodClosedAt ?? scoreData?.periodClosedAt ?? null;
     const attendanceRecord = detail?.attendanceRecord ?? null;
 
     const details = detail?.researchMethodScoreDetails ?? [];
@@ -418,6 +445,7 @@ function buildScoreSummary(
         coSignNote,
         attendanceAutoZeroedAt,
         attendanceAutoZeroReason,
+        periodClosedAt,
         attendanceRecord,
         ta03aCap: detail?.ta03aCap ?? 75,
         ta03bCap: detail?.ta03bCap ?? 25,

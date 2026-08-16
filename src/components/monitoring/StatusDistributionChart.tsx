@@ -4,27 +4,15 @@ import { PieChart, Pie, Cell, Legend } from "recharts";
 import type { StatusDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
+import { getThesisStatusStyle } from "@/lib/monitoring/thesisStatus";
 
 interface StatusDistributionChartProps {
   statusDistribution: StatusDistribution[] | undefined;
   isLoading: boolean;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  "Bimbingan": "#3b82f6",
-  "Acc Seminar": "#f59e0b",
-  "Seminar Proposal": "#8b5cf6",
-  "Revisi Proposal": "#f97316",
-  "Penelitian": "#06b6d4",
-  "Seminar Hasil": "#6366f1",
-  "Sidang": "#ec4899",
-  "Revisi Akhir": "#f43f5e",
-  "Selesai": "#22c55e",
-  "Gagal": "#ef4444",
-};
-
-function getColor(status: string, index: number): string {
-  return STATUS_COLORS[status] || `hsl(${index * 45}, 70%, 50%)`;
+function getColor(status: string): string {
+  return getThesisStatusStyle(status).chartColor;
 }
 
 export function StatusDistributionChart({ statusDistribution, isLoading }: StatusDistributionChartProps) {
@@ -45,8 +33,8 @@ export function StatusDistributionChart({ statusDistribution, isLoading }: Statu
   const total = data.reduce((sum, s) => sum + s.count, 0);
 
   const chartConfig: ChartConfig = {};
-  data.forEach((s, i) => {
-    chartConfig[s.name] = { label: s.name, color: getColor(s.name, i) };
+  data.forEach((s) => {
+    chartConfig[s.name] = { label: s.name, color: getColor(s.name) };
   });
 
   return (
@@ -82,8 +70,8 @@ export function StatusDistributionChart({ statusDistribution, isLoading }: Statu
                 labelLine={false}
                 fontSize={11}
               >
-                {data.map((entry, index) => (
-                  <Cell key={entry.id} fill={getColor(entry.name, index)} />
+                {data.map((entry) => (
+                  <Cell key={entry.id} fill={getColor(entry.name)} />
                 ))}
               </Pie>
               <Legend

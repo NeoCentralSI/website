@@ -5,6 +5,11 @@ import { apiRequest } from "./auth.service";
 
 export interface ProgressStats {
   totalActiveTheses: number;
+  totalProposalTheses?: number;
+  totalPostProposalTheses?: number;
+  supervisorLoadThesisCount?: number;
+  definitionLabel?: string;
+  periodLabel?: string;
   totalMilestones: number;
   completedMilestones: number;
   averageProgress: number;
@@ -70,6 +75,14 @@ export interface SupervisorLoad {
   students: SupervisorLoadStudent[];
 }
 
+export interface SupervisorLoadList {
+  definitionLabel: string;
+  periodLabel: string;
+  academicYearId: string | null;
+  uniqueThesisCount: number;
+  lecturers: SupervisorLoad[];
+}
+
 export interface RatingDistribution {
   id: string;
   name: string;
@@ -109,8 +122,25 @@ export interface MonitoringDashboard {
   guidanceTrend: GuidanceTrend[];
   atRiskStudents: AtRiskStudent[];
   slowStudents: AtRiskStudent[];
-  supervisorLoads: SupervisorLoad[];
+  supervisorLoads: SupervisorLoadList;
   readyForSeminar: ReadyForSeminarStudent[];
+}
+
+/** Status penerbitan TA-04 (read-only; KaDep tetap satu-satunya penerbit). */
+export interface ThesisTa04Snapshot {
+  issued: boolean;
+  issuedAt: string | null;
+}
+
+/** Ringkasan nilai TA-03. `null` bila belum ada baris penilaian sama sekali. */
+export interface ThesisTa03Snapshot {
+  ta03a: number | null;
+  ta03b: number | null;
+  finalScore: number | null;
+  isFinalized: boolean;
+  finalizedAt: string | null;
+  coSigned: boolean;
+  autoZeroed: boolean;
 }
 
 export interface ThesisListItem {
@@ -129,6 +159,8 @@ export interface ThesisListItem {
     email: string;
   };
   status: string;
+  ta04: ThesisTa04Snapshot;
+  ta03: ThesisTa03Snapshot | null;
   academicYear: string;
   startSemester: string;
   progress: {
@@ -210,6 +242,8 @@ export interface ThesisDetail {
   id: string;
   title: string;
   status: string | null;
+  ta04: ThesisTa04Snapshot;
+  ta03: ThesisTa03Snapshot | null;
   rating: string;
   topic: string | null;
   academicYear: string | null;
@@ -414,7 +448,7 @@ export async function getStudentsReadyForSeminar(academicYear?: string): Promise
 /**
  * Get lecturer supervision workloads
  */
-export async function getSupervisorLoads(academicYear?: string): Promise<SupervisorLoad[]> {
+export async function getSupervisorLoads(academicYear?: string): Promise<SupervisorLoadList> {
   const url = academicYear && academicYear !== "all"
     ? `${ENDPOINTS.SUPERVISOR_LOADS}?academicYear=${academicYear}`
     : ENDPOINTS.SUPERVISOR_LOADS;

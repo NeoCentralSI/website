@@ -13,7 +13,7 @@ import {
   type FilterOptions,
   type AtRiskStudent,
   type ReadyForSeminarStudent,
-  type SupervisorLoad,
+  type SupervisorLoadList,
   type ThesisDetail,
 } from "@/services/monitoring.service";
 
@@ -90,7 +90,7 @@ export function useStudentsReadyForSeminar(academicYear?: string) {
  * Hook to fetch lecturer supervision workloads
  */
 export function useSupervisorLoads(academicYear?: string) {
-  return useQuery<SupervisorLoad[], Error>({
+  return useQuery<SupervisorLoadList, Error>({
     queryKey: monitoringKeys.supervisorLoads(academicYear),
     queryFn: () => getSupervisorLoads(academicYear),
     staleTime: 2 * 60 * 1000, // 2 minutes

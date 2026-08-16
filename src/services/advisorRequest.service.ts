@@ -18,6 +18,7 @@ export interface LecturerCatalogItem {
   normalAvailable: number;
   trafficLight: 'green' | 'yellow' | 'red';
   statusLabel?: string;
+  acceptingRequests?: boolean;
   supervisedTopics: string[];
 }
 
@@ -70,13 +71,23 @@ export interface AdvisorQuotaEntry {
   createdAt: string | null;
   updatedAt: string | null;
   proposalStatus?: string | null;
+  proposalVersion?: number | null;
+  hasFinalProposal?: boolean;
+  academicYearId?: string | null;
+  academicYearLabel?: string | null;
+  isCurrentPeriod?: boolean;
   thesisStatus?: string | null;
   acceptedOverNormal?: boolean;
 }
 
 export interface DosenInboxPayload {
   summary: LecturerQuotaSnapshot | null;
+  /** Period the `summary` numbers are scoped to. */
+  academicYearId?: string;
+  academicYearLabel?: string | null;
   pendingRequests: AdvisorRequest[];
+  /** Requests still queued from a period that is no longer operational. */
+  outOfPeriodCount?: number;
   activeOfficial: AdvisorQuotaEntry[];
   bookings: AdvisorQuotaEntry[];
   pendingKadep: AdvisorQuotaEntry[];
@@ -98,6 +109,10 @@ export interface AdvisorSupervisorSummary {
   email: string | null;
   avatarUrl: string | null;
   role: string | null;
+  identityNumber?: string | null;
+  scienceGroup?: { id: string; name: string } | null;
+  expertise?: string | null;
+  assignedAt?: string | null;
 }
 
 export interface AdvisorRequest {
@@ -126,8 +141,15 @@ export interface AdvisorRequest {
   withdrawCount: number;
   reviewedAt: string | null;
   lecturerRespondedAt: string | null;
+  releasedAt?: string | null;
+  releaseReason?: string | null;
   student: {
     id: string;
+    enrollmentYear?: number | null;
+    sksCompleted?: number | null;
+    currentSemester?: number | null;
+    eligibleMetopen?: boolean | null;
+    takingThesisCourse?: boolean | null;
     user: { id: string; fullName: string; identityNumber: string; avatarUrl?: string };
   };
   lecturer: {
@@ -135,7 +157,6 @@ export interface AdvisorRequest {
     scienceGroupId?: string;
     user: { id: string; fullName: string; identityNumber?: string; avatarUrl?: string };
     scienceGroup?: { id: string; name: string };
-    supervisionQuotas?: Array<{ quotaMax: number; quotaSoftLimit: number; currentCount: number }>;
   } | null;
   topic: {
     id: string;
@@ -148,7 +169,14 @@ export interface AdvisorRequest {
     user: { id: string; fullName: string };
     scienceGroup?: { id: string; name: string };
   };
+  academicYearId?: string;
+  academicYear?: { id: string; year: string; semester: string; isActive: boolean } | null;
+  /** False when the request was filed in a period that is no longer operational. */
+  isCurrentPeriod?: boolean;
+  periodLabel?: string | null;
   quotaSnapshot?: LecturerQuotaSnapshot | null;
+  /** Load the lecturer carries in the operational period, for out-of-period requests. */
+  operationalQuotaSnapshot?: LecturerQuotaSnapshot | null;
   quotaPreview?: {
     projectedCurrentCount: number;
     willBeOverquota: boolean;
@@ -197,6 +225,9 @@ export interface AdvisorAccessState {
   metopenEligibilitySource: 'sia' | 'devtools' | null;
   metopenEligibilityUpdatedAt: string | null;
   metopenReadOnly: boolean;
+  hasTakenMetopen?: boolean;
+  takingThesisCourse?: boolean | null;
+  isMetopenArchive?: boolean;
   gateConfigured: boolean;
   gateOpen: boolean;
   gates: AdvisorAccessGate[];
@@ -265,6 +296,9 @@ export interface AssignableLecturersResponse {
 }
 
 export interface KadepQueue {
+  /** Operational period; requests outside it carry `isCurrentPeriod: false`. */
+  academicYearId?: string | null;
+  academicYearLabel?: string | null;
   escalated: AdvisorRequest[];
   pendingAssignment: AdvisorRequest[];
 }

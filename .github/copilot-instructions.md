@@ -1,7 +1,7 @@
-# Frontend Development Rules — NeoCentral
+﻿# Frontend Development Rules â€” NeoCentral
 
 This file is a frontend-specific projection. Business truth remains in root
-`AGENTS.md`, `KONTEKS_KANONIS_SIMPTA.md` v2.9, and `prdpurpose.md` v7.9.
+`AGENTS.md`, `KONTEKS_KANONIS_SIMPTA.md` **v3.3**, and `prdpurpose.md` **v8.3**. See root `AGENTS.md`.
 Technical truth remains in root `.cursor/rules/20-website-frontend.mdc`.
 
 ## Mandatory preflight

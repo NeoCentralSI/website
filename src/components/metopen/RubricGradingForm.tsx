@@ -52,6 +52,7 @@ import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
 interface RubricGradingFormProps {
     thesisId: string;
     formCode: "TA-03A" | "TA-03B";
+    academicYearId?: string | null;
     studentName?: string;
     onSuccess?: () => void;
     onCancel?: () => void;
@@ -86,6 +87,7 @@ function formatPercent(value?: number | null) {
 export function RubricGradingForm({
     thesisId,
     formCode,
+    academicYearId,
     studentName,
     onSuccess,
     onCancel,
@@ -94,6 +96,7 @@ export function RubricGradingForm({
 }: RubricGradingFormProps) {
     const queryClient = useQueryClient();
     const { academicYear } = useActiveAcademicYear();
+    const criteriaAcademicYearId = academicYearId || academicYear?.id;
 
     /** Score per criteria.id (DB-level). */
     const [scores, setScores] = useState<Record<string, CriteriaScoreState>>({});
@@ -103,9 +106,9 @@ export function RubricGradingForm({
     const [subScores, setSubScores] = useState<Record<string, Record<string, SubScoreState>>>({});
 
     const { data: criteriaBundle, isLoading } = useQuery({
-        queryKey: ["assessment-criteria", formCode, academicYear?.id],
-        queryFn: () => assessmentService.getCriteria(formCode, academicYear!.id),
-        enabled: Boolean(academicYear?.id),
+        queryKey: ["assessment-criteria", formCode, criteriaAcademicYearId],
+        queryFn: () => assessmentService.getCriteria(formCode, criteriaAcademicYearId!),
+        enabled: Boolean(criteriaAcademicYearId),
     });
     const criteria = criteriaBundle?.criteria;
     const formCap =

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLecturerQuotaAvailability } from "@/hooks/master-data/useSupervisionQuota";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner, Loading } from "@/components/ui/spinner";
@@ -42,9 +43,11 @@ export function Supervisor2KadepSection() {
     queryKey: ["kadep-supervisor2-requests"],
     queryFn: getSupervisor2KadepRequests,
   });
+  const quotaByLecturer = useLecturerQuotaAvailability(requests.map((req) => req.lecturerId));
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["kadep-supervisor2-requests"] });
+    queryClient.invalidateQueries({ queryKey: ["quota-check"] });
   };
 
   const approveMutation = useMutation({
@@ -93,8 +96,29 @@ export function Supervisor2KadepSection() {
     );
   }
 
+  const quotaGate = (lecturerId: string) => {
+    const check = quotaByLecturer.get(lecturerId);
+    if (!check || check.isError || !check.availability) {
+      return {
+        blocked: false,
+        checking: Boolean(check?.isLoading),
+        figures: check?.availability,
+        reason: null as string | null,
+        quotaFull: false,
+      };
+    }
+    return {
+      blocked: check.availability.allowed === false,
+      checking: false,
+      figures: check.availability,
+      reason: check.availability.reason ?? null,
+      quotaFull: check.availability.trafficLight === "red" && check.availability.allowed !== false,
+    };
+  };
+
   const activeRequest = decisionDialog.request;
   const isPending = approveMutation.isPending || rejectMutation.isPending;
+  const activeGate = activeRequest ? quotaGate(activeRequest.lecturerId) : null;
 
   return (
     <div className="space-y-3">
@@ -106,7 +130,10 @@ export function Supervisor2KadepSection() {
       </Card>
 
       <div className="grid gap-3 md:grid-cols-2">
-        {requests.map((req) => (
+        {requests.map((req) => {
+          const gate = quotaGate(req.lecturerId);
+          const figures = gate.figures;
+          return (
           <Card key={req.requestId} className="p-4">
             <div className="space-y-3">
               <div className="space-y-1">
@@ -125,13 +152,30 @@ export function Supervisor2KadepSection() {
                   </span>
                 </p>
                 <p>Dosen bersedia sejak: {formatDateId(req.requestedAt)}</p>
+                {figures && typeof figures.currentCount === "number" ? (
+                  <p className="text-foreground">
+                    Kuota calon P2: {figures.currentCount}/{figures.quotaMax}
+                    {typeof figures.remaining === "number" ? ` (sisa ${figures.remaining})` : ""}
+                  </p>
+                ) : gate.checking ? (
+                  <p>Memeriksa kuota calon Pembimbing 2…</p>
+                ) : null}
+                {gate.quotaFull ? (
+                  <p className="text-muted-foreground">
+                    Kuota calon Pembimbing 2 penuh. Persetujuan tetap dapat menetapkan overquota sah.
+                  </p>
+                ) : null}
+                {gate.blocked && gate.reason ? (
+                  <p className="text-destructive">{gate.reason}</p>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2 pt-1">
                 <Button
                   size="sm"
                   className="flex-1 gap-1"
-                  disabled={isPending}
+                  disabled={isPending || gate.blocked}
+                  title={gate.blocked ? (gate.reason ?? "Kuota calon Pembimbing 2 tidak mencukupi") : undefined}
                   onClick={() => setDecisionDialog({ open: true, mode: "approve", request: req })}
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
@@ -150,7 +194,8 @@ export function Supervisor2KadepSection() {
               </div>
             </div>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       <AlertDialog
@@ -194,6 +239,18 @@ export function Supervisor2KadepSection() {
                     </>
                   )}
                 </p>
+                {decisionDialog.mode === "approve" && activeGate?.figures ? (
+                  <p>
+                    {typeof activeGate.figures.currentCount === "number"
+                      ? `Kuota calon P2: ${activeGate.figures.currentCount}/${activeGate.figures.quotaMax}`
+                      : activeGate.quotaFull
+                        ? "Kuota calon Pembimbing 2 penuh. Persetujuan tetap dapat menetapkan overquota sah."
+                        : null}
+                    {activeGate.blocked
+                      ? `. ${activeGate.reason ?? "Dosen menutup penerimaan."}`
+                      : ""}
+                  </p>
+                ) : null}
                 {decisionDialog.mode === "reject" && (
                   <div>
                     <label className="text-sm font-medium text-foreground">
@@ -214,7 +271,7 @@ export function Supervisor2KadepSection() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isPending}
+              disabled={isPending || (decisionDialog.mode === "approve" && Boolean(activeGate?.blocked))}
               className={
                 decisionDialog.mode === "reject"
                   ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"

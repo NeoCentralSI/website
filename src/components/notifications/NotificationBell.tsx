@@ -70,7 +70,7 @@ export default function NotificationBell({
             </div>
           </div>
           <div className="flex-1 px-6 py-4 overflow-hidden">
-            <NotificationsSheetContent />
+            <NotificationsSheetContent onNavigate={() => setOpen(false)} />
           </div>
         </div>
       </SheetContent>

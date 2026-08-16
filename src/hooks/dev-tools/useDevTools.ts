@@ -14,6 +14,7 @@ const QK = {
   theses: 'devtools-theses',
   users: 'devtools-users',
   roles: 'devtools-roles',
+  academicYears: 'devtools-academic-years',
 } as const;
 
 export function useDevToolsStudents(search: string, statusFilter: string) {
@@ -60,6 +61,14 @@ export function useDevToolsRoles() {
   });
 }
 
+export function useDevToolsAcademicYears() {
+  return useQuery({
+    queryKey: [QK.academicYears],
+    queryFn: () => devToolsService.getAcademicYears(),
+    staleTime: 60_000,
+  });
+}
+
 export function useDevToolsMutations() {
   const qc = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,6 +78,7 @@ export function useDevToolsMutations() {
     qc.invalidateQueries({ queryKey: [QK.studentDetail] });
     qc.invalidateQueries({ queryKey: [QK.theses] });
     qc.invalidateQueries({ queryKey: [QK.users] });
+    qc.invalidateQueries({ queryKey: [QK.academicYears] });
   }, [qc]);
 
   const wrap = useCallback(
@@ -106,5 +116,9 @@ export function useDevToolsMutations() {
       wrap(() => devToolsService.setMetopenEligibility(studentId, eligibleMetopen)),
     setThesisCourseEligibility: (studentId: string, takingThesisCourse: boolean | null) =>
       wrap(() => devToolsService.setThesisCourseEligibility(studentId, takingThesisCourse)),
+    setThesisAcademicYear: (thesisId: string, academicYearId: string) =>
+      wrap(() => devToolsService.setThesisAcademicYear(thesisId, academicYearId)),
+    closeMetopenPeriod: (closedAcademicYearId: string, dryRun: boolean, force = false) =>
+      wrap(() => devToolsService.closeMetopenPeriod(closedAcademicYearId, dryRun, force)),
   };
 }

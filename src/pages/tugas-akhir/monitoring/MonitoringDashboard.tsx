@@ -196,7 +196,10 @@ export default function MonitoringDashboard() {
           isLoading={isLoadingAny}
         />
         <SupervisorLoadCard
-          loads={data?.supervisorLoads}
+          loads={data?.supervisorLoads?.lecturers}
+          definitionLabel={data?.supervisorLoads?.definitionLabel}
+          periodLabel={data?.supervisorLoads?.periodLabel}
+          uniqueThesisCount={data?.supervisorLoads?.uniqueThesisCount}
           isLoading={isLoadingAny}
         />
         <ReadyForSeminarCard
