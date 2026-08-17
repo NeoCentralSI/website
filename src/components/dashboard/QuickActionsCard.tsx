@@ -97,11 +97,11 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const pendingSupervisor2Count = supervisor2RequestsData?.length || 0;
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
-  const pendingSupervisorScoringCount = supervisorScoringQueue?.length || 0;
+  const pendingSupervisorScoringCount = supervisorScoringQueue?.items?.length || 0;
   const pendingKadepEscalatedCount = kadepQueue?.escalated?.length || 0;
 
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
-  const firstSupervisorScoringThesisId = supervisorScoringQueue?.[0]?.thesisId;
+  const firstSupervisorScoringThesisId = supervisorScoringQueue?.items?.[0]?.thesisId;
 
   const supervisorActions: QuickAction[] = showSupervisorActions
     ? [

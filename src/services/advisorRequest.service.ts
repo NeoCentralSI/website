@@ -255,6 +255,7 @@ export type AdvisorRequestStatus =
   | 'pending_kadep'
   | 'booking_approved'
   | 'active_official'
+  | 'released'
   | 'revision_requested'
   | 'rejected_by_dosen'
   | 'rejected_by_kadep'

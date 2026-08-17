@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAdvisorAccessState, useRole } from "@/hooks/shared";
 import { metopenTitleService } from "@/services/metopenTitle.service";
 import type { StudentArchiveData, StudentArchiveScoreDetail } from "@/services/metopenTitle.service";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MetricAction } from "@/components/metopen/MetricAction";
 import { Badge } from "@/components/ui/badge";
@@ -125,7 +126,9 @@ function resolveOverviewSupervisors(advisorAccess?: AdvisorAccessState): Overvie
   if (!request) return [];
 
   const lecturer = request.redirectTarget ?? request.lecturer;
-  const fullName = resolveSupervisorDisplayName(lecturer?.user?.fullName, lecturer?.id, advisorAccess);
+  if (!lecturer) return [];
+
+  const fullName = resolveSupervisorDisplayName(lecturer.user?.fullName, lecturer.id, advisorAccess);
   if (!fullName) return [];
 
   return [
@@ -302,6 +305,8 @@ export function MetopelOverviewTab({ readOnly = false, advisorAccess: advisorAcc
   const ta04GateDescription = isArchiveMode || Boolean(ta04IssuedAt)
     ? "Penugasan TA-04 sudah dicatat. Proposal final dan penilaian dapat dilanjutkan."
     : "Menunggu finalisasi TA-04 oleh KaDep setelah booking disetujui.";
+
+  const overviewSupervisors = resolveOverviewSupervisors(advisorAccess);
 
   const periodClosedBanner =
     !isArchiveMode &&
