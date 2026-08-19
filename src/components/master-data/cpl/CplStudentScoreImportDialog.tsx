@@ -75,7 +75,7 @@ export function CplStudentScoreImportDialog({
                                 Template
                             </Button>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="relative">
                             <Input
                                 type="file"
                                 accept=".xlsx,.xls"
@@ -87,18 +87,23 @@ export function CplStudentScoreImportDialog({
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full justify-start text-muted-foreground font-normal"
+                                className="w-full justify-start gap-2 overflow-hidden pr-12 text-muted-foreground font-normal"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isImporting}
                             >
-                                <FileUp className="mr-2 h-4 w-4" />
-                                {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
+                                <FileUp className="h-4 w-4 shrink-0" />
+                                <span className="truncate">
+                                    {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
+                                </span>
                             </Button>
                             {file && !isImporting && (
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
+                                    className="absolute right-1 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    aria-label="Hapus file terpilih"
+                                    title="Hapus file terpilih"
                                     onClick={() => {
                                         setFile(null);
                                         if (fileInputRef.current) fileInputRef.current.value = '';

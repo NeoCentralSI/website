@@ -91,6 +91,7 @@ export function SeminarRequirementManagementPanel() {
                 onReorder={reorder}
                 onCopyTemplate={() => setCopyDialogOpen(true)}
                 isCopyingTemplate={isCopyingTemplate}
+                isDisabled={!effectiveAcademicYearId}
                 extraActions={
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <Label className="text-xs text-muted-foreground">Tahun Ajaran</Label>
@@ -116,7 +117,7 @@ export function SeminarRequirementManagementPanel() {
             <SeminarRequirementFormDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                onSubmit={(payload: any) => create({ ...payload, academicYearId: effectiveAcademicYearId! })}
+                onSubmit={(payload) => create({ ...payload, academicYearId: effectiveAcademicYearId! })}
             />
 
             <Dialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen}>

@@ -1,4 +1,4 @@
-export type ExitSurveyQuestionType = 'short_answer' | 'paragraph' | 'single_choice' | 'multiple_choice' | 'date';
+export type ExitSurveyQuestionType = 'short_answer' | 'paragraph' | 'single_choice' | 'multiple_choice' | 'number' | 'date';
 
 export interface ExitSurveyOption {
   id: string;

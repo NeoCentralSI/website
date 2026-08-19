@@ -4,11 +4,8 @@ import { apiRequest } from '../auth.service';
 export interface DefenceRequirement {
     id: string;
     academicYearId: string;
-    code: string;
     name: string;
     description: string | null;
-    isRequired: boolean;
-    isActive: boolean;
     displayOrder: number;
     createdAt: string;
     updatedAt: string;
@@ -17,12 +14,8 @@ export interface DefenceRequirement {
 
 export interface CreateDefenceRequirementPayload {
     academicYearId: string;
-    code: string;
     name: string;
     description?: string;
-    isRequired?: boolean;
-    isActive?: boolean;
-    displayOrder?: number;
 }
 
 export type UpdateDefenceRequirementPayload = Partial<Omit<CreateDefenceRequirementPayload, 'academicYearId'>>;
@@ -91,10 +84,10 @@ export const deleteDefenceRequirement = async (id: string): Promise<void> => {
     }
 };
 
-export const reorderDefenceRequirements = async (orderedIds: string[]): Promise<void> => {
+export const reorderDefenceRequirements = async (academicYearId: string, orderedIds: string[]): Promise<void> => {
     const response = await apiRequest(getApiUrl(`/defence-requirements/reorder`), {
         method: 'PATCH',
-        body: JSON.stringify({ orderedIds }),
+        body: JSON.stringify({ academicYearId, orderedIds }),
     });
     if (!response.ok) {
         const error = await response.json();

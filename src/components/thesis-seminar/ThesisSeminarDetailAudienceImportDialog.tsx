@@ -37,12 +37,12 @@ export function AdminThesisSeminarAudienceImportDialog({
 
     const worksheet = xlsx.utils.json_to_sheet(sampleData, { header: headers });
     const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, "Template_Audience");
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Template Import");
 
     // Auto-width
     worksheet["!cols"] = [{ wch: 5 }, { wch: 35 }, { wch: 18 }];
 
-    xlsx.writeFile(workbook, "Template_Audience_Seminar.xlsx");
+    xlsx.writeFile(workbook, "template_import_peserta_seminar_hasil.xlsx");
   };
 
   const reset = () => {
@@ -94,7 +94,7 @@ export function AdminThesisSeminarAudienceImportDialog({
               </Button>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="relative">
               <Input
                 type="file"
                 accept=".xlsx,.xls"
@@ -106,18 +106,23 @@ export function AdminThesisSeminarAudienceImportDialog({
               <Button
                 type="button"
                 variant="outline"
-                className="w-full justify-start text-muted-foreground font-normal"
+                className="w-full justify-start gap-2 overflow-hidden pr-12 text-muted-foreground font-normal"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isImporting}
               >
-                <FileUp className="mr-2 h-4 w-4" />
-                {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
+                <FileUp className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
+                </span>
               </Button>
               {file && !isImporting && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
+                  className="absolute right-1 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Hapus file terpilih"
+                  title="Hapus file terpilih"
                   onClick={() => {
                     setFile(null);
                     if (fileInputRef.current) fileInputRef.current.value = '';

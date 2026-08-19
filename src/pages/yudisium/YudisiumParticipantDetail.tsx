@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading, Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
@@ -13,10 +13,21 @@ import {
   Eye,
   Check, Plus, CheckCircle2,
   Download,
-  AlertCircle,
-  FileUp,
-  X
+  Upload,
+  X,
+  User,
+  BarChart3,
 } from 'lucide-react';
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from 'recharts';
 import {
   useYudisiumParticipantDetail,
   useParticipantCplScores,
@@ -25,7 +36,7 @@ import {
 } from '@/hooks/yudisium/useYudisiumParticipants';
 import { useRole } from '@/hooks/shared';
 import { openProtectedFile } from '@/lib/protected-file';
-import { formatDateId, toTitleCaseName } from '@/lib/text';
+import { formatDateId, formatDateShortId, formatDateTimeId, formatRoleName, toTitleCaseName, truncateFileName } from '@/lib/text';
 import { exportParticipantCplReport } from '@/services/yudisium/participant.service';
 import type { CplScoreItem } from '@/types/admin-yudisium.types';
 import { toast } from 'sonner';
@@ -47,12 +58,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
-  registered: { label: 'Menunggu Verifikasi Dokumen', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  verified: { label: 'Menunggu Validasi CPL', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  cpl_validated: { label: 'Calon Peserta Yudisium', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  appointed: { label: 'Peserta Yudisium', className: 'bg-purple-50 text-purple-700 border-purple-200' },
-  finalized: { label: 'Lulus', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  rejected: { label: 'Belum Lulus', className: 'bg-red-50 text-red-700 border-red-200' },
+  registered: { label: 'Terdaftar (Proses Verifikasi)', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  eligible: { label: 'Eligibel', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  appointed: { label: 'Peserta Yudisium (Ditetapkan)', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  finalized: { label: 'Lulus Yudisium', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  rejected: { label: 'Ditolak', className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
 
@@ -135,9 +145,35 @@ export default function YudisiumParticipantDetail() {
     );
   }, [cplData?.cplScores, cplSearch]);
 
+  const radarData = useMemo(() => {
+    return (cplData?.cplScores ?? []).map((sc) => ({
+      subject: sc.code,
+      skor: sc.score ?? 0,
+      minimal: sc.minimalScore ?? 0,
+      fullMark: 100,
+    }));
+  }, [cplData?.cplScores]);
+
+  const cplSummary = useMemo(() => {
+    const scores = cplData?.cplScores ?? [];
+    if (scores.length === 0) return null;
+    const passedCount = scores.filter((s) => s.passed).length;
+    const totalCount = scores.length;
+    const validScores = scores.filter((s) => typeof s.score === 'number') as { score: number }[];
+    const avgScore = validScores.length > 0
+      ? (validScores.reduce((acc, curr) => acc + curr.score, 0) / validScores.length).toFixed(1)
+      : '-';
+
+    return {
+      passedCount,
+      totalCount,
+      avgScore,
+      isAllPassed: passedCount === totalCount && totalCount > 0,
+    };
+  }, [cplData?.cplScores]);
+
   const participantCplStatus = cplData?.participantStatus ?? data?.status;
-  const cplActionsEnabled = canPerformActions && participantCplStatus === 'verified';
-  const showCplLockedNotice = canPerformActions && participantCplStatus === 'registered';
+  const cplActionsEnabled = canPerformActions && participantCplStatus === 'registered';
 
   const handleRepairFileChange = (
     event: ChangeEvent<HTMLInputElement>,
@@ -241,34 +277,39 @@ export default function YudisiumParticipantDetail() {
           )}
 
           {/* Validated badge — visible to ALL roles */}
-          {row.status === 'validated' && (
-            <div className="flex items-center justify-center h-8 w-8" title={`Tervalidasi oleh ${row.validatedBy ?? '-'}`}>
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            </div>
-          )}
+          {(() => {
+            const isCplValidated = row.status === 'validated' || !!row.validatedBy || !!row.validatedAt;
 
-          {cplActionsEnabled && row.status === 'validated' && (row.recommendationDocument || row.settlementDocument) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-primary"
-              onClick={() => {
-                setSelectedCpl(row);
-                setNewScore(row.score ?? row.minimalScore);
-                setRecFile(null);
-                setSetFile(null);
-                clearRepairFile(recFileInputRef, setRecFile);
-                clearRepairFile(setFileInputRef, setSetFile);
-                setRepairModalOpen(true);
-              }}
-              title="Ganti Dokumen Perbaikan"
-            >
-              <FileUp className="h-4 w-4" />
-            </Button>
-          )}
+            return (
+              <>
+                {isCplValidated && (
+                  <div className="flex items-center justify-center h-8 w-8" title={`Tervalidasi oleh ${row.validatedBy ?? '-'}`}>
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  </div>
+                )}
 
-          {/* Verify / Repair actions — GKM only after document verification is complete */}
-          {cplActionsEnabled && row.status !== 'validated' && (
+                {cplActionsEnabled && isCplValidated && (row.recommendationDocument || row.settlementDocument) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={() => {
+                      setSelectedCpl(row);
+                      setNewScore(row.score ?? row.minimalScore);
+                      setRecFile(null);
+                      setSetFile(null);
+                      clearRepairFile(recFileInputRef, setRecFile);
+                      clearRepairFile(setFileInputRef, setSetFile);
+                      setRepairModalOpen(true);
+                    }}
+                    title="Ganti Dokumen Perbaikan"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                )}
+
+                {/* Verify / Repair actions — GKM only after document verification is complete */}
+                {cplActionsEnabled && !isCplValidated && (
             <>
               {row.passed && (
                 <Button
@@ -303,7 +344,10 @@ export default function YudisiumParticipantDetail() {
               )}
             </>
           )}
-        </div>
+        </>
+      );
+    })()}
+  </div>
       )
     });
 
@@ -356,97 +400,224 @@ export default function YudisiumParticipantDetail() {
         <Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge>
       </div>
 
-      {/* ── Identity + Documents ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Informasi Mahasiswa Section */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold px-1">
+      {/* ── ROW 1: Informasi Mahasiswa (Full-width Horizontal Card) ── */}
+      <Card className="gap-4 py-6">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" />
             Informasi Mahasiswa
-          </h2>
-          <Card className="h-full flex flex-col overflow-hidden">
-            <CardContent className="pt-6 space-y-4 flex-1">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Nama Mahasiswa</p>
-                  <p className="text-sm font-medium mt-0.5 leading-snug">{toTitleCaseName(data.studentName)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">NIM</p>
-                  <p className="text-sm font-medium mt-0.5">{data.studentNim}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Judul Tugas Akhir</p>
-                  <p className="text-sm font-medium mt-0.5 leading-snug">{data.thesisTitle || '-'}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {data.supervisors.map((s: any, i: number) => (
-                    <div key={i}>
-                      <p className="text-xs text-muted-foreground">{s.role}</p>
-                      <p className="text-sm font-medium mt-0.5">{toTitleCaseName(s.name)}</p>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Tanggal Daftar Yudisium</p>
-                  <p className="text-sm font-medium mt-0.5">{data.registeredAt ? formatDateId(data.registeredAt) : '-'}</p>
-                </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Nama Mahasiswa</p>
+              <p className="text-sm font-medium mt-0.5 leading-snug">{toTitleCaseName(data.studentName)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">NIM</p>
+              <p className="text-sm font-medium mt-0.5">{data.studentNim}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Tanggal Pendaftaran</p>
+              <p className="text-sm font-medium mt-0.5">{data.registeredAt ? formatDateId(data.registeredAt) : '-'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Status Pendaftaran</p>
+              <div className="mt-1">
+                <Badge variant="outline" className={statusInfo.className}>
+                  {statusInfo.label}
+                </Badge>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
 
-        {/* Dokumen Persyaratan Section */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold px-1">
-            Dokumen Persyaratan
-          </h2>
-          <Card className="h-full flex flex-col overflow-hidden">
-            <CardContent className="pt-6 space-y-3 flex-1">
-	              {data.documents.map((doc: any) => {
-	                const documentMeta = [
-	                  doc.document?.fileName || null,
-	                  doc.submittedAt ? formatDateId(doc.submittedAt) : null,
-	                ].filter(Boolean).join(' • ');
-
-	                return (
-	                <div
-	                  key={doc.requirementId}
-	                  className="flex items-center justify-between p-4 bg-card border border-border/50 rounded-xl shadow-sm hover:border-border transition-colors gap-4"
-                >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className={`p-2.5 rounded-lg shrink-0 ${doc.document ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
-                      <FileText className="h-5 w-5" />
-                    </div>
-	                    <div className="min-w-0">
-	                      <span className="font-medium text-sm text-foreground block truncate">{doc.requirementName}</span>
-	                      <span className="text-xs text-muted-foreground block mt-0.5 truncate">
-	                        {documentMeta || 'Belum diunggah'}
-	                      </span>
-	                    </div>
+          <div className="pt-3 border-t border-border/60 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <p className="text-xs text-muted-foreground">Judul Tugas Akhir</p>
+              <p className="text-sm font-medium mt-0.5 leading-snug">{data.thesisTitle || '-'}</p>
+            </div>
+            {data.supervisors && data.supervisors.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {data.supervisors.map((s: any, index: number) => (
+                  <div key={index}>
+                    <p className="text-xs text-muted-foreground">
+                      {s.role ? formatRoleName(s.role) : `Dosen Pembimbing ${index + 1}`}
+                    </p>
+                    <p className="text-sm font-medium mt-0.5">{toTitleCaseName(s.name)}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge
-                      variant={doc.status === 'approved' ? 'success' : doc.status === 'declined' ? 'destructive' : 'warning'}
-                      className="rounded-md font-medium px-2.5 py-0.5 whitespace-nowrap"
-                    >
-                      {doc.status === 'approved' ? 'Disetujui' : doc.status === 'declined' ? 'Ditolak' : 'Menunggu'}
-                    </Badge>
-                    {doc.document?.filePath && (
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-9 w-9 border rounded-lg hover:bg-accent shrink-0"
-                        onClick={() => openProtectedFile(doc.document.filePath, doc.document.fileName)}
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── ROW 2: Dokumen Persyaratan & Grafik CPL Mahasiswa ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* Dokumen Persyaratan Card */}
+        <Card className="gap-4 py-6 flex flex-col h-full">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                Dokumen Persyaratan
+              </span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {data.documents.filter((d: any) => d.status === 'approved').length} / {data.documents.length} Disetujui
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 flex-1 flex flex-col justify-between">
+            <div className="space-y-2.5">
+              {data.documents.map((doc: any) => {
+                const isUploaded = !!doc.document?.filePath;
+                const fileName = doc.document?.fileName ? truncateFileName(doc.document.fileName, 24) : 'Belum diunggah';
+                const fileDate = doc.submittedAt ? formatDateShortId(doc.submittedAt) : '';
+
+                return (
+                  <div
+                    key={doc.requirementId}
+                    className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-card p-3.5"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`p-2.5 rounded-lg shrink-0 ${
+                          doc.status === 'approved'
+                            ? 'border border-emerald-200 bg-emerald-50 text-emerald-600'
+                            : doc.status === 'declined'
+                              ? 'border border-red-200 bg-red-50 text-red-600'
+                              : isUploaded
+                                ? 'border border-blue-200 bg-blue-50 text-blue-600'
+                                : 'border border-gray-200 bg-gray-50 text-gray-400'
+                        }`}
                       >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    )}
-	                  </div>
-	                </div>
-	                );
-	              })}
-            </CardContent>
-          </Card>
-        </div>
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-medium text-sm text-foreground block truncate" title={doc.requirementName}>
+                          {doc.requirementName}
+                        </span>
+                        <span className="text-xs text-muted-foreground block mt-0.5 truncate" title={doc.document?.fileName || 'Belum diunggah'}>
+                          {fileName} {fileDate && `• ${fileDate}`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge
+                        variant={doc.status === 'approved' ? 'success' : doc.status === 'declined' ? 'destructive' : 'warning'}
+                        className="rounded-md font-medium px-2.5 py-0.5 whitespace-nowrap"
+                      >
+                        {doc.status === 'approved' ? 'Disetujui' : doc.status === 'declined' ? 'Ditolak' : 'Menunggu'}
+                      </Badge>
+                      {doc.document?.filePath && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1.5 border-gray-200 text-xs shrink-0"
+                          onClick={() => openProtectedFile(doc.document.filePath, doc.document.fileName)}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Lihat
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Grafik CPL Mahasiswa Card */}
+        <Card className="gap-4 py-6 flex flex-col h-full">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                Grafik CPL Mahasiswa
+              </span>
+              {cplSummary && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  Rata-rata: <strong className="text-foreground">{cplSummary.avgScore}</strong>
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 flex-1 flex flex-col items-center justify-between">
+            {radarData.length > 0 ? (
+              <div className="w-full space-y-4">
+                <div className="h-[260px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis
+                        dataKey="subject"
+                        tick={{ fill: '#475569', fontSize: 11, fontWeight: 600 }}
+                      />
+                      <PolarRadiusAxis
+                        angle={30}
+                        domain={[0, 100]}
+                        tick={{ fill: '#94a3b8', fontSize: 9 }}
+                      />
+                      <Radar
+                        name="Skor Mahasiswa"
+                        dataKey="skor"
+                        stroke="#10b981"
+                        fill="#10b981"
+                        fillOpacity={0.35}
+                        dot={{ r: 3, fill: '#10b981' }}
+                      />
+                      <Radar
+                        name="Batas Minimal"
+                        dataKey="minimal"
+                        stroke="#f59e0b"
+                        fill="#f59e0b"
+                        fillOpacity={0.08}
+                        strokeDasharray="3 3"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '8px',
+                          borderColor: '#e2e8f0',
+                          fontSize: '12px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        }}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {cplSummary && (
+                  <div className="grid grid-cols-3 gap-3 text-center pt-3 border-t border-border/60">
+                    <div className="p-2.5 rounded-lg border border-gray-200 bg-card">
+                      <p className="text-xs text-muted-foreground">Total CPL</p>
+                      <p className="text-sm font-semibold text-foreground mt-0.5">{cplSummary.totalCount}</p>
+                    </div>
+                    <div className="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/50">
+                      <p className="text-xs text-emerald-800">Tercapai</p>
+                      <p className="text-sm font-semibold text-emerald-700 mt-0.5">{cplSummary.passedCount}</p>
+                    </div>
+                    <div className="p-2.5 rounded-lg border border-blue-200 bg-blue-50/50">
+                      <p className="text-xs text-blue-800">Rata-Rata</p>
+                      <p className="text-sm font-semibold text-blue-700 mt-0.5">{cplSummary.avgScore}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center flex-1 py-12 text-center text-muted-foreground">
+                <BarChart3 className="h-10 w-10 text-muted-foreground/40 mb-2" />
+                <p className="text-sm font-medium">Belum ada data nilai CPL</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Grafik radar akan ditampilkan setelah data CPL dimuat.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* ── CPL Table Section ── */}
@@ -454,17 +625,6 @@ export default function YudisiumParticipantDetail() {
         <h2 className="text-lg font-semibold px-1">
           Capaian Pembelajaran Lulusan (CPL)
         </h2>
-        {showCplLockedNotice && (
-          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div>
-              <p className="font-medium">Validasi CPL belum dapat dilakukan.</p>
-              <p className="text-amber-700">
-                Validasi tersedia setelah seluruh dokumen persyaratan peserta terverifikasi.
-              </p>
-            </div>
-          </div>
-        )}
         <CustomTable
           columns={cplColumns}
           data={cplScores}
@@ -479,7 +639,7 @@ export default function YudisiumParticipantDetail() {
           emptyText="Tidak ada data CPL"
           actions={
             <div className="flex items-center gap-2">
-              {['cpl_validated', 'appointed', 'finalized'].includes(data?.status || '') && (
+              {['eligible', 'appointed', 'finalized'].includes(data?.status || '') && (
                 <Button
 	                  variant="outline"
 	                  size="sm"
@@ -534,15 +694,18 @@ export default function YudisiumParticipantDetail() {
                 className="hidden"
                 onChange={(e) => handleRepairFileChange(e, setRecFile)}
               />
-              <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3">
+              <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3 min-w-0 overflow-hidden">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                   <FileText className="h-4 w-4" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {recFile?.name || selectedCpl?.recommendationDocument?.fileName || 'Belum ada dokumen rekomendasi'}
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p
+                    className="truncate text-sm font-medium text-foreground"
+                    title={recFile?.name || selectedCpl?.recommendationDocument?.fileName || 'Belum ada dokumen rekomendasi'}
+                  >
+                    {truncateFileName(recFile?.name || selectedCpl?.recommendationDocument?.fileName, 24) || 'Belum ada dokumen rekomendasi'}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="truncate text-xs text-muted-foreground">
                     {recFile
                       ? 'File baru siap diunggah saat perbaikan disimpan'
                       : selectedCpl?.recommendationDocument
@@ -573,7 +736,7 @@ export default function YudisiumParticipantDetail() {
                     className="h-8"
                     onClick={() => recFileInputRef.current?.click()}
                   >
-                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
+                    <Upload className="mr-1.5 h-3.5 w-3.5" />
                     {recFile || selectedCpl?.recommendationDocument ? 'Ganti' : 'Upload'}
                   </Button>
                   {recFile && (
@@ -602,15 +765,18 @@ export default function YudisiumParticipantDetail() {
                 className="hidden"
                 onChange={(e) => handleRepairFileChange(e, setSetFile)}
               />
-              <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3">
+              <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3 min-w-0 overflow-hidden">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                   <FileText className="h-4 w-4" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {setFile?.name || selectedCpl?.settlementDocument?.fileName || 'Belum ada dokumen penyelesaian'}
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p
+                    className="truncate text-sm font-medium text-foreground"
+                    title={setFile?.name || selectedCpl?.settlementDocument?.fileName || 'Belum ada dokumen penyelesaian'}
+                  >
+                    {truncateFileName(setFile?.name || selectedCpl?.settlementDocument?.fileName, 24) || 'Belum ada dokumen penyelesaian'}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="truncate text-xs text-muted-foreground">
                     {setFile
                       ? 'File baru siap diunggah saat perbaikan disimpan'
                       : selectedCpl?.settlementDocument
@@ -641,7 +807,7 @@ export default function YudisiumParticipantDetail() {
                     className="h-8"
                     onClick={() => setFileInputRef.current?.click()}
                   >
-                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
+                    <Upload className="mr-1.5 h-3.5 w-3.5" />
                     {setFile || selectedCpl?.settlementDocument ? 'Ganti' : 'Upload'}
                   </Button>
                   {setFile && (
@@ -691,69 +857,169 @@ export default function YudisiumParticipantDetail() {
 
       {/* View Detail Modal */}
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Detail Perbaikan CPL</DialogTitle>
-            <DialogDescription>{selectedCpl?.code} - {selectedCpl?.description}</DialogDescription>
+        <DialogContent className="sm:max-w-lg border-gray-200">
+          <DialogHeader className="space-y-1.5 border-b border-gray-200 pb-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-semibold px-2.5 py-0.5">
+                {selectedCpl?.code}
+              </Badge>
+              <Badge
+                variant="outline"
+                className={selectedCpl?.passed
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-red-50 text-red-700 border-red-200'}
+              >
+                {selectedCpl?.passed ? 'Lulus' : 'Belum Tercapai'}
+              </Badge>
+            </div>
+            <DialogTitle className="text-base font-bold text-foreground">
+              Detail Perbaikan CPL
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              {selectedCpl?.description}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-              <div className="text-center flex-1 border-r">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Skor Lama</p>
-                <p className="text-lg font-bold text-red-600">{selectedCpl?.oldScore ?? '-'}</p>
+
+          <div className="space-y-4 py-3">
+            {/* Score Comparison Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-gray-200 bg-muted/40 p-3 text-center space-y-1">
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block">
+                  Skor Sebelum Perbaikan
+                </span>
+                <span className="text-lg font-bold text-red-600 block">
+                  {selectedCpl?.oldScore ?? '-'}
+                </span>
+                <span className="text-[10px] text-muted-foreground block">
+                  Minimal: {selectedCpl?.minimalScore}
+                </span>
               </div>
-              <div className="text-center flex-1">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Skor Baru</p>
-                <p className="text-lg font-bold text-emerald-600">{selectedCpl?.score ?? '-'}</p>
+
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-center space-y-1">
+                <span className="text-[11px] font-medium text-emerald-800 uppercase tracking-wider block">
+                  Skor Perbaikan
+                </span>
+                <span className="text-lg font-bold text-emerald-700 block">
+                  {selectedCpl?.score ?? '-'}
+                </span>
+                <span className="text-[10px] text-emerald-600 font-medium block">
+                  {selectedCpl?.passed ? '✓ Mencapai Target' : 'Belum Lulus'}
+                </span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Dokumen Pendukung</p>
-              {selectedCpl?.recommendationDocument && (
-                <div className="flex items-center justify-between p-3 border rounded-lg group hover:border-primary transition-colors">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium">Rekomendasi</p>
-                      <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">{selectedCpl.recommendationDocument.fileName}</p>
-                    </div>
+            {/* Dokumen Pendukung Section */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-foreground uppercase tracking-wider block">
+                Dokumen Pendukung Perbaikan
+              </span>
+
+              {/* Recommendation Document Card */}
+              <div className="rounded-lg border border-gray-200 bg-card p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+                    <FileText className="h-4 w-4" />
                   </div>
-                  <Button
-                    variant="ghost" size="icon"
-                    onClick={() => openProtectedFile(selectedCpl.recommendationDocument!.filePath, selectedCpl.recommendationDocument!.fileName)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              {selectedCpl?.settlementDocument && (
-                <div className="flex items-center justify-between p-3 border rounded-lg group hover:border-primary transition-colors">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-600" />
-                    <div>
-                      <p className="text-sm font-medium">Penyelesaian</p>
-                      <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">{selectedCpl.settlementDocument.fileName}</p>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground truncate">
+                      Surat Rekomendasi
+                    </p>
+                    <p
+                      className="text-[11px] text-muted-foreground truncate max-w-[140px] sm:max-w-[190px]"
+                      title={selectedCpl?.recommendationDocument?.fileName || 'Surat Rekomendasi'}
+                    >
+                      {truncateFileName(selectedCpl?.recommendationDocument?.fileName, 24) || 'Surat Rekomendasi'}
+                    </p>
                   </div>
-                  <Button
-                    variant="ghost" size="icon"
-                    onClick={() => openProtectedFile(selectedCpl.settlementDocument!.filePath, selectedCpl.settlementDocument!.fileName)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
                 </div>
-              )}
+
+                {selectedCpl?.recommendationDocument?.filePath ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 shrink-0 text-xs font-medium border-gray-200"
+                    onClick={() =>
+                      openProtectedFile(
+                        selectedCpl.recommendationDocument!.filePath,
+                        selectedCpl.recommendationDocument!.fileName || 'Surat Rekomendasi',
+                      )
+                    }
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Lihat
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground italic shrink-0">Tidak ada</span>
+                )}
+              </div>
+
+              {/* Settlement Document Card */}
+              <div className="rounded-lg border border-gray-200 bg-card p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">
+                    <CheckCircle className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <p className="text-xs font-semibold text-foreground truncate">
+                      Bukti Penyelesaian
+                    </p>
+                    <p
+                      className="text-[11px] text-muted-foreground truncate max-w-[140px] sm:max-w-[190px]"
+                      title={selectedCpl?.settlementDocument?.fileName || 'Bukti Penyelesaian'}
+                    >
+                      {truncateFileName(selectedCpl?.settlementDocument?.fileName, 24) || 'Bukti Penyelesaian'}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedCpl?.settlementDocument?.filePath ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 shrink-0 text-xs font-medium border-gray-200"
+                    onClick={() =>
+                      openProtectedFile(
+                        selectedCpl.settlementDocument!.filePath,
+                        selectedCpl.settlementDocument!.fileName || 'Bukti Penyelesaian',
+                      )
+                    }
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Lihat
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground italic shrink-0">Tidak ada</span>
+                )}
+              </div>
             </div>
 
-            <div className="pt-2 border-t">
-              <p className="text-[10px] text-muted-foreground">Tervalidasi oleh:</p>
-              <p className="text-sm font-medium">{selectedCpl?.validatedBy ?? '-'}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{selectedCpl?.validatedAt ? formatDateId(selectedCpl.validatedAt) : '-'}</p>
+            {/* Validation Audit Stamp */}
+            <div className="rounded-lg border border-gray-200 bg-muted/30 p-3 space-y-1">
+              <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>Status Validasi: Tervalidasi</span>
+              </div>
+              <div className="text-xs text-muted-foreground pl-6 space-y-0.5">
+                <div>
+                  <span className="text-muted-foreground/80">Tervalidasi oleh:</span>{' '}
+                  <span className="font-medium text-foreground">
+                    {selectedCpl?.validatedBy ? toTitleCaseName(selectedCpl.validatedBy) : '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/80">Waktu Validasi:</span>{' '}
+                  <span className="font-medium text-foreground">
+                    {selectedCpl?.validatedAt ? formatDateTimeId(selectedCpl.validatedAt) : '-'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={() => setViewModalOpen(false)}>Tutup</Button>
+
+          <DialogFooter className="border-t border-gray-200 pt-3">
+            <Button variant="outline" size="sm" onClick={() => setViewModalOpen(false)}>
+              Tutup
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

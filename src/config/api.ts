@@ -63,12 +63,12 @@ export const API_CONFIG = {
     DEFENCE_RUBRIC: {
       CPMKS: (role: string) => `/defence-rubrics/cpmks?role=${role}`,
       CRITERIA: '/defence-rubrics/criteria',
-      CRITERIA_BY_ID: (criteriaId: string) => `/defence-rubrics/criteria/${criteriaId}`,
+      CRITERIA_BY_ID: (criteriaId: string, role: string) => `/defence-rubrics/criteria/${criteriaId}?role=${role}`,
       CPMK_CONFIG: (cpmkId: string, role: string) => `/defence-rubrics/cpmk/${cpmkId}?role=${role}`,
-      CRITERIA_RUBRICS: (criteriaId: string) => `/defence-rubrics/criteria/${criteriaId}/rubrics`,
-      RUBRIC_BY_ID: (rubricId: string) => `/defence-rubrics/rubrics/${rubricId}`,
-      CRITERIA_REORDER: '/defence-rubrics/criteria/reorder',
-      RUBRICS_REORDER: '/defence-rubrics/rubrics/reorder',
+      CRITERIA_RUBRICS: (criteriaId: string, role: string) => `/defence-rubrics/criteria/${criteriaId}/rubrics?role=${role}`,
+      RUBRIC_BY_ID: (rubricId: string, role: string) => `/defence-rubrics/rubrics/${rubricId}?role=${role}`,
+      CRITERIA_REORDER: (role: string) => `/defence-rubrics/criteria/reorder?role=${role}`,
+      RUBRICS_REORDER: (role: string) => `/defence-rubrics/rubrics/reorder?role=${role}`,
       WEIGHT_SUMMARY: (role: string) => `/defence-rubrics/weight-summary?role=${role}`,
     },
     RUBRIC_METOPEN: {
@@ -127,6 +127,8 @@ export const API_CONFIG = {
       DELETE_PARTICIPANT: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
       VERIFY_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/verify`,
+      REQUIREMENT_FILE: (yudisiumId: string, participantId: string, itemId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${itemId}/file`,
 
       // CPL (Lecturer / GKM)
       CPL_SCORES: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-scores`,
@@ -318,6 +320,7 @@ export const API_CONFIG = {
       DOCUMENT_TYPES: '/thesis-defences/documents/types',
       DOCUMENTS: (id: string) => `/thesis-defences/${id}/documents`,
       DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}`,
+      DOCUMENT_FILE: (id: string, reqId: string) => `/thesis-defences/${id}/documents/${reqId}/file`,
       VERIFY_DOCUMENT: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}/verify`,
 
       // --- Examiners & Assignment ---

@@ -4,19 +4,23 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useCurriculum } from '@/hooks/master-data/useCurriculum';
 import { CurriculumTable } from '@/components/master-data/curriculum/CurriculumTable';
 import { CurriculumFormDialog } from '@/components/master-data/curriculum/CurriculumFormDialog';
-import { useRole } from '@/hooks/shared';
+import { useRole } from '@/hooks/shared/useRole';
+import type {
+    CreateCurriculumPayload,
+    UpdateCurriculumPayload,
+} from '@/services/master-data/curriculum.service';
 
 export default function MasterDataCurriculum() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
     const breadcrumbs = useMemo(() => [
         { label: 'Kelola' },
-        { label: 'Kurikulum' },
+        { label: 'CPL' },
     ], []);
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle('Kurikulum');
+        setTitle('Kelola Kurikulum CPL');
     }, [breadcrumbs, setBreadcrumbs, setTitle]);
 
     const {
@@ -49,8 +53,10 @@ export default function MasterDataCurriculum() {
     return (
         <div className="p-6 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">Kurikulum</h1>
-                <p className="text-muted-foreground">Pilih kurikulum untuk melihat dan mengelola data CPL</p>
+                <h1 className="text-2xl font-bold">Kelola Kurikulum CPL</h1>
+                <p className="text-muted-foreground">
+                    Kelola data kurikulum dan pilih kurikulum untuk mengatur CPL
+                </p>
             </div>
 
             <CurriculumTable
@@ -65,7 +71,7 @@ export default function MasterDataCurriculum() {
                 }}
                 onCreate={() => setCreateCurriculumOpen(true)}
                 onRefresh={() => refetchCurriculums()}
-                onDetail={(id) => navigate(`/kelola/cpl/${id}/cpls`)}
+                onDetail={(id) => navigate(`/kelola/cpl/${id}`)}
                 isDeleting={isDeletingCurriculum}
                 isManagement={isManagement}
                 params={curriculumParams}
@@ -75,7 +81,9 @@ export default function MasterDataCurriculum() {
             <CurriculumFormDialog
                 open={createCurriculumOpen}
                 onOpenChange={setCreateCurriculumOpen}
-                onSubmit={async (data) => { await createCurriculum(data as any); }}
+                onSubmit={async (data) => {
+                    await createCurriculum(data as CreateCurriculumPayload);
+                }}
             />
 
             <CurriculumFormDialog
@@ -85,7 +93,10 @@ export default function MasterDataCurriculum() {
                     if (!open) setSelectedCurriculumId(null);
                 }}
                 initialData={selectedCurriculumData}
-                onSubmit={async (data) => { await updateCurriculum(selectedCurriculumId as string, data as any); }}
+                onSubmit={async (data) => {
+                    if (!selectedCurriculumId) return;
+                    await updateCurriculum(selectedCurriculumId, data as UpdateCurriculumPayload);
+                }}
             />
         </div>
     );

@@ -4,11 +4,8 @@ import { apiRequest } from '../auth.service';
 export interface SeminarRequirement {
     id: string;
     academicYearId: string;
-    code: string;
     name: string;
     description: string | null;
-    isRequired: boolean;
-    isActive: boolean;
     displayOrder: number;
     createdAt: string;
     updatedAt: string;
@@ -17,12 +14,8 @@ export interface SeminarRequirement {
 
 export interface CreateSeminarRequirementPayload {
     academicYearId: string;
-    code: string;
     name: string;
     description?: string;
-    isRequired?: boolean;
-    isActive?: boolean;
-    displayOrder?: number;
 }
 
 export type UpdateSeminarRequirementPayload = Partial<Omit<CreateSeminarRequirementPayload, 'academicYearId'>>;
@@ -91,10 +84,10 @@ export const deleteSeminarRequirement = async (id: string): Promise<void> => {
     }
 };
 
-export const reorderSeminarRequirements = async (orderedIds: string[]): Promise<void> => {
+export const reorderSeminarRequirements = async (academicYearId: string, orderedIds: string[]): Promise<void> => {
     const response = await apiRequest(getApiUrl(`/seminar-requirements/reorder`), {
         method: 'PATCH',
-        body: JSON.stringify({ orderedIds }),
+        body: JSON.stringify({ academicYearId, orderedIds }),
     });
     if (!response.ok) {
         const error = await response.json();

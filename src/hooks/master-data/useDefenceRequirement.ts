@@ -76,7 +76,8 @@ export function useDefenceRequirement(academicYearId?: string) {
         update: updateMutation.mutateAsync,
         remove: deleteMutation.mutateAsync,
         reorder: async (orderedIds: string[]) => {
-            await reorderDefenceRequirements(orderedIds);
+            if (!academicYearId) return;
+            await reorderDefenceRequirements(academicYearId, orderedIds);
             refetch();
         },
         isCreating: createMutation.isPending,

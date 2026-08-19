@@ -329,6 +329,8 @@ function App() {
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/syarat-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
+                  <Route path="/kelola/tugas-akhir/syarat-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   {/* Legacy bookmark: rubrik Metopen pindah ke surface Metopen (KC-20260717-04). */}
                   <Route path="/kelola/tugas-akhir/rubrik-metopen" element={<Navigate to="/kelola/metopen/cpmk-rubrik" replace />} />
                   <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />

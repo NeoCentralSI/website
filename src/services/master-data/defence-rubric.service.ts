@@ -20,11 +20,9 @@ export interface AssessmentRubric {
 
 export interface AssessmentCriteria {
     id: string;
-    cpmkId: string;
-    name: string | null;
-    maxScore: number | null;
-    appliesTo: 'defence';
-    role: DefenceRole;
+    thesisCpmkId: string;
+    name: string;
+    maxScore: number;
     displayOrder: number;
     hasAssessmentDetails?: boolean;
     hasSubmittedScores?: boolean;
@@ -35,7 +33,6 @@ export interface CpmkWithRubrics {
     id: string;
     code: string;
     description: string;
-    displayOrder: number;
     hasAssessmentDetails?: boolean;
     assessmentCriterias: AssessmentCriteria[];
 }
@@ -43,7 +40,7 @@ export interface CpmkWithRubrics {
 export interface CreateCriteriaPayload {
     cpmkId: string;
     role: DefenceRole;
-    name?: string;
+    name: string;
     maxScore: number;
 }
 
@@ -122,10 +119,11 @@ export const createCriteria = async (
 
 export const updateCriteria = async (
     criteriaId: string,
-    payload: UpdateCriteriaPayload
+    payload: UpdateCriteriaPayload,
+    role: DefenceRole
 ): Promise<AssessmentCriteria> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_BY_ID(criteriaId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_BY_ID(criteriaId, role)),
         {
             method: 'PATCH',
             body: JSON.stringify(payload),
@@ -139,9 +137,9 @@ export const updateCriteria = async (
     return result.data;
 };
 
-export const deleteCriteria = async (criteriaId: string): Promise<void> => {
+export const deleteCriteria = async (criteriaId: string, role: DefenceRole): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_BY_ID(criteriaId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_BY_ID(criteriaId, role)),
         { method: 'DELETE' }
     );
     if (!response.ok) {
@@ -167,10 +165,11 @@ export const removeCpmkDefenceConfig = async (cpmkId: string, role: DefenceRole)
 
 export const createRubric = async (
     criteriaId: string,
-    payload: CreateRubricPayload
+    payload: CreateRubricPayload,
+    role: DefenceRole
 ): Promise<AssessmentRubric> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_RUBRICS(criteriaId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_RUBRICS(criteriaId, role)),
         {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -186,10 +185,11 @@ export const createRubric = async (
 
 export const updateRubric = async (
     rubricId: string,
-    payload: UpdateRubricPayload
+    payload: UpdateRubricPayload,
+    role: DefenceRole
 ): Promise<AssessmentRubric> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRIC_BY_ID(rubricId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRIC_BY_ID(rubricId, role)),
         {
             method: 'PATCH',
             body: JSON.stringify(payload),
@@ -203,9 +203,9 @@ export const updateRubric = async (
     return result.data;
 };
 
-export const deleteRubric = async (rubricId: string): Promise<void> => {
+export const deleteRubric = async (rubricId: string, role: DefenceRole): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRIC_BY_ID(rubricId)),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRIC_BY_ID(rubricId, role)),
         { method: 'DELETE' }
     );
     if (!response.ok) {
@@ -220,10 +220,11 @@ export const deleteRubric = async (rubricId: string): Promise<void> => {
 
 export const reorderCriteria = async (
     cpmkId: string,
-    orderedIds: string[]
+    orderedIds: string[],
+    role: DefenceRole
 ): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_REORDER),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.CRITERIA_REORDER(role)),
         {
             method: 'PATCH',
             body: JSON.stringify({ cpmkId, orderedIds }),
@@ -237,10 +238,11 @@ export const reorderCriteria = async (
 
 export const reorderRubrics = async (
     criteriaId: string,
-    orderedIds: string[]
+    orderedIds: string[],
+    role: DefenceRole
 ): Promise<void> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRICS_REORDER),
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.RUBRICS_REORDER(role)),
         {
             method: 'PATCH',
             body: JSON.stringify({ criteriaId, orderedIds }),
@@ -257,9 +259,9 @@ export const reorderRubrics = async (
 
 // ────────────────────────────────────────────
 
-export const getWeightSummary = async (role: DefenceRole): Promise<WeightSummary> => {
+export const getWeightSummary = async (role: DefenceRole, params?: { academicYearId?: string }): Promise<WeightSummary> => {
     const response = await apiRequest(
-        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.WEIGHT_SUMMARY(role))
+        getApiUrl(API_CONFIG.ENDPOINTS.DEFENCE_RUBRIC.WEIGHT_SUMMARY(role) + (params?.academicYearId ? `&academicYearId=${params.academicYearId}` : ''))
     );
     if (!response.ok) {
         const error = await response.json();
@@ -270,9 +272,9 @@ export const getWeightSummary = async (role: DefenceRole): Promise<WeightSummary
 };
 
 export const updateMinimumScore = async (
-    payload: { academicYearId?: string; minimumScore: number }
+    payload: { academicYearId: string; minimumScore: number }
 ): Promise<void> => {
-    const yearId = payload.academicYearId || 'active';
+    const yearId = payload.academicYearId;
     const response = await apiRequest(
         getApiUrl(`/defence-rubrics/academic-years/${yearId}/minimum-score`),
         {

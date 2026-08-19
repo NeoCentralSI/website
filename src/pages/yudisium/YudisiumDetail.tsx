@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileDown, Eye, CheckSquare, FileText, Plus, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileDown, Eye, CheckSquare, FileText, Plus, Upload, Trash2, Check, Clock } from 'lucide-react';
 import { openProtectedFile } from '@/lib/protected-file';
+import { cn } from '@/lib/utils';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Button } from '@/components/ui/button';
@@ -46,27 +47,23 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
   registered: {
-    label: 'Menunggu Verifikasi Dokumen',
+    label: 'Terdaftar (Proses Verifikasi)',
     className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
   },
-  verified: {
-    label: 'Menunggu Validasi CPL',
-    className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
-  },
-  cpl_validated: {
-    label: 'Calon Peserta Yudisium',
-    className: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
+  eligible: {
+    label: 'Eligibel',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
   },
   appointed: {
-    label: 'Peserta Yudisium',
+    label: 'Peserta Yudisium (Ditetapkan)',
     className: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
   },
   finalized: {
-    label: 'Lulus',
+    label: 'Lulus Yudisium',
     className: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
   },
   rejected: {
-    label: 'Belum Lulus',
+    label: 'Ditolak',
     className: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
   },
 };
@@ -211,13 +208,68 @@ export default function YudisiumDetailPage() {
     },
     {
       key: 'status',
-      header: 'Status',
+      header: 'Status & Verifikasi',
+      width: '16rem',
       render: (row) => {
         const s = PARTICIPANT_STATUS_MAP[row.status] || PARTICIPANT_STATUS_MAP.registered;
+
+        const isDocDone =
+          row.isRequirementVerified ||
+          (row.documentSummary.total > 0 && row.documentSummary.approved === row.documentSummary.total);
+        const isCplDone = row.isCplValidated || !!row.cplValidatedAt;
+
+        if (row.status === 'registered' || row.status === 'eligible') {
+          return (
+            <div className="py-1 min-w-[13rem]">
+              <div className="flex flex-col gap-1">
+                {/* Task 1: Verifikasi Dokumen */}
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border",
+                    isDocDone
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-amber-50/70 text-amber-700 border-amber-200/80"
+                  )}
+                >
+                  {isDocDone ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={3} />
+                  ) : (
+                    <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    Dokumen Persyaratan {isDocDone ? '(Lengkap)' : `(${row.documentSummary.approved}/${row.documentSummary.total})`}
+                  </span>
+                </div>
+
+                {/* Task 2: Validasi CPL */}
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border",
+                    isCplDone
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-amber-50/70 text-amber-700 border-amber-200/80"
+                  )}
+                >
+                  {isCplDone ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" strokeWidth={3} />
+                  ) : (
+                    <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    Validasi CPL {isCplDone ? '(Lulus)' : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
-          <Badge variant="outline" className={s.className}>
-            {s.label}
-          </Badge>
+          <div className="py-1 min-w-[13rem]">
+            <Badge variant="outline" className={s.className}>
+              {s.label}
+            </Badge>
+          </div>
         );
       },
     },

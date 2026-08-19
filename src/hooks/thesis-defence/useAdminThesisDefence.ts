@@ -47,13 +47,13 @@ export function useVerifyDefenceDocument() {
   return useMutation({
     mutationFn: ({
       defenceId,
-      documentTypeId,
+      requirementId,
       payload,
     }: {
       defenceId: string;
-      documentTypeId: string;
+      requirementId: string;
       payload: VerifyDefenceDocumentPayload;
-    }) => verifyDefenceDocument(defenceId, documentTypeId, payload),
+    }) => verifyDefenceDocument(defenceId, requirementId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-defences'] });
       queryClient.invalidateQueries({

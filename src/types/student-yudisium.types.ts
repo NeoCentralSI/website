@@ -53,7 +53,21 @@ export type StudentYudisiumRequirementsResponse = {
   requirements: YudisiumRequirementUploadStatus[];
 };
 
+export type StudentYudisiumHistoryItem = {
+  id: string;
+  yudisiumId?: string;
+  yudisiumName?: string;
+  registrationOpenDate?: string | null;
+  registrationCloseDate?: string | null;
+  eventDate?: string | null;
+  status?: string;
+  participantStatus?: string | null;
+  registeredAt?: string | null;
+  [key: string]: unknown;
+};
+
 export type StudentYudisiumOverviewResponse = {
+  participantId?: string | null;
   yudisium: {
     id: string;
     name?: string | null;
@@ -79,8 +93,7 @@ export type StudentYudisiumOverviewResponse = {
   } | null;
   participantStatus:
     | 'registered'
-    | 'verified'
-    | 'cpl_validated'
+    | 'eligible'
     | 'appointed'
     | 'rejected'
     | 'finalized'
@@ -95,7 +108,7 @@ export type StudentYudisiumOverviewResponse = {
   allChecklistMet: boolean;
   allCplVerified: boolean;
   cplScores: {
-    code: string | null;
+    code: string;
     description: string;
     score: number | null;
     minimalScore: number;
@@ -109,8 +122,5 @@ export type StudentYudisiumOverviewResponse = {
     verifiedAt?: string | null;
   }[];
   requirements: StudentYudisiumRequirement[];
-  history?: Array<{
-    id: string;
-    [key: string]: unknown;
-  }>;
+  history?: StudentYudisiumHistoryItem[];
 };
