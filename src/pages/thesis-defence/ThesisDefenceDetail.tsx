@@ -23,8 +23,8 @@ export default function ThesisDefenceDetailPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { isStudent, isAdmin, isKadep } = useRole();
   const { user } = useAuth();
-  const { hasTugasAkhirCourse } = useStudentEligibility();
-  const studentTaParentHref = hasTugasAkhirCourse ? '/tugas-akhir' : '/metopel';
+  const { canAccessTugasAkhir } = useStudentEligibility();
+  const studentTaParentHref = canAccessTugasAkhir ? '/tugas-akhir' : '/metopel';
 
   const _isStudent = isStudent();
   const _isKadep = isKadep();

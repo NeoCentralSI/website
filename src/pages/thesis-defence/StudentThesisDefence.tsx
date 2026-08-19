@@ -13,8 +13,8 @@ import { useStudentEligibility } from '@/hooks/shared';
 export default function StudentThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const { hasTugasAkhirCourse } = useStudentEligibility();
-  const studentTaParentHref = hasTugasAkhirCourse ? '/tugas-akhir' : '/metopel';
+  const { canAccessTugasAkhir } = useStudentEligibility();
+  const studentTaParentHref = canAccessTugasAkhir ? '/tugas-akhir' : '/metopel';
   const { data: overview, isLoading: isOverviewLoading } = useStudentDefenceOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentDefenceHistory();
 

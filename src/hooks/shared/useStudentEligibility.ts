@@ -17,6 +17,7 @@ interface EligibilityResult {
   isLoading: boolean;
   sks: number;
   hasTugasAkhirCourse: boolean;
+  hasExistingThesis: boolean;
   canAccessKerjaPraktek: boolean;
   canAccessTugasAkhir: boolean;
   canAccessMetopel: boolean;
@@ -60,6 +61,7 @@ export function useStudentEligibility(): EligibilityResult {
         ? authUser.student.takingThesisCourse
         : null;
   const hasTugasAkhirCourse = takingThesisCourseFromBackend === true;
+  const hasExistingThesis = Boolean(metopelEligibility?.thesisId);
 
   const canAccessMetopel = metopelEligibility?.canAccess ?? false;
   const isMetopenReadOnly =
@@ -67,12 +69,13 @@ export function useStudentEligibility(): EligibilityResult {
   const isMetopenOnlyTrack = canAccessMetopel && !hasTugasAkhirCourse;
 
   const canAccessKerjaPraktek = sks >= 90;
-  const canAccessTugasAkhir = hasTugasAkhirCourse;
+  const canAccessTugasAkhir = hasTugasAkhirCourse || hasExistingThesis;
 
   return {
     isLoading: metopelLoading,
     sks,
     hasTugasAkhirCourse,
+    hasExistingThesis,
     canAccessKerjaPraktek,
     canAccessTugasAkhir,
     canAccessMetopel,
@@ -83,14 +86,15 @@ export function useStudentEligibility(): EligibilityResult {
         sks: { met: sks >= 90, current: sks, required: 90 },
       },
       tugasAkhir: {
-        // BR-25 / anti-pattern #8 (audit F-0.2): gate Tugas Akhir = snapshot SIA
-        // MK Tugas Akhir, BUKAN SKS hard-code. Objek `sks`/`module` lama dihapus
-        // sebagai dead code agar tidak tersambung kembali sebagai gate.
+        // Snapshot SIA tetap menjadi sumber utama. Data thesis yang sudah ada
+        // menjadi fallback kompatibilitas bagi mahasiswa hasil migrasi.
         course: {
-          met: hasTugasAkhirCourse,
+          met: canAccessTugasAkhir,
           description: hasTugasAkhirCourse
             ? "Snapshot SIA mencatat Anda mengambil mata kuliah Tugas Akhir"
-            : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
+            : hasExistingThesis
+              ? "Data tugas akhir mahasiswa sudah tersedia pada sistem"
+              : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
         },
       },
       metopel: {

@@ -14,6 +14,7 @@ export interface MetopelEligibility {
   canSubmit: boolean;
   readOnly: boolean;
   thesisPhase: string | null;
+  thesisId: string | null;
   source: 'sia' | 'devtools' | null;
   updatedAt: string | null;
   takingThesisCourse: boolean | null;

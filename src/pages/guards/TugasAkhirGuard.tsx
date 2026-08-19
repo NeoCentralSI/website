@@ -25,10 +25,10 @@ export default function TugasAkhirGuard() {
       return (
         <RequirementsNotMet
           title="Tugas Akhir Belum Tersedia"
-          description="Modul Tugas Akhir (overview, bimbingan formal, seminar, sidang) hanya terbuka setelah snapshot SIA mencatat Anda mengambil mata kuliah Tugas Akhir. Untuk fase Metode Penelitian, unggah proposal dan catatan bimbingan informal lewat menu Metode Penelitian di sidebar."
+          description="Modul Tugas Akhir terbuka setelah snapshot SIA mencatat mata kuliah Tugas Akhir atau data tugas akhir mahasiswa sudah tersedia pada sistem. Untuk fase Metode Penelitian, unggah proposal dan catatan bimbingan informal lewat menu Metode Penelitian di sidebar."
           requirements={[
             {
-              label: "Mengambil mata kuliah Tugas Akhir (snapshot SIA)",
+              label: "Mengambil mata kuliah Tugas Akhir atau telah memiliki data tugas akhir",
               met: requirements.tugasAkhir.course.met,
               description: requirements.tugasAkhir.course.description,
             },
