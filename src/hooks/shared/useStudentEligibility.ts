@@ -59,7 +59,12 @@ export function useStudentEligibility(): EligibilityResult {
       : typeof authUser?.student?.takingThesisCourse === "boolean"
         ? authUser.student.takingThesisCourse
         : null;
-  const hasTugasAkhirCourse = takingThesisCourseFromBackend === true;
+  const hasTugasAkhirCourse =
+    takingThesisCourseFromBackend === true ||
+    metopelEligibility?.canAccessTugasAkhir === true ||
+    metopelEligibility?.hasThesisRecord === true ||
+    metopelEligibility?.hasThesisPassed === true ||
+    authUser?.student?.status === "graduated";
 
   const canAccessMetopel = metopelEligibility?.canAccess ?? false;
   const isMetopenReadOnly =

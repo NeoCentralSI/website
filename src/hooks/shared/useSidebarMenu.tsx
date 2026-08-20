@@ -177,9 +177,10 @@ export const useSidebarMenu = () => {
       ];
 
       if (canAccessMetopel) {
+        const isArchive = advisorAccess?.requestStatus === "active_official";
         const metopenItems = [{ title: "Ringkasan", url: "/metopel" }];
         const canOpenAdvisorSearch =
-          !isMetopenReadOnly &&
+          !isArchive &&
           !(advisorAccess?.hasOfficialSupervisor ?? false) &&
           (Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest));
 
@@ -204,7 +205,7 @@ export const useSidebarMenu = () => {
         metopenItems.push({ title: "Alur Proposal", url: "/metopel/arsip" });
 
         studentNav.splice(2, 0, {
-          title: isMetopenReadOnly ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
+          title: isArchive ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
           url: "/metopel",
           icon: BookOpen,
           items: metopenItems,
