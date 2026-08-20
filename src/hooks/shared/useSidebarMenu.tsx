@@ -648,6 +648,7 @@ export const useSidebarMenu = () => {
     advisorAccess?.hasBlockingRequest,
     advisorAccess?.hasBookedSupervisor,
     advisorAccess?.hasOfficialSupervisor,
+    advisorAccess?.requestStatus,
     canAccessMetopel,
     isMetopenReadOnly,
     hasTugasAkhirCourse,

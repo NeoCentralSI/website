@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { MilestoneList } from "@/components/milestone/MilestoneList";
-import { useAuth } from "@/hooks/shared";
 import { useQuery } from "@tanstack/react-query";
 import { getMyThesisDetail } from "@/services/studentGuidance.service";
 import { useMilestoneManagement, useTemplates } from "@/hooks/milestone";
@@ -16,7 +15,6 @@ import { MilestoneFormDialog, TemplateSelectorDialog } from "@/components/milest
 
 export default function StudentMilestoneManagement() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { } = useAuth();
   
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);

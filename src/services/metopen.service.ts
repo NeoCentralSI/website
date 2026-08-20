@@ -19,6 +19,8 @@ export interface MetopelEligibility {
   takingThesisCourse: boolean | null;
   hasThesisCourseStatus: boolean;
   canAccessTugasAkhir: boolean;
+  hasThesisRecord?: boolean;
+  hasThesisPassed?: boolean;
   thesisCourseSource: 'sia' | 'devtools' | null;
   thesisCourseUpdatedAt: string | null;
 }
