@@ -4,6 +4,7 @@ import { useLocation, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Supervisor2KadepSection } from '@/components/bimbingan/Supervisor2KadepSection';
 import { MetricAction } from '@/components/metopen/MetricAction';
+import { OutOfPeriodBadge } from '@/components/metopen/OutOfPeriodBadge';
 import { advisorRequestService, type AdvisorQuotaEntry, type AdvisorRequest, type AlternativeLecturer } from '@/services/advisorRequest.service';
 import { getSupervisor2KadepRequests } from '@/services/lecturerGuidance.service';
 import { metopenTitleService, type TitleReportHistoryRow } from '@/services/metopenTitle.service';
@@ -412,6 +413,7 @@ export default function DSSKadep() {
     }, [location.pathname]);
 
     const detail = selectedRequest?.quotaSnapshot;
+    const operationalSnapshot = selectedRequest?.operationalQuotaSnapshot;
     const preview = selectedRequest?.quotaPreview;
     const activeEntries = detail?.activeOfficialEntries ?? [];
     const bookingEntries = detail?.bookingEntries ?? [];
@@ -505,6 +507,7 @@ export default function DSSKadep() {
                                                     {isTa02Card ? 'TA-02' : 'TA-01'}
                                                 </Badge>
                                                 <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">Pending KaDep</Badge>
+                                                <OutOfPeriodBadge isCurrentPeriod={req.isCurrentPeriod} periodLabel={req.periodLabel} />
                                             </div>
                                         </div>
                                         {isTa02Card ? (
@@ -584,10 +587,38 @@ export default function DSSKadep() {
                                         </Card>
                                     ) : (
                                     <Card>
-                                        <CardHeader className="pb-3"><CardTitle className="text-sm">Snapshot Kuota Dosen</CardTitle></CardHeader>
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm">Snapshot Kuota Dosen</CardTitle>
+                                            <CardDescription className="text-xs">
+                                                {selectedRequest.periodLabel
+                                                    ? `Dihitung untuk periode pengajuan ${selectedRequest.periodLabel}.`
+                                                    : 'Dihitung untuk periode pengajuan ini.'}
+                                            </CardDescription>
+                                        </CardHeader>
                                         <CardContent className="space-y-4 text-sm">
                                             {hasTargetLecturer ? (
                                                 <>
+                                                    {selectedRequest.isCurrentPeriod === false && (
+                                                        <div className="rounded-md border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
+                                                            <p className="font-semibold">Pengajuan dari periode lampau</p>
+                                                            <p className="mt-1">
+                                                                Angka di bawah menghitung periode pengajuan, bukan periode berjalan. Pada periode
+                                                                berjalan dosen ini memikul{' '}
+                                                                <strong className="tabular-nums">
+                                                                    {operationalSnapshot?.currentCount ?? 0}
+                                                                </strong>{' '}
+                                                                dari{' '}
+                                                                <strong className="tabular-nums">
+                                                                    {operationalSnapshot?.quotaMax ?? 0}
+                                                                </strong>{' '}
+                                                                dengan sisa normal{' '}
+                                                                <strong className="tabular-nums">
+                                                                    {operationalSnapshot?.normalAvailable ?? 0}
+                                                                </strong>
+                                                                . Pertimbangkan keduanya sebelum memutuskan.
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                                                         <div className="rounded-md border bg-muted/40 p-3">
                                                             <p className="text-xs text-muted-foreground">Kuota Maksimal</p>
@@ -1045,7 +1076,7 @@ export default function DSSKadep() {
                                                 {(row.topicName || row.topicScienceGroupName) && (
                                                     <p className="mt-1 text-xs text-muted-foreground">
                                                         Topik: {row.topicName ?? '-'}
-                                                        {row.topicScienceGroupName ? ` · KBK ${row.topicScienceGroupName}` : ''}
+                                                        {row.topicScienceGroupName ? ` · ${row.topicScienceGroupName}` : ''}
                                                     </p>
                                                 )}
                                                 <p className="mt-1 text-xs text-muted-foreground">
@@ -1171,7 +1202,7 @@ export default function DSSKadep() {
                                     ? 'KaDep menyetujui penetapan pembimbing TA-02 dan booking akan langsung tercatat.'
                                     : 'KaDep menyetujui usulan overquota pada dosen target dan booking pembimbing akan langsung tercatat.'
                             )}
-                            {confirmDialog.action === 'reject' && 'Request ini akan ditolak dan tidak akan menghitung booking_count.'}
+                            {confirmDialog.action === 'reject' && 'Pengajuan ini akan ditolak dan tidak menambah beban booking dosen.'}
                             {confirmDialog.action === 'redirect' && (
                                 hasTargetLecturer
                                     ? `Dosen target pada pengajuan ini akan diganti ke ${confirmDialog.targetName} sebelum booking pembimbing dicatat. Jika dosen tersebut kuotanya penuh, booking dicatat sebagai overquota sah atas putusan KaDep.`

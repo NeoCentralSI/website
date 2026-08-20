@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
+import { ROLES } from '@/lib/roles';
 
 interface UserFormDialogProps {
   open: boolean;
@@ -168,10 +169,11 @@ export function UserFormDialog({
                   // For NIP/OTHER, show all roles except Mahasiswa
                   roleOptions
                     .filter(role => {
-                      // Filter admin role when editing
-                      if (editingUser && role.value === 'Admin') return false;
-                      // Filter Mahasiswa for NIP/OTHER
-                      if (role.value === 'Mahasiswa') return false;
+                      // Peran Admin tidak bisa ditugaskan lewat endpoint ini: backend
+                      // membuangnya saat create dan tidak menyentuhnya saat update.
+                      if (role.value === ROLES.ADMIN) return false;
+                      // NIP/OTHER tidak boleh memegang peran Mahasiswa (ditolak backend).
+                      if (role.value === ROLES.MAHASISWA) return false;
                       return true;
                     })
                     .map((role) => {

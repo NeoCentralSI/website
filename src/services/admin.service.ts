@@ -334,6 +334,61 @@ export const deleteRoomAPI = async (id: string): Promise<{ success: boolean; mes
   return response.json();
 };
 
+export interface AdminAuditLog {
+  id: string;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  changes: {
+    oldValues?: unknown;
+    newValues?: unknown;
+    metadata?: unknown;
+  } | null;
+  createdAt: string;
+  actor: {
+    id: string;
+    fullName: string | null;
+    email: string | null;
+    identityNumber: string | null;
+  } | null;
+}
+
+export const getAdminAuditLogsAPI = async (params?: {
+  page?: number;
+  pageSize?: number;
+  action?: string;
+  entity?: string;
+}): Promise<{
+  success: boolean;
+  logs: AdminAuditLog[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
+  if (params?.action) queryParams.append('action', params.action);
+  if (params?.entity) queryParams.append('entity', params.entity);
+
+  const response = await fetch(getApiUrl(`/adminfeatures/audit-logs?${queryParams}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat jejak audit');
+  }
+
+  return response.json();
+};
+
 // Get all users
 export const getUsersAPI = async (params?: {
   page?: number;

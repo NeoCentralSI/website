@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNotifications } from '@/hooks/shared';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Check, CheckCheck, Trash2 } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { useOutletContext } from 'react-router-dom';
-import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { Check, CheckCheck, Trash2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import EmptyState from '@/components/ui/empty-state';
 import { Spinner } from '@/components/ui/spinner';
+import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { useNotifications } from '@/hooks/shared';
+import { getNotificationRoute, type NotificationItem } from '@/services/notification.service';
+import { cn } from '@/lib/utils';
 
 export default function Notifikasi() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+  const navigate = useNavigate();
   
   // Memoized breadcrumbs
   const breadcrumbs = useMemo(() => [
@@ -61,6 +65,15 @@ export default function Notifikasi() {
     } catch (error) {
       console.error('Failed to delete notification:', error);
     }
+  };
+
+  const handleOpenNotification = async (notification: NotificationItem) => {
+    const route = getNotificationRoute(notification);
+    if (!notification.isRead) {
+      await handleMarkAsRead(notification.id);
+    }
+    if (!route) return;
+    navigate(route);
   };
 
   const formatTime = (dateString: string) => {
@@ -130,40 +143,66 @@ export default function Notifikasi() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {notifications.map((notification) => (
+          {notifications.map((notification) => {
+            const route = getNotificationRoute(notification);
+            return (
             <Card
               key={notification.id}
-              className={`transition-colors ${
+              className={cn(
+                "transition-colors",
                 !notification.isRead
-                  ? 'bg-blue-50 border-blue-200'
-                  : 'bg-white hover:bg-gray-50'
-              }`}
+                  ? "bg-blue-50 border-blue-200"
+                  : "bg-white hover:bg-gray-50"
+              )}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {!notification.isRead && (
-                        <div className="w-2 h-2 bg-blue-600 rounded-full shrink-0" />
-                      )}
-                      <h3 className="font-semibold text-gray-900 truncate">
-                        {notification.title}
-                      </h3>
+                  {route ? (
+                    <button
+                      type="button"
+                      className="flex-1 min-w-0 text-left cursor-pointer bg-transparent p-0 border-0"
+                      onClick={() => { void handleOpenNotification(notification); }}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        {!notification.isRead && (
+                          <div className="w-2 h-2 bg-blue-600 rounded-full shrink-0" />
+                        )}
+                        <h3 className="font-semibold text-gray-900 truncate">
+                          {notification.title}
+                        </h3>
+                      </div>
+                      <p className="text-gray-600 text-sm mb-2 whitespace-pre-wrap">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {formatTime(notification.createdAt)}
+                      </p>
+                    </button>
+                  ) : (
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {!notification.isRead && (
+                          <div className="w-2 h-2 bg-blue-600 rounded-full shrink-0" />
+                        )}
+                        <h3 className="font-semibold text-gray-900 truncate">
+                          {notification.title}
+                        </h3>
+                      </div>
+                      <p className="text-gray-600 text-sm mb-2 whitespace-pre-wrap">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {formatTime(notification.createdAt)}
+                      </p>
                     </div>
-                    <p className="text-gray-600 text-sm mb-2 whitespace-pre-wrap">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {formatTime(notification.createdAt)}
-                    </p>
-                  </div>
+                  )}
 
                   <div className="flex items-center gap-2 shrink-0">
                     {!notification.isRead && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleMarkAsRead(notification.id)}
+                        onClick={() => { void handleMarkAsRead(notification.id); }}
                         title="Tandai sudah dibaca"
                       >
                         <Check className="w-4 h-4" />
@@ -172,7 +211,7 @@ export default function Notifikasi() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDelete(notification.id)}
+                      onClick={() => { void handleDelete(notification.id); }}
                       title="Hapus"
                     >
                       <Trash2 className="w-4 h-4 text-red-500" />
@@ -181,7 +220,8 @@ export default function Notifikasi() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
       </div>

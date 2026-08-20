@@ -24,6 +24,16 @@ const {
   mockUseUpdateLecturerQuota: vi.fn(),
 }));
 
+vi.mock('recharts', async () => {
+  const actual = await vi.importActual<typeof import('recharts')>('recharts');
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children?: ReactNode }) => (
+      <div style={{ width: 400, height: 256 }}>{children}</div>
+    ),
+  };
+});
+
 vi.mock('@/hooks/master-data/useSupervisionQuota', () => ({
   useDefaultQuota: mockUseDefaultQuota,
   useLecturerQuotas: mockUseLecturerQuotas,
@@ -73,6 +83,8 @@ const lecturerQuota: LecturerQuota = {
   quotaMax: 10,
   quotaSoftLimit: 8,
   currentCount: 2,
+  cachedCurrentCount: 2,
+  currentCountDrift: 0,
   activeCount: 1,
   bookingCount: 1,
   pendingKadepCount: 0,
@@ -175,11 +187,48 @@ function renderWithRoute(children: ReactNode) {
 describe('KuotaBimbingan', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    global.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
     mockUseDefaultQuota.mockReturnValue({
-      data: { quotaMax: 10, quotaSoftLimit: 8, academicYearId: 'ay-1' },
+      data: { quotaMax: 10, quotaSoftLimit: 8, academicYearId: 'ay-1', isFallback: false, source: 'stored' },
     });
     mockUseLecturerQuotas.mockReturnValue({
-      data: [lecturerQuota],
+      data: {
+        definitionLabel:
+          'Beban kuota SIMPTA (fase proposal): Aktif + Booking pada periode yang dipilih. Bukan beban pasca-proposal di Monitoring Tugas Akhir.',
+        periodLabel: '2025/2026 Genap',
+        academicYearId: 'ay-1',
+        lecturers: [lecturerQuota],
+        kbkLoads: {
+          methodLabel:
+            'Penanda ketimpangan: beban dosen (Aktif+Booking) lebih dari rata-rata + 1 simpangan baku, atau kurang dari rata-rata − 1 simpangan baku.',
+          overall: {
+            lecturerCount: 1,
+            totalLoad: 2,
+            averageLoad: 2,
+            stdDev: 0,
+            availableCount: 1,
+            nearLimitCount: 0,
+            fullCount: 0,
+          },
+          groups: [
+            {
+              scienceGroupId: 'sg-1',
+              scienceGroupName: 'Rekayasa Perangkat Lunak',
+              lecturerCount: 1,
+              totalLoad: 2,
+              activeCount: 1,
+              bookingCount: 1,
+              averageLoad: 2,
+              aboveAverage: [],
+              belowAverage: [],
+            },
+          ],
+        },
+      },
       isLoading: false,
       isFetching: false,
       refetch: vi.fn(),
@@ -204,6 +253,12 @@ describe('KuotaBimbingan', () => {
     renderWithRoute(<KuotaBimbingan readOnly />);
 
     expect(await screen.findByText('Mode monitoring read-only')).toBeInTheDocument();
+    expect(screen.getByText(/Periode 2025\/2026 Genap/)).toBeInTheDocument();
+    expect(screen.getByText(/Sebaran beban per kelompok keilmuan/)).toBeInTheDocument();
+    expect(screen.queryByText('Beban per KBK')).not.toBeInTheDocument();
+    expect(screen.getByText('Status kuota dosen')).toBeInTheDocument();
+    expect(screen.getAllByText('Rekayasa Perangkat Lunak').length).toBeGreaterThan(0);
+    expect(screen.getByText(/pemetaan dosen hanya dapat diubah Admin/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Set Default Kuota/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Edit kuota/i })).not.toBeInTheDocument();
 
@@ -241,5 +296,63 @@ describe('KuotaBimbingan', () => {
       screen.getByRole('button', { name: /Edit kuota Dr\. Dosen Uji/i }),
     ).toBeInTheDocument();
     expect(screen.queryByText('Mode monitoring read-only')).not.toBeInTheDocument();
+  });
+
+  it('labels hardcoded fallback on the Default Kuota card', async () => {
+    mockUseDefaultQuota.mockReturnValue({
+      data: {
+        quotaMax: 10,
+        quotaSoftLimit: 8,
+        academicYearId: 'ay-1',
+        isFallback: true,
+        source: 'hardcoded_fallback',
+      },
+    });
+
+    renderWithRoute(<KuotaBimbingan />);
+
+    expect(await screen.findByText(/Fallback keras 10\/8, belum disimpan/)).toBeInTheDocument();
+    expect(screen.queryByText('Konfigurasi tersimpan')).not.toBeInTheDocument();
+  });
+
+  it('labels a stored default quota as configuration, not fallback', async () => {
+    renderWithRoute(<KuotaBimbingan />);
+
+    expect(await screen.findByText('Konfigurasi tersimpan')).toBeInTheDocument();
+    expect(screen.queryByText(/Fallback keras/)).not.toBeInTheDocument();
+  });
+
+  it('does not show stored-counter drift alerts to KaDep or Admin', async () => {
+    const driftedList = {
+      definitionLabel:
+        'Beban kuota SIMPTA (fase proposal): Aktif + Booking pada periode yang dipilih. Bukan beban pasca-proposal di Monitoring Tugas Akhir.',
+      periodLabel: '2025/2026 Genap',
+      academicYearId: 'ay-1',
+      lecturers: [
+        {
+          ...lecturerQuota,
+          cachedCurrentCount: 0,
+          currentCountDrift: 2,
+        },
+      ],
+      kbkLoads: mockUseLecturerQuotas().data.kbkLoads,
+    };
+    mockUseLecturerQuotas.mockReturnValue({
+      data: driftedList,
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    });
+
+    const { unmount } = renderWithRoute(<KuotaBimbingan readOnly />);
+    expect(await screen.findByText('Mode monitoring read-only')).toBeInTheDocument();
+    expect(screen.queryByText('Penghitung kuota tersimpan tidak sesuai')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Perbaikan penghitung dilakukan oleh Admin/)).not.toBeInTheDocument();
+    unmount();
+
+    renderWithRoute(<KuotaBimbingan />);
+    expect(await screen.findByRole('button', { name: /Set Default Kuota/i })).toBeInTheDocument();
+    expect(screen.queryByText('Penghitung kuota tersimpan tidak sesuai')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Hitung ulang penghitung/i })).not.toBeInTheDocument();
   });
 });

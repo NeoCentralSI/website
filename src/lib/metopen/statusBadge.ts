@@ -55,6 +55,8 @@ export const ADVISOR_REQUEST_STATUS_CONFIG: Record<string, StatusBadgeConfig> = 
   rejected_by_kadep: { label: 'Ditolak KaDep', className: 'bg-red-500/15 text-red-700 border-red-200' },
   rejected: { label: 'Ditolak', className: 'bg-red-500/15 text-red-700 border-red-200' },
   redirected: { label: 'Dialihkan', className: 'bg-amber-500/15 text-amber-700 border-amber-200' },
+  released: { label: 'Booking Dilepas', className: 'bg-slate-500/15 text-slate-700 border-slate-200' },
+  closed: { label: 'Ditutup Sistem', className: 'bg-muted text-muted-foreground border-border' },
   canceled: { label: 'Ditarik', className: 'bg-muted text-muted-foreground border-border' },
   withdrawn: { label: 'Ditarik', className: 'bg-muted text-muted-foreground border-border' },
 };

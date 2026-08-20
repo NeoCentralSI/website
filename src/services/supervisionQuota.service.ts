@@ -7,6 +7,48 @@ export interface SupervisionQuotaDefault {
   quotaMax: number;
   quotaSoftLimit: number;
   academicYearId: string;
+  isFallback?: boolean;
+  source?: 'hardcoded_fallback' | 'stored';
+}
+
+export interface KbkLoadOutlier {
+  lecturerId: string;
+  fullName: string;
+  load: number;
+}
+
+export interface KbkLoadGroup {
+  scienceGroupId: string | null;
+  scienceGroupName: string;
+  lecturerCount: number;
+  totalLoad: number;
+  activeCount: number;
+  bookingCount: number;
+  averageLoad: number;
+  aboveAverage: KbkLoadOutlier[];
+  belowAverage: KbkLoadOutlier[];
+}
+
+export interface KbkLoadAggregation {
+  methodLabel: string;
+  overall: {
+    lecturerCount: number;
+    totalLoad: number;
+    averageLoad: number;
+    stdDev: number;
+    availableCount: number;
+    nearLimitCount: number;
+    fullCount: number;
+  };
+  groups: KbkLoadGroup[];
+}
+
+export interface LecturerQuotaList {
+  definitionLabel: string;
+  periodLabel: string;
+  academicYearId: string;
+  lecturers: LecturerQuota[];
+  kbkLoads: KbkLoadAggregation;
 }
 
 export interface LecturerQuota {
@@ -16,10 +58,16 @@ export interface LecturerQuota {
   fullName: string;
   identityNumber: string;
   email: string | null;
+  scienceGroupId?: string | null;
   scienceGroup: string | null;
   quotaMax: number;
   quotaSoftLimit: number;
+  /** Recomputed from live data; this is the number every surface decides on. */
   currentCount: number;
+  /** Cached counter on the quota row; `null` when no row exists yet. */
+  cachedCurrentCount: number | null;
+  /** `currentCount - cachedCurrentCount`; non-zero means the cache drifted. */
+  currentCountDrift: number | null;
   activeCount: number;
   bookingCount: number;
   pendingKadepCount: number;
@@ -68,6 +116,19 @@ export interface UpdateLecturerQuotaRequest {
   notes?: string | null;
 }
 
+export interface RecalculateQuotasResult {
+  academicYearId: string;
+  recalculated: number;
+  repairedCount: number;
+  repaired: Array<{
+    lecturerId: string;
+    fullName: string;
+    previousCount: number;
+    currentCount: number;
+    drift: number;
+  }>;
+}
+
 // ==================== API Functions ====================
 
 export async function getDefaultQuotaAPI(academicYearId: string): Promise<SupervisionQuotaDefault> {
@@ -110,7 +171,7 @@ export async function setDefaultQuotaAPI(
 export async function getLecturerQuotasAPI(
   academicYearId: string,
   search?: string
-): Promise<LecturerQuota[]> {
+): Promise<LecturerQuotaList> {
   const { accessToken } = getAuthTokens();
   const params = new URLSearchParams();
   if (search) params.set('search', search);
@@ -126,7 +187,7 @@ export async function getLecturerQuotasAPI(
     throw new Error(err.message || 'Gagal mengambil data kuota dosen');
   }
   const json = await res.json();
-  return json.data;
+  return json.data as LecturerQuotaList;
 }
 
 export async function getLecturerQuotaDetailAPI(
@@ -174,4 +235,56 @@ export async function updateLecturerQuotaAPI(
   }
   const json = await res.json();
   return json.data;
+}
+
+/**
+ * Rewrite the cached `currentCount` on every quota row from live data.
+ * Admin-only; repairs drift left behind by partially failed writes.
+ */
+export async function recalculateQuotasAPI(
+  academicYearId: string
+): Promise<RecalculateQuotasResult> {
+  const { accessToken } = getAuthTokens();
+  const res = await fetch(getApiUrl(`/supervision-quota/recalculate/${academicYearId}`), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal menghitung ulang kuota dosen');
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+export interface QuotaAvailability {
+  lecturerId: string;
+  allowed: boolean;
+  currentCount?: number;
+  quotaMax: number;
+  quotaSoftLimit?: number;
+  remaining?: number;
+  trafficLight?: string;
+  acceptingRequests?: boolean;
+  reason?: string | null;
+}
+
+/** Gate payload from `GET /quota/check/:lecturerId`. `allowed` follows intake flag, not red quota. */
+export async function checkLecturerQuotaAPI(lecturerId: string): Promise<QuotaAvailability> {
+  const { accessToken } = getAuthTokens();
+  const res = await fetch(getApiUrl(`/quota/check/${lecturerId}`), {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal memeriksa kuota dosen');
+  }
+  const json = await res.json();
+  return json.data as QuotaAvailability;
 }

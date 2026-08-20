@@ -1,7 +1,10 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { Ta03ScoreSummary } from '@/components/monitoring/Ta03ScoreSummary';
+import { Ta04StatusBadge } from '@/components/monitoring/Ta04StatusBadge';
 import { useThesisDetail } from '@/hooks/monitoring';
+import { getThesisStatusStyle } from '@/lib/monitoring/thesisStatus';
 import { toTitleCaseName, formatRoleName, formatDateId } from '@/lib/text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,13 +33,6 @@ import {
 import { getApiUrl } from '@/config/api';
 import Lottie from 'lottie-react';
 import emptyAnimation from '@/assets/lottie/empty.json';
-
-const STATUS_COLORS: Record<string, string> = {
-  'Bimbingan': 'bg-blue-100 text-blue-700 border-blue-200',
-  'Acc Seminar': 'bg-amber-100 text-amber-700 border-amber-200',
-  'Selesai': 'bg-green-100 text-green-700 border-green-200',
-  'Gagal': 'bg-red-500 text-white border-red-600',
-};
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -139,8 +135,8 @@ export default function StudentProgressDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className={STATUS_COLORS[data.status || ''] || 'bg-gray-100 text-gray-700'}>
-            {data.status || 'Tidak diketahui'}
+          <Badge className={getThesisStatusStyle(data.status).className}>
+            {getThesisStatusStyle(data.status).label}
           </Badge>
           {data.seminarApproval.isFullyApproved && (
             <Badge className="bg-amber-100 text-amber-800">
@@ -308,6 +304,26 @@ export default function StudentProgressDetail() {
                     <p className="text-sm font-medium">{data.deadlineDate ? formatDateId(data.deadlineDate) : '-'}</p>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Penugasan TA-04 & Nilai TA-03 — read-only untuk KaDep/Sekdep */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Award className="h-4 w-4" />
+                Penugasan TA-04 &amp; Nilai TA-03
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Penugasan TA-04</p>
+                <Ta04StatusBadge ta04={data.ta04} showIssuedAt />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Nilai TA-03</p>
+                <Ta03ScoreSummary ta03={data.ta03} />
               </div>
             </CardContent>
           </Card>

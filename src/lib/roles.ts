@@ -77,6 +77,15 @@ export const roleOptions = [
   { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
 ];
 
+// Peran yang bisa ditugaskan Admin lewat form Kelola User.
+// Admin dikecualikan dengan sengaja: endpoint adminfeatures membuang peran Admin
+// saat create dan tidak pernah menambah atau menghapusnya saat update, jadi
+// menampilkannya hanya menghasilkan pilihan yang diabaikan tanpa umpan balik.
+// Peran Mahasiswa disaring terpisah di form karena bergantung pada tipe identitas.
+export const assignableRoleOptions = roleOptions.filter(
+  (option) => option.value !== ROLES.ADMIN,
+);
+
 // Helper functions
 export const isStudentRole = (roleName: string): boolean => 
   roleName === ROLES.MAHASISWA;

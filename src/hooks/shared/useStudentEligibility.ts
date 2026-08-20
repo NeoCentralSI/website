@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { getCachedStudentsFromSia } from "@/services/sia.service";
 import { checkMetopelEligibility } from "@/services/metopen.service";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";
@@ -46,13 +45,6 @@ export function useStudentEligibility(): EligibilityResult {
   // (NIP/NIDN) but the backend returns 403, causing constant error logs.
   const isStudentUser = isStudent();
 
-  const { data: siaStudents, isLoading: siaLoading } = useQuery({
-    queryKey: ["sia-cached-students"],
-    queryFn: getCachedStudentsFromSia,
-    enabled: !!nim && isStudentUser,
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: metopelEligibility, isLoading: metopelLoading } = useQuery({
     queryKey: ["metopel-eligibility"],
     queryFn: checkMetopelEligibility,
@@ -60,18 +52,14 @@ export function useStudentEligibility(): EligibilityResult {
     staleTime: 5 * 60 * 1000,
   });
 
-  const siaStudent = siaStudents?.find((s) => s.nim === nim);
-  const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
-  const hasTugasAkhirCourseFromSia = !!siaStudent?.currentSemesterCourses?.some(
-    (c) => (c.name || "").toLowerCase().includes("tugas akhir")
-  );
+  const sks = authUser?.student?.sksCompleted ?? 0;
   const takingThesisCourseFromBackend =
     typeof metopelEligibility?.takingThesisCourse === "boolean"
       ? metopelEligibility.takingThesisCourse
       : typeof authUser?.student?.takingThesisCourse === "boolean"
         ? authUser.student.takingThesisCourse
         : null;
-  const hasTugasAkhirCourse = takingThesisCourseFromBackend ?? hasTugasAkhirCourseFromSia;
+  const hasTugasAkhirCourse = takingThesisCourseFromBackend === true;
 
   const canAccessMetopel = metopelEligibility?.canAccess ?? false;
   const isMetopenReadOnly =
@@ -82,7 +70,7 @@ export function useStudentEligibility(): EligibilityResult {
   const canAccessTugasAkhir = hasTugasAkhirCourse;
 
   return {
-    isLoading: siaLoading || metopelLoading,
+    isLoading: metopelLoading,
     sks,
     hasTugasAkhirCourse,
     canAccessKerjaPraktek,

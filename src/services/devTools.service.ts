@@ -13,6 +13,8 @@ import type {
   CreateUserDto,
   DevToolsUserListItem,
   RoleOption,
+  DevToolsAcademicYear,
+  CloseMetopenPeriodResult,
 } from '@/types/devTools.types';
 
 const BASE = '/devtools';
@@ -147,5 +149,38 @@ export const devToolsService = {
     const url = getApiUrl(`${BASE}/thesis/${id}`);
     const response = await apiRequest(url, { method: 'DELETE' });
     return parseMsg(response, 'Gagal menghapus thesis');
+  },
+
+  getAcademicYears: async (): Promise<DevToolsAcademicYear[]> => {
+    const url = getApiUrl(`${BASE}/academic-years`);
+    const response = await apiRequest(url);
+    return parseJson<DevToolsAcademicYear[]>(response, 'Gagal memuat tahun ajaran');
+  },
+
+  setThesisAcademicYear: async (thesisId: string, academicYearId: string): Promise<string> => {
+    const url = getApiUrl(`${BASE}/thesis/${thesisId}/academic-year`);
+    const response = await apiRequest(url, {
+      method: 'PATCH',
+      body: JSON.stringify({ academicYearId }),
+    });
+    return parseMsg(response, 'Gagal menandai thesis ke tahun ajaran');
+  },
+
+  closeMetopenPeriod: async (
+    closedAcademicYearId: string,
+    dryRun: boolean,
+    force = false,
+  ): Promise<CloseMetopenPeriodResult> => {
+    const url = getApiUrl(`${BASE}/scenarios/close-metopen-period`);
+    const response = await apiRequest(url, {
+      method: 'POST',
+      body: JSON.stringify({ closedAcademicYearId, dryRun, force }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as { message?: string }).message || 'Gagal menutup periode Metopel');
+    }
+    const result = await response.json();
+    return result.data as CloseMetopenPeriodResult;
   },
 };

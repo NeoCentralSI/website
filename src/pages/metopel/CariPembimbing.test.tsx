@@ -332,6 +332,75 @@ describe("CariPembimbing", () => {
     ).toBeInTheDocument();
   });
 
+  it("disables TA-01 submit when the lecturer closed acceptingRequests", async () => {
+    vi.mocked(useAdvisorAccessState).mockReturnValue({
+      data: {
+        studentId: "student-1",
+        thesisId: null,
+        thesisTitle: null,
+        thesisStatus: "Metopel",
+        eligibleMetopen: true,
+        hasExternalEligibility: true,
+        metopenEligibilitySource: "sia",
+        metopenEligibilityUpdatedAt: "2026-04-23T10:00:00.000Z",
+        metopenReadOnly: false,
+        gateConfigured: true,
+        gateOpen: true,
+        gates: [],
+        supervisors: [],
+        hasOfficialSupervisor: false,
+        hasBlockingRequest: false,
+        blockingRequest: null,
+        latestRequest: null,
+        requestStatus: null,
+        canBrowseCatalog: true,
+        canViewCatalog: true,
+        canSubmitRequest: true,
+        canOpenLogbook: false,
+        reason: "Silakan mulai pengajuan awal pembimbing dan judul.",
+        nextStep: "browse_catalog",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdvisorAccessState>);
+
+    vi.mocked(advisorRequestService.getCatalog).mockResolvedValue({
+      success: true,
+      data: [
+        {
+          lecturerId: "lecturer-closed",
+          fullName: "Dosen Tutup",
+          identityNumber: "19800102",
+          email: "closed@example.com",
+          avatarUrl: null,
+          scienceGroup: { id: "kbk-1", name: "AI" },
+          quotaMax: 8,
+          activeTheses: 1,
+          activeCount: 1,
+          normalAvailable: 7,
+          trafficLight: "green",
+          acceptingRequests: false,
+          supervisedTopics: ["Sistem Informasi"],
+        },
+      ],
+    });
+    vi.mocked(advisorRequestService.getMyRequests).mockResolvedValue({
+      success: true,
+      data: [],
+    });
+    vi.mocked(getApiUrl).mockReturnValue("/topics");
+    vi.mocked(apiRequest).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [] }),
+    } as Response);
+
+    render(<CariPembimbing />, { wrapper: createWrapper() });
+    fireEvent.click(await screen.findByRole("button", { name: /^Pilihan Dosen$/i }));
+
+    const closedButton = await screen.findByRole("button", { name: /Tidak menerima pengajuan/i });
+    expect(closedButton).toBeDisabled();
+    expect(screen.getByText("Sistem Informasi")).toBeInTheDocument();
+  });
+
   it("should show active supervisor state when advisor is already assigned", async () => {
     vi.mocked(useAdvisorAccessState).mockReturnValue({
       data: {

@@ -13,9 +13,11 @@ import {
 } from "lucide-react";
 
 import { MetopenAttendanceUploadCard } from "@/components/metopen/MetopenAttendanceUploadCard";
+import { MetopenSiaOperationsCard } from "@/components/master-data";
 import { MetricAction } from "@/components/metopen/MetricAction";
 import { ResearchMethodScoreReadOnly } from "@/components/metopen/ResearchMethodScoreReadOnly";
 import { RubricGradingForm } from "@/components/metopen/RubricGradingForm";
+import { Ta03AcademicYearPicker, Ta03OtherPeriodHint } from "@/components/metopen/Ta03PeriodControls";
 import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,13 +35,20 @@ import { Loading, Spinner } from "@/components/ui/spinner";
 import { LocalTabsNav, type LocalTabItem } from "@/components/ui/tabs-nav";
 import EmptyState from "@/components/ui/empty-state";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { assessmentService, type ScoringQueueItem } from "@/services/assessment.service";
-import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
+import { useTa03AcademicYearSelection } from "@/hooks/shared/useTa03AcademicYearSelection";
+import {
+    assessmentService,
+    formatTa03EmptyDescription,
+    isAttendanceAutoZeroed,
+    type ScoringQueueItem,
+    type Ta03QueueMeta,
+} from "@/services/assessment.service";
 import { toTitleCaseName } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 const METOPEN_TA03B_QUEUE_KEY = ["assessment-metopen-queue"];
 const METOPEN_TA03B_HISTORY_KEY = ["assessment-metopen-history"];
+const EMPTY_TA03B_QUEUE: ScoringQueueItem[] = [];
 const METOPEN_SCORE_DETAIL_KEY = (thesisId?: string | null) => [
     "assessment-metopen-score-detail",
     thesisId,
@@ -70,13 +79,18 @@ export default function MetopenTa03BQueue() {
         : "pending";
     const [selectedThesisId, setSelectedThesisId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
-    const { academicYear } = useActiveAcademicYear();
+    const { selectedAyId, setSelectedAyId, years, activeYearId } = useTa03AcademicYearSelection();
 
     const updateView = (tab: TabKey, status: StatusFilter = "all") => {
         const next = new URLSearchParams(searchParams);
         next.set("tab", tab);
         next.set("status", status);
         setSearchParams(next, { replace: true });
+        setSelectedThesisId(null);
+    };
+
+    const handleYearChange = (id: string) => {
+        setSelectedAyId(id);
         setSelectedThesisId(null);
     };
 
@@ -89,15 +103,17 @@ export default function MetopenTa03BQueue() {
     }, [setBreadcrumbs, setTitle]);
 
     const {
-        data: queue = [],
+        data: queueResult,
         isLoading,
         isError,
         error,
     } = useQuery({
-        queryKey: [...METOPEN_TA03B_QUEUE_KEY, academicYear?.id],
-        queryFn: () => assessmentService.getMetopenScoringQueue(academicYear!.id),
-        enabled: Boolean(academicYear?.id),
+        queryKey: [...METOPEN_TA03B_QUEUE_KEY, selectedAyId],
+        queryFn: () => assessmentService.getMetopenScoringQueue(selectedAyId),
+        enabled: Boolean(selectedAyId),
     });
+    const queue = queueResult?.items ?? EMPTY_TA03B_QUEUE;
+    const queueMeta: Ta03QueueMeta | undefined = queueResult?.meta;
 
     const {
         data: history = [],
@@ -105,9 +121,9 @@ export default function MetopenTa03BQueue() {
         isError: isHistoryError,
         error: historyError,
     } = useQuery({
-        queryKey: [...METOPEN_TA03B_HISTORY_KEY, academicYear?.id],
-        queryFn: () => assessmentService.getMetopenScoringHistory(academicYear!.id),
-        enabled: Boolean(academicYear?.id),
+        queryKey: [...METOPEN_TA03B_HISTORY_KEY, selectedAyId],
+        queryFn: () => assessmentService.getMetopenScoringHistory(selectedAyId),
+        enabled: Boolean(selectedAyId),
         refetchInterval: 30_000,
     });
 
@@ -118,8 +134,8 @@ export default function MetopenTa03BQueue() {
 
     const downloadMutation = useMutation({
         mutationFn: () => {
-            if (!academicYear?.id) throw new Error("Periode akademik aktif belum tersedia");
-            return assessmentService.downloadMetopenScoresXlsx(academicYear.id);
+            if (!selectedAyId) throw new Error("Pilih tahun ajaran terlebih dahulu");
+            return assessmentService.downloadMetopenScoresXlsx(selectedAyId);
         },
         onSuccess: () => {
             toast.success("Rekap nilai TA-03 sedang diunduh.");
@@ -136,7 +152,7 @@ export default function MetopenTa03BQueue() {
             if (
                 activeTab === "history" &&
                 statusFilter === "auto_zeroed" &&
-                !("attendanceAutoZeroedAt" in item && item.attendanceAutoZeroedAt)
+                !isAttendanceAutoZeroed(item)
             ) return false;
             if (q) {
                 const matches =
@@ -180,52 +196,31 @@ export default function MetopenTa03BQueue() {
     const stats = useMemo(() => {
         const total = queue.length;
         const pending = queue.filter((item) => !item.isScored).length;
-        const autoZeroed = history.filter((item) => item.attendanceAutoZeroedAt).length;
+        const autoZeroed = history.filter((item) => isAttendanceAutoZeroed(item)).length;
         return { total, pending, autoZeroed, history: history.length };
     }, [history, queue]);
 
-    if (currentLoading) {
-        return (
-            <div className="py-12">
-                <Loading
-                    size="lg"
-                    text={activeTab === "history" ? "Memuat riwayat penilaian TA-03B..." : "Memuat antrean penilaian TA-03B..."}
-                />
+    const queueChrome = (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h1 className="text-base font-semibold tracking-tight sm:text-lg">Penilaian Proposal TA-03B</h1>
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                    Antrean penilaian rubrik TA-03B.
+                </p>
             </div>
-        );
-    }
-
-    if (currentError) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>
-                        {activeTab === "history" ? "Riwayat TA-03B gagal dimuat" : "Antrean TA-03B gagal dimuat"}
-                    </CardTitle>
-                    <CardDescription>
-                        {currentErrorValue instanceof Error ? currentErrorValue.message : "Terjadi kesalahan."}
-                    </CardDescription>
-                </CardHeader>
-            </Card>
-        );
-    }
-
-    return (
-        <div className="space-y-5 sm:space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h1 className="text-base font-semibold tracking-tight sm:text-lg">Penilaian Proposal TA-03B</h1>
-                    <p className="text-xs text-muted-foreground sm:text-sm">
-                        Antrean penilaian rubrik TA-03B.
-                    </p>
-                </div>
+            <div className="flex flex-col gap-2 sm:items-end">
+                <Ta03AcademicYearPicker
+                    years={years}
+                    value={selectedAyId}
+                    onChange={handleYearChange}
+                />
                 <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="self-start border-violet-300 bg-background text-violet-800 hover:bg-violet-100"
                     onClick={() => downloadMutation.mutate()}
-                    disabled={downloadMutation.isPending || !academicYear?.id}
+                    disabled={downloadMutation.isPending || !selectedAyId}
                     title="Unduh rekap nilai TA-03A + TA-03B kelas Metopel terbaru dalam format SIA."
                 >
                     {downloadMutation.isPending ? (
@@ -241,6 +236,49 @@ export default function MetopenTa03BQueue() {
                     )}
                 </Button>
             </div>
+        </div>
+    );
+
+    if (!selectedAyId || currentLoading) {
+        return (
+            <div className="space-y-5 sm:space-y-6">
+                {queueChrome}
+                <div className="py-12">
+                    <Loading
+                        size="lg"
+                        text={activeTab === "history" ? "Memuat riwayat penilaian TA-03B..." : "Memuat antrean penilaian TA-03B..."}
+                    />
+                </div>
+            </div>
+        );
+    }
+
+    if (currentError) {
+        return (
+            <div className="space-y-5 sm:space-y-6">
+                {queueChrome}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>
+                            {activeTab === "history" ? "Riwayat TA-03B gagal dimuat" : "Antrean TA-03B gagal dimuat"}
+                        </CardTitle>
+                        <CardDescription>
+                            {currentErrorValue instanceof Error ? currentErrorValue.message : "Terjadi kesalahan."}
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-5 sm:space-y-6">
+            {queueChrome}
+
+            <Ta03OtherPeriodHint
+                otherPeriods={queueMeta?.otherPeriods}
+                onSelectPeriod={handleYearChange}
+            />
 
             {/* Hero card ─────────────────────────────────── */}
             <Card>
@@ -287,6 +325,8 @@ export default function MetopenTa03BQueue() {
                 </CardContent>
             </Card>
 
+            <MetopenSiaOperationsCard />
+
             <MetopenAttendanceUploadCard />
 
             <LocalTabsNav
@@ -305,12 +345,15 @@ export default function MetopenTa03BQueue() {
                     title={
                         activeTab === "history"
                             ? "Belum ada riwayat proposal yang sudah dinilai TA-03B."
-                            : "Belum ada proposal yang menunggu penilaian TA-03B."
+                            : "Belum ada proposal yang siap dinilai TA-03B."
                     }
                     description={
                         activeTab === "history"
                             ? "Proposal yang sudah memiliki skor Koordinator atau nilai otomatis 0 presensi akan tampil di sini."
-                            : "Belum ada antrean. Menunggu penugasan TA-04 dan proposal final. Presensi di bawah 75% memblokir penilaian."
+                            : formatTa03EmptyDescription(
+                                queueMeta,
+                                "Penilaian menunggu penerbitan TA-04.",
+                            )
                     }
                 />
             ) : (
@@ -396,10 +439,19 @@ export default function MetopenTa03BQueue() {
                                         isError={isScoreDetailError}
                                         error={scoreDetailError}
                                     />
+                                ) : (Boolean(activeYearId) && selectedAyId !== activeYearId) || selectedItem.periodClosedAt ? (
+                                    <Card>
+                                        <CardContent className="py-6 text-sm text-muted-foreground">
+                                            {selectedItem.periodClosedAt
+                                                ? "Periode Metode Penelitian sudah ditutup. Penilaian ini hanya arsip."
+                                                : "Penilaian hanya dapat diubah pada tahun ajaran operasional. Periode ini ditampilkan sebagai riwayat."}
+                                        </CardContent>
+                                    </Card>
                                 ) : (
                                     <RubricGradingForm
                                         thesisId={selectedItem.thesisId}
                                         formCode="TA-03B"
+                                        academicYearId={selectedAyId}
                                         studentName={toTitleCaseName(selectedItem.studentName)}
                                         onSuccess={() => {
                                             queryClient.invalidateQueries({

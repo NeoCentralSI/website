@@ -45,7 +45,11 @@ function groupNotificationsByDate(notifications: any[]) {
   return groups;
 }
 
-export default function NotificationsSheetContent() {
+type NotificationsSheetContentProps = {
+  onNavigate?: () => void;
+};
+
+export default function NotificationsSheetContent({ onNavigate }: NotificationsSheetContentProps) {
   const { notifications, isLoading, markAsRead, deleteNotification, markAllAsRead, deleteAllNotifications, unreadCount } = useNotifications();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -197,6 +201,7 @@ export default function NotificationsSheetContent() {
                       notification={notification}
                       onMarkRead={markAsRead}
                       onDelete={deleteNotification}
+                      onNavigate={onNavigate}
                     />
                   ))}
                 </div>

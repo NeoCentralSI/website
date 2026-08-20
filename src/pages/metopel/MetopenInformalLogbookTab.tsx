@@ -1,32 +1,28 @@
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, FileText, History, Info, Paperclip } from "lucide-react";
+import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading } from "@/components/ui/spinner";
-import { formatDateId } from "@/lib/text";
-import { getApiUrl } from "@/config/api";
 import {
   createMetopenInformalLog,
   listMetopenInformalLogs,
   type InformalLogItem,
 } from "@/services/metopenInformalLog.service";
-import { AlertCircle, FileText, History, Info, Paperclip } from "lucide-react";
-import { toast } from "sonner";
+import { openAuthenticatedFile } from "@/lib/authenticatedFile";
+import { formatDateId } from "@/lib/text";
 
 const QK_METOPEN_INFORMAL_LOGS = ["metopen-informal-logs"] as const;
 
-function getFileUrl(url: string | null): string {
-  if (!url) return "#";
-  const fullUrl = url.startsWith("http") ? url : getApiUrl(url);
-  const token = localStorage.getItem("accessToken");
-  if (token && url.includes("thesis/")) {
-    return fullUrl + (fullUrl.includes("?") ? "&" : "?") + `token=${token}`;
-  }
-  return fullUrl;
+function openInformalAttachment(url: string | null) {
+  void openAuthenticatedFile(url).catch(() => {
+    toast.error("Gagal membuka lampiran.");
+  });
 }
 
 interface MetopenInformalLogbookTabProps {
@@ -179,15 +175,14 @@ export function MetopenInformalLogbookTab({ readOnly }: MetopenInformalLogbookTa
                   <CardContent className="space-y-2 pt-0 text-sm whitespace-pre-wrap">{entry.content}</CardContent>
                   {entry.document?.url && (
                     <CardContent className="pt-0">
-                      <a
-                        href={getFileUrl(entry.document.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => openInformalAttachment(entry.document?.url ?? null)}
                         className="inline-flex items-center gap-2 text-sm text-primary underline-offset-4 hover:underline"
                       >
                         <Paperclip className="h-4 w-4 shrink-0" />
                         {entry.document.fileName || "Lampiran"}
-                      </a>
+                      </button>
                     </CardContent>
                   )}
                 </Card>

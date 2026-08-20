@@ -10,10 +10,19 @@ import type { SupervisorLoad } from "@/services/monitoring.service";
 
 interface SupervisorLoadCardProps {
   loads: SupervisorLoad[] | undefined;
+  definitionLabel?: string;
+  periodLabel?: string;
+  uniqueThesisCount?: number;
   isLoading: boolean;
 }
 
-export function SupervisorLoadCard({ loads, isLoading }: SupervisorLoadCardProps) {
+export function SupervisorLoadCard({
+  loads,
+  definitionLabel,
+  periodLabel,
+  uniqueThesisCount,
+  isLoading,
+}: SupervisorLoadCardProps) {
   const [selectedLoad, setSelectedLoad] = useState<SupervisorLoad | null>(null);
 
   if (isLoading) {
@@ -22,7 +31,7 @@ export function SupervisorLoadCard({ loads, isLoading }: SupervisorLoadCardProps
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-sky-500" />
-            Beban Bimbingan
+            Beban Bimbingan Pasca-Proposal
           </CardTitle>
           <CardDescription>Jumlah mahasiswa bimbingan per dosen</CardDescription>
         </CardHeader>
@@ -49,9 +58,13 @@ export function SupervisorLoadCard({ loads, isLoading }: SupervisorLoadCardProps
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-sky-500" />
-            Beban Bimbingan
+            Beban Bimbingan Pasca-Proposal
           </CardTitle>
-          <CardDescription>Jumlah mahasiswa bimbingan per dosen</CardDescription>
+          <CardDescription>
+            {definitionLabel || "Jumlah mahasiswa bimbingan per dosen"}
+            {periodLabel ? ` Periode: ${periodLabel}.` : ""}
+            {uniqueThesisCount != null ? ` ${uniqueThesisCount} tesis unik.` : ""}
+          </CardDescription>
         </CardHeader>
         <CardContent className="max-h-80 overflow-y-auto">
           {displayLoads.length === 0 ? (
@@ -97,7 +110,7 @@ export function SupervisorLoadCard({ loads, isLoading }: SupervisorLoadCardProps
           <DialogHeader>
             <DialogTitle>{selectedLoad ? toTitleCaseName(selectedLoad.lecturerName) : "Mahasiswa Bimbingan"}</DialogTitle>
             <DialogDescription>
-              {selectedLoad?.studentCount ?? 0} mahasiswa bimbingan aktif
+              {selectedLoad?.studentCount ?? 0} mahasiswa bimbingan pasca-proposal
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto pr-2">

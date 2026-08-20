@@ -11,5 +11,7 @@ export { ReadyForSeminarCard } from "./ReadyForSeminarCard";
 export { SlowStudentsCard } from "./SlowStudentsCard";
 export { SupervisorLoadCard } from "./SupervisorLoadCard";
 export { ThesesTable } from "./ThesesTable";
+export { Ta04StatusBadge } from "./Ta04StatusBadge";
+export { Ta03ScoreSummary } from "./Ta03ScoreSummary";
 export { GuidanceTrendChart } from "./MonthlyTrendChart";
 

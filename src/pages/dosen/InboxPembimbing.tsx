@@ -29,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { MetricAction } from '@/components/metopen/MetricAction';
+import { OutOfPeriodBadge } from '@/components/metopen/OutOfPeriodBadge';
 import { Loading } from '@/components/ui/spinner';
 import { Separator } from '@/components/ui/separator';
 import EmptyState from '@/components/ui/empty-state';
@@ -63,6 +64,30 @@ function formatDate(d: string) {
 function displayText(value?: string | null) {
     const cleanValue = value?.trim();
     return cleanValue ? cleanValue : '-';
+}
+
+const proposalStatusLabel: Record<string, string> = {
+    submitted: 'Proposal final',
+    accepted: 'Proposal diterima',
+    rejected: 'Proposal ditolak',
+    revision_in_progress: 'Revisi proposal',
+};
+
+function formatProposalStatus(status?: string | null) {
+    if (!status) return 'Belum ada proposal';
+    return proposalStatusLabel[status] ?? status;
+}
+
+function formatAcademicRecord(request: AdvisorRequest) {
+    const student = request.student;
+    const parts: string[] = [];
+    if (student?.enrollmentYear) parts.push(`Angkatan ${student.enrollmentYear}`);
+    if (typeof student?.sksCompleted === 'number') parts.push(`${student.sksCompleted} SKS`);
+    if (student?.currentSemester) parts.push(`Semester ${student.currentSemester}`);
+    if (student?.eligibleMetopen === true) parts.push('Eligible Metopel');
+    if (student?.eligibleMetopen === false) parts.push('Belum eligible Metopel');
+    if (student?.takingThesisCourse === true) parts.push('KRS TA');
+    return parts;
 }
 
 function DetailField({ label, value }: { label: string; value?: string | null }) {
@@ -127,6 +152,23 @@ function EntryCard({ entry, tone }: { entry: AdvisorQuotaEntry; tone: 'active' |
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                             <span>{entry.topicName || 'Topik belum tersedia'}</span>
                             {entry.roleName && <span>{entry.roleName}</span>}
+                            <span>{formatProposalStatus(entry.proposalStatus)}</span>
+                            {entry.proposalVersion != null && (
+                                <span>
+                                    {entry.hasFinalProposal ? 'Final' : 'Versi'} v{entry.proposalVersion}
+                                </span>
+                            )}
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            {(entry.academicYearLabel || entry.isCurrentPeriod === false) && (
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                    {entry.academicYearLabel ?? 'Periode aktif'}
+                                </Badge>
+                            )}
+                            <OutOfPeriodBadge
+                                isCurrentPeriod={entry.isCurrentPeriod}
+                                periodLabel={entry.academicYearLabel}
+                            />
                         </div>
                         {(entry.lecturerApprovalNote || entry.kadepNotes) && (
                             <p className="mt-2 border-l-2 border-border pl-2 text-xs leading-relaxed text-muted-foreground">
@@ -158,6 +200,7 @@ export default function InboxPembimbing() {
     });
     const [rejectionReason, setRejectionReason] = useState('');
     const [approvalNote, setApprovalNote] = useState('');
+    const [periodScope, setPeriodScope] = useState<'active' | 'all'>('active');
     const activeTab = ['pending', 'portfolio', 'history'].includes(searchParams.get('tab') ?? '')
         ? (searchParams.get('tab') as 'pending' | 'portfolio' | 'history')
         : 'pending';
@@ -199,6 +242,8 @@ export default function InboxPembimbing() {
     const overquotaEntries = [...inbox.activeOfficial, ...inbox.bookings]
         .filter((entry) => entry.acceptedOverNormal);
     const overquotaSahCount = inbox.summary?.overquotaSahCount ?? overquotaEntries.length;
+    const scopePortfolio = (items: AdvisorQuotaEntry[]) =>
+        periodScope === 'all' ? items : items.filter((entry) => entry.isCurrentPeriod !== false);
 
     const respondMutation = useMutation({
         mutationFn: ({ id, action, approvalNote: nextApprovalNote, lecturerOverquotaReason, rejectionReason: nextReason }: { id: string; action: 'accept' | 'reject'; approvalNote?: string; lecturerOverquotaReason?: string; rejectionReason?: string }) =>
@@ -326,6 +371,10 @@ export default function InboxPembimbing() {
                                                 Di atas kuota
                                             </Badge>
                                         )}
+                                        <OutOfPeriodBadge
+                                            isCurrentPeriod={request.isCurrentPeriod}
+                                            periodLabel={request.periodLabel}
+                                        />
                                     </div>
                                 </div>
                                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -335,6 +384,11 @@ export default function InboxPembimbing() {
                                     </span>
                                     <span>{request.topic?.name || 'Topik belum dipilih'}</span>
                                 </div>
+                                {formatAcademicRecord(request).length > 0 && (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        {formatAcademicRecord(request).join(' · ')}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -476,6 +530,19 @@ export default function InboxPembimbing() {
                             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                                 Dari batas {inbox.summary?.quotaMax ?? 0} mahasiswa. Pengajuan di atas batas normal memerlukan validasi KaDep.
                             </p>
+                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                                Angka di kartu ini hanya menghitung periode{' '}
+                                {inbox.academicYearLabel ?? 'berjalan'}.
+                                {(inbox.outOfPeriodCount ?? 0) > 0 && (
+                                    <>
+                                        {' '}
+                                        <span className="text-amber-700">
+                                            {inbox.outOfPeriodCount} pengajuan di daftar berasal dari periode lain dan belum
+                                            terhitung di sini.
+                                        </span>
+                                    </>
+                                )}
+                            </p>
                         </div>
                         <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
                             <MetricAction
@@ -541,38 +608,57 @@ export default function InboxPembimbing() {
 
             {activeTab === 'portfolio' && (
                 <div className="space-y-6">
-                    {portfolioFocus && (
-                        <div className="flex justify-end">
-                            <Button variant="outline" size="sm" onClick={() => applyView('portfolio')}>
-                                Tampilkan seluruh komposisi kuota
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">
+                            Daftar bimbingan untuk periode {inbox.academicYearLabel ?? 'aktif'}.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                variant={periodScope === 'active' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setPeriodScope('active')}
+                            >
+                                Periode aktif
                             </Button>
+                            <Button
+                                variant={periodScope === 'all' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setPeriodScope('all')}
+                            >
+                                Semua periode
+                            </Button>
+                            {portfolioFocus && (
+                                <Button variant="outline" size="sm" onClick={() => applyView('portfolio')}>
+                                    Tampilkan seluruh komposisi kuota
+                                </Button>
+                            )}
                         </div>
-                    )}
+                    </div>
                     {(!portfolioFocus || portfolioFocus === 'active') && renderPortfolioSection(
                         'Aktif Resmi',
                         'Mahasiswa yang sudah masuk beban bimbingan resmi aktif.',
-                        inbox.activeOfficial,
+                        scopePortfolio(inbox.activeOfficial),
                         'active',
                         'Belum ada bimbingan resmi aktif.'
                     )}
                     {(!portfolioFocus || portfolioFocus === 'booking') && renderPortfolioSection(
                         'Booking Pra-TA',
                         'Mahasiswa yang sudah disetujui dosen pada fase Metopen tetapi belum resmi TA-04.',
-                        inbox.bookings,
+                        scopePortfolio(inbox.bookings),
                         'booking',
                         'Belum ada booking pembimbing aktif.'
                     )}
                     {(!portfolioFocus || portfolioFocus === 'pending') && renderPortfolioSection(
                         'Pending Validasi KaDep',
                         'Pengajuan yang Anda terima di atas kuota normal dan masih menunggu keputusan KaDep.',
-                        inbox.pendingKadep,
+                        scopePortfolio(inbox.pendingKadep),
                         'pending',
                         'Tidak ada pengajuan yang menunggu validasi KaDep.'
                     )}
                     {portfolioFocus === 'overquota' && renderPortfolioSection(
                         'Overquota Sah',
                         'Mahasiswa yang disetujui melalui jalur di atas kuota normal.',
-                        overquotaEntries,
+                        scopePortfolio(overquotaEntries),
                         null,
                         'Tidak ada mahasiswa overquota sah pada komposisi kuota saat ini.'
                     )}
@@ -652,6 +738,43 @@ export default function InboxPembimbing() {
                                             <DetailField label="Tanggal submit" value={formatDateId(detailDialog.request.createdAt)} />
                                             <DetailField label="Status" value={getAdvisorRequestStatus(detailDialog.request.status).label} />
                                             <DetailField label="Jenis pengajuan" value={requestTypeLabel[detailDialog.request.requestType] ?? detailDialog.request.requestType} />
+                                        </div>
+                                    </DetailSection>
+
+                                    <DetailSection title="Rekam jejak akademik">
+                                        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                                            <DetailField
+                                                label="Angkatan"
+                                                value={detailDialog.request.student?.enrollmentYear != null ? String(detailDialog.request.student.enrollmentYear) : null}
+                                            />
+                                            <DetailField
+                                                label="SKS selesai"
+                                                value={typeof detailDialog.request.student?.sksCompleted === 'number' ? String(detailDialog.request.student.sksCompleted) : null}
+                                            />
+                                            <DetailField
+                                                label="Semester berjalan"
+                                                value={detailDialog.request.student?.currentSemester != null ? String(detailDialog.request.student.currentSemester) : null}
+                                            />
+                                            <DetailField
+                                                label="Eligible Metopel"
+                                                value={
+                                                    detailDialog.request.student?.eligibleMetopen == null
+                                                        ? null
+                                                        : detailDialog.request.student.eligibleMetopen
+                                                            ? 'Ya'
+                                                            : 'Tidak'
+                                                }
+                                            />
+                                            <DetailField
+                                                label="Mengambil MK Tugas Akhir"
+                                                value={
+                                                    detailDialog.request.student?.takingThesisCourse == null
+                                                        ? null
+                                                        : detailDialog.request.student.takingThesisCourse
+                                                            ? 'Ya'
+                                                            : 'Tidak'
+                                                }
+                                            />
                                         </div>
                                     </DetailSection>
 
