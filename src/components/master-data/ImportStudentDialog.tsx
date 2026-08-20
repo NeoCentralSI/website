@@ -12,7 +12,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Download, FileSpreadsheet, FileText, CheckCircle2, Loader2 } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface ImportStudentDialogProps {

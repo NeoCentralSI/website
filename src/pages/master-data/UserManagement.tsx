@@ -187,20 +187,6 @@ export default function UserManagementPage() {
     }
   };
 
-  // Role options for form - using ROLES constants from lib/roles.ts
-  const roleOptions = [
-    { value: ROLES.ADMIN, label: 'Admin' },
-    { value: ROLES.MAHASISWA, label: 'Mahasiswa' },
-    { value: ROLES.PEMBIMBING_1, label: 'Pembimbing 1' },
-    { value: ROLES.PEMBIMBING_2, label: 'Pembimbing 2' },
-    { value: ROLES.PENGUJI, label: 'Penguji' },
-    { value: ROLES.KETUA_DEPARTEMEN, label: 'Ketua Departemen' },
-    { value: ROLES.SEKRETARIS_DEPARTEMEN, label: 'Sekretaris Departemen' },
-    { value: ROLES.GKM, label: 'GKM' },
-    { value: ROLES.KOORDINATOR_METOPEN, label: 'Koordinator Matkul Metopen' },
-    { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
-    { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
-  ];
   const columns = [
     {
       key: 'fullName',
