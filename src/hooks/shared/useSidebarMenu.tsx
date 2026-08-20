@@ -30,8 +30,17 @@ export const useSidebarMenu = () => {
   const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing, isKoordinatorMetopen } = useRole();
   const { user: authUser } = useAuth();
 
+  const isStudentRole = isStudent();
+  const isDosenRole = isDosen();
+  const isKadepRole = isKadep();
+  const isSekdepRole = isSekdep();
+  const isGkmRole = isGkm();
+  const isAdminRole = isAdmin();
+  const isPembimbingRole = isPembimbing();
+  const isKoordinatorMetopenRole = isKoordinatorMetopen();
+
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
-  const isStudentUser = Boolean(authUser?.id) && isStudent();
+  const isStudentUser = Boolean(authUser?.id) && isStudentRole;
   const { canAccessMetopel, isMetopenReadOnly, hasTugasAkhirCourse, isMetopenOnlyTrack } =
     useStudentEligibility();
   const { data: advisorAccess } = useAdvisorAccessState(isStudentUser && canAccessMetopel);
@@ -39,14 +48,14 @@ export const useSidebarMenu = () => {
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
     const role = {
-      student: isStudent(),
-      dosen: isDosen(),
-      kadep: isKadep(),
-      sekdep: isSekdep(),
-      gkm: isGkm(),
-      admin: isAdmin(),
-      pembimbing: isPembimbing(),
-      koordinatorMetopen: isKoordinatorMetopen(),
+      student: isStudentRole,
+      dosen: isDosenRole,
+      kadep: isKadepRole,
+      sekdep: isSekdepRole,
+      gkm: isGkmRole,
+      admin: isAdminRole,
+      pembimbing: isPembimbingRole,
+      koordinatorMetopen: isKoordinatorMetopenRole,
     };
 
     // Get user initials for avatar fallback
@@ -136,7 +145,7 @@ export const useSidebarMenu = () => {
         // Kerja Praktik
         {
           title: "Kerja Praktik",
-          url: "#",
+          url: "/kerja-praktik",
           icon: Briefcase,
           items: [
             { title: "Pendaftaran", url: "/kerja-praktik/pendaftaran" },
@@ -148,7 +157,7 @@ export const useSidebarMenu = () => {
           ? [
               {
                 title: "Tugas Akhir",
-                url: "#",
+                url: "/tugas-akhir",
                 icon: FileText,
                 items: [
                   { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
@@ -190,10 +199,13 @@ export const useSidebarMenu = () => {
         if (showMetopenInformalLogbook) {
           metopenItems.push({ title: "Catatan informal", url: "/metopel/logbook" });
         }
+        
+        // Selalu tampilkan Stepper (Alur Proposal)
+        metopenItems.push({ title: "Alur Proposal", url: "/metopel/arsip" });
 
         studentNav.splice(2, 0, {
           title: isMetopenReadOnly ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
-          url: "#",
+          url: "/metopel",
           icon: BookOpen,
           items: metopenItems,
         });
@@ -627,7 +639,7 @@ export const useSidebarMenu = () => {
     // Only recompute when role flags or auth user identity change
   }, [
     // role flags
-    isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing, isKoordinatorMetopen,
+    isStudentRole, isDosenRole, isKadepRole, isSekdepRole, isGkmRole, isAdminRole, isPembimbingRole, isKoordinatorMetopenRole,
     // user deps
     authUser?.fullName, authUser?.email,
     avatarBlobUrl,

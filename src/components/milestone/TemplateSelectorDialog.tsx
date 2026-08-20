@@ -39,7 +39,7 @@ interface TemplateSelectorDialogProps {
 export function TemplateSelectorDialog({
   open,
   onOpenChange,
-  templates,
+  templates = [],
   isLoading,
   isSubmitting,
   onSubmit,
@@ -155,7 +155,7 @@ export function TemplateSelectorDialog({
                   />
                 ) : (
                   topics.map((topic) => {
-                    const count = templates.filter(
+                    const count = (templates || []).filter(
                       (t) => t.topicId === topic.id
                     ).length;
                     return (

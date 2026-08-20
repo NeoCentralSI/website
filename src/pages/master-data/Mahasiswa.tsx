@@ -12,10 +12,9 @@ import {
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Eye, RefreshCw, Pencil } from 'lucide-react';
+import { Eye, RefreshCw, Pencil, Check, X } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminUpdateStudentAPI } from '@/services/admin.service';
@@ -26,7 +25,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Check, X } from 'lucide-react';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -41,9 +39,9 @@ export default function Mahasiswa() {
   const [searchValue, setSearchValue] = useState('');
   const [programFilter, setProgramFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [enrollmentYearFilter] = useState(''); // TODO: wire UI filter when ready
+  const [enrollmentYearFilter] = useState('');
   const [academicYearFilter, setAcademicYearFilter] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortBy, setSortBy] = useState('identityNumber');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Edit states
@@ -170,29 +168,6 @@ export default function Mahasiswa() {
       header: 'Nama',
       render: (row: Student) => toTitleCaseName(row.fullName),
     },
-    /*
-    {
-      key: 'email',
-      header: 'Email',
-      render: (row: Student) => row.email,
-    },
-    {
-      key: 'enrollmentYear',
-      header: 'Tahun Masuk',
-      filter: {
-        kind: 'control',
-        type: 'select',
-        value: enrollmentYearFilter,
-        onChange: setEnrollmentYearFilter,
-        options: [
-          { value: '', label: 'Semua' },
-          ...Array.from({ length: 11 }, (_, i) => 2018 + i).map((y) => ({ value: String(y), label: String(y) })),
-        ],
-        placeholder: 'Filter tahun',
-      },
-      render: (row: Student) => row.student?.enrollmentYear || '-',
-    },
-    */
     {
       key: 'currentSemester',
       header: 'Sem.',

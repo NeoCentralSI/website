@@ -70,7 +70,7 @@ export default function StudentGuidancePage() {
     hasPendingRequest,
     pendingRequestInfo,
     refetch,
-  } = useStudentGuidance(guidancePhase);
+  } = useStudentGuidance();
 
   const isThesisInactive = thesisDetail?.status === "Gagal" || thesisDetail?.status === "Dibatalkan" || thesisDetail?.status === "Selesai";
 
@@ -223,7 +223,7 @@ export default function StudentGuidancePage() {
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Riwayat Bimbingan', to: '/tugas-akhir/bimbingan/student/history', end: true },
+          { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone', end: true },
         ]}
       />
 
