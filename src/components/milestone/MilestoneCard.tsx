@@ -102,11 +102,11 @@ export function MilestoneCard({
   return (
     <div
       className={cn(
-        "relative rounded-lg border bg-card transition-all hover:shadow-sm",
-        isCompleted && "border-green-200/70 bg-green-50/30",
-        isRevisionNeeded && "border-orange-200/70 bg-orange-50/30",
-        isPendingReview && "border-amber-200/70 bg-amber-50/30",
-        isInProgress && "border-blue-200/70",
+        "relative border-b transition-all hover:bg-muted/50",
+        isCompleted && "bg-green-50/20",
+        isRevisionNeeded && "bg-orange-50/20",
+        isPendingReview && "bg-amber-50/20",
+        isInProgress && "bg-blue-50/10",
         !isCompleted && !isRevisionNeeded && !isInProgress && "border-border/60",
         isProgressUpdating && "opacity-60"
       )}

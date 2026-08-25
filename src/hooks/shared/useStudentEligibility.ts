@@ -61,15 +61,23 @@ export function useStudentEligibility(): EligibilityResult {
         ? authUser.student.takingThesisCourse
         : null;
   const hasTugasAkhirCourse = takingThesisCourseFromBackend === true;
-  const hasExistingThesis = Boolean(metopelEligibility?.thesisId);
+  const hasExistingThesis = Boolean(
+    metopelEligibility?.thesisId ||
+    metopelEligibility?.hasThesisRecord ||
+    metopelEligibility?.hasThesisPassed
+  );
 
   const canAccessMetopel = metopelEligibility?.canAccess ?? false;
   const isMetopenReadOnly =
     metopelEligibility?.readOnly ?? metopelEligibility?.thesisPhase === "thesis";
-  const isMetopenOnlyTrack = canAccessMetopel && !hasTugasAkhirCourse;
+  const canAccessTugasAkhir =
+    hasTugasAkhirCourse ||
+    metopelEligibility?.canAccessTugasAkhir === true ||
+    hasExistingThesis ||
+    authUser?.student?.status === "lulus";
+  const isMetopenOnlyTrack = canAccessMetopel && !canAccessTugasAkhir;
 
   const canAccessKerjaPraktek = sks >= 90;
-  const canAccessTugasAkhir = hasTugasAkhirCourse || hasExistingThesis;
 
   return {
     isLoading: metopelLoading,
@@ -94,7 +102,9 @@ export function useStudentEligibility(): EligibilityResult {
             ? "Snapshot SIA mencatat Anda mengambil mata kuliah Tugas Akhir"
             : hasExistingThesis
               ? "Data tugas akhir mahasiswa sudah tersedia pada sistem"
-              : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
+              : canAccessTugasAkhir
+                ? "Backend mengonfirmasi akses mahasiswa ke Tugas Akhir"
+                : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
         },
       },
       metopel: {

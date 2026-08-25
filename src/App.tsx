@@ -30,6 +30,7 @@ const Profil = lazy(() => import('./pages/profil/Profil'))
 // Tugas Akhir - Bimbingan
 const BimbinganEntry = lazy(() => import('./pages/tugas-akhir/bimbingan/BimbinganEntry'))
 const StudentGuidance = lazy(() => import('./pages/tugas-akhir/bimbingan/student/StudentGuidance'));
+const MilestoneManagement = lazy(() => import('./pages/tugas-akhir/bimbingan/student/MilestoneManagement'));
 const CompletedHistory = lazy(() => import('./pages/tugas-akhir/bimbingan/student/CompletedHistory'));
 const StudentGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/GuidanceSession'))
 const LecturerRequestsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/Requests'))
@@ -84,6 +85,7 @@ const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetter
 // Overview Pages
 const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/student/Overview'))
 const MetopenOverviewPage = lazy(() => import('./pages/metopel/Metopel'))
+const MetopelOverviewArsip = lazy(() => import('./pages/metopel/MetopelOverview'))
 const YudisiumEntry = lazy(() => import('./pages/yudisium/YudisiumEntry'))
 const StudentExitSurveyPage = lazy(() => import('./pages/yudisium/StudentExitSurvey'))
 const YudisiumDetailPage = lazy(() => import('./pages/yudisium/YudisiumDetail'))
@@ -232,13 +234,14 @@ function App() {
                     <Route path="/metopel/cari-pembimbing" element={<MetopenOverviewPage />} />
                     <Route path="/metopel/proposal" element={<MetopenOverviewPage />} />
                     <Route path="/metopel/logbook" element={<MetopenOverviewPage />} />
+                    <Route path="/metopel/arsip" element={<MetopelOverviewArsip />} />
                   </Route>
 
                   <Route path="tugas-akhir" element={<TugasAkhirGuard />}>
                     <Route index element={<TugasAkhirOverviewPage />} />
                     {/* Removed bimbingan/ route to allow BimbinganEntry to handle role-based redirection */}
                     <Route path="bimbingan/student" element={<StudentGuidance />} />
-                    <Route path="bimbingan/student/milestone" element={<Navigate to="/tugas-akhir/bimbingan/student/history" replace />} />
+                    <Route path="bimbingan/student/milestone" element={<MilestoneManagement />} />
                     <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                     <Route path="bimbingan/student/history" element={<CompletedHistory />} />
                     {/* DangerZone removed per SIMPTA canon v2.1 refactor; redirect to TA overview */}

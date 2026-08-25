@@ -5,9 +5,9 @@
 # ─────────────────────────────────────────────────────────────────
 name: Deploy Frontend
 
+# Deployment disabled because server is offline. Use workflow_dispatch if manually needed.
 on:
-  push:
-    branches: [staging]
+  workflow_dispatch:
 
 env:
   DEPLOY_DIR: /www/wwwroot/neocentral

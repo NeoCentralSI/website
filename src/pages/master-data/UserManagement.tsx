@@ -7,12 +7,13 @@ import { Pencil, UserPlus, Upload, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import CustomTable from '@/components/layout/CustomTable';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
-import { createUserAPI, updateUserAPI, importStudentsCsvAPI, getUsersAPI } from '@/services/admin.service';
+import { createUserAPI, updateUserAPI, importStudentsCsvAPI, importUsersExcelAPI, getUsersAPI } from '@/services/admin.service';
 import { toTitleCaseName } from '@/lib/text';
 import { assignableRoleOptions, formatRoleName, roleOptions, ROLES } from '@/lib/roles';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserFormDialog, ImportStudentDialog, AdminAuditLogCard } from '@/components/master-data';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import * as XLSX from 'xlsx';
 
 export default function UserManagementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -153,19 +154,34 @@ export default function UserManagementPage() {
 
   const handleImportCsv = async () => {
     if (!selectedFile) {
-      toast.error('Pilih file CSV terlebih dahulu');
+      toast.error('Pilih file Excel atau CSV terlebih dahulu');
       return;
     }
 
     setIsImporting(true);
     try {
-      const result = await importStudentsCsvAPI(selectedFile);
-      toast.success(`Berhasil import ${result.summary?.created || 0} mahasiswa`);
+      const isExcel = selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls');
+      if (isExcel) {
+        const buffer = await selectedFile.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
+        const result = await importUsersExcelAPI(rows);
+        const createdCount = result.created ?? result.success ?? result.summary?.created ?? 0;
+        const updatedCount = result.updated ?? result.summary?.updated ?? 0;
+        toast.success(`Berhasil import: ${createdCount} dibuat, ${updatedCount} diupdate`);
+      } else {
+        const result: any = await importStudentsCsvAPI(selectedFile);
+        const createdCount = result.summary?.created ?? result.created ?? 0;
+        const updatedCount = result.summary?.updated ?? result.updated ?? 0;
+        toast.success(`Berhasil import: ${createdCount} dibuat, ${updatedCount} diupdate`);
+      }
+
       setImportDialogOpen(false);
       setSelectedFile(null);
       invalidateUsers(); // Invalidate cache to refetch data
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Gagal import CSV');
+      toast.error(error instanceof Error ? error.message : 'Gagal import user');
     } finally {
       setIsImporting(false);
     }

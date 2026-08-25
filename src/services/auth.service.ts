@@ -113,11 +113,6 @@ export const getAuthTokens = () => {
     refreshToken: getCookie('refreshToken')
   };
   
-  console.log('🔑 [getAuthTokens] Retrieved tokens:', {
-    hasAccessToken: !!tokens.accessToken,
-    hasRefreshToken: !!tokens.refreshToken
-  });
-  
   return tokens;
 };
 

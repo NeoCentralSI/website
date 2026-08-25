@@ -43,7 +43,10 @@ const getDaysRemaining = (deadlineDate?: string | null) => {
   return diffDays;
 };
 
-const getRatingConfig = (rating?: string) => {
+const getRatingConfig = (rating?: string, thesisStatus?: string | null) => {
+  if (thesisStatus === "Lulus" || thesisStatus === "Selesai" || thesisStatus === "Yudisium") {
+    return { variant: "outline" as const, label: "Completed", className: "border-emerald-500 text-emerald-700 bg-emerald-50 font-medium", needsWarning: false };
+  }
   switch (rating) {
     case "ONGOING":
       return { variant: "outline" as const, label: "Ongoing", className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
@@ -233,7 +236,7 @@ export default function LecturerMyStudentsPage() {
       key: 'thesisRating',
       header: 'Rating',
       render: (row) => {
-        const config = getRatingConfig(row.thesisRating ?? undefined);
+        const config = getRatingConfig(row.thesisRating ?? undefined, row.thesisStatus);
         return (
           <div className="flex items-center gap-2">
             <Badge variant={config.variant} className={cn("whitespace-nowrap", config.className)}>
