@@ -193,8 +193,8 @@ export const useSidebarMenu = () => {
                 icon: FileText,
                 items: [
                   { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                  { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-                  { title: "Sidang", url: "/tugas-akhir/sidang" },
+                  { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+                  { title: "Sidang TA", url: "/tugas-akhir/sidang" },
                 ],
               } as SidebarNavItem,
             ]
@@ -299,8 +299,8 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-          { title: "Sidang", url: "/tugas-akhir/sidang" },
+          { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+          { title: "Sidang TA", url: "/tugas-akhir/sidang" },
         ],
       });
 
@@ -365,7 +365,7 @@ export const useSidebarMenu = () => {
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
           { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-          { title: "Sidang", url: "/tugas-akhir/sidang" },
+          { title: "Sidang TA", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
       });
@@ -454,8 +454,8 @@ export const useSidebarMenu = () => {
           ...(role.pembimbing
             ? [
                 { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-                { title: "Sidang", url: "/tugas-akhir/sidang" },
+                { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+                { title: "Sidang TA", url: "/tugas-akhir/sidang" },
               ]
             : []),
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
@@ -480,7 +480,6 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
-          { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "Kelola Data CPL", url: "/kelola/cpl" },
@@ -543,8 +542,8 @@ export const useSidebarMenu = () => {
           icon: FileText,
           items: [
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-            { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-            { title: "Sidang", url: "/tugas-akhir/sidang" },
+            { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+            { title: "Sidang TA", url: "/tugas-akhir/sidang" },
           ],
         });
       }
@@ -622,8 +621,8 @@ export const useSidebarMenu = () => {
             url: "#",
             icon: FileText,
             items: [
-              { title: "Penjadwalan Seminar", url: "/tugas-akhir/seminar-hasil" },
-              { title: "Penjadwalan Sidang", url: "/tugas-akhir/sidang" },
+              { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+              { title: "Sidang TA", url: "/tugas-akhir/sidang" },
             ],
           },
           {

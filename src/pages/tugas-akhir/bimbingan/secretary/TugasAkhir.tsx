@@ -13,10 +13,10 @@ import { DefenceRequirementManagementPanel } from "@/components/master-data/defe
 /** Master TA penuh (seminar/sidang). CPMK+rubrik Metopen ada di /kelola/metopen/cpmk-rubrik. */
 const TAB_ITEMS: TabItem[] = [
   { label: "Kelola Topik", to: "/kelola/tugas-akhir/topik" },
-  { label: "Kelola CPMK Seminar & Sidang", to: "/kelola/tugas-akhir/cpmk" },
+  { label: "Data Master Tugas Akhir", to: "/kelola/tugas-akhir/master-data" },
+  { label: "Kelola CPMK", to: "/kelola/tugas-akhir/cpmk" },
   { label: "Kelola Rubrik Seminar", to: "/kelola/tugas-akhir/rubrik-seminar" },
   { label: "Kelola Rubrik Sidang", to: "/kelola/tugas-akhir/rubrik-sidang" },
-  { label: "Data Master Tugas Akhir", to: "/kelola/tugas-akhir/master-data" },
   { label: "Kelola Syarat Seminar", to: "/kelola/tugas-akhir/syarat-seminar" },
   { label: "Kelola Syarat Sidang", to: "/kelola/tugas-akhir/syarat-sidang" }
 ];
@@ -56,7 +56,7 @@ export default function KelolaTugasAkhirPage() {
       return <DataMasterTaPanel />;
     }
 
-    if (activeTab.label === "Kelola CPMK Seminar & Sidang") {
+    if (activeTab.label === "Kelola CPMK") {
       return <CpmkManagementPanel />;
     }
 
@@ -88,8 +88,8 @@ export default function KelolaTugasAkhirPage() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Kelola Tugas Akhir</h1>
-          <p className="text-xs text-muted-foreground sm:text-sm">
+          <h1 className="text-2xl font-bold">Kelola Tugas Akhir</h1>
+          <p className="text-muted-foreground">
             Manajemen topik, CPMK seminar/sidang, rubrik seminar/sidang, dan data master tugas akhir.
             CPMK serta rubrik Metode Penelitian (TA-03) dikelola di menu Metode Penelitian.
           </p>
