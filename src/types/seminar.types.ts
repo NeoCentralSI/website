@@ -34,8 +34,7 @@ export interface SeminarChecklist {
 
 export interface SeminarDocument {
   thesisSeminarId: string;
-  documentTypeId: string;
-  documentId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   submittedAt: string;
   verifiedAt: string | null;
@@ -43,6 +42,46 @@ export interface SeminarDocument {
   verifiedBy?: string | null;
   fileName?: string | null;
   filePath?: string | null;
+}
+
+
+export interface SeminarRequirementDocument {
+  thesisSeminarId: string;
+  requirementId: string;
+  status: DocumentSubmitStatus;
+  submittedAt: string;
+  verifiedAt: string | null;
+  notes: string | null;
+  verifiedBy: string | null;
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  fileSize: number;
+}
+
+export interface SeminarRequirement {
+  id: string;
+  name: string;
+  description: string | null;
+  displayOrder: number;
+  document: SeminarRequirementDocument | null;
+}
+
+export interface SeminarRequirementConfiguration {
+  isConfigured: boolean;
+  message: string | null;
+}
+
+export interface SeminarUploadConfig {
+  accept: string[];
+  maxFileSizeBytes: number;
+  maxFileSizeMb: number;
+}
+
+export interface SeminarRequirementsResponse {
+  seminarId: string;
+  requirements: SeminarRequirement[];
+  uploadConfig: SeminarUploadConfig;
 }
 
 export interface AdminSeminarDocumentSummary {
@@ -117,6 +156,9 @@ export interface SeminarOverviewResponse {
   allChecklistMet: boolean;
   milestones: SeminarMilestone[];
   canUpload: boolean;
+  requirements: SeminarRequirement[];
+  requirementConfiguration: SeminarRequirementConfiguration;
+  uploadConfig: SeminarUploadConfig;
   seminar: SeminarInfo | null;
 }
 
@@ -176,8 +218,7 @@ export interface AdminSeminarListItem {
 }
 
 export interface AdminSeminarDocumentDetail {
-  documentTypeId: string;
-  documentId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   submittedAt: string;
   verifiedAt: string | null;
@@ -236,7 +277,7 @@ export interface VerifyDocumentPayload {
 }
 
 export interface VerifyDocumentResponse {
-  documentTypeId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   seminarTransitioned: boolean;
   newSeminarStatus: ThesisSeminarStatus;
@@ -494,6 +535,7 @@ export interface ExaminerAssessmentFormResponse {
     assessmentSubmittedAt: string | null;
   };
   criteriaGroups: SeminarAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface SubmitExaminerAssessmentPayload {
@@ -551,6 +593,8 @@ export interface SupervisorFinalizationDataResponse {
   averageScore: number | null;
   averageGrade: string | null;
   recommendationUnlocked: boolean;
+  criteriaGroups: SeminarAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface FinalizeSeminarPayload {

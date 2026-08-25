@@ -81,6 +81,7 @@ export function StudentThesisSeminarChecklistRequirementsCard({ checklist }: Che
           label={checklist.pembimbing.label}
           met={checklist.pembimbing.met}
         />
+
       </div>
     </div>
   );

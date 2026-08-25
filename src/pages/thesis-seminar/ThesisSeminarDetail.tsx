@@ -25,8 +25,8 @@ export default function ThesisSeminarDetailPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { isStudent, isAdmin, isKadep } = useRole();
   const { user } = useAuth();
-  const { hasTugasAkhirCourse } = useStudentEligibility();
-  const studentTaParentHref = hasTugasAkhirCourse ? '/tugas-akhir' : '/metopel';
+  const { canAccessTugasAkhir } = useStudentEligibility();
+  const studentTaParentHref = canAccessTugasAkhir ? '/tugas-akhir' : '/metopel';
 
   const _isStudent = isStudent();
   const _isKadep = isKadep();
@@ -94,7 +94,7 @@ export default function ThesisSeminarDetailPage() {
   const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
   const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
-  const showScheduling = isUserAdmin && !['registered', 'verified'].includes(d.status);
+  const showScheduling = isUserAdmin && !d.isArchive && !['registered', 'verified'].includes(d.status);
 
   const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
   const isAssessmentFinalized = allowedAssessmentStatuses.includes(d?.status);
@@ -120,7 +120,7 @@ export default function ThesisSeminarDetailPage() {
     if (isUserExaminer || isUserSupervisor || isUserAdmin || _isKadep) {
       showAssessment = true;
     }
-  } else if (isAssessmentFinalized) {
+  } else if (isAssessmentFinalized && !d.isArchive) {
     if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor || _isKadep) {
       showAssessment = true;
     }

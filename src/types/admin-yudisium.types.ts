@@ -21,6 +21,10 @@ export type AdminYudisiumParticipant = {
   id: string;
   status: string;
   registeredAt: string | null;
+  requirementVerifiedAt?: string | null;
+  cplValidatedAt?: string | null;
+  isRequirementVerified?: boolean;
+  isCplValidated?: boolean;
   notes: string | null;
   studentName: string;
   studentNim: string;
@@ -103,7 +107,7 @@ export type VerifyDocumentResponse = {
 
 export type CplScoreItem = {
   cplId: string;
-  code: string | null;
+  code: string;
   description: string;
   score: number | null;
   oldScore: number | null;

@@ -128,7 +128,7 @@ export function GuidanceTimeline({
             {groupItems.length} Sesi
           </Badge>
         </div>
-        
+
         <div className="space-y-4">
           {groupItems.map((item, index) => {
             const status = (item as any).status || 'completed'; // CompletedHistory might not have status field if it's implicitly completed, but it does in some APIs. Let's default to completed.
@@ -137,7 +137,7 @@ export function GuidanceTimeline({
             const canReschedule = isActive && status === 'accepted' && onReschedule;
             const canCancel = isActive && (status === 'requested' || status === 'accepted') && onCancel;
             const canExport = (status === 'completed' || status === 'summary_pending') && onExport;
-            
+
             return (
               <div key={item.id} className="relative flex gap-4 items-start group">
                 <div className="relative flex flex-col items-center mt-1">
@@ -146,7 +146,7 @@ export function GuidanceTimeline({
                     <div className="absolute top-7 bottom-[-1.5rem] w-0.5 bg-border z-0" />
                   )}
                 </div>
-                
+
                 <Card className={cn(
                   "flex-1 transition-all hover:shadow-md",
                   selectedIds?.has(item.id) && "ring-2 ring-primary/60 border-primary"
@@ -181,7 +181,7 @@ export function GuidanceTimeline({
                               </div>
                             )}
                           </div>
-                          
+
                           {(item.sessionSummary || item.studentNotes) && (
                             <div className="mt-2 text-sm bg-muted/50 p-2.5 rounded-md border text-muted-foreground">
                               <p className="line-clamp-2">
@@ -192,7 +192,7 @@ export function GuidanceTimeline({
                               </p>
                             </div>
                           )}
-                          
+
                           {item.milestoneName && (
                             <div className="mt-2 text-xs font-medium text-primary bg-primary/10 inline-flex px-2 py-1 rounded">
                               Milestone: {item.milestoneName}
@@ -200,7 +200,7 @@ export function GuidanceTimeline({
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="flex sm:flex-col gap-2 items-end justify-start sm:justify-center">
                         {isActive && (status === 'accepted' || status === 'summary_pending' || status === 'completed') && onViewDetail && (
                           <Button variant="secondary" size="sm" onClick={() => onViewDetail(item.id)} className="w-full sm:w-auto">

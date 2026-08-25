@@ -7,6 +7,7 @@ import {
   SquareTerminal,
   Wrench,
   GraduationCap,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 import { useMemo } from "react";
@@ -15,6 +16,7 @@ import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useAdvisorAccessState } from "./useAdvisorAccessState";
 import { useStudentEligibility } from "./useStudentEligibility";
+import { isMetopenArchiveMode } from "@/lib/metopelArchive";
 import { ENV } from "@/config/env";
 
 type SidebarLeafItem = { title: string; url: string };
@@ -24,6 +26,28 @@ type SidebarNavItem = {
   icon: LucideIcon;
   items: SidebarLeafItem[];
   isActive?: boolean;
+};
+
+const buildAnnouncementMenu = (): SidebarNavItem => ({
+  title: "Pengumuman",
+  url: "/pengumuman/seminar-hasil",
+  icon: Megaphone,
+  items: [
+    { title: "Seminar Hasil", url: "/pengumuman/seminar-hasil" },
+    { title: "Yudisium", url: "/pengumuman/yudisium" },
+  ],
+});
+
+const appendSharedEventMenus = (items: SidebarNavItem[]) => {
+  items.push(
+    {
+      title: "Yudisium",
+      url: "/yudisium",
+      icon: GraduationCap,
+      items: [],
+    },
+    buildAnnouncementMenu(),
+  );
 };
 
 export const useSidebarMenu = () => {
@@ -41,9 +65,17 @@ export const useSidebarMenu = () => {
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
   const isStudentUser = Boolean(authUser?.id) && isStudentRole;
-  const { canAccessMetopel, isMetopenReadOnly, hasTugasAkhirCourse, isMetopenOnlyTrack } =
+  const { canAccessMetopel, canAccessTugasAkhir, hasTugasAkhirCourse, isMetopenOnlyTrack } =
     useStudentEligibility();
   const { data: advisorAccess } = useAdvisorAccessState(isStudentUser && canAccessMetopel);
+  const isMetopenArchive = isMetopenArchiveMode({
+    isMetopenArchive: advisorAccess?.isMetopenArchive,
+    hasTakenMetopen: advisorAccess?.hasTakenMetopen,
+    takingThesisCourse: advisorAccess?.takingThesisCourse,
+    metopenReadOnly: advisorAccess?.metopenReadOnly,
+    requestStatus: advisorAccess?.requestStatus,
+    latestRequestStatus: advisorAccess?.latestRequest?.status,
+  });
 
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
@@ -145,7 +177,7 @@ export const useSidebarMenu = () => {
         // Kerja Praktik
         {
           title: "Kerja Praktik",
-          url: "/kerja-praktik",
+          url: "#",
           icon: Briefcase,
           items: [
             { title: "Pendaftaran", url: "/kerja-praktik/pendaftaran" },
@@ -153,16 +185,16 @@ export const useSidebarMenu = () => {
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
-        ...(hasTugasAkhirCourse
+        ...(canAccessTugasAkhir
           ? [
               {
                 title: "Tugas Akhir",
-                url: "/tugas-akhir",
+                url: "#",
                 icon: FileText,
                 items: [
                   { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                  { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-                  { title: "Sidang", url: "/tugas-akhir/sidang" },
+                  { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+                  { title: "Sidang TA", url: "/tugas-akhir/sidang" },
                 ],
               } as SidebarNavItem,
             ]
@@ -174,13 +206,19 @@ export const useSidebarMenu = () => {
           icon: GraduationCap,
           items: [],
         },
+        buildAnnouncementMenu(),
+        {
+          title: "Repositori",
+          url: "/repositori",
+          icon: Database,
+          items: [],
+        },
       ];
 
-      if (canAccessMetopel) {
-        const isArchive = advisorAccess?.requestStatus === "active_official";
+      if (canAccessMetopel || canAccessTugasAkhir) {
         const metopenItems = [{ title: "Ringkasan", url: "/metopel" }];
         const canOpenAdvisorSearch =
-          !isArchive &&
+          !isMetopenArchive &&
           !(advisorAccess?.hasOfficialSupervisor ?? false) &&
           (Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest));
 
@@ -190,23 +228,21 @@ export const useSidebarMenu = () => {
 
         const showMetopenProposal =
           isMetopenOnlyTrack &&
-          (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+          (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenArchive);
         const showMetopenInformalLogbook =
           isMetopenOnlyTrack &&
-          (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenReadOnly);
+          (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenArchive);
         if (showMetopenProposal) {
           metopenItems.push({ title: "Proposal", url: "/metopel/proposal" });
         }
         if (showMetopenInformalLogbook) {
           metopenItems.push({ title: "Catatan informal", url: "/metopel/logbook" });
         }
-        
-        // Selalu tampilkan Stepper (Alur Proposal)
         metopenItems.push({ title: "Alur Proposal", url: "/metopel/arsip" });
 
         studentNav.splice(2, 0, {
-          title: isArchive ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
-          url: "/metopel",
+          title: isMetopenArchive ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
+          url: "#",
           icon: BookOpen,
           items: metopenItems,
         });
@@ -263,10 +299,12 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-          { title: "Sidang", url: "/tugas-akhir/sidang" },
+          { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+          { title: "Sidang TA", url: "/tugas-akhir/sidang" },
         ],
       });
+
+      appendSharedEventMenus(menuItems);
 
       // Jadwal Ketersediaan — leaf item
       menuItems.push({
@@ -327,10 +365,12 @@ export const useSidebarMenu = () => {
         items: [
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
           { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-          { title: "Sidang", url: "/tugas-akhir/sidang" },
+          { title: "Sidang TA", url: "/tugas-akhir/sidang" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
       });
+
+      appendSharedEventMenus(menuItems);
 
       // Jadwal Ketersediaan — leaf item
       menuItems.push({
@@ -384,10 +424,14 @@ export const useSidebarMenu = () => {
           title: "Kerja Praktik",
           url: "#",
           icon: Briefcase,
+          // "Seminar & Nilai" dihapus: /kelola/kerja-praktik/pendaftaran tidak
+          // terdaftar di App.tsx sehingga menghasilkan halaman kosong. Seminar dan
+          // nilai KP hanya ada sebagai tab per mahasiswa di bawah
+          // /kelola/kerja-praktik/mahasiswa/:internshipId, yang tetap dapat
+          // dicapai lewat menu Kelola > Kerja Praktik.
           items: [
             { title: "Monitoring", url: "/kerja-praktik/monitoring" },
             { title: "Bimbingan", url: "/kelola/kerja-praktik/bimbingan" },
-            { title: "Seminar & Nilai", url: "/kelola/kerja-praktik/pendaftaran" },
           ],
         },
       ];
@@ -410,13 +454,15 @@ export const useSidebarMenu = () => {
           ...(role.pembimbing
             ? [
                 { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-                { title: "Sidang", url: "/tugas-akhir/sidang" },
+                { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+                { title: "Sidang TA", url: "/tugas-akhir/sidang" },
               ]
             : []),
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
       });
+
+      appendSharedEventMenus(menuItems);
 
       // Jadwal Ketersediaan — leaf item
       menuItems.push({
@@ -434,7 +480,6 @@ export const useSidebarMenu = () => {
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
-          { title: "Yudisium", url: "/kelola/yudisium" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "Kelola Data CPL", url: "/kelola/cpl" },
@@ -497,11 +542,19 @@ export const useSidebarMenu = () => {
           icon: FileText,
           items: [
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-            { title: "Seminar", url: "/tugas-akhir/seminar-hasil" },
-            { title: "Sidang", url: "/tugas-akhir/sidang" },
+            { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+            { title: "Sidang TA", url: "/tugas-akhir/sidang" },
           ],
         });
       }
+
+      appendSharedEventMenus(menuItems);
+      menuItems.push({
+        title: "Kelola",
+        url: "#",
+        icon: Database,
+        items: [{ title: "Kelola Data CPL", url: "/kelola/cpl" }],
+      });
 
       // Jadwal Ketersediaan — leaf item
       menuItems.push({
@@ -568,10 +621,17 @@ export const useSidebarMenu = () => {
             url: "#",
             icon: FileText,
             items: [
-              { title: "Penjadwalan Seminar", url: "/tugas-akhir/seminar-hasil" },
-              { title: "Penjadwalan Sidang", url: "/tugas-akhir/sidang/admin" },
+              { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+              { title: "Sidang TA", url: "/tugas-akhir/sidang" },
             ],
           },
+          {
+            title: "Yudisium",
+            url: "/yudisium",
+            icon: GraduationCap,
+            items: [],
+          },
+          buildAnnouncementMenu(),
           {
             title: "Master Data",
             url: "#",
@@ -596,6 +656,14 @@ export const useSidebarMenu = () => {
               {
                 title: "Kelola Tahun Ajaran",
                 url: "/master-data/tahun-ajaran",
+              },
+              {
+                title: "Kelola Ruangan",
+                url: "/master-data/ruangan",
+              },
+              {
+                title: "Data Hari Libur",
+                url: "/master-data/hari-libur",
               },
               {
                 title: "Kuota Bimbingan",
@@ -648,9 +716,13 @@ export const useSidebarMenu = () => {
     advisorAccess?.hasBlockingRequest,
     advisorAccess?.hasBookedSupervisor,
     advisorAccess?.hasOfficialSupervisor,
-    advisorAccess?.requestStatus,
+    advisorAccess?.isMetopenArchive,
+    advisorAccess?.hasTakenMetopen,
+    advisorAccess?.takingThesisCourse,
+    advisorAccess?.metopenReadOnly,
     canAccessMetopel,
-    isMetopenReadOnly,
+    canAccessTugasAkhir,
+    isMetopenArchive,
     hasTugasAkhirCourse,
     isMetopenOnlyTrack,
   ]);

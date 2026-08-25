@@ -29,6 +29,7 @@ interface ThesisCpmkTableProps {
     extraActions?: React.ReactNode;
     onCopyTemplate?: () => void;
     isCopyingTemplate?: boolean;
+    actionsDisabled?: boolean;
 }
 
 export function ThesisCpmkTable({
@@ -43,6 +44,7 @@ export function ThesisCpmkTable({
     extraActions,
     onCopyTemplate,
     isCopyingTemplate = false,
+    actionsDisabled = false,
 }: ThesisCpmkTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [editItem, setEditItem] = useState<ThesisCpmk | null>(null);
@@ -160,7 +162,7 @@ export function ThesisCpmkTable({
                                 variant="outline"
                                 size="sm"
                                 onClick={onCopyTemplate}
-                                disabled={isCopyingTemplate}
+                                disabled={isCopyingTemplate || actionsDisabled}
                             >
                                 {isCopyingTemplate ? (
                                     <>
@@ -172,7 +174,7 @@ export function ThesisCpmkTable({
                                 )}
                             </Button>
                         )}
-                        <Button variant="outline" size="sm" onClick={onCreate}>
+                        <Button variant="outline" size="sm" onClick={onCreate} disabled={actionsDisabled}>
                             <Plus className="mr-2 h-4 w-4" /> Tambah
                         </Button>
                         <RefreshButton

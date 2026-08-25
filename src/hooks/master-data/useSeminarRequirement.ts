@@ -76,7 +76,8 @@ export function useSeminarRequirement(academicYearId?: string) {
         update: updateMutation.mutateAsync,
         remove: deleteMutation.mutateAsync,
         reorder: async (orderedIds: string[]) => {
-            await reorderSeminarRequirements(orderedIds);
+            if (!academicYearId) return;
+            await reorderSeminarRequirements(academicYearId, orderedIds);
             refetch();
         },
         isCreating: createMutation.isPending,

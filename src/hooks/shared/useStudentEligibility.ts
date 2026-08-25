@@ -17,6 +17,7 @@ interface EligibilityResult {
   isLoading: boolean;
   sks: number;
   hasTugasAkhirCourse: boolean;
+  hasExistingThesis: boolean;
   canAccessKerjaPraktek: boolean;
   canAccessTugasAkhir: boolean;
   canAccessMetopel: boolean;
@@ -59,25 +60,30 @@ export function useStudentEligibility(): EligibilityResult {
       : typeof authUser?.student?.takingThesisCourse === "boolean"
         ? authUser.student.takingThesisCourse
         : null;
-  const hasTugasAkhirCourse =
-    takingThesisCourseFromBackend === true ||
-    metopelEligibility?.canAccessTugasAkhir === true ||
-    metopelEligibility?.hasThesisRecord === true ||
-    metopelEligibility?.hasThesisPassed === true ||
-    authUser?.student?.status === "graduated";
+  const hasTugasAkhirCourse = takingThesisCourseFromBackend === true;
+  const hasExistingThesis = Boolean(
+    metopelEligibility?.thesisId ||
+    metopelEligibility?.hasThesisRecord ||
+    metopelEligibility?.hasThesisPassed
+  );
 
   const canAccessMetopel = metopelEligibility?.canAccess ?? false;
   const isMetopenReadOnly =
     metopelEligibility?.readOnly ?? metopelEligibility?.thesisPhase === "thesis";
-  const isMetopenOnlyTrack = canAccessMetopel && !hasTugasAkhirCourse;
+  const canAccessTugasAkhir =
+    hasTugasAkhirCourse ||
+    metopelEligibility?.canAccessTugasAkhir === true ||
+    hasExistingThesis ||
+    authUser?.student?.status === "lulus";
+  const isMetopenOnlyTrack = canAccessMetopel && !canAccessTugasAkhir;
 
   const canAccessKerjaPraktek = sks >= 90;
-  const canAccessTugasAkhir = hasTugasAkhirCourse;
 
   return {
     isLoading: metopelLoading,
     sks,
     hasTugasAkhirCourse,
+    hasExistingThesis,
     canAccessKerjaPraktek,
     canAccessTugasAkhir,
     canAccessMetopel,
@@ -88,14 +94,17 @@ export function useStudentEligibility(): EligibilityResult {
         sks: { met: sks >= 90, current: sks, required: 90 },
       },
       tugasAkhir: {
-        // BR-25 / anti-pattern #8 (audit F-0.2): gate Tugas Akhir = snapshot SIA
-        // MK Tugas Akhir, BUKAN SKS hard-code. Objek `sks`/`module` lama dihapus
-        // sebagai dead code agar tidak tersambung kembali sebagai gate.
+        // Snapshot SIA tetap menjadi sumber utama. Data thesis yang sudah ada
+        // menjadi fallback kompatibilitas bagi mahasiswa hasil migrasi.
         course: {
-          met: hasTugasAkhirCourse,
+          met: canAccessTugasAkhir,
           description: hasTugasAkhirCourse
             ? "Snapshot SIA mencatat Anda mengambil mata kuliah Tugas Akhir"
-            : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
+            : hasExistingThesis
+              ? "Data tugas akhir mahasiswa sudah tersedia pada sistem"
+              : canAccessTugasAkhir
+                ? "Backend mengonfirmasi akses mahasiswa ke Tugas Akhir"
+                : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
         },
       },
       metopel: {

@@ -53,6 +53,17 @@ const QuestionPreview = ({ question, globalIndex }: { question: any; globalIndex
           />
         )}
 
+        {question.questionType === 'number' && (
+          <div className="space-y-1">
+            <input
+              type="number"
+              disabled
+              placeholder="Jawaban berupa angka"
+              className="w-full bg-transparent border-0 border-b border-border/60 rounded-none px-0 py-1.5 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary transition-colors cursor-default"
+            />
+          </div>
+        )}
+
         {question.questionType === 'date' && (
           <DatePicker
             disabled

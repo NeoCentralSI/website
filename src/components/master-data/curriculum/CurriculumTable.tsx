@@ -144,7 +144,11 @@ export function CurriculumTable({
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
                             onClick={() => onUpdate(item.id)}
-                            title="Edit"
+                            title={
+                                item.hasRelatedScores
+                                    ? 'Edit nama kurikulum; tahun berlaku sudah dikunci karena memiliki nilai mahasiswa'
+                                    : 'Edit kurikulum'
+                            }
                         >
                             <Edit2 className="h-4 w-4" />
                         </Button>
@@ -155,8 +159,12 @@ export function CurriculumTable({
                             size="icon"
                             className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => setDeleteId(item.id)}
-                            disabled={isDeleting || item.cplCount > 0}
-                            title={item.cplCount > 0 ? 'Kurikulum dengan CPL tidak dapat dihapus' : 'Hapus'}
+                            disabled={isDeleting || item.hasRelatedScores}
+                            title={
+                                item.hasRelatedScores
+                                    ? 'Kurikulum tidak dapat dihapus karena CPL memiliki nilai mahasiswa'
+                                    : 'Hapus'
+                            }
                         >
                             <Trash2 className="h-4 w-4" />
                         </Button>
@@ -201,8 +209,8 @@ export function CurriculumTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Kurikulum?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Tindakan ini tidak dapat dibatalkan, data kurikulum akan dihapus permanen
-                            Kurikulum yang sudah memiliki CPL tidak dapat dihapus
+                            Tindakan ini tidak dapat dibatalkan. Kurikulum dan seluruh CPL
+                            yang belum memiliki nilai mahasiswa akan dihapus permanen.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

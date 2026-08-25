@@ -15,7 +15,7 @@ import { MilestoneFormDialog, TemplateSelectorDialog } from "@/components/milest
 
 export default function StudentMilestoneManagement() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  
+
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);

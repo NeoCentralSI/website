@@ -17,8 +17,8 @@ export default function StudentThesisSeminar() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'ringkasan';
-  const { hasTugasAkhirCourse } = useStudentEligibility();
-  const studentTaParentHref = hasTugasAkhirCourse ? '/tugas-akhir' : '/metopel';
+  const { canAccessTugasAkhir } = useStudentEligibility();
+  const studentTaParentHref = canAccessTugasAkhir ? '/tugas-akhir' : '/metopel';
 
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true });

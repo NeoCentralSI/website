@@ -25,10 +25,12 @@ export interface YudisiumEvent {
   status: YudisiumStatus;
   exitSurveyForm: { id: string; name: string } | null;
   decreeDocument?: {
-    id: string;
+    id?: string;
     fileName: string | null;
     filePath: string | null;
   } | null;
+  decreeFilePath?: string | null;
+  decreeFileName?: string | null;
   room: { id: string; name: string } | null;
   requirementItems: YudisiumRequirementItem[];
   participantCount: number;

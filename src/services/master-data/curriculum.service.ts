@@ -7,6 +7,7 @@ export interface Curriculum {
     startYear: number;
     endYear: number | null;
     cplCount: number;
+    hasRelatedScores: boolean;
     createdAt: string;
     updatedAt: string;
 }

@@ -83,12 +83,10 @@ export function CriteriaFormDialog({
 
     const parsed = parseInt(maxScore, 10);
     const effectiveMax = remainingScore != null ? remainingScore : 100;
-    const isValid =
-        isMaxScoreLocked
-            ? true
-            : (maxScore.trim() &&
-                !isNaN(parsed) &&
-                parsed >= 1);
+    const isValid = Boolean(name.trim()) && (
+        isMaxScoreLocked ||
+        (maxScore.trim() && !isNaN(parsed) && parsed >= 1 && parsed <= effectiveMax)
+    );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -104,16 +102,14 @@ export function CriteriaFormDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="criteriaName">Nama Kriteria</Label>
+                        <Label htmlFor="criteriaName">Nama Kriteria <span className="text-destructive">*</span></Label>
                         <Input
                             id="criteriaName"
                             placeholder="Contoh: Kemampuan Analisis"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            required
                         />
-                        <p className="text-xs text-muted-foreground">
-                            Opsional. Biarkan kosong jika tidak diperlukan.
-                        </p>
                     </div>
 
                     <div className="space-y-2">
@@ -143,8 +139,8 @@ export function CriteriaFormDialog({
                             </p>
                         )}
                         {maxScore.trim() && !isNaN(parsed) && parsed > effectiveMax && (
-                            <p className="text-xs text-amber-700">
-                                Skor ({parsed}) melebihi sisa indikator ({effectiveMax}). Ini hanya peringatan.
+                            <p className="text-xs text-destructive">
+                                Skor ({parsed}) melebihi sisa skor yang tersedia ({effectiveMax}).
                             </p>
                         )}
                     </div>

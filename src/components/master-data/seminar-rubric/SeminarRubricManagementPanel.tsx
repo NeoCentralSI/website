@@ -2,12 +2,14 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSeminarRubric } from '@/hooks/master-data/useSeminarRubric';
 import { useThesisCpmk } from '@/hooks/master-data/useThesisCpmk';
-import { getActiveAcademicYearAPI } from '@/services/admin.service';
+import { getAcademicYearsAPI, getActiveAcademicYearAPI } from '@/services/admin.service';
 import { CriteriaTable } from '@/components/master-data/seminar-rubric/CriteriaTable';
 import { CriteriaFormDialog } from '@/components/master-data/seminar-rubric/CriteriaFormDialog';
 import { MinimumScoreDialog } from '@/components/master-data/MinimumScoreDialog';
+import { SeminarRubricPreviewDialog } from '@/components/master-data/seminar-rubric/SeminarRubricPreviewDialog';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Eye, Settings } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Card,
     CardContent,
@@ -22,12 +24,18 @@ import type {
 } from '@/services/master-data/seminar-rubric.service';
 
 export function SeminarRubricManagementPanel() {
-    const { data: activeAcademicYearData } = useQuery({
+    const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string>();
+
+    const { data: academicYearsData, isLoading: isAcademicYearsLoading } = useQuery({
+        queryKey: ['seminar-rubric-academic-years'],
+        queryFn: () => getAcademicYearsAPI({ page: 1, pageSize: 100 }),
+    });
+    const { data: activeAcademicYearData, isLoading: isActiveAcademicYearLoading } = useQuery({
         queryKey: ['seminar-rubric-active-academic-year'],
         queryFn: getActiveAcademicYearAPI,
     });
 
-    const activeAcademicYearId = activeAcademicYearData?.academicYear?.id;
+    const effectiveAcademicYearId = selectedAcademicYearId || activeAcademicYearData?.academicYear?.id;
     const {
         cpmks,
         weightSummary,
@@ -48,14 +56,15 @@ export function SeminarRubricManagementPanel() {
         isRemovingCpmkConfig,
         updateMinimumScore,
         isUpdatingMinimumScore,
-    } = useSeminarRubric();
+    } = useSeminarRubric(effectiveAcademicYearId);
 
-    const { thesisCpmks: allCpmks } = useThesisCpmk(activeAcademicYearId);
+    const { thesisCpmks: allCpmks } = useThesisCpmk(effectiveAcademicYearId);
 
     const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false);
     const [criteriaTargetCpmk, setCriteriaTargetCpmk] = useState<CpmkWithRubrics | null>(null);
     const [editCriteria, setEditCriteria] = useState<AssessmentCriteria | null>(null);
     const [minScoreDialogOpen, setMinScoreDialogOpen] = useState(false);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const currentTotalScore = weightSummary?.totalScore ?? 0;
     const remainingScore = 100 - currentTotalScore;
@@ -77,7 +86,6 @@ export function SeminarRubricManagementPanel() {
                     id: cpmk.id,
                     code: cpmk.code,
                     description: cpmk.description,
-                    displayOrder: 0,
                     hasAssessmentDetails: false,
                     assessmentCriterias: [],
                 } as CpmkWithRubrics;
@@ -107,9 +115,34 @@ export function SeminarRubricManagementPanel() {
                         <CardDescription>
                             Kelola kriteria dan rubrik penilaian seminar hasil tugas akhir berdasarkan CPMK.
                         </CardDescription>
+                        <div className="mt-3 w-full sm:w-[240px]">
+                            <Select value={effectiveAcademicYearId || ''} onValueChange={setSelectedAcademicYearId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih tahun ajaran" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {(academicYearsData?.academicYears ?? []).map((item) => (
+                                        <SelectItem key={item.id} value={item.id}>
+                                            {(item.semester === 'ganjil' ? 'Ganjil' : 'Genap') + ' ' + (item.year || '')}
+                                            {item.isActive ? ' (Aktif)' : ''}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     
                     <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-fit py-2"
+                            onClick={() => setPreviewOpen(true)}
+                            disabled={!mergedCpmks.some((cpmk) => cpmk.assessmentCriterias.length > 0)}
+                        >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Preview Form Penilaian
+                        </Button>
                         {weightSummary && (
                             <Button 
                                 variant="outline" 
@@ -145,7 +178,7 @@ export function SeminarRubricManagementPanel() {
             <CardContent className="space-y-4">
                 <CriteriaTable
                     data={mergedCpmks}
-                    isLoading={isLoading}
+                    isLoading={isLoading || isAcademicYearsLoading || isActiveAcademicYearLoading}
                     isFetching={isFetching}
                     onRefresh={() => refetch()}
                     onAddCriteria={handleOpenAddCriteria}
@@ -184,10 +217,17 @@ export function SeminarRubricManagementPanel() {
                 onOpenChange={setMinScoreDialogOpen}
                 currentScore={weightSummary?.minimumScore || 0}
                 isLoading={isUpdatingMinimumScore}
-                onSubmit={(score) => updateMinimumScore({ 
-                    academicYearId: activeAcademicYearId, 
-                    minimumScore: score 
-                })}
+                onSubmit={(score) => {
+                    if (effectiveAcademicYearId) {
+                        void updateMinimumScore({ academicYearId: effectiveAcademicYearId, minimumScore: score });
+                    }
+                }}
+            />
+            <SeminarRubricPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                cpmks={mergedCpmks}
+                minimumPassingScore={weightSummary?.minimumScore ?? 0}
             />
         </Card>
     );

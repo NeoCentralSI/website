@@ -54,7 +54,7 @@ export function ImportStudentDialog({
           if (prev >= 92) return prev; // Hold at 92% until server finishes
           const next = prev + Math.floor(Math.random() * 8) + 4;
           const capped = Math.min(next, 92);
-          
+
           const currentStage = IMPORT_STAGES.find((s) => capped <= s.threshold);
           if (currentStage) {
             setStageText(currentStage.text);
@@ -262,4 +262,3 @@ export function ImportStudentDialog({
     </Dialog>
   );
 }
-

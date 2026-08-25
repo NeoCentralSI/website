@@ -410,9 +410,9 @@ export default function TugasAkhirOverviewPage() {
 
                                         {isSeminarCompleted && thesisId && (
                                             <div className="mt-4">
-                                                <DefenceRequestCard 
-                                                    thesisId={thesisId} 
-                                                    className="mt-0 border-primary/20 bg-primary/5" 
+                                                <DefenceRequestCard
+                                                    thesisId={thesisId}
+                                                    className="mt-0 border-primary/20 bg-primary/5"
                                                 />
                                             </div>
                                         )}

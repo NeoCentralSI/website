@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,12 +12,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { useYudisiumParticipantDetail, useVerifyYudisiumDocument } from '@/hooks/yudisium/useYudisiumParticipants';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
-import { apiRequest } from '@/services/auth.service';
-import { ENV } from '@/config/env';
+import { streamRequirementFile } from '@/services/yudisium/participant.service';
 import { CheckCircle, XCircle, ChevronLeft, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AdminYudisiumParticipant, AdminYudisiumParticipantDocument } from '@/types/admin-yudisium.types';
-import { openProtectedFile } from '@/lib/protected-file';
 
 interface YudisiumVerificationFormDialogProps {
   participant: AdminYudisiumParticipant | null;
@@ -74,21 +73,14 @@ export function YudisiumVerificationFormDialog({
       setPdfBlobUrl(null);
     }
 
-    // Load PDF for current doc
-    const filePath = currentDoc?.document?.filePath;
-    if (!filePath) return;
+    // Load PDF for current doc via protected streaming endpoint
+    const reqId = currentDoc?.requirementId;
+    if (!reqId || !currentDoc?.document) return;
 
     let cancelled = false;
     setPdfLoading(true);
 
-    const normalized = filePath.replace(/^\/+/, '');
-    const fileUrl = `${ENV.API_BASE_URL}/${normalized}`;
-
-    apiRequest(fileUrl)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load PDF');
-        return res.blob();
-      })
+    streamRequirementFile(yudisiumId, participant!.id, reqId)
       .then((blob) => {
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
@@ -105,7 +97,7 @@ export function YudisiumVerificationFormDialog({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDocIndex, currentDoc?.document?.filePath]);
+  }, [activeDocIndex, currentDoc?.requirementId, yudisiumId, participant?.id]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -160,6 +152,9 @@ export function YudisiumVerificationFormDialog({
       <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Verifikasi Dokumen Yudisium</DialogTitle>
+          <DialogDescription className="sr-only">
+            Form verifikasi dokumen pendaftaran yudisium mahasiswa
+          </DialogDescription>
           {detail && (
             <div className="text-sm text-muted-foreground mt-1">
               {toTitleCaseName(detail.studentName)} — {detail.studentNim}
@@ -240,13 +235,16 @@ export function YudisiumVerificationFormDialog({
                   <div className="flex items-center gap-3 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="truncate">{currentDoc.document.fileName || 'File'}</span>
-                    {currentDoc.document.filePath && (
+                    {currentDoc.requirementId && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={async () => {
                           try {
-                            await openProtectedFile(currentDoc.document!.filePath!, currentDoc.document?.fileName || undefined);
+                            const blob = await streamRequirementFile(yudisiumId, participant!.id, currentDoc.requirementId);
+                            const blobUrl = URL.createObjectURL(blob);
+                            window.open(blobUrl, '_blank', 'noopener,noreferrer');
+                            setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
                           } catch (error) {
                             toast.error((error as Error).message || 'Gagal membuka dokumen');
                           }

@@ -382,10 +382,13 @@ export async function exportAdminThesisSeminarArchive() {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.EXPORT));
   if (!response.ok) throw new Error('Gagal mengekspor arsip');
   const blob = await response.blob();
+  const contentDisposition = response.headers.get('content-disposition') || '';
+  const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  const exportDate = new Date().toISOString().slice(0, 10);
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `Arsip_Seminar_${new Date().toISOString().split('T')[0]}.xlsx`;
+  link.download = fileNameMatch?.[1] || `Arsip Seminar Hasil - ${exportDate}.xlsx`;
   document.body.appendChild(link);
   link.click();
   link.remove();

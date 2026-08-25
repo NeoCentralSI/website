@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import * as xlsx from 'xlsx';
-import { Download, FileSpreadsheet, FileUp, RefreshCw, Upload, X } from 'lucide-react';
+import { AlertCircle, Download, FileSpreadsheet, FileUp, RefreshCw, Upload, X } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ export function YudisiumParticipantImportDialog({
 }: YudisiumParticipantImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ArchiveYudisiumParticipantImportResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = () => {
@@ -39,39 +40,45 @@ export function YudisiumParticipantImportDialog({
     const sampleData = [
       {
         No: 1,
-        'Nama Mahasiswa': 'Ayu Pratiwi',
+        'Nama Mahasiswa': 'Mahasiswa Contoh 1',
         NIM: '2111521001',
-        'Judul Tugas Akhir': 'Sistem Informasi Monitoring Akademik',
+        'Judul Tugas Akhir': 'Pembangunan Sistem Informasi Monitoring Akademik',
       },
       {
         No: 2,
-        'Nama Mahasiswa': 'Budi Santoso',
+        'Nama Mahasiswa': 'Mahasiswa Contoh 2',
         NIM: '2111521002',
-        'Judul Tugas Akhir': 'Klasifikasi Data Kelulusan Mahasiswa',
+        'Judul Tugas Akhir': 'Klasifikasi Data Kelulusan Mahasiswa Menggunakan Machine Learning',
       },
     ];
 
     const worksheet = xlsx.utils.json_to_sheet(sampleData, { header: headers });
-    worksheet['!cols'] = [{ wch: 5 }, { wch: 35 }, { wch: 18 }, { wch: 60 }];
+    worksheet['!cols'] = [{ wch: 6 }, { wch: 30 }, { wch: 18 }, { wch: 60 }];
 
     const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, 'Template_Peserta');
-    xlsx.writeFile(workbook, 'Template_Peserta_Yudisium.xlsx');
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Template Import');
+    xlsx.writeFile(workbook, 'template_import_arsip_peserta_yudisium.xlsx');
   };
 
   const reset = () => {
     setFile(null);
     setResult(null);
+    setErrorMessage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async () => {
     if (!file) return;
+    setErrorMessage(null);
     try {
       const importResult = await onImport(file);
       setResult(importResult);
-    } catch {
-      // Error handled by parent/toast
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Gagal mengimpor file Excel. Pastikan format file sesuai template.';
+      setErrorMessage(msg);
     }
   };
 
@@ -83,11 +90,11 @@ export function YudisiumParticipantImportDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Import Peserta Yudisium</DialogTitle>
+          <DialogTitle>Import Arsip Peserta Yudisium</DialogTitle>
           <DialogDescription>
-            Unggah file Excel untuk menambahkan peserta arsip yudisium secara massal.
+            Unggah file Excel untuk mengarsipkan data peserta yudisium secara massal
           </DialogDescription>
         </DialogHeader>
 
@@ -95,7 +102,7 @@ export function YudisiumParticipantImportDialog({
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
               <div className="flex items-center gap-3">
-                <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                <FileSpreadsheet className="h-8 w-8 text-green-600 shrink-0" />
                 <div>
                   <p className="text-sm font-medium">Gunakan template standar</p>
                   <p className="text-xs text-muted-foreground">
@@ -108,32 +115,41 @@ export function YudisiumParticipantImportDialog({
               </Button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="relative">
               <Input
                 type="file"
                 accept=".xlsx,.xls"
                 className="hidden"
                 ref={fileInputRef}
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                onChange={(event) => {
+                  setFile(event.target.files?.[0] ?? null);
+                  setErrorMessage(null);
+                }}
                 disabled={isImporting}
               />
               <Button
                 type="button"
                 variant="outline"
-                className="w-full justify-start text-muted-foreground font-normal"
+                className="w-full justify-start gap-2 overflow-hidden pr-12 text-muted-foreground font-normal"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isImporting}
               >
-                <FileUp className="mr-2 h-4 w-4" />
-                {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
+                <FileUp className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
+                </span>
               </Button>
               {file && !isImporting && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
+                  className="absolute right-1 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Hapus file terpilih"
+                  title="Hapus file terpilih"
                   onClick={() => {
                     setFile(null);
+                    setErrorMessage(null);
                     if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
                 >
@@ -142,12 +158,22 @@ export function YudisiumParticipantImportDialog({
               )}
             </div>
 
+            {errorMessage && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <AlertTitle>Format File Tidak Sesuai</AlertTitle>
+                <AlertDescription className="text-xs leading-relaxed mt-1">
+                  {errorMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {isImporting && (
               <Alert>
-                <Upload className="h-4 w-4 animate-bounce text-blue-600" />
+                <Upload className="h-4 w-4 animate-bounce text-blue-600 shrink-0" />
                 <AlertTitle>Sedang memproses...</AlertTitle>
-                <AlertDescription>
-                  Sistem sedang memvalidasi peserta, NIM, dan data Tugas Akhir.
+                <AlertDescription className="text-xs">
+                  Sistem sedang memvalidasi data peserta, NIM, dan Tugas Akhir.
                 </AlertDescription>
               </Alert>
             )}
@@ -170,8 +196,8 @@ export function YudisiumParticipantImportDialog({
             </div>
 
             {result.failedRows.length > 0 && (
-              <ScrollArea className="h-52 rounded border p-3">
-                <div className="space-y-2">
+              <ScrollArea className="h-44 rounded border p-3">
+                <div className="space-y-1">
                   {result.failedRows.map((row, index) => (
                     <p key={`${row.row}-${index}`} className="text-xs text-red-600">
                       Baris {row.row}: {row.error}

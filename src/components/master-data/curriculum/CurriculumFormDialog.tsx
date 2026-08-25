@@ -19,14 +19,15 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { LockKeyhole } from 'lucide-react';
 import type { Curriculum, CreateCurriculumPayload, UpdateCurriculumPayload } from '@/services/master-data/curriculum.service';
 
 const curriculumSchema = z.object({
-    name: z.string().min(1, 'Nama kurikulum wajib diisi'),
-    startYear: z.coerce.number().min(2000, 'Tahun mulai tidak valid'),
-    endYear: z.coerce.number().optional().nullable(),
+    name: z.string().trim().min(1, 'Nama kurikulum wajib diisi').max(255, 'Nama kurikulum maksimal 255 karakter'),
+    startYear: z.number().int('Tahun mulai harus berupa angka tahun').min(2000, 'Tahun mulai tidak valid'),
+    endYear: z.number().int('Tahun akhir harus berupa angka tahun').min(2000, 'Tahun akhir tidak valid').optional().nullable(),
 }).refine((data) => {
-    if (data.endYear) {
+    if (data.endYear !== null && data.endYear !== undefined) {
         return data.endYear >= data.startYear;
     }
     return true;
@@ -35,7 +36,7 @@ const curriculumSchema = z.object({
     path: ["endYear"],
 });
 
-// type CurriculumFormValues = z.infer<typeof curriculumSchema>;
+type CurriculumFormValues = z.infer<typeof curriculumSchema>;
 
 interface CurriculumFormDialogProps {
     open: boolean;
@@ -51,9 +52,9 @@ export function CurriculumFormDialog({
     onSubmit,
 }: CurriculumFormDialogProps) {
     const isEditing = !!initialData;
-    const hasCpl = isEditing && (initialData.cplCount > 0);
+    const yearFieldsLocked = isEditing && Boolean(initialData?.hasRelatedScores);
 
-    const form = useForm<any>({
+    const form = useForm<CurriculumFormValues>({
         resolver: zodResolver(curriculumSchema),
         defaultValues: {
             name: '',
@@ -80,9 +81,9 @@ export function CurriculumFormDialog({
         }
     }, [open, initialData, form]);
 
-    const handleSubmit = async (values: any) => {
+    const handleSubmit = async (values: CurriculumFormValues) => {
         try {
-            await onSubmit(values as CreateCurriculumPayload);
+            await onSubmit(yearFieldsLocked ? { name: values.name } : values);
             onOpenChange(false);
         } catch {
             // Error is handled by mutation
@@ -104,7 +105,7 @@ export function CurriculumFormDialog({
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                         <FormField
-                            control={form.control as any}
+                            control={form.control}
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
@@ -119,20 +120,28 @@ export function CurriculumFormDialog({
 
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
-                                control={form.control as any}
+                                control={form.control}
                                 name="startYear"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Tahun Mulai</FormLabel>
                                         <FormControl>
-                                            <Input type="number" disabled={hasCpl} {...field} />
+                                            <Input
+                                                type="number"
+                                                value={field.value}
+                                                onChange={(event) => field.onChange(Number(event.target.value))}
+                                                onBlur={field.onBlur}
+                                                name={field.name}
+                                                ref={field.ref}
+                                                disabled={yearFieldsLocked}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
                             <FormField
-                                control={form.control as any}
+                                control={form.control}
                                 name="endYear"
                                 render={({ field: { value, onChange, ...field } }) => (
                                     <FormItem>
@@ -143,7 +152,7 @@ export function CurriculumFormDialog({
                                                 value={value || ''}
                                                 onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
                                                 placeholder="Kosongkan jika masih berlaku"
-                                                disabled={hasCpl}
+                                                disabled={yearFieldsLocked}
                                                 {...field}
                                             />
                                         </FormControl>
@@ -152,6 +161,15 @@ export function CurriculumFormDialog({
                                 )}
                             />
                         </div>
+
+                        {yearFieldsLocked && (
+                            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                                <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0" />
+                                <p>
+                                    Tahun berlaku dikunci karena CPL pada kurikulum ini sudah memiliki nilai mahasiswa. Nama kurikulum masih dapat diubah.
+                                </p>
+                            </div>
+                        )}
 
                         <div className="flex justify-end gap-2 pt-4">
                             <Button

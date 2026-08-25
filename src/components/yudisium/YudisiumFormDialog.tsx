@@ -21,11 +21,12 @@ import {
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
-import { Eye, FileText, FileUp, X } from 'lucide-react';
+import { Eye, FileText, Upload, X } from 'lucide-react';
 import { getExitSurveyForms } from '@/services/yudisium/exit-survey.service';
 import { getYudisiumRequirements } from '@/services/yudisium/requirement.service';
 import { toast } from 'sonner';
 import { openProtectedFile } from '@/lib/protected-file';
+import { truncateFileName } from '@/lib/text';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import type { YudisiumRequirement } from '@/services/yudisium/requirement.service';
 import type {
@@ -169,14 +170,18 @@ export function YudisiumFormDialog({
 	const isCompletedActive = isActiveYudisium && editData?.status === 'completed';
 	const hasAppointedParticipants = !!editData?.appointedAt;
 
+	const existingDecreePath = editData?.decreeDocument?.filePath || editData?.decreeFilePath;
+	const existingDecreeName = editData?.decreeDocument?.fileName || editData?.decreeFileName;
+
 	const canEditName = !isCompletedActive;
 	const canEditNotes = isArchiveYudisium || !isCompletedActive;
 	const canEditOpenDate = !isEdit || isDraft;
 	const canEditCloseDate = !isEdit || isDraft || (isOpen && !hasAppointedParticipants);
 	const canEditSchedule = !isEdit || isArchiveYudisium || (isActiveYudisium && !isCompletedActive && !hasAppointedParticipants);
 	const canEditSetup = !isEdit || isDraft;
-	const canUploadDecree = isEdit && hasAppointedParticipants;
-	const showDecreeUpload = canUploadDecree || !!editData?.decreeDocument?.filePath;
+	const isCompleted = editData?.status === 'completed';
+	const canUploadDecree = isEdit && hasAppointedParticipants && isCompleted;
+	const showDecreeUpload = isEdit;
 
 	const today = useMemo(() => {
 		const d = new Date();
@@ -236,11 +241,11 @@ export function YudisiumFormDialog({
 	};
 
 	const handleViewCurrentDecree = async () => {
-		const filePath = editData?.decreeDocument?.filePath;
+		const filePath = existingDecreePath;
 		if (!filePath) return;
 
 		try {
-			await openProtectedFile(filePath, editData?.decreeDocument?.fileName || undefined);
+			await openProtectedFile(filePath, existingDecreeName || undefined);
 		} catch (error) {
 			toast.error((error as Error).message || 'Gagal membuka dokumen SK');
 		}
@@ -468,32 +473,48 @@ export function YudisiumFormDialog({
 								onChange={handleFileChange}
 							/>
 
-							<div className="flex items-center gap-3 rounded-md border border-gray-200 bg-card p-3">
-								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-									<FileText className="h-4 w-4" />
+							<div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-card p-3.5">
+								<div className="flex items-center gap-3 min-w-0">
+									<div
+										className={`p-2.5 rounded-lg shrink-0 ${
+											decreeFile || existingDecreePath
+												? 'border border-blue-200 bg-blue-50 text-blue-600'
+												: 'border border-gray-200 bg-gray-50 text-gray-400'
+										}`}
+									>
+										<FileText className="h-5 w-5" />
+									</div>
+									<div className="min-w-0">
+										<p
+											className="truncate text-sm font-medium text-foreground"
+											title={decreeFile?.name || existingDecreeName || 'Belum ada file SK'}
+										>
+											{decreeFile?.name
+												? truncateFileName(decreeFile.name, 26)
+												: existingDecreeName
+													? truncateFileName(existingDecreeName, 26)
+													: 'Belum ada file SK'}
+										</p>
+										<p className="text-xs text-muted-foreground truncate">
+											{decreeFile
+												? 'File baru siap diunggah saat data disimpan'
+												: existingDecreePath
+													? 'File SK saat ini'
+													: 'Pilih file PDF maksimal 5MB'}
+										</p>
+									</div>
 								</div>
-								<div className="min-w-0 flex-1">
-									<p className="truncate text-sm font-medium text-foreground">
-										{decreeFile?.name || editData?.decreeDocument?.fileName || 'Belum ada file SK'}
-									</p>
-									<p className="text-xs text-muted-foreground">
-										{decreeFile
-											? 'File baru siap diunggah saat data disimpan'
-											: editData?.decreeDocument?.filePath
-												? 'File SK saat ini'
-												: 'Pilih file PDF maksimal 5MB'}
-									</p>
-								</div>
+
 								<div className="flex shrink-0 items-center gap-1.5">
-									{!decreeFile && editData?.decreeDocument?.filePath && (
+									{!decreeFile && existingDecreePath && (
 										<Button
 											type="button"
 											variant="outline"
 											size="sm"
-											className="h-8"
+											className="h-8 gap-1.5 border-gray-200 text-xs shrink-0"
 											onClick={handleViewCurrentDecree}
 										>
-											<Eye className="mr-1.5 h-3.5 w-3.5" />
+											<Eye className="h-3.5 w-3.5" />
 											Lihat
 										</Button>
 									)}
@@ -502,11 +523,11 @@ export function YudisiumFormDialog({
 											type="button"
 											variant="outline"
 											size="sm"
-											className="h-8"
+											className="h-8 gap-1.5 border-gray-200 text-xs shrink-0"
 											onClick={() => fileInputRef.current?.click()}
 										>
-											<FileUp className="mr-1.5 h-3.5 w-3.5" />
-											{decreeFile || editData?.decreeDocument?.filePath ? 'Ganti' : 'Upload'}
+											<Upload className="h-3.5 w-3.5" />
+											{decreeFile || existingDecreePath ? 'Ganti' : 'Upload'}
 										</Button>
 									)}
 									{decreeFile && (
@@ -523,11 +544,19 @@ export function YudisiumFormDialog({
 									)}
 								</div>
 							</div>
-							{canUploadDecree && (
-								<p className="text-[10px] text-muted-foreground">
+							{canUploadDecree ? (
+								<p className="text-[11px] text-muted-foreground">
 									Mengunggah SK akan memfinalisasi status peserta dan nilai CPL yang telah ditetapkan.
 								</p>
-							)}
+							) : !hasAppointedParticipants ? (
+								<p className="text-[11px] text-amber-600 font-medium">
+									SK Yudisium hanya dapat diunggah setelah peserta ditetapkan oleh Koordinator Yudisium.
+								</p>
+							) : !isCompleted ? (
+								<p className="text-[11px] text-amber-600 font-medium">
+									SK Yudisium hanya dapat diunggah setelah periode yudisium selesai (setelah tanggal pelaksanaan).
+								</p>
+							) : null}
 						</div>
 					)}
 

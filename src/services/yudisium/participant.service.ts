@@ -179,3 +179,37 @@ export async function finalizeParticipants(yudisiumId: string): Promise<any> {
   if (!json.success) throw new Error(json.message || 'Gagal memfinalisasi peserta');
   return json.data;
 }
+
+/**
+ * Returns the full authenticated URL for streaming a participant's requirement file.
+ * Used by components that need to construct blob URLs for inline PDF viewing.
+ */
+export function getRequirementFileUrl(
+  yudisiumId: string,
+  participantId: string,
+  itemId: string
+): string {
+  return getApiUrl(EP.REQUIREMENT_FILE(yudisiumId, participantId, itemId));
+}
+
+/**
+ * Streams a participant's requirement file as a Blob via the protected endpoint.
+ */
+export async function streamRequirementFile(
+  yudisiumId: string,
+  participantId: string,
+  itemId: string
+): Promise<Blob> {
+  const res = await apiRequest(getRequirementFileUrl(yudisiumId, participantId, itemId));
+  if (!res.ok) {
+    let message = 'Gagal memuat dokumen';
+    try {
+      const json = await res.json();
+      message = json?.message || message;
+    } catch {
+      // binary response, ignore JSON parse error
+    }
+    throw new Error(message);
+  }
+  return res.blob();
+}

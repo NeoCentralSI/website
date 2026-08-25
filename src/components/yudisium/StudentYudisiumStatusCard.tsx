@@ -1,25 +1,42 @@
 import { Check, Clock, PartyPopper } from 'lucide-react';
-import type { ThesisDefenceStatus, DefenceMilestone } from '@/types/defence.types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { StudentYudisiumOverviewResponse } from '@/types/student-yudisium.types';
 
-interface DefenceStatusStepperProps {
-  status: ThesisDefenceStatus | null;
-  allChecklistMet?: boolean;
-  milestones?: DefenceMilestone[];
+const STEPS = [
+  { key: 'checklist', label: 'Checklist Persyaratan & Survey' },
+  { key: 'verification', label: 'Verifikasi Dokumen & Validasi CPL' },
+  { key: 'eligible', label: 'Eligibel' },
+  { key: 'appointed', label: 'Ditetapkan sebagai Peserta' },
+  { key: 'finalized', label: 'Lulus Yudisium' },
+] as const;
+
+function getActiveStepIndex(
+  participantStatus: string | null,
+  allChecklistMet: boolean,
+): number {
+  if (participantStatus === 'finalized') return 4;
+  if (participantStatus === 'appointed') return 3;
+  if (participantStatus === 'eligible') return 2;
+  if (participantStatus === 'registered') return 1;
+  if (allChecklistMet) return 0;
+  return -1;
 }
 
-export function StudentThesisDefenceStatusCard({ status, milestones = [] }: DefenceStatusStepperProps) {
-  const activeCount = milestones.filter(m => m.checked).length;
-  const totalCount = milestones.length;
-  const spinePct = totalCount > 0 ? (activeCount / totalCount) * 100 : 0;
+interface StudentYudisiumStatusCardProps {
+  overview: StudentYudisiumOverviewResponse;
+}
 
-  const isFinalized = status === 'passed' || status === 'passed_with_revision';
+export function StudentYudisiumStatusCard({ overview }: StudentYudisiumStatusCardProps) {
+  const currentStep = getActiveStepIndex(overview.participantStatus, overview.allChecklistMet);
+  const isFinalized = currentStep >= 4;
+  const spinePct = currentStep === -1 ? 0 : (currentStep + 1) * 20;
+  const completedCount = currentStep + 1;
 
   return (
     <div className="bg-card border border-gray-200 rounded-[10px] p-[18px_18px_14px] h-full flex flex-col box-border">
       <div className="text-base font-semibold text-foreground mb-1.5 flex items-center justify-between">
-        Status Sidang
+        Status Yudisium
         {isFinalized && (
           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 h-5 px-1.5 text-[10px]">
             <PartyPopper className="mr-1 h-2.5 w-2.5" />
@@ -28,28 +45,27 @@ export function StudentThesisDefenceStatusCard({ status, milestones = [] }: Defe
         )}
       </div>
       <div className="text-xs text-muted-foreground mb-[18px]">
-        Progres pengajuan sidang tugas akhir
+        Progres pengajuan yudisium Anda
       </div>
 
       <div className="relative pl-8 flex-1 flex flex-col">
-        {milestones.map((step, i) => {
-          const isActive = step.checked;
-          const isNextActive = milestones[i+1]?.checked;
+        {STEPS.map((step, i) => {
+          const isActive = i <= currentStep;
 
           return (
             <div
-              key={step.id}
+              key={step.key}
               className={cn(
                 "relative",
-                i < milestones.length - 1 ? "pb-[22px]" : "pb-0"
+                i < STEPS.length - 1 ? "pb-[22px]" : "pb-0"
               )}
             >
               {/* Segment to next node */}
-              {i < milestones.length - 1 && (
+              {i < STEPS.length - 1 && (
                 <div
                   className={cn(
                     "absolute top-[13px] bottom-[-13px] w-[2px] z-[0]",
-                    isNextActive ? "bg-[#16A34A]" : "bg-muted"
+                    i < currentStep ? "bg-emerald-600" : "bg-muted"
                   )}
                   style={{ left: '-21px' }}
                 />
@@ -59,8 +75,8 @@ export function StudentThesisDefenceStatusCard({ status, milestones = [] }: Defe
                 className={cn(
                   "absolute -left-8 top-[2px] w-[22px] h-[22px] rounded-full flex items-center justify-center z-[1] border-[2.5px]",
                   isActive
-                    ? "bg-[#16A34A] border-[#16A34A] text-white shadow-[0_0_0_3px_#dcfce7]"
-                    : "bg-white border-[#d1d5db] text-[#bbb] shadow-[0_0_0_3px_#f3f4f6]"
+                    ? "bg-emerald-600 border-emerald-600 text-white shadow-[0_0_0_3px_#dcfce7]"
+                    : "bg-white border-gray-300 text-gray-400 shadow-[0_0_0_3px_#f3f4f6]"
                 )}
               >
                 {isActive ? (
@@ -83,8 +99,8 @@ export function StudentThesisDefenceStatusCard({ status, milestones = [] }: Defe
               {/* Step status */}
               <div
                 className={cn(
-                  "inline-flex items-center gap-1 text-xs font-medium",
-                  isActive ? "text-[#16A34A]" : "text-muted-foreground"
+                  "text-xs font-medium",
+                  isActive ? "text-emerald-600" : "text-muted-foreground"
                 )}
               >
                 {isActive ? 'Terpenuhi' : 'Menunggu'}
@@ -98,7 +114,7 @@ export function StudentThesisDefenceStatusCard({ status, milestones = [] }: Defe
       <div className="mt-[18px] pt-[14px] border-t border-gray-200">
         <div className="flex justify-between items-center mb-1.5">
           <span className="text-xs text-muted-foreground font-medium">Progres Keseluruhan</span>
-          <span className="text-xs font-bold text-[#16A34A]">{Math.round(spinePct)}%</span>
+          <span className="text-xs font-bold text-emerald-600">{spinePct}%</span>
         </div>
         <div className="bg-muted rounded-full h-[6px] overflow-hidden">
           <div
@@ -107,7 +123,7 @@ export function StudentThesisDefenceStatusCard({ status, milestones = [] }: Defe
           />
         </div>
         <div className="text-xs text-muted-foreground mt-1.5 font-medium">
-          {activeCount > 0 ? `${activeCount} dari ${totalCount} tahap selesai` : 'Checklist Persyaratan Belum Terpenuhi'}
+          {completedCount > 0 ? `${completedCount} dari ${STEPS.length} tahap selesai` : 'Checklist Persyaratan Belum Terpenuhi'}
         </div>
       </div>
     </div>

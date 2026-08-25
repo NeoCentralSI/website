@@ -2,8 +2,8 @@ import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from '@/services/auth.service';
 import type {
   DefenceDocumentType,
-  DefenceDocumentsResponse,
-  DefenceDocumentUploadResponse,
+  DefenceRequirementsResponse,
+  DefenceRequirementDocument,
   VerifyDefenceDocumentPayload,
   VerifyDefenceDocumentResponse,
 } from '@/types/defence.types';
@@ -25,9 +25,9 @@ export const getDefenceDocumentTypes = async (): Promise<DefenceDocumentType[]> 
 };
 
 /**
- * Get documents for a specific defence
+ * Get requirements and documents for a specific defence
  */
-export const getStudentDefenceDocuments = async (defenceId: string): Promise<DefenceDocumentsResponse> => {
+export const getStudentDefenceDocuments = async (defenceId: string): Promise<DefenceRequirementsResponse> => {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.DOCUMENTS(defenceId)));
   return parseJsonResponse(response, 'Gagal memuat dokumen sidang');
 };
@@ -37,12 +37,12 @@ export const getStudentDefenceDocuments = async (defenceId: string): Promise<Def
  */
 export const uploadDefenceDocument = async (
   file: File,
-  documentTypeName: string,
+  requirementId: string,
   defenceId: string = 'active'
-): Promise<DefenceDocumentUploadResponse> => {
+): Promise<DefenceRequirementDocument> => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('documentTypeName', documentTypeName);
+  formData.append('requirementId', requirementId);
 
   const response = await apiRequest(
     getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.DOCUMENTS(defenceId)),
@@ -59,15 +59,34 @@ export const uploadDefenceDocument = async (
  */
 export const verifyDefenceDocument = async (
   defenceId: string,
-  documentTypeId: string,
+  requirementId: string,
   payload: VerifyDefenceDocumentPayload
 ): Promise<VerifyDefenceDocumentResponse> => {
   const response = await apiRequest(
-    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.VERIFY_DOCUMENT(defenceId, documentTypeId)),
+    getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.VERIFY_DOCUMENT(defenceId, requirementId)),
     {
       method: 'POST',
       body: JSON.stringify(payload),
     }
   );
   return parseJsonResponse(response, 'Gagal memverifikasi dokumen sidang');
+};
+
+/**
+ * Fetch authenticated document PDF Blob for protected preview / download
+ */
+export const fetchDefenceDocumentBlob = async (defenceId: string, requirementId: string): Promise<Blob> => {
+  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.DOCUMENT_FILE(defenceId, requirementId));
+  const response = await apiRequest(url, { method: 'GET' });
+  if (!response.ok) {
+    let message = 'Gagal memuat dokumen';
+    try {
+      const json = await response.json();
+      message = json?.message || message;
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+  return response.blob();
 };

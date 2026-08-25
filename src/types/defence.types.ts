@@ -58,10 +58,23 @@ export interface DefenceExaminer {
   assessmentSubmittedAt: string | null;
 }
 
+export interface DefenceRequirementDocument {
+  thesisDefenceId: string;
+  requirementId: string;
+  status: DocumentSubmitStatus;
+  submittedAt: string;
+  verifiedAt: string | null;
+  notes: string | null;
+  verifiedBy?: string | null;
+  fileName: string;
+  filePath: string;
+  mimeType?: string;
+  fileSize?: number;
+}
+
 export interface DefenceDocument {
   thesisDefenceId: string;
-  documentTypeId: string;
-  documentId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   submittedAt: string;
   verifiedAt: string | null;
@@ -96,6 +109,31 @@ export interface DefenceMilestone {
   checked: boolean;
 }
 
+export interface DefenceRequirement {
+  id: string;
+  name: string;
+  description: string | null;
+  displayOrder: number;
+  document: DefenceRequirementDocument | null;
+}
+
+export interface DefenceRequirementConfiguration {
+  isConfigured: boolean;
+  message: string | null;
+}
+
+export interface DefenceUploadConfig {
+  accept: string[];
+  maxFileSizeBytes: number;
+  maxFileSizeMb: number;
+}
+
+export interface DefenceRequirementsResponse {
+  defenceId: string;
+  requirements: DefenceRequirement[];
+  uploadConfig: DefenceUploadConfig;
+}
+
 export interface DefenceOverviewResponse {
   thesisId: string | null;
   thesisTitle: string | null;
@@ -103,6 +141,9 @@ export interface DefenceOverviewResponse {
   allChecklistMet: boolean;
   milestones: DefenceMilestone[];
   canUpload: boolean;
+  requirements: DefenceRequirement[];
+  requirementConfiguration: DefenceRequirementConfiguration;
+  uploadConfig: DefenceUploadConfig;
   defence: DefenceInfo | null;
 }
 
@@ -159,8 +200,7 @@ export interface AdminDefenceListItem {
 }
 
 export interface AdminDefenceDocumentDetail {
-  documentTypeId: string;
-  documentId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   submittedAt: string;
   verifiedAt: string | null;
@@ -471,7 +511,7 @@ export interface DefenceAssessmentFormResponse {
     scheduledAt: string | null;
     invitationLetterNo: string | null;
   };
-  assessorRole: 'examiner' | 'supervisor';
+  assessorRole: 'examiner' | 'supervisor' | 'viewer';
   examiner: {
     id: string;
     order: number;
@@ -486,6 +526,7 @@ export interface DefenceAssessmentFormResponse {
     assessmentSubmittedAt: string | null;
   } | null;
   criteriaGroups: DefenceAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface SubmitDefenceAssessmentPayload {
@@ -578,6 +619,7 @@ export interface DefenceFinalizationDataResponse {
   allExaminerSubmitted: boolean;
   supervisorAssessmentSubmitted: boolean;
   recommendationUnlocked: boolean;
+  minimumPassingScore: number;
 }
 
 export interface FinalizeDefencePayload {

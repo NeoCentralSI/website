@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
+import { cn } from '@/lib/utils';
 import { useYudisiumAnnouncements } from '@/hooks/yudisium/useYudisium';
 
 const PAGE_SIZE = 5;
@@ -169,12 +170,12 @@ export default function YudisiumAnnouncementPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border bg-card/70 p-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:flex-1 sm:max-w-[65%]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Cari nama mahasiswa, NIM, atau judul TA..."
-            className="pl-9"
+            className="pl-9 border-gray-200 bg-card text-xs"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -184,7 +185,7 @@ export default function YudisiumAnnouncementPage() {
             <Button
               size="sm"
               variant="outline"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 border-gray-200 text-xs"
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPage === 1}
             >
@@ -200,7 +201,7 @@ export default function YudisiumAnnouncementPage() {
                   key={item}
                   size="sm"
                   variant={currentPage === item ? 'default' : 'outline'}
-                  className="h-8 min-w-8 px-2 text-xs"
+                  className={cn("h-8 min-w-8 px-2 text-xs", currentPage !== item && "border-gray-200")}
                   onClick={() => setCurrentPage(item)}
                 >
                   {item}
@@ -210,7 +211,7 @@ export default function YudisiumAnnouncementPage() {
             <Button
               size="sm"
               variant="outline"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 border-gray-200 text-xs"
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
               disabled={currentPage === totalPages}
             >
@@ -280,11 +281,11 @@ export default function YudisiumAnnouncementPage() {
                   }
                   rowKey={(row) => row.id}
                   emptyText="Tidak ada peserta yudisium pada pengumuman ini"
-                  className="p-3"
+                  className="border border-gray-200 rounded-lg overflow-hidden"
                 />
 
                 {item.notes && (
-                  <div className="rounded-md border bg-card px-4 py-2 text-xs text-muted-foreground">
+                  <div className="rounded-md border border-gray-200 bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
                     <span className="font-semibold text-foreground">Catatan: </span>
                     <span>{item.notes}</span>
                   </div>

@@ -19,6 +19,7 @@ export function useThesisCpmk(academicYearId?: string) {
     const { data: thesisCpmks, isLoading, isFetching, refetch } = useQuery({
         queryKey,
         queryFn: () => getThesisCpmks({ academicYearId }),
+        enabled: Boolean(academicYearId),
     });
 
     const createMutation = useMutation({

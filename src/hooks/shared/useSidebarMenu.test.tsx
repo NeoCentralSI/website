@@ -443,8 +443,8 @@ describe("useSidebarMenu", () => {
 
     expect(itemTitles).toEqual(["Monitoring"]);
     expect(itemTitles).not.toContain("Bimbingan");
-    expect(itemTitles).not.toContain("Seminar");
-    expect(itemTitles).not.toContain("Sidang");
+    expect(itemTitles).not.toContain("Seminar Hasil");
+    expect(itemTitles).not.toContain("Sidang TA");
   });
 
   it("restores Tugas Akhir operational items when Sekdep is also a supervisor", () => {
@@ -458,7 +458,7 @@ describe("useSidebarMenu", () => {
     );
     const itemTitles = taMenu?.items.map((item) => item.title) ?? [];
 
-    expect(itemTitles).toEqual(["Bimbingan", "Seminar", "Sidang", "Monitoring"]);
+    expect(itemTitles).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA", "Monitoring"]);
   });
   it("keeps Sekdep TA-03B queue when Sekdep also has KOORDINATOR_METOPEN role", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
@@ -518,11 +518,73 @@ describe("useSidebarMenu", () => {
     expect(taMenu).toBeUndefined();
   });
 
+  it("preserves Fathur student navigation alongside staging eligibility menus", () => {
+    const { result } = renderHook(() => useSidebarMenu());
+    const titles = result.current.navMain.map((item) => item.title);
+
+    expect(titles).toEqual(
+      expect.arrayContaining([
+        "Metode Penelitian",
+        "Tugas Akhir",
+        "Yudisium",
+        "Pengumuman",
+        "Repositori",
+      ]),
+    );
+    expect(
+      result.current.navMain.find((item) => item.title === "Pengumuman")?.items,
+    ).toEqual([
+      { title: "Seminar Hasil", url: "/pengumuman/seminar-hasil" },
+      { title: "Yudisium", url: "/pengumuman/yudisium" },
+    ]);
+  });
+
+  it("preserves shared Yudisium and announcement menus for operational roles", () => {
+    const scenarios = [
+      { isDosen: true, isPembimbing: true },
+      { isDosen: true, isKadep: true },
+      { isDosen: true, isSekdep: true },
+      { isDosen: true, isGkm: true },
+      { isAdmin: true },
+    ];
+
+    for (const scenario of scenarios) {
+      mockRole(scenario);
+      const { result, unmount } = renderHook(() => useSidebarMenu());
+      const titles = result.current.navMain.map((item) => item.title);
+      expect(titles).toEqual(expect.arrayContaining(["Yudisium", "Pengumuman"]));
+      unmount();
+    }
+  });
+
+  it("keeps GKM CPL and Admin master-data additions from fathur-sidang", () => {
+    mockRole({ isDosen: true, isGkm: true });
+    const gkm = renderHook(() => useSidebarMenu());
+    expect(
+      gkm.result.current.navMain.find((item) => item.title === "Kelola")?.items,
+    ).toContainEqual({ title: "Kelola Data CPL", url: "/kelola/cpl" });
+    gkm.unmount();
+
+    mockRole({ isAdmin: true });
+    const admin = renderHook(() => useSidebarMenu());
+    const masterItems = admin.result.current.navMain.find(
+      (item) => item.title === "Master Data",
+    )?.items;
+    expect(masterItems).toEqual(
+      expect.arrayContaining([
+        { title: "Kelola Ruangan", url: "/master-data/ruangan" },
+        { title: "Data Hari Libur", url: "/master-data/hari-libur" },
+      ]),
+    );
+    admin.unmount();
+  });
+
   it("does not emit sidebar URLs that are not registered routes", () => {
     const invalidUrls = [
       "/tugas-akhir/seminar",
       "/tugas-akhir/seminar/admin",
       "/kelola/data-cpl",
+      "/tugas-akhir/sidang/admin",
       "/kelola/kerja-praktik/pendaftaran/bimbingan",
       "/admin/kerja-praktik/seminar",
     ];

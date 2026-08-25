@@ -35,14 +35,14 @@ export default function Yudisium() {
   const breadcrumbs = useMemo(() => {
     const b = [{ label: 'Yudisium' }];
     
-    if (isKoordinatorYudisium()) {
+    if (canManageGlobal) {
       if (activeTab === 'acara') b.push({ label: 'Kelola Acara' });
       else if (activeTab === 'persyaratan') b.push({ label: 'Kelola Persyaratan' });
       else if (activeTab === 'exit-survey') b.push({ label: 'Kelola Exit Survey' });
     }
     
     return b;
-  }, [activeTab, isKoordinatorYudisium]);
+  }, [activeTab, canManageGlobal]);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
@@ -54,7 +54,7 @@ export default function Yudisium() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Yudisium</h1>
         <p className="text-muted-foreground">
-          {isKoordinatorYudisium() 
+          {canManageGlobal
             ? "Kelola acara yudisium, persyaratan yudisium, dan exit survey" 
             : "Kelola data yudisium"}
         </p>
