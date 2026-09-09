@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useLocation, useOutletContext } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import { FileText } from 'lucide-react';
@@ -10,6 +11,7 @@ import { GuidanceMasterPanel } from '@/components/internship/sekdep/GuidanceMast
 import { InternshipCpmkPanel } from '@/components/internship/sekdep/InternshipCpmkPanel';
 import { GradeRecapPanel } from '@/components/internship/sekdep/GradeRecapPanel';
 import { MonitoringPanel } from '@/components/internship/MonitoringPanel';
+import { getSekdepPendingProposals } from '@/services/internship';
 
 const TAB_ITEMS: TabItem[] = [
     { label: "Monitoring", to: "/kelola/kerja-praktik/monitoring" },
@@ -41,6 +43,24 @@ export default function SekdepInternshipProposalPage() {
         setBreadcrumbs(breadcrumb);
         setTitle('Kelola Kerja Praktik');
     }, [breadcrumb, setBreadcrumbs, setTitle]);
+
+    const { data: pendingProposals } = useQuery({
+        queryKey: ['sekdep-internship-proposals-pending', 'tab-badge'],
+        queryFn: () => getSekdepPendingProposals(undefined, '', 1, 100),
+    });
+
+    const pendingProposalCount = useMemo(
+        () => (pendingProposals?.data || []).filter((item) => item.status === 'PENDING').length,
+        [pendingProposals]
+    );
+
+    const tabs = useMemo<TabItem[]>(() =>
+        TAB_ITEMS.map((tab) =>
+            tab.label === 'Verifikasi Proposal'
+                ? { ...tab, badge: pendingProposalCount }
+                : tab
+        ),
+    [pendingProposalCount]);
 
     const renderContent = () => {
         if (activeTab.label === "Monitoring") {
@@ -89,7 +109,7 @@ export default function SekdepInternshipProposalPage() {
                 <h1>Kelola Kerja Praktik</h1>
             </div>
 
-            <TabsNav tabs={TAB_ITEMS} />
+            <TabsNav tabs={tabs} />
 
             <div className="mt-6">
                 {renderContent()}
