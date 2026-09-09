@@ -251,9 +251,6 @@ function App() {
                     {/* Seminar Hasil and Sidang handled by top-level routes (thesis-seminar/, thesis-defence/) */}
                   </Route>
 
-                  {/* Pengumuman routes */}
-                  <Route path="/pengumuman" element={<Navigate to="/pengumuman/seminar-hasil" replace />} />
-                  <Route path="/pengumuman/seminar-hasil" element={<ThesisSeminarAnnouncementPage />} />
                 </Route>
 
                 {/* Shared Routes (Student & Lecturer & Others)
@@ -262,6 +259,13 @@ function App() {
                     before redirect. */}
                 {/* Tugas Akhir Shared — seminar-hasil/sidang handled by top-level routes (thesis-seminar/, thesis-defence/) */}
                 <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
+
+                {/* Pengumuman dapat dibaca oleh seluruh pengguna terautentikasi.
+                    Mutasi pendaftaran audiens seminar tetap dibatasi untuk Mahasiswa
+                    pada komponen dan endpoint backend terkait. */}
+                <Route path="/pengumuman" element={<Navigate to="/pengumuman/seminar-hasil" replace />} />
+                <Route path="/pengumuman/seminar-hasil" element={<ThesisSeminarAnnouncementPage />} />
+                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
 
                 {/* Kerja Praktik Shared */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA, ...LECTURER_ROLES, ROLES.ADMIN]} />}>
@@ -274,7 +278,6 @@ function App() {
                 <Route path="/yudisium/exit-survey" element={<StudentExitSurveyPage />} />
                 <Route path="/yudisium/exit-survey/:id" element={<ExitSurveyFormPage />} />
                 <Route path="/repositori" element={<RepositoryPage />} />
-                <Route path="/pengumuman/yudisium" element={<YudisiumAnnouncementPage />} />
 
                 {/* Tugas Akhir - Lecturer routes (no guard, different role) */}
                 <Route element={<RoleGuard allowedRoles={[...LECTURER_ROLES]} />}>
