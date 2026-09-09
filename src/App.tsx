@@ -175,6 +175,7 @@ function App() {
               <Route path="/auth/activate/email-sent" element={<ActivationEmailSent />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/internship-letter/:id" element={<InternshipLetterVerification />} />
+              <Route path="/verify/internship-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/lecturer-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/seminar-minutes/:id" element={<InternshipLetterVerification />} />
 

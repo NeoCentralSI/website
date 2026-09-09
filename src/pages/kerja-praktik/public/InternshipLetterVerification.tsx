@@ -55,10 +55,12 @@ export default function InternshipLetterVerification() {
                 // Detect type from path
                 const isSeminarPath = window.location.pathname.includes('seminar-minutes');
                 const isLecturerPath = window.location.pathname.includes('lecturer-assignment');
-                
+                const isAssignmentPath = window.location.pathname.includes('internship-assignment');
+
                 let type: 'APPLICATION' | 'ASSIGNMENT' | 'SEMINAR_MINUTES' | 'LECTURER_ASSIGNMENT' = queryType || 'APPLICATION';
                 if (isSeminarPath) type = 'SEMINAR_MINUTES';
                 else if (isLecturerPath) type = 'LECTURER_ASSIGNMENT';
+                else if (isAssignmentPath) type = 'ASSIGNMENT';
 
                 const res = await verifyInternshipLetter(id, type);
                 setData(res.data);
