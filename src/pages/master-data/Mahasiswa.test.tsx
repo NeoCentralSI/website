@@ -99,6 +99,8 @@ describe('Mahasiswa page', () => {
           year: 2025,
           semester: 'genap',
           isActive: true,
+          startDate: '2026-01-13T00:00:00.000Z',
+          endDate: '2026-07-31T23:59:59.999Z',
           createdAt: '',
           updatedAt: '',
         },

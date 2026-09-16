@@ -9,7 +9,7 @@ import {
   getYudisiumRepository,
   type CreateYudisiumPayload,
   type UpdateYudisiumPayload,
-} from '@/services/yudisium/yudisium.service';
+} from '@/services/yudisium/core.service';
 import { toast } from 'sonner';
 
 export const yudisiumKeys = {

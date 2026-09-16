@@ -30,6 +30,18 @@ interface AcademicYearFormDialogProps {
   isSubmitting?: boolean;
 }
 
+function toStartOfLocalDayIso(date: Date) {
+  const boundary = new Date(date);
+  boundary.setHours(0, 0, 0, 0);
+  return boundary.toISOString();
+}
+
+function toEndOfLocalDayIso(date: Date) {
+  const boundary = new Date(date);
+  boundary.setHours(23, 59, 59, 999);
+  return boundary.toISOString();
+}
+
 export function AcademicYearFormDialog({
   open,
   onOpenChange,
@@ -96,7 +108,7 @@ export function AcademicYearFormDialog({
                 onChange={(date) =>
                   setFormData({
                     ...formData,
-                    startDate: date ? date.toISOString() : '',
+                    startDate: date ? toStartOfLocalDayIso(date) : '',
                   })
                 }
                 showPastDates={true}
@@ -110,7 +122,7 @@ export function AcademicYearFormDialog({
                 onChange={(date) =>
                   setFormData({
                     ...formData,
-                    endDate: date ? date.toISOString() : '',
+                    endDate: date ? toEndOfLocalDayIso(date) : '',
                   })
                 }
                 showPastDates={true}

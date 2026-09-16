@@ -6,11 +6,13 @@ export type StudentYudisiumChecklistItem = {
   submittedAt?: string | null;
   revisionFinalizedAt?: string | null;
   responseId?: string | null;
+  isAvailable?: boolean;
 };
 
 export type StudentYudisiumChecklist = {
   sks: StudentYudisiumChecklistItem;
-  revisiSidang: StudentYudisiumChecklistItem;
+  lulusSidang: StudentYudisiumChecklistItem;
+  revisiSidang?: StudentYudisiumChecklistItem;
   mataKuliahWajib: StudentYudisiumChecklistItem;
   mataKuliahMkwu: StudentYudisiumChecklistItem;
   mataKuliahKerjaPraktik: StudentYudisiumChecklistItem;
@@ -51,7 +53,21 @@ export type StudentYudisiumRequirementsResponse = {
   requirements: YudisiumRequirementUploadStatus[];
 };
 
+export type StudentYudisiumHistoryItem = {
+  id: string;
+  yudisiumId?: string;
+  yudisiumName?: string;
+  registrationOpenDate?: string | null;
+  registrationCloseDate?: string | null;
+  eventDate?: string | null;
+  status?: string;
+  participantStatus?: string | null;
+  registeredAt?: string | null;
+  [key: string]: unknown;
+};
+
 export type StudentYudisiumOverviewResponse = {
+  participantId?: string | null;
   yudisium: {
     id: string;
     name?: string | null;
@@ -59,6 +75,10 @@ export type StudentYudisiumOverviewResponse = {
     registrationOpenDate: string | null;
     registrationCloseDate: string | null;
     eventDate: string | null;
+    room?: {
+      id: string;
+      name: string;
+    } | null;
     decreeNumber?: string | null;
     decreeIssuedAt?: string | null;
     decreeDocument?: {
@@ -73,10 +93,7 @@ export type StudentYudisiumOverviewResponse = {
   } | null;
   participantStatus:
     | 'registered'
-    | 'under_review'
-    | 'approved'
-    | 'verified'
-    | 'cpl_validated'
+    | 'eligible'
     | 'appointed'
     | 'rejected'
     | 'finalized'
@@ -91,19 +108,19 @@ export type StudentYudisiumOverviewResponse = {
   allChecklistMet: boolean;
   allCplVerified: boolean;
   cplScores: {
-    code: string | null;
+    code: string;
     description: string;
     score: number | null;
     minimalScore: number;
     status: string;
     passed: boolean;
+    validatedBy?: string | null;
+    validatedByNip?: string | null;
+    validatedAt?: string | null;
     verifiedBy?: string | null;
     verifiedByNip?: string | null;
     verifiedAt?: string | null;
   }[];
   requirements: StudentYudisiumRequirement[];
-  history?: Array<{
-    id: string;
-    [key: string]: unknown;
-  }>;
+  history?: StudentYudisiumHistoryItem[];
 };

@@ -108,7 +108,7 @@ export default function AdminApplicationPage() {
     }, [filteredData, page, pageSize]);
 
     return (
-        <div className="p-4">
+        <div className="p-6 space-y-6">
             <div className="flex items-center gap-2 mb-6 text-2xl font-semibold">
                 <Mail className="h-6 w-6 text-primary" />
                 <h1>Surat Pengantar Kerja Praktik</h1>

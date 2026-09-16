@@ -3,7 +3,7 @@ import { useOutletContext, useNavigate } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import type { MyStudentItem } from "@/services/lecturerGuidance.service";
 import { getMyStudents, sendWarningToStudent, type WarningType } from "@/services/lecturerGuidance.service";
-import { TabsNav } from "@/components/ui/tabs-nav";
+import { TabsNav, LocalTabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toTitleCaseName } from "@/lib/text";
@@ -43,7 +43,10 @@ const getDaysRemaining = (deadlineDate?: string | null) => {
   return diffDays;
 };
 
-const getRatingConfig = (rating?: string) => {
+const getRatingConfig = (rating?: string, thesisStatus?: string | null) => {
+  if (thesisStatus === "Lulus" || thesisStatus === "Selesai" || thesisStatus === "Yudisium") {
+    return { variant: "outline" as const, label: "Completed", className: "border-emerald-500 text-emerald-700 bg-emerald-50 font-medium", needsWarning: false };
+  }
   switch (rating) {
     case "ONGOING":
       return { variant: "outline" as const, label: "Ongoing", className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
@@ -73,6 +76,8 @@ export default function LecturerMyStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  // Aktif = mahasiswa bimbingan berjalan; Arsip = thesis selesai/ditutup (read-only).
+  const [scope, setScope] = useState<'active' | 'archive'>('active');
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
@@ -80,8 +85,8 @@ export default function LecturerMyStudentsPage() {
   }>({ open: false, student: null });
 
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['lecturer-my-students'],
-    queryFn: () => getMyStudents(),
+    queryKey: ['lecturer-my-students', scope],
+    queryFn: () => getMyStudents(scope),
   });
 
   // Send warning mutation
@@ -231,7 +236,7 @@ export default function LecturerMyStudentsPage() {
       key: 'thesisRating',
       header: 'Rating',
       render: (row) => {
-        const config = getRatingConfig(row.thesisRating ?? undefined);
+        const config = getRatingConfig(row.thesisRating ?? undefined, row.thesisStatus);
         return (
           <div className="flex items-center gap-2">
             <Badge variant={config.variant} className={cn("whitespace-nowrap", config.className)}>
@@ -302,7 +307,7 @@ export default function LecturerMyStudentsPage() {
   ];
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-base font-semibold tracking-tight sm:text-lg">Mahasiswa Bimbingan</h1>
@@ -319,6 +324,19 @@ export default function LecturerMyStudentsPage() {
 
       {/* Pembimbing 2 Requests Section */}
       <Supervisor2RequestsSection />
+
+      {/* Aktif vs Arsip (mahasiswa selesai) — akses read-only pasca-finalisasi */}
+      <LocalTabsNav
+        tabs={[
+          { label: 'Aktif', value: 'active' },
+          { label: 'Arsip (Selesai)', value: 'archive' },
+        ]}
+        activeTab={scope}
+        onTabChange={(v) => {
+          setScope(v as 'active' | 'archive');
+          setPage(1);
+        }}
+      />
 
       {/* Loading state - tabs tetap render, loading di content */}
       {isLoading ? (
@@ -341,7 +359,7 @@ export default function LecturerMyStudentsPage() {
             setSearchQuery(val);
             setPage(1); // Reset to page 1 on search
           }}
-          emptyText="Tidak ada mahasiswa bimbingan"
+          emptyText={scope === 'archive' ? "Belum ada mahasiswa di arsip" : "Tidak ada mahasiswa bimbingan"}
           rowKey={(row) => row.studentId}
           actions={
             <RefreshButton

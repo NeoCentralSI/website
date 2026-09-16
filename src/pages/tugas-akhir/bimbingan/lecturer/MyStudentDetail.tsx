@@ -26,6 +26,7 @@ import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/Guidan
 import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
+import { InformalLogReadonlyList } from "@/components/metopen/InformalLogReadonlyList";
 
 export default function LecturerMyStudentDetailPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -111,7 +112,7 @@ export default function LecturerMyStudentDetailPage() {
     }
 
     return (
-        <div className="space-y-6 mt-6">
+        <div className="p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <Button variant="outline" size="icon" asChild className="shrink-0">
@@ -145,7 +146,7 @@ export default function LecturerMyStudentDetailPage() {
                     <div className="ml-2 w-full">
                         <AlertTitle className="text-blue-800">Proposal Tugas Akhir Diajukan</AlertTitle>
                         <AlertDescription className="text-blue-700 mt-1">
-                            Pembimbing dapat melanjutkan review melalui bimbingan dan penilaian TA-03. Aktivasi resmi proposal diputuskan pada TA-04 oleh KaDep.
+                            Pembimbing dapat melanjutkan review melalui bimbingan dan penilaian TA-03. Aktivasi beban aktif berjalan otomatis setelah TA-03 final dan KRS Tugas Akhir terkonfirmasi.
                         </AlertDescription>
                     </div>
                 </Alert>
@@ -242,6 +243,13 @@ export default function LecturerMyStudentDetailPage() {
                             {thesisId && (
                                 <div className="mb-4">
                                     <ProposalVersionHistory thesisId={thesisId} compact readOnly />
+                                </div>
+                            )}
+
+                            {/* FR-LOG-08: Catatan informal Metopel read-only */}
+                            {thesisId && (
+                                <div className="mb-4">
+                                    <InformalLogReadonlyList thesisId={thesisId} compact />
                                 </div>
                             )}
 

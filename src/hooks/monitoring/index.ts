@@ -4,6 +4,7 @@ export {
   useFilterOptions,
   useAtRiskStudents,
   useStudentsReadyForSeminar,
+  useSupervisorLoads,
   useThesisDetail,
   monitoringKeys,
 } from "./useMonitoring";

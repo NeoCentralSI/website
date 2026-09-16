@@ -223,12 +223,15 @@ export function DataMasterTaPanel() {
             width: 90,
             className: "text-center",
             render: (t) => {
+                if (!t.rating || t.status === "Selesai" || t.status === "Lulus") {
+                    return <span className="text-muted-foreground text-xs font-mono">-</span>;
+                }
                 const colors: Record<string, string> = {
                     "ONGOING": "bg-blue-500",
                     "SLOW": "bg-yellow-500",
                     "AT_RISK": "bg-orange-500",
                     "FAILED": "bg-red-500 text-white",
-                    "CANCELLED": "bg-gray-500",
+                    "CANCELLED": "bg-gray-500 text-white",
                 };
                 return <Badge className={`${colors[t.rating] || "bg-primary"} text-xs`}>{t.rating}</Badge>;
             }
@@ -240,10 +243,15 @@ export function DataMasterTaPanel() {
             className: "text-center",
             render: (t) => {
                 const colors: Record<string, string> = {
-                    "Aktif": "bg-green-500",
-                    "Selesai": "bg-blue-600",
-                    "Dibatalkan": "bg-red-600 text-white",
-                    "Lulus": "bg-blue-600",
+                    "Aktif": "bg-emerald-600 text-white",
+                    "Bimbingan": "bg-emerald-600 text-white",
+                    "Selesai": "bg-blue-600 text-white",
+                    "Lulus": "bg-blue-600 text-white",
+                    "Gagal": "bg-red-600 text-white",
+                    "Dibatalkan": "bg-zinc-600 text-white",
+                    "Drop Out": "bg-rose-700 text-white",
+                    "Diajukan": "bg-amber-600 text-white",
+                    "Metopel": "bg-indigo-600 text-white",
                 };
                 return <Badge className={`${colors[t.status] || "bg-primary"} text-xs`}>{t.status}</Badge>;
             }

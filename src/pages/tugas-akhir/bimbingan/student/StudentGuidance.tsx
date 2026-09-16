@@ -45,7 +45,11 @@ export default function StudentGuidancePage() {
     queryKey: ["my-thesis-detail"],
     queryFn: getMyThesisDetail,
   });
-  const guidancePhase: 'proposal' | 'thesis' = thesisDetail?.isProposal ? 'proposal' : 'thesis';
+  // Logbook phase: setelah promosi aktif / thesis bukan lagi fase proposal -> logbook tugas akhir penuh.
+  const guidancePhase: 'proposal' | 'thesis' =
+    thesisDetail?.proposalStatus === 'accepted' || thesisDetail?.isProposal === false
+      ? 'thesis'
+      : 'proposal';
 
   const {
     items,
@@ -66,7 +70,7 @@ export default function StudentGuidancePage() {
     hasPendingRequest,
     pendingRequestInfo,
     refetch,
-  } = useStudentGuidance(guidancePhase);
+  } = useStudentGuidance();
 
   const isThesisInactive = thesisDetail?.status === "Gagal" || thesisDetail?.status === "Dibatalkan" || thesisDetail?.status === "Selesai";
 
@@ -205,11 +209,11 @@ export default function StudentGuidancePage() {
   // proposal (pra-TA-04) atau logbook tugas akhir penuh (pasca-TA-04).
   const phaseLabel = guidancePhase === 'proposal' ? 'Logbook Proposal' : 'Logbook Tugas Akhir';
   const phaseDescription = guidancePhase === 'proposal'
-    ? 'Sesi bimbingan untuk fase pra-TA-04 (penyusunan & revisi proposal). Tidak ada minimum jumlah sesi (canon §5.5).'
+    ? 'Sesi bimbingan untuk fase pra-TA-04 (penyusunan & revisi proposal). Tidak ada minimum jumlah sesi.'
     : 'Sesi bimbingan untuk fase Tugas Akhir penuh (pasca-pengesahan TA-04 oleh KaDep).';
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="p-6 space-y-6">
       <div>
         <h1 className="text-base font-semibold tracking-tight sm:text-lg">{phaseLabel}</h1>
         <p className="text-xs text-muted-foreground sm:text-sm">{phaseDescription}</p>
@@ -219,7 +223,7 @@ export default function StudentGuidancePage() {
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Riwayat Bimbingan', to: '/tugas-akhir/bimbingan/student/history', end: true },
+          { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone', end: true },
         ]}
       />
 
@@ -247,12 +251,12 @@ export default function StudentGuidancePage() {
           {(!thesisId || (thesisDetail?.supervisors?.length ?? 0) === 0) ? (
             <RequirementsNotMet
               title="Pembimbing Resmi Belum Ditetapkan"
-              description="Logbook bimbingan akan terbuka segera setelah pembimbing resmi tercatat di SIMPTA. Pastikan pengajuan TA-01/TA-02 Anda sudah disetujui."
+              description="Logbook bimbingan terbuka setelah pembimbing resmi tercatat. Pastikan pengajuan TA-01/TA-02 sudah disetujui."
               requirements={[
                 {
-                  label: "Pembimbing resmi tercatat di SIMPTA",
+                  label: "Pembimbing resmi tercatat",
                   met: false,
-                  description: "Pembimbing resmi tercatat setelah TA-01 disetujui dosen atau TA-02 difinalisasi KaDep (canon §5.4).",
+                  description: "Pembimbing resmi tercatat setelah TA-01 disetujui dosen atau TA-02 difinalisasi KaDep.",
                 },
               ]}
               homeUrl="/metopel"
@@ -341,7 +345,7 @@ export default function StudentGuidancePage() {
         open={openRequest}
         onOpenChange={setOpenRequest}
         supervisors={supervisorsQuery.data?.supervisors || []}
-        phase="thesis"
+        phase={guidancePhase}
         onSubmitted={() => {
           qc.invalidateQueries({ queryKey: ['student-guidance'] });
           qc.invalidateQueries({ queryKey: ['notification-unread'] });

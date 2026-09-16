@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useOutletContext, useParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -8,13 +8,19 @@ import { CplStudentScoreTable } from '@/components/master-data/cpl/CplStudentSco
 import { CplStudentScoreFormDialog } from '@/components/master-data/cpl/CplStudentScoreFormDialog';
 import { CplStudentScoreImportDialog } from '@/components/master-data/cpl/CplStudentScoreImportDialog';
 import type { CplStudentScore } from '@/services/master-data/cpl.service';
+import { useRole } from '@/hooks/shared/useRole';
 
 export default function CplDetailPage() {
-    const { id = '' } = useParams();
+    const { curriculumId, cplId, id } = useParams();
+    const resolvedCplId = cplId || id || '';
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+    const navigate = useNavigate();
     const [formOpen, setFormOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
     const [editData, setEditData] = useState<CplStudentScore | null>(null);
+
+    const { isGkm } = useRole();
+    const isManagement = isGkm();
 
     const {
         cpl,
@@ -35,30 +41,53 @@ export default function CplDetailPage() {
         isDeleting,
         isImporting,
         isExporting,
-    } = useCplStudents(id);
+    } = useCplStudents(resolvedCplId);
+
+    const parentCurriculumId = cpl?.curriculumId
+        || (curriculumId && curriculumId !== 'detail' ? curriculumId : '');
+    const cplListPath = parentCurriculumId
+        ? `/kelola/cpl/${parentCurriculumId}`
+        : null;
+
+    // Normalize legacy URLs and mismatched curriculum context to the canonical route.
+    useEffect(() => {
+        if (!cpl?.curriculumId || !resolvedCplId) return;
+        if (curriculumId !== cpl.curriculumId) {
+            navigate(`/kelola/cpl/${cpl.curriculumId}/${resolvedCplId}`, { replace: true });
+        }
+    }, [cpl?.curriculumId, curriculumId, navigate, resolvedCplId]);
 
     const breadcrumbs = useMemo(
         () => [
-            { label: 'Master Data' },
+            { label: 'Kelola' },
             { label: 'CPL', href: '/kelola/cpl' },
-            { label: cpl?.code ? `Detail ${cpl.code}` : 'Detail CPL' },
+            {
+                label: cpl?.curriculum?.name || 'Memuat...',
+                href: cplListPath || undefined,
+            },
+            { label: cpl?.code ? `${cpl.code} (Versi ${cpl.version})` : 'CPL' },
         ],
-        [cpl?.code]
+        [cpl?.curriculum?.name, cpl?.code, cpl?.version, cplListPath]
     );
 
     useEffect(() => {
         setBreadcrumbs(breadcrumbs);
-        setTitle('Detail CPL');
-    }, [breadcrumbs, setBreadcrumbs, setTitle]);
+        setTitle(`Detail CPL ${cpl?.code ? `- ${cpl.code}` : ''}`);
+    }, [breadcrumbs, setBreadcrumbs, setTitle, cpl?.code]);
 
     return (
         <div className="p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" asChild className="shrink-0">
-                        <Link to="/kelola/cpl">
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        disabled={!cplListPath}
+                        onClick={() => cplListPath && navigate(cplListPath)}
+                        aria-label="Kembali ke daftar CPL"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
@@ -93,6 +122,7 @@ export default function CplDetailPage() {
                 onImportClick={() => setImportOpen(true)}
                 onExport={exportScores}
                 isExporting={isExporting}
+                isManagement={isManagement}
             />
 
             <CplStudentScoreFormDialog

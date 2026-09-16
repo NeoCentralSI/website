@@ -225,7 +225,7 @@ export function AdminThesisDefenceArchiveFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Nilai Akhir (0-100)</Label>
+              <Label>Skor Akhir (0-100)</Label>
               <Input
                 type="number"
                 min="0"
@@ -237,7 +237,7 @@ export function AdminThesisDefenceArchiveFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>Grade</Label>
+              <Label>Nilai</Label>
               <Input
                 placeholder="Contoh: A"
                 value={grade}

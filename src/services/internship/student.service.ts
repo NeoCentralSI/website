@@ -6,6 +6,7 @@ import type {
     CompanyItem, 
     StudentItem,
     StudentLogbookData,
+    StudentInternshipHistoryItem,
     SeminarScheduleData,
     UpcomingSeminarItem,
     StudentGuidance
@@ -141,6 +142,15 @@ export const getStudentLogbooks = async (): Promise<{ success: boolean; data: St
     return res.json();
 };
 
+export const getStudentInternshipHistory = async (): Promise<{ success: boolean; data: StudentInternshipHistoryItem[] }> => {
+    const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.HISTORY));
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Gagal memuat riwayat Kerja Praktik" }));
+        throw new Error(errorData.message || "Gagal memuat riwayat Kerja Praktik");
+    }
+    return res.json();
+};
+
 export const finishLogbook = async (): Promise<{ success: boolean; message: string }> => {
     const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.LOGBOOK) + "/finish", {
         method: "POST"
@@ -164,7 +174,13 @@ export const updateLogbookEntry = async (id: string, activityDescription: string
     return res.json();
 };
 
-export const updateInternshipDetails = async (body: { fieldSupervisorName: string; fieldSupervisorEmail: string; unitSection: string }): Promise<{ success: boolean; message: string }> => {
+export const updateInternshipDetails = async (body: {
+    fieldSupervisorName: string;
+    fieldSupervisorEmail: string;
+    fieldSupervisorPhone?: string;
+    fieldSupervisorNip?: string;
+    unitSection: string;
+}): Promise<{ success: boolean; message: string }> => {
     const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.UPDATE_DETAILS), {
         method: "PUT",
         body: JSON.stringify(body),
@@ -224,19 +240,6 @@ export const submitInternshipReport = async (title: string, documentId: string):
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah laporan" }));
         throw new Error(errorData.message || "Gagal mengunggah laporan");
-    }
-    return res.json();
-};
-
-export const submitFinalFixReport = async (title: string, documentId: string): Promise<{ success: boolean; message: string }> => {
-    const url = getApiUrl(API_CONFIG.ENDPOINTS.INTERNSHIP_STUDENT.ACTIVITY) + "/final-fix-report";
-    const res = await apiRequest(url, {
-        method: "POST",
-        body: JSON.stringify({ reportFinalTitle: title, documentId }),
-    });
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Gagal mengunggah laporan final" }));
-        throw new Error(errorData.message || "Gagal mengunggah laporan final");
     }
     return res.json();
 };

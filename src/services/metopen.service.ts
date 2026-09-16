@@ -8,12 +8,22 @@ export interface MetopelEligibility {
   eligibleMetopen: boolean | null;
   hasExternalStatus: boolean;
   hasMetopenCourse: boolean;
+  semester?: number;
+  isMinSemester6?: boolean;
   canAccess: boolean;
   canSubmit: boolean;
   readOnly: boolean;
   thesisPhase: string | null;
+  thesisId: string | null;
   source: 'sia' | 'devtools' | null;
   updatedAt: string | null;
+  takingThesisCourse: boolean | null;
+  hasThesisCourseStatus: boolean;
+  canAccessTugasAkhir: boolean;
+  hasThesisRecord?: boolean;
+  hasThesisPassed?: boolean;
+  thesisCourseSource: 'sia' | 'devtools' | null;
+  thesisCourseUpdatedAt: string | null;
 }
 
 export const checkMetopelEligibility = async (): Promise<MetopelEligibility> => {

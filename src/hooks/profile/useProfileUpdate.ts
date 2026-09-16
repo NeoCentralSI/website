@@ -8,7 +8,7 @@ interface ProfileFormData {
 }
 
 export const useProfileUpdate = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, setUserDirectly } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
     phoneNumber: '',
@@ -40,8 +40,16 @@ export const useProfileUpdate = () => {
 
     setIsSaving(true);
     try {
-      await updateProfileAPI({ phoneNumber: formData.phoneNumber });
+      const updatedUser = await updateProfileAPI({ 
+        phoneNumber: formData.phoneNumber,
+      });
+      
       toast.success('Profil berhasil diperbarui');
+      
+      // Update local cache immediately
+      setUserDirectly(updatedUser);
+      
+      // Also refresh to be safe and update other components
       await refreshUser();
     } catch (err) {
       if (err instanceof Error) {
@@ -54,7 +62,7 @@ export const useProfileUpdate = () => {
     }
   };
 
-  const updateField = (field: keyof ProfileFormData, value: string) => {
+  const updateField = <K extends keyof ProfileFormData>(field: K, value: ProfileFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -65,6 +73,6 @@ export const useProfileUpdate = () => {
     setError,
     isSaving,
     handleSubmit,
-    isProfileIncomplete: !user?.phoneNumber,
+    isProfileIncomplete: !user?.phoneNumber || user.gender === null,
   };
 };

@@ -120,13 +120,15 @@ export interface MyThesisDetail {
   createdAt?: string;
   updatedAt?: string;
   deadlineDate?: string | null;
-  isProposal?: boolean;
   student?: ThesisStudentInfo | null;
   topic?: ThesisTopicInfo | null;
   academicYear?: ThesisAcademicYearInfo | null;
   document?: ThesisDocumentInfo | null;
   proposalDocument?: ThesisDocumentInfo | null;
   uploadedFiles?: ThesisDocumentInfo[];
+  /** Schema thesis: true = fase proposal (pra-TA-04); false = TA pasca pengesahan. */
+  isProposal?: boolean;
+  proposalStatus?: string | null;
   supervisors?: ThesisSupervisorSummary[];
   examiners?: SupervisorInfo[];
   stats?: ThesisStatsSummary;
@@ -405,8 +407,8 @@ export async function getStudentThesisHistory(): Promise<{ theses: ThesisHistory
 export async function getPendingSupervisor2Request(): Promise<PendingSupervisor2Request | null> {
   const url = getApiUrl(EP.PENDING_SUPERVISOR_2);
   const response = await apiRequest(url);
-  const data = await handleJson<{ success: boolean; request: PendingSupervisor2Request }>(response);
-  return data.request ?? null;
+  const data = await handleJson<{ success: boolean; data: PendingSupervisor2Request | null }>(response);
+  return data.data ?? null;
 }
 
 export interface AvailableSupervisor2Item {
@@ -415,9 +417,18 @@ export interface AvailableSupervisor2Item {
   email: string | null;
   identityNumber: string | null;
   scienceGroup: string | null;
+  /** Info kuota aman untuk mahasiswa (canon §7.3): traffic light + sisa normal + beban aktif. */
+  trafficLight?: 'green' | 'yellow' | 'red' | null;
+  normalAvailable?: number | null;
+  activeCount?: number | null;
+  acceptingRequests?: boolean | null;
 }
 
+/** Tahap permintaan P2: menunggu kesediaan dosen, lalu persetujuan akhir KaDep. */
+export type Supervisor2RequestStage = 'lecturer' | 'kadep';
+
 export interface PendingSupervisor2Request {
+  stage?: Supervisor2RequestStage;
   requestId: string;
   lecturerId: string;
   lecturerName: string | null;
@@ -443,7 +454,7 @@ export async function requestSupervisor2(lecturerId: string): Promise<{ message:
 
 export async function cancelSupervisor2Request(): Promise<{ message: string }> {
   const url = getApiUrl(EP.CANCEL_SUPERVISOR_2);
-  const response = await apiRequest(url, { method: 'POST' });
+  const response = await apiRequest(url, { method: 'DELETE' });
   return handleJson<{ message: string }>(response);
 }
 
@@ -553,7 +564,17 @@ export interface FinalProposalVersionStatus {
 export interface ProposalSubmissionStatus {
   thesisId: string;
   hasSupervisor: boolean;
+  /** Booking P1/P2 sudah ada; belum berarti bimbingan proposal berwenang. */
+  hasBookedSupervisor: boolean;
+  /** Hanya benar setelah TA-04 batch difinalisasi KaDep. */
+  hasOfficialSupervisor: boolean;
+  /** Draf pribadi tetap boleh diunggah; submit final menunggu gate ini. */
+  canSubmitFinalProposal: boolean;
+  guidanceGateOpen: boolean;
+  guidanceGateReason: string | null;
   proposalStatus: string | null;
+  uploadLocked: boolean;
+  uploadLockedReason: string | null;
   latestVersion: ProposalVersion | null;
   finalProposalVersion: FinalProposalVersionStatus | null;
 }

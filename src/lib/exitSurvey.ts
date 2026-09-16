@@ -5,6 +5,7 @@ export const EXIT_SURVEY_QUESTION_TYPE_LABELS: Record<ExitSurveyQuestionType, st
   paragraph: 'Teks Panjang',
   single_choice: 'Pilihan Tunggal',
   multiple_choice: 'Pilihan Ganda',
+  number: 'Angka',
   date: 'Tanggal',
 };
 

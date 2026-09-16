@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useLocation, useOutletContext } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import { FileText } from 'lucide-react';
@@ -8,7 +9,9 @@ import { InternshipListPanel } from '@/components/internship/sekdep/InternshipLi
 import { LecturerWorkloadPanel } from '@/components/internship/sekdep/LecturerWorkloadPanel';
 import { GuidanceMasterPanel } from '@/components/internship/sekdep/GuidanceMasterPanel';
 import { InternshipCpmkPanel } from '@/components/internship/sekdep/InternshipCpmkPanel';
+import { GradeRecapPanel } from '@/components/internship/sekdep/GradeRecapPanel';
 import { MonitoringPanel } from '@/components/internship/MonitoringPanel';
+import { getSekdepPendingProposals } from '@/services/internship';
 
 const TAB_ITEMS: TabItem[] = [
     { label: "Monitoring", to: "/kelola/kerja-praktik/monitoring" },
@@ -17,15 +20,18 @@ const TAB_ITEMS: TabItem[] = [
     { label: "Daftar Dosen", to: "/kelola/kerja-praktik/dosen" },
     { label: "Bimbingan", to: "/kelola/kerja-praktik/bimbingan" },
     { label: "CPMK", to: "/kelola/kerja-praktik/cpmk" },
+    { label: "Rekap Nilai", to: "/kelola/kerja-praktik/rekap-nilai" },
 ];
 
 export default function SekdepInternshipProposalPage() {
-    const { pathname } = useLocation();
+    const { pathname, search } = useLocation();
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
     const activeTab = useMemo(() =>
         TAB_ITEMS.find((tab) => pathname.startsWith(tab.to)) || TAB_ITEMS[0]
         , [pathname]);
+
+    const isWeekDetail = useMemo(() => new URLSearchParams(search).has('week'), [search]);
 
     const breadcrumb = useMemo(() => [
         { label: 'Kerja Praktik' },
@@ -37,6 +43,24 @@ export default function SekdepInternshipProposalPage() {
         setBreadcrumbs(breadcrumb);
         setTitle('Kelola Kerja Praktik');
     }, [breadcrumb, setBreadcrumbs, setTitle]);
+
+    const { data: pendingProposals } = useQuery({
+        queryKey: ['sekdep-internship-proposals-pending', 'tab-badge'],
+        queryFn: () => getSekdepPendingProposals(undefined, '', 1, 100),
+    });
+
+    const pendingProposalCount = useMemo(
+        () => (pendingProposals?.data || []).filter((item) => item.status === 'PENDING').length,
+        [pendingProposals]
+    );
+
+    const tabs = useMemo<TabItem[]>(() =>
+        TAB_ITEMS.map((tab) =>
+            tab.label === 'Verifikasi Proposal'
+                ? { ...tab, badge: pendingProposalCount }
+                : tab
+        ),
+    [pendingProposalCount]);
 
     const renderContent = () => {
         if (activeTab.label === "Monitoring") {
@@ -63,17 +87,29 @@ export default function SekdepInternshipProposalPage() {
             return <InternshipCpmkPanel />;
         }
 
+        if (activeTab.label === "Rekap Nilai") {
+            return <GradeRecapPanel />;
+        }
+
         return null;
     };
 
+    if (isWeekDetail) {
+        return (
+            <div className="p-6 space-y-6">
+                {renderContent()}
+            </div>
+        );
+    }
+
     return (
-        <div className="p-4 space-y-6">
+        <div className="p-6 space-y-6">
             <div className="flex items-center gap-2 text-2xl font-semibold">
                 <FileText className="h-6 w-6 text-primary" />
                 <h1>Kelola Kerja Praktik</h1>
             </div>
 
-            <TabsNav tabs={TAB_ITEMS} />
+            <TabsNav tabs={tabs} />
 
             <div className="mt-6">
                 {renderContent()}

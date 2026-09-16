@@ -21,17 +21,19 @@ import {
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
-import { FileUp, X } from 'lucide-react';
-import { getExitSurveyForms } from '@/services/yudisium/yudisium-exit-survey.service';
-import { getYudisiumRequirements } from '@/services/yudisium/yudisium-requirement.service';
+import { Eye, FileText, Upload, X } from 'lucide-react';
+import { getExitSurveyForms } from '@/services/yudisium/exit-survey.service';
+import { getYudisiumRequirements } from '@/services/yudisium/requirement.service';
 import { toast } from 'sonner';
+import { openProtectedFile } from '@/lib/protected-file';
+import { truncateFileName } from '@/lib/text';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
-import type { YudisiumRequirement } from '@/services/yudisium/yudisium-requirement.service';
+import type { YudisiumRequirement } from '@/services/yudisium/requirement.service';
 import type {
 	CreateYudisiumPayload,
 	UpdateYudisiumPayload,
 	YudisiumEvent,
-} from '@/services/yudisium/yudisium.service';
+} from '@/services/yudisium/core.service';
 import { apiRequest } from '@/services/auth.service';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 
@@ -111,7 +113,7 @@ export function YudisiumFormDialog({
 		const load = async () => {
 			setIsLoadingOptions(true);
 			try {
-				const roomsUrl = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.OPTIONS_ROOMS);
+				const roomsUrl = getApiUrl(API_CONFIG.ENDPOINTS.YUDISIUM.OPTIONS_ROOMS);
 				const [formsRes, reqsRes, roomsRes] = await Promise.all([
 					getExitSurveyForms(),
 					getYudisiumRequirements(),
@@ -161,13 +163,25 @@ export function YudisiumFormDialog({
 		}
 	}, [editData, open]);
 
-	const hasRegParticipants = !!editData?.hasRegisteredParticipants;
-	const isRegistrationStarted = useMemo(() => {
-		if (!editData?.registrationOpenDate) return false;
-		return new Date(editData.registrationOpenDate) <= new Date();
-	}, [editData]);
+	const isActiveYudisium = !!editData?.registrationOpenDate && !!editData?.registrationCloseDate;
+	const isArchiveYudisium = isEdit && !isActiveYudisium;
+	const isDraft = !isEdit || editData?.status === 'draft';
+	const isOpen = isEdit && editData?.status === 'open';
+	const isCompletedActive = isActiveYudisium && editData?.status === 'completed';
+	const hasAppointedParticipants = !!editData?.appointedAt;
 
-	const isLocked = isRegistrationStarted || hasRegParticipants;
+	const existingDecreePath = editData?.decreeDocument?.filePath || editData?.decreeFilePath;
+	const existingDecreeName = editData?.decreeDocument?.fileName || editData?.decreeFileName;
+
+	const canEditName = !isCompletedActive;
+	const canEditNotes = isArchiveYudisium || !isCompletedActive;
+	const canEditOpenDate = !isEdit || isDraft;
+	const canEditCloseDate = !isEdit || isDraft || (isOpen && !hasAppointedParticipants);
+	const canEditSchedule = !isEdit || isArchiveYudisium || (isActiveYudisium && !isCompletedActive && !hasAppointedParticipants);
+	const canEditSetup = !isEdit || isDraft;
+	const isCompleted = editData?.status === 'completed';
+	const canUploadDecree = isEdit && hasAppointedParticipants && isCompleted;
+	const showDecreeUpload = isEdit;
 
 	const today = useMemo(() => {
 		const d = new Date();
@@ -182,11 +196,11 @@ export function YudisiumFormDialog({
 
 	// Validation errors
 	const openDateError =
-		openDateObj && openDateObj < today
+		canEditOpenDate && openDateObj && openDateObj < today
 			? 'Tanggal pembukaan pendaftaran tidak boleh sebelum hari ini'
 			: null;
 
-	const closeDateError = closeDateObj
+	const closeDateError = canEditCloseDate && closeDateObj
 		? closeDateObj < today
 			? 'Tanggal penutupan pendaftaran tidak boleh sebelum hari ini'
 			: openDateObj && closeDateObj < openDateObj
@@ -194,7 +208,7 @@ export function YudisiumFormDialog({
 			: null
 		: null;
 
-	const eventDateError = eventDate && hasRegDates && closeDateObj && eventDate < closeDateObj
+	const eventDateError = canEditSchedule && eventDate && hasRegDates && closeDateObj && eventDate < closeDateObj
 			? 'Tanggal pelaksanaan tidak boleh sebelum tanggal penutupan pendaftaran'
 			: null;
 
@@ -214,7 +228,7 @@ export function YudisiumFormDialog({
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
 			const file = e.target.files[0];
-			if (file.type !== 'application/pdf') {
+			if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
 				toast.error('File harus berformat PDF');
 				return;
 			}
@@ -224,6 +238,22 @@ export function YudisiumFormDialog({
 			}
 			setDecreeFile(file);
 		}
+	};
+
+	const handleViewCurrentDecree = async () => {
+		const filePath = existingDecreePath;
+		if (!filePath) return;
+
+		try {
+			await openProtectedFile(filePath, existingDecreeName || undefined);
+		} catch (error) {
+			toast.error((error as Error).message || 'Gagal membuka dokumen SK');
+		}
+	};
+
+	const handleClearSelectedDecree = () => {
+		setDecreeFile(null);
+		if (fileInputRef.current) fileInputRef.current.value = '';
 	};
 
 	const handleSubmit = async (event: React.FormEvent) => {
@@ -246,13 +276,29 @@ export function YudisiumFormDialog({
 				exitSurveyFormId: exitSurveyFormId === 'none' ? null : exitSurveyFormId,
 				roomId: roomId === 'none' ? null : roomId,
 				requirementIds: selectedRequirementIds,
-				decreeFile: decreeFile,
+				decreeFile: null,
 			};
 
 			if (isEdit && editData) {
+				const updatePayload: UpdateYudisiumPayload = {};
+
+				if (canEditName) updatePayload.name = base.name;
+				if (canEditSchedule) {
+					updatePayload.eventDate = base.eventDate;
+					updatePayload.roomId = base.roomId;
+				}
+				if (canEditOpenDate) updatePayload.registrationOpenDate = base.registrationOpenDate;
+				if (canEditCloseDate) updatePayload.registrationCloseDate = base.registrationCloseDate;
+				if (canEditSetup) {
+					updatePayload.exitSurveyFormId = base.exitSurveyFormId;
+					updatePayload.requirementIds = base.requirementIds;
+				}
+				if (canEditNotes) updatePayload.notes = base.notes;
+				if (canUploadDecree) updatePayload.decreeFile = decreeFile;
+
 				await (onSubmit as (id: string, p: UpdateYudisiumPayload) => Promise<unknown>)(
 					editData.id,
-					base,
+					updatePayload,
 				);
 			} else {
 				await (onSubmit as (p: CreateYudisiumPayload) => Promise<unknown>)(base);
@@ -286,6 +332,7 @@ export function YudisiumFormDialog({
 							placeholder="Contoh: Yudisium Periode 1 2026"
 							value={name}
 							onChange={(e) => setName(e.target.value)}
+							disabled={!canEditName}
 							required
 						/>
 					</div>
@@ -299,6 +346,7 @@ export function YudisiumFormDialog({
 							value={eventDate}
 							onChange={setEventDate}
 							placeholder="Pilih tanggal & waktu pelaksanaan"
+							disabled={!canEditSchedule}
 						/>
 						{eventDateError && (
 							<p className="text-xs text-red-500">{eventDateError}</p>
@@ -312,14 +360,11 @@ export function YudisiumFormDialog({
 							<DatePicker
 								value={parseDateOnlyLocal(registrationOpenDate)}
 								onChange={(date) => setRegistrationOpenDate(date ? toDateOnlyLocalString(date) : '')}
-								showPastDates={false}
-								disabled={isLocked}
+								showPastDates={!canEditOpenDate}
+								disabled={!canEditOpenDate}
 							/>
 							{openDateError && (
 								<p className="text-xs text-red-500">{openDateError}</p>
-							)}
-							{hasRegParticipants && (
-								<p className="text-[10px] text-amber-600 font-medium">Sudah ada peserta terdaftar</p>
 							)}
 						</div>
 						<div className="space-y-2">
@@ -328,6 +373,7 @@ export function YudisiumFormDialog({
 								value={parseDateOnlyLocal(registrationCloseDate)}
 								onChange={(date) => setRegistrationCloseDate(date ? toDateOnlyLocalString(date) : '')}
 								showPastDates={true}
+								disabled={!canEditCloseDate}
 							/>
 							{closeDateError && (
 								<p className="text-xs text-red-500">{closeDateError}</p>
@@ -338,7 +384,7 @@ export function YudisiumFormDialog({
 					{/* Room */}
 					<div className="space-y-2">
 						<Label>Ruangan</Label>
-						<Select value={roomId} onValueChange={setRoomId} disabled={isLoadingOptions}>
+						<Select value={roomId} onValueChange={setRoomId} disabled={isLoadingOptions || !canEditSchedule}>
 							<SelectTrigger id="yud-room">
 								<SelectValue placeholder="Pilih ruangan" />
 							</SelectTrigger>
@@ -359,7 +405,7 @@ export function YudisiumFormDialog({
 						<Select
 							value={exitSurveyFormId}
 							onValueChange={setExitSurveyFormId}
-							disabled={isLoadingOptions || isLocked}
+							disabled={isLoadingOptions || !canEditSetup}
 						>
 							<SelectTrigger id="yud-survey">
 								<SelectValue placeholder="Pilih template exit survey" />
@@ -373,11 +419,6 @@ export function YudisiumFormDialog({
 								))}
 							</SelectContent>
 						</Select>
-						{isLocked && (
-							<p className="text-[10px] text-amber-600 font-medium">
-								{isRegistrationStarted ? 'Pendaftaran sedang dibuka' : 'Sudah ada peserta terdaftar'}
-							</p>
-						)}
 					</div>
 
 					{/* Requirements */}
@@ -401,7 +442,7 @@ export function YudisiumFormDialog({
 											checked={selectedRequirementIds.includes(req.id)}
 											onCheckedChange={() => toggleRequirement(req.id)}
 											className="mt-0.5"
-											disabled={isLocked}
+											disabled={!canEditSetup}
 										/>
 										<div className="space-y-0.5">
 											<p className="text-sm font-medium leading-none">{req.name}</p>
@@ -413,11 +454,6 @@ export function YudisiumFormDialog({
 								))}
 							</div>
 						)}
-						{isLocked && (
-							<p className="text-[10px] text-amber-600 font-medium">
-								{isRegistrationStarted ? 'Pendaftaran sedang dibuka' : 'Sudah ada peserta terdaftar'}
-							</p>
-						)}
 						{selectedRequirementIds.length > 0 && (
 							<p className="text-xs text-muted-foreground">
 								{selectedRequirementIds.length} persyaratan dipilih
@@ -426,9 +462,9 @@ export function YudisiumFormDialog({
 					</div>
 
 					{/* Upload SK (Decree) */}
-					<div className="space-y-2">
-						<Label>Unggah SK Yudisium</Label>
-						<div className="flex items-center gap-2">
+					{showDecreeUpload && (
+						<div className="space-y-2">
+							<Label>Unggah SK Yudisium</Label>
 							<Input
 								type="file"
 								accept=".pdf"
@@ -436,30 +472,93 @@ export function YudisiumFormDialog({
 								ref={fileInputRef}
 								onChange={handleFileChange}
 							/>
-							<Button
-								type="button"
-								variant="outline"
-								className="w-full justify-start text-muted-foreground font-normal"
-								onClick={() => fileInputRef.current?.click()}
-							>
-								<FileUp className="mr-2 h-4 w-4" />
-								{decreeFile ? decreeFile.name : 'Pilih file SK (PDF, max 5MB)'}
-							</Button>
-							{decreeFile && (
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon"
-									onClick={() => setDecreeFile(null)}
-								>
-									<X className="h-4 w-4" />
-								</Button>
-							)}
+
+							<div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-card p-3.5">
+								<div className="flex items-center gap-3 min-w-0">
+									<div
+										className={`p-2.5 rounded-lg shrink-0 ${
+											decreeFile || existingDecreePath
+												? 'border border-blue-200 bg-blue-50 text-blue-600'
+												: 'border border-gray-200 bg-gray-50 text-gray-400'
+										}`}
+									>
+										<FileText className="h-5 w-5" />
+									</div>
+									<div className="min-w-0">
+										<p
+											className="truncate text-sm font-medium text-foreground"
+											title={decreeFile?.name || existingDecreeName || 'Belum ada file SK'}
+										>
+											{decreeFile?.name
+												? truncateFileName(decreeFile.name, 26)
+												: existingDecreeName
+													? truncateFileName(existingDecreeName, 26)
+													: 'Belum ada file SK'}
+										</p>
+										<p className="text-xs text-muted-foreground truncate">
+											{decreeFile
+												? 'File baru siap diunggah saat data disimpan'
+												: existingDecreePath
+													? 'File SK saat ini'
+													: 'Pilih file PDF maksimal 5MB'}
+										</p>
+									</div>
+								</div>
+
+								<div className="flex shrink-0 items-center gap-1.5">
+									{!decreeFile && existingDecreePath && (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											className="h-8 gap-1.5 border-gray-200 text-xs shrink-0"
+											onClick={handleViewCurrentDecree}
+										>
+											<Eye className="h-3.5 w-3.5" />
+											Lihat
+										</Button>
+									)}
+									{canUploadDecree && (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											className="h-8 gap-1.5 border-gray-200 text-xs shrink-0"
+											onClick={() => fileInputRef.current?.click()}
+										>
+											<Upload className="h-3.5 w-3.5" />
+											{decreeFile || existingDecreePath ? 'Ganti' : 'Upload'}
+										</Button>
+									)}
+									{decreeFile && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="h-8 w-8"
+											onClick={handleClearSelectedDecree}
+											title="Batalkan file baru"
+										>
+											<X className="h-4 w-4" />
+										</Button>
+									)}
+								</div>
+							</div>
+							{canUploadDecree ? (
+								<p className="text-[11px] text-muted-foreground">
+									Mengunggah SK akan memfinalisasi status peserta dan nilai CPL yang telah ditetapkan.
+								</p>
+							) : !hasAppointedParticipants ? (
+								<p className="text-[11px] text-amber-600 font-medium">
+									SK Yudisium hanya dapat diunggah setelah peserta ditetapkan oleh Koordinator Yudisium.
+								</p>
+							) : !isCompleted ? (
+								<p className="text-[11px] text-amber-600 font-medium">
+									SK Yudisium hanya dapat diunggah setelah periode yudisium selesai (setelah tanggal pelaksanaan).
+								</p>
+							) : null}
 						</div>
-						<p className="text-[10px] text-muted-foreground">
-							Mengunggah SK akan memfinalisasi status pendaftaran dan nilai CPL seluruh peserta.
-						</p>
-					</div>
+					)}
 
 					{/* Notes */}
 					<div className="space-y-2">
@@ -470,6 +569,7 @@ export function YudisiumFormDialog({
 							onChange={(e) => setNotes(e.target.value)}
 							placeholder="Catatan tambahan (opsional)"
 							rows={3}
+							disabled={!canEditNotes}
 						/>
 					</div>
 

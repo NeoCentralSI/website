@@ -36,10 +36,10 @@ export const getStudentRegistrationColumns = ({
             header: 'Nama',
             render: (item) => (
                 <div className="flex flex-col py-1">
-                    <span className="font-medium text-sm leading-tight">{item.nama}</span>
-                    <span className="text-xs text-muted-foreground">{item.nim}</span>
+                    <span className="font-medium text-sm leading-tight">{item.nama || '-'}</span>
+                    <span className="text-xs text-muted-foreground">{item.nim || '-'}</span>
                     <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-primary/70">
-                        {item.koordinatorAtauMember}
+                        {item.koordinatorAtauMember || '-'}
                     </span>
                 </div>
             ),
@@ -112,7 +112,7 @@ export const getStudentRegistrationColumns = ({
             key: 'responseDoc',
             header: 'Surat Balasan',
             render: (item) => {
-                const canUpload = item.status === 'APPROVED_PROPOSAL' && item.koordinatorAtauMember === 'Koordinator' && !item.dokumenSuratBalasan && !!item.dokumenSuratPermohonan && item.isSigned;
+                const canUpload = ['APPROVED_PROPOSAL', 'WAITING_FOR_VERIFICATION'].includes(item.status) && item.koordinatorAtauMember === 'Koordinator' && !item.dokumenSuratBalasan && !!item.dokumenSuratPermohonan && item.isSigned;
                 const canReupload = (item.status === 'REJECTED_PROPOSAL' || item.status === 'WAITING_FOR_VERIFICATION') && !!item.dokumenSuratBalasan && item.koordinatorAtauMember === 'Koordinator';
 
                 return (

@@ -25,7 +25,12 @@ export function useInputSupervisorScore() {
     onSuccess: () => {
       toast.success('Nilai pembimbing (TA-03A) berhasil disimpan');
       queryClient.invalidateQueries({ queryKey: ['supervisor-scoring-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-supervisor-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-supervisor-history'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-metopen-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-metopen-history'] });
       queryClient.invalidateQueries({ queryKey: ['metopel-seminar-eligibility'] });
+      queryClient.invalidateQueries({ queryKey: ['metopel-proposal-approval'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-kadep-title-reports'] });
     },
     onError: (err: Error) => {
@@ -41,7 +46,12 @@ export function useInputLecturerScore() {
     onSuccess: () => {
       toast.success('Nilai Koordinator Metopen (TA-03B) berhasil disimpan');
       queryClient.invalidateQueries({ queryKey: ['assessment-metopen-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-metopen-history'] });
+      queryClient.invalidateQueries({ queryKey: ['supervisor-scoring-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-supervisor-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['assessment-supervisor-history'] });
       queryClient.invalidateQueries({ queryKey: ['metopel-seminar-eligibility'] });
+      queryClient.invalidateQueries({ queryKey: ['metopel-proposal-approval'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-kadep-title-reports'] });
     },
     onError: (err: Error) => {

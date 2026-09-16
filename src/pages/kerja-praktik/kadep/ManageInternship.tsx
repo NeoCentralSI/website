@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { Loading } from '@/components/ui/spinner';
-import { FileText } from 'lucide-react';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
-import { useQuery } from '@tanstack/react-query';
-import { getKadepPendingLetters } from '@/services/internship';
-import { getKadepInternshipLetterColumns } from '@/lib/internship';
+import { Loading } from '@/components/ui/spinner';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
+import { getKadepInternshipLetterColumns } from '@/lib/internship';
+import { getKadepPendingLetters } from '@/services/internship';
+import { useQuery } from '@tanstack/react-query';
+import { FileText } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 
 import { MonitoringPanel } from '@/components/internship/MonitoringPanel';
 import { ApplicationLettersTab } from '@/components/internship/kadep/ApplicationLettersTab';
@@ -84,31 +84,50 @@ export default function KadepInternshipManagementPage() {
         setTitle(activeTab.to.includes('monitoring') ? 'Monitoring Kerja Praktik' : 'Persetujuan Surat Kerja Praktik');
     }, [breadcrumb, setBreadcrumbs, setTitle, activeTab]);
 
-    const columns = useMemo(() => getKadepInternshipLetterColumns({
-        onViewDoc: (item) => {
-            if (item.document) {
-                openDocumentPreview(item.document.fileName, item.document.filePath);
-            }
-        },
-        onApprove: (item) => {
-            navigate(`/kelola/kerja-praktik/kadep/sign/${item.type}/${item.id}`);
-        }
-    }), [navigate]);
-
     const summary = useMemo(() => {
         const pendingApp = (data?.applicationLetters || []).filter(l => !l.signedById).length;
         const pendingAssign = (data?.assignmentLetters || []).filter(l => !l.signedById).length;
         const pendingSup = (data?.supervisorLetters || []).filter(l => !l.signedById).length;
-        return { 
-            pendingApp, 
-            pendingAssign, 
-            pendingSup, 
-            total: pendingApp + pendingAssign + pendingSup,
-            totalApp: (data?.applicationLetters || []).length,
-            totalAssign: (data?.assignmentLetters || []).length,
-            totalSup: (data?.supervisorLetters || []).length
+        const pendingRep = (data?.pendingReplacements || []).length;
+        return {
+            pendingApp,
+            pendingAssign,
+            pendingSup,
+            pendingRep,
         };
     }, [data]);
+
+    const tabs = useMemo<TabItem[]>(() => [
+        { label: "Monitoring", to: "/kelola/kerja-praktik/kadep/monitoring" },
+        { label: "Permohonan", to: "/kelola/kerja-praktik/kadep/persetujuan/permohonan", badge: summary.pendingApp },
+        { label: "Penugasan", to: "/kelola/kerja-praktik/kadep/persetujuan/penugasan", badge: summary.pendingAssign },
+        { label: "Penugasan Dosen", to: "/kelola/kerja-praktik/kadep/persetujuan/dosen", badge: summary.pendingSup + summary.pendingRep },
+    ], [summary.pendingApp, summary.pendingAssign, summary.pendingSup, summary.pendingRep]);
+
+    const letterColumns = useMemo(() => ({
+        mahasiswa: getKadepInternshipLetterColumns({
+            nameHeader: 'Nama Mahasiswa',
+            onViewDoc: (item) => {
+                if (item.document) {
+                    openDocumentPreview(item.document.fileName, item.document.filePath);
+                }
+            },
+            onApprove: (item) => {
+                navigate(`/kelola/kerja-praktik/kadep/sign/${item.type}/${item.id}`);
+            }
+        }),
+        dosen: getKadepInternshipLetterColumns({
+            nameHeader: 'Nama Dosen',
+            onViewDoc: (item) => {
+                if (item.document) {
+                    openDocumentPreview(item.document.fileName, item.document.filePath);
+                }
+            },
+            onApprove: (item) => {
+                navigate(`/kelola/kerja-praktik/kadep/sign/${item.type}/${item.id}`);
+            }
+        })
+    }), [navigate]);
 
     const renderContent = () => {
         if (activeTab.to.includes('monitoring')) {
@@ -126,7 +145,6 @@ export default function KadepInternshipManagementPage() {
         const sharedProps = {
             isLoading,
             isFetching,
-            columns,
             searchQuery,
             onSearchChange: (v: string) => updateParams({ q: v }),
             academicYearId,
@@ -136,39 +154,24 @@ export default function KadepInternshipManagementPage() {
         };
 
         if (activeTab.label.startsWith("Permohonan")) {
-            return <ApplicationLettersTab data={data?.applicationLetters || []} {...sharedProps} />;
+            return <ApplicationLettersTab data={data?.applicationLetters || []} columns={letterColumns.mahasiswa} {...sharedProps} />;
         } else if (activeTab.label.startsWith("Penugasan Dosen")) {
-            return <SupervisorLettersTab data={data?.supervisorLetters || []} {...sharedProps} />;
+            return <SupervisorLettersTab data={data?.supervisorLetters || []} pendingReplacements={data?.pendingReplacements || []} columns={letterColumns.dosen} {...sharedProps} />;
         } else if (activeTab.label.startsWith("Penugasan")) {
-            return <AssignmentLettersTab data={data?.assignmentLetters || []} {...sharedProps} />;
+            return <AssignmentLettersTab data={data?.assignmentLetters || []} columns={letterColumns.mahasiswa} {...sharedProps} />;
         }
 
         return null;
     };
 
     return (
-        <div className="p-4 space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 text-2xl font-semibold">
-                        <FileText className="h-6 w-6 text-primary" />
-                        <h1>Kelola Kerja Praktik</h1>
-                    </div>
+        <div className="p-6 space-y-6">
+            <div className="flex items-center gap-2 text-2xl font-semibold">
+                <FileText className="h-6 w-6 text-primary" />
+                <h1>Kelola Kerja Praktik</h1>
+            </div>
 
-                    {!isLoading && (
-                        <div className="flex flex-wrap items-center gap-2">
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 animate-in fade-in slide-in-from-right-2 duration-300">
-                                <span className="relative flex h-2 w-2">
-                                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${summary.total > 0 ? 'bg-amber-400' : 'bg-transparent'}`}></span>
-                                    <span className={`relative inline-flex rounded-full h-2 w-2 ${summary.total > 0 ? 'bg-amber-500' : 'bg-amber-200'}`}></span>
-                                </span>
-                                <span className="text-xs font-semibold uppercase tracking-wider">Perlu TTD:</span>
-                                <span className="text-sm font-bold tabular-nums">{summary.total}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-            <TabsNav tabs={TAB_ITEMS} preserveSearch />
+            <TabsNav tabs={tabs} preserveSearch />
 
             <div className="mt-6">
                 {renderContent()}

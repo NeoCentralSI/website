@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'; // Re-trigger compile
+import { useMemo, useState } from 'react';
 import { useRole, useAuth } from '@/hooks/shared';
 import {
   ChevronDown,
@@ -37,6 +37,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,6 +72,12 @@ interface Props {
   onRefresh: () => Promise<unknown> | unknown;
   isRefreshing?: boolean;
 }
+const REVISION_NOTE_PREVIEW_LIMIT = 160;
+
+function getRevisionNotePreview(note: string): string {
+  if (note.length <= REVISION_NOTE_PREVIEW_LIMIT) return note;
+  return `${note.slice(0, REVISION_NOTE_PREVIEW_LIMIT).trimEnd()}...`;
+}
 
 export function ThesisSeminarDetailRevisionPanel({ seminarId, detail, onRefresh, isRefreshing }: Props) {
   const { user } = useAuth();
@@ -84,8 +91,8 @@ export function ThesisSeminarDetailRevisionPanel({ seminarId, detail, onRefresh,
 
   return (
     <div className="space-y-6">
-      {/* 1. Catatan Penguji (Dari Rekap Penilaian) */}
-      <ExaminerNotesSection detail={detail} />
+      {/* 1. Catatan Penguji (Dari Rekap Penilaian) — Hanya untuk Mahasiswa */}
+      {showStudentActions && <ExaminerNotesSection detail={detail} />}
 
       {/* 2. Board Revisi (Main Table) */}
       <RevisionBoardSection
@@ -120,9 +127,9 @@ function ExaminerNotesSection({ detail }: { detail: any }) {
             open={isExpanded}
             onOpenChange={(open) => setExpandedNotes(prev => ({ ...prev, [idx]: open }))}
           >
-            <Card className="bg-muted/10">
+            <Card className="gap-0 border-gray-200 bg-card py-0 shadow-none">
               <CollapsibleTrigger asChild>
-                <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between cursor-pointer hover:bg-muted/20 transition-colors">
+                <CardHeader className="flex cursor-pointer flex-row items-center justify-between border-b border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50">
                   <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                     <MessageSquareText className="h-4 w-4 text-muted-foreground" />
                     Catatan — Penguji {note.examinerOrder} ({toTitleCaseName(note.lecturerName)})
@@ -205,15 +212,17 @@ function RevisionBoardSection({
 
   const filteredData = useMemo(() => {
     const term = search.toLowerCase();
-    const visibleItems = showStudentActions ? revisions : revisions.filter(r => r.studentSubmittedAt || r.isFinished);
-    if (!term) return visibleItems;
-    return visibleItems.filter(
+    const visibleItems = showStudentActions || showSupervisorActions ? revisions : revisions.filter(r => r.studentSubmittedAt || r.isFinished);
+    const items = !term ? visibleItems : visibleItems.filter(
       (r) =>
         r.description.toLowerCase().includes(term) ||
         (r.revisionAction || '').toLowerCase().includes(term) ||
         (r.examinerName || '').toLowerCase().includes(term)
     );
-  }, [revisions, search, showStudentActions]);
+
+    // CRITICAL: Sort by examinerOrder to ensure adjacency for merging
+    return [...items].sort((a, b) => (a.examinerOrder || 0) - (b.examinerOrder || 0));
+  }, [revisions, search, showStudentActions, showSupervisorActions]);
 
   const paginatedData = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -223,67 +232,92 @@ function RevisionBoardSection({
   const summary = (board as any)?.summary || {
     total: revisions.length,
     finished: revisions.filter((r: any) => r.isFinished).length,
+    pendingApproval: revisions.filter((r: any) => r.studentSubmittedAt && !r.isFinished).length,
   };
 
-  const canFinalizeBoard = !isRevisionFinalized && summary.finished > 0;
+  const canFinalizeBoard = !isRevisionFinalized && revisions.length > 0 && revisions.every((revision) => revision.isFinished);
 
   const handleCreate = async () => {
-    if (!selectedExaminerId || !newDescription.trim()) return;
-    await createMutation.mutateAsync({
-      seminarId,
-      payload: {
-        seminarExaminerId: selectedExaminerId,
-        description: newDescription.trim(),
-        revisionAction: newRevisionAction.trim() || undefined,
-      }
-    });
-    setCreateOpen(false);
-    setSelectedExaminerId('');
-    setNewDescription('');
-    setNewRevisionAction('');
-    refetch();
-    await onRefresh();
+    if (!selectedExaminerId || !newDescription.trim() || createMutation.isPending) return;
+    try {
+      await createMutation.mutateAsync({
+        seminarId,
+        payload: {
+          seminarExaminerId: selectedExaminerId,
+          description: newDescription.trim(),
+          revisionAction: newRevisionAction.trim() || undefined,
+        }
+      });
+      toast.success('Item revisi berhasil ditambahkan.');
+      setCreateOpen(false);
+      setSelectedExaminerId('');
+      setNewDescription('');
+      setNewRevisionAction('');
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal menambahkan item revisi.');
+    }
   };
 
   const handleSaveEdit = async () => {
-    if (!editingId || !editDescription.trim()) return;
-    await saveMutation.mutateAsync({
-      seminarId,
-      revisionId: editingId,
-      payload: { description: editDescription.trim(), revisionAction: editRevisionAction.trim() || undefined },
-    });
-    setEditOpen(false);
-    setEditingId(null);
-    refetch();
-    await onRefresh();
+    if (!editingId || !editDescription.trim() || saveMutation.isPending) return;
+    try {
+      await saveMutation.mutateAsync({
+        seminarId,
+        revisionId: editingId,
+        payload: { description: editDescription.trim(), revisionAction: editRevisionAction.trim() || undefined },
+      });
+      toast.success('Revisi berhasil diperbarui.');
+      setEditOpen(false);
+      setEditingId(null);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal memperbarui revisi.');
+    }
   };
 
   const handleFinalizeRevisions = async () => {
-    await finalizeRevisionsMutation.mutateAsync({ seminarId });
-    setFinalizeConfirmOpen(false);
-    await onRefresh();
+    if (finalizeRevisionsMutation.isPending) return;
+    try {
+      await finalizeRevisionsMutation.mutateAsync({ seminarId });
+      toast.success('Seluruh revisi seminar berhasil difinalisasi.');
+      setFinalizeConfirmOpen(false);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal memfinalisasi revisi.');
+    }
   };
 
   const handleUnfinalizeRevisions = async () => {
-    await unfinalizeRevisionsMutation.mutateAsync({ seminarId });
-    setUnfinalizeConfirmOpen(false);
-    await onRefresh();
+    if (unfinalizeRevisionsMutation.isPending) return;
+    try {
+      await unfinalizeRevisionsMutation.mutateAsync({ seminarId });
+      toast.success('Finalisasi revisi seminar berhasil dibatalkan.');
+      setUnfinalizeConfirmOpen(false);
+      refetch();
+      await onRefresh();
+    } catch (err) {
+      toast.error((err as Error).message || 'Gagal membatalkan finalisasi.');
+    }
   };
 
   const columns = useMemo<Column<any>[]>(() => {
     // Calculate rowSpan for examiner column
     const examinerRowSpans = new Map<string, number>();
-    filteredData.forEach((item, idx) => {
+    paginatedData.forEach((item, idx) => {
       const key = `${item.examinerOrder}-${item.examinerLecturerId}`;
       if (idx > 0) {
-        const prev = filteredData[idx - 1];
+        const prev = paginatedData[idx - 1];
         const prevKey = `${prev.examinerOrder}-${prev.examinerLecturerId}`;
         if (key === prevKey) return; // Skip
       }
       // Count subsequent matches
       let count = 1;
-      for (let j = idx + 1; j < filteredData.length; j++) {
-        const next = filteredData[j];
+      for (let j = idx + 1; j < paginatedData.length; j++) {
+        const next = paginatedData[j];
         if (`${next.examinerOrder}-${next.examinerLecturerId}` === key) {
           count++;
         } else {
@@ -302,11 +336,11 @@ function RevisionBoardSection({
           const key = `${row.examinerOrder}-${row.examinerLecturerId}`;
           const span = examinerRowSpans.get(`${index}-${key}`);
           if (span === undefined) {
-            return { className: 'hidden' };
+            return { className: 'sr-only !p-0 !border-0 hidden' };
           }
           return {
             rowSpan: span,
-            className: 'align-middle font-semibold',
+            className: 'align-top bg-gray-50/70 font-semibold',
           };
         },
         render: (row, index) => {
@@ -325,7 +359,14 @@ function RevisionBoardSection({
       {
         key: 'description',
         header: 'Catatan',
-        render: (row) => <p className="text-sm whitespace-pre-wrap break-words max-w-[200px]">{row.description}</p>,
+        render: (row) => (
+          <p
+            className="max-w-[280px] whitespace-pre-wrap break-words text-sm"
+            title={row.description}
+          >
+            {getRevisionNotePreview(row.description)}
+          </p>
+        ),
       },
       {
         key: 'revisionAction',
@@ -342,7 +383,7 @@ function RevisionBoardSection({
         width: 110,
         render: (row) => {
           if (row.isFinished) return <Badge variant="success" className="text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Disetujui</Badge>;
-          if (row.studentSubmittedAt) return <Badge variant="default" className="text-xs gap-1"><Send className="h-3 w-3" /> Diajukan</Badge>;
+          if (row.studentSubmittedAt) return <Badge variant="secondary" className="text-xs gap-1"><Send className="h-3 w-3" /> Diajukan</Badge>;
           return <Badge variant="warning" className="text-xs gap-1"><Clock className="h-3 w-3" /> Diproses</Badge>;
         },
       },
@@ -354,7 +395,7 @@ function RevisionBoardSection({
         render: (row) => (
           <div className="flex items-center justify-end gap-1">
             {/* Student Actions */}
-            {showStudentActions && !row.isFinished && (
+            {showStudentActions && !row.isFinished && !isRevisionFinalized && (
               <div className="flex items-center gap-1">
                 {!row.studentSubmittedAt ? (
                   <>
@@ -363,25 +404,25 @@ function RevisionBoardSection({
                       setEditDescription(row.description);
                       setEditRevisionAction(row.revisionAction || '');
                       setEditOpen(true);
-                    }} className="h-8 w-8 text-muted-foreground hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+                    }} className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground"><Pencil className="h-4 w-4" /></Button>
                     {row.revisionAction && (
-                      <Button variant="ghost" size="icon" onClick={() => setSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Ajukan"><Send className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => setSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground" title="Ajukan"><Send className="h-4 w-4" /></Button>
                     )}
                     <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(row.id)} className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Hapus"><Trash2 className="h-4 w-4" /></Button>
                   </>
                 ) : (
-                  <Button variant="ghost" size="icon" onClick={() => setCancelSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Pengajuan"><RotateCcw className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => setCancelSubmitConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground" title="Batalkan Pengajuan"><RotateCcw className="h-4 w-4" /></Button>
                 )}
               </div>
             )}
             {/* Supervisor Actions */}
             {showSupervisorActions && row.studentSubmittedAt && !row.isFinished && !isRevisionFinalized && (
-              <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ seminarId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Setujui">
+              <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ seminarId, revisionId: row.id })} disabled={approveMutation.isPending} className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground" title="Setujui">
                 {approveMutation.isPending ? <Spinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
               </Button>
             )}
             {showSupervisorActions && row.isFinished && !isRevisionFinalized && (
-              <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:text-primary" title="Batalkan Persetujuan">
+              <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground" title="Batalkan Persetujuan">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             )}
@@ -391,12 +432,23 @@ function RevisionBoardSection({
         ),
       },
     ];
-  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, filteredData]);
+  }, [showStudentActions, showSupervisorActions, isRevisionFinalized, approveMutation, seminarId, paginatedData]);
 
   if (isLoading) return <Loading size="lg" text="Memuat board revisi..." />;
 
   return (
     <div className="space-y-4">
+      {showStudentActions && !isRevisionFinalized && revisions.length > 0 && (
+        <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-card px-4 py-3">
+          <MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+          <div className="text-xs text-foreground/80 leading-relaxed">
+            <p className="mb-1 font-bold text-foreground">Informasi Perbaikan</p>
+            Daftar perbaikan di bawah ini telah dibuat secara otomatis berdasarkan catatan dari para penguji. 
+            Silakan lengkapi kolom <b>"Perbaikan"</b> untuk setiap item, lalu klik ikon <b>"Ajukan"</b> (<Send className="h-3 w-3 inline" />) agar dapat diperiksa oleh Pembimbing.
+          </div>
+        </div>
+      )}
+
       <CustomTable
         columns={columns}
         data={paginatedData}
@@ -418,12 +470,14 @@ function RevisionBoardSection({
             )}
 
             {isRevisionFinalized && (
-              <Badge variant="success" className="text-xs px-2 py-1">
-                <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
-              </Badge>
+              <div className="flex flex-col items-end">
+                <Badge variant="success" className="text-xs px-2 py-1">
+                  <CheckCircle2 className="mr-1.5 h-3 w-3" /> Revisi Selesai
+                </Badge>
+              </div>
             )}
 
-            {showStudentActions && (
+            {showStudentActions && !isRevisionFinalized && (
               <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Tambah
               </Button>
@@ -435,7 +489,7 @@ function RevisionBoardSection({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                    className="border-gray-200 text-foreground hover:bg-gray-50"
                     onClick={() => setUnfinalizeConfirmOpen(true)}
                     disabled={unfinalizeRevisionsMutation.isPending}
                   >
@@ -463,7 +517,7 @@ function RevisionBoardSection({
 
       {/* Dialogs & Alerts */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader><DialogTitle>Tambah Item Revisi</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -498,7 +552,7 @@ function RevisionBoardSection({
       </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader><DialogTitle>Edit Revisi</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><Label>Catatan Revisi</Label><Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} /></div>

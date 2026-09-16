@@ -170,9 +170,15 @@ export default function ScienceGroupPage() {
                                 <Input
                                     value={formData.name}
                                     onChange={e => setFormData({ name: e.target.value })}
-                                    placeholder="Contoh: Rekayasa Perangkat Lunak"
+                                    placeholder="Contoh: Sistem Enterprise"
                                     required
                                 />
+                                <p className="text-xs text-muted-foreground">
+                                    Nama resmi DSI saat ini: Sistem Enterprise; Rekayasa Data dan Business
+                                    Intelligence; Tata Kelola dan Infrastruktur Teknologi Informasi; Pengembangan
+                                    Sistem. Jangan diawali kata KBK. Dosen dipetakan ke kelompok ini oleh Admin
+                                    di Data Dosen.
+                                </p>
                             </div>
                         </div>
                         <DialogFooter>

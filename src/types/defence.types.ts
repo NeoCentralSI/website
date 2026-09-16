@@ -30,6 +30,7 @@ export interface DefenceChecklistRevisi extends DefenceChecklistItem {
   seminarStatus: 'passed' | 'passed_with_revision' | null;
   total: number;
   finished: number;
+  isVisible?: boolean;
 }
 
 export interface DefenceChecklistPembimbing extends DefenceChecklistItem {
@@ -57,10 +58,23 @@ export interface DefenceExaminer {
   assessmentSubmittedAt: string | null;
 }
 
+export interface DefenceRequirementDocument {
+  thesisDefenceId: string;
+  requirementId: string;
+  status: DocumentSubmitStatus;
+  submittedAt: string;
+  verifiedAt: string | null;
+  notes: string | null;
+  verifiedBy?: string | null;
+  fileName: string;
+  filePath: string;
+  mimeType?: string;
+  fileSize?: number;
+}
+
 export interface DefenceDocument {
   thesisDefenceId: string;
-  documentTypeId: string;
-  documentId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   submittedAt: string;
   verifiedAt: string | null;
@@ -83,15 +97,53 @@ export interface DefenceInfo {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   documents: DefenceDocument[];
   examiners: DefenceExaminer[];
 }
 
+export interface DefenceMilestone {
+  id: string;
+  label: string;
+  checked: boolean;
+}
+
+export interface DefenceRequirement {
+  id: string;
+  name: string;
+  description: string | null;
+  displayOrder: number;
+  document: DefenceRequirementDocument | null;
+}
+
+export interface DefenceRequirementConfiguration {
+  isConfigured: boolean;
+  message: string | null;
+}
+
+export interface DefenceUploadConfig {
+  accept: string[];
+  maxFileSizeBytes: number;
+  maxFileSizeMb: number;
+}
+
+export interface DefenceRequirementsResponse {
+  defenceId: string;
+  requirements: DefenceRequirement[];
+  uploadConfig: DefenceUploadConfig;
+}
+
 export interface DefenceOverviewResponse {
-  thesisId: string;
-  thesisTitle: string;
+  thesisId: string | null;
+  thesisTitle: string | null;
   checklist: DefenceChecklist;
   allChecklistMet: boolean;
+  milestones: DefenceMilestone[];
+  canUpload: boolean;
+  requirements: DefenceRequirement[];
+  requirementConfiguration: DefenceRequirementConfiguration;
+  uploadConfig: DefenceUploadConfig;
   defence: DefenceInfo | null;
 }
 
@@ -148,8 +200,7 @@ export interface AdminDefenceListItem {
 }
 
 export interface AdminDefenceDocumentDetail {
-  documentTypeId: string;
-  documentId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   submittedAt: string;
   verifiedAt: string | null;
@@ -184,6 +235,8 @@ export interface AdminDefenceDetailResponse {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   thesis: {
     id: string;
     title: string;
@@ -209,12 +262,12 @@ export interface RejectedDefenceExaminer {
   assignedAt: string | null;
 }
 
-export interface ValidateDefenceDocumentPayload {
+export interface VerifyDefenceDocumentPayload {
   action: 'approve' | 'decline';
   notes?: string;
 }
 
-export interface ValidateDefenceDocumentResponse {
+export interface VerifyDefenceDocumentResponse {
   documentTypeId: string;
   status: DocumentSubmitStatus;
   defenceTransitioned: boolean;
@@ -250,6 +303,7 @@ export interface DefenceCurrentSchedule {
   isOnline: boolean;
   meetingLink: string | null;
   room: DefenceRoomOption | null;
+  scheduledAt: string | null;
 }
 
 export interface DefenceRoomBooking {
@@ -259,6 +313,7 @@ export interface DefenceRoomBooking {
   date: string;
   startTime: string;
   endTime: string;
+  isOnline: boolean;
 }
 
 export interface DefenceSchedulingData {
@@ -334,6 +389,8 @@ export interface ExaminerDefenceRequestItem {
   startTime: string | null;
   endTime: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   myExaminerStatus: ExaminerAvailabilityStatus | null;
   myExaminerId: string | null;
   myExaminerOrder: number | null;
@@ -352,6 +409,8 @@ export interface SupervisedStudentDefenceItem {
   startTime: string | null;
   endTime: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   myRole: string;
   examiners: LecturerDefenceExaminer[];
 }
@@ -395,6 +454,8 @@ export interface LecturerDefenceDetailResponse {
   finalScore: number | null;
   grade: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   thesis: { id: string; title: string };
   student: { name: string; nim: string };
   viewerRole: 'examiner' | 'supervisor' | 'none';
@@ -447,8 +508,10 @@ export interface DefenceAssessmentFormResponse {
     startTime: string | null;
     endTime: string | null;
     room: { id: string; name: string } | null;
+    scheduledAt: string | null;
+    invitationLetterNo: string | null;
   };
-  assessorRole: 'examiner' | 'supervisor';
+  assessorRole: 'examiner' | 'supervisor' | 'viewer';
   examiner: {
     id: string;
     order: number;
@@ -463,6 +526,7 @@ export interface DefenceAssessmentFormResponse {
     assessmentSubmittedAt: string | null;
   } | null;
   criteriaGroups: DefenceAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface SubmitDefenceAssessmentPayload {
@@ -490,6 +554,7 @@ export interface DefenceFinalizationDataResponse {
     computedFinalScore: number | null;
     grade: string | null;
     resultFinalizedAt: string | null;
+    resultFinalizedBy: string | null;
     revisionFinalizedAt: string | null;
     revisionFinalizedBy: string | null;
     studentName: string;
@@ -519,6 +584,12 @@ export interface DefenceFinalizationDataResponse {
         maxScore: number;
         score: number;
         displayOrder: number;
+        rubrics?: {
+          id: string;
+          minScore: number;
+          maxScore: number;
+          description: string;
+        }[];
       }[];
     }[];
   }[];
@@ -536,16 +607,24 @@ export interface DefenceFinalizationDataResponse {
         maxScore: number;
         score: number;
         displayOrder: number;
+        rubrics?: {
+          id: string;
+          minScore: number;
+          maxScore: number;
+          description: string;
+        }[];
       }[];
     }[];
   };
   allExaminerSubmitted: boolean;
   supervisorAssessmentSubmitted: boolean;
   recommendationUnlocked: boolean;
+  minimumPassingScore: number;
 }
 
 export interface FinalizeDefencePayload {
   status: 'passed' | 'passed_with_revision' | 'failed';
+  recommendRevision?: boolean;
 }
 
 export interface FinalizeDefenceResponse {
@@ -595,6 +674,8 @@ export interface StudentDefenceHistoryItem {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   examiners: {
     id: string;
     lecturerId: string;
@@ -619,6 +700,8 @@ export interface StudentDefenceDetailResponse {
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
   room: { id: string; name: string } | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   thesis: {
     id: string;
     studentId: string;

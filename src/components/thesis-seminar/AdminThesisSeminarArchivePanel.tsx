@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Plus, Upload } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,12 +48,30 @@ export function AdminThesisSeminarArchivePanel() {
     status: ARCHIVE_STATUSES,
   });
 
-  const { thesisOptions, lecturerOptions, roomOptions } = useAdminThesisSeminarFormOptions();
+  const {
+    thesisOptions,
+    lecturerOptions,
+    roomOptions,
+    isLoading: isFormOptionsLoading,
+    error: formOptionsError,
+  } = useAdminThesisSeminarFormOptions();
   const createMutation = useCreateAdminThesisSeminarArchive();
   const updateMutation = useUpdateAdminThesisSeminarArchive();
   const deleteMutation = useDeleteAdminThesisSeminarArchive();
   const importMutation = useImportAdminThesisSeminarArchive();
   const exportMutation = useExportAdminThesisSeminarArchive();
+
+  useEffect(() => {
+    if (archiveQuery.error instanceof Error) {
+      toast.error(archiveQuery.error.message || 'Gagal memuat arsip seminar');
+    }
+  }, [archiveQuery.error]);
+
+  useEffect(() => {
+    if (formOptionsError instanceof Error) {
+      toast.error(formOptionsError.message || 'Gagal memuat pilihan data arsip');
+    }
+  }, [formOptionsError]);
 
   const archiveData = archiveQuery.data?.seminars ?? [];
   const meta = archiveQuery.data?.meta ?? {
@@ -90,10 +108,6 @@ export function AdminThesisSeminarArchivePanel() {
         onDelete={(id) => setDeletingId(id)}
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <RefreshButton
-              onClick={() => archiveQuery.refetch()}
-              isRefreshing={archiveQuery.isFetching && !archiveQuery.isLoading}
-            />
             <Button size="sm" variant="outline" onClick={() => setIsImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Import Excel
@@ -104,6 +118,7 @@ export function AdminThesisSeminarArchivePanel() {
             </Button>
             <Button
               size="sm"
+              disabled={isFormOptionsLoading}
               onClick={() => {
                 setEditingSeminar(null);
                 setIsFormOpen(true);
@@ -112,6 +127,10 @@ export function AdminThesisSeminarArchivePanel() {
               <Plus className="mr-2 h-4 w-4" />
               Tambah Arsip
             </Button>
+            <RefreshButton
+              onClick={() => archiveQuery.refetch()}
+              isRefreshing={archiveQuery.isFetching && !archiveQuery.isLoading}
+            />
           </div>
         }
       />
@@ -171,7 +190,7 @@ export function AdminThesisSeminarArchivePanel() {
                   onError: (error: Error) => toast.error(error.message || 'Gagal menghapus arsip seminar'),
                 })
               }
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 hover:bg-red-700"
             >
               Hapus
             </AlertDialogAction>

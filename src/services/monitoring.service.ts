@@ -5,6 +5,11 @@ import { apiRequest } from "./auth.service";
 
 export interface ProgressStats {
   totalActiveTheses: number;
+  totalProposalTheses?: number;
+  totalPostProposalTheses?: number;
+  supervisorLoadThesisCount?: number;
+  definitionLabel?: string;
+  periodLabel?: string;
   totalMilestones: number;
   completedMilestones: number;
   averageProgress: number;
@@ -52,6 +57,32 @@ export interface ReadyForSeminarStudent {
   approvedAt: string;
 }
 
+export interface SupervisorLoadStudent {
+  thesisId: string;
+  thesisTitle: string | null;
+  role: string | null;
+  name: string;
+  nim: string;
+  email: string | null;
+}
+
+export interface SupervisorLoad {
+  lecturerId: string;
+  lecturerName: string;
+  lecturerNip: string | null;
+  lecturerEmail: string | null;
+  studentCount: number;
+  students: SupervisorLoadStudent[];
+}
+
+export interface SupervisorLoadList {
+  definitionLabel: string;
+  periodLabel: string;
+  academicYearId: string | null;
+  uniqueThesisCount: number;
+  lecturers: SupervisorLoad[];
+}
+
 export interface RatingDistribution {
   id: string;
   name: string;
@@ -91,13 +122,35 @@ export interface MonitoringDashboard {
   guidanceTrend: GuidanceTrend[];
   atRiskStudents: AtRiskStudent[];
   slowStudents: AtRiskStudent[];
+  supervisorLoads: SupervisorLoadList;
   readyForSeminar: ReadyForSeminarStudent[];
+}
+
+/** Status penerbitan TA-04 (read-only; KaDep tetap satu-satunya penerbit). */
+export interface ThesisTa04Snapshot {
+  issued: boolean;
+  issuedAt: string | null;
+}
+
+/** Ringkasan nilai TA-03. `null` bila belum ada baris penilaian sama sekali. */
+export interface ThesisTa03Snapshot {
+  ta03a: number | null;
+  ta03b: number | null;
+  finalScore: number | null;
+  isFinalized: boolean;
+  finalizedAt: string | null;
+  coSigned: boolean;
+  autoZeroed: boolean;
 }
 
 export interface ThesisListItem {
   id: string;
   title: string;
   rating: 'ONGOING' | 'SLOW' | 'AT_RISK' | 'FAILED' | 'CANCELLED';
+  topic: {
+    id: string;
+    name: string;
+  } | null;
   student: {
     id: string;
     userId: string;
@@ -106,6 +159,8 @@ export interface ThesisListItem {
     email: string;
   };
   status: string;
+  ta04: ThesisTa04Snapshot;
+  ta03: ThesisTa03Snapshot | null;
   academicYear: string;
   startSemester: string;
   progress: {
@@ -187,6 +242,8 @@ export interface ThesisDetail {
   id: string;
   title: string;
   status: string | null;
+  ta04: ThesisTa04Snapshot;
+  ta03: ThesisTa03Snapshot | null;
   rating: string;
   topic: string | null;
   academicYear: string | null;
@@ -251,6 +308,7 @@ export interface FilterOption {
 export interface FilterOptions {
   statuses: FilterOption[];
   supervisors: FilterOption[];
+  topics: FilterOption[];
   academicYears?: {
     value: string;
     label: string;
@@ -261,6 +319,7 @@ export interface FilterOptions {
 export interface ThesesFilters {
   status?: string;
   lecturerId?: string;
+  topicId?: string;
   academicYear?: string;
   search?: string;
   page?: number;
@@ -276,6 +335,7 @@ const ENDPOINTS = {
   FILTERS: "/thesisGuidance/monitoring/filters",
   AT_RISK: "/thesisGuidance/monitoring/at-risk",
   READY_SEMINAR: "/thesisGuidance/monitoring/ready-seminar",
+  SUPERVISOR_LOADS: "/thesisGuidance/monitoring/supervisor-loads",
   BATCH_WARNING: "/thesisGuidance/monitoring/batch-warning",
 };
 
@@ -305,6 +365,7 @@ export async function getThesesList(filters: ThesesFilters = {}): Promise<Theses
 
   if (filters.status) params.append("status", filters.status);
   if (filters.lecturerId) params.append("lecturerId", filters.lecturerId);
+  if (filters.topicId) params.append("topicId", filters.topicId);
   if (filters.academicYear && filters.academicYear !== "all") params.append("academicYear", filters.academicYear);
   if (filters.search) params.append("search", filters.search);
   if (filters.page) params.append("page", filters.page.toString());
@@ -379,6 +440,22 @@ export async function getStudentsReadyForSeminar(academicYear?: string): Promise
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Gagal mengambil mahasiswa siap seminar");
+  }
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Get lecturer supervision workloads
+ */
+export async function getSupervisorLoads(academicYear?: string): Promise<SupervisorLoadList> {
+  const url = academicYear && academicYear !== "all"
+    ? `${ENDPOINTS.SUPERVISOR_LOADS}?academicYear=${academicYear}`
+    : ENDPOINTS.SUPERVISOR_LOADS;
+  const response = await apiRequest(getApiUrl(url));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil beban bimbingan dosen");
   }
   const result = await response.json();
   return result.data;

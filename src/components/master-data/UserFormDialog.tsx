@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
+import { ROLES } from '@/lib/roles';
 
 interface UserFormDialogProps {
   open: boolean;
@@ -124,6 +125,28 @@ export function UserFormDialog({
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="gender">Jenis Kelamin</Label>
+                <Select
+                  value={formData.gender === null ? "null" : (formData.gender ? "female" : "male")}
+                  onValueChange={(value) => {
+                    const genderValue = value === "null" ? null : value === "female";
+                    setFormData({ ...formData, gender: genderValue });
+                  }}
+                >
+                  <SelectTrigger id="gender">
+                    <SelectValue placeholder="Pilih Jenis Kelamin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="null">Belum Set</SelectItem>
+                    <SelectItem value="male">Laki-laki</SelectItem>
+                    <SelectItem value="female">Perempuan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label>Role</Label>
               <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
@@ -146,10 +169,11 @@ export function UserFormDialog({
                   // For NIP/OTHER, show all roles except Mahasiswa
                   roleOptions
                     .filter(role => {
-                      // Filter admin role when editing
-                      if (editingUser && role.value === 'Admin') return false;
-                      // Filter Mahasiswa for NIP/OTHER
-                      if (role.value === 'Mahasiswa') return false;
+                      // Peran Admin tidak bisa ditugaskan lewat endpoint ini: backend
+                      // membuangnya saat create dan tidak menyentuhnya saat update.
+                      if (role.value === ROLES.ADMIN) return false;
+                      // NIP/OTHER tidak boleh memegang peran Mahasiswa (ditolak backend).
+                      if (role.value === ROLES.MAHASISWA) return false;
                       return true;
                     })
                     .map((role) => {

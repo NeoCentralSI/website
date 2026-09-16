@@ -36,12 +36,19 @@ export default function Profil() {
   // Calculate profile completeness
   const profileCompleteness = useMemo(() => {
     if (!user) return 0;
-    const fields = [!!user.fullName, !!user.email, !!user.phoneNumber, !!user.avatarUrl];
+    const fields = [
+      !!user.fullName,
+      !!user.email,
+      !!user.phoneNumber,
+      !!user.avatarUrl,
+      user.gender !== null && user.gender !== undefined
+    ];
     return Math.round((fields.filter(Boolean).length / fields.length) * 100);
   }, [user]);
 
+
   return (
-    <div className="space-y-5 pt-2">
+    <div className="p-6 space-y-6">
       {isProfileIncomplete && <ProfileIncompleteAlert />}
 
       <div className="flex flex-col lg:flex-row gap-5">

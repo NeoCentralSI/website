@@ -7,13 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import type { AssessmentRubric, CreateRubricPayload, UpdateRubricPayload } from '@/services/rubricMetopen.service';
+import type { MetopenAssessmentRubric, CreateRubricPayload, UpdateRubricPayload } from '@/services/rubricMetopen.service';
 
 interface MetopenRubricItemFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     criteriaMaxScore: number | null;
-    editData?: AssessmentRubric | null;
+    editData?: MetopenAssessmentRubric | null;
     onSubmit:
         | ((data: CreateRubricPayload) => Promise<unknown>)
         | ((data: UpdateRubricPayload) => Promise<unknown>);

@@ -17,9 +17,9 @@ import {
   finalizeDefenceSchedule,
   downloadInvitationLetter,
 } from '@/services/thesis-defence/core.service';
-import { validateDefenceDocument } from '@/services/thesis-defence/doc.service';
+import { verifyDefenceDocument } from '@/services/thesis-defence/doc.service';
 import type {
-  ValidateDefenceDocumentPayload,
+  VerifyDefenceDocumentPayload,
   SetDefenceSchedulePayload,
   AdminDefenceArchivePayload,
 } from '@/types/defence.types';
@@ -41,19 +41,19 @@ export function useAdminDefenceDetail(defenceId: string | undefined) {
   });
 }
 
-export function useValidateDefenceDocument() {
+export function useVerifyDefenceDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({
       defenceId,
-      documentTypeId,
+      requirementId,
       payload,
     }: {
       defenceId: string;
-      documentTypeId: string;
-      payload: ValidateDefenceDocumentPayload;
-    }) => validateDefenceDocument(defenceId, documentTypeId, payload),
+      requirementId: string;
+      payload: VerifyDefenceDocumentPayload;
+    }) => verifyDefenceDocument(defenceId, requirementId, payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-defences'] });
       queryClient.invalidateQueries({

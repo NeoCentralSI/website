@@ -1,25 +1,36 @@
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getLecturerGuidanceTimeline, verifyFinalReportByLecturer } from '@/services/internship';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { AlertCircle, CheckCircle2, Clock, Eye, FileText, Loader2, MessageSquare, Upload, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, FileText, CheckCircle2, Clock, XCircle, AlertCircle, Eye, Edit } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
-import DocumentVerificationDialog from '@/components/internship/sekdep/DocumentVerificationDialog';
-import { useState } from 'react';
-import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
-import { toast } from 'sonner';
+import { getLecturerGuidanceTimeline, verifyFinalReportByLecturer } from '@/services/internship';
 
 export default function LecturerFinalReportTab() {
     const { internshipId } = useParams<{ internshipId: string }>();
+    const queryClient = useQueryClient();
     const [previewOpen, setPreviewOpen] = useState(false);
     const [feedbackPreviewOpen, setFeedbackPreviewOpen] = useState(false);
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [dialogMode, setDialogMode] = useState<'APPROVE' | 'REJECT'>('APPROVE');
-    const [isEditMode, setIsEditMode] = useState(false);
-    const queryClient = useQueryClient();
+    const [approveOpen, setApproveOpen] = useState(false);
+    const [rejectOpen, setRejectOpen] = useState(false);
+    const [notes, setNotes] = useState('');
+    const [feedbackFile, setFeedbackFile] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { data: studentGuidance, isLoading } = useQuery({
         queryKey: ['lecturer-student-guidance-timeline', internshipId],
@@ -27,27 +38,83 @@ export default function LecturerFinalReportTab() {
         enabled: !!internshipId,
     });
 
-    const verifyMutation = useMutation({
-        mutationFn: ({ status, notes, file }: { status: 'APPROVED' | 'REVISION_NEEDED', notes?: string, file?: File }) =>
-            verifyFinalReportByLecturer(internshipId!, status, notes, file),
-        onSuccess: (data) => {
-            toast.success(data.message);
-            queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
-            setDialogOpen(false);
-        },
-        onError: (error: unknown) => {
-            toast.error(error instanceof Error ? error.message : "Gagal memverifikasi laporan akhir");
-        }
-    });
+    const report = studentGuidance?.report;
+    const hasReport = !!report?.document;
 
-    const handleOpenDialog = (mode: 'APPROVE' | 'REJECT', isEdit: boolean = false) => {
-        setDialogMode(mode);
-        setIsEditMode(isEdit);
-        setDialogOpen(true);
+    const statusBadge = useMemo(() => {
+        switch (report?.status) {
+            case 'APPROVED':
+                return <Badge className="gap-1 bg-green-600 hover:bg-green-700"><CheckCircle2 className="h-3.5 w-3.5" />Final</Badge>;
+            case 'REVISION_NEEDED':
+                return <Badge variant="destructive" className="gap-1"><XCircle className="h-3.5 w-3.5" />Revisi</Badge>;
+            case 'SUBMITTED':
+                return <Badge variant="outline" className="gap-1 border-blue-300 bg-blue-50 text-blue-700"><Clock className="h-3.5 w-3.5" />Menunggu Review</Badge>;
+            default:
+                return <Badge variant="secondary">Belum Ada</Badge>;
+        }
+    }, [report?.status]);
+
+    const resetDialogState = () => {
+        setNotes('');
+        setFeedbackFile(null);
     };
 
-    const handleConfirmVerification = (status: 'APPROVED' | 'REVISION_NEEDED', notes?: string, file?: File) => {
-        verifyMutation.mutate({ status, notes, file });
+    const refreshData = () => {
+        queryClient.invalidateQueries({ queryKey: ['lecturer-student-guidance-timeline', internshipId] });
+        queryClient.invalidateQueries({ queryKey: ['lecturerSupervisedStudents'] });
+        queryClient.invalidateQueries({ queryKey: ['student-logbooks'] });
+    };
+
+    const handleApprove = async () => {
+        if (!internshipId) return;
+
+        setIsSubmitting(true);
+        try {
+            await verifyFinalReportByLecturer(internshipId, 'APPROVED', notes.trim() || undefined);
+            toast.success('Laporan akhir disetujui sebagai laporan final');
+            setApproveOpen(false);
+            resetDialogState();
+            refreshData();
+        } catch (error: any) {
+            toast.error(error.message || 'Gagal menyetujui laporan akhir');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!internshipId) return;
+
+        setIsSubmitting(true);
+        try {
+            await verifyFinalReportByLecturer(internshipId, 'REVISION_NEEDED', notes.trim() || undefined, feedbackFile || undefined);
+            toast.success('Laporan akhir dikembalikan untuk revisi');
+            setRejectOpen(false);
+            resetDialogState();
+            refreshData();
+        } catch (error: any) {
+            toast.error(error.message || 'Gagal menolak laporan akhir');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleFeedbackFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Ukuran file maksimal 5MB');
+            event.target.value = '';
+            return;
+        }
+        if (file.type !== 'application/pdf') {
+            toast.error('File feedback harus berformat PDF');
+            event.target.value = '';
+            return;
+        }
+
+        setFeedbackFile(file);
     };
 
     if (isLoading) {
@@ -58,247 +125,199 @@ export default function LecturerFinalReportTab() {
         );
     }
 
-    // Get report data from internship
-    const report = studentGuidance?.report;
-    const reportStatus = report?.status ?? null;
-    const reportTitle = report?.title ?? null;
-    const reportNotes = report?.notes ?? null;
-    const reportUploadedAt = report?.uploadedAt ?? null;
-    const reportDocument = report?.document ?? null;
-    const reportFeedbackDocument = report?.feedbackDocument ?? null;
-
-
-    const getStatusBadge = (status: string | null) => {
-        switch (status) {
-            case 'SUBMITTED':
-                return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Menunggu Verifikasi</Badge>;
-            case 'APPROVED':
-                return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Disetujui</Badge>;
-            case 'REVISION_NEEDED':
-                return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Perlu Revisi</Badge>;
-            default:
-                return <Badge variant="outline" className="text-slate-400">Belum Diunggah</Badge>;
-        }
-    };
-
-    const getStatusIcon = (status: string | null) => {
-        switch (status) {
-            case 'SUBMITTED':
-                return <Clock className="w-5 h-5 text-blue-600" />;
-            case 'APPROVED':
-                return <CheckCircle2 className="w-5 h-5 text-green-600" />;
-            case 'REVISION_NEEDED':
-                return <XCircle className="w-5 h-5 text-amber-600" />;
-            default:
-                return <AlertCircle className="w-5 h-5 text-muted-foreground" />;
-        }
-    };
+    if (!hasReport) {
+        return (
+            <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground font-medium">Mahasiswa belum mengunggah laporan akhir</p>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-xs">Laporan akhir yang diunggah mahasiswa akan muncul di sini untuk Anda review.</p>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <div className="space-y-6">
-            {/* Card untuk Laporan Akhir Mahasiswa */}
             <Card>
-                <CardHeader className="relative">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-5 w-5" />
-                                Laporan Akhir Mahasiswa
-                            </CardTitle>
-                            <CardDescription>
-                                Laporan akhir yang diunggah oleh mahasiswa
-                            </CardDescription>
-                        </div>
-                        {report && reportStatus && reportStatus !== null && (
-                            <div className="flex items-center gap-2">
-                                {getStatusIcon(reportStatus)}
-                                {getStatusBadge(reportStatus)}
-                            </div>
-                        )}
+                <CardHeader className="flex flex-row items-start justify-between gap-4">
+                    <div className="space-y-1">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <FileText className="h-5 w-5 text-primary" />
+                            Laporan Akhir Kerja Praktik
+                        </CardTitle>
+                        <CardDescription>
+                            Review laporan akhir mahasiswa. Jika disetujui, dokumen ini menjadi laporan akhir final.
+                        </CardDescription>
                     </div>
+                    {statusBadge}
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {!report || !reportStatus || reportStatus === null ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground">Mahasiswa belum mengunggah laporan akhir</p>
-                        </div>
-                    ) : (
-                        <>
-                            {(reportTitle || reportUploadedAt) && (
-                                <div className="flex flex-col gap-2 p-4 rounded-xl bg-background border">
-                                    {reportTitle && (
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="font-medium">Judul Laporan:</span>
-                                            <span className="text-muted-foreground font-medium">{reportTitle}</span>
-                                        </div>
-                                    )}
-                                    {reportUploadedAt && (
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="font-medium">Tanggal Unggah:</span>
-                                            <span className="text-muted-foreground">
-                                                {format(new Date(reportUploadedAt), 'dd MMMM yyyy', { locale: idLocale })}
-                                            </span>
-                                        </div>
-                                    )}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div className="lg:col-span-7 space-y-4">
+                            <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+                                <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Judul</p>
+                                    <p className="text-sm font-semibold">{report?.title || '-'}</p>
                                 </div>
-                            )}
+                                <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Diunggah</p>
+                                    <p className="text-sm">{report?.uploadedAt ? new Date(report.uploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</p>
+                                </div>
+                            </div>
 
-                            {reportDocument && (
-                                <div className="flex items-center justify-between p-4 rounded-xl bg-background border">
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <FileText className="h-5 w-5 text-primary shrink-0" />
-                                        <div className="flex flex-col min-w-0 flex-1">
-                                            <span className="text-sm font-medium truncate">{reportDocument.fileName || 'Laporan Akhir.pdf'}</span>
-                                            <span className="text-xs text-muted-foreground">PDF</span>
+                            <div className="flex items-center justify-between rounded-xl border p-4">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <FileText className="h-5 w-5 text-primary shrink-0" />
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium">{report?.document?.fileName || 'Laporan Akhir.pdf'}</p>
+                                        <p className="text-xs text-muted-foreground">PDF</p>
+                                    </div>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Preview
+                                </Button>
+                            </div>
+
+                            {report?.feedbackDocument && (
+                                <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/40 p-4">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <MessageSquare className="h-5 w-5 text-amber-600 shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-medium">{report.feedbackDocument.fileName || 'Feedback.pdf'}</p>
+                                            <p className="text-xs text-muted-foreground">Feedback revisi terakhir</p>
                                         </div>
                                     </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setPreviewOpen(true)}
-                                        className="shrink-0"
-                                    >
+                                    <Button variant="outline" size="sm" onClick={() => setFeedbackPreviewOpen(true)}>
                                         <Eye className="h-4 w-4 mr-2" />
                                         Preview
                                     </Button>
                                 </div>
                             )}
+                        </div>
 
-                            {reportStatus === 'SUBMITTED' && (
-                                <div className="pt-4 border-t">
-                                    <p className="text-sm text-muted-foreground mb-4">
-                                        Laporan akhir menunggu verifikasi. Silakan review dokumen dan berikan keputusan.
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <Button 
-                                            variant="outline" 
-                                            className="flex-1"
-                                            onClick={() => handleOpenDialog('REJECT')}
-                                            disabled={verifyMutation.isPending}
-                                        >
-                                            Perlu Revisi
-                                        </Button>
-                                        <Button 
-                                            className="flex-1"
-                                            onClick={() => handleOpenDialog('APPROVE')}
-                                            disabled={verifyMutation.isPending}
-                                        >
-                                            Setujui
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
+                        <div className="lg:col-span-5 space-y-4">
+                            <Card className="bg-blue-50/20 border-blue-100">
+                                <CardHeader>
+                                    <CardTitle className="text-sm flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4 text-blue-600" />
+                                        Catatan Untuk Mahasiswa
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {report?.notes ? (
+                                        <p className="text-sm leading-relaxed italic text-blue-900">"{report.notes}"</p>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <AlertCircle className="h-4 w-4" />
+                                            Belum ada catatan.
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <Button variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setRejectOpen(true)}>
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    {report?.status === 'APPROVED' ? 'Tolak Ulang' : 'Tolak'}
+                                </Button>
+                                <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => setApproveOpen(true)} disabled={report?.status === 'APPROVED'}>
+                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                    Setujui
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
-            {/* Card untuk Feedback Dosen */}
-            {(reportNotes || reportFeedbackDocument) && (
-                <Card>
-                    <CardHeader className="relative">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="flex items-center gap-2">
-                                    <FileText className="h-5 w-5" />
-                                    Feedback Dosen Pembimbing
-                                </CardTitle>
-                                <CardDescription>
-                                    Catatan dan file feedback dari dosen pembimbing
-                                </CardDescription>
-                            </div>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenDialog('REJECT', true)}
-                                className="shrink-0"
-                                disabled={verifyMutation.isPending}
-                            >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
+            <AlertDialog open={approveOpen} onOpenChange={(open) => {
+                setApproveOpen(open);
+                if (!open) resetDialogState();
+            }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Setujui Laporan Akhir?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Dokumen laporan akhir ini akan ditetapkan sebagai laporan akhir final mahasiswa. Anda masih dapat menolak ulang nanti jika mahasiswa perlu mengunggah revisi.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Catatan opsional..."
+                        className="min-h-[100px]"
+                        disabled={isSubmitting}
+                    />
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isSubmitting}>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleApprove} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700">
+                            {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                            Ya, Setujui
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={rejectOpen} onOpenChange={(open) => {
+                setRejectOpen(open);
+                if (!open) resetDialogState();
+            }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{report?.status === 'APPROVED' ? 'Tolak Ulang Laporan Final?' : 'Tolak Laporan Akhir?'}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Status laporan akan menjadi revisi dan mahasiswa dapat mengunggah ulang laporan akhir.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Catatan Revisi</Label>
+                            <Textarea
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Tuliskan bagian yang perlu direvisi..."
+                                className="min-h-[120px]"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="feedback-file">File Feedback PDF</Label>
+                            <input id="feedback-file" type="file" accept=".pdf" className="hidden" onChange={handleFeedbackFile} disabled={isSubmitting} />
+                            <Button type="button" variant="outline" className="w-full gap-2" onClick={() => document.getElementById('feedback-file')?.click()} disabled={isSubmitting}>
+                                <Upload className="h-4 w-4" />
+                                {feedbackFile ? feedbackFile.name : 'Pilih File Feedback'}
                             </Button>
                         </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {reportNotes && (
-                            <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
-                                <p className="text-sm font-medium text-amber-900 mb-1">Catatan</p>
-                                <p className="text-sm text-amber-800">{reportNotes}</p>
-                            </div>
-                        )}
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isSubmitting}>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleReject} disabled={isSubmitting} className="bg-red-600 hover:bg-red-700">
+                            {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                            Ya, Tolak
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
-                        {reportFeedbackDocument && (
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 border border-amber-200">
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <FileText className="h-5 w-5 text-amber-600 shrink-0" />
-                                    <div className="flex flex-col min-w-0 flex-1">
-                                        <span className="text-sm font-medium truncate">
-                                            {reportFeedbackDocument.fileName || 'Feedback.pdf'}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">File feedback yang telah diunggah</span>
-                                    </div>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setFeedbackPreviewOpen(true)}
-                                    className="shrink-0"
-                                >
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    Preview
-                                </Button>
-                            </div>
-                        )}
-
-                        {!reportNotes && !reportFeedbackDocument && (
-                            <div className="flex flex-col items-center justify-center py-8 text-center">
-                                <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
-                                <p className="text-sm text-muted-foreground">Belum ada feedback dari dosen pembimbing</p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
-            {reportDocument && (
+            {report?.document && (
                 <DocumentPreviewDialog
                     open={previewOpen}
                     onOpenChange={setPreviewOpen}
-                    fileName={reportDocument.fileName}
-                    filePath={reportDocument.filePath}
+                    fileName={report.document.fileName || 'Laporan Akhir.pdf'}
+                    filePath={report.document.filePath || undefined}
                 />
             )}
 
-            {reportFeedbackDocument && reportFeedbackDocument.filePath && (
+            {report?.feedbackDocument && (
                 <DocumentPreviewDialog
                     open={feedbackPreviewOpen}
                     onOpenChange={setFeedbackPreviewOpen}
-                    fileName={reportFeedbackDocument.fileName || 'Feedback.pdf'}
-                    filePath={reportFeedbackDocument.filePath}
+                    fileName={report.feedbackDocument.fileName || 'Feedback.pdf'}
+                    filePath={report.feedbackDocument.filePath || undefined}
                 />
             )}
-
-            <DocumentVerificationDialog
-                open={dialogOpen}
-                onOpenChange={(open) => {
-                    setDialogOpen(open);
-                    if (!open) {
-                        setIsEditMode(false);
-                    }
-                }}
-                onConfirm={handleConfirmVerification}
-                isLoading={verifyMutation.isPending}
-                title={isEditMode ? "Feedback" : "Laporan Akhir"}
-                mode={dialogMode}
-                initialNotes={reportNotes || ''}
-                allowFileUpload={true}
-                existingFeedbackFile={report?.feedbackDocument || null}
-            />
         </div>
     );
 }
-

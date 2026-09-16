@@ -15,10 +15,11 @@ import {
 
 const QUERY_KEY = ['cpls'];
 
-export function useCpl() {
+export function useCpl(initialCurriculumId = '') {
     const queryClient = useQueryClient();
     const [params, setParams] = useState<GetCplsParams>({
-        status: 'active',
+        curriculumId: initialCurriculumId,
+        status: 'all',
         search: '',
         page: 1,
         limit: 10,
@@ -27,6 +28,7 @@ export function useCpl() {
     const { data: cpls, isLoading, isFetching, refetch } = useQuery({
         queryKey: [...QUERY_KEY, params],
         queryFn: () => getCpls(params),
+        enabled: Boolean(params.curriculumId),
     });
 
     const createMutation = useMutation({
@@ -77,7 +79,7 @@ export function useCpl() {
     const exportAllMutation = useMutation({
         mutationFn: exportAllCplStudentScores,
         onSuccess: () => {
-            toast.success('Export semua nilai CPL berhasil diunduh');
+            toast.success('Berhasil mengekspor semua data CPL dan nilai mahasiswa terkait');
         },
         onError: (error: Error) => {
             toast.error(error.message);

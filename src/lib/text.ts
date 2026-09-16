@@ -137,4 +137,25 @@ export function formatThesisDocName(nim?: string | null, fullName?: string | nul
   return `${nimPart}_${namePart}_LaporanTA`;
 }
 
+/**
+ * Safely truncate long file names while preserving extension if possible.
+ * e.g. "Daftar Hadir Peserta Seminar Hasil - 2026-08-02.pdf" -> "Daftar Hadir Peser...pdf"
+ */
+export function truncateFileName(name?: string | null, maxLength = 26): string {
+  if (!name) return "";
+  const trimmed = name.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+
+  const lastDot = trimmed.lastIndexOf(".");
+  if (lastDot > 0 && trimmed.length - lastDot <= 7) {
+    const ext = trimmed.slice(lastDot);
+    const base = trimmed.slice(0, lastDot);
+    const available = maxLength - ext.length - 3;
+    if (available > 3) {
+      return `${base.slice(0, available)}...${ext}`;
+    }
+  }
+  return `${trimmed.slice(0, maxLength - 3)}...`;
+}
+
 

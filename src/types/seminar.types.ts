@@ -34,8 +34,7 @@ export interface SeminarChecklist {
 
 export interface SeminarDocument {
   thesisSeminarId: string;
-  documentTypeId: string;
-  documentId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   submittedAt: string;
   verifiedAt: string | null;
@@ -43,6 +42,46 @@ export interface SeminarDocument {
   verifiedBy?: string | null;
   fileName?: string | null;
   filePath?: string | null;
+}
+
+
+export interface SeminarRequirementDocument {
+  thesisSeminarId: string;
+  requirementId: string;
+  status: DocumentSubmitStatus;
+  submittedAt: string;
+  verifiedAt: string | null;
+  notes: string | null;
+  verifiedBy: string | null;
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  fileSize: number;
+}
+
+export interface SeminarRequirement {
+  id: string;
+  name: string;
+  description: string | null;
+  displayOrder: number;
+  document: SeminarRequirementDocument | null;
+}
+
+export interface SeminarRequirementConfiguration {
+  isConfigured: boolean;
+  message: string | null;
+}
+
+export interface SeminarUploadConfig {
+  accept: string[];
+  maxFileSizeBytes: number;
+  maxFileSizeMb: number;
+}
+
+export interface SeminarRequirementsResponse {
+  seminarId: string;
+  requirements: SeminarRequirement[];
+  uploadConfig: SeminarUploadConfig;
 }
 
 export interface AdminSeminarDocumentSummary {
@@ -97,16 +136,29 @@ export interface SeminarInfo {
   grade: string | null;
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   room: { id: string; name: string } | null;
   documents: SeminarDocument[];
   examiners: SeminarExaminer[];
 }
 
+export interface SeminarMilestone {
+  id: string;
+  label: string;
+  checked: boolean;
+}
+
 export interface SeminarOverviewResponse {
-  thesisId: string;
-  thesisTitle: string;
+  thesisId: string | null;
+  thesisTitle: string | null;
   checklist: SeminarChecklist;
   allChecklistMet: boolean;
+  milestones: SeminarMilestone[];
+  canUpload: boolean;
+  requirements: SeminarRequirement[];
+  requirementConfiguration: SeminarRequirementConfiguration;
+  uploadConfig: SeminarUploadConfig;
   seminar: SeminarInfo | null;
 }
 
@@ -166,8 +218,7 @@ export interface AdminSeminarListItem {
 }
 
 export interface AdminSeminarDocumentDetail {
-  documentTypeId: string;
-  documentId: string;
+  requirementId: string;
   status: DocumentSubmitStatus;
   submittedAt: string;
   verifiedAt: string | null;
@@ -201,6 +252,8 @@ export interface AdminSeminarDetailResponse {
   grade: string | null;
   resultFinalizedAt: string | null;
   cancelledReason: string | null;
+  scheduledAt: string | null;
+  invitationLetterNo: string | null;
   room: { id: string; name: string } | null;
   thesis: {
     id: string;
@@ -218,13 +271,13 @@ export interface AdminSeminarDetailResponse {
   audiences: SeminarAudienceItem[];
 }
 
-export interface ValidateDocumentPayload {
+export interface VerifyDocumentPayload {
   action: 'approve' | 'decline';
   notes?: string;
 }
 
-export interface ValidateDocumentResponse {
-  documentTypeId: string;
+export interface VerifyDocumentResponse {
+  requirementId: string;
   status: DocumentSubmitStatus;
   seminarTransitioned: boolean;
   newSeminarStatus: ThesisSeminarStatus;
@@ -254,6 +307,7 @@ export interface RoomOption {
 
 export interface SeminarCurrentSchedule {
   date: string;
+  scheduledAt?: string | null;
   startTime: string | null;
   endTime: string | null;
   isOnline: boolean;
@@ -481,6 +535,7 @@ export interface ExaminerAssessmentFormResponse {
     assessmentSubmittedAt: string | null;
   };
   criteriaGroups: SeminarAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface SubmitExaminerAssessmentPayload {
@@ -502,6 +557,7 @@ export interface SupervisorFinalizationDataResponse {
     finalScore: number | null;
     grade: string | null;
     resultFinalizedAt?: string | null;
+    resultFinalizedBy?: string | null;
     revisionFinalizedAt?: string | null;
     studentName: string;
     studentNim: string;
@@ -519,6 +575,7 @@ export interface SupervisorFinalizationDataResponse {
     assessmentScore: number | null;
     revisionNotes: string | null;
     assessmentSubmittedAt: string | null;
+    isDraft: boolean;
     assessmentDetails: {
       id: string;
       code: string;
@@ -536,6 +593,8 @@ export interface SupervisorFinalizationDataResponse {
   averageScore: number | null;
   averageGrade: string | null;
   recommendationUnlocked: boolean;
+  criteriaGroups: SeminarAssessmentGroup[];
+  minimumPassingScore: number;
 }
 
 export interface FinalizeSeminarPayload {
@@ -594,6 +653,7 @@ export interface SeminarAnnouncementItem {
   startTime: string | null;
   endTime: string | null;
   status: ThesisSeminarStatus;
+  resultFinalizedAt?: string | null;
   meetingLink: string | null;
   room: { id: string; name: string } | null;
   thesisTitle: string;

@@ -131,11 +131,14 @@ export async function exportAdminThesisSeminarAudiences(seminarId: string) {
     getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES_EXPORT(seminarId))
   );
   if (!response.ok) throw new Error('Gagal mengekspor audience seminar');
+  const contentDisposition = response.headers.get('content-disposition') || '';
+  const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  const exportDate = new Date().toISOString().slice(0, 10);
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `Audience_Seminar_${new Date().toISOString().split('T')[0]}.xlsx`;
+  link.download = fileNameMatch?.[1] || `Daftar Peserta Seminar Hasil - ${exportDate}.xlsx`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -147,11 +150,14 @@ export async function exportAdminThesisSeminarAudiencesPdf(seminarId: string) {
     getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_SEMINAR.AUDIENCES(seminarId)}/export-pdf`)
   );
   if (!response.ok) throw new Error('Gagal mengekspor audience seminar ke PDF');
+  const contentDisposition = response.headers.get('content-disposition') || '';
+  const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  const exportDate = new Date().toISOString().slice(0, 10);
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `Audience_Seminar_${new Date().toISOString().split('T')[0]}.pdf`;
+  link.download = fileNameMatch?.[1] || `Daftar Hadir Peserta Seminar Hasil - ${exportDate}.pdf`;
   document.body.appendChild(link);
   link.click();
   link.remove();

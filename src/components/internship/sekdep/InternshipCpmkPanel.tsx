@@ -298,7 +298,7 @@ export function InternshipCpmkPanel() {
                             variant="outline" 
                             size="sm" 
                             className="text-xs h-8 gap-1.5 border-primary/20 hover:border-primary/50 hover:bg-primary/5"
-                            onClick={() => navigate(`/kelola/kerja-praktik/pendaftaran/cpmk/${row.id}/rubrik`)}
+                            onClick={() => navigate(`/kelola/kerja-praktik/cpmk/${row.id}/rubrik`)}
                         >
                             <Plus className="h-3.5 w-3.5" />
                             Kelola Rubrik

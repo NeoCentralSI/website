@@ -12,18 +12,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Loading } from '@/components/ui/spinner';
 import type {
-    CpmkWithRubrics, AssessmentCriteria, AssessmentRubric,
+    MetopenCpmkWithRubrics, MetopenAssessmentCriteria, MetopenAssessmentRubric,
     CreateRubricPayload, UpdateRubricPayload,
 } from '@/services/rubricMetopen.service';
 import { MetopenRubricItemFormDialog } from './MetopenRubricItemFormDialog';
 
 interface MetopenCriteriaTableProps {
-    data: CpmkWithRubrics[];
+    data: MetopenCpmkWithRubrics[];
     isLoading: boolean;
     isFetching: boolean;
     onRefresh: () => void;
     onAddCriteria: (cpmkId: string) => void;
-    onEditCriteria: (criteria: AssessmentCriteria, cpmk: CpmkWithRubrics) => void;
+    onEditCriteria: (criteria: MetopenAssessmentCriteria, cpmk: MetopenCpmkWithRubrics) => void;
     onDeleteCriteria: (criteriaId: string) => void;
     onDeleteCpmk: (cpmkId: string) => Promise<unknown>;
     onCreateRubric: (criteriaId: string, data: CreateRubricPayload) => Promise<unknown>;
@@ -34,12 +34,15 @@ interface MetopenCriteriaTableProps {
     isDeletingCriteria: boolean;
     isRemovingCpmk: boolean;
     isDeletingRubric: boolean;
+    onGoToCatalog?: () => void;
+    catalogCount?: number;
 }
 
 export function MetopenCriteriaTable({
     data, isLoading, isFetching, onRefresh, onAddCriteria, onEditCriteria,
     onDeleteCriteria, onDeleteCpmk, onCreateRubric, onUpdateRubric, onDeleteRubric,
     onReorderCriteria, onReorderRubrics, isDeletingCriteria, isRemovingCpmk, isDeletingRubric,
+    onGoToCatalog, catalogCount = 0,
 }: MetopenCriteriaTableProps) {
     const [deleteCpmkId, setDeleteCpmkId] = useState<string | null>(null);
     const [deleteCriteriaId, setDeleteCriteriaId] = useState<string | null>(null);
@@ -48,34 +51,34 @@ export function MetopenCriteriaTable({
     const [rubricFormOpen, setRubricFormOpen] = useState(false);
     const [rubricFormCriteriaId, setRubricFormCriteriaId] = useState<string>('');
     const [rubricFormCriteriaMaxScore, setRubricFormCriteriaMaxScore] = useState<number | null>(null);
-    const [editRubric, setEditRubric] = useState<AssessmentRubric | null>(null);
+    const [editRubric, setEditRubric] = useState<MetopenAssessmentRubric | null>(null);
 
-    const totalSkorKriteria = (cpmk: CpmkWithRubrics): number =>
-        cpmk.assessmentCriterias.reduce((s, c) => s + (c.maxScore || 0), 0);
-    const totalRubrik = (cpmk: CpmkWithRubrics): number =>
-        cpmk.assessmentCriterias.reduce((s, c) => s + c.assessmentRubrics.length, 0);
-    const configuredCount = useMemo(() => data.filter((c) => c.assessmentCriterias.length > 0).length, [data]);
+    const totalSkorKriteria = (cpmk: MetopenCpmkWithRubrics): number =>
+        cpmk.metopenAssessmentCriterias.reduce((s, c) => s + (c.maxScore || 0), 0);
+    const totalRubrik = (cpmk: MetopenCpmkWithRubrics): number =>
+        cpmk.metopenAssessmentCriterias.reduce((s, c) => s + c.metopenAssessmentRubrics.length, 0);
+    const configuredCount = useMemo(() => data.filter((c) => c.metopenAssessmentCriterias.length > 0).length, [data]);
 
     const toggleCpmk = (cpmkId: string) => {
         setOpenCpmks((prev) => prev.includes(cpmkId) ? prev.filter((id) => id !== cpmkId) : [...prev, cpmkId]);
     };
 
-    const handleAddRubric = (criteria: AssessmentCriteria) => {
+    const handleAddRubric = (criteria: MetopenAssessmentCriteria) => {
         setEditRubric(null);
         setRubricFormCriteriaId(criteria.id);
         setRubricFormCriteriaMaxScore(criteria.maxScore);
         setRubricFormOpen(true);
     };
 
-    const handleEditRubric = (rubric: AssessmentRubric, criteriaMaxScore: number | null) => {
+    const handleEditRubric = (rubric: MetopenAssessmentRubric, criteriaMaxScore: number | null) => {
         setEditRubric(rubric);
         setRubricFormCriteriaId('');
         setRubricFormCriteriaMaxScore(criteriaMaxScore);
         setRubricFormOpen(true);
     };
 
-    const handleMoveCriteria = (cpmk: CpmkWithRubrics, criteriaId: string, direction: 'up' | 'down') => {
-        const ids = cpmk.assessmentCriterias.map((c) => c.id);
+    const handleMoveCriteria = (cpmk: MetopenCpmkWithRubrics, criteriaId: string, direction: 'up' | 'down') => {
+        const ids = cpmk.metopenAssessmentCriterias.map((c) => c.id);
         const idx = ids.indexOf(criteriaId);
         if (idx < 0) return;
         const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
@@ -84,8 +87,8 @@ export function MetopenCriteriaTable({
         onReorderCriteria(cpmk.id, ids);
     };
 
-    const handleMoveRubric = (criteria: AssessmentCriteria, rubricId: string, direction: 'up' | 'down') => {
-        const ids = criteria.assessmentRubrics.map((r) => r.id);
+    const handleMoveRubric = (criteria: MetopenAssessmentCriteria, rubricId: string, direction: 'up' | 'down') => {
+        const ids = criteria.metopenAssessmentRubrics.map((r) => r.id);
         const idx = ids.indexOf(rubricId);
         if (idx < 0) return;
         const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
@@ -95,19 +98,33 @@ export function MetopenCriteriaTable({
     };
 
     if (isLoading) {
-        return (<div className="flex h-64 items-center justify-center"><Loading size="lg" text="Memuat data rubrik Metopel..." /></div>);
+        return (<div className="flex h-64 items-center justify-center"><Loading size="lg" text="Memuat konfigurasi rubrik..." /></div>);
     }
 
     return (
         <>
             <div className="flex items-center justify-between mb-3">
-                <p className="text-sm text-muted-foreground">{configuredCount} dari {data.length} CPMK sudah dikonfigurasi</p>
+                <p className="text-sm text-muted-foreground">
+                    {data.length === 0
+                        ? "Belum ada CPMK di konfigurasi role ini"
+                        : `${configuredCount} dari ${data.length} CPMK sudah punya kriteria`}
+                </p>
                 <RefreshButton onClick={onRefresh} isRefreshing={isFetching && !isLoading} />
             </div>
 
             {data.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                    Belum ada CPMK bertipe Metode Penelitian. Tambahkan CPMK terlebih dahulu di menu &quot;Kelola CPMK&quot; (tab Metodologi Penelitian).
+                <div className="rounded-lg border border-dashed px-6 py-8 text-center space-y-2">
+                    <p className="text-sm font-medium">Belum ada CPMK di konfigurasi</p>
+                    <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                        {catalogCount > 0
+                            ? "Gunakan tombol Masukkan CPMK untuk memilih dari katalog, lalu isi kriteria dan level skor."
+                            : "Buat CPMK di tab Katalog terlebih dahulu."}
+                    </p>
+                    {catalogCount === 0 && onGoToCatalog ? (
+                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={onGoToCatalog}>
+                            Buka Katalog CPMK
+                        </Button>
+                    ) : null}
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -125,7 +142,7 @@ export function MetopenCriteriaTable({
                                                 <div className="min-w-0">
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <span className="font-semibold text-sm">{cpmk.code}</span>
-                                                        {cpmk.assessmentCriterias.length > 0
+                                                        {cpmk.metopenAssessmentCriterias.length > 0
                                                             ? <Badge variant="secondary" className="text-xs">Skor: {skor}</Badge>
                                                             : <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Belum dikonfigurasi</Badge>}
                                                     </div>
@@ -133,7 +150,7 @@ export function MetopenCriteriaTable({
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0 ml-2">
-                                                <span>{cpmk.assessmentCriterias.length} kriteria</span>
+                                                <span>{cpmk.metopenAssessmentCriterias.length} kriteria</span>
                                                 <span>{jmlRubrik} rubrik</span>
                                             </div>
                                         </button>
@@ -148,30 +165,30 @@ export function MetopenCriteriaTable({
                                                         <Plus className="mr-1 h-3 w-3" /> Kriteria
                                                     </Button>
                                                     <Button variant="outline" size="sm" className="h-7 text-xs text-destructive hover:text-destructive"
-                                                        onClick={() => setDeleteCpmkId(cpmk.id)} disabled={cpmk.assessmentCriterias.length === 0}>
-                                                        <Trash2 className="mr-1 h-3 w-3" /> Hapus CPMK
+                                                        onClick={() => setDeleteCpmkId(cpmk.id)}>
+                                                        <Trash2 className="mr-1 h-3 w-3" /> Lepas dari penilaian
                                                     </Button>
                                                 </div>
                                             </div>
-                                            {cpmk.assessmentCriterias.length === 0 ? (
+                                            {cpmk.metopenAssessmentCriterias.length === 0 ? (
                                                 <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
                                                     Belum ada kriteria. Gunakan tombol &quot;Kriteria&quot; untuk menambah kriteria, lalu tambahkan rubrik.
                                                 </div>
                                             ) : (
-                                                cpmk.assessmentCriterias.map((criteria, criteriaIdx) => (
+                                                cpmk.metopenAssessmentCriterias.map((criteria, criteriaIdx) => (
                                                     <div key={criteria.id} className="rounded-md border p-3 space-y-3">
                                                         <div className="flex items-center justify-between flex-wrap gap-2">
                                                             <div className="flex items-center gap-2 flex-wrap">
                                                                 <span className="text-sm font-medium">{criteria.name || 'Tanpa Nama'}</span>
                                                                 <Badge variant="outline" className="text-xs">Maks: {criteria.maxScore ?? '-'}</Badge>
-                                                                {criteria.assessmentRubrics.length === 0 && (
+                                                                {criteria.metopenAssessmentRubrics.length === 0 && (
                                                                     <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Belum ada rubrik</Badge>
                                                                 )}
                                                             </div>
                                                             <div className="flex items-center gap-1">
                                                                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Pindah ke atas" disabled={criteriaIdx === 0}
                                                                     onClick={() => handleMoveCriteria(cpmk, criteria.id, 'up')}><ArrowUp className="h-3 w-3" /></Button>
-                                                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Pindah ke bawah" disabled={criteriaIdx === cpmk.assessmentCriterias.length - 1}
+                                                                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Pindah ke bawah" disabled={criteriaIdx === cpmk.metopenAssessmentCriterias.length - 1}
                                                                     onClick={() => handleMoveCriteria(cpmk, criteria.id, 'down')}><ArrowDown className="h-3 w-3" /></Button>
                                                                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Ubah kriteria"
                                                                     onClick={() => onEditCriteria(criteria, cpmk)}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -181,7 +198,7 @@ export function MetopenCriteriaTable({
                                                                     onClick={() => handleAddRubric(criteria)}><Plus className="mr-1 h-3 w-3" /> Rubrik</Button>
                                                             </div>
                                                         </div>
-                                                        {criteria.assessmentRubrics.length > 0 ? (
+                                                        {criteria.metopenAssessmentRubrics.length > 0 ? (
                                                             <div className="rounded-md border">
                                                                 <Table>
                                                                     <TableHeader><TableRow>
@@ -190,7 +207,7 @@ export function MetopenCriteriaTable({
                                                                         <TableHead className="w-40 text-right">Aksi</TableHead>
                                                                     </TableRow></TableHeader>
                                                                     <TableBody>
-                                                                        {criteria.assessmentRubrics.map((rubric, rubricIdx) => (
+                                                                        {criteria.metopenAssessmentRubrics.map((rubric, rubricIdx) => (
                                                                             <TableRow key={rubric.id}>
                                                                                 <TableCell className="text-sm">{rubric.minScore}–{rubric.maxScore}</TableCell>
                                                                                 <TableCell className="text-sm whitespace-pre-wrap">{rubric.description}</TableCell>
@@ -198,7 +215,7 @@ export function MetopenCriteriaTable({
                                                                                     <div className="flex items-center justify-end gap-1">
                                                                                         <Button variant="ghost" size="icon" className="h-7 w-7" title="Pindah ke atas" disabled={rubricIdx === 0}
                                                                                             onClick={() => handleMoveRubric(criteria, rubric.id, 'up')}><ArrowUp className="h-3 w-3" /></Button>
-                                                                                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Pindah ke bawah" disabled={rubricIdx === criteria.assessmentRubrics.length - 1}
+                                                                                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Pindah ke bawah" disabled={rubricIdx === criteria.metopenAssessmentRubrics.length - 1}
                                                                                             onClick={() => handleMoveRubric(criteria, rubric.id, 'down')}><ArrowDown className="h-3 w-3" /></Button>
                                                                                         <Button variant="ghost" size="icon" className="h-7 w-7" title="Ubah rubrik"
                                                                                             onClick={() => handleEditRubric(rubric, criteria.maxScore)}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -247,13 +264,16 @@ export function MetopenCriteriaTable({
 
             <AlertDialog open={!!deleteCpmkId} onOpenChange={(open: boolean) => !open && setDeleteCpmkId(null)}>
                 <AlertDialogContent><AlertDialogHeader>
-                    <AlertDialogTitle>Hapus Konfigurasi CPMK Metopel</AlertDialogTitle>
-                    <AlertDialogDescription>Semua kriteria dan rubrik Metopel pada CPMK ini akan dihapus untuk role yang dipilih. Data master CPMK tetap tersimpan.</AlertDialogDescription>
+                    <AlertDialogTitle>Lepas CPMK dari penilaian?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Kriteria dan level rubrik untuk role ini akan dihapus. CPMK tetap ada di
+                        katalog dan dapat dimasukkan lagi nanti.
+                    </AlertDialogDescription>
                 </AlertDialogHeader><AlertDialogFooter>
                     <AlertDialogCancel>Batal</AlertDialogCancel>
                     <AlertDialogAction onClick={async () => { if (deleteCpmkId) { await onDeleteCpmk(deleteCpmkId); setDeleteCpmkId(null); } }}
                         disabled={isRemovingCpmk} className="bg-destructive/70 text-destructive-foreground hover:bg-destructive/90">
-                        {isRemovingCpmk ? (<><Spinner className="mr-2 h-4 w-4" />Menghapus...</>) : 'Hapus'}
+                        {isRemovingCpmk ? (<><Spinner className="mr-2 h-4 w-4" />Melepas...</>) : 'Lepas'}
                     </AlertDialogAction>
                 </AlertDialogFooter></AlertDialogContent>
             </AlertDialog>

@@ -159,7 +159,6 @@ export default function SeminarDetail() {
         );
     }
 
-    // @ts-ignore - roles can be compared with strings
     const isLecturer = user?.roles?.some(r => LECTURER_ROLES.includes(r as any));
     const isSupervisor = seminar.internship?.supervisor?.user?.id === user?.id;
     const canValidate = isLecturer && isSupervisor;
@@ -188,7 +187,7 @@ export default function SeminarDetail() {
     };
 
     return (
-        <div className="flex flex-col gap-6 p-6">
+        <div className="p-6 space-y-6">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                     <ArrowLeft className="h-5 w-5" />

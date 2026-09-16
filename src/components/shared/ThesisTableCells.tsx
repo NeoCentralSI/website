@@ -7,7 +7,8 @@ export function ThesisTitleCell({ title, maxWidth = 300 }: { title: string; maxW
   return (
     <div 
       style={{ maxWidth }} 
-      className="text-sm font-medium leading-relaxed whitespace-normal break-words py-1"
+      className="text-sm font-medium leading-relaxed line-clamp-3 whitespace-normal break-words py-1"
+      title={title}
     >
       {title || '-'}
     </div>

@@ -22,19 +22,19 @@ export interface User {
   phoneNumber?: string;
   isVerified: boolean;
   avatarUrl?: string | null;
+  gender?: boolean | null;
   roles: Role[];
   student?: {
     id: string;
     enrollmentYear: number;
     sksCompleted: number;
-    currentSemester?: number | null;
+    status: string | null;
     eligibleMetopen?: boolean | null;
-    metopenEligibilitySource?: string | null;
+    metopenEligibilitySource?: 'sia' | 'devtools' | null;
     metopenEligibilityUpdatedAt?: string | null;
     takingThesisCourse?: boolean | null;
-    thesisCourseEnrollmentSource?: string | null;
+    thesisCourseEnrollmentSource?: 'sia' | 'devtools' | null;
     thesisCourseEnrollmentUpdatedAt?: string | null;
-    status: string | null;
   };
   lecturer?: {
     id: string;
@@ -96,11 +96,15 @@ export const loginAPI = async (credentials: LoginRequest): Promise<LoginResponse
 };
 
 export const saveAuthTokens = (accessToken: string, refreshToken: string) => {
+  console.log('💾 [saveAuthTokens] Saving tokens to localStorage and cookies');
+  
   // Access token tetap di localStorage (lebih mudah untuk API calls)
   localStorage.setItem('accessToken', accessToken);
   
   // Refresh token disimpan di cookies (lebih aman, httpOnly bisa ditambahkan di backend)
   setCookie('refreshToken', refreshToken, 7); // 7 hari
+  
+  console.log('✅ [saveAuthTokens] Tokens saved');
 };
 
 export const getAuthTokens = () => {
@@ -108,6 +112,7 @@ export const getAuthTokens = () => {
     accessToken: localStorage.getItem('accessToken'),
     refreshToken: getCookie('refreshToken')
   };
+  
   return tokens;
 };
 
@@ -206,36 +211,6 @@ export const handleMicrosoftCallbackAPI = async (code: string): Promise<LoginRes
     }
     throw new Error('Terjadi kesalahan saat memproses login Microsoft');
   }
-};
-
-export interface MicrosoftExchangeResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-  hasCalendarAccess: boolean;
-}
-
-/**
- * Tukar one-shot code dari URL callback dengan token (HTTPS body).
- * Hanya bisa dipanggil sekali per code; code expire 60 detik setelah dibuat.
- */
-export const exchangeMicrosoftCodeAPI = async (
-  code: string,
-): Promise<MicrosoftExchangeResponse> => {
-  const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH.MICROSOFT_EXCHANGE), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code }),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Gagal menukar exchange code Microsoft');
-  }
-  const json = await response.json();
-  if (!json?.success || !json.data) {
-    throw new Error('Respons exchange tidak valid');
-  }
-  return json.data as MicrosoftExchangeResponse;
 };
 
 export const clearAuthTokens = () => {
@@ -411,6 +386,7 @@ export const apiRequest = async (url: string, options: RequestInit = {}): Promis
 
 export interface UpdateProfileRequest {
   phoneNumber?: string;
+  gender?: boolean;
 }
 
 export const updateProfileAPI = async (data: UpdateProfileRequest): Promise<User> => {

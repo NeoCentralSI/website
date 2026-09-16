@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from 'react';
 import InternshipTable from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -104,7 +105,7 @@ export function ProposalVerificationPanel() {
         },
         onViewDetail: (item) => {
             // Navigate to detail if needed, or keep it as is
-            window.location.href = `/kelola/kerja-praktik/pendaftaran/${item.id}`;
+            window.location.href = `/kelola/kerja-praktik/${item.id}`;
         }
     }), []);
 
@@ -135,7 +136,7 @@ export function ProposalVerificationPanel() {
                 actions={
                     <div className="flex items-center gap-2">
                         <Select value={academicYearId} onValueChange={setAcademicYearId}>
-                            <SelectTrigger className="w-[200px] h-9">
+                            <SelectTrigger className="w-50 h-9">
                                 <SelectValue placeholder="Pilih Tahun Ajaran" />
                             </SelectTrigger>
                             <SelectContent>

@@ -13,10 +13,10 @@ import {
 } from 'lucide-react';
 import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
 import type { DocumentSubmitStatus } from '@/types/defence.types';
-import { openProtectedFile } from '@/lib/protected-file';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/shared';
-import { useValidateDefenceDocument } from '@/hooks/thesis-defence';
+import { useVerifyDefenceDocument } from '@/hooks/thesis-defence';
+import { fetchDefenceDocumentBlob } from '@/services/thesis-defence/doc.service';
 import {
   Dialog,
   DialogContent,
@@ -53,7 +53,7 @@ interface Props {
 
 export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
   const { isAdmin } = useRole();
-  const validateMutation = useValidateDefenceDocument();
+  const validateMutation = useVerifyDefenceDocument();
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [selectedDocTypeId, setSelectedDocTypeId] = useState<string | null>(null);
   const [declineNotes, setDeclineNotes] = useState('');
@@ -62,7 +62,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
     try {
       await validateMutation.mutateAsync({
         defenceId: detail.id,
-        documentTypeId: docTypeId,
+        requirementId: docTypeId,
         payload: { action, notes },
       });
       toast.success(action === 'approve' ? 'Dokumen disetujui' : 'Dokumen ditolak');
@@ -73,7 +73,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
     }
   };
 
-  const supervisors: any[] = detail.supervisors || [];
+  const supervisors: any[] = [...(detail.supervisors || [])].sort((a, b) => (a.role || '').localeCompare(b.role || ''));
   const examiners: any[] = detail.examiners || [];
   const documentTypes: any[] = detail.documentTypes || [];
   const documents: any[] = detail.documents || [];
@@ -82,14 +82,14 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Informasi Sidang */}
-        <Card className="lg:col-span-1 h-full flex flex-col">
-          <CardHeader className="border-b pb-4">
+        <Card className="lg:col-span-1 h-full gap-4 py-6">
+          <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               Informasi Sidang
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4 flex-1">
+          <CardContent className="space-y-4 flex-1">
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-muted-foreground">Nama Mahasiswa</p>
@@ -99,6 +99,17 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                 <p className="text-xs text-muted-foreground">NIM</p>
                 <p className="text-sm font-medium mt-0.5">{detail.student?.nim}</p>
               </div>
+
+              {examiners.map((e: any) => (
+                <div key={e.id}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Penguji {e.order}</p>
+                    <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[9px] px-1 py-0 h-4" />
+                  </div>
+                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(e.lecturerName)}</p>
+                </div>
+              ))}
+
               <div>
                 <p className="text-xs text-muted-foreground">Tanggal Sidang</p>
                 <p className="text-sm font-medium mt-0.5">
@@ -114,7 +125,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Tempat</p>
+                <p className="text-xs text-muted-foreground">Ruangan</p>
                 <div className="text-sm font-medium mt-0.5 leading-snug">
                   {detail.room?.name || '-'}
                   {detail.meetingLink && (
@@ -129,16 +140,12 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                   )}
                 </div>
               </div>
-
-              {examiners.map((e: any) => (
-                <div key={e.id}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">Penguji {e.order}</p>
-                    <ThesisExaminerAvailabilityStatusBadge status={e.availabilityStatus} className="text-[9px] px-1 py-0 h-4" />
-                  </div>
-                  <p className="text-sm font-medium mt-0.5">{toTitleCaseName(e.lecturerName)}</p>
+              {detail.scheduledAt && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Jadwal Ditetapkan Pada</p>
+                  <p className="text-sm font-medium mt-0.5">{formatDateOnlyId(detail.scheduledAt)}</p>
                 </div>
-              ))}
+              )}
 
               {detail.rejectedExaminers && detail.rejectedExaminers.length > 0 && (
                 <div className="pt-2 border-t">
@@ -166,14 +173,14 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
         {/* Right Column - TA Info & Documents */}
         <div className="lg:col-span-2 space-y-6">
           {/* Informasi Tugas Akhir */}
-          <Card>
-            <CardHeader className="border-b pb-4">
+          <Card className="gap-4 py-6">
+            <CardHeader>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
                 Informasi Tugas Akhir
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="space-y-4">
               <div>
                 <p className="text-xs text-muted-foreground">Judul</p>
                 <p className="text-sm font-medium mt-0.5 leading-snug">{detail.thesis?.title}</p>
@@ -192,16 +199,16 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
           </Card>
 
           {/* Dokumen Sidang */}
-          <Card>
-            <CardHeader className="border-b pb-4">
+          <Card className="gap-4 py-6">
+            <CardHeader>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 Dokumen Sidang
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-3">
+            <CardContent className="space-y-3">
               {documentTypes.map((dt: any) => {
-                const doc = documents.find((d: any) => d.documentTypeId === dt.id);
+                const doc = documents.find((d: any) => (d.requirementId || d.documentTypeId) === dt.id);
                 const statusDisplay = doc ? getDocStatusDisplay(doc.status) : null;
                 const isSubmitted = doc?.status === 'submitted';
                 const isDeclined = doc?.status === 'declined';
@@ -209,7 +216,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                 return (
                   <div
                     key={dt.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-card border border-border/50 rounded-xl shadow-sm hover:border-border transition-colors gap-4"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg border bg-muted/10 p-4 transition-colors hover:bg-muted/20"
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className={`p-2.5 rounded-lg shrink-0 ${doc ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
@@ -223,7 +230,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                           {doc ? `${doc.fileName || 'File'} • ${formatDateShortId(doc.submittedAt)}` : 'Belum diunggah'}
                         </span>
                         {doc?.notes && (
-                          <span className="text-xs text-red-600 block mt-1 italic">
+                          <span className="text-xs text-muted-foreground block mt-1 italic">
                             Catatan: {doc.notes}
                           </span>
                         )}
@@ -237,14 +244,18 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                         </Badge>
                       )}
 
-                      {doc?.filePath && (
+                      {doc && (
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Lihat Dokumen"
                           className="h-9 w-9 border rounded-lg hover:bg-accent shrink-0"
                           onClick={async () => {
                             try {
-                              await openProtectedFile(doc.filePath!, doc.fileName || undefined);
+                              const blob = await fetchDefenceDocumentBlob(detail.id, dt.id);
+                              const blobUrl = URL.createObjectURL(blob);
+                              window.open(blobUrl, '_blank', 'noopener,noreferrer');
+                              setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
                             } catch (error) {
                               toast.error((error as Error).message || 'Gagal membuka dokumen');
                             }

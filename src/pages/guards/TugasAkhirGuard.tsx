@@ -21,15 +21,14 @@ export default function TugasAkhirGuard() {
       );
     }
 
-    // Check eligibility requirements
     if (!canAccessTugasAkhir) {
       return (
         <RequirementsNotMet
           title="Tugas Akhir Belum Tersedia"
-          description="Akses Tugas Akhir dibuka setelah snapshot SIA mengonfirmasi Anda sedang mengambil mata kuliah Tugas Akhir."
+          description="Modul Tugas Akhir terbuka setelah snapshot SIA mencatat mata kuliah Tugas Akhir atau data tugas akhir mahasiswa sudah tersedia pada sistem. Untuk fase Metode Penelitian, unggah proposal dan catatan bimbingan informal lewat menu Metode Penelitian di sidebar."
           requirements={[
             {
-              label: "Snapshot mata kuliah Tugas Akhir valid",
+              label: "Mengambil mata kuliah Tugas Akhir atau telah memiliki data tugas akhir",
               met: requirements.tugasAkhir.course.met,
               description: requirements.tugasAkhir.course.description,
             },

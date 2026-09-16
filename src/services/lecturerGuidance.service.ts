@@ -246,8 +246,11 @@ export interface MyStudentItem {
   [key: string]: unknown;
 }
 
-export async function getMyStudents(): Promise<{ students: MyStudentItem[] }> {
-  const url = getApiUrl(EP.MY_STUDENTS);
+export async function getMyStudents(
+  scope: 'active' | 'archive' = 'active',
+): Promise<{ students: MyStudentItem[] }> {
+  const base = getApiUrl(EP.MY_STUDENTS);
+  const url = scope === 'archive' ? `${base}?scope=archive` : base;
   const response = await apiRequest(url);
   const data = await handleJson<{ success: boolean; data: MyStudentItem[] }>(response);
   return { students: data.data ?? [] };
@@ -265,6 +268,10 @@ export interface StudentDetail {
     lecturerScore?: number | null;
     finalScore?: number | null;
     isFinalized?: boolean;
+    attendanceAutoZeroedAt?: string | null;
+    attendanceAutoZeroReason?: string | null;
+    periodClosedAt?: string | null;
+    periodClosedReason?: string | null;
   } | null;
   student: {
     id?: string | null;
@@ -406,6 +413,46 @@ export async function rejectSupervisor2Request(
   return handleJson<{ message: string }>(response);
 }
 
+// ── Persetujuan akhir Pembimbing 2 oleh KaDep (F2-5 / OQ-2.2) ──
+
+export interface Supervisor2KadepRequestItem {
+  requestId: string;
+  thesisId: string;
+  studentId: string;
+  lecturerId: string;
+  studentName: string;
+  studentNim?: string | null;
+  lecturerName: string;
+  thesisTitle: string;
+  requestedAt: string;
+}
+
+export async function getSupervisor2KadepRequests(): Promise<Supervisor2KadepRequestItem[]> {
+  const url = getApiUrl(EP.KADEP_SUPERVISOR2_REQUESTS);
+  const response = await apiRequest(url);
+  const data = await handleJson<{ success: boolean; data: Supervisor2KadepRequestItem[] }>(response);
+  return data.data ?? [];
+}
+
+export async function approveSupervisor2KadepRequest(requestId: string): Promise<{ message: string }> {
+  const url = getApiUrl(EP.KADEP_SUPERVISOR2_APPROVE(requestId));
+  const response = await apiRequest(url, { method: 'POST' });
+  return handleJson<{ message: string }>(response);
+}
+
+export async function rejectSupervisor2KadepRequest(
+  requestId: string,
+  reason?: string,
+): Promise<{ message: string }> {
+  const url = getApiUrl(EP.KADEP_SUPERVISOR2_REJECT(requestId));
+  const response = await apiRequest(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  return handleJson<{ message: string }>(response);
+}
+
 // ============================================
 // Proposal Version History (for Lecturer)
 // ============================================
@@ -429,4 +476,31 @@ export async function getStudentProposalVersions(
   const url = getApiUrl(EP.STUDENT_PROPOSAL_VERSIONS(thesisId));
   const response = await apiRequest(url);
   return handleJson(response);
+}
+
+/** FR-LOG-08: P1/P2 read-only Metopel informal notes (same item shape as student list). */
+export interface InformalLogItem {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  document: {
+    id: string;
+    fileName: string | null;
+    url: string | null;
+    fileSize: number | null;
+    mimeType: string | null;
+  } | null;
+}
+
+export async function getStudentInformalLogs(
+  thesisId: string,
+): Promise<{ thesisId: string; items: InformalLogItem[] }> {
+  const url = getApiUrl(EP.STUDENT_INFORMAL_LOGS(thesisId));
+  const response = await apiRequest(url);
+  const json = await handleJson<{
+    success: boolean;
+    data: { thesisId: string; items: InformalLogItem[] };
+  }>(response);
+  return json.data;
 }

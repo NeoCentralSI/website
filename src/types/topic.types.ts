@@ -2,6 +2,11 @@
 export interface Topic {
   id: string;
   name: string;
+  scienceGroupId: string | null;
+  scienceGroup: {
+    id: string;
+    name: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
   thesisCount: number;
@@ -10,10 +15,12 @@ export interface Topic {
 
 export interface CreateTopicDto {
   name: string;
+  scienceGroupId: string;
 }
 
 export interface UpdateTopicDto {
   name?: string;
+  scienceGroupId?: string;
 }
 
 export interface BulkDeleteResult {

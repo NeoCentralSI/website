@@ -25,9 +25,9 @@ export const verifyFieldAssessmentPin = async (token: string, pin: string) => {
 };
 
 /**
- * Submit field assessment scores and signature.
+ * Submit field assessment scores, notes, and signature.
  */
-export const submitFieldAssessment = async (token: string, data: { scores: any[]; signature: string }) => {
+export const submitFieldAssessment = async (token: string, data: { scores: any[]; signature: string; notes?: string }) => {
     const response = await axios.post(`${ENV.API_BASE_URL}/insternship/field-assessment/submit/${token}`, data);
     return response.data;
 };

@@ -130,7 +130,7 @@ export default function GuidanceDetailPage() {
     const isLocked = currentWeekData.status === 'APPROVED' || currentWeekData.status === 'NOT_AVAILABLE';
 
     return (
-        <div className="flex flex-col gap-6 p-6 mx-auto w-full">
+        <div className="p-6 space-y-6">
             <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" onClick={() => navigate('/kerja-praktik/kegiatan/bimbingan')}>
                     <ArrowLeft className="h-4 w-4" />

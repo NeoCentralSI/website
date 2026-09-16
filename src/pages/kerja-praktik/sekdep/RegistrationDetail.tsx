@@ -40,8 +40,8 @@ export default function SekdepInternshipProposalDetail() {
     const [responseType, setResponseType] = useState<'APPROVED_PROPOSAL' | 'REJECTED_PROPOSAL' | null>(null);
 
     const breadcrumbs = useMemo(() => [
-        { label: 'Kerja Praktik', href: '/kelola/kerja-praktik/pendaftaran' },
-        { label: 'Pendaftaran', href: '/kelola/kerja-praktik/pendaftaran' },
+        { label: 'Kerja Praktik', href: '/kelola/kerja-praktik/proposal' },
+        { label: 'Pendaftaran', href: '/kelola/kerja-praktik/proposal' },
         { label: 'Detail' },
     ], []);
 
@@ -92,12 +92,12 @@ export default function SekdepInternshipProposalDetail() {
 
     if (isError || !data) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <div className="flex flex-col items-center justify-center min-h-100">
                 <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
                 <h2 className="text-xl font-semibold mb-2">Terjadi Kesalahan</h2>
                 <p className="text-muted-foreground mb-4">Gagal memuat detail proposal. Silakan coba lagi.</p>
                 <Button asChild variant="outline">
-                    <Link to="/kelola/kerja-praktik/pendaftaran">
+                    <Link to="/kelola/kerja-praktik/proposal">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Kembali
                     </Link>

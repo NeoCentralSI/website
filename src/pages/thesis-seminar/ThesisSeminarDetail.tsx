@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import { useRole, useAuth } from '@/hooks/shared';
+import { useRole, useAuth, useStudentEligibility } from '@/hooks/shared';
 import { useThesisSeminarDetail } from '@/hooks/thesis-seminar';
 import { toTitleCaseName } from '@/lib/text';
 
@@ -25,6 +25,8 @@ export default function ThesisSeminarDetailPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { isStudent, isAdmin, isKadep } = useRole();
   const { user } = useAuth();
+  const { canAccessTugasAkhir } = useStudentEligibility();
+  const studentTaParentHref = canAccessTugasAkhir ? '/tugas-akhir' : '/metopel';
 
   const _isStudent = isStudent();
   const _isKadep = isKadep();
@@ -51,7 +53,7 @@ export default function ThesisSeminarDetailPage() {
     }
 
     const base = [
-      { label: 'Tugas Akhir', href: _isStudent ? '/tugas-akhir' : undefined },
+      { label: 'Tugas Akhir', href: _isStudent ? studentTaParentHref : undefined },
       { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
     ];
 
@@ -59,11 +61,11 @@ export default function ThesisSeminarDetailPage() {
       ...base,
       { label: 'Detail' },
     ];
-  }, [_isStudent, isFromSeminarAnnouncement]);
+  }, [_isStudent, isFromSeminarAnnouncement, studentTaParentHref]);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
-    setTitle(isArchiveRoute ? 'Detail Arsip Seminar' : 'Detail Seminar Hasil');
+    setTitle('Detail Seminar Hasil');
   }, [setBreadcrumbs, setTitle, breadcrumbs, isArchiveRoute]);
 
   if (isLoading) {
@@ -92,7 +94,7 @@ export default function ThesisSeminarDetailPage() {
   const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
   const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
-  const showScheduling = isUserAdmin && !['registered', 'verified'].includes(d.status);
+  const showScheduling = isUserAdmin && !d.isArchive && !['registered', 'verified'].includes(d.status);
 
   const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
   const isAssessmentFinalized = allowedAssessmentStatuses.includes(d?.status);
@@ -118,7 +120,7 @@ export default function ThesisSeminarDetailPage() {
     if (isUserExaminer || isUserSupervisor || isUserAdmin || _isKadep) {
       showAssessment = true;
     }
-  } else if (isAssessmentFinalized) {
+  } else if (isAssessmentFinalized && !d.isArchive) {
     if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor || _isKadep) {
       showAssessment = true;
     }
@@ -144,12 +146,8 @@ export default function ThesisSeminarDetailPage() {
   }
 
   let showAudience = false;
-  if (isAudienceFinalized) {
+  if (isAudienceFinalized || isAudienceOngoing) {
     showAudience = true;
-  } else if (isAudienceOngoing) {
-    if (isUserSupervisor) {
-      showAudience = true;
-    }
   }
 
   const showRevisions = (isUserStudent || isUserSupervisor) && d.status === 'passed_with_revision';
@@ -171,12 +169,10 @@ export default function ThesisSeminarDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              {isStudent()
-                ? (isArchiveRoute ? 'Detail Arsip Seminar' : 'Detail Seminar Hasil')
-                : toTitleCaseName(d.student?.name || 'Seminar Detail')}
+              Detail Seminar Hasil
             </h1>
             <p className="text-muted-foreground">
-              {isStudent() ? d.thesis?.title : d.student?.nim}
+              {toTitleCaseName(d.student?.name || '')} • {d.student?.nim || '-'}
             </p>
           </div>
         </div>

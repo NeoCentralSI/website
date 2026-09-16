@@ -312,7 +312,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "bg-gray-50 relative flex w-full flex-1 flex-col transition-[margin,padding,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+        "bg-gray-50 relative flex min-w-0 flex-1 flex-col transition-[margin,padding,transform] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className
       )}
@@ -535,9 +535,14 @@ function SidebarMenuButton({
     }
   }
 
+  // Wrap in span so TooltipTrigger's Slot does not compose refs onto a nested
+  // Slot (asChild SidebarMenuButton → Link/<a>), which causes infinite
+  // update-depth loops under React 19.
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipTrigger asChild>
+        <span className="contents">{button}</span>
+      </TooltipTrigger>
       <TooltipContent
         side="right"
         align="center"

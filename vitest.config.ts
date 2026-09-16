@@ -12,6 +12,10 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    // The full jsdom suite exceeds worker resources when files run in
+    // parallel, causing nondeterministic timeouts. Keep CI and local results
+    // deterministic; individual tests still exercise their async behavior.
+    fileParallelism: false,
     setupFiles: "./src/test/setup.ts",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     css: true,

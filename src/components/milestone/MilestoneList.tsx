@@ -392,28 +392,22 @@ export function MilestoneList({
                 : "relative"
             }
           >
-            {/* Timeline vertical line (only in list view) */}
-            {viewMode === "list" && filteredMilestones.length > 1 && (
-              <div className="absolute left-3.25 top-4 bottom-4 w-0.5 bg-border" />
-            )}
-
             {filteredMilestones.map((milestone, index) => (
               <div key={milestone.id} className={cn(
                 "relative",
-                viewMode === "list" && "flex gap-3"
+                viewMode === "list" && "flex gap-4 items-start"
               )}>
-                {/* Timeline dot (list view only) */}
                 {viewMode === "list" && (
-                  <div className="flex flex-col items-center shrink-0 pt-3">
+                  <div className="relative flex flex-col items-center mt-1">
                     <TimelineDot status={milestone.status} />
-                    {index < filteredMilestones.length - 1 && (
-                      <div className="flex-1" />
+                    {index !== filteredMilestones.length - 1 && (
+                      <div className="absolute top-7 bottom-[-1.5rem] w-0.5 bg-border z-0" />
                     )}
                   </div>
                 )}
 
                 {/* Card content */}
-                <div className={cn("flex-1 min-w-0", viewMode === "list" && "pb-3")}>
+                <div className={cn("flex-1 min-w-0 mb-3", viewMode === "list" && "pb-0")}>
                   {showCheckboxes && (
                     <div className="absolute z-10 right-2 top-2">
                       <input

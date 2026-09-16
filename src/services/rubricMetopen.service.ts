@@ -1,11 +1,12 @@
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from './auth.service';
+import { unwrapApiArray, unwrapApiValue } from '@/lib/apiResponse';
 
 export type MetopenRole = 'supervisor' | 'default';
 
-export interface AssessmentRubric {
+export interface MetopenAssessmentRubric {
     id: string;
-    assessmentCriteriaId: string;
+    metopenAssessmentCriteriaId: string;
     minScore: number;
     maxScore: number;
     description: string;
@@ -14,27 +15,48 @@ export interface AssessmentRubric {
     updatedAt: string;
 }
 
-export interface AssessmentCriteria {
+export interface MetopenAssessmentCriteria {
     id: string;
-    cpmkId: string;
+    metopenCpmkId: string;
     name: string | null;
     maxScore: number | null;
-    appliesTo: 'proposal' | 'metopen';
     role: MetopenRole;
     displayOrder: number;
-    assessmentRubrics: AssessmentRubric[];
+    metopenAssessmentRubrics: MetopenAssessmentRubric[];
 }
 
-export interface CpmkWithRubrics {
+export interface MetopenCpmkWithRubrics {
     id: string;
     code: string;
     description: string;
-    displayOrder: number;
-    assessmentCriterias: AssessmentCriteria[];
+    metopenAssessmentCriterias: MetopenAssessmentCriteria[];
+}
+
+export interface MetopenCpmk {
+    id: string;
+    code: string;
+    description: string;
+    academicYearId: string;
+    createdAt: string;
+    updatedAt: string;
+    _count?: {
+        metopenAssessmentCriterias: number;
+    };
+}
+
+export interface CreateMetopenCpmkPayload {
+    code: string;
+    description: string;
+    academicYearId: string;
+}
+
+export interface UpdateMetopenCpmkPayload {
+    code?: string;
+    description?: string;
 }
 
 export interface CreateCriteriaPayload {
-    cpmkId: string;
+    metopenCpmkId: string;
     role: MetopenRole;
     name?: string;
     maxScore: number;
@@ -67,6 +89,28 @@ export interface WeightSummary {
     isComplete: boolean;
     globalTotalScore: number;
     details: WeightSummaryDetail[];
+    ta03aCap?: number;
+    ta03bCap?: number;
+    academicYearId?: string | null;
+}
+
+export interface MetopenScoreComposition {
+    academicYearId: string;
+    ta03aCap: number;
+    ta03bCap: number;
+    isLocked: boolean;
+    finalizedScoreCount: number;
+    academicYear?: {
+        id: string;
+        year: string | null;
+        semester: string;
+        isActive: boolean;
+    };
+}
+
+export interface UpdateScoreCompositionPayload {
+    ta03aCap: number;
+    ta03bCap: number;
 }
 
 async function parseResponse<T>(response: Response, fallbackMsg: string): Promise<T> {
@@ -74,29 +118,81 @@ async function parseResponse<T>(response: Response, fallbackMsg: string): Promis
         const error = await response.json().catch(() => ({ message: fallbackMsg }));
         throw new Error(error.message || fallbackMsg);
     }
-    const result = await response.json();
-    return result.data;
+    const result: unknown = await response.json();
+    return unwrapApiValue<T>(result);
 }
 
-export const getCpmksWithRubrics = async (role: MetopenRole): Promise<CpmkWithRubrics[]> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS(role)));
-    return parseResponse<CpmkWithRubrics[]>(response, 'Gagal mengambil data CPMK rubrik Metopel');
+async function parseArrayResponse<T>(response: Response, fallbackMsg: string, keys: string[] = []): Promise<T[]> {
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: fallbackMsg }));
+        throw new Error(error.message || fallbackMsg);
+    }
+    const result: unknown = await response.json();
+    return unwrapApiArray<T>(result, keys);
+}
+
+export const getCpmksWithRubrics = async (
+    role: MetopenRole,
+    academicYearId: string,
+): Promise<MetopenCpmkWithRubrics[]> => {
+    const base = getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS(role));
+    const response = await apiRequest(
+        `${base}&academicYearId=${encodeURIComponent(academicYearId)}`,
+    );
+    return parseArrayResponse<MetopenCpmkWithRubrics>(response, 'Gagal mengambil data CPMK rubrik Metopel', ['cpmks']);
 };
 
-export const createCriteria = async (payload: CreateCriteriaPayload): Promise<AssessmentCriteria> => {
+export const getAllMetopenCpmks = async (academicYearId: string): Promise<MetopenCpmk[]> => {
+    const query = new URLSearchParams({ academicYearId });
+    const response = await apiRequest(
+        `${getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS_ALL)}?${query}`,
+    );
+    return parseArrayResponse<MetopenCpmk>(response, 'Gagal mengambil daftar CPMK Metopel', ['cpmks', 'metopenCpmks']);
+};
+
+export const createMetopenCpmk = async (payload: CreateMetopenCpmkPayload): Promise<MetopenCpmk> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMKS_CREATE), {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
+    return parseResponse<MetopenCpmk>(response, 'Gagal menambah CPMK Metopel');
+};
+
+export const updateMetopenCpmk = async (
+    cpmkId: string,
+    payload: UpdateMetopenCpmkPayload,
+): Promise<MetopenCpmk> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMK_BY_ID(cpmkId)), {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+    });
+    return parseResponse<MetopenCpmk>(response, 'Gagal mengubah CPMK Metopel');
+};
+
+export const deleteMetopenCpmk = async (cpmkId: string): Promise<void> => {
+    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CPMK_BY_ID(cpmkId)), {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Gagal menghapus CPMK Metopel' }));
+        throw new Error(error.message || 'Gagal menghapus CPMK Metopel');
+    }
+};
+
+export const createCriteria = async (payload: CreateCriteriaPayload): Promise<MetopenAssessmentCriteria> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CRITERIA), {
         method: 'POST',
         body: JSON.stringify(payload),
     });
-    return parseResponse<AssessmentCriteria>(response, 'Gagal menambah kriteria Metopel');
+    return parseResponse<MetopenAssessmentCriteria>(response, 'Gagal menambah kriteria Metopel');
 };
 
-export const updateCriteria = async (criteriaId: string, payload: UpdateCriteriaPayload): Promise<AssessmentCriteria> => {
+export const updateCriteria = async (criteriaId: string, payload: UpdateCriteriaPayload): Promise<MetopenAssessmentCriteria> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CRITERIA_BY_ID(criteriaId)), {
         method: 'PATCH',
         body: JSON.stringify(payload),
     });
-    return parseResponse<AssessmentCriteria>(response, 'Gagal mengubah kriteria Metopel');
+    return parseResponse<MetopenAssessmentCriteria>(response, 'Gagal mengubah kriteria Metopel');
 };
 
 export const deleteCriteria = async (criteriaId: string): Promise<void> => {
@@ -119,20 +215,20 @@ export const removeCpmkMetopenConfig = async (cpmkId: string, role: MetopenRole)
     }
 };
 
-export const createRubric = async (criteriaId: string, payload: CreateRubricPayload): Promise<AssessmentRubric> => {
+export const createRubric = async (criteriaId: string, payload: CreateRubricPayload): Promise<MetopenAssessmentRubric> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.CRITERIA_RUBRICS(criteriaId)), {
         method: 'POST',
         body: JSON.stringify(payload),
     });
-    return parseResponse<AssessmentRubric>(response, 'Gagal menambah level rubrik Metopel');
+    return parseResponse<MetopenAssessmentRubric>(response, 'Gagal menambah level rubrik Metopel');
 };
 
-export const updateRubric = async (rubricId: string, payload: UpdateRubricPayload): Promise<AssessmentRubric> => {
+export const updateRubric = async (rubricId: string, payload: UpdateRubricPayload): Promise<MetopenAssessmentRubric> => {
     const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.RUBRIC_BY_ID(rubricId)), {
         method: 'PATCH',
         body: JSON.stringify(payload),
     });
-    return parseResponse<AssessmentRubric>(response, 'Gagal mengubah komponen rubrik Metopel');
+    return parseResponse<MetopenAssessmentRubric>(response, 'Gagal mengubah komponen rubrik Metopel');
 };
 
 export const deleteRubric = async (rubricId: string): Promise<void> => {
@@ -167,7 +263,42 @@ export const reorderRubrics = async (criteriaId: string, orderedIds: string[]): 
     }
 };
 
-export const getWeightSummary = async (role: MetopenRole): Promise<WeightSummary> => {
-    const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.WEIGHT_SUMMARY(role)));
+export const getWeightSummary = async (
+    role: MetopenRole,
+    academicYearId: string,
+): Promise<WeightSummary> => {
+    const base = getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.WEIGHT_SUMMARY(role));
+    const response = await apiRequest(
+        `${base}&academicYearId=${encodeURIComponent(academicYearId)}`,
+    );
     return parseResponse<WeightSummary>(response, 'Gagal mengambil ringkasan bobot Metopel');
+};
+
+export const getScoreComposition = async (
+    academicYearId: string,
+): Promise<MetopenScoreComposition> => {
+    const response = await apiRequest(
+        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.COMPOSITION(academicYearId)),
+    );
+    return parseResponse<MetopenScoreComposition>(
+        response,
+        'Gagal mengambil komposisi penilaian TA-03',
+    );
+};
+
+export const updateScoreComposition = async (
+    academicYearId: string,
+    payload: UpdateScoreCompositionPayload,
+): Promise<MetopenScoreComposition> => {
+    const response = await apiRequest(
+        getApiUrl(API_CONFIG.ENDPOINTS.RUBRIC_METOPEN.COMPOSITION(academicYearId)),
+        {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+        },
+    );
+    return parseResponse<MetopenScoreComposition>(
+        response,
+        'Gagal menyimpan komposisi penilaian TA-03',
+    );
 };

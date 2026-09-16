@@ -5,6 +5,11 @@ import tailwindcss from "@tailwindcss/vite"
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    port: 5173,
+    // Fail loudly when 5173 is taken — OAuth callback FRONTEND_URL defaults to this port.
+    strictPort: true,
+  },
   optimizeDeps: {
     include: ["xlsx"],
   },

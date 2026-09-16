@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useParams, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -38,10 +38,12 @@ export default function RegisterInternshipFormPage() {
     const [newCompanyAddress, setNewCompanyAddress] = useState("");
     const [newCompanyReason, setNewCompanyReason] = useState("");
     const [proposalFile, setProposalFile] = useState<File | null>(null);
+    const [isChangingFile, setIsChangingFile] = useState(false);
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
     const [memberSearch, setMemberSearch] = useState("");
     const [proposedStartDate, setProposedStartDate] = useState("");
     const [proposedEndDate, setProposedEndDate] = useState("");
+    const activeProposalToastShown = useRef(false);
 
     // Breadcrumbs
     const breadcrumbs = useMemo(() => [
@@ -74,8 +76,29 @@ export default function RegisterInternshipFormPage() {
     const proposalsQuery = useQuery({
         queryKey: ['student-proposals'],
         queryFn: () => getStudentProposals(),
-        enabled: !!proposalId
     });
+
+    const activeProposal = useMemo(() => {
+        if (proposalId || !proposalsQuery.data?.data) return null;
+
+        return proposalsQuery.data.data.find(item => {
+            if (['REJECTED_PROPOSAL', 'REJECTED_BY_COMPANY'].includes(item.status)) {
+                return false;
+            }
+            if (['REJECTED', 'REJECTED_BY_COMPANY', 'FAILED'].includes(item.memberStatus as string)) {
+                return false;
+            }
+            return true;
+        }) || null;
+    }, [proposalId, proposalsQuery.data]);
+
+    useEffect(() => {
+        if (!activeProposal || activeProposalToastShown.current) return;
+
+        activeProposalToastShown.current = true;
+        toast.error("Anda masih memiliki proposal aktif. Selesaikan atau batalkan proposal tersebut sebelum mendaftar kembali.");
+        navigate("/kerja-praktik/pendaftaran", { replace: true });
+    }, [activeProposal, navigate]);
 
     // Fetch holidays
     const holidaysQuery = useQuery({
@@ -122,9 +145,23 @@ export default function RegisterInternshipFormPage() {
 
     // Populate form if editing
     useEffect(() => {
-        if (proposalToEdit) {
-            setSelectedCompanyId(proposalToEdit.targetCompanyId || "");
-            setSelectedMemberIds(proposalToEdit.members?.filter(m => m.id !== user?.id).map(m => m.id) || []);
+        if (proposalToEdit && companiesQuery.isSuccess) {
+            const company = companiesQuery.data?.data?.find((c: any) => c.id === proposalToEdit.targetCompanyId);
+            if (company && (company.status === 'diajukan' || company.status === 'DIAJUKAN')) {
+                setSelectedCompanyId("NEW");
+                setNewCompanyName(company.companyName || "");
+                setNewCompanyAddress(company.companyAddress || "");
+                setNewCompanyReason(company.alasan || "");
+            } else {
+                setSelectedCompanyId(proposalToEdit.targetCompanyId || "");
+            }
+
+            const coordinatorId = proposalToEdit.coordinatorId || user?.id;
+            const memberIds = proposalToEdit.members
+                ?.filter(m => m.role !== 'KOORDINATOR' && m.id !== coordinatorId)
+                .map(m => m.id)
+                .filter(Boolean) || [];
+            setSelectedMemberIds([...new Set(memberIds)]);
             const formatDate = (dateStr?: string | null) => {
                 if (!dateStr) return "";
                 const d = new Date(dateStr);
@@ -136,7 +173,7 @@ export default function RegisterInternshipFormPage() {
             setProposedStartDate(formatDate(proposalToEdit.proposedStartDate));
             setProposedEndDate(formatDate(proposalToEdit.proposedEndDate));
         }
-    }, [proposalToEdit, user?.id]);
+    }, [proposalToEdit, user?.id, companiesQuery.isSuccess, companiesQuery.data?.data]);
 
     // Mapped options for ComboBox
     const companyOptions = useMemo(() => {
@@ -218,7 +255,7 @@ export default function RegisterInternshipFormPage() {
                 } : undefined,
                 proposalDocumentId: documentId,
                 academicYearId: activeAcademicYearQuery.data?.academicYear?.id || "",
-                memberIds: selectedMemberIds,
+                memberIds: [...new Set(selectedMemberIds.filter(id => id && id !== (proposalToEdit?.coordinatorId || user?.id)))],
                 proposedStartDate,
                 proposedEndDate,
             };
@@ -249,7 +286,7 @@ export default function RegisterInternshipFormPage() {
     const workingDaysCount = calculateBusinessDays(proposedStartDate, proposedEndDate, holidaysQuery.data || []);
     const isWorkingDaysValid = workingDaysCount >= 30;
 
-    const isFormValid = (!!proposalFile || !!proposalToEdit) &&
+    const isFormValid = (!!proposalFile || (!!proposalToEdit && !isChangingFile)) &&
         !!selectedCompanyId &&
         !!proposedStartDate &&
         !!proposedEndDate &&
@@ -257,7 +294,7 @@ export default function RegisterInternshipFormPage() {
         (selectedCompanyId === "NEW" ? (!!newCompanyName && !!newCompanyAddress) : true);
 
     return (
-        <div className="space-y-6 p-6 animate-in fade-in duration-500 mx-auto pb-20">
+        <div className="space-y-6 p-6 animate-in fade-in duration-500 pb-20">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -412,23 +449,33 @@ export default function RegisterInternshipFormPage() {
                         <CardContent className="space-y-4">
                             <Label className="text-sm font-semibold">File Proposal <span className="text-destructive">*</span></Label>
 
-                            {proposalToEdit?.dokumenProposal && !proposalFile && (
+                            {proposalToEdit?.dokumenProposal && !proposalFile && !isChangingFile && (
                                 <div className="p-3 bg-primary/5 rounded-md border border-primary/10 flex items-center justify-between">
                                     <div className="flex items-center gap-2 overflow-hidden">
                                         <FileText className="h-4 w-4 text-primary shrink-0" />
                                         <span className="text-sm truncate font-medium">{proposalToEdit.dokumenProposal.fileName}</span>
                                     </div>
-                                    <Button variant="ghost" size="sm" className="text-[10px] h-7 px-2" onClick={() => setProposalFile(null)}>Ganti File</Button>
+                                    <Button variant="ghost" size="sm" className="text-[10px] h-7 px-2" onClick={() => setIsChangingFile(true)}>Ganti File</Button>
                                 </div>
                             )}
 
-                            {(!proposalToEdit || proposalFile) && (
-                                <Input
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={(e) => setProposalFile(e.target.files?.[0] || null)}
-                                    className="cursor-pointer h-11"
-                                />
+                            {(!proposalToEdit || proposalFile || isChangingFile) && (
+                                <div className="space-y-2">
+                                    <Input
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={(e) => {
+                                            setProposalFile(e.target.files?.[0] || null);
+                                            if (!e.target.files?.[0]) setIsChangingFile(false);
+                                        }}
+                                        className="cursor-pointer h-11"
+                                    />
+                                    {isChangingFile && proposalToEdit?.dokumenProposal && !proposalFile && (
+                                        <Button variant="ghost" size="sm" onClick={() => setIsChangingFile(false)} className="text-xs text-muted-foreground h-8 -mt-1 px-2">
+                                            Batal Ganti File
+                                        </Button>
+                                    )}
+                                </div>
                             )}
 
                             <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">

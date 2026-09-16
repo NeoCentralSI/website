@@ -1,4 +1,5 @@
 import { getApiUrl } from '@/config/api';
+import { unwrapApiArray } from '@/lib/apiResponse';
 
 export interface User {
   id: string;
@@ -7,6 +8,7 @@ export interface User {
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
   isVerified: boolean;
+  gender: boolean | null;
   roles: Array<{
     id: string;
     name: string;
@@ -19,10 +21,9 @@ export interface User {
 export interface AcademicYear {
   id: string;
   semester: 'ganjil' | 'genap';
-  /** SIMPTA: backend may return number (legacy) or string; UI normalises */
-  year: number | string;
-  startDate?: string;
-  endDate?: string;
+  year: string | number;
+  startDate: string;
+  endDate: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -45,6 +46,7 @@ export interface CreateUserRequest {
   roles?: string[];
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
+  gender?: boolean | null;
 }
 
 export interface UpdateUserRequest {
@@ -54,13 +56,14 @@ export interface UpdateUserRequest {
   identityNumber?: string;
   identityType?: 'NIM' | 'NIP' | 'OTHER';
   isVerified?: boolean;
+  gender?: boolean | null;
 }
 
 export interface CreateAcademicYearRequest {
   semester: 'ganjil' | 'genap';
-  year?: string;
-  startDate?: string;
-  endDate?: string;
+  year: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface UpdateAcademicYearRequest {
@@ -331,6 +334,61 @@ export const deleteRoomAPI = async (id: string): Promise<{ success: boolean; mes
   return response.json();
 };
 
+export interface AdminAuditLog {
+  id: string;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  changes: {
+    oldValues?: unknown;
+    newValues?: unknown;
+    metadata?: unknown;
+  } | null;
+  createdAt: string;
+  actor: {
+    id: string;
+    fullName: string | null;
+    email: string | null;
+    identityNumber: string | null;
+  } | null;
+}
+
+export const getAdminAuditLogsAPI = async (params?: {
+  page?: number;
+  pageSize?: number;
+  action?: string;
+  entity?: string;
+}): Promise<{
+  success: boolean;
+  logs: AdminAuditLog[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}> => {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
+  if (params?.action) queryParams.append('action', params.action);
+  if (params?.entity) queryParams.append('entity', params.entity);
+
+  const response = await fetch(getApiUrl(`/adminfeatures/audit-logs?${queryParams}`), {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Gagal memuat jejak audit');
+  }
+
+  return response.json();
+};
+
 // Get all users
 export const getUsersAPI = async (params?: {
   page?: number;
@@ -373,37 +431,7 @@ export const getUsersAPI = async (params?: {
   return response.json();
 };
 
-/**
- * Student interface with detailed info.
- * SIMPTA canon v2.1 extensions (BR-25 metopen eligibility, BR-04 seminar eligibility):
- * - metopenEligibility: snapshot lengkap status Metopel mahasiswa
- * - visibleAcademicYear: konteks tahun ajaran yang ditampilkan ke UI
- * - isInMetopen, hasActiveThesis: flag derived dari relasi
- * - activeTheses[].status: status lifecycle tugas akhir (active, withdrawn, finalized, etc.)
- */
-export interface MetopenEligibilitySnapshot {
-  eligibleMetopen: boolean;
-  hasExternalStatus: boolean;
-  source: string;
-  updatedAt: string | null;
-  readOnly: boolean;
-  canAccess: boolean;
-  canSubmit: boolean;
-  thesisId: string | null;
-  thesisTitle: string | null;
-  thesisStatus: string | null;
-  reason?: string | null;
-}
-
-export interface VisibleAcademicYear {
-  id: string;
-  year: number | string;
-  semester: 'ganjil' | 'genap';
-  label?: string;
-  isActive: boolean;
-  sources?: string[];
-}
-
+// Student interface with detailed info
 export interface Student {
   id: string;
   fullName: string;
@@ -414,6 +442,8 @@ export interface Student {
   student?: {
     enrollmentYear: number | null;
     sksCompleted: number;
+    gpa?: number | null;
+    graduationPredicate?: string | null;
     currentSemester?: number | null;
     status: string | null;
     mandatoryCoursesCompleted?: boolean;
@@ -421,17 +451,35 @@ export interface Student {
     internshipCompleted?: boolean;
     kknCompleted?: boolean;
     researchMethodCompleted?: boolean;
-    /** SIMPTA BR-25: metopen eligibility computed by backend without SKS hard-code */
-    metopenEligibility?: MetopenEligibilitySnapshot | null;
-    /** SIMPTA: konteks tahun ajaran aktif yang ditampilkan ke UI */
-    visibleAcademicYear?: VisibleAcademicYear | null;
-    /** SIMPTA: flag derived — mahasiswa sedang mengambil mata kuliah Metopen */
+    metopenEligibility?: {
+      canAccess: boolean;
+      eligibleMetopen?: boolean | null;
+      hasExternalEligibility?: boolean;
+      hasExternalStatus?: boolean;
+      readOnly?: boolean;
+      metopenReadOnly?: boolean;
+      canSubmit?: boolean;
+      thesisId?: string | null;
+      thesisTitle?: string | null;
+      thesisStatus?: string | null;
+      source?: string | null;
+      metopenEligibilitySource?: string | null;
+      updatedAt?: string | null;
+      metopenEligibilityUpdatedAt?: string | null;
+    } | null;
+    visibleAcademicYear?: {
+      id?: string | null;
+      label?: string | null;
+      year?: string | number | null;
+      semester?: string | null;
+      isActive?: boolean;
+      sources?: string[];
+    } | null;
     isInMetopen?: boolean;
-    /** SIMPTA: flag derived — mahasiswa memiliki tugas akhir aktif */
     hasActiveThesis?: boolean;
     activeTheses: Array<{
       title: string;
-      status?: string;
+      status?: string | null;
       supervisors: Array<{
         role: string;
         fullName: string;
@@ -458,18 +506,13 @@ export interface Lecturer {
 }
 
 // Get all students
-// SIMPTA canon v2.1: supports academicYearContext snapshot + extended filters
 export const getStudentsAPI = async (params?: {
   page?: number;
   pageSize?: number;
   search?: string;
-  /** SIMPTA: filter mahasiswa berdasarkan program studi */
   programFilter?: string;
-  /** SIMPTA: filter status mahasiswa (aktif, cuti, lulus, dll.) */
   statusFilter?: string;
-  /** SIMPTA: filter angkatan masuk */
   enrollmentYearFilter?: string;
-  /** SIMPTA: filter tahun ajaran konteks */
   academicYearFilter?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
@@ -481,13 +524,14 @@ export const getStudentsAPI = async (params?: {
     total: number;
     totalPages: number;
   };
-  /** SIMPTA BR-25: konteks tahun ajaran aktif untuk eligibility computation */
   academicYearContext?: {
-    id: string;
-    semester: 'ganjil' | 'genap';
-    year: number | string;
-    label?: string;
+    id?: string | null;
+    label?: string | null;
+    year?: string | number | null;
+    semester?: string | null;
     isActive?: boolean;
+    activeAcademicYearId?: string | null;
+    selectedAcademicYearId?: string | null;
   } | null;
 }> => {
   const queryParams = new URLSearchParams();
@@ -527,16 +571,26 @@ export const triggerSiaSyncAPI = async (): Promise<{
     cplUnmatchedCodes?: number;
   };
 }> => {
-  const response = await fetch(getApiUrl('/sia/sync'), {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(getApiUrl('/sia/sync'), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+    });
+  } catch {
+    throw new Error(
+      'Gagal menghubungi server sinkronisasi SIA (failed to fetch). Pastikan backend berjalan dan untuk UAT lokal SIA_MOCK=true di services/.env.',
+    );
+  }
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal menjalankan sync SIA');
+    const errorData = await response.json().catch(() => ({} as { message?: string }));
+    throw new Error(
+      errorData.message ||
+        `Gagal menjalankan sync SIA (HTTP ${response.status}). Untuk UAT lokal aktifkan SIA_MOCK=true.`,
+    );
   }
 
   return response.json();
@@ -588,9 +642,26 @@ export interface StudentDetail {
   phoneNumber?: string;
   isVerified: boolean;
   createdAt: string;
+  metopenEligibility?: {
+    canAccess: boolean;
+    eligibleMetopen?: boolean | null;
+    hasExternalEligibility?: boolean;
+    hasExternalStatus?: boolean;
+    readOnly?: boolean;
+    metopenReadOnly?: boolean;
+    canSubmit?: boolean;
+    thesisTitle?: string | null;
+    thesisStatus?: string | null;
+    source?: string | null;
+    metopenEligibilitySource?: string | null;
+    updatedAt?: string | null;
+    metopenEligibilityUpdatedAt?: string | null;
+  } | null;
   student: {
     enrollmentYear: number;
     sksCompleted: number;
+    gpa?: number | null;
+    graduationPredicate?: string | null;
     status: string | null;
     currentSemester?: number | null;
     mandatoryCoursesCompleted?: boolean | null;
@@ -598,9 +669,22 @@ export interface StudentDetail {
     internshipCompleted?: boolean | null;
     kknCompleted?: boolean | null;
     researchMethodCompleted?: boolean | null;
+    metopenEligibility?: {
+      canAccess: boolean;
+      eligibleMetopen?: boolean | null;
+      hasExternalEligibility?: boolean;
+      hasExternalStatus?: boolean;
+      readOnly?: boolean;
+      metopenReadOnly?: boolean;
+      canSubmit?: boolean;
+      thesisTitle?: string | null;
+      thesisStatus?: string | null;
+      source?: string | null;
+      metopenEligibilitySource?: string | null;
+      updatedAt?: string | null;
+      metopenEligibilityUpdatedAt?: string | null;
+    } | null;
   };
-  /** SIMPTA BR-25: metopen eligibility snapshot (read-only di Mahasiswa detail) */
-  metopenEligibility?: MetopenEligibilitySnapshot | null;
   cplScores?: Array<{
     cplId: string;
     cplCode: string;
@@ -851,6 +935,8 @@ export const updateLecturerByAdminAPI = async (id: string, data: { scienceGroupI
 export const adminUpdateStudentAPI = async (id: string, data: {
   status: string;
   sksCompleted: number;
+  gpa?: number | null;
+  graduationPredicate?: string | null;
   enrollmentYear?: number;
   currentSemester?: number;
   mandatoryCoursesCompleted?: boolean;
@@ -868,6 +954,8 @@ export const adminUpdateStudentAPI = async (id: string, data: {
     body: JSON.stringify({
       status: data.status,
       skscompleted: data.sksCompleted,
+      gpa: data.gpa,
+      graduationPredicate: data.graduationPredicate,
       enrollmentYear: data.enrollmentYear,
       currentSemester: data.currentSemester,
       mandatoryCoursesCompleted: data.mandatoryCoursesCompleted,
@@ -901,7 +989,8 @@ export const getScienceGroupsAPI = async (): Promise<{ data: ScienceGroup[] }> =
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || 'Gagal memuat Kelompok Keilmuan');
   }
-  return response.json();
+  const result: unknown = await response.json();
+  return { data: unwrapApiArray<ScienceGroup>(result, ['scienceGroups']) };
 };
 
 export const createScienceGroupAPI = async (data: { name: string }): Promise<{ data: ScienceGroup }> => {

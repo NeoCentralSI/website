@@ -170,7 +170,7 @@ export default function LecturerBimbinganPage() {
   };
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="p-6 space-y-6">
       <div>
         <h1 className="text-base font-semibold tracking-tight sm:text-lg">Bimbingan Tugas Akhir</h1>
         <p className="text-xs text-muted-foreground sm:text-sm">Kelola permintaan dan jadwal bimbingan mahasiswa</p>

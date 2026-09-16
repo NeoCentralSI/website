@@ -1,0 +1,9 @@
+packages:
+  - '.'
+
+# Allow build scripts for packages that pnpm flagged during Docker build
+allowBuilds:
+  esbuild: true
+  "@firebase/util": true
+  core-js: true
+  protobufjs: true

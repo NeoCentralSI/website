@@ -4,6 +4,7 @@ export type TabItem = {
   label: string;
   to: string;
   end?: boolean; // exact match
+  badge?: number;
 };
 
 export function TabsNav({ tabs, preserveSearch }: { tabs: TabItem[]; preserveSearch?: boolean }) {
@@ -36,12 +37,17 @@ export function TabsNav({ tabs, preserveSearch }: { tabs: TabItem[]; preserveSea
             <Link
               key={t.to}
               to={targetTo}
-              className={`px-3 py-2 text-sm rounded-t-md border-b-2 -mb-px transition-colors ${isActive
+              className={`inline-flex items-center px-3 py-2 text-sm rounded-t-md border-b-2 -mb-px transition-colors ${isActive
                 ? "border-primary text-primary font-medium"
                 : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
                 }`}
             >
               {t.label}
+              {typeof t.badge === "number" && t.badge > 0 && (
+                <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold leading-none tabular-nums text-amber-700">
+                  {t.badge}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -69,8 +75,8 @@ export function LocalTabsNav({
   onTabChange: (value: string) => void;
 }) {
   return (
-    <div className="border-b mb-4">
-      <nav className="flex gap-2">
+    <div className="border-b mb-4 whitespace-nowrap overflow-x-auto overflow-y-hidden" style={{ scrollbarWidth: 'none' }}>
+      <nav className="flex min-w-max gap-2">
         {tabs.map((t) => {
           const isActive = activeTab === t.value;
           return (
@@ -78,7 +84,7 @@ export function LocalTabsNav({
               key={t.value}
               type="button"
               onClick={() => onTabChange(t.value)}
-              className={`px-3 py-2 text-sm rounded-t-md border-b-2 -mb-px ${
+              className={`shrink-0 px-3 py-2 text-sm rounded-t-md border-b-2 -mb-px ${
                 isActive
                   ? "border-primary text-primary font-medium"
                   : "border-transparent text-muted-foreground hover:text-foreground"

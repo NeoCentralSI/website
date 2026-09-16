@@ -8,10 +8,13 @@ import {
   useStudentDefenceHistory,
 } from '@/hooks/thesis-defence';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useStudentEligibility } from '@/hooks/shared';
 
 export default function StudentThesisDefence() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
+  const { canAccessTugasAkhir } = useStudentEligibility();
+  const studentTaParentHref = canAccessTugasAkhir ? '/tugas-akhir' : '/metopel';
   const { data: overview, isLoading: isOverviewLoading } = useStudentDefenceOverview();
   const { data: history, isLoading: isHistoryLoading } = useStudentDefenceHistory();
 
@@ -19,11 +22,11 @@ export default function StudentThesisDefence() {
 
   const breadcrumbs = useMemo(
     () => [
-      { label: 'Tugas Akhir', href: '/tugas-akhir' },
+      { label: 'Tugas Akhir', href: studentTaParentHref },
       { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
       { label: 'Status & Pendaftaran' },
     ],
-    []
+    [studentTaParentHref]
   );
 
   useEffect(() => {
@@ -33,7 +36,7 @@ export default function StudentThesisDefence() {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-6">
+      <div className="p-6 space-y-6">
         <Skeleton className="h-10 w-[250px]" />
         <Skeleton className="h-10 w-full max-w-md" />
         <Skeleton className="h-[200px] w-full" />

@@ -41,7 +41,7 @@ export function useCplStudents(cplId: string) {
     const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
     const createMutation = useMutation({
-        mutationFn: (payload: { studentId: string; score: number; status?: string }) => createCplStudentScore(cplId, payload),
+        mutationFn: (payload: { studentId: string; score: number; status?: CplStudentScoreStatus }) => createCplStudentScore(cplId, payload),
         onSuccess: () => {
             invalidate();
             toast.success('Nilai CPL mahasiswa berhasil ditambahkan');
@@ -50,8 +50,8 @@ export function useCplStudents(cplId: string) {
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ studentId, score }: { studentId: string; score: number; status?: string }) =>
-            updateCplStudentScore(cplId, studentId, { score }),
+        mutationFn: ({ studentId, score, status }: { studentId: string; score: number; status?: CplStudentScoreStatus }) =>
+            updateCplStudentScore(cplId, studentId, { score, status }),
         onSuccess: () => {
             invalidate();
             toast.success('Nilai CPL mahasiswa berhasil diubah');
@@ -73,7 +73,7 @@ export function useCplStudents(cplId: string) {
         onSuccess: (result: CplStudentImportResult) => {
             invalidate();
             if (result.failedCount === 0) {
-                toast.success(`Import berhasil (${result.successCount}/${result.totalRows})`);
+                toast.success('Import nilai CPL mahasiswa berhasil');
             } else {
                 toast.warning(
                     `Import selesai: ${result.successCount} sukses, ${result.failedCount} gagal`
@@ -108,8 +108,8 @@ export function useCplStudents(cplId: string) {
         optionSearch,
         setOptionSearch,
         studentOptions,
-        createScore: (payload: { studentId: string; score: number; status?: string }) => createMutation.mutateAsync(payload),
-        updateScore: (studentId: string, score: number, status?: string) => updateMutation.mutateAsync({ studentId, score, status }),
+        createScore: (payload: { studentId: string; score: number; status?: CplStudentScoreStatus }) => createMutation.mutateAsync(payload),
+        updateScore: (studentId: string, score: number, status?: CplStudentScoreStatus) => updateMutation.mutateAsync({ studentId, score, status }),
         deleteScore: (studentId: string) => deleteMutation.mutate(studentId),
         importScores: (file: File) => importMutation.mutateAsync(file),
         exportScores: () => exportMutation.mutateAsync(),

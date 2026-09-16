@@ -24,6 +24,10 @@ export const API_CONFIG = {
       SERVE_AVATAR: (fileName: string) => `/profile/avatar/${fileName}`,
       LECTURER_DATA: '/profile/lecturer-data',
     },
+    CURRICULUM: {
+      BASE: '/curriculums',
+      BY_ID: (id: string) => `/curriculums/${id}`,
+    },
     CPL: {
       BASE: '/cpls',
       BY_ID: (id: string) => `/cpls/${id}`,
@@ -41,6 +45,10 @@ export const API_CONFIG = {
       COPY_TEMPLATE: '/cpmks/copy-template',
       HIERARCHY: '/cpmks/hierarchy',
     },
+    THESIS_CPMK: {
+      BASE: '/thesis-cpmks',
+      BY_ID: (id: string) => `/thesis-cpmks/${id}`,
+    },
     SEMINAR_RUBRIC: {
       CPMKS: '/seminar-rubrics/cpmks',
       CRITERIA: '/seminar-rubrics/criteria',
@@ -55,16 +63,19 @@ export const API_CONFIG = {
     DEFENCE_RUBRIC: {
       CPMKS: (role: string) => `/defence-rubrics/cpmks?role=${role}`,
       CRITERIA: '/defence-rubrics/criteria',
-      CRITERIA_BY_ID: (criteriaId: string) => `/defence-rubrics/criteria/${criteriaId}`,
+      CRITERIA_BY_ID: (criteriaId: string, role: string) => `/defence-rubrics/criteria/${criteriaId}?role=${role}`,
       CPMK_CONFIG: (cpmkId: string, role: string) => `/defence-rubrics/cpmk/${cpmkId}?role=${role}`,
-      CRITERIA_RUBRICS: (criteriaId: string) => `/defence-rubrics/criteria/${criteriaId}/rubrics`,
-      RUBRIC_BY_ID: (rubricId: string) => `/defence-rubrics/rubrics/${rubricId}`,
-      CRITERIA_REORDER: '/defence-rubrics/criteria/reorder',
-      RUBRICS_REORDER: '/defence-rubrics/rubrics/reorder',
+      CRITERIA_RUBRICS: (criteriaId: string, role: string) => `/defence-rubrics/criteria/${criteriaId}/rubrics?role=${role}`,
+      RUBRIC_BY_ID: (rubricId: string, role: string) => `/defence-rubrics/rubrics/${rubricId}?role=${role}`,
+      CRITERIA_REORDER: (role: string) => `/defence-rubrics/criteria/reorder?role=${role}`,
+      RUBRICS_REORDER: (role: string) => `/defence-rubrics/rubrics/reorder?role=${role}`,
       WEIGHT_SUMMARY: (role: string) => `/defence-rubrics/weight-summary?role=${role}`,
     },
     RUBRIC_METOPEN: {
       CPMKS: (role: string) => `/rubric-metopen/cpmks?role=${role}`,
+      CPMKS_ALL: '/rubric-metopen/cpmks/all',
+      CPMKS_CREATE: '/rubric-metopen/cpmks',
+      CPMK_BY_ID: (cpmkId: string) => `/rubric-metopen/cpmks/${cpmkId}`,
       CRITERIA: '/rubric-metopen/criteria',
       CRITERIA_BY_ID: (criteriaId: string) => `/rubric-metopen/criteria/${criteriaId}`,
       CPMK_CONFIG: (cpmkId: string, role: string) => `/rubric-metopen/cpmk/${cpmkId}?role=${role}`,
@@ -73,6 +84,7 @@ export const API_CONFIG = {
       CRITERIA_REORDER: '/rubric-metopen/criteria/reorder',
       RUBRICS_REORDER: '/rubric-metopen/rubrics/reorder',
       WEIGHT_SUMMARY: (role: string) => `/rubric-metopen/weight-summary?role=${role}`,
+      COMPOSITION: (academicYearId: string) => `/rubric-metopen/composition/${academicYearId}`,
     },
     EXIT_SURVEY: {
       BASE: '/exit-surveys',
@@ -80,6 +92,8 @@ export const API_CONFIG = {
       TOGGLE: (id: string) => `/exit-surveys/${id}/toggle`,
       DUPLICATE: (id: string) => `/exit-surveys/${id}/duplicate`,
       RESPONSES: (id: string) => `/exit-surveys/${id}/responses`,
+      RESPONSES_EXPORT_PDF: (id: string) => `/exit-surveys/${id}/responses/export.pdf`,
+      RESPONSES_EXPORT_EXCEL: (id: string) => `/exit-surveys/${id}/responses/export.xlsx`,
       QUESTIONS: (formId: string) => `/exit-surveys/${formId}/questions`,
       QUESTION_BY_ID: (formId: string, questionId: string) => `/exit-surveys/${formId}/questions/${questionId}`,
     },
@@ -101,24 +115,33 @@ export const API_CONFIG = {
       ME_EXIT_SURVEY: '/yudisiums/me/exit-survey',
       ME_REQUIREMENTS: '/yudisiums/me/requirements',
       ME_REQUIREMENTS_UPLOAD: '/yudisiums/me/requirements/upload',
+      ME_CPL_REPORT: '/yudisiums/me/cpl-report',
+      ME_CERTIFICATE: '/yudisiums/me/certificate',
 
       // Participants & Validation
       PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants`,
+      PARTICIPANT_OPTIONS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/options`,
+      PARTICIPANTS_IMPORT: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/import`,
       PARTICIPANT_DETAIL: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
       PARTICIPANT_REQUIREMENTS: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/requirements`,
-      VALIDATE_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
-        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/validate`,
+      DELETE_PARTICIPANT: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
+      VERIFY_DOCUMENT: (yudisiumId: string, participantId: string, requirementId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${requirementId}/verify`,
+      REQUIREMENT_FILE: (yudisiumId: string, participantId: string, itemId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/requirements/${itemId}/file`,
 
       // CPL (Lecturer / GKM)
       CPL_SCORES: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-scores`,
-      VERIFY_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
-        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/verify`,
+      CPL_REPORT: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/cpl-report`,
+      VALIDATE_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
+        `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/validate`,
       REPAIR_CPL: (yudisiumId: string, participantId: string, cplId: string) =>
         `/yudisiums/${yudisiumId}/participants/${participantId}/cpl/${cplId}/repair`,
 
       // Actions
       EXPORT_PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/export-participants`,
       FINALIZE: (yudisiumId: string) => `/yudisiums/${yudisiumId}/finalize`,
+      OPTIONS_ROOMS: '/yudisiums/options/rooms',
     },
     NOTIFICATION: {
       BASE: '/notification',
@@ -166,6 +189,7 @@ export const API_CONFIG = {
       REQUEST_SUPERVISOR_2: '/thesisGuidance/student/request-supervisor-2',
       PENDING_SUPERVISOR_2: '/thesisGuidance/student/pending-supervisor-2-request',
       CANCEL_SUPERVISOR_2: '/thesisGuidance/student/cancel-supervisor-2-request',
+      METOPEN_INFORMAL_LOGS: '/thesisGuidance/student/metopen/informal-logs',
     },
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',
@@ -191,10 +215,16 @@ export const API_CONFIG = {
       // Guidance Detail
       GUIDANCE_DETAIL: (guidanceId: string) => `/thesisGuidance/lecturer/guidance/${guidanceId}`,
       // Pembimbing 2 Requests
-        SUPERVISOR2_REQUESTS: '/thesisGuidance/lecturer/supervisor2-requests',
-        SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
-        SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
+    SUPERVISOR2_REQUESTS: '/thesisGuidance/lecturer/supervisor2-requests',
+    SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/approve`,
+    SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/lecturer/supervisor2-requests/${requestId}/reject`,
+    // Persetujuan akhir Pembimbing 2 oleh KaDep (F2-5 / OQ-2.2)
+    KADEP_SUPERVISOR2_REQUESTS: '/thesisGuidance/kadep/supervisor2-requests',
+    KADEP_SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/approve`,
+    KADEP_SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/reject`,
         STUDENT_PROPOSAL_VERSIONS: (thesisId: string) => `/thesisGuidance/lecturer/students/${thesisId}/proposal/versions`,
+        STUDENT_INFORMAL_LOGS: (thesisId: string) =>
+          `/thesisGuidance/lecturer/students/${thesisId}/metopen/informal-logs`,
       },
     THESIS_MONITORING: {
       DASHBOARD: '/thesisGuidance/monitoring/dashboard',
@@ -234,7 +264,7 @@ export const API_CONFIG = {
       DOCUMENT_TYPES: '/thesis-seminars/documents/types',
       DOCUMENTS: (id: string) => `/thesis-seminars/${id}/documents`,
       DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}`,
-      VALIDATE_DOCUMENT: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}/validate`,
+      VERIFY_DOCUMENT: (id: string, typeId: string) => `/thesis-seminars/${id}/documents/${typeId}/verify`,
 
       // --- Examiners & Assignment ---
       ELIGIBLE_EXAMINERS: (id: string) => `/thesis-seminars/${id}/eligible-examiners`,
@@ -290,7 +320,8 @@ export const API_CONFIG = {
       DOCUMENT_TYPES: '/thesis-defences/documents/types',
       DOCUMENTS: (id: string) => `/thesis-defences/${id}/documents`,
       DOCUMENT_BY_TYPE: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}`,
-      VALIDATE_DOCUMENT: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}/validate`,
+      DOCUMENT_FILE: (id: string, reqId: string) => `/thesis-defences/${id}/documents/${reqId}/file`,
+      VERIFY_DOCUMENT: (id: string, typeId: string) => `/thesis-defences/${id}/documents/${typeId}/verify`,
 
       // --- Examiners & Assignment ---
       ELIGIBLE_EXAMINERS: (id: string) => `/thesis-defences/${id}/eligible-examiners`,
@@ -324,6 +355,7 @@ export const API_CONFIG = {
       SUBMIT_PROPOSAL: '/insternship/registration/submit',
       SUBMIT_COMPANY_RESPONSE: (proposalId: string) => `/insternship/registration/proposals/${proposalId}/company-response`,
       LOGBOOK: '/insternship/activity/logbook',
+      HISTORY: '/insternship/activity/history',
       UPDATE_LOGBOOK: (id: string) => `/insternship/activity/logbook/${id}`,
       UPDATE_DETAILS: '/insternship/activity/details',
       ACTIVITY: '/insternship/activity',
@@ -350,9 +382,11 @@ export const API_CONFIG = {
       COMPANY_RESPONSES: '/insternship/sekdep/company-responses',
       VERIFY_COMPANY_RESPONSE: (id: string) => `/insternship/sekdep/company-responses/${id}/verify`,
       INTERNSHIPS: '/insternship/sekdep/internships',
+      GRADE_RECAP: '/insternship/sekdep/grade-recap',
       INTERNSHIPS_DETAIL: (id: string) => `/insternship/sekdep/internships/${id}`,
       VERIFY_DOCUMENT: (id: string) => `/insternship/sekdep/internships/${id}/verify-document`,
       VERIFY_DOCUMENTS_BULK: (id: string) => `/insternship/sekdep/internships/${id}/verify-documents-bulk`,
+      UPDATE_FIELD_INFO: (id: string) => `/insternship/sekdep/internships/${id}/field-info`,
       SEND_FIELD_ASSESSMENT: (id: string) => `/insternship/sekdep/internships/${id}/send-field-assessment`,
       LECTURERS_WORKLOAD: '/insternship/sekdep/lecturers/workload',
       LECTURERS_WORKLOAD_EXPORT: '/insternship/sekdep/lecturers/workload/export',
@@ -401,10 +435,14 @@ export const API_CONFIG = {
       ME_PROPOSAL_APPROVAL: '/metopen/me/proposal-approval',
       /** Mahasiswa: snapshot eligibility seminar tanpa side effect sync. */
       ME_SEMINAR_ELIGIBILITY: '/metopen/me/seminar-eligibility',
-      /** Mahasiswa: sinkron antre KaDep + ringkasan status. */
+      /** Mahasiswa: sinkron promosi/release TA-04 awal + ringkasan status. */
       ME_PROPOSAL_QUEUE_SYNC: '/metopen/me/proposal-queue/sync',
-      /** BR-23: Arsip Metopel mahasiswa pasca TA-04 — read-only single source of truth. */
+      /** Mahasiswa: riwayat penilaian TA-03 sejak skor tersedia, termasuk sebelum TA-04. */
+      ME_ASSESSMENT_HISTORY: '/metopen/me/assessment-history',
+      /** BR-23: Arsip Metopel mahasiswa pasca promosi aktif — read-only single source of truth. */
       ME_ARCHIVE: '/metopen/me/archive',
+      /** KC-20260709-06: endpoint tetap ada tetapi menolak unduh mahasiswa (403). */
+      ME_TITLE_APPROVAL_DOCUMENT: '/metopen/me/archive/title-approval-document',
       /** KaDep/Admin: antre judul menunggu pengesahan. */
       KADEP_PENDING_TITLE_REPORTS: (academicYearId?: string) =>
         academicYearId
@@ -412,10 +450,27 @@ export const API_CONFIG = {
           : '/metopen/kadep/title-reports/pending',
       KADEP_TITLE_REPORT_REVIEW: (thesisId: string) =>
         `/metopen/kadep/thesis/${thesisId}/title-report/review`,
+      /** Legacy: thesis aktif/TA-04 awal yang belum terhubung ke Formulir TA-04 batch resmi. */
+      KADEP_TITLE_REPORTS_MISSING_DOCUMENT: (academicYearId?: string) =>
+        academicYearId
+          ? `/metopen/kadep/title-reports/missing-document?academicYearId=${academicYearId}`
+          : '/metopen/kadep/title-reports/missing-document',
+      /** Riwayat TA-04 awal + legacy accepted/rejected antar-periode. */
+      KADEP_TITLE_REPORTS_HISTORY: (academicYearId?: string) =>
+        academicYearId
+          ? `/metopen/kadep/title-reports/history?academicYearId=${academicYearId}`
+          : '/metopen/kadep/title-reports/history',
+      /** Legacy: endpoint per-thesis tidak lagi menerbitkan dokumen resmi. */
+      KADEP_TITLE_REPORT_REGENERATE: (thesisId: string) =>
+        `/metopen/kadep/thesis/${thesisId}/title-report/regenerate`,
+      /** KaDep unduh Formulir TA-04 PDF untuk thesis yang sudah terhubung ke batch. */
+      KADEP_TITLE_REPORT_DOCUMENT: (thesisId: string) =>
+        `/metopen/kadep/thesis/${thesisId}/title-report/document`,
     },
     ASSESSMENT: {
       // TA-03A: Supervisor scoring of Metopen proposal
       SUPERVISOR_SCORING_QUEUE: '/assessment/supervisor/queue',
+      SUPERVISOR_SCORING_HISTORY: '/assessment/supervisor/history',
       SUPERVISOR_SUBMIT_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
       // BR-20: Pembimbing 2 co-sign endpoint
       SUPERVISOR_CO_SIGN: (thesisId: string) => `/assessment/supervisor/${thesisId}/co-sign`,
@@ -424,6 +479,15 @@ export const API_CONFIG = {
       SUPERVISOR_GET_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
       // TA-03B: Metopen lecturer scoring
       METOPEN_SCORING_QUEUE: '/assessment/metopen/queue',
+      METOPEN_SCORING_HISTORY: '/assessment/metopen/history',
+      METOPEN_ATTENDANCE_LATEST: '/assessment/metopen/attendance/latest',
+      /** F-4.2: dry-run pratinjau dampak auto-zero sebelum commit. */
+      METOPEN_ATTENDANCE_PREVIEW: '/assessment/metopen/attendance/preview',
+      METOPEN_ATTENDANCE_UPLOAD: '/assessment/metopen/attendance/upload',
+      METOPEN_ATTENDANCE_ELIGIBILITY: (thesisId: string) => `/assessment/metopen/attendance/eligibility/${thesisId}`,
+      METOPEN_SCORES_EXPORT: '/assessment/metopen/scores/export',
+      // Koordinator dashboard: monitoring progress per mahasiswa eligible Metopen.
+      METOPEN_MONITORING: '/assessment/metopen/monitoring',
       METOPEN_SUBMIT_SCORE: (thesisId: string) => `/assessment/metopen/${thesisId}/score`,
       METOPEN_PUBLISH: (thesisId: string) => `/assessment/metopen/${thesisId}/publish`,
       // Shared: Get criteria by assessment form code
@@ -440,6 +504,7 @@ export const API_CONFIG = {
       DETAIL: (id: string) => `/advisorRequest/${id}`,
       LECTURER_DECISION: (id: string) => `/advisorRequest/${id}/respond`,
       KADEP_DECISION: (id: string) => `/advisorRequest/${id}/decide`,
+      /** @deprecated Backend selalu 400; jangan panggil dari UI baru. */
       ASSIGN: (id: string) => `/advisorRequest/${id}/assign`,
     },
     QUOTA: {

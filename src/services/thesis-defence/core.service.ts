@@ -93,7 +93,7 @@ export async function getAdminDefenceList(params?: {
   search?: string;
   status?: string;
 }): Promise<AdminDefenceListItem[]> {
-  const res = await apiRequest(getApiUrl(buildDefenceListEndpoint({ ...params, view: 'admin' })));
+  const res = await apiRequest(getApiUrl(buildDefenceListEndpoint({ ...params, view: 'verification' })));
   return parseJsonResponse(res, 'Gagal memuat data sidang');
 }
 
@@ -162,7 +162,7 @@ export async function exportAdminDefenceArchive() {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `arsip-sidang-ta-${new Date().toISOString().split('T')[0]}.xlsx`;
+  a.download = `Arsip Sidang TA - ${new Date().toISOString().split('T')[0]}.xlsx`;
   document.body.appendChild(a);
   a.click();
   window.URL.revokeObjectURL(url);

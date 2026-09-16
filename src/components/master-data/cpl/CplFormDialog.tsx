@@ -12,12 +12,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
+// removed Select imports
 import type { Cpl, CreateCplPayload, UpdateCplPayload } from '@/services/master-data/cpl.service';
+// removed Curriculum import
 
 interface CplFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editData?: Cpl | null;
+    // curriculums removed
+    defaultCurriculumId?: string;
     onSubmit: ((data: CreateCplPayload) => Promise<unknown>) | ((id: string, data: UpdateCplPayload) => Promise<unknown>);
 }
 
@@ -25,28 +29,33 @@ export function CplFormDialog({
     open,
     onOpenChange,
     editData,
+    // curriculums removed
+    defaultCurriculumId,
     onSubmit,
 }: CplFormDialogProps) {
+    const [curriculumId, setCurriculumId] = useState<string>(defaultCurriculumId || '');
     const [code, setCode] = useState('');
     const [description, setDescription] = useState('');
     const [minimalScore, setMinimalScore] = useState<number | ''>('');
-    const [isActive, setIsActive] = useState(true);
+    const [isActive, setIsActive] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isEdit = !!editData;
 
     useEffect(() => {
         if (editData) {
+            setCurriculumId(editData.curriculumId || '');
             setCode(editData.code || '');
             setDescription(editData.description || '');
             setMinimalScore(editData.minimalScore);
         } else {
+            setCurriculumId(defaultCurriculumId || '');
             setCode('');
             setDescription('');
             setMinimalScore('');
-            setIsActive(true);
+            setIsActive(false);
         }
-    }, [editData, open]);
+    }, [editData, open, defaultCurriculumId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,13 +65,13 @@ export function CplFormDialog({
         try {
             if (isEdit && editData) {
                 const payload: UpdateCplPayload = {
-                    code,
                     description,
                     minimalScore: Number(minimalScore),
                 };
                 await (onSubmit as (id: string, data: UpdateCplPayload) => Promise<unknown>)(editData.id, payload);
             } else {
                 const payload: CreateCplPayload = {
+                    curriculumId,
                     code,
                     description,
                     minimalScore: Number(minimalScore),
@@ -78,7 +87,7 @@ export function CplFormDialog({
         }
     };
 
-    const isValid = Boolean(code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0);
+    const isValid = Boolean(curriculumId && code.trim() && description.trim() && minimalScore !== '' && Number(minimalScore) >= 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,6 +98,11 @@ export function CplFormDialog({
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {isEdit && editData && (
+                        <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                            Versi <span className="font-semibold">v{editData.version}</span>
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <Label htmlFor="code">Kode CPL</Label>
                         <Input
@@ -96,8 +110,14 @@ export function CplFormDialog({
                             placeholder="Contoh: CPL-01"
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
+                            disabled={isEdit}
                             required
                         />
+                        {isEdit && (
+                            <p className="text-xs text-muted-foreground">
+                                Kode adalah identitas versi CPL dan tidak dapat diubah.
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -138,10 +158,10 @@ export function CplFormDialog({
                             />
                             <div className="space-y-0.5">
                                 <Label htmlFor="isActive" className="cursor-pointer font-medium">
-                                    Aktif
+                                    Aktifkan versi ini
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Nonaktifkan jika ini adalah data CPL lama yang diarsipkan.
+                                    Versi ditentukan otomatis. Biarkan tidak aktif sampai data versi baru selesai diperiksa.
                                 </p>
                             </div>
                         </div>

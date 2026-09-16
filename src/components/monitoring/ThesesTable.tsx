@@ -28,7 +28,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
+import { Ta03ScoreSummary } from "./Ta03ScoreSummary";
+import { Ta04StatusBadge } from "./Ta04StatusBadge";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
+import { useRole } from "@/hooks/shared/useRole";
+import { getThesisStatusStyle } from "@/lib/monitoring/thesisStatus";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
@@ -40,25 +44,9 @@ import { RefreshButton } from "@/components/ui/refresh-button";
 
 
 
-// Status badge color mapping
-const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  "Bimbingan": "default",
-  "Acc Seminar": "secondary",
-  "Selesai": "secondary",
-  "Gagal": "destructive",
-};
-
 function getStatusBadge(status: string) {
-  const variant = statusVariants[status] || "outline";
-
-  if (status === "Acc Seminar") {
-    return <Badge className="bg-amber-100 text-amber-800">{status}</Badge>;
-  }
-  if (status === "Selesai") {
-    return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
-  }
-
-  return <Badge variant={variant}>{status}</Badge>;
+  const { label, className } = getThesisStatusStyle(status);
+  return <Badge className={cn("whitespace-nowrap", className)}>{label}</Badge>;
 }
 
 // Rating badge config
@@ -94,6 +82,9 @@ interface ThesesTableProps {
 
 export function ThesesTable({ isSyncing = false, academicYear, initialRating }: ThesesTableProps) {
   const navigate = useNavigate();
+  const { isGkm, isSekdep } = useRole();
+  const canSendWarning = !isGkm() && !isSekdep();
+  
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
@@ -124,6 +115,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   // Filter state for dropdowns (backend filtering)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [lecturerFilter, setLecturerFilter] = useState<string | undefined>(undefined);
+  const [topicFilter, setTopicFilter] = useState<string | undefined>(undefined);
   const [ratingFilter, setRatingFilter] = useState<string | undefined>(initialRating);
 
   // Frontend pagination & search state
@@ -136,10 +128,11 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   const apiFilters = useMemo(() => ({
     status: statusFilter,
     lecturerId: lecturerFilter,
+    topicId: topicFilter,
     academicYear,
     page: 1,
     pageSize: 1000, // Fetch all data for frontend pagination & search
-  }), [statusFilter, lecturerFilter, academicYear]);
+  }), [statusFilter, lecturerFilter, topicFilter, academicYear]);
 
   const { data, isLoading, refetch, isFetching } = useThesesList(apiFilters);
   const isLoadingAny = isLoading || isFetching || isSyncing;
@@ -163,6 +156,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         thesis.student.name.toLowerCase().includes(searchLower) ||
         thesis.student.nim.toLowerCase().includes(searchLower) ||
         thesis.title?.toLowerCase().includes(searchLower) ||
+        thesis.topic?.name?.toLowerCase().includes(searchLower) ||
         thesis.supervisors.pembimbing1?.toLowerCase().includes(searchLower) ||
         thesis.supervisors.pembimbing2?.toLowerCase().includes(searchLower)
       );
@@ -177,11 +171,13 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
     return searchFilteredData.slice(startIndex, startIndex + pageSize);
   }, [searchFilteredData, page, pageSize]);
 
-  const handleFilterChange = useCallback((key: 'status' | 'lecturerId' | 'rating', value: string | undefined) => {
+  const handleFilterChange = useCallback((key: 'status' | 'lecturerId' | 'topicId' | 'rating', value: string | undefined) => {
     if (key === 'status') {
       setStatusFilter(value === "all" ? undefined : value);
     } else if (key === 'lecturerId') {
       setLecturerFilter(value === "all" ? undefined : value);
+    } else if (key === 'topicId') {
+      setTopicFilter(value === "all" ? undefined : value);
     } else if (key === 'rating') {
       setRatingFilter(value === "all" ? undefined : value);
     }
@@ -205,12 +201,13 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   const clearFilters = useCallback(() => {
     setStatusFilter(undefined);
     setLecturerFilter(undefined);
+    setTopicFilter(undefined);
     setRatingFilter(undefined);
     setFrontendSearch("");
     setPage(1);
   }, []);
 
-  const hasActiveFilters = statusFilter || lecturerFilter || ratingFilter || frontendSearch;
+  const hasActiveFilters = statusFilter || lecturerFilter || topicFilter || ratingFilter || frontendSearch;
 
   const columns: Column<ThesisListItem>[] = [
     {
@@ -231,9 +228,28 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
       ),
     },
     {
+      key: "topic",
+      header: "Topik",
+      render: (thesis) => (
+        <span className="block max-w-45 truncate text-sm" title={thesis.topic?.name || "-"}>
+          {thesis.topic?.name || "-"}
+        </span>
+      ),
+    },
+    {
       key: "status",
       header: "Status",
       render: (thesis) => getStatusBadge(thesis.status),
+    },
+    {
+      key: "ta04",
+      header: "TA-04",
+      render: (thesis) => <Ta04StatusBadge ta04={thesis.ta04} />,
+    },
+    {
+      key: "ta03",
+      header: "Nilai TA-03",
+      render: (thesis) => <Ta03ScoreSummary ta03={thesis.ta03} />,
     },
     {
       key: "progress",
@@ -361,7 +377,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         const config = getRatingConfig(thesis.rating);
         return (
           <div className="flex items-center justify-center gap-1">
-            {config.needsWarning && (
+            {config.needsWarning && canSendWarning && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -420,6 +436,23 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
           {filterOptions?.statuses.map((status) => (
             <SelectItem key={status.value} value={status.value}>
               {status.label} ({status.count})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={topicFilter || "all"}
+        onValueChange={(value) => handleFilterChange("topicId", value)}
+      >
+        <SelectTrigger className="w-50">
+          <SelectValue placeholder="Topik" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Semua Topik</SelectItem>
+          {filterOptions?.topics.map((topic) => (
+            <SelectItem key={topic.value} value={topic.value}>
+              {topic.label}{topic.count !== undefined ? ` (${topic.count})` : ""}
             </SelectItem>
           ))}
         </SelectContent>

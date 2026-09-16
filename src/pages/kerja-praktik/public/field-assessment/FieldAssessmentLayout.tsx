@@ -36,7 +36,7 @@ export default function FieldAssessmentLayout() {
     return (
         <div className="flex h-screen w-screen bg-[#F8FAFC] overflow-hidden">
             {/* Sidebar */}
-            <aside className="w-72 shrink-0 bg-white border-r border-slate-200 flex flex-col z-20">
+            <aside className="w-80 shrink-0 bg-white border-r border-slate-200 flex flex-col z-20">
                 <div className="p-6">
                     <div className="flex items-center gap-3 mb-8">
                         <img src={logo} alt="Logo" className="h-8 w-8" />
@@ -82,19 +82,19 @@ export default function FieldAssessmentLayout() {
                                     <div className="h-10 w-10 rounded-md bg-white border border-slate-200 flex items-center justify-center shrink-0">
                                         <User className="h-5 w-5 text-slate-400" />
                                     </div>
-                                    <div className="overflow-hidden">
-                                        <p className="text-sm font-semibold text-slate-900 leading-tight truncate">{data.internship.studentName}</p>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-slate-900 leading-tight break-words">{data.internship.studentName}</p>
                                         <p className="text-xs font-medium text-slate-500 mt-0.5">{data.internship.studentNim}</p>
                                     </div>
                                 </div>
                                 <div className="space-y-2 pt-3 border-t border-slate-200/60">
                                     <div className="flex items-center gap-2 text-slate-500">
                                         <Building2 className="h-3.5 w-3.5 opacity-70" />
-                                        <p className="text-[11px] font-medium truncate">{data.internship.companyName}</p>
+                                        <p className="text-[11px] font-medium break-words">{data.internship.companyName}</p>
                                     </div>
                                     <div className="flex items-center gap-2 text-slate-500">
                                         <Calendar className="h-3.5 w-3.5 opacity-70" />
-                                        <p className="text-[11px] font-medium truncate">{data.internship.academicYear}</p>
+                                        <p className="text-[11px] font-medium break-words">{data.internship.academicYear}</p>
                                     </div>
                                 </div>
                             </div>

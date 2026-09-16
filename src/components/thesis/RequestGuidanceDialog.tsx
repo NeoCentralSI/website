@@ -157,7 +157,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
 
   const isProposal = phase === "proposal";
 
-  const activeMilestones = milestones.filter((m) => m.status !== "completed");
+  const activeMilestones = (milestones || []).filter((m) => m.status !== "completed");
 
   // Agenda tautan bersifat opsional. Source of truth logbook adalah sesi bimbingan itu sendiri.
   const canSubmit = !!when && !slotConflict && !checkingAvailability;

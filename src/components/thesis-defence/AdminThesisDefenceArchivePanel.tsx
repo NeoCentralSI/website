@@ -83,10 +83,6 @@ export function AdminThesisDefenceArchivePanel() {
         onDelete={(id) => setDeletingId(id)}
         actions={
           <div className="flex flex-wrap gap-2">
-            <RefreshButton
-              onClick={() => archiveQuery.refetch()}
-              isRefreshing={archiveQuery.isFetching && !archiveQuery.isLoading}
-            />
             <Button size="sm" variant="outline" onClick={() => setIsImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Import Excel
@@ -110,6 +106,10 @@ export function AdminThesisDefenceArchivePanel() {
               <Plus className="w-4 h-4 mr-2" />
               Tambah Arsip
             </Button>
+            <RefreshButton
+              onClick={() => archiveQuery.refetch()}
+              isRefreshing={archiveQuery.isFetching && !archiveQuery.isLoading}
+            />
           </div>
         }
       />

@@ -3,9 +3,17 @@ import { apiRequest } from '@/services/auth.service';
 
 export interface Cpl {
     id: string;
+    curriculumId: string;
+    curriculum: {
+        id: string;
+        name: string;
+        startYear: number;
+        endYear: number | null;
+    };
     code: string;
     description: string;
     minimalScore: number;
+    version: number;
     isActive: boolean;
     hasRelatedScores: boolean;
     studentCplScoreCount: number;
@@ -14,6 +22,7 @@ export interface Cpl {
 }
 
 export interface CreateCplPayload {
+    curriculumId: string;
     code: string;
     description: string;
     minimalScore: number;
@@ -23,6 +32,7 @@ export interface CreateCplPayload {
 export type UpdateCplPayload = Partial<CreateCplPayload>;
 
 export interface GetCplsParams {
+    curriculumId?: string;
     status?: 'active' | 'inactive' | 'all';
     search?: string;
     page?: number;
@@ -30,7 +40,7 @@ export interface GetCplsParams {
 }
 
 export type CplStudentScoreSource = 'SIA' | 'manual' | 'MANUAL';
-export type CplStudentScoreStatus = 'draft' | 'pending' | 'finalized' | 'failed';
+export type CplStudentScoreStatus = 'calculated' | 'validated' | 'finalized';
 
 export interface CplStudentScore {
     cplId: string;
@@ -48,13 +58,14 @@ export interface CplStudentScore {
     } | null;
     cpl: {
         id: string;
-        code: string | null;
+        code: string;
         description: string;
         minimalScore: number;
+        version: number;
         isActive: boolean;
     } | null;
     finalizedAt: string | null;
-    verifiedAt: string | null;
+    validatedAt: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -75,10 +86,12 @@ export interface GetCplStudentsParams {
 export interface CreateCplStudentScorePayload {
     studentId: string;
     score: number;
+    status?: CplStudentScoreStatus;
 }
 
 export interface UpdateCplStudentScorePayload {
     score: number;
+    status?: CplStudentScoreStatus;
 }
 
 export interface CplStudentImportResult {
@@ -106,7 +119,8 @@ const downloadResponseAsFile = async (response: Response, fallbackFileName: stri
 
 export const getCpls = async (params: GetCplsParams = {}): Promise<{ data: Cpl[]; total: number }> => {
     const queryParams = new URLSearchParams();
-    if (params.status) queryParams.append('status', params.status);
+    if (params.curriculumId) queryParams.append('curriculumId', params.curriculumId);
+    if (params.status !== undefined) queryParams.append('status', params.status);
     if (params.search) queryParams.append('search', params.search);
     if (params.page) queryParams.append('page', params.page.toString());
     if (params.limit) queryParams.append('limit', params.limit.toString());
@@ -293,7 +307,8 @@ export const exportCplStudentScores = async (cplId: string): Promise<void> => {
         throw new Error(message);
     }
 
-    await downloadResponseAsFile(response, `nilai-cpl-${cplId}.xlsx`);
+    const exportDate = new Date().toISOString().slice(0, 10);
+    await downloadResponseAsFile(response, `Nilai CPL Mahasiswa - ${exportDate}.xlsx`);
 };
 
 export const exportAllCplStudentScores = async (): Promise<void> => {
@@ -309,5 +324,6 @@ export const exportAllCplStudentScores = async (): Promise<void> => {
         throw new Error(message);
     }
 
-    await downloadResponseAsFile(response, 'nilai-cpl-semua.xlsx');
+    const exportDate = new Date().toISOString().slice(0, 10);
+    await downloadResponseAsFile(response, `Rekap Nilai CPL - Semua Mahasiswa - ${exportDate}.xlsx`);
 };

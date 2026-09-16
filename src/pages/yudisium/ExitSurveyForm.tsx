@@ -33,7 +33,7 @@ import {
   createExitSurveyQuestion,
   updateExitSurveyQuestion,
   deleteExitSurveyQuestion,
-} from '@/services/yudisium/yudisium-exit-survey.service';
+} from '@/services/yudisium/exit-survey.service';
 
 import type { 
   UpdateExitSurveyFormPayload,

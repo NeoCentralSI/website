@@ -18,6 +18,7 @@ export interface LecturerCatalogItem {
   normalAvailable: number;
   trafficLight: 'green' | 'yellow' | 'red';
   statusLabel?: string;
+  acceptingRequests?: boolean;
   supervisedTopics: string[];
 }
 
@@ -36,9 +37,13 @@ export interface LecturerQuotaSnapshot {
   pendingKadepCount: number;
   normalAvailable: number;
   overquotaAmount: number;
+  overquotaSahCount?: number;
   trafficLight: 'green' | 'yellow' | 'red';
   isNearLimit: boolean;
   isFull: boolean;
+  activeOfficialEntries?: AdvisorQuotaEntry[];
+  bookingEntries?: AdvisorQuotaEntry[];
+  pendingKadepEntries?: AdvisorQuotaEntry[];
 }
 
 export interface AdvisorQuotaEntry {
@@ -66,12 +71,23 @@ export interface AdvisorQuotaEntry {
   createdAt: string | null;
   updatedAt: string | null;
   proposalStatus?: string | null;
+  proposalVersion?: number | null;
+  hasFinalProposal?: boolean;
+  academicYearId?: string | null;
+  academicYearLabel?: string | null;
+  isCurrentPeriod?: boolean;
   thesisStatus?: string | null;
+  acceptedOverNormal?: boolean;
 }
 
 export interface DosenInboxPayload {
   summary: LecturerQuotaSnapshot | null;
+  /** Period the `summary` numbers are scoped to. */
+  academicYearId?: string;
+  academicYearLabel?: string | null;
   pendingRequests: AdvisorRequest[];
+  /** Requests still queued from a period that is no longer operational. */
+  outOfPeriodCount?: number;
   activeOfficial: AdvisorQuotaEntry[];
   bookings: AdvisorQuotaEntry[];
   pendingKadep: AdvisorQuotaEntry[];
@@ -93,6 +109,10 @@ export interface AdvisorSupervisorSummary {
   email: string | null;
   avatarUrl: string | null;
   role: string | null;
+  identityNumber?: string | null;
+  scienceGroup?: { id: string; name: string } | null;
+  expertise?: string | null;
+  assignedAt?: string | null;
 }
 
 export interface AdvisorRequest {
@@ -112,7 +132,7 @@ export interface AdvisorRequest {
   lecturerApprovalNote?: string | null;
   lecturerOverquotaReason?: string | null;
   status: AdvisorRequestStatus;
-  routeType: 'normal' | 'escalated';
+  routeType: 'normal' | 'escalated' | 'dept';
   rejectionReason: string | null;
   kadepNotes: string | null;
   createdAt: string;
@@ -121,8 +141,15 @@ export interface AdvisorRequest {
   withdrawCount: number;
   reviewedAt: string | null;
   lecturerRespondedAt: string | null;
+  releasedAt?: string | null;
+  releaseReason?: string | null;
   student: {
     id: string;
+    enrollmentYear?: number | null;
+    sksCompleted?: number | null;
+    currentSemester?: number | null;
+    eligibleMetopen?: boolean | null;
+    takingThesisCourse?: boolean | null;
     user: { id: string; fullName: string; identityNumber: string; avatarUrl?: string };
   };
   lecturer: {
@@ -130,15 +157,26 @@ export interface AdvisorRequest {
     scienceGroupId?: string;
     user: { id: string; fullName: string; identityNumber?: string; avatarUrl?: string };
     scienceGroup?: { id: string; name: string };
-    supervisionQuotas?: Array<{ quotaMax: number; quotaSoftLimit: number; currentCount: number }>;
   } | null;
-  topic: { id: string; name: string } | null;
+  topic: {
+    id: string;
+    name: string;
+    scienceGroupId?: string | null;
+    scienceGroup?: { id: string; name: string } | null;
+  } | null;
   redirectTarget?: {
     id: string;
     user: { id: string; fullName: string };
     scienceGroup?: { id: string; name: string };
   };
+  academicYearId?: string;
+  academicYear?: { id: string; year: string; semester: string; isActive: boolean } | null;
+  /** False when the request was filed in a period that is no longer operational. */
+  isCurrentPeriod?: boolean;
+  periodLabel?: string | null;
   quotaSnapshot?: LecturerQuotaSnapshot | null;
+  /** Load the lecturer carries in the operational period, for out-of-period requests. */
+  operationalQuotaSnapshot?: LecturerQuotaSnapshot | null;
   quotaPreview?: {
     projectedCurrentCount: number;
     willBeOverquota: boolean;
@@ -187,11 +225,18 @@ export interface AdvisorAccessState {
   metopenEligibilitySource: 'sia' | 'devtools' | null;
   metopenEligibilityUpdatedAt: string | null;
   metopenReadOnly: boolean;
+  hasTakenMetopen?: boolean;
+  takingThesisCourse?: boolean | null;
+  isMetopenArchive?: boolean;
   gateConfigured: boolean;
   gateOpen: boolean;
   gates: AdvisorAccessGate[];
   supervisors: AdvisorSupervisorSummary[];
+  hasBookedSupervisor: boolean;
   hasOfficialSupervisor: boolean;
+  ta04AssignmentIssued?: boolean;
+  guidanceGateOpen: boolean;
+  guidanceGateReason: string | null;
   hasBlockingRequest: boolean;
   blockingRequest: AdvisorRequest | null;
   latestRequest: AdvisorRequest | null;
@@ -210,6 +255,7 @@ export type AdvisorRequestStatus =
   | 'pending_kadep'
   | 'booking_approved'
   | 'active_official'
+  | 'released'
   | 'revision_requested'
   | 'rejected_by_dosen'
   | 'rejected_by_kadep'
@@ -235,12 +281,25 @@ export interface AlternativeLecturer {
   currentCount: number;
   remaining: number;
   activeTheses: number;
+  bookingCount?: number;
   sameTopicCount: number;
-  trafficLight: 'green' | 'yellow';
+  trafficLight: 'green' | 'yellow' | 'red';
   score: number;
 }
 
+export interface RecommendationResponse {
+  alternatives: AlternativeLecturer[];
+  message?: string;
+}
+
+export interface AssignableLecturersResponse {
+  lecturers: AlternativeLecturer[];
+}
+
 export interface KadepQueue {
+  /** Operational period; requests outside it carry `isCurrentPeriod: false`. */
+  academicYearId?: string | null;
+  academicYearLabel?: string | null;
   escalated: AdvisorRequest[];
   pendingAssignment: AdvisorRequest[];
 }
@@ -378,10 +437,16 @@ export const advisorRequestService = {
     return parseResponse<KadepQueue>(response);
   },
 
-  getRecommendations: async (id: string): Promise<ApiResponse<{ alternatives: AlternativeLecturer[] }>> => {
+  getRecommendations: async (id: string): Promise<ApiResponse<RecommendationResponse>> => {
     const url = getApiUrl(`/advisorRequest/${id}/recommendations`);
     const response = await apiRequest(url);
-    return parseResponse<{ alternatives: AlternativeLecturer[] }>(response);
+    return parseResponse<RecommendationResponse>(response);
+  },
+
+  getAssignableLecturers: async (id: string): Promise<ApiResponse<AssignableLecturersResponse>> => {
+    const url = getApiUrl(`/advisorRequest/${id}/assignable-lecturers`);
+    const response = await apiRequest(url);
+    return parseResponse<AssignableLecturersResponse>(response);
   },
 
   decideRequest: async (id: string, data: { action: 'approve' | 'reject' | 'override' | 'redirect' | 'request_revision'; targetLecturerId?: string; notes?: string }): Promise<ApiResponse<AdvisorRequest>> => {
@@ -394,10 +459,12 @@ export const advisorRequestService = {
     return parseResponse<AdvisorRequest>(response);
   },
 
-  assignAdvisor: async (id: string): Promise<ApiResponse<{ message: string; thesisId: string; assignedLecturerId: string }>> => {
-    const url = getApiUrl(`/advisorRequest/${id}/assign`);
-    const response = await apiRequest(url, { method: 'POST' });
-    return parseResponse<{ message: string; thesisId: string; assignedLecturerId: string }>(response);
+  /** @deprecated Always throws; promosi aktif hanya via jalur TA-04 batch + otomatis. */
+  assignAdvisor: async (_id: string): Promise<ApiResponse<{ message: string; thesisId: string; assignedLecturerId: string }>> => {
+    void _id;
+    throw new Error(
+      'Penetapan pembimbing mandiri sudah dinonaktifkan. Gunakan keputusan KaDep lalu finalisasi Formulir TA-04 batch.',
+    );
   },
 
   getDetail: async (id: string): Promise<ApiResponse<AdvisorRequest>> => {

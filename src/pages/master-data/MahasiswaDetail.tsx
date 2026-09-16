@@ -25,7 +25,8 @@ import {
   Users,
   Target,
   FileText,
-  Shield
+  Shield,
+  Award
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -119,7 +120,7 @@ export default function MahasiswaDetail() {
   const metopenEligibility = data.metopenEligibility;
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -177,11 +178,11 @@ export default function MahasiswaDetail() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-purple-100">
-                <BookOpen className="h-5 w-5 text-purple-600" />
+                <Award className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Skripsi</p>
-                <p className="text-xl font-bold">{data.theses.length}</p>
+                <p className="text-sm text-muted-foreground">IPK</p>
+                <p className="text-xl font-bold">{data.student.gpa != null ? data.student.gpa.toFixed(2) : '-'}</p>
               </div>
             </div>
           </CardContent>
@@ -250,6 +251,14 @@ export default function MahasiswaDetail() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Semester</span>
                   <Badge variant="outline">{data.student.currentSemester ?? '-'}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">IPK</span>
+                  <Badge variant="outline">{data.student.gpa != null ? data.student.gpa.toFixed(2) : '-'}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Predikat</span>
+                  <Badge variant="outline">{data.student.graduationPredicate || '-'}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">MK Wajib</span>

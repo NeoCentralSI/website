@@ -1,12 +1,52 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 
+export type NotificationDataPayload = {
+  route?: string;
+  type?: string;
+} & Record<string, unknown>;
+
 export interface NotificationItem {
   id: string;
   title?: string | null;
   message?: string | null;
   isRead: boolean;
   createdAt: string; // ISO
+  type?: string | null;
+  data?: NotificationDataPayload | string | null;
+}
+
+function parseNotificationData(data: NotificationItem["data"]): NotificationDataPayload | null {
+  if (data == null) return null;
+  if (typeof data === "string") {
+    try {
+      const parsed: unknown = JSON.parse(data);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as NotificationDataPayload;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+  if (typeof data === "object" && !Array.isArray(data)) {
+    return data;
+  }
+  return null;
+}
+
+/**
+ * Returns an in-app path from `data.route` when the backend provided one.
+ * Rejects protocol-relative and absolute URLs so click-through cannot leave the app.
+ */
+export function getNotificationRoute(notification: Pick<NotificationItem, "data">): string | null {
+  const payload = parseNotificationData(notification.data);
+  const raw = payload?.route;
+  if (typeof raw !== "string") return null;
+  const route = raw.trim();
+  if (!route.startsWith("/") || route.startsWith("//")) return null;
+  if (route.includes("://") || route.includes("\\")) return null;
+  return route;
 }
 
 export interface NotificationsListResponse {
@@ -61,12 +101,21 @@ export async function deleteAllNotifications(): Promise<{ success: boolean; dele
   return res.json();
 }
  
-export async function registerFcmToken(token: string): Promise<{ success: boolean; registered: number }> {
+export async function registerFcmToken(token: string, platform = "web"): Promise<{ success: boolean; registered: number }> {
   const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFICATION.FCM_REGISTER), {
     method: "POST",
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ token, platform }),
   });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal mendaftarkan FCM token");
+  if (!res.ok) {
+    let message = "Gagal mendaftarkan FCM token";
+    try {
+      const errorData = await res.json();
+      message = errorData.message || message;
+    } catch {
+      message = `${message} (${res.status} ${res.statusText})`;
+    }
+    throw new Error(message);
+  }
   return res.json();
 }
 

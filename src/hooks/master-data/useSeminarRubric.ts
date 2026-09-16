@@ -12,6 +12,7 @@ import {
     getWeightSummary,
     reorderCriteria,
     reorderRubrics,
+    updateMinimumScore,
     type CreateCriteriaPayload,
     type UpdateCriteriaPayload,
     type CreateRubricPayload,
@@ -21,7 +22,7 @@ import {
 const CPMKS_KEY = ['seminar-rubric-cpmks'];
 const WEIGHT_KEY = ['seminar-rubric-weight'];
 
-export function useSeminarRubric() {
+export function useSeminarRubric(academicYearId?: string) {
     const queryClient = useQueryClient();
 
     const invalidateAll = () => {
@@ -36,8 +37,9 @@ export function useSeminarRubric() {
         isFetching,
         refetch,
     } = useQuery({
-        queryKey: CPMKS_KEY,
-        queryFn: () => getCpmksWithRubrics(),
+        queryKey: [...CPMKS_KEY, academicYearId],
+        queryFn: () => getCpmksWithRubrics({ academicYearId }),
+        enabled: Boolean(academicYearId),
     });
 
     // ── Weight summary query ─────────────────
@@ -45,8 +47,9 @@ export function useSeminarRubric() {
         data: weightSummary,
         isLoading: isWeightLoading,
     } = useQuery({
-        queryKey: WEIGHT_KEY,
-        queryFn: () => getWeightSummary(),
+        queryKey: [...WEIGHT_KEY, academicYearId],
+        queryFn: () => getWeightSummary({ academicYearId }),
+        enabled: Boolean(academicYearId),
     });
 
     // ── Criteria mutations ───────────────────
@@ -182,6 +185,18 @@ export function useSeminarRubric() {
         },
     });
 
+    // ── Update minimum score mutation ────────
+    const updateMinimumScoreMutation = useMutation({
+        mutationFn: updateMinimumScore,
+        onSuccess: () => {
+            invalidateAll();
+            toast.success('Skor minimum berhasil diubah');
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
     return {
         // Data
         cpmks: cpmks ?? [],
@@ -218,5 +233,9 @@ export function useSeminarRubric() {
             reorderCriteriaMutation.mutateAsync({ cpmkId, orderedIds }),
         reorderRubrics: (criteriaId: string, orderedIds: string[]) =>
             reorderRubricsMutation.mutateAsync({ criteriaId, orderedIds }),
+            
+        // Settings actions
+        updateMinimumScore: updateMinimumScoreMutation.mutateAsync,
+        isUpdatingMinimumScore: updateMinimumScoreMutation.isPending,
     };
 }

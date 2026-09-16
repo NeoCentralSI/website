@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, FileSpreadsheet, RefreshCw, Upload } from "lucide-react";
+import { Download, FileSpreadsheet, RefreshCw, Upload, X, FileUp } from "lucide-react";
 
 import type { AdminThesisSeminarArchiveImportResult } from "@/services/thesis-seminar/core.service";
 
@@ -26,6 +26,7 @@ export function AdminThesisSeminarArchiveImportDialog({
 }: AdminThesisSeminarArchiveImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<AdminThesisSeminarArchiveImportResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = () => {
     const headers = [
@@ -63,12 +64,13 @@ export function AdminThesisSeminarArchiveImportDialog({
     // Auto-width
     worksheet["!cols"] = headers.map(() => ({ wch: 20 }));
 
-    xlsx.writeFile(workbook, "Template_Import_Seminar.xlsx");
+    xlsx.writeFile(workbook, "template_import_arsip_seminar_hasil.xlsx");
   };
 
   const reset = () => {
     setFile(null);
     setResult(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async () => {
@@ -105,24 +107,54 @@ export function AdminThesisSeminarArchiveImportDialog({
                 <div>
                   <p className="text-sm font-medium">Gunakan template standar</p>
                   <p className="text-xs text-muted-foreground">
-                    Kolom wajib: Nama, NIM, Judul TA, Tanggal, Ruangan, Hasil, Dosen Penguji 1, Dosen Penguji 2
+                    Kolom wajib: NIM, Tanggal, Ruangan, Hasil, dan Dosen Penguji 1
                   </p>
-                  {/* <p className="text-xs text-muted-foreground">
-                    Catatan: Dosen Penguji 3 bersifat opsional.
-                  </p> */}
                 </div>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleDownloadTemplate}>
-                <Download className="mr-2 h-4 w-4" /> Template
+              <Button type="button" variant="outline" size="sm" onClick={handleDownloadTemplate} className="gap-2 shrink-0">
+                <Download className="h-4 w-4" /> Template
               </Button>
             </div>
-            <Input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              disabled={isImporting}
-            />
-            {file && <p className="text-xs text-muted-foreground">File: {file.name}</p>}
+
+            <div className="relative">
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                disabled={isImporting}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-start gap-2 overflow-hidden pr-12 text-muted-foreground font-normal"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isImporting}
+              >
+                <FileUp className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
+                </span>
+              </Button>
+              {file && !isImporting && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Hapus file terpilih"
+                  title="Hapus file terpilih"
+                  onClick={() => {
+                    setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
             {isImporting && (
               <Alert>
                 <Upload className="h-4 w-4 animate-bounce text-blue-600" />

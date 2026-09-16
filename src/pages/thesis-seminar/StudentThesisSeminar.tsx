@@ -10,12 +10,15 @@ import {
   useStudentAttendanceHistory
 } from '@/hooks/thesis-seminar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useStudentEligibility } from '@/hooks/shared';
 
 export default function StudentThesisSeminar() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'ringkasan';
+  const { canAccessTugasAkhir } = useStudentEligibility();
+  const studentTaParentHref = canAccessTugasAkhir ? '/tugas-akhir' : '/metopel';
 
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true });
@@ -29,11 +32,11 @@ export default function StudentThesisSeminar() {
 
   const breadcrumbs = useMemo(
     () => [
-      { label: 'Tugas Akhir', href: '/tugas-akhir' },
+      { label: 'Tugas Akhir', href: studentTaParentHref },
       { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
       { label: activeTab === 'riwayat-kehadiran' ? 'Riwayat Kehadiran' : 'Status & Pendaftaran' },
     ],
-    [activeTab]
+    [activeTab, studentTaParentHref]
   );
 
   useEffect(() => {
@@ -43,7 +46,7 @@ export default function StudentThesisSeminar() {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-6">
+      <div className="p-6 space-y-6">
         <Skeleton className="h-10 w-[250px]" />
         <Skeleton className="h-10 w-full max-w-md" />
         <Skeleton className="h-[200px] w-full" />

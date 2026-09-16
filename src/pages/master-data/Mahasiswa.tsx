@@ -12,10 +12,9 @@ import {
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Eye, RefreshCw, Pencil } from 'lucide-react';
+import { Eye, RefreshCw, Pencil, Check, X } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminUpdateStudentAPI } from '@/services/admin.service';
@@ -26,7 +25,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Check, X } from 'lucide-react';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -41,9 +39,9 @@ export default function Mahasiswa() {
   const [searchValue, setSearchValue] = useState('');
   const [programFilter, setProgramFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [enrollmentYearFilter] = useState(''); // TODO: wire UI filter when ready
+  const [enrollmentYearFilter] = useState('');
   const [academicYearFilter, setAcademicYearFilter] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortBy, setSortBy] = useState('identityNumber');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Edit states
@@ -51,6 +49,8 @@ export default function Mahasiswa() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editSks, setEditSks] = useState<number>(0);
+  const [editGpa, setEditGpa] = useState<string>('');
+  const [editGraduationPredicate, setEditGraduationPredicate] = useState<string>('none');
   const [editSemester, setEditSemester] = useState<number>(1);
   const [editStatus, setEditStatus] = useState<string>('');
   const [editMandatory, setEditMandatory] = useState<boolean>(false);
@@ -109,6 +109,8 @@ export default function Mahasiswa() {
     mutationFn: (data: {
       status: string;
       sksCompleted: number;
+      gpa?: number | null;
+      graduationPredicate?: string | null;
       enrollmentYear?: number;
       currentSemester?: number;
       mandatoryCoursesCompleted?: boolean;
@@ -166,29 +168,6 @@ export default function Mahasiswa() {
       header: 'Nama',
       render: (row: Student) => toTitleCaseName(row.fullName),
     },
-    /*
-    {
-      key: 'email',
-      header: 'Email',
-      render: (row: Student) => row.email,
-    },
-    {
-      key: 'enrollmentYear',
-      header: 'Tahun Masuk',
-      filter: {
-        kind: 'control',
-        type: 'select',
-        value: enrollmentYearFilter,
-        onChange: setEnrollmentYearFilter,
-        options: [
-          { value: '', label: 'Semua' },
-          ...Array.from({ length: 11 }, (_, i) => 2018 + i).map((y) => ({ value: String(y), label: String(y) })),
-        ],
-        placeholder: 'Filter tahun',
-      },
-      render: (row: Student) => row.student?.enrollmentYear || '-',
-    },
-    */
     {
       key: 'currentSemester',
       header: 'Sem.',
@@ -355,6 +334,8 @@ export default function Mahasiswa() {
               onClick={() => {
                 setSelectedStudent(row);
                 setEditSks(row.student?.sksCompleted || 0);
+                setEditGpa(row.student?.gpa != null ? row.student.gpa.toFixed(2) : '');
+                setEditGraduationPredicate(row.student?.graduationPredicate || 'none');
                 setEditSemester(row.student?.currentSemester || 1);
                 setEditStatus(row.student?.status || 'active');
                 setEditMandatory(row.student?.mandatoryCoursesCompleted || false);
@@ -394,7 +375,7 @@ export default function Mahasiswa() {
   );
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-base font-semibold tracking-tight sm:text-lg">Data Mahasiswa</h1>
@@ -531,6 +512,34 @@ export default function Mahasiswa() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>IPK</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="4"
+                  step="0.01"
+                  value={editGpa}
+                  onChange={(e) => setEditGpa(e.target.value)}
+                  placeholder="Contoh: 3.82"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Predikat</Label>
+                <Select value={editGraduationPredicate} onValueChange={setEditGraduationPredicate}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih predikat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Belum ditentukan</SelectItem>
+                    <SelectItem value="Sangat Memuaskan">Sangat Memuaskan</SelectItem>
+                    <SelectItem value="Dengan Pujian">Dengan Pujian</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={editStatus} onValueChange={setEditStatus}>
@@ -615,6 +624,8 @@ export default function Mahasiswa() {
                 e.preventDefault();
                 updateMutation.mutate({
                   sksCompleted: editSks,
+                  gpa: editGpa === '' ? null : Math.round(Number(editGpa) * 100) / 100,
+                  graduationPredicate: editGraduationPredicate === 'none' ? null : editGraduationPredicate,
                   status: editStatus,
                   currentSemester: editSemester,
                   mandatoryCoursesCompleted: editMandatory,

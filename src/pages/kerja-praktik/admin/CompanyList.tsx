@@ -70,7 +70,7 @@ export default function AdminCompanyListPage() {
     }), []);
 
     return (
-        <div className="p-4">
+        <div className="p-6 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-2 text-2xl font-semibold">
                     <Building2 className="h-6 w-6 text-primary" />

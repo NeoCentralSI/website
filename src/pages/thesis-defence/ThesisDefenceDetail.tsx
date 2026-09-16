@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { ThesisEventStatusBadge } from '@/components/shared/ThesisEventStatusBadge';
-import { useRole, useAuth } from '@/hooks/shared';
+import { useRole, useAuth, useStudentEligibility } from '@/hooks/shared';
 import { useThesisDefenceDetail } from '@/hooks/thesis-defence';
 import { toTitleCaseName } from '@/lib/text';
 
@@ -23,6 +23,8 @@ export default function ThesisDefenceDetailPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { isStudent, isAdmin, isKadep } = useRole();
   const { user } = useAuth();
+  const { canAccessTugasAkhir } = useStudentEligibility();
+  const studentTaParentHref = canAccessTugasAkhir ? '/tugas-akhir' : '/metopel';
 
   const _isStudent = isStudent();
   const _isKadep = isKadep();
@@ -38,7 +40,7 @@ export default function ThesisDefenceDetailPage() {
 
   const breadcrumbs = useMemo(() => {
     const base = [
-      { label: 'Tugas Akhir', href: _isStudent ? '/tugas-akhir' : undefined },
+      { label: 'Tugas Akhir', href: _isStudent ? studentTaParentHref : undefined },
       { label: 'Sidang', href: '/tugas-akhir/sidang' },
     ];
 
@@ -46,7 +48,7 @@ export default function ThesisDefenceDetailPage() {
       ...base,
       { label: 'Detail' },
     ];
-  }, [_isStudent]);
+  }, [_isStudent, studentTaParentHref]);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);
@@ -73,30 +75,31 @@ export default function ThesisDefenceDetailPage() {
   }
 
   const d = detail as any;
+  const isArchive = d.registeredAt === null || d.isArchive === true;
 
   const isUserAdmin = isAdmin();
   const isUserStudent = isStudent() && !!user?.student?.id && (d.student?.id === user?.student?.id || d.student?.nim === user?.identityNumber);
   const isUserExaminer = !!user?.lecturer?.id && d.examiners?.some((e: any) => e.lecturerId === user?.lecturer?.id);
   const isUserSupervisor = !!user?.lecturer?.id && d.supervisors?.some((s: any) => s.lecturerId === user?.lecturer?.id);
 
-  const showScheduling = isUserAdmin && !['registered', 'verified'].includes(d.status);
+  const showScheduling = isUserAdmin && !isArchive && !['registered', 'verified'].includes(d.status);
 
   const allowedAssessmentStatuses = ['passed', 'passed_with_revision', 'failed'];
   const isAssessmentFinalized = allowedAssessmentStatuses.includes(d.status);
   const isAssessmentOngoing = d.status === 'ongoing';
 
   let showAssessment = false;
-  if (isAssessmentOngoing) {
+  if (isAssessmentOngoing && !isArchive) {
     if (isUserExaminer || isUserSupervisor || isUserAdmin || _isKadep) {
       showAssessment = true;
     }
-  } else if (isAssessmentFinalized) {
+  } else if (isAssessmentFinalized && !isArchive) {
     if (isUserAdmin || isUserStudent || isUserExaminer || isUserSupervisor || _isKadep) {
       showAssessment = true;
     }
   }
 
-  const showRevisions = (isUserStudent || isUserSupervisor) && d.status === 'passed_with_revision';
+  const showRevisions = (isUserStudent || isUserSupervisor || isUserAdmin) && d.status === 'passed_with_revision' && !isArchive;
 
   const tabs = [{ label: 'Identitas', value: 'identitas' }];
   if (showScheduling) tabs.push({ label: 'Penjadwalan', value: 'penjadwalan' });

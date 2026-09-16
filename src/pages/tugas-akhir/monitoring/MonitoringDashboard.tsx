@@ -10,6 +10,7 @@ import {
   ProgressDistributionChart,
   SlowStudentsCard,
   ReadyForSeminarCard,
+  SupervisorLoadCard,
   ThesesTable,
   GuidanceTrendChart,
 } from "@/components/monitoring";
@@ -42,15 +43,16 @@ export default function MonitoringDashboard() {
   const academicYearFilter = selectedAcademicYear === "all" ? undefined : selectedAcademicYear;
   const { data, isLoading, isFetching, refetch } = useMonitoringDashboard(academicYearFilter);
   const { data: filterOptions } = useFilterOptions();
-  const { setBreadcrumbs } = useOutletContext<LayoutContext>();
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
 
   useEffect(() => {
+    setTitle("Monitoring Tugas Akhir");
     setBreadcrumbs([
       { label: "Tugas Akhir" },
       { label: "Monitoring" },
     ]);
-  }, [setBreadcrumbs]);
+  }, [setBreadcrumbs, setTitle]);
 
   // Check if any operation is in progress
   const isLoadingAny = isLoading || isFetching || isSyncing;
@@ -111,7 +113,7 @@ export default function MonitoringDashboard() {
   }
 
   return (
-    <div className="flex flex-1 flex-col p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header with Academic Year Filter and Reload */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -187,10 +189,17 @@ export default function MonitoringDashboard() {
       </div>
 
       {/* Quick Lists */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <SlowStudentsCard
           slowStudents={data?.slowStudents}
           atRiskStudents={data?.atRiskStudents}
+          isLoading={isLoadingAny}
+        />
+        <SupervisorLoadCard
+          loads={data?.supervisorLoads?.lecturers}
+          definitionLabel={data?.supervisorLoads?.definitionLabel}
+          periodLabel={data?.supervisorLoads?.periodLabel}
+          uniqueThesisCount={data?.supervisorLoads?.uniqueThesisCount}
           isLoading={isLoadingAny}
         />
         <ReadyForSeminarCard

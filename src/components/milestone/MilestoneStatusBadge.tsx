@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import type { MilestoneStatus } from "@/types/milestone.types";
 import { MILESTONE_STATUS_CONFIG } from "@/types/milestone.types";
 import { Circle, Loader2, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
@@ -17,6 +18,14 @@ const IconByStatus: Record<MilestoneStatus, React.ElementType> = {
   completed: CheckCircle2,
 };
 
+const variantByStatus: Record<MilestoneStatus, "default" | "secondary" | "destructive" | "outline" | "warning" | "success" | "info"> = {
+  not_started: "secondary",
+  in_progress: "info",
+  pending_review: "warning",
+  revision_needed: "destructive",
+  completed: "success",
+};
+
 export function MilestoneStatusBadge({
   status,
   className,
@@ -24,18 +33,12 @@ export function MilestoneStatusBadge({
 }: MilestoneStatusBadgeProps) {
   const config = MILESTONE_STATUS_CONFIG[status] || MILESTONE_STATUS_CONFIG.not_started;
   const Icon = (status && IconByStatus[status]) ? IconByStatus[status] : IconByStatus.not_started;
+  const variant = variantByStatus[status] || "secondary";
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium",
-        config.bgColor,
-        config.color,
-        className
-      )}
-    >
-      {showIcon && Icon && <Icon className={cn("h-3 w-3", status === "in_progress" && "animate-spin")} />}
+    <Badge variant={variant} className={className}>
+      {showIcon && Icon && <Icon className={cn("h-3 w-3 mr-1.5", status === "in_progress" && "animate-spin")} />}
       {config.label}
-    </span>
+    </Badge>
   );
 }

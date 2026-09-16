@@ -1,109 +1,121 @@
 import { useQuery } from "@tanstack/react-query";
-import { getCachedStudentsFromSia } from "@/services/sia.service";
 import { checkMetopelEligibility } from "@/services/metopen.service";
-import { useAuth } from "@/hooks/shared";
+import { useAuth } from "./useAuth";
+import { useRole } from "./useRole";
 
-/**
- * Snapshot eligibility mahasiswa lintas modul (KP, TA, Metopel).
- *
- * Sumber kebenaran (KONTEKS_KANONIS_SIMPTA.md v2.0 §5.1 + §5.8):
- * - Metopel: snapshot eksternal `students.eligible_metopen` dari SIA.
- * - Tugas Akhir penuh: snapshot eksternal `students.taking_thesis_course` dari SIA.
- *
- * BR-25: Gate Tugas Akhir TIDAK boleh memakai SKS hard-code (`sks >= 110`).
- * Akses TA ditentukan murni oleh `taking_thesis_course = true` yang sudah
- * dipersist di profil mahasiswa. Frontend tidak menebak dari nama mata kuliah
- * di cache SIA karena cache itu hanya dipakai untuk konteks non-SIMPTA seperti KP.
- *
- * Catatan: KP tetap mempertahankan baseline `sks >= 90` karena modul KP
- * di luar scope SIMPTA dan belum punya snapshot eksternal yang setara.
- */
-export interface EligibilityResult {
+type RequirementStatus = {
+  met: boolean;
+  description?: string;
+};
+
+type NumericRequirementStatus = RequirementStatus & {
+  current: number;
+  required: number;
+};
+
+interface EligibilityResult {
   isLoading: boolean;
   sks: number;
   hasTugasAkhirCourse: boolean;
+  hasExistingThesis: boolean;
   canAccessKerjaPraktek: boolean;
   canAccessTugasAkhir: boolean;
   canAccessMetopel: boolean;
-  /** True jika proposal sudah dikunci (proposalStatus = "accepted"); UI Metopen masuk mode arsip read-only. */
   isMetopenReadOnly: boolean;
+  isMetopenOnlyTrack: boolean;
   requirements: {
     kerjaPraktek: {
-      sks: { met: boolean; current: number; required: number };
+      sks: NumericRequirementStatus;
     };
     tugasAkhir: {
-      course: { met: boolean; description: string };
+      // F-0.2: gate TA = snapshot SIA MK Tugas Akhir (course), bukan SKS hard-code (BR-25).
+      course: RequirementStatus;
     };
     metopel: {
-      eligibility: { met: boolean; description: string };
+      // Canon §5.1 (F-0.1): eligibility = snapshot SIA semata (tanpa gate semester).
+      eligibility: RequirementStatus;
     };
   };
 }
 
 export function useStudentEligibility(): EligibilityResult {
   const { user: authUser } = useAuth();
+  const { isStudent } = useRole();
   const nim = authUser?.identityNumber;
-
-  const { data: siaStudents, isLoading: siaLoading } = useQuery({
-    queryKey: ["sia-cached-students"],
-    queryFn: getCachedStudentsFromSia,
-    enabled: !!nim,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Only fire API calls for students — lecturers/admins also have identityNumber
+  // (NIP/NIDN) but the backend returns 403, causing constant error logs.
+  const isStudentUser = isStudent();
 
   const { data: metopelEligibility, isLoading: metopelLoading } = useQuery({
     queryKey: ["metopel-eligibility"],
     queryFn: checkMetopelEligibility,
-    enabled: !!nim,
+    enabled: !!nim && isStudentUser,
     staleTime: 5 * 60 * 1000,
   });
 
-  const siaStudent = siaStudents?.find((s) => s.nim === nim);
-  const sks = siaStudent?.sksCompleted ?? authUser?.student?.sksCompleted ?? 0;
-  const takingThesisCourse = authUser?.student?.takingThesisCourse ?? null;
-  const hasTugasAkhirCourse = takingThesisCourse === true;
+  const sks = authUser?.student?.sksCompleted ?? 0;
+  const takingThesisCourseFromBackend =
+    typeof metopelEligibility?.takingThesisCourse === "boolean"
+      ? metopelEligibility.takingThesisCourse
+      : typeof authUser?.student?.takingThesisCourse === "boolean"
+        ? authUser.student.takingThesisCourse
+        : null;
+  const hasTugasAkhirCourse = takingThesisCourseFromBackend === true;
+  const hasExistingThesis = Boolean(
+    metopelEligibility?.thesisId ||
+    metopelEligibility?.hasThesisRecord ||
+    metopelEligibility?.hasThesisPassed
+  );
 
-  const eligibleMetopen = metopelEligibility?.eligibleMetopen ?? null;
   const canAccessMetopel = metopelEligibility?.canAccess ?? false;
-  const isMetopenReadOnly = metopelEligibility?.readOnly ?? false;
+  const isMetopenReadOnly =
+    metopelEligibility?.readOnly ?? metopelEligibility?.thesisPhase === "thesis";
+  const canAccessTugasAkhir =
+    hasTugasAkhirCourse ||
+    metopelEligibility?.canAccessTugasAkhir === true ||
+    hasExistingThesis ||
+    authUser?.student?.status === "lulus";
+  const isMetopenOnlyTrack = canAccessMetopel && !canAccessTugasAkhir;
 
   const canAccessKerjaPraktek = sks >= 90;
-  // BR-25 (canon §5.8 + §5.1): TA-04 / TA penuh hanya bergantung snapshot SIA
-  // `taking_thesis_course`. Hilangkan filter `sks >= 110` agar tidak menolak
-  // mahasiswa yang sah ambil MK TA tapi SKS-nya kurang menurut snapshot
-  // (kasus: mahasiswa transferan, snapshot stale, dst).
-  const canAccessTugasAkhir = hasTugasAkhirCourse;
-
-  const metopelDescription =
-    eligibleMetopen === true
-      ? "SIA sudah mengonfirmasi Anda layak mengikuti Metode Penelitian."
-      : eligibleMetopen === false
-        ? "SIA menyatakan Anda belum layak mengikuti Metode Penelitian semester ini."
-        : "Snapshot eligibility dari SIA belum tersedia. Hubungi admin untuk sinkronisasi.";
-
-  const tugasAkhirCourseDescription = hasTugasAkhirCourse
-    ? "Mata kuliah Tugas Akhir tercatat di snapshot resmi mahasiswa."
-    : takingThesisCourse === false
-      ? "Snapshot resmi mahasiswa belum mencatat Anda mengambil mata kuliah Tugas Akhir."
-      : "Snapshot resmi mata kuliah Tugas Akhir belum tersedia. Hubungi admin untuk sinkronisasi.";
 
   return {
-    isLoading: siaLoading || metopelLoading,
+    isLoading: metopelLoading,
     sks,
     hasTugasAkhirCourse,
+    hasExistingThesis,
     canAccessKerjaPraktek,
     canAccessTugasAkhir,
     canAccessMetopel,
     isMetopenReadOnly,
+    isMetopenOnlyTrack,
     requirements: {
       kerjaPraktek: {
         sks: { met: sks >= 90, current: sks, required: 90 },
       },
       tugasAkhir: {
-        course: { met: hasTugasAkhirCourse, description: tugasAkhirCourseDescription },
+        // Snapshot SIA tetap menjadi sumber utama. Data thesis yang sudah ada
+        // menjadi fallback kompatibilitas bagi mahasiswa hasil migrasi.
+        course: {
+          met: canAccessTugasAkhir,
+          description: hasTugasAkhirCourse
+            ? "Snapshot SIA mencatat Anda mengambil mata kuliah Tugas Akhir"
+            : hasExistingThesis
+              ? "Data tugas akhir mahasiswa sudah tersedia pada sistem"
+              : canAccessTugasAkhir
+                ? "Backend mengonfirmasi akses mahasiswa ke Tugas Akhir"
+                : "Snapshot SIA belum mencatat Anda mengambil mata kuliah Tugas Akhir",
+        },
       },
       metopel: {
-        eligibility: { met: canAccessMetopel, description: metopelDescription },
+        // Canon §5.1 (audit F-0.1): eligibility Metopen = snapshot SIA semata.
+        // Objek `semester`/`course` (gate semester-6 non-kanonis) dihapus.
+        eligibility: {
+          met: canAccessMetopel,
+          description: canAccessMetopel
+            ? "Snapshot eligibility Metopen aktif"
+            : "Snapshot eligibility Metopen belum aktif",
+        },
       },
     },
   };

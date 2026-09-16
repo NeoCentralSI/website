@@ -130,7 +130,7 @@ function buildSeminarListEndpoint(params?: {
     : API_CONFIG.ENDPOINTS.THESIS_SEMINAR.BASE;
 }
 
-function normalizeValidationSeminar(item: any): AdminSeminarListItem {
+function normalizeVerificationSeminar(item: any): AdminSeminarListItem {
   return {
     id: item.id,
     thesisId: item.thesisId ?? null,
@@ -205,13 +205,13 @@ export async function getAdminThesisSeminarDetail(seminarId: string): Promise<Ad
 // Role-specific Lists
 // ============================================================
 
-export async function getAdminThesisSeminarValidationList(params?: {
+export async function getAdminThesisSeminarVerificationList(params?: {
   search?: string;
   status?: string;
 }): Promise<AdminSeminarListItem[]> {
-  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'validation' })));
-  const data = await parseJsonResponse<any[]>(response, 'Gagal memuat data validasi seminar');
-  return data.map(normalizeValidationSeminar);
+  const response = await apiRequest(getApiUrl(buildSeminarListEndpoint({ ...params, view: 'verification' })));
+  const data = await parseJsonResponse<any[]>(response, 'Gagal memuat data verifikasi seminar');
+  return data.map(normalizeVerificationSeminar);
 }
 
 export async function getExaminerRequests(params?: { search?: string }): Promise<ExaminerRequestItem[]> {
@@ -382,10 +382,13 @@ export async function exportAdminThesisSeminarArchive() {
   const response = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_SEMINAR.EXPORT));
   if (!response.ok) throw new Error('Gagal mengekspor arsip');
   const blob = await response.blob();
+  const contentDisposition = response.headers.get('content-disposition') || '';
+  const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  const exportDate = new Date().toISOString().slice(0, 10);
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `Arsip_Seminar_${new Date().toISOString().split('T')[0]}.xlsx`;
+  link.download = fileNameMatch?.[1] || `Arsip Seminar Hasil - ${exportDate}.xlsx`;
   document.body.appendChild(link);
   link.click();
   link.remove();

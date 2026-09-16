@@ -1,17 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import InternshipTable from '@/components/internship/InternshipTable';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { useQuery } from '@tanstack/react-query';
-import { getLecturerSupervisedStudents, bulkApproveSeminars, getLecturerSupervisorLetter } from '@/services/internship';
+import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertCircle, Clock, CheckCircle2, FileText } from 'lucide-react';
-import InternshipTable from '@/components/internship/InternshipTable';
-import { getLecturerSupervisedStudentsColumns } from '@/lib/internship/lecturerColumns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
+import { getLecturerSupervisedStudentsColumns } from '@/lib/internship/lecturerColumns';
+import {
+    bulkApproveSeminars,
+    getGuidanceCriteria,
+    getGuidanceQuestions,
+    getLecturerSupervisedStudents,
+    getLecturerSupervisorLetter
+} from '@/services/internship';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, CheckCircle2, Clock, FileText, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
-import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
 
 export default function GuidanceOverviewPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -51,6 +57,27 @@ export default function GuidanceOverviewPage() {
         queryKey: ['lecturerSupervisedStudents'],
         queryFn: getLecturerSupervisedStudents,
     });
+
+    const { data: questions = [] } = useQuery({
+        queryKey: ['guidance-questions-overview', academicYearFilter],
+        queryFn: () => getGuidanceQuestions(academicYearFilter && academicYearFilter !== 'all' ? academicYearFilter : undefined),
+    });
+
+    const { data: criteria = [] } = useQuery({
+        queryKey: ['guidance-criteria-overview', academicYearFilter],
+        queryFn: () => getGuidanceCriteria(academicYearFilter && academicYearFilter !== 'all' ? academicYearFilter : undefined),
+    });
+
+    const totalGuidanceWeeks = useMemo(() => {
+        const questionWeeks = new Set<number>();
+        const criteriaWeeks = new Set<number>();
+
+        questions.forEach(q => questionWeeks.add(q.weekNumber));
+        criteria.forEach(c => criteriaWeeks.add(c.weekNumber));
+
+        const configuredTotal = new Set([...questionWeeks, ...criteriaWeeks]).size;
+        return configuredTotal > 0 ? configuredTotal : undefined;
+    }, [questions, criteria]);
 
     const { data: supervisorLetter } = useQuery({
         queryKey: ['lecturerSupervisorLetter', academicYearFilter],
@@ -104,8 +131,9 @@ export default function GuidanceOverviewPage() {
             const targetUrl = `/kerja-praktik/dosen/bimbingan/${student.internshipId}`;
             navigate(targetUrl);
         },
-        onApproveSeminar: handleApproveSeminar
-    }), [navigate, handleApproveSeminar]);
+        onApproveSeminar: handleApproveSeminar,
+        totalWeeks: academicYearFilter && academicYearFilter !== 'all' ? totalGuidanceWeeks : undefined
+    }), [navigate, handleApproveSeminar, totalGuidanceWeeks, academicYearFilter]);
 
     // Client-side filtering & pagination
     const filteredData = useMemo(() => {
@@ -156,7 +184,7 @@ export default function GuidanceOverviewPage() {
     const unreviewedCount = students?.reduce((sum, s) => sum + s.progress.submittedCount, 0) || 0;
 
     return (
-        <div className="flex flex-col gap-6 p-6 w-full">
+        <div className="p-6 space-y-6">
             <div className="flex justify-between items-end">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">Daftar Mahasiswa Bimbingan</h1>
@@ -165,7 +193,7 @@ export default function GuidanceOverviewPage() {
                 {unreviewedCount > 0 && (
                     <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100 border-orange-200 flex gap-2 py-1.5 px-3">
                         <Clock className="w-4 h-4" />
-                        {unreviewedCount} Bimbingan Perlu Dinilai
+                        {unreviewedCount} Bimbingan Perlu Dievaluasi
                     </Badge>
                 )}
             </div>

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,8 +25,8 @@ import type { EventClickArg, DateSelectArg } from '@fullcalendar/core';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 interface SeminarTabProps {
-    internship: any;
-    latestSeminar: any;
+    internship: any | null;
+    latestSeminar: any | null;
     endDate: Date | null;
     seminarDeadline: Date | null;
     isSeminarOverdue: boolean;
@@ -62,6 +63,7 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
     const [moderatorSearch, setModeratorSearch] = useState('');
     const [selectedEvent, setSelectedEvent] = useState<UpcomingSeminarItem | null>(null);
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+    const canManageOwnSeminar = Boolean(internship);
     const [form, setForm] = useState<SeminarScheduleData>({
         seminarDate: '',
         startTime: '',
@@ -78,23 +80,58 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
     }, [internship]);
 
     const eligibleGroupMembers = useMemo(() => {
-        return groupMembers.filter((m: any) => m.supervisorId === internship.supervisorId);
-    }, [groupMembers, internship.supervisorId]);
+        if (!internship) return [];
+        return groupMembers.filter((m: any) =>
+            m.supervisorId === internship.supervisorId &&
+            !(m.seminars || []).some((s: any) => ['REQUESTED', 'APPROVED'].includes(s.status))
+        );
+    }, [groupMembers, internship?.supervisorId]);
 
     const ineligibleGroupMembers = useMemo(() => {
+        if (!internship) return [];
         return groupMembers.filter((m: any) => m.supervisorId !== internship.supervisorId);
-    }, [groupMembers, internship.supervisorId]);
+    }, [groupMembers, internship?.supervisorId]);
+
+    const alreadyScheduledGroupMembers = useMemo(() => {
+        if (!internship) return [];
+        return groupMembers.filter((m: any) =>
+            m.supervisorId === internship.supervisorId &&
+            (m.seminars || []).some((s: any) => ['REQUESTED', 'APPROVED'].includes(s.status))
+        );
+    }, [groupMembers, internship?.supervisorId]);
+
+    useEffect(() => {
+        const eligibleIds = new Set(eligibleGroupMembers.map((m: any) => m.id));
+        setSelectedMemberIds(prev => prev.filter(id => eligibleIds.has(id)));
+    }, [eligibleGroupMembers]);
+
+    const openScheduleDialog = () => {
+        setIsEditing(false);
+        setModeratorSearch('');
+        setSelectedMemberIds([]);
+        setForm({
+            seminarDate: '',
+            startTime: '',
+            endTime: '',
+            roomId: '',
+            linkMeeting: '',
+            moderatorStudentId: '',
+        });
+        setIsDialogOpen(true);
+    };
 
     // Fetch rooms
     const { data: roomsData } = useQuery({
         queryKey: ['rooms-list'],
         queryFn: () => getRoomsAPI({ page: 1, limit: 500, search: '' }),
+        enabled: canManageOwnSeminar,
     });
     const rooms: Room[] = roomsData?.data || [];
 
     const { data: studentsData } = useQuery({
         queryKey: ['eligible-students'],
         queryFn: getEligibleStudents,
+        enabled: canManageOwnSeminar,
     });
     
     const availableModerators = useMemo(() => {
@@ -119,6 +156,11 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
 
 
     const handleDateSelect = (info: DateSelectArg) => {
+        if (!canManageOwnSeminar) {
+            toast.error('Pengajuan jadwal seminar hanya tersedia untuk mahasiswa yang sedang melaksanakan KP.');
+            return;
+        }
+
         // Prevent creating new if there's already an active (Requested/Approved) seminar
         if (latestSeminar && ['REQUESTED', 'APPROVED', 'COMPLETED'].includes(latestSeminar.status)) {
             toast.error('Anda sudah memiliki jadwal seminar aktif');
@@ -155,6 +197,11 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
     };
 
     const handleSubmit = async () => {
+        if (!canManageOwnSeminar) {
+            toast.error('Pengajuan jadwal seminar hanya tersedia untuk mahasiswa yang sedang melaksanakan KP.');
+            return;
+        }
+
         if (!form.seminarDate || !form.startTime || !form.endTime || !form.roomId || !form.moderatorStudentId) {
             toast.error('Semua field wajib harus diisi.');
             return;
@@ -208,9 +255,12 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
                 await updateSeminarProposal(latestSeminar.id, form);
                 toast.success('Jadwal seminar berhasil diperbarui.');
             } else {
-                await registerSeminar({ ...form, memberInternshipIds: selectedMemberIds });
-                toast.success(selectedMemberIds.length > 0 
-                    ? `Pengajuan seminar untuk Anda dan ${selectedMemberIds.length} anggota kelompok berhasil dikirim.`
+                const memberInternshipIds = selectedMemberIds.filter(id =>
+                    eligibleGroupMembers.some((member: any) => member.id === id)
+                );
+                await registerSeminar({ ...form, memberInternshipIds });
+                toast.success(memberInternshipIds.length > 0 
+                    ? `Pengajuan seminar untuk Anda dan ${memberInternshipIds.length} anggota kelompok berhasil dikirim.`
                     : 'Pengajuan seminar berhasil dikirim.'
                 );
             }
@@ -218,6 +268,7 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
             queryClient.invalidateQueries({ queryKey: ['upcoming-seminars'] });
             setIsEditing(false);
             setIsDialogOpen(false);
+            setSelectedMemberIds([]);
             setForm({ seminarDate: '', startTime: '', endTime: '', roomId: '', linkMeeting: '', moderatorStudentId: '' });
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Gagal mengajukan seminar.');
@@ -232,6 +283,7 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
             case 'COMPLETED': return <Badge variant="default" className="bg-emerald-500">Selesai</Badge>;
             case 'REQUESTED': return <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50">Menunggu ACC Pembimbing</Badge>;
             case 'REJECTED': return <Badge variant="destructive">Ditolak</Badge>;
+            case 'FAILED': return <Badge variant="destructive" className="bg-red-700">Gagal</Badge>;
             default: return <Badge variant="secondary">{status}</Badge>;
         }
     };
@@ -296,6 +348,7 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
     // ========================= RENDER =========================
 
     const renderFormModal = () => (
+        canManageOwnSeminar ? (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
@@ -398,7 +451,7 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
                         ) : (
                             <div className="flex items-center justify-between bg-primary/5 border border-primary/10 rounded-lg p-2 pl-3 group hover:border-primary/30 transition-colors h-10">
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-semibold truncate max-w-[200px]">{selectedModerator.fullName}</span>
+                                    <span className="text-sm font-semibold truncate max-w-50">{selectedModerator.fullName}</span>
                                     <span className="text-[10px] text-muted-foreground">{selectedModerator.identityNumber}</span>
                                 </div>
                                 <Button
@@ -478,6 +531,15 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
                             ))}
                         </div>
                         
+                        {alreadyScheduledGroupMembers.length > 0 && (
+                            <div className="flex items-start gap-2 pt-2 border-t mt-1">
+                                <AlertCircle className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />
+                                <p className="text-[10px] text-muted-foreground leading-tight">
+                                    {alreadyScheduledGroupMembers.length} anggota dengan dosen pembimbing yang sama sudah memiliki pengajuan seminar aktif.
+                                </p>
+                            </div>
+                        )}
+
                         {ineligibleGroupMembers.length > 0 && (
                             <div className="flex items-start gap-2 pt-2 border-t mt-1">
                                 <AlertCircle className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />
@@ -493,7 +555,9 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
                     <div className="p-3 rounded-lg bg-amber-50 border border-amber-100 flex gap-2 items-start text-amber-800">
                         <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                         <p className="text-[11px] leading-relaxed">
-                            Anggota kelompok Anda memiliki dosen pembimbing yang berbeda, sehingga pendaftaran harus dilakukan secara mandiri.
+                            {alreadyScheduledGroupMembers.length > 0
+                                ? 'Anggota kelompok dengan dosen pembimbing yang sama sudah memiliki pengajuan seminar aktif, sehingga tidak dapat disertakan pada pengajuan baru.'
+                                : 'Anggota kelompok Anda memiliki dosen pembimbing yang berbeda, sehingga pendaftaran harus dilakukan secara mandiri.'}
                         </p>
                     </div>
                 )}
@@ -506,11 +570,12 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
             </DialogFooter>
         </DialogContent>
     </Dialog>
+        ) : null
 );
 
 
     const renderUpcomingSeminars = () => {
-        const canSelectSchedule = !latestSeminar || latestSeminar.status === 'REJECTED';
+        const canSelectSchedule = canManageOwnSeminar && (!latestSeminar || ['REJECTED', 'FAILED'].includes(latestSeminar.status));
         
         return (
         <Card>
@@ -534,19 +599,7 @@ export const SeminarTab: React.FC<SeminarTabProps> = ({
                             />
                         </div>
                         {canSelectSchedule && (
-                            <Button onClick={() => {
-                                setIsEditing(false);
-                                setModeratorSearch('');
-                                setForm({
-                                    seminarDate: '',
-                                    startTime: '',
-                                    endTime: '',
-                                    roomId: '',
-                                    linkMeeting: '',
-                                    moderatorStudentId: '',
-                                });
-                                setIsDialogOpen(true);
-                            }} className="gap-2 shrink-0">
+                            <Button onClick={openScheduleDialog} className="gap-2 shrink-0">
                                 <Calendar className="h-4 w-4" />
                                 Ajukan Jadwal
                             </Button>

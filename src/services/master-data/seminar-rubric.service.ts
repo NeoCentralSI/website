@@ -18,11 +18,9 @@ export interface AssessmentRubric {
 
 export interface AssessmentCriteria {
     id: string;
-    cpmkId: string;
-    name: string | null;
-    maxScore: number | null;
-    appliesTo: 'seminar' | 'defence' | 'proposal';
-    role: 'default' | 'examiner' | 'supervisor';
+    thesisCpmkId: string;
+    name: string;
+    maxScore: number;
     displayOrder: number;
     hasAssessmentDetails?: boolean;
     hasSubmittedScores?: boolean;
@@ -33,7 +31,6 @@ export interface CpmkWithRubrics {
     id: string;
     code: string;
     description: string;
-    displayOrder: number;
     hasAssessmentDetails?: boolean;
     assessmentCriterias: AssessmentCriteria[];
 }
@@ -48,7 +45,7 @@ export interface QuickAddRubricPayload {
 
 export interface CreateCriteriaPayload {
     cpmkId: string;
-    name?: string;
+    name: string;
     maxScore: number;
 }
 
@@ -65,13 +62,6 @@ export interface CreateRubricPayload {
 
 export type UpdateRubricPayload = Partial<CreateRubricPayload>;
 
-export interface QuickAddRubricPayload {
-    criteriaMaxScore: number;
-    description: string;
-    minScore: number;
-    maxScore: number;
-    criteriaName?: string;
-}
 export interface WeightSummaryDetail {
     cpmkId: string;
     cpmkCode: string;
@@ -84,6 +74,7 @@ export interface WeightSummaryDetail {
 export interface WeightSummary {
     totalScore: number;
     isComplete: boolean;
+    minimumScore?: number;
     details: WeightSummaryDetail[];
 }
 
@@ -283,4 +274,21 @@ export const getWeightSummary = async (params?: { academicYearId?: string }): Pr
     }
     const result = await response.json();
     return result.data;
+};
+
+export const updateMinimumScore = async (
+    payload: { academicYearId: string; minimumScore: number }
+): Promise<void> => {
+    const yearId = payload.academicYearId;
+    const response = await apiRequest(
+        getApiUrl(`/seminar-rubrics/academic-years/${yearId}/minimum-score`),
+        {
+            method: 'PATCH',
+            body: JSON.stringify({ minimumScore: payload.minimumScore }),
+        }
+    );
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Gagal mengubah skor minimum');
+    }
 };

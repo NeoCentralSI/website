@@ -18,6 +18,14 @@ export interface DevToolsMetopenEligibility {
   thesisStatus: string | null;
 }
 
+export interface DevToolsThesisCourseEligibility {
+  takingThesisCourse: boolean | null;
+  hasExternalStatus: boolean;
+  source: 'sia' | 'devtools' | null;
+  updatedAt: string | null;
+  canAccess: boolean;
+}
+
 export interface DevToolsStudent {
   id: string;
   fullName: string;
@@ -33,6 +41,7 @@ export interface DevToolsStudent {
   kknCompleted: boolean;
   currentSemester: number | null;
   metopenEligibility: DevToolsMetopenEligibility;
+  thesisCourseEligibility: DevToolsThesisCourseEligibility;
   latestThesis: {
     id: string;
     status: string;
@@ -73,10 +82,47 @@ export interface ThesisRecord {
   status: string;
   createdAt: string;
   updatedAt: string;
+  academicYearId?: string | null;
+  academicYearLabel?: string | null;
   supervisors: {
     role: { name: string };
     lecturer: { user: { fullName: string } };
   }[];
+}
+
+export interface DevToolsAcademicYear {
+  id: string;
+  year: string | number;
+  semester: string;
+  isActive: boolean;
+  label: string;
+}
+
+export interface CloseMetopenPeriodResult {
+  dryRun: boolean;
+  closedAcademicYearId: string;
+  yearLabel: string;
+  items: Array<{
+    thesisId: string;
+    studentName?: string | null;
+    identityNumber?: string | null;
+    eligibleMetopen?: boolean | null;
+    requestId?: string | null;
+    currentStatus?: string | null;
+    nextStatus?: string | null;
+    scoreAction?: string | null;
+    skipReason?: string | null;
+    releaseReason?: string | null;
+  }>;
+  counts: {
+    examined: number;
+    zeroed: number;
+    ungradedFinal?: number;
+    noFinalProposal?: number;
+    released: number;
+    closed: number;
+    skipped: number;
+  };
 }
 
 export interface CreateUserDto {

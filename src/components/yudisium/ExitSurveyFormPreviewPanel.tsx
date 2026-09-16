@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import Lottie from 'lottie-react';
+import emptyAnimation from '@/assets/lottie/empty.json';
 import {
   ChevronLeft,
   ChevronRight,
@@ -49,6 +51,17 @@ const QuestionPreview = ({ question, globalIndex }: { question: any; globalIndex
             placeholder="Jawaban Anda"
             className="min-h-[80px] bg-muted/30 border-border/40 text-sm placeholder:text-muted-foreground/40 resize-none rounded-lg"
           />
+        )}
+
+        {question.questionType === 'number' && (
+          <div className="space-y-1">
+            <input
+              type="number"
+              disabled
+              placeholder="Jawaban berupa angka"
+              className="w-full bg-transparent border-0 border-b border-border/60 rounded-none px-0 py-1.5 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary transition-colors cursor-default"
+            />
+          </div>
         )}
 
         {question.questionType === 'date' && (
@@ -143,12 +156,18 @@ const ExitSurveyFormPreviewPanel = ({ form }: ExitSurveyFormPreviewPanelProps) =
 
   if (totalSteps === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[400px] text-center space-y-3">
-        <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center">
-          <span className="text-2xl">📋</span>
+      <div className="flex flex-col items-center justify-center h-[450px] text-center space-y-4">
+        <Lottie 
+          animationData={emptyAnimation} 
+          loop={true} 
+          className="w-48 h-48 opacity-80" 
+        />
+        <div className="space-y-1">
+          <p className="text-sm font-bold text-foreground">Formulir Masih Kosong</p>
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-[240px]">
+            Tambahkan bagian dan pertanyaan di tab <strong>Editor</strong> untuk melihat pratinjau formulir ini.
+          </p>
         </div>
-        <p className="text-sm font-semibold text-muted-foreground">Belum ada bagian di formulir ini.</p>
-        <p className="text-xs text-muted-foreground/60">Tambahkan bagian dan pertanyaan di tab Editor.</p>
       </div>
     );
   }

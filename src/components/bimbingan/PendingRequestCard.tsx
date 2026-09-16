@@ -40,6 +40,9 @@ export function PendingRequestCard({ request }: PendingRequestCardProps) {
     },
   });
 
+  // Dua tahap (OQ-2.2): kesediaan dosen → persetujuan akhir KaDep.
+  const isKadepStage = request.stage === "kadep";
+
   return (
     <Card className="p-4 border-dashed border-amber-300 bg-amber-50/50">
       <div className="flex items-start justify-between gap-3">
@@ -47,7 +50,7 @@ export function PendingRequestCard({ request }: PendingRequestCardProps) {
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="outline" className="gap-1 text-amber-700 border-amber-300 bg-amber-100">
               <Clock className="h-3 w-3" />
-              Menunggu Konfirmasi
+              {isKadepStage ? "Menunggu Persetujuan KaDep" : "Menunggu Konfirmasi Dosen"}
             </Badge>
           </div>
           <p className="text-sm font-medium text-foreground">
@@ -58,6 +61,9 @@ export function PendingRequestCard({ request }: PendingRequestCardProps) {
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Diajukan {formatDateId(request.requestedAt)}
+            {isKadepStage
+              ? " — dosen telah bersedia; menunggu persetujuan akhir Ketua Departemen."
+              : ""}
           </p>
         </div>
 

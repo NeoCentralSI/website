@@ -43,7 +43,7 @@ export function useLecturerAvailability() {
             updateAvailability(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-            toast.success('Jadwal ketersediaan berhasil diubah');
+            toast.success('Jadwal ketersediaan berhasil diperbaharui');
         },
         onError: (error: Error) => {
             toast.error(error.message);

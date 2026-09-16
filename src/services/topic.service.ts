@@ -1,5 +1,6 @@
 import { getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
+import { unwrapApiArray, unwrapApiValue } from "@/lib/apiResponse";
 import type { Topic, CreateTopicDto, UpdateTopicDto, BulkDeleteResult } from "@/types/topic.types";
 
 const ENDPOINTS = {
@@ -18,8 +19,8 @@ export async function getTopics(): Promise<Topic[]> {
     throw new Error(error.message || "Gagal mengambil daftar topik");
   }
 
-  const result = await response.json();
-  return result.data;
+  const result: unknown = await response.json();
+  return unwrapApiArray<Topic>(result, ["topics"]);
 }
 
 /**
@@ -32,8 +33,8 @@ export async function getTopicById(id: string): Promise<Topic> {
     throw new Error(error.message || "Gagal mengambil detail topik");
   }
 
-  const result = await response.json();
-  return result.data;
+  const result: unknown = await response.json();
+  return unwrapApiValue<Topic>(result);
 }
 
 /**
@@ -50,8 +51,8 @@ export async function createTopic(data: CreateTopicDto): Promise<Topic> {
     throw new Error(error.message || "Gagal membuat topik");
   }
 
-  const result = await response.json();
-  return result.data;
+  const result: unknown = await response.json();
+  return unwrapApiValue<Topic>(result);
 }
 
 /**
@@ -68,8 +69,8 @@ export async function updateTopic(id: string, data: UpdateTopicDto): Promise<Top
     throw new Error(error.message || "Gagal memperbarui topik");
   }
 
-  const result = await response.json();
-  return result.data;
+  const result: unknown = await response.json();
+  return unwrapApiValue<Topic>(result);
 }
 
 /**
@@ -100,6 +101,6 @@ export async function bulkDeleteTopics(ids: string[]): Promise<BulkDeleteResult>
     throw new Error(error.message || "Gagal menghapus topik");
   }
 
-  const result = await response.json();
-  return result.data;
+  const result: unknown = await response.json();
+  return unwrapApiValue<BulkDeleteResult>(result);
 }

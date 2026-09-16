@@ -12,6 +12,7 @@ import {
     getWeightSummary,
     reorderCriteria,
     reorderRubrics,
+    updateMinimumScore,
     type DefenceRole,
     type CreateCriteriaPayload,
     type UpdateCriteriaPayload,
@@ -22,7 +23,7 @@ import {
 const CPMKS_KEY = 'defence-rubric-cpmks';
 const WEIGHT_KEY = 'defence-rubric-weight';
 
-export function useDefenceRubric(role: DefenceRole) {
+export function useDefenceRubric(role: DefenceRole, academicYearId?: string) {
     const queryClient = useQueryClient();
 
     const invalidateAll = () => {
@@ -40,8 +41,9 @@ export function useDefenceRubric(role: DefenceRole) {
         isFetching,
         refetch,
     } = useQuery({
-        queryKey: [CPMKS_KEY, role],
-        queryFn: () => getCpmksWithRubrics(role),
+        queryKey: [CPMKS_KEY, role, academicYearId],
+        queryFn: () => getCpmksWithRubrics(role, { academicYearId }),
+        enabled: Boolean(academicYearId),
     });
 
     // ── Weight summary query (per role) ──────
@@ -49,8 +51,9 @@ export function useDefenceRubric(role: DefenceRole) {
         data: weightSummary,
         isLoading: isWeightLoading,
     } = useQuery({
-        queryKey: [WEIGHT_KEY, role],
-        queryFn: () => getWeightSummary(role),
+        queryKey: [WEIGHT_KEY, role, academicYearId],
+        queryFn: () => getWeightSummary(role, { academicYearId }),
+        enabled: Boolean(academicYearId),
     });
 
     // ── Criteria mutations ───────────────────
@@ -72,7 +75,7 @@ export function useDefenceRubric(role: DefenceRole) {
         }: {
             criteriaId: string;
             data: UpdateCriteriaPayload;
-        }) => updateCriteria(criteriaId, data),
+        }) => updateCriteria(criteriaId, data, role),
         onSuccess: () => {
             invalidateAll();
             toast.success('Kriteria sidang berhasil diubah');
@@ -83,7 +86,7 @@ export function useDefenceRubric(role: DefenceRole) {
     });
 
     const deleteCriteriaMutation = useMutation({
-        mutationFn: deleteCriteria,
+        mutationFn: (criteriaId: string) => deleteCriteria(criteriaId, role),
         onSuccess: () => {
             invalidateAll();
             toast.success('Kriteria sidang berhasil dihapus');
@@ -112,7 +115,7 @@ export function useDefenceRubric(role: DefenceRole) {
         }: {
             criteriaId: string;
             data: CreateRubricPayload;
-        }) => createRubric(criteriaId, data),
+        }) => createRubric(criteriaId, data, role),
         onSuccess: () => {
             invalidateAll();
             toast.success('Rubrik sidang berhasil ditambahkan');
@@ -129,7 +132,7 @@ export function useDefenceRubric(role: DefenceRole) {
         }: {
             rubricId: string;
             data: UpdateRubricPayload;
-        }) => updateRubric(rubricId, data),
+        }) => updateRubric(rubricId, data, role),
         onSuccess: () => {
             invalidateAll();
             toast.success('Rubrik sidang berhasil diubah');
@@ -140,7 +143,7 @@ export function useDefenceRubric(role: DefenceRole) {
     });
 
     const deleteRubricMutation = useMutation({
-        mutationFn: deleteRubric,
+        mutationFn: (rubricId: string) => deleteRubric(rubricId, role),
         onSuccess: () => {
             invalidateAll();
             toast.success('Rubrik sidang berhasil dihapus');
@@ -158,7 +161,7 @@ export function useDefenceRubric(role: DefenceRole) {
         }: {
             cpmkId: string;
             orderedIds: string[];
-        }) => reorderCriteria(cpmkId, orderedIds),
+        }) => reorderCriteria(cpmkId, orderedIds, role),
         onSuccess: () => {
             invalidateAll();
         },
@@ -175,9 +178,21 @@ export function useDefenceRubric(role: DefenceRole) {
         }: {
             criteriaId: string;
             orderedIds: string[];
-        }) => reorderRubrics(criteriaId, orderedIds),
+        }) => reorderRubrics(criteriaId, orderedIds, role),
         onSuccess: () => {
             invalidateAll();
+        },
+        onError: (error: Error) => {
+            toast.error(error.message);
+        },
+    });
+
+    // ── Update minimum score mutation ────────
+    const updateMinimumScoreMutation = useMutation({
+        mutationFn: updateMinimumScore,
+        onSuccess: () => {
+            invalidateAll();
+            toast.success('Skor minimum sidang berhasil diubah');
         },
         onError: (error: Error) => {
             toast.error(error.message);
@@ -220,5 +235,9 @@ export function useDefenceRubric(role: DefenceRole) {
             reorderCriteriaMutation.mutateAsync({ cpmkId, orderedIds }),
         reorderRubrics: (criteriaId: string, orderedIds: string[]) =>
             reorderRubricsMutation.mutateAsync({ criteriaId, orderedIds }),
+            
+        // Settings actions
+        updateMinimumScore: updateMinimumScoreMutation.mutateAsync,
+        isUpdatingMinimumScore: updateMinimumScoreMutation.isPending,
     };
 }
