@@ -61,7 +61,9 @@ jobs:
         env:
           DEPLOY_SHA: ${{ github.sha }}
         run: |
-          printf '{"commit":"%s","deployedAt":"%s"}\n'             "$DEPLOY_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"             > dist/deployment.json
+          printf '{"commit":"%s","deployedAt":"%s"}\n' \
+            "$DEPLOY_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            > dist/deployment.json
 
       - name: Configure SSH
         env:
@@ -83,7 +85,9 @@ jobs:
         run: |
           test -n "$DEPLOY_HOST" && test -n "$DEPLOY_PORT"
           test -n "$DEPLOY_USER" && test -n "$DEPLOY_DIR"
-          rsync -az --delete             -e "ssh -p $DEPLOY_PORT"             dist/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/"
+          rsync -az --delete \
+            -e "ssh -p $DEPLOY_PORT" \
+            dist/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/"
 
       - name: Verify deployment
         env:
@@ -93,5 +97,12 @@ jobs:
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
           DEPLOY_SHA: ${{ github.sha }}
         run: |
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST"             "grep -F '$DEPLOY_SHA' '$DEPLOY_DIR/deployment.json'"
-          curl --fail --silent --show-error --retry 5 --retry-delay 2             https://neocentral.dev/ >/dev/null
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_DIR='$DEPLOY_DIR' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE'
+          set -euo pipefail
+          test -s "$DEPLOY_DIR/index.html"
+          grep -F "$DEPLOY_SHA" "$DEPLOY_DIR/deployment.json"
+          curl --fail --silent --show-error \
+            -H "Host: neocentral.dev" \
+            http://127.0.0.1/ >/dev/null
+          REMOTE
