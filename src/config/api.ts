@@ -39,12 +39,6 @@ export const API_CONFIG = {
       STUDENT_IMPORT: (id: string) => `/cpls/${id}/students/import`,
       STUDENT_EXPORT: (id: string) => `/cpls/${id}/students/export`,
     },
-    CPMK: {
-      BASE: '/cpmks',
-      BY_ID: (id: string) => `/cpmks/${id}`,
-      COPY_TEMPLATE: '/cpmks/copy-template',
-      HIERARCHY: '/cpmks/hierarchy',
-    },
     THESIS_CPMK: {
       BASE: '/thesis-cpmks',
       BY_ID: (id: string) => `/thesis-cpmks/${id}`,
