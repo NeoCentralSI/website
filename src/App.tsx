@@ -9,6 +9,7 @@ import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import NotFoundPage from './pages/NotFound'
 import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification'
+import OfficialDocumentVerificationPage from './pages/public/OfficialDocumentVerification'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
@@ -178,6 +179,7 @@ function App() {
               <Route path="/verify/internship-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/lecturer-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/seminar-minutes/:id" element={<InternshipLetterVerification />} />
+              <Route path="/verify/document/:token" element={<OfficialDocumentVerificationPage />} />
 
               <Route path="/field-assessment/:token" element={<FieldAssessmentPortal />}>
                 <Route index element={<FieldAssessmentLogin />} />
