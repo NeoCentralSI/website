@@ -423,6 +423,15 @@ describe("useSidebarMenu", () => {
       { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
       { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
     ]);
+    const kelolaMenu = result.current.navMain.find((item) => item.title === "Kelola");
+    expect(kelolaMenu?.items).toContainEqual({
+      title: "Metode Penelitian",
+      url: "/kelola/metode-penelitian",
+    });
+    const kelolaTitles = kelolaMenu?.items.map((item) => item.title) ?? [];
+    expect(kelolaTitles.indexOf("Metode Penelitian")).toBeLessThan(
+      kelolaTitles.indexOf("Tugas Akhir"),
+    );
     const titles = metopenMenu?.items.map((item) => item.title) ?? [];
     expect(titles).not.toContain("Penilaian TA-03A");
     expect(titles).not.toContain("Penilaian TA-03B");

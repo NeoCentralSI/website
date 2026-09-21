@@ -69,6 +69,7 @@ const sitemapGroups: SitemapGroup[] = [
       { label: 'Kelola CPL', path: '/kelola/cpl' },
       { label: 'Kelola Metopen', path: '/kelola/metopen' },
       { label: 'CPMK & Rubrik Metopen', path: '/kelola/metopen/cpmk-rubrik' },
+      { label: 'Metode Penelitian', path: '/kelola/metode-penelitian' },
       { label: 'Sekretaris Departemen', path: '/sekretaris-departemen' },
       { label: 'Kabag Departemen', path: '/kabag-departemen' },
       { label: 'DSS', path: '/dss' },

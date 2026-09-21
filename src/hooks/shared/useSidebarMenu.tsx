@@ -314,6 +314,15 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
+      if (role.koordinatorMetopen) {
+        menuItems.push({
+          title: "Kelola",
+          url: "#",
+          icon: Database,
+          items: [{ title: "Metode Penelitian", url: "/kelola/metode-penelitian" }],
+        });
+      }
+
       return {
         user: {
           name: authUser?.fullName || "User",
@@ -479,6 +488,7 @@ export const useSidebarMenu = () => {
         items: [
           { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
+          { title: "Metode Penelitian", url: "/kelola/metode-penelitian" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
           { title: "Kelola Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
