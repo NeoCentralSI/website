@@ -67,8 +67,8 @@ export function Footer() {
                 </div>
                 <div className="flex items-center gap-2.5 text-white/70">
                   <Mail className="h-4 w-4 flex-shrink-0 text-[#F5A623]" />
-                  <a href="mailto:info@neocentral.dev" className="font-body text-sm text-white/80 transition-colors hover:text-white">
-                    info@neocentral.dev
+                  <a href="mailto:si@it.unand.ac.id" className="font-body text-sm text-white/80 transition-colors hover:text-white">
+                    si@it.unand.ac.id
                   </a>
                 </div>
               </div>
@@ -188,10 +188,10 @@ export function Footer() {
                 <li className="flex items-center gap-2.5">
                   <Mail className="h-4 w-4 text-[#F5A623]" />
                   <a
-                    href="mailto:info@neocentral.dev"
+                    href="mailto:si@it.unand.ac.id"
                     className="font-body text-sm text-gray-500 transition-colors duration-200 hover:text-white"
                   >
-                    info@neocentral.dev
+                    si@it.unand.ac.id
                   </a>
                 </li>
                 <li className="flex items-center gap-2.5">
