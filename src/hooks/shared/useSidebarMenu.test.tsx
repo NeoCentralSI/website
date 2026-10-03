@@ -379,8 +379,8 @@ describe("useSidebarMenu", () => {
       url: "/kelola/metopen/kuota-dosen",
     });
     expect(kelolaMenu?.items).toContainEqual({
-      title: "Master Tugas Akhir",
-      url: "/kelola/tugas-akhir/topik",
+      title: "Tugas Akhir",
+      url: "/kelola/tugas-akhir/master-data",
     });
     expect(kelolaMenu?.items).not.toContainEqual({
       title: "Tugas Akhir",
@@ -571,7 +571,7 @@ describe("useSidebarMenu", () => {
     const gkm = renderHook(() => useSidebarMenu());
     expect(
       gkm.result.current.navMain.find((item) => item.title === "Kelola")?.items,
-    ).toContainEqual({ title: "Kelola Data CPL", url: "/kelola/cpl" });
+    ).toContainEqual({ title: "CPL", url: "/kelola/cpl" });
     gkm.unmount();
 
     mockRole({ isAdmin: true });

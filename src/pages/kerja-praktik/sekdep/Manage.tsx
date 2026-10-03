@@ -3,7 +3,6 @@ import { useLocation, useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
-import { FileText } from 'lucide-react';
 import { ProposalVerificationPanel } from '@/components/internship/sekdep/ProposalVerificationPanel';
 import { InternshipListPanel } from '@/components/internship/sekdep/InternshipListPanel';
 import { LecturerWorkloadPanel } from '@/components/internship/sekdep/LecturerWorkloadPanel';
@@ -104,14 +103,14 @@ export default function SekdepInternshipProposalPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex items-center gap-2 text-2xl font-semibold">
-                <FileText className="h-6 w-6 text-primary" />
-                <h1>Kelola Kerja Praktik</h1>
+            <div>
+                <h1 className="text-2xl font-bold">Kelola Kerja Praktik</h1>
+                <p className="text-muted-foreground">Kelola proposal, bimbingan, dan penilaian kerja praktik</p>
             </div>
 
             <TabsNav tabs={tabs} />
 
-            <div className="mt-6">
+            <div>
                 {renderContent()}
             </div>
         </div>

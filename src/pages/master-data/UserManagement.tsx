@@ -295,9 +295,9 @@ export default function UserManagementPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Kelola User</h2>
+          <h1 className="text-2xl font-bold">Kelola User</h1>
           <p className="text-muted-foreground">Manajemen pengguna sistem</p>
         </div>
         <div className="flex gap-2">

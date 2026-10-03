@@ -93,12 +93,10 @@ export default function ScienceGroupPage() {
     if (isLoading) return <Loading />;
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Kelola Kelompok Keilmuan</h1>
-                    <p className="text-gray-500">Kelola data referensi kelompok keilmuan dosen</p>
-                </div>
+        <div className="p-6 space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold">Kelola Kelompok Keilmuan</h1>
+                <p className="text-muted-foreground">Kelola data referensi kelompok keilmuan dosen</p>
             </div>
 
             <CustomTable

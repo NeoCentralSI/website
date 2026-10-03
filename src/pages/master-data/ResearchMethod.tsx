@@ -55,7 +55,7 @@ export default function ResearchMethod() {
           <h1 className="text-2xl font-bold">Kelola Metode Penelitian</h1>
           <p className="text-muted-foreground">
             Kelola CPMK serta kriteria dan rubrik penilaian proposal secara
-            terstruktur.
+            terstruktur
           </p>
         </div>
         <div className="w-full md:w-[260px]">

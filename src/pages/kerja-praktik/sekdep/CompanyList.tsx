@@ -6,7 +6,7 @@ import InternshipTable from '@/components/internship/InternshipTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useCompanyStats } from '@/hooks/internship/useCompanyStats';
 import { getCompanyStatsColumns } from '@/lib/internship';
-import { Building2, Plus, Info, AlertTriangle } from 'lucide-react';
+import { Plus, Info, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -159,11 +159,9 @@ export default function SekdepCompanyListPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-2 text-2xl font-semibold">
-                    <Building2 className="h-6 w-6 text-primary" />
-                    <h1>Daftar Perusahaan Terdaftar</h1>
-                </div>
+            <div>
+                <h1 className="text-2xl font-bold">Daftar Perusahaan Terdaftar</h1>
+                <p className="text-muted-foreground">Kelola perusahaan tujuan kerja praktik mahasiswa</p>
             </div>
 
             <InternshipTable

@@ -395,11 +395,11 @@ export const useSidebarMenu = () => {
         url: "#",
         icon: Database,
         items: [
-          { title: "Master Tugas Akhir", url: "/kelola/tugas-akhir/topik" },
-          { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
+          { title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" },
+          { title: "Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
-          { title: "Kelola Data CPL", url: "/kelola/cpl" },
+          { title: "CPL", url: "/kelola/cpl" },
         ],
       });
 
@@ -486,13 +486,13 @@ export const useSidebarMenu = () => {
         url: "#",
         icon: Database,
         items: [
-          { title: "Kelola Perusahaan", url: "/kelola/perusahaan" },
+          { title: "Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Metode Penelitian", url: "/kelola/metode-penelitian" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
-          { title: "Kelola Panduan", url: "/kelola/sop" },
+          { title: "Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
-          { title: "Kelola Data CPL", url: "/kelola/cpl" },
+          { title: "CPL", url: "/kelola/cpl" },
         ],
       });
 
@@ -563,7 +563,7 @@ export const useSidebarMenu = () => {
         title: "Kelola",
         url: "#",
         icon: Database,
-        items: [{ title: "Kelola Data CPL", url: "/kelola/cpl" }],
+        items: [{ title: "CPL", url: "/kelola/cpl" }],
       });
 
       // Jadwal Ketersediaan — leaf item
