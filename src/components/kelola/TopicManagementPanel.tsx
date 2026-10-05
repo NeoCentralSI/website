@@ -201,7 +201,7 @@ export function TopicManagementPanel() {
       return;
     }
     if (!formState.scienceGroupId) {
-      toast.error("KBK topik wajib dipilih");
+      toast.error("Kelompok Keilmuan topik wajib dipilih");
       return;
     }
 
@@ -250,15 +250,23 @@ export function TopicManagementPanel() {
         key: "name",
         header: "Nama Topik",
         accessor: "name",
-        className: "font-medium",
+        className: "font-medium whitespace-normal",
+        render: (topic) => (
+          <div className="max-w-[40ch] whitespace-normal [overflow-wrap:anywhere] leading-relaxed">
+            {topic.name}
+          </div>
+        ),
       },
       {
         key: "scienceGroup",
-        header: "KBK",
+        header: "Kelompok Keilmuan",
         width: "180px",
+        className: "whitespace-normal",
         render: (topic) => (
           topic.scienceGroup?.name ? (
-            <Badge variant="outline">{topic.scienceGroup.name}</Badge>
+            <Badge variant="outline" className="max-w-[24ch] whitespace-normal [overflow-wrap:anywhere] text-left">
+              {topic.scienceGroup.name}
+            </Badge>
           ) : (
             <Badge variant="destructive">Belum dipetakan</Badge>
           )
@@ -353,7 +361,7 @@ export function TopicManagementPanel() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <CustomTable
         columns={columns}
         data={paginatedTopics}
@@ -396,8 +404,8 @@ export function TopicManagementPanel() {
             </DialogTitle>
             <DialogDescription>
               {formState.id
-                ? "Perbarui topik dan KBK yang menjadi dasar rekomendasi pembimbing."
-                : "Buat topik baru dan petakan ke KBK agar rekomendasi pembimbing KaDep akurat."}
+                ? "Perbarui topik dan Kelompok Keilmuan yang menjadi dasar rekomendasi pembimbing."
+                : "Buat topik baru dan petakan ke Kelompok Keilmuan agar rekomendasi pembimbing KaDep akurat."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -414,7 +422,7 @@ export function TopicManagementPanel() {
               />
             </div>
             <div className="space-y-2">
-              <Label>KBK Topik</Label>
+              <Label htmlFor="science-group">Kelompok Keilmuan Topik</Label>
               <Select
                 value={formState.scienceGroupId}
                 onValueChange={(value) =>
@@ -426,8 +434,8 @@ export function TopicManagementPanel() {
                   updateTopic.isPending
                 }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih KBK..." />
+                <SelectTrigger id="science-group">
+                  <SelectValue placeholder="Pilih Kelompok Keilmuan..." />
                 </SelectTrigger>
                 <SelectContent>
                   {(scienceGroupsQuery.data ?? []).map((group) => (

@@ -6,7 +6,6 @@ import { useAcademicYears } from '@/hooks/master-data/useAcademicYears';
 import { getKadepInternshipLetterColumns } from '@/lib/internship';
 import { getKadepPendingLetters } from '@/services/internship';
 import { useQuery } from '@tanstack/react-query';
-import { FileText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 
@@ -166,14 +165,14 @@ export default function KadepInternshipManagementPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex items-center gap-2 text-2xl font-semibold">
-                <FileText className="h-6 w-6 text-primary" />
-                <h1>Kelola Kerja Praktik</h1>
+            <div>
+                <h1 className="text-2xl font-bold">Kelola Kerja Praktik</h1>
+                <p className="text-muted-foreground">Pantau kerja praktik dan kelola persetujuan surat</p>
             </div>
 
             <TabsNav tabs={tabs} preserveSearch />
 
-            <div className="mt-6">
+            <div>
                 {renderContent()}
             </div>
 

@@ -9,6 +9,7 @@ import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import NotFoundPage from './pages/NotFound'
 import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification'
+import OfficialDocumentVerificationPage from './pages/public/OfficialDocumentVerification'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
@@ -116,6 +117,7 @@ const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvai
 // Kelola
 const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
 const MetopenCpmkRubricPage = lazy(() => import('./pages/kelola/MetopenCpmkRubric'))
+const ResearchMethodPage = lazy(() => import('./pages/master-data/ResearchMethod'))
 const MetopenTa03AQueuePage = lazy(() => import('./pages/kelola/MetopenTa03AQueue'))
 const MetopenTa03BQueuePage = lazy(() => import('./pages/kelola/MetopenTa03BQueue'))
 const MetopenMonitoringPage = lazy(() => import('./pages/kelola/MetopenMonitoring'))
@@ -178,6 +180,7 @@ function App() {
               <Route path="/verify/internship-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/lecturer-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/seminar-minutes/:id" element={<InternshipLetterVerification />} />
+              <Route path="/verify/document/:token" element={<OfficialDocumentVerificationPage />} />
 
               <Route path="/field-assessment/:token" element={<FieldAssessmentPortal />}>
                 <Route index element={<FieldAssessmentLogin />} />
@@ -362,6 +365,10 @@ function App() {
                 {/* Master CPMK + rubrik TA-03 — Sekdep only (selaras routes/rubric-metopen.route.js). */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN]} />}>
                   <Route path="/kelola/metopen/cpmk-rubrik" element={<MetopenCpmkRubricPage />} />
+                </Route>
+                {/* Data master Metode Penelitian versi baru yang berdiri independen. */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_METOPEN]} />}>
+                  <Route path="/kelola/metode-penelitian" element={<ResearchMethodPage />} />
                 </Route>
                 {/* TA-03A: penilaian Pembimbing — bagian rangkaian Metopen (BR-20). RBAC = SUPERVISOR_ROLES (P1+P2). */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.PEMBIMBING_1, ROLES.PEMBIMBING_2]} />}>

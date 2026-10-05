@@ -33,11 +33,11 @@ export default function MasterDataTugasAkhirPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-base font-semibold tracking-tight sm:text-lg">Data Master Tugas Akhir</h1>
-                    <p className="text-xs text-muted-foreground sm:text-sm">
-                        Kelola data master tugas akhir, mahasiswa, topik, dan pembimbing.
+                    <h1 className="text-2xl font-bold">Data Master Tugas Akhir</h1>
+                    <p className="text-muted-foreground">
+                        Kelola data master tugas akhir, mahasiswa, topik, dan pembimbing
                     </p>
                 </div>
                 <div className="flex items-center gap-3">

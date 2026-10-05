@@ -119,14 +119,14 @@ export default function ManageHolidays() {
     }, []);
 
     return (
-        <div className="flex flex-col gap-6 p-6 animate-in fade-in duration-500">
+        <div className="p-6 space-y-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <div>
+                <h1 className="text-2xl font-bold">
                     Manajemen Hari Libur
                 </h1>
-                <p className="text-muted-foreground text-sm">
-                    Kelola daftar hari libur untuk perhitungan hari kerja KP.
+                <p className="text-muted-foreground">
+                    Kelola daftar hari libur untuk perhitungan hari kerja KP
                 </p>
             </div>
 

@@ -379,8 +379,8 @@ describe("useSidebarMenu", () => {
       url: "/kelola/metopen/kuota-dosen",
     });
     expect(kelolaMenu?.items).toContainEqual({
-      title: "Master Tugas Akhir",
-      url: "/kelola/tugas-akhir/topik",
+      title: "Tugas Akhir",
+      url: "/kelola/tugas-akhir/master-data",
     });
     expect(kelolaMenu?.items).not.toContainEqual({
       title: "Tugas Akhir",
@@ -423,6 +423,15 @@ describe("useSidebarMenu", () => {
       { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
       { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
     ]);
+    const kelolaMenu = result.current.navMain.find((item) => item.title === "Kelola");
+    expect(kelolaMenu?.items).toContainEqual({
+      title: "Metode Penelitian",
+      url: "/kelola/metode-penelitian",
+    });
+    const kelolaTitles = kelolaMenu?.items.map((item) => item.title) ?? [];
+    expect(kelolaTitles.indexOf("Metode Penelitian")).toBeLessThan(
+      kelolaTitles.indexOf("Tugas Akhir"),
+    );
     const titles = metopenMenu?.items.map((item) => item.title) ?? [];
     expect(titles).not.toContain("Penilaian TA-03A");
     expect(titles).not.toContain("Penilaian TA-03B");
@@ -562,7 +571,7 @@ describe("useSidebarMenu", () => {
     const gkm = renderHook(() => useSidebarMenu());
     expect(
       gkm.result.current.navMain.find((item) => item.title === "Kelola")?.items,
-    ).toContainEqual({ title: "Kelola Data CPL", url: "/kelola/cpl" });
+    ).toContainEqual({ title: "CPL", url: "/kelola/cpl" });
     gkm.unmount();
 
     mockRole({ isAdmin: true });

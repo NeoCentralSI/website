@@ -202,7 +202,15 @@ export function DataMasterTaPanel() {
             render: (t) => (
                 <div className="min-w-[180px] max-w-[260px]">
                     <div className="line-clamp-2 text-sm">{t.title || "-"}</div>
-                    <Badge variant="outline" className="mt-1 text-xs">{t.topic?.name || "Tanpa Topik"}</Badge>
+                    <Badge
+                        variant="outline"
+                        className="mt-1 max-w-full overflow-hidden text-xs"
+                        title={t.topic?.name || "Tanpa Topik"}
+                    >
+                        <span className="min-w-0 truncate">
+                            {t.topic?.name || "Tanpa Topik"}
+                        </span>
+                    </Badge>
                 </div>
             )
         },

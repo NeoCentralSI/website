@@ -23,6 +23,13 @@ export function Footer() {
     { icon: Linkedin, href: 'https://www.linkedin.com/school/universitas-andalas/', label: 'LinkedIn Universitas Andalas' },
   ];
 
+  const developers = [
+    { name: 'Nabil Rizki Navisa', nim: '2211522018' },
+    { name: 'Ilham Nofaldi', nim: '2211522028' },
+    { name: 'Mustafa Fathur Rahman', nim: '2211522036' },
+    { name: 'Muhammad Fariz', nim: '2211523034' },
+  ];
+
   return (
     <>
       {/* Lokasi Kampus — full-bleed campus photo with overlaid info */}
@@ -60,8 +67,8 @@ export function Footer() {
                 </div>
                 <div className="flex items-center gap-2.5 text-white/70">
                   <Mail className="h-4 w-4 flex-shrink-0 text-[#F5A623]" />
-                  <a href="mailto:info@neocentral.dev" className="font-body text-sm text-white/80 transition-colors hover:text-white">
-                    info@neocentral.dev
+                  <a href="mailto:si@it.unand.ac.id" className="font-body text-sm text-white/80 transition-colors hover:text-white">
+                    si@it.unand.ac.id
                   </a>
                 </div>
               </div>
@@ -181,10 +188,10 @@ export function Footer() {
                 <li className="flex items-center gap-2.5">
                   <Mail className="h-4 w-4 text-[#F5A623]" />
                   <a
-                    href="mailto:info@neocentral.dev"
+                    href="mailto:si@it.unand.ac.id"
                     className="font-body text-sm text-gray-500 transition-colors duration-200 hover:text-white"
                   >
-                    info@neocentral.dev
+                    si@it.unand.ac.id
                   </a>
                 </li>
                 <li className="flex items-center gap-2.5">
@@ -200,7 +207,19 @@ export function Footer() {
             </motion.div>
           </div>
 
-          <div className="relative z-10 mt-12 border-t border-gray-800/60 pt-6">
+          <div className="relative z-10 mt-12 border-t border-gray-800/60 pt-8">
+            <h4 className="font-display text-sm font-semibold text-white">Pengembang NeoCentral</h4>
+            <ul className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+              {developers.map((developer) => (
+                <li key={developer.nim} className="font-body text-sm">
+                  <p className="font-medium text-gray-300">{developer.name}</p>
+                  <p className="mt-0.5 text-gray-600">NIM {developer.nim}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="relative z-10 mt-8 border-t border-gray-800/60 pt-6">
             <p className="font-body text-sm text-gray-600">&copy; 2025 NeoCentral. All rights reserved.</p>
           </div>
         </div>

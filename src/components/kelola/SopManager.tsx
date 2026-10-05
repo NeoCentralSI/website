@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Trash2, FileDigit, FileText, Edit, Download } from "lucide-react";
+import { Loader2, Plus, Trash2, Eye, Edit, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import * as sopService from "@/services/sop.service";
@@ -149,22 +149,10 @@ export function SopManager() {
   const columns: Column<SopFile>[] = useMemo(
     () => [
       {
-        header: "No",
-        key: "no",
-        render: (_, idx) => (page - 1) * pageSize + idx + 1,
-        width: "50px",
-        className: "text-center"
-      },
-      {
         header: "Nama Dokumen",
         key: "fileName",
         render: (row) => (
-          <div className="flex items-center gap-2">
-            <FileDigit className="h-4 w-4 text-primary" />
-            <span className="font-medium text-xs sm:text-sm truncate max-w-[150px] sm:max-w-none">
-              {row.fileName}
-            </span>
-          </div>
+          <span className="font-medium">{row.fileName}</span>
         )
       },
       {
@@ -175,7 +163,7 @@ export function SopManager() {
           const isTemplate = row.type.startsWith('TEMPLATE');
           return (
             <div className="flex justify-center">
-              <Badge variant={isTemplate ? 'outline' : 'secondary'} className="text-[10px] uppercase font-bold px-2 py-0">
+              <Badge variant="outline">
                 {isTemplate ? 'Template' : 'SOP'}
               </Badge>
             </div>
@@ -191,12 +179,9 @@ export function SopManager() {
           const subject = parts[parts.length - 1];
           return (
             <div className="flex justify-center">
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${subject === 'TA' ? 'bg-blue-100 text-blue-700' :
-                subject === 'KP' ? 'bg-green-100 text-green-700' :
-                  'bg-slate-100 text-slate-700'
-                }`}>
-                {subject}
-              </span>
+              <Badge variant="outline">
+                {SUBJECT_OPTIONS.find((option) => option.value === subject)?.label ?? subject}
+              </Badge>
             </div>
           );
         }
@@ -215,26 +200,26 @@ export function SopManager() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 gap-2 px-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  className="h-8 gap-2 px-2 text-muted-foreground hover:text-foreground"
                   asChild
                 >
                   <a href={sopService.getSopDownloadUrl(url)} target="_blank" rel="noopener noreferrer">
                     <Download className="h-4 w-4" />
-                    <span className="text-xs">Download</span>
+                    <span>Unduh</span>
                   </a>
                 </Button>
               ) : (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 gap-2 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  className="h-8 gap-2 px-2 text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     setPreviewData({ name: row.fileName, path: row.url });
                     setPreviewOpen(true);
                   }}
                 >
-                  <FileText className="h-4 w-4" />
-                  <span className="text-xs">Lihat</span>
+                  <Eye className="h-4 w-4" />
+                  <span>Lihat</span>
                 </Button>
               )}
             </div>
@@ -250,15 +235,22 @@ export function SopManager() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
               title="Edit Dokumen"
+              aria-label={`Edit dokumen ${row.fileName}`}
               onClick={() => handleEditClick(row)}
             >
               <Edit className="h-4 w-4" />
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title="Hapus Dokumen"
+                  aria-label={`Hapus dokumen ${row.fileName}`}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
@@ -284,7 +276,7 @@ export function SopManager() {
         )
       },
     ],
-    [deleteMutation, page, pageSize]
+    [deleteMutation]
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -308,12 +300,10 @@ export function SopManager() {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2 text-2xl font-semibold">
-          <FileDigit className="h-6 w-6 text-primary" />
-          <h1>Manajemen Panduan & Template</h1>
-        </div>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Manajemen Panduan & Template</h1>
+        <p className="text-muted-foreground">Kelola panduan dan template dokumen akademik</p>
       </div>
 
       <CustomTable

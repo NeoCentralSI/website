@@ -39,12 +39,6 @@ export const API_CONFIG = {
       STUDENT_IMPORT: (id: string) => `/cpls/${id}/students/import`,
       STUDENT_EXPORT: (id: string) => `/cpls/${id}/students/export`,
     },
-    CPMK: {
-      BASE: '/cpmks',
-      BY_ID: (id: string) => `/cpmks/${id}`,
-      COPY_TEMPLATE: '/cpmks/copy-template',
-      HIERARCHY: '/cpmks/hierarchy',
-    },
     THESIS_CPMK: {
       BASE: '/thesis-cpmks',
       BY_ID: (id: string) => `/thesis-cpmks/${id}`,
@@ -85,6 +79,19 @@ export const API_CONFIG = {
       RUBRICS_REORDER: '/rubric-metopen/rubrics/reorder',
       WEIGHT_SUMMARY: (role: string) => `/rubric-metopen/weight-summary?role=${role}`,
       COMPOSITION: (academicYearId: string) => `/rubric-metopen/composition/${academicYearId}`,
+    },
+    RESEARCH_METHOD: {
+      CPMKS: '/research-method/cpmks',
+      CPMK_BY_ID: (cpmkId: string) => `/research-method/cpmks/${cpmkId}`,
+      CONFIGURATION: '/research-method/assessment-configuration',
+      CRITERIA: '/research-method/criteria',
+      CRITERIA_BY_ID: (criteriaId: string) => `/research-method/criteria/${criteriaId}`,
+      CPMK_CONFIG: (cpmkId: string) => `/research-method/cpmks/${cpmkId}/configuration`,
+      CRITERIA_RUBRICS: (criteriaId: string) => `/research-method/criteria/${criteriaId}/rubrics`,
+      RUBRIC_BY_ID: (rubricId: string) => `/research-method/rubrics/${rubricId}`,
+      CRITERIA_REORDER: '/research-method/criteria/reorder',
+      RUBRICS_REORDER: '/research-method/rubrics/reorder',
+      WEIGHT_SUMMARY: '/research-method/weight-summary',
     },
     EXIT_SURVEY: {
       BASE: '/exit-surveys',

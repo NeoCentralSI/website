@@ -195,12 +195,10 @@ export default function Dosen() {
   const total = data?.meta?.total || 0;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Data Dosen</h1>
-          <p className="text-gray-500">Kelola data dosen sistem</p>
-        </div>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Data Dosen</h1>
+        <p className="text-muted-foreground">Kelola data dosen sistem</p>
       </div>
 
       <CustomTable
