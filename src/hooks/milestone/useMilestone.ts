@@ -667,10 +667,10 @@ export function useRevokeSeminarReadiness() {
       queryClient.invalidateQueries({
         queryKey: [...milestoneKeys.all, "lecturer-completion-status"],
       });
-      toast.success("Persetujuan kesiapan seminar berhasil dicabut");
+      toast.success("Persetujuan kesiapan seminar berhasil dibatalkan");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Gagal mencabut persetujuan kesiapan seminar");
+      toast.error(error.message || "Gagal membatalkan persetujuan kesiapan seminar");
     },
   });
 }
@@ -780,31 +780,10 @@ export function useRevokeDefenceReadiness() {
       queryClient.invalidateQueries({
         queryKey: [...milestoneKeys.all, "lecturer-completion-status"],
       });
-      toast.success("Persetujuan kesiapan sidang berhasil dicabut");
+      toast.success("Persetujuan kesiapan sidang berhasil dibatalkan");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Gagal mencabut persetujuan kesiapan sidang");
-    },
-  });
-}
-
-/**
- * Hook for student to request defence
- */
-export function useRequestDefence() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ thesisId, documentId }: { thesisId: string; documentId: string }) =>
-      milestoneService.requestDefence(thesisId, { documentId }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: [...milestoneKeys.all, "defence-readiness", variables.thesisId],
-      });
-      toast.success("Permintaan sidang berhasil diajukan");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Gagal mengajukan permintaan sidang");
+      toast.error(error.message || "Gagal membatalkan persetujuan kesiapan sidang");
     },
   });
 }
@@ -844,16 +823,16 @@ export function useDefenceReadinessManagement(thesisId?: string) {
 }
 
 /**
- * Hook to send reminder for seminar readiness approval
+ * Hook for the student's "Minta Persetujuan" (seminar or defence readiness)
  */
-export function useRemindSeminarApproval() {
+export function useRequestReadinessApproval(kind: "seminar" | "defence") {
   return useMutation({
-    mutationFn: (thesisId: string) => milestoneService.remindSeminarApproval(thesisId),
-    onSuccess: (data: { success: boolean; message: string }) => {
-      toast.success(data.message || "Pengingat berhasil dikirim ke pembimbing");
+    mutationFn: (thesisId: string) => milestoneService.requestReadinessApproval(kind, thesisId),
+    onSuccess: (result) => {
+      toast.success(result.message || "Permintaan persetujuan berhasil dikirim ke pembimbing");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Gagal mengirim pengingat");
+      toast.error(error.message || "Gagal meminta persetujuan pembimbing");
     },
   });
 }

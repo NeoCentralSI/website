@@ -108,7 +108,7 @@ export default function LecturerMyStudentDetailPage() {
 
     const { data: readinessStatus } = useSeminarReadinessStatus(thesisId);
     const { data: defenceStatus } = useDefenceReadinessStatus(thesisId);
-    const isSeminarCompleted = defenceStatus?.thesisStatus?.isEligible === true;
+    const isSeminarCompleted = defenceStatus?.requirementsMet === true;
 
     const progressPercentage = useMemo(() => {
         if (!detailData?.milestones?.length) return 0;
@@ -382,20 +382,12 @@ export default function LecturerMyStudentDetailPage() {
 
             {/* Seminar Readiness Card - sembunyikan jika mahasiswa sudah lulus seminar */}
             {!isSeminarCompleted && detailData.status === "research" && thesisId && (
-                <SeminarReadinessCard
-                    thesisId={thesisId}
-                    studentName={detailData.student.fullName}
-                    thesisTitle={detailData.title}
-                />
+                <SeminarReadinessCard thesisId={thesisId} studentName={detailData.student.fullName} />
             )}
 
-            {/* Defence Readiness Card - tampilkan berdasarkan status thesis */}
-            {thesisId && (
-                <DefenceReadinessCard
-                    thesisId={thesisId}
-                    studentName={detailData.student.fullName}
-                    thesisTitle={detailData.title}
-                />
+            {/* Defence readiness: same card shape; unmet requirements are listed, not hidden */}
+            {detailData.status === "research" && thesisId && (
+                <DefenceReadinessCard thesisId={thesisId} studentName={detailData.student.fullName} />
             )}
 
             {/* Thesis Info & Documents */}

@@ -352,17 +352,41 @@ export interface ThesisCompletionResponse {
 // Seminar Readiness Approval Types
 // ============================================
 
-export interface SeminarReadinessSupervisor {
+/** One system requirement of seminar/defence readiness (computed by the backend). */
+export interface ReadinessRequirement {
+  key: string;
+  label: string;
+  met: boolean;
+  detail: string;
+}
+
+/** Latest research-phase guidance attachment: what a supervisor reads as the draft. */
+export interface ReadinessAttachment {
+  guidanceId: string;
+  fileName: string | null;
+  filePath: string;
+  uploadedAt: string | null;
+}
+
+export interface ReadinessSupervisor {
   id: string;
   name: string;
   email: string;
   role: string;
-  hasApproved: boolean | null;
+  hasApproved: boolean;
 }
 
-export interface SeminarReadinessStatus {
+export interface ReadinessApproval {
+  approvedBySupervisor1: boolean;
+  approvedBySupervisor2: boolean;
+  isFullyApproved: boolean;
+}
+
+/** Fields shared by seminar and defence readiness (the two cards are symmetric). */
+export interface ReadinessStatusBase {
   thesisId: string;
   thesisTitle: string;
+  thesisStatus: string | null;
   student: {
     id: string;
     userId: string;
@@ -370,6 +394,19 @@ export interface SeminarReadinessStatus {
     nim: string;
     email: string;
   };
+  requirements: ReadinessRequirement[];
+  requirementsMet: boolean;
+  supervisors: ReadinessSupervisor[];
+  currentUserRole: string | null;
+  currentUserHasApproved: boolean;
+  latestGuidanceAttachment: ReadinessAttachment | null;
+  /** Why "Minta Persetujuan" is disabled; null when the student may ask. */
+  requestBlockedReason: string | null;
+  /** Why "Setujui" is disabled; null when a supervisor may approve. */
+  approveBlockedReason: string | null;
+}
+
+export interface SeminarReadinessStatus extends ReadinessStatusBase {
   milestoneProgress: {
     total: number;
     completed: number;
@@ -381,27 +418,13 @@ export interface SeminarReadinessStatus {
     required: number;
     isComplete: boolean;
   };
-  seminarReadiness: {
-    approvedBySupervisor1: boolean;
-    approvedBySupervisor2: boolean;
-    isFullyApproved: boolean;
-    approvedAt: string | null;
-    notes: string | null;
-  };
-  supervisors: SeminarReadinessSupervisor[];
-  currentUserRole: string | null;
-  currentUserHasApproved: boolean | null;
+  seminarReadiness: ReadinessApproval;
   canRegisterSeminar: boolean;
 }
 
-export interface SeminarReadinessApprovalResult {
+export interface SeminarReadinessApprovalResult extends ReadinessApproval {
   thesisId: string;
   thesisTitle: string;
-  approvedBySupervisor1: boolean;
-  approvedBySupervisor2: boolean;
-  isFullyApproved: boolean;
-  approvedAt: string | null;
-  notes: string | null;
 }
 
 export interface StudentReadyForSeminar {
@@ -415,9 +438,8 @@ export interface StudentReadyForSeminar {
   supervisors: Array<{
     name: string;
     role: string;
+    seminarReady?: boolean;
   }>;
-  approvedAt: string;
-  notes: string | null;
 }
 
 export interface SeminarReadinessNotesDto {
@@ -446,58 +468,14 @@ export interface StudentsReadyForSeminarResponse {
 // Defence Readiness Approval Types
 // ============================================
 
-export interface DefenceReadinessSupervisor {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  hasApproved: boolean | null;
-}
-
-export interface DefenceReadinessStatus {
-  thesisId: string;
-  thesisTitle: string;
-  student: {
-    id: string;
-    userId: string;
-    name: string;
-    nim: string;
-    email: string;
-  };
-  thesisStatus: {
-    id: string;
-    name: string;
-    isEligible: boolean;
-  };
-  finalDocument: {
-    id: string;
-    fileName: string;
-    filePath: string;
-    uploadedAt: string;
-  } | null;
-  defenceReadiness: {
-    hasRequestedDefence: boolean;
-    requestedAt: string | null;
-    approvedBySupervisor1: boolean;
-    approvedBySupervisor2: boolean;
-    isFullyApproved: boolean;
-    approvedAt: string | null;
-    notes: string | null;
-  };
-  supervisors: DefenceReadinessSupervisor[];
-  currentUserRole: string | null;
-  currentUserHasApproved: boolean | null;
+export interface DefenceReadinessStatus extends ReadinessStatusBase {
+  defenceReadiness: ReadinessApproval;
   canRegisterDefence: boolean;
 }
 
-export interface DefenceReadinessApprovalResult {
+export interface DefenceReadinessApprovalResult extends ReadinessApproval {
   thesisId: string;
   thesisTitle: string;
-  approvedBySupervisor1: boolean;
-  approvedBySupervisor2: boolean;
-  isFullyApproved: boolean;
-  approvedAt: string | null;
-  notes: string | null;
 }
 
 export interface StudentReadyForDefence {
@@ -511,32 +489,18 @@ export interface StudentReadyForDefence {
   supervisors: Array<{
     name: string;
     role: string;
+    defenceReady?: boolean;
   }>;
-  finalDocument: {
-    fileName: string;
-    filePath: string;
-  } | null;
-  approvedAt: string;
-  notes: string | null;
 }
 
 export interface DefenceReadinessNotesDto {
   notes?: string | null;
 }
 
-export interface RequestDefenceDto {
-  documentId: string;
-}
-
-export interface RequestDefenceResult {
+/** Result of the student's "Minta Persetujuan" (seminar or defence). */
+export interface ReadinessRequestResult {
   thesisId: string;
-  thesisTitle: string;
-  finalDocument: {
-    id: string;
-    fileName: string;
-    filePath: string;
-  };
-  requestedAt: string;
+  notifiedSupervisors: number;
 }
 
 // Defence readiness responses
@@ -555,10 +519,4 @@ export interface StudentsReadyForDefenceResponse {
   success: boolean;
   data: StudentReadyForDefence[];
   count: number;
-}
-
-export interface RequestDefenceResponse {
-  success: boolean;
-  message: string;
-  data: RequestDefenceResult;
 }
