@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -24,8 +24,12 @@ import {
 } from "@/lib/thesisLabels";
 
 const BACKEND = resolve(__dirname, "../../../backend");
-const schema = readFileSync(resolve(BACKEND, "prisma/schema.prisma"), "utf8");
-const backendLabels = readFileSync(resolve(BACKEND, "src/constants/thesisLabels.js"), "utf8");
+// The backend lives in a separate repository; the parity tests only run where it is checked out
+// next to the frontend (local development), and are skipped elsewhere (frontend-only CI).
+const HAS_BACKEND = existsSync(resolve(BACKEND, "prisma/schema.prisma"));
+const readBackend = (file: string) => readFileSync(resolve(BACKEND, file), "utf8");
+const schema = HAS_BACKEND ? readBackend("prisma/schema.prisma") : "";
+const backendLabels = HAS_BACKEND ? readBackend("src/constants/thesisLabels.js") : "";
 
 function backendMap(exportName: string): Record<string, string> {
   const match = backendLabels.match(new RegExp(`export const ${exportName} = Object\\.freeze\\(\\{([^}]*)\\}\\)`));
@@ -53,7 +57,7 @@ const CASES = [
   ["MilestoneStatus", MILESTONE_STATUS_LABELS, "MILESTONE_STATUS_LABELS"],
 ] as const;
 
-describe("thesisLabels", () => {
+describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
   it.each(CASES)("labels every %s value from the schema, and nothing else", (enumName, labels) => {
     expect(Object.keys(labels).sort()).toEqual(enumValues(enumName).sort());
     for (const label of Object.values(labels)) expect(label.trim()).not.toBe("");
@@ -63,6 +67,26 @@ describe("thesisLabels", () => {
     expect({ ...labels }).toEqual(backendMap(exportName));
   });
 
+  it("offers every status from the schema as an option, in schema order", () => {
+    expect(getThesisStatusOptions().map((o) => o.value)).toEqual(enumValues("ThesisLifecycleStatus"));
+  });
+
+  it("K15 transitions are identical to the backend lifecycle table", () => {
+    const backend = readBackend("src/services/thesisLifecycle.service.js");
+    const block = backend.match(/THESIS_STATUS_TRANSITIONS = Object\.freeze\(\{([\s\S]*?)\}\);/);
+    expect(block).not.toBeNull();
+    const toValue = (name: string) => name.trim().replace("THESIS_STATUS.", "").toLowerCase();
+    const parsed = Object.fromEntries(
+      [...block![1].matchAll(/\[(THESIS_STATUS\.\w+)\]: \[([^\]]*)\]/g)].map((m) => [
+        toValue(m[1]),
+        m[2].split(",").map((v) => v.trim()).filter(Boolean).map(toValue),
+      ]),
+    );
+    expect(parsed).toEqual(THESIS_STATUS_TRANSITIONS);
+  });
+});
+
+describe("thesisLabels", () => {
   it("gives every status, phase and rating a badge variant", () => {
     expect(Object.keys(THESIS_STATUS_VARIANTS).sort()).toEqual(Object.keys(THESIS_STATUS_LABELS).sort());
     expect(Object.keys(THESIS_PHASE_VARIANTS).sort()).toEqual(Object.keys(THESIS_PHASE_LABELS).sort());
@@ -74,7 +98,7 @@ describe("thesisLabels", () => {
   });
 
   it("offers every status as an option, and only active ratings for new input", () => {
-    expect(getThesisStatusOptions().map((o) => o.value)).toEqual(enumValues("ThesisLifecycleStatus"));
+    expect(getThesisStatusOptions().map((o) => o.value).sort()).toEqual(Object.keys(THESIS_STATUS_LABELS).sort());
     expect(getThesisRatingOptions().map((o) => o.value)).toEqual(ACTIVE_THESIS_RATINGS);
     expect(getThesisRatingOptions().map((o) => o.value)).not.toContain("FAILED");
   });
@@ -92,20 +116,6 @@ describe("thesisLabels", () => {
     const reason = getGuidanceActionBlockReason("on_leave");
     expect(reason).toContain("Berhenti Studi Sementara (BSS)");
     expect(reason).not.toContain("on_leave");
-  });
-
-  it("K15 transitions are identical to the backend lifecycle table", () => {
-    const backend = readFileSync(resolve(BACKEND, "src/services/thesisLifecycle.service.js"), "utf8");
-    const block = backend.match(/THESIS_STATUS_TRANSITIONS = Object\.freeze\(\{([\s\S]*?)\}\);/);
-    expect(block).not.toBeNull();
-    const toValue = (name: string) => name.trim().replace("THESIS_STATUS.", "").toLowerCase();
-    const parsed = Object.fromEntries(
-      [...block![1].matchAll(/\[(THESIS_STATUS\.\w+)\]: \[([^\]]*)\]/g)].map((m) => [
-        toValue(m[1]),
-        m[2].split(",").map((v) => v.trim()).filter(Boolean).map(toValue),
-      ]),
-    );
-    expect(parsed).toEqual(THESIS_STATUS_TRANSITIONS);
   });
 
   it("status options follow the allowed transitions", () => {
