@@ -69,7 +69,7 @@ export default function StudentGuidancePage() {
   const isNotInThesisPhase = isThesisDetailError;
   const isThesisInactive = thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
   // K14: guidance write actions only for status `research`; the button stays visible but disabled.
-  const actionBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status) : null;
+  const actionBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", { repeatingProposal: thesisDetail.repeatingProposal }) : null;
 
   /* ADDED: Search params for Quick Actions */
   const [searchParams, setSearchParams] = useSearchParams();

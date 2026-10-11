@@ -396,8 +396,8 @@ export const useSidebarMenu = () => {
         icon: Database,
         items: [
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" },
-          // Pengajuan Perubahan Tugas Akhir: judul, pembimbing, dan alihkan mahasiswa
-          { title: "Perubahan Tugas Akhir", url: "/kelola/tugas-akhir/kadep/perubahan" },
+          // Keputusan Kadep: Pengajuan Perubahan Tugas Akhir dan Evaluasi Bimbingan
+          { title: "Persetujuan Tugas Akhir", url: "/kelola/tugas-akhir/kadep/perubahan" },
           { title: "Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },

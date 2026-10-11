@@ -73,7 +73,7 @@ export default function StudentMilestonePage() {
 
   // K14: milestone write actions only for status `research`; buttons stay visible but disabled.
   const actionBlockReason = thesisDetail
-    ? getGuidanceActionBlockReason(thesisDetail.status)
+    ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", { repeatingProposal: thesisDetail.repeatingProposal })
     : null;
 
   // Milestones data

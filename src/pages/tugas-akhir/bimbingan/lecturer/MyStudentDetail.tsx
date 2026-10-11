@@ -15,6 +15,7 @@ import EmptyState from "@/components/ui/empty-state";
 import { Activity, FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
 import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
 import { LecturerThesisChangeRequestCard } from "@/components/thesis-change-request/LecturerThesisChangeRequestCard";
+import { LecturerThesisGuidanceEvaluationCard } from "@/components/thesis-guidance-evaluation/LecturerThesisGuidanceEvaluationCard";
 import { SupervisionClockCell } from "@/components/shared/SupervisionClockCell";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
@@ -122,7 +123,7 @@ export default function LecturerMyStudentDetailPage() {
     // Ended thesis (K15): read-only history.
     const isCancelled = detailData?.status === "failed" || detailData?.status === "completed";
     // K14: milestone/guidance write actions only for status `research`.
-    const actionBlockReason = detailData ? getGuidanceActionBlockReason(detailData.status, "mahasiswa") : null;
+    const actionBlockReason = detailData ? getGuidanceActionBlockReason(detailData.status, "mahasiswa", { repeatingProposal: detailData.repeatingProposal }) : null;
 
     const isPembimbing1 = useMemo(() => {
         if (!detailData?.userRole) return false;
@@ -383,6 +384,9 @@ export default function LecturerMyStudentDetailPage() {
 
             {/* Pengajuan Perubahan Tugas Akhir: "Ajukan Perubahan" untuk Pembimbing 1, pengajuan berjalan, riwayat */}
             {thesisId && <LecturerThesisChangeRequestCard thesisId={thesisId} />}
+
+            {/* Evaluasi Bimbingan: masa bimbingan, jatuh tempo, riwayat, dan "Isi Evaluasi" untuk Pembimbing 1 */}
+            {thesisId && <LecturerThesisGuidanceEvaluationCard thesisId={thesisId} />}
 
             {/* Seminar Readiness Card - sembunyikan jika mahasiswa sudah lulus seminar */}
             {!isSeminarCompleted && detailData.status === "research" && thesisId && (

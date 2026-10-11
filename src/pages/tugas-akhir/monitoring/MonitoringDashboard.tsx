@@ -9,6 +9,7 @@ import {
   BatchDistributionChart,
   ProgressDistributionChart,
   SlowStudentsCard,
+  EvaluationDueCard,
   ReadyForSeminarCard,
   SupervisorLoadCard,
   ThesesTable,
@@ -193,7 +194,8 @@ export default function MonitoringDashboard() {
       </div>
 
       {/* Quick Lists */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <EvaluationDueCard students={data?.evaluationDueStudents} isLoading={isLoadingAny} />
         <SlowStudentsCard
           slowStudents={data?.slowStudents}
           atRiskStudents={data?.atRiskStudents}

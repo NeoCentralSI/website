@@ -31,6 +31,10 @@ vi.mock("@/hooks/milestone", () => ({
   })),
 }));
 
+vi.mock("@/components/thesis-guidance-evaluation/StudentThesisGuidanceEvaluationCard", () => ({
+  StudentThesisGuidanceEvaluationCard: () => <div>Evaluasi Bimbingan Card</div>,
+}));
+
 vi.mock("@/components/thesis-change-request/StudentThesisChangeRequestCard", () => ({
   StudentThesisChangeRequestCard: () => <div>Perubahan Tugas Akhir Card</div>,
 }));

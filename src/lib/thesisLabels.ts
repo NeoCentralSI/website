@@ -123,6 +123,61 @@ export const SUPERVISOR_POSITION_LABELS: Record<SupervisorPosition, string> = {
   pembimbing_2: "Pembimbing 2",
 };
 
+/** Evaluasi Bimbingan (formulir TA-17). */
+export type GuidanceEvaluationType = "six_month" | "one_year";
+export type GuidanceEvaluationRecommendation = "continue" | "extend_1_month" | "revise_proposal" | "terminate_supervision";
+export type GuidanceEvaluationStatus = "pending" | "approved" | "rejected";
+export type GuidanceEvaluationObservation = "noGuidance" | "noProgress" | "noResponse" | "noRevision";
+
+export const GUIDANCE_EVALUATION_TYPE_LABELS: Record<GuidanceEvaluationType, string> = {
+  six_month: "Evaluasi 6 Bulan",
+  one_year: "Evaluasi 1 Tahun",
+};
+
+/** Tahap evaluasi (nilai `EvaluationDue`): tindak lanjut adalah bagian dari evaluasi 6 bulan. */
+export const GUIDANCE_EVALUATION_STAGE_LABELS: Record<EvaluationDue, string> = {
+  six_month: "Evaluasi 6 Bulan",
+  extension_follow_up: "Tindak Lanjut Evaluasi 6 Bulan",
+  one_year: "Evaluasi 1 Tahun",
+};
+
+export const GUIDANCE_EVALUATION_RECOMMENDATION_LABELS: Record<GuidanceEvaluationRecommendation, string> = {
+  continue: "Lanjut Bimbingan",
+  extend_1_month: "Peringatan dan Perpanjangan 1 Bulan",
+  revise_proposal: "Mengulang Proposal",
+  terminate_supervision: "Dihentikan",
+};
+
+/** Akibat tiap keputusan, ditampilkan di formulir sebelum dikirim. */
+export const GUIDANCE_EVALUATION_RECOMMENDATION_EFFECTS: Record<GuidanceEvaluationRecommendation, string> = {
+  continue: "Langsung tercatat, tanpa keputusan Ketua Departemen.",
+  extend_1_month: "Setelah disetujui Ketua Departemen: mahasiswa menerima peringatan akademik dan perpanjangan 1 bulan sejak tanggal keputusan.",
+  revise_proposal: "Setelah disetujui Ketua Departemen: status tugas akhir kembali ke Proposal; bimbingan dan milestone terkunci.",
+  terminate_supervision: "Setelah disetujui Ketua Departemen: tugas akhir berstatus Gagal, pembimbing dilepas, dan sesi terbuka dibatalkan.",
+};
+
+export const GUIDANCE_EVALUATION_STATUS_LABELS: Record<GuidanceEvaluationStatus, string> = {
+  pending: "Menunggu Keputusan Ketua Departemen",
+  approved: "Disetujui",
+  rejected: "Ditolak",
+};
+
+export const GUIDANCE_EVALUATION_STATUS_VARIANTS: Record<GuidanceEvaluationStatus, ThesisBadgeVariant> = {
+  pending: "warning",
+  approved: "success",
+  rejected: "destructive",
+};
+
+export const GUIDANCE_EVALUATION_OBSERVATION_LABELS: Record<GuidanceEvaluationObservation, string> = {
+  noGuidance: "Tidak melakukan bimbingan selama periode evaluasi",
+  noProgress: "Tidak menunjukkan kemajuan berarti",
+  noResponse: "Tidak merespons komunikasi pembimbing",
+  noRevision: "Tidak menyerahkan revisi sesuai arahan",
+};
+
+/** Alasan aksi bimbingan/milestone terkunci selama TA mengulang proposal (E5). */
+export const REPEAT_PROPOSAL_LOCK_REASON = "Mengulang proposal berdasarkan evaluasi bimbingan.";
+
 /** `rescheduled` adalah data lama yang diperlakukan sama dengan `accepted` (K19). */
 export const GUIDANCE_STATUS_LABELS: Record<GuidanceSessionStatus, string> = {
   requested: "Menunggu Persetujuan",
@@ -217,6 +272,10 @@ export const getChangeRequestTypeLabel = labelOf(CHANGE_REQUEST_TYPE_LABELS);
 export const getChangeRequestStatusLabel = labelOf(CHANGE_REQUEST_STATUS_LABELS);
 export const getChangeRequestStepLabel = labelOf(CHANGE_REQUEST_STEP_LABELS);
 export const getSupervisorPositionLabel = labelOf(SUPERVISOR_POSITION_LABELS);
+export const getGuidanceEvaluationTypeLabel = labelOf(GUIDANCE_EVALUATION_TYPE_LABELS);
+export const getGuidanceEvaluationStageLabel = labelOf(GUIDANCE_EVALUATION_STAGE_LABELS);
+export const getGuidanceEvaluationRecommendationLabel = labelOf(GUIDANCE_EVALUATION_RECOMMENDATION_LABELS);
+export const getGuidanceEvaluationStatusLabel = labelOf(GUIDANCE_EVALUATION_STATUS_LABELS);
 
 export function getThesisStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
   return THESIS_STATUS_VARIANTS[value as ThesisLifecycleStatus] ?? "outline";
@@ -289,8 +348,13 @@ export function getThesisActivityOptions(): { value: ThesisActivityLevel; label:
 export function getGuidanceActionBlockReason(
   status: string | null | undefined,
   owner: "Anda" | "mahasiswa" = "Anda",
+  options: { repeatingProposal?: boolean | null } = {},
 ): string | null {
   if (status === "research") return null;
+  // TA yang dikembalikan ke proposal oleh evaluasi bimbingan menyebut alasannya (E5).
+  if (status === "proposal" && options.repeatingProposal) {
+    return `${REPEAT_PROPOSAL_LOCK_REASON} Bimbingan dan milestone terkunci sampai tugas akhir kembali berstatus "${THESIS_STATUS_LABELS.research}".`;
+  }
   if (!status) return owner === "Anda" ? "Anda belum memiliki tugas akhir yang aktif." : "Mahasiswa belum memiliki tugas akhir yang aktif.";
   return `Aksi ini hanya tersedia untuk tugas akhir berstatus "${THESIS_STATUS_LABELS.research}". Status tugas akhir ${owner} saat ini: "${getThesisStatusLabel(status)}".`;
 }

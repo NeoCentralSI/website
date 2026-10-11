@@ -1,6 +1,6 @@
 import { getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { SupervisionClock, ThesisActivityLevel } from '@/lib/thesisLabels';
+import type { EvaluationDue, SupervisionClock, ThesisActivityLevel } from '@/lib/thesisLabels';
 
 // ========== Types ==========
 
@@ -14,6 +14,7 @@ export interface ProgressStats {
   totalReadyForSeminar: number;
   totalAtRisk: number;
   totalSlow?: number;
+  totalEvaluationDue?: number;
 }
 
 export interface StatusDistribution {
@@ -40,6 +41,17 @@ export interface AtRiskStudent {
   lastActivity: string;
   daysSinceActivity: number;
   supervisionClock?: SupervisionClock | null;
+  supervisors: SupervisorInfo[];
+}
+
+/** A running thesis whose guidance evaluation is due ("Perlu Evaluasi"). */
+export interface EvaluationDueStudent {
+  thesisId: string;
+  title: string;
+  student: { name: string; nim: string; email: string };
+  activityLevel: ThesisActivityLevel | null;
+  evaluationDue: EvaluationDue;
+  supervisionClock: SupervisionClock;
   supervisors: SupervisorInfo[];
 }
 
@@ -113,6 +125,7 @@ export interface MonitoringDashboard {
   guidanceTrend: GuidanceTrend[];
   atRiskStudents: AtRiskStudent[];
   slowStudents: AtRiskStudent[];
+  evaluationDueStudents?: EvaluationDueStudent[];
   supervisorLoads: SupervisorLoad[];
   readyForSeminar: ReadyForSeminarStudent[];
 }

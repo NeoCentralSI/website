@@ -36,6 +36,7 @@ import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { StudentThesisChangeRequestCard } from "@/components/thesis-change-request/StudentThesisChangeRequestCard";
+import { StudentThesisGuidanceEvaluationCard } from "@/components/thesis-guidance-evaluation/StudentThesisGuidanceEvaluationCard";
 import { toast } from "sonner";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
 import { getGuidanceActionBlockReason } from "@/lib/thesisLabels";
@@ -102,7 +103,7 @@ export default function TugasAkhirOverviewPage() {
     const isFailed = thesisDetail?.status === "failed";
     const isThesisActive = thesisDetail?.status !== "failed";
     // K14: the quick action stays visible but disabled with a reason unless status is `research`.
-    const guidanceBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status) : null;
+    const guidanceBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", { repeatingProposal: thesisDetail.repeatingProposal }) : null;
 
 
 
@@ -312,6 +313,9 @@ export default function TugasAkhirOverviewPage() {
 
                             {/* Pengajuan Perubahan Tugas Akhir (judul, ganti/tambah pembimbing) */}
                             <StudentThesisChangeRequestCard />
+
+                            {/* Evaluasi Bimbingan: peringatan akademik, batas perpanjangan, hasil evaluasi */}
+                            <StudentThesisGuidanceEvaluationCard />
 
                             {/* DOKUMEN TUGAS AKHIR */}
                             {/* Always shown: an empty latest-report slot reads "Belum ada dokumen" */}

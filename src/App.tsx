@@ -418,6 +418,7 @@ function App() {
                   <Route path="/kelola/tugas-akhir/kadep/pengesahan-judul" element={<DSSKadep />} />
                   {/* Pengajuan Perubahan Tugas Akhir (judul, pembimbing, alihkan mahasiswa); rute lama diarahkan ke sini */}
                   <Route path="/kelola/tugas-akhir/kadep/perubahan" element={<KelolaTugasAkhirKadepPage />} />
+                  <Route path="/kelola/tugas-akhir/kadep/evaluasi" element={<KelolaTugasAkhirKadepPage />} />
                   <Route path="/kelola/tugas-akhir/kadep/pergantian-pembimbing" element={<Navigate to="/kelola/tugas-akhir/kadep/perubahan" replace />} />
                   {/* Kerja Praktik Kadep (non-SIMPTA, from origin/main) */}
                   <Route path="/kelola/kerja-praktik/kadep" element={<Navigate to="/kelola/kerja-praktik/kadep/monitoring" replace />} />

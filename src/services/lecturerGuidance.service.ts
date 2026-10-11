@@ -91,6 +91,8 @@ export interface StudentDetail {
   lastActivityAt: string | null;
   daysSinceActivity: number | null;
   supervisionClock: SupervisionClock | null;
+  /** True while the thesis is back in proposal because of a guidance evaluation (E5). */
+  repeatingProposal?: boolean;
   startDate: string | null;
   startDateFormatted: string | null;
   student: {

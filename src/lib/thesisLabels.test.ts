@@ -26,6 +26,13 @@ import {
   CHANGE_REQUEST_STATUS_VARIANTS,
   CHANGE_REQUEST_STEP_LABELS,
   SUPERVISOR_POSITION_LABELS,
+  GUIDANCE_EVALUATION_TYPE_LABELS,
+  GUIDANCE_EVALUATION_STAGE_LABELS,
+  GUIDANCE_EVALUATION_RECOMMENDATION_LABELS,
+  GUIDANCE_EVALUATION_RECOMMENDATION_EFFECTS,
+  GUIDANCE_EVALUATION_STATUS_LABELS,
+  GUIDANCE_EVALUATION_STATUS_VARIANTS,
+  GUIDANCE_EVALUATION_OBSERVATION_LABELS,
   THESIS_STATUS_LABELS,
   THESIS_STATUS_VARIANTS,
   THESIS_TERMINATION_REASON_LABELS,
@@ -66,6 +73,10 @@ const CASES = [
   ["ThesisChangeRequestType", CHANGE_REQUEST_TYPE_LABELS, "CHANGE_REQUEST_TYPE_LABELS"],
   ["ThesisChangeRequestStatus", CHANGE_REQUEST_STATUS_LABELS, "CHANGE_REQUEST_STATUS_LABELS"],
   ["ThesisSupervisorPosition", SUPERVISOR_POSITION_LABELS, "SUPERVISOR_POSITION_LABELS"],
+  // Paket E (E5): Evaluasi Bimbingan
+  ["GuidanceEvaluationType", GUIDANCE_EVALUATION_TYPE_LABELS, "GUIDANCE_EVALUATION_TYPE_LABELS"],
+  ["GuidanceEvaluationRecommendation", GUIDANCE_EVALUATION_RECOMMENDATION_LABELS, "GUIDANCE_EVALUATION_RECOMMENDATION_LABELS"],
+  ["GuidanceEvaluationStatus", GUIDANCE_EVALUATION_STATUS_LABELS, "GUIDANCE_EVALUATION_STATUS_LABELS"],
 ] as const;
 
 describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
@@ -88,6 +99,10 @@ describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
   it("change request steps: every ThesisChangeApprovalRole plus the Kadep step, same as the backend", () => {
     expect(Object.keys(CHANGE_REQUEST_STEP_LABELS).sort()).toEqual([...enumValues("ThesisChangeApprovalRole"), "kadep"].sort());
     expect({ ...CHANGE_REQUEST_STEP_LABELS }).toEqual(backendMap("CHANGE_REQUEST_STEP_LABELS"));
+  });
+
+  it("guidance evaluation observations are identical to the backend map", () => {
+    expect({ ...GUIDANCE_EVALUATION_OBSERVATION_LABELS }).toEqual(backendMap("GUIDANCE_EVALUATION_OBSERVATION_LABELS"));
   });
 
   it("offers every status from the schema as an option, in schema order", () => {
@@ -122,6 +137,20 @@ describe("thesisLabels", () => {
 
   it("gives every change request status a badge variant", () => {
     expect(Object.keys(CHANGE_REQUEST_STATUS_VARIANTS).sort()).toEqual(Object.keys(CHANGE_REQUEST_STATUS_LABELS).sort());
+  });
+
+  it("guidance evaluation: every recommendation has an effect text, every stage and status a label", () => {
+    expect(Object.keys(GUIDANCE_EVALUATION_RECOMMENDATION_EFFECTS).sort()).toEqual(Object.keys(GUIDANCE_EVALUATION_RECOMMENDATION_LABELS).sort());
+    expect(Object.keys(GUIDANCE_EVALUATION_STATUS_VARIANTS).sort()).toEqual(Object.keys(GUIDANCE_EVALUATION_STATUS_LABELS).sort());
+    expect(Object.keys(GUIDANCE_EVALUATION_STAGE_LABELS).sort()).toEqual(Object.keys(EVALUATION_DUE_LABELS).sort());
+    expect(GUIDANCE_EVALUATION_STAGE_LABELS.extension_follow_up).toBe("Tindak Lanjut Evaluasi 6 Bulan");
+  });
+
+  it("names the guidance evaluation as the reason while a thesis repeats its proposal", () => {
+    const reason = getGuidanceActionBlockReason("proposal", "Anda", { repeatingProposal: true });
+    expect(reason).toContain("Mengulang proposal berdasarkan evaluasi bimbingan.");
+    expect(getGuidanceActionBlockReason("proposal")).not.toContain("Mengulang proposal");
+    expect(getGuidanceActionBlockReason("research", "Anda", { repeatingProposal: true })).toBeNull();
   });
 
   it("offers every status as an option", () => {
