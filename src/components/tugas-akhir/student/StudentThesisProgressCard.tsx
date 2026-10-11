@@ -36,6 +36,8 @@ export interface StudentThesisProgressCardProps {
   requiredGuidances?: number;
   /** Why "Ajukan Bimbingan" is disabled; null when the student may ask. */
   guidanceBlockReason: string | null;
+  /** A finished thesis: totals only, without activity, due evaluations or action buttons. */
+  readOnly?: boolean;
 }
 
 /**
@@ -43,7 +45,7 @@ export interface StudentThesisProgressCardProps {
  * the academic warning with the extension deadline, completed sessions out of the required
  * count, and milestone progress.
  */
-export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceBlockReason }: StudentThesisProgressCardProps) {
+export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceBlockReason, readOnly = false }: StudentThesisProgressCardProps) {
   const clock = thesis.supervisionClock ?? null;
   const completedGuidances = thesis.stats.completedGuidances ?? 0;
   const required = requiredGuidances ?? DEFAULT_REQUIRED_GUIDANCES;
@@ -52,7 +54,11 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
     <Card className="w-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Masa Bimbingan dan Progres</CardTitle>
-        <CardDescription>Dihitung dari tanggal mulai bimbingan dan aktivitas terakhir; tidak ada tenggat.</CardDescription>
+        <CardDescription>
+          {readOnly
+            ? "Ringkasan masa bimbingan, sesi bimbingan, dan milestone tugas akhir ini."
+            : "Dihitung dari tanggal mulai bimbingan dan aktivitas terakhir; tidak ada tenggat."}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -67,19 +73,23 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
             <dt className="text-xs text-muted-foreground">Mulai bimbingan</dt>
             <dd className="mt-0.5 text-sm font-medium">{clock?.startedAt ? formatDateShortId(clock.startedAt) : "-"}</dd>
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Aktivitas</dt>
-            <dd className="mt-0.5"><ThesisActivityBadge level={thesis.activityLevel ?? null} /></dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Evaluasi bimbingan</dt>
-            <dd className="mt-0.5 text-sm font-medium">
-              {clock?.evaluationDue ? <Badge variant="warning">{getEvaluationDueLabel(clock.evaluationDue)}</Badge> : "Tidak ada yang jatuh tempo"}
-            </dd>
-          </div>
+          {!readOnly && (
+            <>
+              <div>
+                <dt className="text-xs text-muted-foreground">Aktivitas</dt>
+                <dd className="mt-0.5"><ThesisActivityBadge level={thesis.activityLevel ?? null} /></dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Evaluasi bimbingan</dt>
+                <dd className="mt-0.5 text-sm font-medium">
+                  {clock?.evaluationDue ? <Badge variant="warning">{getEvaluationDueLabel(clock.evaluationDue)}</Badge> : "Tidak ada yang jatuh tempo"}
+                </dd>
+              </div>
+            </>
+          )}
         </dl>
 
-        {clock?.extensionUntil && (
+        {!readOnly && clock?.extensionUntil && (
           <Alert className="border-amber-300 bg-amber-50 text-amber-900">
             <AlertTriangle className="h-4 w-4 !text-amber-600" />
             <AlertTitle>Peringatan akademik</AlertTitle>
@@ -94,38 +104,40 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
           <Meter label="Milestone selesai" done={thesis.stats.completedMilestones} total={thesis.stats.totalMilestones} unit="milestone" />
         </div>
 
-        <div className="space-y-2 border-t pt-4">
-          <div className="flex flex-wrap gap-2">
-            {guidanceBlockReason ? (
-              <Button disabled>
-                <Plus className="mr-2 h-4 w-4" />
-                Ajukan Bimbingan
-              </Button>
-            ) : (
-              <Button asChild>
-                <Link to="/tugas-akhir/bimbingan/student?action=create">
+        {!readOnly && (
+          <div className="space-y-2 border-t pt-4">
+            <div className="flex flex-wrap gap-2">
+              {guidanceBlockReason ? (
+                <Button disabled>
                   <Plus className="mr-2 h-4 w-4" />
                   Ajukan Bimbingan
+                </Button>
+              ) : (
+                <Button asChild>
+                  <Link to="/tugas-akhir/bimbingan/student?action=create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Ajukan Bimbingan
+                  </Link>
+                </Button>
+              )}
+              <Button asChild variant="outline">
+                <Link to="/tugas-akhir/bimbingan/student/milestone">
+                  <Target className="mr-2 h-4 w-4" />
+                  Kelola Milestone
                 </Link>
               </Button>
+              <Button asChild variant="outline">
+                <Link to="/tugas-akhir/bimbingan/student/history">
+                  <History className="mr-2 h-4 w-4" />
+                  Riwayat Bimbingan
+                </Link>
+              </Button>
+            </div>
+            {guidanceBlockReason && (
+              <p className="text-xs text-muted-foreground">Ajukan Bimbingan belum tersedia: {guidanceBlockReason}</p>
             )}
-            <Button asChild variant="outline">
-              <Link to="/tugas-akhir/bimbingan/student/milestone">
-                <Target className="mr-2 h-4 w-4" />
-                Kelola Milestone
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/tugas-akhir/bimbingan/student/history">
-                <History className="mr-2 h-4 w-4" />
-                Riwayat Bimbingan
-              </Link>
-            </Button>
           </div>
-          {guidanceBlockReason && (
-            <p className="text-xs text-muted-foreground">Ajukan Bimbingan belum tersedia: {guidanceBlockReason}</p>
-          )}
-        </div>
+        )}
       </CardContent>
     </Card>
   );

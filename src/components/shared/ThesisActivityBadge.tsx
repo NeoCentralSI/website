@@ -32,7 +32,7 @@ export function ThesisActivityBadge({ level, className }: ThesisActivityBadgePro
         <span className="inline-flex">{badge}</span>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        {description} Aktivitas dihitung dari bimbingan selesai, milestone selesai, seminar, dan perubahan data tugas akhir.
+        {description} Aktivitas dihitung dari bimbingan selesai, milestone selesai, dan seminar, paling awal sejak tugas akhir mulai atau kembali berstatus Penelitian.
       </TooltipContent>
     </Tooltip>
   );

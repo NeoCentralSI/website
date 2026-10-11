@@ -213,15 +213,44 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.queryByText("Informasi Tugas Akhir")).not.toBeInTheDocument();
   });
 
-  it("points to Riwayat when the latest thesis has ended", async () => {
+  it("a stopped thesis without a newer one: empty first tab that points to Riwayat", async () => {
     vi.mocked(getMyThesisDetail).mockResolvedValue(buildThesis({ status: "failed" }));
     renderAt("/tugas-akhir");
 
     expect(await screen.findByText("Belum Ada Tugas Akhir yang Berjalan")).toBeInTheDocument();
+    expect(screen.getByText(/dihentikan\. Rinciannya ada di tab Riwayat/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lihat Riwayat" })).toBeInTheDocument();
+    expect(screen.queryByText("Informasi Tugas Akhir")).not.toBeInTheDocument();
   });
 
-  it("Riwayat lists ended theses with the reason a thesis was stopped", async () => {
+  it("a finished thesis stays on the first tab with the badge Selesai and no action buttons", async () => {
+    vi.mocked(getMyThesisDetail).mockResolvedValue(buildThesis({
+      status: "completed",
+      activityLevel: null,
+      stats: { ...buildThesis().stats, completedGuidances: 9, completedMilestones: 4 },
+    }));
+    renderAt("/tugas-akhir");
+
+    expect(await screen.findByText("Informasi Tugas Akhir")).toBeInTheDocument();
+    expect(screen.getByText("Selesai")).toBeInTheDocument();
+    expect(screen.getByText("Sistem Rekomendasi Tugas Akhir")).toBeInTheDocument();
+    expect(screen.getByText("7 bulan 10 hari")).toBeInTheDocument();
+    expect(screen.getByText("9 dari 8 sesi")).toBeInTheDocument();
+    expect(screen.getByText("4 dari 4 milestone")).toBeInTheDocument();
+    // Read-only: no actions, no readiness, change request or evaluation cards.
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ajukan Bimbingan/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Kelola Milestone/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Kartu Kesiapan Seminar")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kartu Kesiapan Sidang")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kartu Perubahan Tugas Akhir")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kartu Evaluasi Bimbingan")).not.toBeInTheDocument();
+    expect(screen.queryByText("Belum Ada Tugas Akhir yang Berjalan")).not.toBeInTheDocument();
+    // The readiness of a finished thesis is not requested.
+    expect(vi.mocked(useSeminarReadinessStatus)).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("Riwayat lists the theses before the current one, with the reason a thesis was stopped", async () => {
     vi.mocked(getStudentThesisHistory).mockResolvedValue({
       success: true,
       theses: [
@@ -242,7 +271,30 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.getByText("Dihentikan melalui evaluasi bimbingan")).toBeInTheDocument();
     expect(screen.getByText("Tidak ada kemajuan selama satu tahun.")).toBeInTheDocument();
     expect(screen.queryByText("supervision_evaluation")).not.toBeInTheDocument();
-    expect(getMyThesisDetail).not.toHaveBeenCalled();
+  });
+
+  it("Riwayat leaves out a finished thesis that the first tab shows", async () => {
+    vi.mocked(getMyThesisDetail).mockResolvedValue(buildThesis({ id: "thesis-1", status: "completed" }));
+    vi.mocked(getStudentThesisHistory).mockResolvedValue({
+      success: true,
+      theses: [
+        historyItem({ id: "thesis-1", title: "Sistem Rekomendasi Tugas Akhir", status: "completed", terminationReason: null, terminationNote: null, terminatedAt: null }),
+        historyItem(),
+      ],
+    });
+    renderAt("/tugas-akhir/riwayat");
+
+    expect(await screen.findByText("Judul Tugas Akhir Lama")).toBeInTheDocument();
+    expect(screen.queryByText("Sistem Rekomendasi Tugas Akhir")).not.toBeInTheDocument();
+  });
+
+  it("Riwayat keeps a stopped thesis even when it is the latest one", async () => {
+    vi.mocked(getMyThesisDetail).mockResolvedValue(buildThesis({ id: "thesis-0", status: "failed" }));
+    vi.mocked(getStudentThesisHistory).mockResolvedValue({ success: true, theses: [historyItem()] });
+    renderAt("/tugas-akhir/riwayat");
+
+    expect(await screen.findByText("Judul Tugas Akhir Lama")).toBeInTheDocument();
+    expect(screen.getByText("Dihentikan melalui evaluasi bimbingan")).toBeInTheDocument();
   });
 
   it("Riwayat shows an empty state when nothing has ended", async () => {

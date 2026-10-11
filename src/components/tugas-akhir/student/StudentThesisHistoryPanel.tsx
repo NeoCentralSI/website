@@ -7,7 +7,8 @@ import { Loading } from "@/components/ui/spinner";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
 import { formatDateShortId, formatRoleName, toTitleCaseName } from "@/lib/text";
 import { getThesisTerminationReasonLabel } from "@/lib/thesisLabels";
-import { getStudentThesisHistory, type ThesisHistoryItem } from "@/services/studentGuidance.service";
+import { getMyThesisDetail, getStudentThesisHistory, type ThesisHistoryItem } from "@/services/studentGuidance.service";
+import { isShownAsCurrentThesis } from "./studentThesisTabs";
 
 function Fact({ icon: Icon, label, children }: { icon: typeof Target; label: string; children: React.ReactNode }) {
   return (
@@ -73,15 +74,24 @@ function HistoryCard({ thesis }: { thesis: ThesisHistoryItem }) {
   );
 }
 
-/** Tab "Riwayat": earlier theses that ended (Selesai or Gagal), with the reason a thesis was stopped. */
+/**
+ * Tab "Riwayat": the student's other theses, i.e. every ended thesis (Selesai or Gagal)
+ * except the one shown under "Tugas Akhir Saat Ini", with the reason a thesis was stopped.
+ */
 export function StudentThesisHistoryPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ["student-thesis-history"],
     queryFn: getStudentThesisHistory,
     retry: false,
   });
+  // The same query the first tab uses: its thesis is not history.
+  const { data: latest, isLoading: isLoadingLatest } = useQuery({
+    queryKey: ["my-thesis-detail"],
+    queryFn: getMyThesisDetail,
+    retry: false,
+  });
 
-  if (isLoading) {
+  if (isLoading || isLoadingLatest) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loading size="lg" text="Memuat riwayat tugas akhir..." />
@@ -89,12 +99,15 @@ export function StudentThesisHistoryPanel() {
     );
   }
 
-  const ended = (data?.theses ?? []).filter((thesis) => thesis.status === "completed" || thesis.status === "failed");
+  const currentId = latest && isShownAsCurrentThesis(latest.status) ? latest.id : null;
+  const ended = (data?.theses ?? []).filter(
+    (thesis) => thesis.id !== currentId && (thesis.status === "completed" || thesis.status === "failed"),
+  );
   if (ended.length === 0) {
     return (
       <EmptyState
         title="Belum Ada Riwayat"
-        description="Tugas akhir yang sudah selesai atau dihentikan akan tampil di sini."
+        description="Tugas akhir Anda sebelum yang sekarang, baik yang selesai maupun yang dihentikan, akan tampil di sini."
       />
     );
   }
