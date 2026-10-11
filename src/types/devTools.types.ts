@@ -148,3 +148,31 @@ export interface RoleOption {
   id: string;
   name: string;
 }
+
+export interface DevToolsGuidance {
+  id: string;
+  status: string;
+  phase: string;
+  requestedDate: string;
+  approvedDate: string | null;
+  summarySubmittedAt: string | null;
+  completedAt: string | null;
+  thesisId: string | null;
+  thesisTitle: string | null;
+  studentName: string | null;
+  studentNim: string | null;
+  supervisorName: string | null;
+}
+
+export interface DevToolsGuidanceList {
+  data: DevToolsGuidance[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+}
+
+/** Editable session dates (ISO). `null` clears a nullable column. */
+export interface UpdateGuidanceScheduleDto {
+  requestedDate?: string;
+  approvedDate?: string | null;
+  summarySubmittedAt?: string | null;
+  completedAt?: string | null;
+}

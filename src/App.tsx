@@ -453,7 +453,10 @@ function App() {
                   <Route path="/master-data/kuota-bimbingan" element={<KuotaBimbinganPage />} />
                   {/* DevTools simulator: only registered when explicitly enabled outside production. */}
                   {ENV.ENABLE_DEV_TOOLS && (
-                    <Route path="/admin/dev-tools" element={<DevToolsPage />} />
+                    <>
+                      <Route path="/admin/dev-tools" element={<Navigate to="/admin/dev-tools/users" replace />} />
+                      <Route path="/admin/dev-tools/:tab" element={<DevToolsPage />} />
+                    </>
                   )}
                 </Route>
               </Route>

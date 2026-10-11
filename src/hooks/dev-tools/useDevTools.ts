@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { devToolsService } from '@/services/devTools.service';
-import type { UpdateStudentDto, UpdateUserDto, CreateUserDto } from '@/types/devTools.types';
+import type { UpdateStudentDto, UpdateUserDto, CreateUserDto, UpdateGuidanceScheduleDto } from '@/types/devTools.types';
 
 const QK = {
   students: 'devtools-students',
@@ -15,6 +15,7 @@ const QK = {
   users: 'devtools-users',
   roles: 'devtools-roles',
   academicYears: 'devtools-academic-years',
+  guidances: 'devtools-guidances',
 } as const;
 
 export function useDevToolsStudents(search: string, statusFilter: string) {
@@ -69,6 +70,21 @@ export function useDevToolsAcademicYears() {
   });
 }
 
+export function useDevToolsGuidances(params: { search: string; status: string; page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: [QK.guidances, params.search, params.status, params.page, params.pageSize],
+    queryFn: () =>
+      devToolsService.getGuidances({
+        search: params.search || undefined,
+        status: params.status || undefined,
+        page: params.page,
+        pageSize: params.pageSize,
+      }),
+    staleTime: 15_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
 export function useDevToolsMutations() {
   const qc = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,6 +95,7 @@ export function useDevToolsMutations() {
     qc.invalidateQueries({ queryKey: [QK.theses] });
     qc.invalidateQueries({ queryKey: [QK.users] });
     qc.invalidateQueries({ queryKey: [QK.academicYears] });
+    qc.invalidateQueries({ queryKey: [QK.guidances] });
   }, [qc]);
 
   const wrap = useCallback(
@@ -120,5 +137,7 @@ export function useDevToolsMutations() {
       wrap(() => devToolsService.setThesisAcademicYear(thesisId, academicYearId)),
     closeMetopenPeriod: (closedAcademicYearId: string, dryRun: boolean, force = false) =>
       wrap(() => devToolsService.closeMetopenPeriod(closedAcademicYearId, dryRun, force)),
+    updateGuidanceSchedule: (id: string, data: UpdateGuidanceScheduleDto) =>
+      wrap(() => devToolsService.updateGuidanceSchedule(id, data)),
   };
 }

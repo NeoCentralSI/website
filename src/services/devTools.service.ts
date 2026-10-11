@@ -15,6 +15,8 @@ import type {
   RoleOption,
   DevToolsAcademicYear,
   CloseMetopenPeriodResult,
+  DevToolsGuidanceList,
+  UpdateGuidanceScheduleDto,
 } from '@/types/devTools.types';
 
 const BASE = '/devtools';
@@ -182,5 +184,24 @@ export const devToolsService = {
     }
     const result = await response.json();
     return result.data as CloseMetopenPeriodResult;
+  },
+
+  // --- Guidance sessions ---
+  getGuidances: async (params: { search?: string; status?: string; page: number; pageSize: number }): Promise<DevToolsGuidanceList> => {
+    const query = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+    if (params.search) query.set('search', params.search);
+    if (params.status) query.set('status', params.status);
+    const response = await apiRequest(getApiUrl(`${BASE}/guidances?${query.toString()}`));
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error((result as { message?: string }).message || 'Gagal memuat sesi bimbingan');
+    }
+    return { data: result.data ?? [], meta: result.meta } as DevToolsGuidanceList;
+  },
+
+  updateGuidanceSchedule: async (id: string, data: UpdateGuidanceScheduleDto): Promise<string> => {
+    const url = getApiUrl(`${BASE}/guidances/${id}`);
+    const response = await apiRequest(url, { method: 'PATCH', body: JSON.stringify(data) });
+    return parseMsg(response, 'Gagal mengubah jadwal sesi bimbingan');
   },
 };
