@@ -1,11 +1,8 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { Ta03ScoreSummary } from '@/components/monitoring/Ta03ScoreSummary';
-import { Ta04StatusBadge } from '@/components/monitoring/Ta04StatusBadge';
 import { useThesisDetail } from '@/hooks/monitoring';
-import { getThesisStatusStyle } from '@/lib/monitoring/thesisStatus';
-import { toTitleCaseName, formatRoleName, formatDateId } from '@/lib/text';
+import { toTitleCaseName, formatRoleName, formatDateShortId, formatDateTimeWib } from '@/lib/text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,9 +27,11 @@ import {
   Award,
   Download
 } from 'lucide-react';
-import { getApiUrl } from '@/config/api';
+import { openAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
 import Lottie from 'lottie-react';
 import emptyAnimation from '@/assets/lottie/empty.json';
+import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
+import { getGuidanceStatusLabel, getThesisRatingLabel, getThesisStatusLabel } from '@/lib/thesisLabels';
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -135,9 +134,7 @@ export default function StudentProgressDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className={getThesisStatusStyle(data.status).className}>
-            {getThesisStatusStyle(data.status).label}
-          </Badge>
+          <ThesisStatusBadge status={data.status} />
           {data.seminarApproval.isFullyApproved && (
             <Badge className="bg-amber-100 text-amber-800">
               <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -148,12 +145,12 @@ export default function StudentProgressDetail() {
       </div>
 
       {/* Inactive Thesis Alert */}
-      {(data.status === 'Gagal' || data.rating === 'FAILED' || data.status === 'Dibatalkan' || data.rating === 'CANCELLED') && (
+      {(data.status === 'failed' || data.rating === 'FAILED' || data.rating === 'CANCELLED') && (
         <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800 dark:bg-red-950/50 dark:border-red-900 dark:text-red-200">
           <AlertTriangle className="h-5 w-5 !text-red-600 dark:!text-red-400" />
           <AlertTitle className="font-semibold">Perhatian: Tugas Akhir Tidak Aktif</AlertTitle>
           <AlertDescription className="mt-2 text-red-700 dark:text-red-300">
-            Tugas akhir ini sudah tidak aktif karena memiliki status <strong>{data.status || "Gagal/Dibatalkan"}</strong>.
+            Tugas akhir ini sudah tidak aktif karena memiliki status <strong>{data.status === 'failed' ? getThesisStatusLabel(data.status) : getThesisRatingLabel(data.rating)}</strong>.
             Mahasiswa bersangkutan perlu mengulang pengajuan judul pada periode selanjutnya atau berkoordinasi dengan pihak prodi.
           </AlertDescription>
         </Alert>
@@ -288,42 +285,22 @@ export default function StudentProgressDetail() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Aktivitas Terakhir</p>
-                  <p className="text-sm font-medium">{formatDateId(data.lastActivity)}</p>
+                  <p className="text-sm font-medium">{formatDateTimeWib(data.lastActivity)}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <div>
                     <p className="text-xs text-muted-foreground">Mulai</p>
-                    <p className="text-sm font-medium">{data.startDate ? formatDateId(data.startDate) : '-'}</p>
+                    <p className="text-sm font-medium">{data.startDate ? formatDateShortId(data.startDate) : '-'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div>
                     <p className="text-xs text-muted-foreground">Deadline</p>
-                    <p className="text-sm font-medium">{data.deadlineDate ? formatDateId(data.deadlineDate) : '-'}</p>
+                    <p className="text-sm font-medium">{data.deadlineDate ? formatDateShortId(data.deadlineDate) : '-'}</p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Penugasan TA-04 & Nilai TA-03 — read-only untuk KaDep/Sekdep */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Award className="h-4 w-4" />
-                Penugasan TA-04 &amp; Nilai TA-03
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Penugasan TA-04</p>
-                <Ta04StatusBadge ta04={data.ta04} showIssuedAt />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Nilai TA-03</p>
-                <Ta03ScoreSummary ta03={data.ta03} />
               </div>
             </CardContent>
           </Card>
@@ -344,20 +321,14 @@ export default function StudentProgressDetail() {
                     <p className="text-sm font-medium truncate">{data.latestDocument.fileName}</p>
                     <p className="text-xs text-muted-foreground">Draft Terbaru</p>
                   </div>
-                  <Button variant="ghost" size="icon" className="shrink-0" asChild>
-                    <a
-                      href={(() => {
-                        const path = data.latestDocument!.filePath;
-                        let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
-                        const token = localStorage.getItem('accessToken');
-                        if (token && path.includes('thesis/')) url += `?token=${token}`;
-                        return url;
-                      })()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download className="h-4 w-4" />
-                    </a>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    title="Buka berkas"
+                    onClick={() => void openAuthenticatedFileOrToast(data.latestDocument!.filePath)}
+                  >
+                    <Download className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -418,12 +389,12 @@ export default function StudentProgressDetail() {
 
         {/* Right Column - Progress Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Active flow progress */}
+          {/* Milestone Progress */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Target className="h-4 w-4" />
-                Progress Alur Proposal
+                Progress Milestone
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -435,11 +406,11 @@ export default function StudentProgressDetail() {
                 </div>
                 <Progress value={data.progress.percent} className="h-3" />
                 <p className="text-xs text-muted-foreground">
-                  {data.progress.completed} dari {data.progress.total} langkah selesai
+                  {data.progress.completed} dari {data.progress.total} milestone selesai
                 </p>
               </div>
 
-              {/* Active flow steps */}
+              {/* Milestones List */}
               {data.milestones.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {data.milestones.map((m) => (
@@ -449,9 +420,9 @@ export default function StudentProgressDetail() {
                         <p className="text-sm font-medium truncate">{m.title}</p>
                         <p className="text-xs text-muted-foreground">
                           {m.completedAt
-                            ? `Selesai: ${formatDateId(m.completedAt)}`
+                            ? `Selesai: ${formatDateShortId(m.completedAt)}`
                             : m.targetDate
-                              ? `Target: ${formatDateId(m.targetDate)}`
+                              ? `Target: ${formatDateShortId(m.targetDate)}`
                               : 'Belum ada target'}
                         </p>
                       </div>
@@ -464,7 +435,7 @@ export default function StudentProgressDetail() {
                   ))}
                 </div>
               ) : (
-                <EmptyState message="Belum ada langkah alur yang tercatat" icon={Target} />
+                <EmptyState message="Belum ada milestone" icon={Target} />
               )}
             </CardContent>
           </Card>
@@ -490,11 +461,11 @@ export default function StudentProgressDetail() {
                           {g.topic || 'Bimbingan'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDateId(g.createdAt)}
+                          {formatDateTimeWib(g.createdAt)}
                         </p>
                       </div>
                       <Badge className={GUIDANCE_STATUS_COLORS[g.status] || 'bg-gray-100 text-gray-700'}>
-                        {g.status}
+                        {getGuidanceStatusLabel(g.status)}
                       </Badge>
                     </div>
                   ))}
@@ -531,7 +502,7 @@ export default function StudentProgressDetail() {
                         {s.scheduledAt && (
                           <p className="text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3 inline mr-1" />
-                            {formatDateId(s.scheduledAt)}
+                            {formatDateTimeWib(s.scheduledAt)}
                           </p>
                         )}
                         {s.room && (
@@ -572,7 +543,7 @@ export default function StudentProgressDetail() {
                         {d.scheduledAt && (
                           <p className="text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3 inline mr-1" />
-                            {formatDateId(d.scheduledAt)}
+                            {formatDateTimeWib(d.scheduledAt)}
                           </p>
                         )}
                         {d.room && (

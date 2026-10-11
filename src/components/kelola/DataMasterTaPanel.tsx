@@ -1,8 +1,9 @@
 import { useCallback, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Download } from "lucide-react";
+import { Plus, Pencil, Download, AlertCircle, RotateCw } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { getMasterDataTheses, createMasterDataThesis, updateMasterDataThesis, getMasterDataThesisStatuses, type MasterDataThesis, type SupervisorData } from "@/services/masterDataTa.service";
+import { getMasterDataTheses, createMasterDataThesis, updateMasterDataThesis, type MasterDataThesis, type SupervisorData } from "@/services/masterDataTa.service";
 import { getStudentsAPI, getLecturersAPI, getAcademicYearsAPI } from "@/services/admin.service";
 import { getTopics } from "@/services/topic.service";
 
@@ -19,7 +20,16 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { ExportExcelDialog } from "./ExportExcelDialog";
 import { ImportMasterDataDialog } from "./ImportMasterDataDialog";
 import { Upload } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
+import { ThesisRatingBadge } from "@/components/shared/ThesisRatingBadge";
+import {
+    getAllowedThesisStatusOptions,
+    getTerminationReasonOptions,
+    THESIS_STATUS_LABELS,
+    type ThesisLifecycleStatus,
+    type ThesisTerminationReason,
+} from "@/lib/thesisLabels";
+import { Textarea } from "@/components/ui/textarea";
 
 interface FormState {
     id?: string;
@@ -28,12 +38,16 @@ interface FormState {
     thesisTopicId: string;
     academicYearId: string;
     startDate: string;
-    rating: string;
-    thesisStatusId: string;
+    rating: string | null;
+    status: ThesisLifecycleStatus;
+    /** Status when the dialog opened (null = new thesis); K21 transitions start from here. */
+    originalStatus: ThesisLifecycleStatus | null;
+    statusBeforeLeave: ThesisLifecycleStatus | null;
+    terminationReason: ThesisTerminationReason | "none";
+    terminationNote: string;
     supervisors: SupervisorData[];
     pembimbing1: string;
     pembimbing2: string;
-    isProposal?: boolean;
 }
 
 const emptyForm: FormState = {
@@ -42,15 +56,19 @@ const emptyForm: FormState = {
     thesisTopicId: "none",
     academicYearId: "none",
     startDate: "",
-    rating: "ONGOING",
-    thesisStatusId: "none",
+    rating: null,
+    status: "research",
+    originalStatus: null,
+    statusBeforeLeave: null,
+    terminationReason: "none",
+    terminationNote: "",
     supervisors: [],
     pembimbing1: "none",
     pembimbing2: "none",
-    isProposal: false,
 };
 
-const ratings = ["ONGOING", "SLOW", "AT_RISK", "FAILED", "CANCELLED"];
+const terminationReasonOptions = getTerminationReasonOptions();
+const isClosedStatus = (s: ThesisLifecycleStatus | null) => s === "completed" || s === "failed";
 
 export function DataMasterTaPanel() {
     const queryClient = useQueryClient();
@@ -63,12 +81,10 @@ export function DataMasterTaPanel() {
     const [formState, setFormState] = useState<FormState>(emptyForm);
 
     // Queries
-    const { data: theses = [], isLoading, isFetching, refetch } = useQuery({
+    const { data: theses = [], isLoading, isFetching, isError, error, refetch } = useQuery({
         queryKey: ["master-data-ta"],
         queryFn: getMasterDataTheses,
     });
-
-    const { data: statusesData = [] } = useQuery({ queryKey: ["master-data-ta-statuses"], queryFn: getMasterDataThesisStatuses });
 
     const { data: studentsData } = useQuery({ queryKey: ["admin-students"], queryFn: () => getStudentsAPI({ pageSize: 1000 }) });
     const { data: lecturersData } = useQuery({ queryKey: ["admin-lecturers"], queryFn: () => getLecturersAPI({ pageSize: 1000 }) });
@@ -129,30 +145,18 @@ export function DataMasterTaPanel() {
             thesisTopicId: thesis.topic?.id || "none",
             academicYearId: thesis.academicYear?.id || "none",
             startDate: thesis.startDate ? new Date(thesis.startDate).toISOString().split('T')[0] : "",
-            rating: thesis.rating || "ONGOING",
-            thesisStatusId: thesis.thesisStatusId || "none",
+            rating: thesis.rating ?? null,
+            status: thesis.status,
+            originalStatus: thesis.status,
+            statusBeforeLeave: thesis.statusBeforeLeave ?? null,
+            terminationReason: thesis.terminationReason ?? "none",
+            terminationNote: thesis.terminationNote ?? "",
             supervisors: [],
             pembimbing1: thesis.supervisors.find((s) => s.roleName === "Pembimbing 1")?.lecturerId || "none",
             pembimbing2: thesis.supervisors.find((s) => s.roleName === "Pembimbing 2")?.lecturerId || "none",
-            isProposal: thesis.isProposal || false,
         });
         setDialogOpen(true);
     }, []);
-
-    const handleToggleProposal = useCallback((t: MasterDataThesis, checked: boolean) => {
-        const payload = {
-            title: t.title,
-            thesisTopicId: t.topic?.id,
-            academicYearId: t.academicYear?.id,
-            startDate: t.startDate,
-            rating: t.rating,
-            thesisStatusId: t.thesisStatusId,
-            pembimbing1: t.supervisors.find((s) => s.roleName === "Pembimbing 1")?.lecturerId,
-            pembimbing2: t.supervisors.find((s) => s.roleName === "Pembimbing 2")?.lecturerId,
-            isProposal: checked,
-        };
-        updateMutation.mutate({ id: t.id, data: payload });
-    }, [updateMutation]);
 
     const handleSubmit = () => {
         if (!formState.studentId) {
@@ -164,17 +168,38 @@ export function DataMasterTaPanel() {
             toast.error("Pembimbing 1 harus dipilih");
             return;
         }
+        if (formState.pembimbing1 !== "none" && formState.pembimbing1 === formState.pembimbing2) {
+            toast.error("Pembimbing 1 dan Pembimbing 2 harus dosen yang berbeda");
+            return;
+        }
+        const becomesFailed = formState.status === "failed" && formState.originalStatus !== "failed";
+        if (becomesFailed && formState.terminationReason === "none") {
+            toast.error("Alasan penghentian wajib dipilih untuk status Gagal");
+            return;
+        }
 
-        const payload = {
-            ...formState,
-            startDate: formState.startDate ? new Date(formState.startDate).toISOString() : null,
-            thesisTopicId: formState.thesisTopicId !== "none" ? formState.thesisTopicId : null,
-            academicYearId: formState.academicYearId !== "none" ? formState.academicYearId : null,
+        // K21: rating is never sent (computed by the rating job); supervisors of a closed
+        // thesis are not editable; status is sent only when it changes.
+        const closed = isClosedStatus(formState.originalStatus);
+        const payload: Record<string, unknown> = {
             title: formState.title || null,
-            pembimbing1: formState.pembimbing1 !== "none" ? formState.pembimbing1 : undefined,
-            pembimbing2: formState.pembimbing2 !== "none" ? formState.pembimbing2 : undefined,
-            thesisStatusId: formState.id ? formState.thesisStatusId : undefined,
-            isProposal: formState.isProposal,
+            thesisTopicId: formState.thesisTopicId !== "none" ? formState.thesisTopicId : null,
+            ...(formState.id
+                ? {
+                    startDate: formState.startDate ? new Date(formState.startDate).toISOString() : null,
+                    academicYearId: formState.academicYearId !== "none" ? formState.academicYearId : null,
+                }
+                : { studentId: formState.studentId }),
+            ...(!closed
+                ? {
+                    pembimbing1: formState.pembimbing1 !== "none" ? formState.pembimbing1 : undefined,
+                    pembimbing2: formState.pembimbing2 !== "none" ? formState.pembimbing2 : "none",
+                }
+                : {}),
+            ...(formState.status !== formState.originalStatus ? { status: formState.status } : {}),
+            ...(becomesFailed
+                ? { terminationReason: formState.terminationReason, terminationNote: formState.terminationNote.trim() || null }
+                : {}),
         };
 
         if (formState.id) {
@@ -231,17 +256,10 @@ export function DataMasterTaPanel() {
             width: 90,
             className: "text-center",
             render: (t) => {
-                if (!t.rating || t.status === "Selesai" || t.status === "Lulus") {
+                if (!t.rating || t.status === "completed") {
                     return <span className="text-muted-foreground text-xs font-mono">-</span>;
                 }
-                const colors: Record<string, string> = {
-                    "ONGOING": "bg-blue-500",
-                    "SLOW": "bg-yellow-500",
-                    "AT_RISK": "bg-orange-500",
-                    "FAILED": "bg-red-500 text-white",
-                    "CANCELLED": "bg-gray-500 text-white",
-                };
-                return <Badge className={`${colors[t.rating] || "bg-primary"} text-xs`}>{t.rating}</Badge>;
+                return <ThesisRatingBadge rating={t.rating} className="text-xs" />;
             }
         },
         {
@@ -249,20 +267,7 @@ export function DataMasterTaPanel() {
             header: "Status",
             width: 90,
             className: "text-center",
-            render: (t) => {
-                const colors: Record<string, string> = {
-                    "Aktif": "bg-emerald-600 text-white",
-                    "Bimbingan": "bg-emerald-600 text-white",
-                    "Selesai": "bg-blue-600 text-white",
-                    "Lulus": "bg-blue-600 text-white",
-                    "Gagal": "bg-red-600 text-white",
-                    "Dibatalkan": "bg-zinc-600 text-white",
-                    "Drop Out": "bg-rose-700 text-white",
-                    "Diajukan": "bg-amber-600 text-white",
-                    "Metopel": "bg-indigo-600 text-white",
-                };
-                return <Badge className={`${colors[t.status] || "bg-primary"} text-xs`}>{t.status}</Badge>;
-            }
+            render: (t) => <ThesisStatusBadge status={t.status} className="text-xs" />
         },
         {
             key: "supervisors",
@@ -278,21 +283,6 @@ export function DataMasterTaPanel() {
             )
         },
         {
-            key: "isProposal",
-            header: "Proposal",
-            width: 70,
-            className: "text-center",
-            render: (t) => (
-                <div onClick={(e) => e.stopPropagation()}>
-                    <Switch
-                        checked={!!t.isProposal}
-                        onCheckedChange={(checked) => handleToggleProposal(t, checked)}
-                        disabled={updateMutation.isPending}
-                    />
-                </div>
-            )
-        },
-        {
             key: "actions",
             header: "",
             width: 48,
@@ -302,10 +292,27 @@ export function DataMasterTaPanel() {
                 </Button>
             )
         }
-    ], [handleToggleProposal, handleStartEdit, updateMutation.isPending]);
+    ], [handleStartEdit]);
 
     if (isLoading && theses.length === 0) {
         return <div className="p-8 flex justify-center"><Loading size="lg" text="Memuat data..." /></div>;
+    }
+
+    // A failed GET /master-data-ta must not look like an empty table.
+    if (isError) {
+        return (
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Gagal memuat data master tugas akhir</AlertTitle>
+                <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span>{(error as Error)?.message || "Terjadi kesalahan saat memuat data."}</span>
+                    <Button size="sm" variant="outline" onClick={() => void refetch()}>
+                        <RotateCw className="mr-2 h-4 w-4" />
+                        Coba lagi
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        );
     }
 
     return (
@@ -422,45 +429,80 @@ export function DataMasterTaPanel() {
                                         </div>
                                         <div className="grid gap-2">
                                             <Label>Rating</Label>
+                                            {/* K21: rating is computed by the rating job, shown only */}
+                                            <div className="flex h-9 items-center gap-2">
+                                                {formState.rating ? (
+                                                    <ThesisRatingBadge rating={formState.rating} />
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground">-</span>
+                                                )}
+                                                <span className="text-xs text-muted-foreground">dihitung otomatis</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                <div className="grid gap-2">
+                                    <Label>Status Tugas Akhir</Label>
+                                    <Select
+                                        value={formState.status}
+                                        onValueChange={(v) => setFormState(prev => ({ ...prev, status: v as ThesisLifecycleStatus }))}
+                                        disabled={isClosedStatus(formState.originalStatus)}
+                                    >
+                                        <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
+                                        <SelectContent>
+                                            {getAllowedThesisStatusOptions(formState.originalStatus, formState.statusBeforeLeave).map(s => (
+                                                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {isClosedStatus(formState.originalStatus) && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Tugas akhir berstatus "{THESIS_STATUS_LABELS[formState.originalStatus as ThesisLifecycleStatus]}" tidak dapat diubah lagi.
+                                        </p>
+                                    )}
+                                    {formState.originalStatus === "on_leave" && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Dari BSS, tugas akhir hanya dapat kembali ke status sebelumnya atau dihentikan.
+                                        </p>
+                                    )}
+                                </div>
+
+                                {formState.status === "failed" && formState.originalStatus !== "failed" && (
+                                    <div className="col-span-2 grid gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                                        <Alert variant="destructive" className="border-0 bg-transparent p-0">
+                                            <AlertCircle className="h-4 w-4" />
+                                            <AlertTitle>Hentikan tugas akhir</AlertTitle>
+                                            <AlertDescription>
+                                                Semua pembimbing aktif akan dilepas dan sesi bimbingan yang masih terbuka dibatalkan. Status Gagal tidak dapat diubah lagi.
+                                            </AlertDescription>
+                                        </Alert>
+                                        <div className="grid gap-2">
+                                            <Label>Alasan penghentian *</Label>
                                             <Select
-                                                value={formState.rating}
-                                                onValueChange={(v) => setFormState(prev => ({ ...prev, rating: v }))}
+                                                value={formState.terminationReason}
+                                                onValueChange={(v) => setFormState(prev => ({ ...prev, terminationReason: v as ThesisTerminationReason }))}
                                             >
-                                                <SelectTrigger><SelectValue placeholder="Pilih rating..." /></SelectTrigger>
+                                                <SelectTrigger><SelectValue placeholder="Pilih alasan..." /></SelectTrigger>
                                                 <SelectContent>
-                                                    {ratings.map(r => (
-                                                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                                                    <SelectItem value="none" disabled>-- Pilih alasan --</SelectItem>
+                                                    {terminationReasonOptions.map(r => (
+                                                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label>Status Tugas Akhir</Label>
-                                            <Select
-                                                value={formState.thesisStatusId}
-                                                onValueChange={(v) => setFormState(prev => ({ ...prev, thesisStatusId: v }))}
-                                            >
-                                                <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
-                                                <SelectContent>
-                                                    {statusesData.map(s => (
-                                                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <Label>Catatan (opsional)</Label>
+                                            <Textarea
+                                                value={formState.terminationNote}
+                                                onChange={(e) => setFormState(prev => ({ ...prev, terminationNote: e.target.value }))}
+                                                maxLength={2000}
+                                                rows={3}
+                                            />
                                         </div>
-                                    </>
-                                )}
-
-                                <div className="grid gap-2 col-span-2">
-                                    <div className="flex items-center space-x-2 mt-2">
-                                        <Switch
-                                            id="isProposal"
-                                            checked={!!formState.isProposal}
-                                            onCheckedChange={(v) => setFormState(prev => ({ ...prev, isProposal: v }))}
-                                        />
-                                        <Label htmlFor="isProposal">Status Proposal (Aktif = Masih Proposal)</Label>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             <div className="border-t pt-4 mt-4">
@@ -471,6 +513,7 @@ export function DataMasterTaPanel() {
                                         <Select
                                             value={formState.pembimbing1}
                                             onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing1: v }))}
+                                            disabled={isClosedStatus(formState.originalStatus)}
                                         >
                                             <SelectTrigger><SelectValue placeholder="Pilih pembimbing 1..." /></SelectTrigger>
                                             <SelectContent>
@@ -486,6 +529,7 @@ export function DataMasterTaPanel() {
                                         <Select
                                             value={formState.pembimbing2}
                                             onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing2: v }))}
+                                            disabled={isClosedStatus(formState.originalStatus)}
                                         >
                                             <SelectTrigger><SelectValue placeholder="Pilih pembimbing 2..." /></SelectTrigger>
                                             <SelectContent>

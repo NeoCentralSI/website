@@ -33,11 +33,18 @@ import {
   Sparkles,
 } from "lucide-react";
 import { PdfViewer } from "@/components/pdf";
+import { useAuthenticatedBlobUrl } from "@/hooks/useAuthenticatedBlobUrl";
 import {
   getLecturerGuidanceDetail,
   approveSessionSummary,
+  rejectSessionSummary,
+  rescheduleGuidanceByLecturer,
+  cancelGuidanceByLecturer,
 } from "@/services/lecturerGuidance.service";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { ReasonDialog, LecturerRescheduleDialog } from "@/components/thesis/LecturerGuidanceDialogs";
+import { getGuidanceStatusLabel } from "@/lib/thesisLabels";
+import { getGuidanceStatusContext } from "@/lib/guidanceTableColumns";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
 
 export default function LecturerGuidanceSessionPage() {
@@ -80,6 +87,26 @@ export default function LecturerGuidanceSessionPage() {
     },
   });
 
+  // K19 dialogs: summary revision, lecturer reschedule, lecturer cancel
+  const [dialog, setDialog] = useState<null | "revise" | "reschedule" | "cancel">(null);
+  const refreshAfterAction = () => {
+    queryClient.invalidateQueries({ queryKey: ["lecturer-guidance-session", guidanceId] });
+    queryClient.invalidateQueries({ queryKey: ["pending-approval"] });
+    queryClient.invalidateQueries({ queryKey: ["lecturer-requests"] });
+    queryClient.invalidateQueries({ queryKey: ["lecturer-scheduled"] });
+  };
+  const runAction = async (action: () => Promise<unknown>, success: string) => {
+    try {
+      await action();
+      toast.success(success);
+      refreshAfterAction();
+      return true;
+    } catch (e) {
+      toast.error((e as Error)?.message || "Aksi gagal");
+      return false;
+    }
+  };
+
   // Breadcrumbs
   const breadcrumb = useMemo(
     () => [
@@ -92,7 +119,7 @@ export default function LecturerGuidanceSessionPage() {
 
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
-    setTitle(undefined);
+    setTitle("Sesi Bimbingan");
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   // Document preview URL
@@ -112,19 +139,19 @@ export default function LecturerGuidanceSessionPage() {
       url = getApiUrl(`/uploads/${path}`);
     }
 
-    const token = localStorage.getItem("accessToken");
-    if (token && path.includes("thesis/")) {
-      url += (url.includes("?") ? "&" : "?") + `token=${token}`;
-    }
+    // C10: no JWT in the URL; the preview is fetched with the Authorization header.
     return url;
   };
 
   const documentUrl = getDocumentUrl();
+  const documentPreview = useAuthenticatedBlobUrl(documentUrl, activeTab === "document");
 
   // Status
   const isPendingApproval = guidance?.status === "summary_pending";
   const isCompleted = guidance?.status === "completed";
-  const isAccepted = guidance?.status === "accepted";
+  // K19: legacy "rescheduled" is a scheduled session like "accepted"
+  const isAccepted = guidance?.status === "accepted" || guidance?.status === "rescheduled";
+  const statusContext = guidance ? getGuidanceStatusContext(guidance) : null;
   const hasSummary = !!guidance?.sessionSummary;
 
   // Status badge
@@ -152,7 +179,7 @@ export default function LecturerGuidanceSessionPage() {
       );
     return (
       <Badge variant="outline">
-        {guidance?.status}
+        {getGuidanceStatusLabel(guidance?.status)}
       </Badge>
     );
   };
@@ -175,7 +202,7 @@ export default function LecturerGuidanceSessionPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-base font-semibold tracking-tight sm:text-lg">Sesi Bimbingan</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Sesi Bimbingan</h1>
           </div>
         </div>
         <Card>
@@ -202,8 +229,8 @@ export default function LecturerGuidanceSessionPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-base font-semibold tracking-tight sm:text-lg">Sesi Bimbingan</h1>
-            <p className="text-xs text-muted-foreground sm:text-sm">
+            <h1 className="text-2xl font-bold tracking-tight">Sesi Bimbingan</h1>
+            <p className="text-muted-foreground">
               {toTitleCaseName(guidance.studentName || "-")}
             </p>
           </div>
@@ -274,19 +301,26 @@ export default function LecturerGuidanceSessionPage() {
                     <Calendar className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="font-medium">
-                        {guidance.approvedDateFormatted ||
-                          guidance.requestedDateFormatted ||
-                          (guidance.approvedDate
-                            ? formatDateId(guidance.approvedDate)
-                            : guidance.requestedDate
-                              ? formatDateId(guidance.requestedDate)
-                              : "-")}
+                        {formatDateTimeWib(guidance.approvedDate ?? guidance.requestedDate, { withWeekday: true })}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {isCompleted ? "Selesai" : isPendingApproval ? "Menunggu Approval" : isAccepted ? "Berjalan" : guidance?.status}
+                        {isCompleted ? "Selesai" : isPendingApproval ? "Menunggu Approval" : isAccepted ? "Berjalan" : getGuidanceStatusLabel(guidance?.status)}
                       </p>
                     </div>
                   </div>
+                  {statusContext && (
+                    <p className="mt-3 rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">{statusContext}</p>
+                  )}
+                  {isAccepted && guidanceId && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setDialog("reschedule")}>
+                        Ubah Jadwal
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-destructive" onClick={() => setDialog("cancel")}>
+                        Batalkan
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -433,10 +467,10 @@ export default function LecturerGuidanceSessionPage() {
                       )}
 
                       {/* Submission Info */}
-                      {guidance.summarySubmittedAtFormatted && (
+                      {guidance.summarySubmittedAt && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
                           <Clock className="h-3.5 w-3.5" />
-                          <span>Catatan dikirim pada: {guidance.summarySubmittedAtFormatted}</span>
+                          <span>Catatan dikirim pada: {formatDateTimeWib(guidance.summarySubmittedAt, { withWeekday: true })}</span>
                         </div>
                       )}
 
@@ -449,6 +483,13 @@ export default function LecturerGuidanceSessionPage() {
                           >
                             <ArrowLeft className="h-4 w-4 mr-2" />
                             Kembali
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setDialog("revise")}
+                            disabled={approveMutation.isPending}
+                          >
+                            Minta Perbaikan
                           </Button>
                           <Button
                             onClick={() => approveMutation.mutate()}
@@ -479,9 +520,22 @@ export default function LecturerGuidanceSessionPage() {
 
         {/* Tab: Dokumen */}
         <TabsContent value="document" className="mt-6">
-          {documentUrl ? (
+          {documentUrl && documentPreview.error ? (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>{documentPreview.error}</p>
+              </CardContent>
+            </Card>
+          ) : documentUrl && !documentPreview.blobUrl ? (
+            <Card>
+              <CardContent className="p-6">
+                <Loading size="md" text="Memuat dokumen..." />
+              </CardContent>
+            </Card>
+          ) : documentUrl && documentPreview.blobUrl ? (
             <PdfViewer
-              url={documentUrl}
+              url={documentPreview.blobUrl}
               className="min-h-150"
               showToolbar={true}
             />
@@ -489,12 +543,42 @@ export default function LecturerGuidanceSessionPage() {
             <Card>
               <CardContent className="p-6 text-center text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Tidak ada dokumen yang diunggah</p>
+                <p>Belum ada dokumen</p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
       </Tabs>
+      {guidanceId && (
+        <>
+          <ReasonDialog
+            open={dialog === "revise"}
+            onOpenChange={(o) => setDialog(o ? "revise" : null)}
+            title="Minta Perbaikan Ringkasan"
+            description="Ringkasan dikembalikan ke mahasiswa untuk diperbaiki lalu dikirim ulang."
+            label="Catatan perbaikan"
+            placeholder="Contoh: Lengkapi arahan untuk bab 3."
+            confirmText="Kirim Permintaan Perbaikan"
+            onSubmit={(notes) => runAction(() => rejectSessionSummary(guidanceId, { notes }), "Permintaan perbaikan ringkasan dikirim")}
+          />
+          <LecturerRescheduleDialog
+            open={dialog === "reschedule"}
+            onOpenChange={(o) => setDialog(o ? "reschedule" : null)}
+            currentDateText={guidance ? formatDateTimeWib(guidance.approvedDate ?? guidance.requestedDate, { withWeekday: true }) : null}
+            onSubmit={(data) => runAction(() => rescheduleGuidanceByLecturer(guidanceId, data), "Jadwal bimbingan diubah")}
+          />
+          <ReasonDialog
+            open={dialog === "cancel"}
+            onOpenChange={(o) => setDialog(o ? "cancel" : null)}
+            title="Batalkan Bimbingan"
+            description="Sesi terjadwal dibatalkan dan mahasiswa diberi tahu alasannya."
+            label="Alasan pembatalan"
+            confirmText="Batalkan Bimbingan"
+            destructive
+            onSubmit={(reason) => runAction(() => cancelGuidanceByLecturer(guidanceId, { reason }), "Bimbingan dibatalkan")}
+          />
+        </>
+      )}
     </div>
   );
 }

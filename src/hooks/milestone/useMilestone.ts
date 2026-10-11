@@ -38,10 +38,11 @@ export const milestoneKeys = {
 /**
  * Hook to fetch milestone templates
  */
-export function useTemplates(topicId?: string) {
+export function useTemplates(topicId?: string, options: milestoneService.TemplateListOptions = {}) {
+  const includeInactive = Boolean(options.includeInactive);
   return useQuery({
-    queryKey: [...milestoneKeys.templates(), { topicId }],
-    queryFn: () => milestoneService.getTemplates(topicId),
+    queryKey: [...milestoneKeys.templates(), { topicId, includeInactive }],
+    queryFn: () => milestoneService.getTemplates(topicId, { includeInactive }),
   });
 }
 
@@ -58,10 +59,11 @@ export function useTopics() {
 /**
  * Hook to fetch template topics with count
  */
-export function useTemplateTopics() {
+export function useTemplateTopics(options: milestoneService.TemplateListOptions = {}) {
+  const includeInactive = Boolean(options.includeInactive);
   return useQuery({
-    queryKey: milestoneKeys.templateTopics(),
-    queryFn: milestoneService.getTemplateTopics,
+    queryKey: [...milestoneKeys.templateTopics(), { includeInactive }],
+    queryFn: () => milestoneService.getTemplateTopics({ includeInactive }),
   });
 }
 

@@ -1,3 +1,4 @@
+import { MILESTONE_STATUS_LABELS } from "@/lib/thesisLabels";
 // Milestone Status
 export type MilestoneStatus =
   | "not_started"
@@ -58,7 +59,13 @@ export interface Milestone {
   progressPercentage: number;
   validatedBy?: string | null;
   validatedAt?: string | null;
+  /** Catatan keputusan (setujui / minta revisi) dari Pembimbing 1. */
   supervisorNotes?: string | null;
+  /** Feedback pembimbing (P1/P2), terpisah dari catatan keputusan (Paket C, C9). */
+  feedback?: string | null;
+  feedbackBy?: string | null;
+  feedbackByName?: string | null;
+  feedbackAt?: string | null;
   studentNotes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -196,33 +203,33 @@ export interface ProgressResponse {
   data: MilestoneProgress;
 }
 
-// Helper for status display
+// Helper for status display (labels: single source in lib/thesisLabels)
 export const MILESTONE_STATUS_CONFIG: Record<
   MilestoneStatus,
   { label: string; color: string; bgColor: string }
 > = {
   not_started: {
-    label: "Belum Dimulai",
+    label: MILESTONE_STATUS_LABELS.not_started,
     color: "text-gray-600",
     bgColor: "bg-gray-100",
   },
   in_progress: {
-    label: "Sedang Dikerjakan",
+    label: MILESTONE_STATUS_LABELS.in_progress,
     color: "text-blue-600",
     bgColor: "bg-blue-100",
   },
   pending_review: {
-    label: "Menunggu Review",
+    label: MILESTONE_STATUS_LABELS.pending_review,
     color: "text-amber-600",
     bgColor: "bg-amber-100",
   },
   revision_needed: {
-    label: "Perlu Revisi",
+    label: MILESTONE_STATUS_LABELS.revision_needed,
     color: "text-orange-600",
     bgColor: "bg-orange-100",
   },
   completed: {
-    label: "Selesai",
+    label: MILESTONE_STATUS_LABELS.completed,
     color: "text-green-600",
     bgColor: "bg-green-100",
   },

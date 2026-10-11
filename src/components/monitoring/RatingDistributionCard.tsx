@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { RatingDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
+import { getThesisRatingLabel } from "@/lib/thesisLabels";
 
 interface RatingDistributionCardProps {
   ratingDistribution: RatingDistribution[] | undefined;
@@ -75,7 +76,7 @@ export function RatingDistributionCard({ ratingDistribution, isLoading }: Rating
                     <span
                       className={`w-2.5 h-2.5 rounded-full ${getRatingColor(rating.value)}`}
                     />
-                    {rating.name}
+                    {getThesisRatingLabel(rating.value)}
                   </span>
                   <span className="text-muted-foreground">
                     {rating.count} ({percentage}%)

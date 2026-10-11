@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MilestoneCard } from "./MilestoneCard";
 import { MilestoneProgressCard } from "./MilestoneProgressCard";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/spinner";
 import EmptyState from "@/components/ui/empty-state";
+import Lottie from "lottie-react";
+import emptyAnimation from "@/assets/lottie/empty.json";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -64,6 +66,10 @@ export interface MilestoneListProps {
   isSupervisor?: boolean;
   onCreateNew?: () => void;
   onCreateFromTemplates?: () => void;
+  /** K14: when set, create buttons stay visible but disabled with this reason. */
+  createDisabledReason?: string | null;
+  /** K20: "Buat dari Template" only (e.g. the thesis has no topic yet). */
+  templateDisabledReason?: string | null;
   onEdit?: (milestone: Milestone) => void;
   onDelete?: (milestone: Milestone) => void;
   onStatusChange?: (milestone: Milestone, status: Exclude<MilestoneStatus, "completed">) => void;
@@ -91,6 +97,8 @@ export function MilestoneList({
   isSupervisor = false,
   onCreateNew,
   onCreateFromTemplates,
+  createDisabledReason = null,
+  templateDisabledReason = null,
   onEdit,
   onDelete,
   onStatusChange,
@@ -164,9 +172,8 @@ export function MilestoneList({
   });
 
   const enableReorder = isOwner && !!onReorder && reorderEnabled && !isReordering;
-  const startableIds = useMemo(
-    () => new Set(orderedMilestones.filter((m) => m.status === "not_started").map((m) => m.id)),
-    [orderedMilestones]
+  const startableIds = new Set(
+    orderedMilestones.filter((m) => m.status === "not_started").map((m) => m.id)
   );
 
   const handleDragStart = (milestoneId: string) => {
@@ -313,13 +320,13 @@ export function MilestoneList({
           </div>
 
           {isOwner && milestones.length === 0 && (
-            <Button onClick={onCreateFromTemplates}>
+            <Button onClick={onCreateFromTemplates} disabled={!!(createDisabledReason || templateDisabledReason)} title={(createDisabledReason || templateDisabledReason) ?? undefined}>
               <Plus className="h-4 w-4 mr-2" />
               Buat dari Template
             </Button>
           )}
           {isOwner && milestones.length > 0 && (
-            <Button onClick={onCreateNew}>
+            <Button onClick={onCreateNew} disabled={!!createDisabledReason} title={createDisabledReason ?? undefined}>
               <Plus className="h-4 w-4 mr-2" />
               Tambah Milestone
             </Button>
@@ -357,21 +364,25 @@ export function MilestoneList({
       {/* Empty state */}
       {milestones.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <LayoutGrid className="h-8 w-8 text-muted-foreground" />
-          </div>
+          {/* Same empty animation as EmptyState (which supports only one button) */}
+          <Lottie animationData={emptyAnimation} loop className="w-32 h-32" />
           <h3 className="text-lg font-semibold mb-2">Belum ada milestone</h3>
           <p className="text-muted-foreground mb-6 max-w-sm">
             Milestone membantu Anda melacak progress tugas akhir dengan lebih terstruktur.
-            Mulai dengan membuat milestone dari template atau buat manual.
+            {isOwner
+              ? " Pilih \"Buat dari Template\" untuk memasang template milestone sesuai topik tugas akhir Anda (hanya bisa saat milestone masih kosong), atau buat milestone secara manual."
+              : " Mahasiswa memasang template sesuai topik tugas akhir, atau pembimbing menambahkan milestone satu per satu."}
           </p>
+          {isOwner && templateDisabledReason && (
+            <p className="mb-4 max-w-sm text-sm text-amber-700">{templateDisabledReason}</p>
+          )}
           {isOwner && (
             <div className="flex gap-3">
-              <Button onClick={onCreateFromTemplates}>
+              <Button onClick={onCreateFromTemplates} disabled={!!(createDisabledReason || templateDisabledReason)} title={(createDisabledReason || templateDisabledReason) ?? undefined}>
                 <Plus className="h-4 w-4 mr-2" />
                 Buat dari Template
               </Button>
-              <Button variant="outline" onClick={onCreateNew}>
+              <Button variant="outline" onClick={onCreateNew} disabled={!!createDisabledReason} title={createDisabledReason ?? undefined}>
                 Buat Manual
               </Button>
             </div>
@@ -392,22 +403,28 @@ export function MilestoneList({
                 : "relative"
             }
           >
+            {/* Timeline vertical line (only in list view) */}
+            {viewMode === "list" && filteredMilestones.length > 1 && (
+              <div className="absolute left-3.25 top-4 bottom-4 w-0.5 bg-border" />
+            )}
+
             {filteredMilestones.map((milestone, index) => (
               <div key={milestone.id} className={cn(
                 "relative",
-                viewMode === "list" && "flex gap-4 items-start"
+                viewMode === "list" && "flex gap-3"
               )}>
+                {/* Timeline dot (list view only) */}
                 {viewMode === "list" && (
-                  <div className="relative flex flex-col items-center mt-1">
+                  <div className="flex flex-col items-center shrink-0 pt-3">
                     <TimelineDot status={milestone.status} />
-                    {index !== filteredMilestones.length - 1 && (
-                      <div className="absolute top-7 bottom-[-1.5rem] w-0.5 bg-border z-0" />
+                    {index < filteredMilestones.length - 1 && (
+                      <div className="flex-1" />
                     )}
                   </div>
                 )}
 
                 {/* Card content */}
-                <div className={cn("flex-1 min-w-0 mb-3", viewMode === "list" && "pb-0")}>
+                <div className={cn("flex-1 min-w-0", viewMode === "list" && "pb-3")}>
                   {showCheckboxes && (
                     <div className="absolute z-10 right-2 top-2">
                       <input

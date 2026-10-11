@@ -45,13 +45,12 @@ export default function MonitoringDashboard() {
   const { data: filterOptions } = useFilterOptions();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
-
   useEffect(() => {
-    setTitle("Monitoring Tugas Akhir");
     setBreadcrumbs([
       { label: "Tugas Akhir" },
       { label: "Monitoring" },
     ]);
+    setTitle("Monitoring Tugas Akhir");
   }, [setBreadcrumbs, setTitle]);
 
   // Check if any operation is in progress
@@ -113,10 +112,15 @@ export default function MonitoringDashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Academic Year Filter and Reload */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Monitoring Tugas Akhir</h1>
+        <p className="text-muted-foreground">Pantau progres, bimbingan, dan kesiapan mahasiswa tugas akhir</p>
+      </div>
+
+      {/* Academic Year Filter and Reload */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
           <Calendar className="h-5 w-5 text-muted-foreground" />
           <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
             <SelectTrigger className="w-50">
@@ -135,7 +139,7 @@ export default function MonitoringDashboard() {
             Menampilkan: <span className="font-medium text-foreground">{displayAcademicYear}</span>
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAny}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingAny ? "animate-spin" : ""}`} />
             Refresh
@@ -196,10 +200,7 @@ export default function MonitoringDashboard() {
           isLoading={isLoadingAny}
         />
         <SupervisorLoadCard
-          loads={data?.supervisorLoads?.lecturers}
-          definitionLabel={data?.supervisorLoads?.definitionLabel}
-          periodLabel={data?.supervisorLoads?.periodLabel}
-          uniqueThesisCount={data?.supervisorLoads?.uniqueThesisCount}
+          loads={data?.supervisorLoads}
           isLoading={isLoadingAny}
         />
         <ReadyForSeminarCard

@@ -1,12 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loading } from "@/components/ui/spinner";
-import EmptyState from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Clock, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toTitleCaseName } from "@/lib/text";
 import type { AtRiskStudent } from "@/services/monitoring.service";
+import Lottie from "lottie-react";
+import emptyAnimation from "@/assets/lottie/empty.json";
+import { getThesisStatusLabel } from "@/lib/thesisLabels";
 
 interface AtRiskStudentsCardProps {
   students: AtRiskStudent[] | undefined;
@@ -27,8 +29,16 @@ export function AtRiskStudentsCard({ students, isLoading, showViewAll = true }: 
           </CardTitle>
           <CardDescription>Tidak ada aktivitas lebih dari 4 bulan</CardDescription>
         </CardHeader>
-        <CardContent className="flex h-48 items-center justify-center">
-          <Loading text="Memuat mahasiswa berisiko..." />
+        <CardContent className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+              <Skeleton className="h-6 w-16" />
+            </div>
+          ))}
         </CardContent>
       </Card>
     );
@@ -51,7 +61,7 @@ export function AtRiskStudentsCard({ students, isLoading, showViewAll = true }: 
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => navigate("/tugas-akhir/monitoring?rating=AT_RISK")}
+              onClick={() => navigate("/monitoring/at-risk")}
             >
               Lihat Semua
               <ChevronRight className="h-4 w-4 ml-1" />
@@ -61,11 +71,14 @@ export function AtRiskStudentsCard({ students, isLoading, showViewAll = true }: 
       </CardHeader>
       <CardContent className="max-h-80 overflow-y-auto">
         {displayStudents.length === 0 ? (
-          <EmptyState
-            size="sm"
-            title="Tidak ada mahasiswa berisiko"
-            description="Semua mahasiswa memiliki aktivitas bimbingan yang memadai."
-          />
+          <div className="flex flex-col items-center justify-center py-6">
+            <Lottie 
+              animationData={emptyAnimation} 
+              loop 
+              className="w-24 h-24 opacity-70" 
+            />
+            <p className="text-sm text-muted-foreground mt-2">Tidak ada mahasiswa berisiko</p>
+          </div>
         ) : (
           <div className="space-y-3 pr-2">
             {displayStudents.map((student) => (
@@ -90,7 +103,7 @@ export function AtRiskStudentsCard({ students, isLoading, showViewAll = true }: 
                     {student.daysSinceActivity} hari
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    {student.status}
+                    {getThesisStatusLabel(student.status)}
                   </span>
                 </div>
               </div>

@@ -114,7 +114,7 @@ export function ValidationDialog({
               onChange={(e) => setNotes(e.target.value)}
               placeholder={
                 isValid
-                  ? "Tambahkan catatan atau feedback (opsional)..."
+                  ? "Tambahkan catatan persetujuan (opsional)..."
                   : "Jelaskan apa yang perlu diperbaiki..."
               }
               rows={4}

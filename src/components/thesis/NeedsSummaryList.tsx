@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar, User, Edit3, AlertCircle, Target, ArrowRight } from "lucide-react";
 import { getGuidancesNeedingSummary, type GuidanceNeedingSummary } from "@/services/studentGuidance.service";
 import { toTitleCaseName } from "@/lib/text";
+import { formatDateTimeWib } from "@/lib/text";
 
 export default function NeedsSummaryList() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function NeedsSummaryList() {
     return null;
   }
 
-  const guidances = data || [];
+  const guidances = data?.guidances || [];
 
   if (guidances.length === 0) {
     return null; // Don't show anything if no pending summaries
@@ -52,7 +53,7 @@ export default function NeedsSummaryList() {
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-4 w-4 text-amber-600" />
                         <span className="font-medium text-sm text-foreground">
-                          {guidance.approvedDateFormatted || "-"}
+                          {formatDateTimeWib(guidance.approvedDate)}
                         </span>
                       </div>
                       {guidance.duration && (

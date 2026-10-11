@@ -14,6 +14,8 @@ import {
   updateStudentGuidanceNotes,
 } from "@/services/studentGuidance.service";
 import { toast } from "sonner";
+import { getGuidanceStatusLabel } from '@/lib/thesisLabels';
+import { formatDateTimeWib } from '@/lib/text';
 
 type Props = {
   guidanceId: string | null;
@@ -124,11 +126,11 @@ export default function GuidanceDialog({ guidanceId, open, onOpenChange, onUpdat
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Status</div>
-                <div className="font-medium capitalize">{guidance.status}</div>
+                <div className="font-medium">{getGuidanceStatusLabel(guidance.status)}</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Terjadwal</div>
-                <div className="font-medium text-sm">{guidance.approvedDateFormatted || guidance.requestedDateFormatted || (guidance.requestedDate ? new Date(guidance.requestedDate).toLocaleString() : '-')}</div>
+                <div className="font-medium text-sm">{formatDateTimeWib(guidance.approvedDate ?? guidance.requestedDate, { withWeekday: true })}</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Lokasi</div>

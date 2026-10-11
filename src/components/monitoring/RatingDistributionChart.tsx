@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, Legend } from "recharts";
 import type { RatingDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
+import { getThesisRatingLabel } from "@/lib/thesisLabels";
 
 interface RatingDistributionChartProps {
   ratingDistribution: RatingDistribution[] | undefined;
@@ -41,7 +42,8 @@ export function RatingDistributionChart({ ratingDistribution, isLoading }: Ratin
     );
   }
 
-  const data = (ratingDistribution ?? []).filter((rating) => rating.count > 0);
+  // Label from the enum value (single source: lib/thesisLabels).
+  const data = (ratingDistribution ?? []).map((r) => ({ ...r, name: getThesisRatingLabel(r.value) }));
   const total = data.reduce((sum, r) => sum + r.count, 0);
 
   const chartConfig: ChartConfig = {};
@@ -78,9 +80,7 @@ export function RatingDistributionChart({ ratingDistribution, isLoading }: Ratin
                 outerRadius={80}
                 innerRadius={40}
                 paddingAngle={2}
-                label={data.length > 1
-                  ? ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`
-                  : false}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                 labelLine={false}
                 fontSize={11}
               >

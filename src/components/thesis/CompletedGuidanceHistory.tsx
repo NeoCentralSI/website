@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,6 +12,7 @@ import GuidanceExportDialog from "./GuidanceExportDialog";
 import BatchExportDialog from "./BatchExportDialog";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { RefreshButton } from "@/components/ui/refresh-button";
+import { formatDateTimeWib } from "@/lib/text";
 
 export default function CompletedGuidanceHistory() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -23,7 +24,7 @@ export default function CompletedGuidanceHistory() {
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["completed-history"],
-    queryFn: () => getCompletedGuidanceHistory(),
+    queryFn: getCompletedGuidanceHistory,
   });
 
   const guidances = useMemo(() => data?.guidances || [], [data]);
@@ -37,7 +38,7 @@ export default function CompletedGuidanceHistory() {
       (g.sessionSummary?.toLowerCase().includes(query)) ||
       (g.actionItems?.toLowerCase().includes(query)) ||
       (g.milestoneName?.toLowerCase().includes(query)) ||
-      (g.completedAtFormatted?.toLowerCase().includes(query))
+      formatDateTimeWib(g.completedAt ?? g.approvedDate).toLowerCase().includes(query)
     );
   }, [guidances, searchQuery]);
 
@@ -47,7 +48,7 @@ export default function CompletedGuidanceHistory() {
     return filteredGuidances.slice(start, start + pageSize);
   }, [filteredGuidances, page, pageSize]);
 
-  const toggleSelect = useCallback((id: string) => {
+  const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
@@ -57,15 +58,15 @@ export default function CompletedGuidanceHistory() {
       }
       return newSet;
     });
-  }, []);
+  };
 
-  const toggleSelectAll = useCallback(() => {
+  const toggleSelectAll = () => {
     if (selectedIds.size === paginatedGuidances.length) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(paginatedGuidances.map((g) => g.id)));
     }
-  }, [paginatedGuidances, selectedIds.size]);
+  };
 
   const isAllSelected = paginatedGuidances.length > 0 && selectedIds.size === paginatedGuidances.length;
   const isSomeSelected = selectedIds.size > 0;
@@ -99,7 +100,7 @@ export default function CompletedGuidanceHistory() {
       header: "Tanggal",
       render: (row) => (
         <span className="text-sm font-medium">
-          {row.completedAtFormatted || row.approvedDateFormatted || "-"}
+          {formatDateTimeWib(row.completedAt ?? row.approvedDate)}
         </span>
       ),
     },
@@ -138,7 +139,7 @@ export default function CompletedGuidanceHistory() {
         </Button>
       ),
     },
-  ], [selectedIds, isAllSelected, toggleSelect, toggleSelectAll]);
+  ], [selectedIds, isAllSelected]);
 
   return (
     <>

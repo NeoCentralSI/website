@@ -3,6 +3,7 @@ import { useLocation, useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { TabsNav, type TabItem } from "@/components/ui/tabs-nav";
 import { TopicManagementPanel } from "@/components/kelola/TopicManagementPanel";
+import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
 import { DataMasterTaPanel } from "@/components/kelola/DataMasterTaPanel";
 import { ThesisCpmkManagementPanel as CpmkManagementPanel } from "@/components/master-data/thesis-cpmk/ThesisCpmkManagementPanel";
 import { SeminarRubricManagementPanel as RubricSeminarManagementPanel } from '@/components/master-data/seminar-rubric/SeminarRubricManagementPanel';
@@ -14,6 +15,8 @@ import { useRole } from "@/hooks/shared";
 /** Master TA penuh (seminar/sidang). CPMK+rubrik Metopen ada di /kelola/metopen/cpmk-rubrik. */
 const TAB_ITEMS: TabItem[] = [
   { label: "Topik", to: "/kelola/tugas-akhir/topik" },
+  // Guidance revival: template milestone TA (baseline "Kelola Milestone")
+  { label: "Milestone", to: "/kelola/tugas-akhir/milestone" },
   { label: "Data Master Tugas Akhir", to: "/kelola/tugas-akhir/master-data" },
   { label: "CPMK", to: "/kelola/tugas-akhir/cpmk" },
   { label: "Rubrik Seminar", to: "/kelola/tugas-akhir/rubrik-seminar" },
@@ -24,6 +27,7 @@ const TAB_ITEMS: TabItem[] = [
 
 const PLACEHOLDER_COPY: Record<string, string> = {
   "Topik": "Kelola daftar topik tugas akhir untuk klasifikasi judul dan rekomendasi dosen pembimbing.",
+  "Milestone": "Kelola template milestone tugas akhir per topik.",
   "Rubrik Seminar": "Atur rubrik penilaian untuk seminar tugas akhir di sini.",
   "Rubrik Sidang": "Atur rubrik penilaian untuk sidang tugas akhir di sini.",
   "Syarat Seminar": "Kelola persyaratan dokumen untuk pendaftaran Seminar Hasil.",
@@ -71,6 +75,10 @@ export default function KelolaTugasAkhirPage() {
       return <TopicManagementPanel />;
     }
 
+    if (activeTab.label === "Milestone") {
+      return <TemplateManagementPanel />;
+    }
+
     if (activeTab.label === "Data Master Tugas Akhir") {
       return <DataMasterTaPanel />;
     }
@@ -105,13 +113,11 @@ export default function KelolaTugasAkhirPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Kelola Tugas Akhir</h1>
-          <p className="text-muted-foreground">
-            Manajemen topik, CPMK seminar/sidang, rubrik seminar/sidang, dan data master tugas akhir
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Kelola Tugas Akhir</h1>
+        <p className="text-muted-foreground">
+          Manajemen topik, milestone, CPMK seminar/sidang, rubrik seminar/sidang, dan data master tugas akhir
+        </p>
       </div>
 
       <TabsNav tabs={TAB_ITEMS} />

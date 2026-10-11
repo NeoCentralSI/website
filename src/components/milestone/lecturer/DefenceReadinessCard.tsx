@@ -30,7 +30,8 @@ import { useDefenceReadinessManagement } from "@/hooks/milestone/useMilestone";
 import { toTitleCaseName, formatDateId } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { ROLES } from "@/lib/roles";
-import { getApiUrl } from "@/config/api";
+import { openAuthenticatedFileOrToast, downloadAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
+import { getThesisStatusLabel } from "@/lib/thesisLabels";
 
 interface DefenceReadinessCardProps {
   thesisId: string;
@@ -138,7 +139,7 @@ export function DefenceReadinessCard({
         <div className="flex items-center justify-between text-sm">
           <span>Status Thesis</span>
           <Badge variant={isEligibleStatus ? "default" : "secondary"}>
-            {thesisStatus?.name || "Unknown"}
+            {getThesisStatusLabel(thesisStatus?.name)}
           </Badge>
         </div>
 
@@ -175,14 +176,7 @@ export function DefenceReadinessCard({
                 variant="outline"
                 size="sm"
                 className="h-7 text-xs"
-                onClick={() => {
-                  const baseUrl = finalDocument.filePath.startsWith("http") 
-                    ? finalDocument.filePath 
-                    : getApiUrl(`/${finalDocument.filePath}`);
-                  const token = localStorage.getItem("accessToken");
-                  const url = token ? `${baseUrl}?token=${token}` : baseUrl;
-                  window.open(url, "_blank");
-                }}
+                onClick={() => void openAuthenticatedFileOrToast(finalDocument.filePath)}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
                 Lihat
@@ -191,17 +185,7 @@ export function DefenceReadinessCard({
                 variant="outline"
                 size="sm"
                 className="h-7 text-xs"
-                onClick={() => {
-                  const baseUrl = finalDocument.filePath.startsWith("http") 
-                    ? finalDocument.filePath 
-                    : getApiUrl(`/${finalDocument.filePath}`);
-                  const token = localStorage.getItem("accessToken");
-                  const url = token ? `${baseUrl}?token=${token}` : baseUrl;
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.download = finalDocument.fileName;
-                  link.click();
-                }}
+                onClick={() => void downloadAuthenticatedFileOrToast(finalDocument.filePath, finalDocument.fileName)}
               >
                 <Download className="h-3 w-3 mr-1" />
                 Download

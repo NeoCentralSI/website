@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { getApiUrl } from "@/config/api";
 import { apiRequest } from "@/services/auth.service";
+import { getThesisStatusLabel } from "@/lib/thesisLabels";
 
 interface DefenceRequestCardProps {
   thesisId: string;
@@ -195,7 +196,7 @@ export function DefenceRequestCard({
         {/* Status Badge */}
         <div className="flex items-center justify-between text-sm">
           <span>Status Thesis</span>
-          <Badge variant="default">{thesisStatus?.name || "Unknown"}</Badge>
+          <Badge variant="default">{getThesisStatusLabel(thesisStatus?.name)}</Badge>
         </div>
 
         {/* Fully Approved Alert */}

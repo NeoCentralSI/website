@@ -510,7 +510,7 @@ describe("useSidebarMenu", () => {
     ]);
   });
 
-  it("does not expose Metopen inbox or TA monitoring menu to GKM (P1-06)", () => {
+  it("gives GKM read-only TA monitoring without Metopen inbox or supervisor items (guidance revival)", () => {
     mockAuthUser({ id: "gkm-1", fullName: "GKM Uji" });
     mockRole({ isDosen: true, isGkm: true });
 
@@ -524,7 +524,7 @@ describe("useSidebarMenu", () => {
     const taMenu = result.current.navMain.find(
       (item) => item.title === "Tugas Akhir",
     );
-    expect(taMenu).toBeUndefined();
+    expect(taMenu?.items?.map((item) => item.url)).toEqual(["/tugas-akhir/monitoring"]);
   });
 
   it("preserves Fathur student navigation alongside staging eligibility menus", () => {

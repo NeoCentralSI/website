@@ -66,16 +66,16 @@ export function FeedbackDialog({
               required
             />
             <p className="text-xs text-muted-foreground">
-              Feedback akan terlihat oleh mahasiswa sebagai catatan pembimbing.
+              Feedback terlihat oleh mahasiswa sebagai "Feedback Pembimbing" dan tidak mengubah catatan persetujuan/revisi.
             </p>
           </div>
 
-          {/* Previous notes if any */}
-          {milestone.supervisorNotes && (
+          {/* C9: a new feedback replaces the previous one */}
+          {milestone.feedback && (
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Catatan Sebelumnya</Label>
+              <Label className="text-muted-foreground">Feedback sebelumnya (akan digantikan)</Label>
               <div className="bg-muted/50 rounded-lg p-3 text-sm whitespace-pre-wrap">
-                {milestone.supervisorNotes}
+                {milestone.feedback}
               </div>
             </div>
           )}

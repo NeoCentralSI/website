@@ -2,14 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import type { MyStudentItem } from "@/services/lecturerGuidance.service";
-import { getMyStudents, sendWarningToStudent, type WarningType } from "@/services/lecturerGuidance.service";
-import { TabsNav, LocalTabsNav } from "@/components/ui/tabs-nav";
+import { getMyStudents, sendWarningToStudent, type MyStudentsFilter, type WarningType } from "@/services/lecturerGuidance.service";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// K21: default "Aktif" (research + on_leave); finished and failed students stay reachable.
+const STUDENT_FILTERS: { value: MyStudentsFilter; label: string }[] = [
+  { value: "active", label: "Aktif" },
+  { value: "completed", label: "Selesai" },
+  { value: "failed", label: "Gagal" },
+  { value: "all", label: "Semua" },
+];
+import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { toTitleCaseName } from "@/lib/text";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toTitleCaseName, formatDateShortId, formatDateTimeWib } from "@/lib/text";
+import { STICKY_ACTION_COLUMN_CLASS } from "@/lib/guidanceCells";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -26,13 +37,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle } from "lucide-react";
+import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft } from "lucide-react";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
+import { IncomingTransfersSection } from "@/components/bimbingan/IncomingTransfersSection";
+import { TransferStudentsDialog } from "@/components/bimbingan/TransferStudentsDialog";
 import { MyStudentsCharts } from "@/components/bimbingan/MyStudentsCharts";
+import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
+import { THESIS_RATING_LABELS } from '@/lib/thesisLabels';
 
 const getDaysRemaining = (deadlineDate?: string | null) => {
   if (!deadlineDate) return null;
@@ -43,23 +58,20 @@ const getDaysRemaining = (deadlineDate?: string | null) => {
   return diffDays;
 };
 
-const getRatingConfig = (rating?: string, thesisStatus?: string | null) => {
-  if (thesisStatus === "Lulus" || thesisStatus === "Selesai" || thesisStatus === "Yudisium") {
-    return { variant: "outline" as const, label: "Completed", className: "border-emerald-500 text-emerald-700 bg-emerald-50 font-medium", needsWarning: false };
-  }
+const getRatingConfig = (rating?: string) => {
   switch (rating) {
     case "ONGOING":
-      return { variant: "outline" as const, label: "Ongoing", className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
+      return { variant: "outline" as const, label: THESIS_RATING_LABELS.ONGOING, className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
     case "SLOW":
-      return { variant: "secondary" as const, label: "Slow", className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", needsWarning: true };
+      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.SLOW, className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", needsWarning: true };
     case "AT_RISK":
-      return { variant: "destructive" as const, label: "At Risk", className: "", needsWarning: true };
+      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.AT_RISK, className: "", needsWarning: true };
     case "FAILED":
-      return { variant: "destructive" as const, label: "Failed", className: "bg-red-500 text-white hover:bg-red-600", needsWarning: true };
+      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.FAILED, className: "bg-red-500 text-white hover:bg-red-600", needsWarning: true };
     case "CANCELLED":
-      return { variant: "secondary" as const, label: "Cancelled", className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
+      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.CANCELLED, className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
     default:
-      return { variant: "secondary" as const, label: "Unknown", className: "", needsWarning: false };
+      return { variant: "secondary" as const, label: "-", className: "", needsWarning: false };
   }
 };
 
@@ -70,23 +82,28 @@ export default function LecturerMyStudentsPage() {
 
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
-    setTitle(undefined);
+    setTitle("Mahasiswa Bimbingan");
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  // Aktif = mahasiswa bimbingan berjalan; Arsip = thesis selesai/ditutup (read-only).
-  const [scope, setScope] = useState<'active' | 'archive'>('active');
+  const queryClient = useQueryClient();
+
+  // Student selection state for transfer
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
     student: MyStudentItem | null;
   }>({ open: false, student: null });
 
+  const [studentFilter, setStudentFilter] = useState<MyStudentsFilter>("active");
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['lecturer-my-students', scope],
-    queryFn: () => getMyStudents(scope),
+    queryKey: ['lecturer-my-students', studentFilter],
+    queryFn: () => getMyStudents({ status: studentFilter }),
   });
 
   // Send warning mutation
@@ -132,6 +149,40 @@ export default function LecturerMyStudentsPage() {
 
   const columns: Column<MyStudentItem>[] = useMemo(() => [
     {
+      key: 'select',
+      header: () => {
+        const allSelected = paginatedData.length > 0 && paginatedData.every(s => selectedStudentIds.has(s.studentId));
+        return (
+          <Checkbox
+            checked={allSelected}
+            onCheckedChange={(checked) => {
+              const next = new Set(selectedStudentIds);
+              if (checked) {
+                paginatedData.forEach(s => next.add(s.studentId));
+              } else {
+                paginatedData.forEach(s => next.delete(s.studentId));
+              }
+              setSelectedStudentIds(next);
+            }}
+          />
+        );
+      },
+      render: (row) => (
+        <Checkbox
+          checked={selectedStudentIds.has(row.studentId)}
+          onCheckedChange={(checked) => {
+            const next = new Set(selectedStudentIds);
+            if (checked) {
+              next.add(row.studentId);
+            } else {
+              next.delete(row.studentId);
+            }
+            setSelectedStudentIds(next);
+          }}
+        />
+      ),
+    },
+    {
       key: 'fullName',
       header: 'Mahasiswa',
       render: (row) => (
@@ -146,10 +197,10 @@ export default function LecturerMyStudentsPage() {
       header: 'Judul Tugas Akhir',
       render: (row) => (
         <div className="space-y-1">
-          <div className="max-w-62.5 truncate font-medium" title={row.thesisTitle ?? undefined}>
+          <div className="max-w-[220px] whitespace-normal break-words line-clamp-2 font-medium" title={row.thesisTitle}>
             {row.thesisTitle || '-'}
           </div>
-          <Badge variant="outline" className="text-xs">{row.thesisStatus || 'Ongoing'}</Badge>
+          {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="text-xs" />}
         </div>
       ),
     },
@@ -162,7 +213,7 @@ export default function LecturerMyStudentsPage() {
         const progress = row.milestoneProgress || 0;
 
         return (
-          <div className="space-y-1.5 min-w-35">
+          <div className="space-y-1.5 min-w-24">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1 text-muted-foreground">
                 <Milestone className="h-3 w-3" />
@@ -172,7 +223,7 @@ export default function LecturerMyStudentsPage() {
             </div>
             <Progress value={progress} className="h-2" />
             {row.latestMilestone && (
-              <div className="text-xs text-muted-foreground truncate max-w-35" title={row.latestMilestone}>
+              <div className="text-xs text-muted-foreground truncate max-w-28" title={row.latestMilestone}>
                 {row.latestMilestone}
               </div>
             )}
@@ -189,9 +240,9 @@ export default function LecturerMyStudentsPage() {
             <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="font-medium">{row.completedGuidanceCount || 0}x</span>
           </div>
-          {row.lastGuidanceDate ? (
-            <div className="text-xs text-muted-foreground">
-              Terakhir: {row.lastGuidanceDate}
+          {row.lastGuidanceAt || row.lastGuidanceDate ? (
+            <div className="text-xs text-muted-foreground" title={formatDateTimeWib(row.lastGuidanceAt)}>
+              Terakhir: {row.lastGuidanceAt ? formatDateShortId(row.lastGuidanceAt) : row.lastGuidanceDate}
             </div>
           ) : (
             <div className="text-xs text-muted-foreground">Belum pernah</div>
@@ -236,7 +287,7 @@ export default function LecturerMyStudentsPage() {
       key: 'thesisRating',
       header: 'Rating',
       render: (row) => {
-        const config = getRatingConfig(row.thesisRating ?? undefined, row.thesisStatus);
+        const config = getRatingConfig(row.thesisRating);
         return (
           <div className="flex items-center gap-2">
             <Badge variant={config.variant} className={cn("whitespace-nowrap", config.className)}>
@@ -252,11 +303,14 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'actions',
       header: 'Aksi',
+      className: STICKY_ACTION_COLUMN_CLASS,
       render: (row) => {
-        const config = getRatingConfig(row.thesisRating ?? undefined);
+        const config = getRatingConfig(row.thesisRating);
+        // Only an active supervisor relation may send a warning (backend rule).
+        const canWarn = config.needsWarning && (row.supervisorStatus ?? "active") === "active";
         return (
           <div className="flex items-center gap-1">
-            {config.needsWarning && (
+            {canWarn && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -298,7 +352,13 @@ export default function LecturerMyStudentsPage() {
         );
       }
     }
-  ], [navigate]);
+  ], [navigate, selectedStudentIds, paginatedData]);
+
+  // Get selected student items
+  const selectedStudents = useMemo(() => {
+    if (!data?.students) return [];
+    return data.students.filter((s: MyStudentItem) => selectedStudentIds.has(s.studentId));
+  }, [data?.students, selectedStudentIds]);
 
   // Define tabs for reuse
   const tabs = [
@@ -308,11 +368,9 @@ export default function LecturerMyStudentsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Mahasiswa Bimbingan</h1>
-          <p className="text-xs text-muted-foreground sm:text-sm">Daftar mahasiswa yang Anda bimbing</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Mahasiswa Bimbingan</h1>
+        <p className="text-muted-foreground">Daftar mahasiswa yang Anda bimbing</p>
       </div>
 
       <TabsNav tabs={tabs} />
@@ -322,21 +380,11 @@ export default function LecturerMyStudentsPage() {
         <MyStudentsCharts students={data.students} />
       )}
 
+      {/* Incoming Transfer Requests Section */}
+      <IncomingTransfersSection />
+
       {/* Pembimbing 2 Requests Section */}
       <Supervisor2RequestsSection />
-
-      {/* Aktif vs Arsip (mahasiswa selesai) — akses read-only pasca-finalisasi */}
-      <LocalTabsNav
-        tabs={[
-          { label: 'Aktif', value: 'active' },
-          { label: 'Arsip (Selesai)', value: 'archive' },
-        ]}
-        activeTab={scope}
-        onTabChange={(v) => {
-          setScope(v as 'active' | 'archive');
-          setPage(1);
-        }}
-      />
 
       {/* Loading state - tabs tetap render, loading di content */}
       {isLoading ? (
@@ -359,13 +407,45 @@ export default function LecturerMyStudentsPage() {
             setSearchQuery(val);
             setPage(1); // Reset to page 1 on search
           }}
-          emptyText={scope === 'archive' ? "Belum ada mahasiswa di arsip" : "Tidak ada mahasiswa bimbingan"}
-          rowKey={(row) => row.studentId}
+          emptyText="Tidak ada mahasiswa bimbingan"
+          rowKey={(row) => row.thesisId ?? row.studentId}
           actions={
-            <RefreshButton
-              onClick={() => refetch()}
-              isRefreshing={isFetching && !isLoading}
-            />
+            <div className="flex items-center gap-2">
+              <Select
+                value={studentFilter}
+                onValueChange={(v) => {
+                  setStudentFilter(v as MyStudentsFilter);
+                  setPage(1);
+                  setSelectedStudentIds(new Set());
+                }}
+              >
+                <SelectTrigger className="h-9 w-32" aria-label="Filter status tugas akhir">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STUDENT_FILTERS.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedStudents.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => setTransferDialogOpen(true)}
+                >
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Transfer ({selectedStudents.length})
+                </Button>
+              )}
+              <RefreshButton
+                onClick={() => refetch()}
+                isRefreshing={isFetching && !isLoading}
+              />
+            </div>
           }
         />
       )}
@@ -390,10 +470,10 @@ export default function LecturerMyStudentsPage() {
                 <div className="flex items-center gap-2">
                   <span>Status saat ini:</span>
                   <Badge
-                    variant={getRatingConfig(warningDialog.student?.thesisRating ?? undefined).variant}
-                    className={getRatingConfig(warningDialog.student?.thesisRating ?? undefined).className}
+                    variant={getRatingConfig(warningDialog.student?.thesisRating).variant}
+                    className={getRatingConfig(warningDialog.student?.thesisRating).className}
                   >
-                    {getRatingConfig(warningDialog.student?.thesisRating ?? undefined).label}
+                    {getRatingConfig(warningDialog.student?.thesisRating).label}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -424,6 +504,17 @@ export default function LecturerMyStudentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Transfer Students Dialog */}
+      <TransferStudentsDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        selectedStudents={selectedStudents}
+        onSuccess={() => {
+          setSelectedStudentIds(new Set());
+          queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
+        }}
+      />
     </div>
   );
 }

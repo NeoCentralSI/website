@@ -16,16 +16,19 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import CustomTable from '@/components/layout/CustomTable';
-import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
+import AuthenticatedDocumentPreviewDialog from '@/components/thesis/AuthenticatedDocumentPreviewDialog';
 import RequestGuidanceDialog from '@/components/thesis/RequestGuidanceDialog';
 import { GuidanceRescheduleDialog } from '@/components/thesis/GuidanceRescheduleDialog';
 import GuidanceExportDialog from '@/components/thesis/GuidanceExportDialog';
 import BatchExportDialog from '@/components/thesis/BatchExportDialog';
 import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
 import { RequirementsNotMet } from '@/components/shared/RequirementsNotMet';
+import { ThesisActionBlockedAlert } from '@/components/thesis/ThesisActionBlockedAlert';
+import { getGuidanceActionBlockReason, getThesisStatusLabel } from '@/lib/thesisLabels';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
 import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
+import { useMilestones } from '@/hooks/milestone';
 import { Loading } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -35,21 +38,6 @@ export default function StudentGuidancePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const qc = useQueryClient();
   const navigate = useNavigate();
-
-  // P0-03 (canon §5.5): phase logbook ditentukan oleh `thesisDetail.isProposal`.
-  // - isProposal=true → fase pra-TA-04 → logbook `phase=proposal`
-  // - isProposal=false (TA-04 sudah disahkan) → fase Tugas Akhir penuh → `phase=thesis`
-  // Wajib ambil thesisDetail SEBELUM hook useStudentGuidance untuk pakai phase
-  // yang benar.
-  const { data: thesisDetail } = useQuery({
-    queryKey: ["my-thesis-detail"],
-    queryFn: getMyThesisDetail,
-  });
-  // Logbook phase: setelah promosi aktif / thesis bukan lagi fase proposal -> logbook tugas akhir penuh.
-  const guidancePhase: 'proposal' | 'thesis' =
-    thesisDetail?.proposalStatus === 'accepted' || thesisDetail?.isProposal === false
-      ? 'thesis'
-      : 'proposal';
 
   const {
     items,
@@ -72,7 +60,16 @@ export default function StudentGuidancePage() {
     refetch,
   } = useStudentGuidance();
 
-  const isThesisInactive = thesisDetail?.status === "Gagal" || thesisDetail?.status === "Dibatalkan" || thesisDetail?.status === "Selesai";
+  const { data: thesisDetail, isPending: isThesisDetailPending, isError: isThesisDetailError } = useQuery({
+    queryKey: ["my-thesis-detail"],
+    queryFn: getMyThesisDetail,
+  });
+
+  // The detail endpoint only returns a TA-phase thesis; a proposal-phase student gets 404.
+  const isNotInThesisPhase = isThesisDetailError;
+  const isThesisInactive = thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
+  // K14: guidance write actions only for status `research`; the button stays visible but disabled.
+  const actionBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status) : null;
 
   /* ADDED: Search params for Quick Actions */
   const [searchParams, setSearchParams] = useSearchParams();
@@ -89,7 +86,8 @@ export default function StudentGuidancePage() {
   // Auto-open request dialog if action=create
   useEffect(() => {
     if (searchParams.get("action") === "create") {
-      if (!hasPendingRequest) {
+      if (isThesisDetailPending) return;
+      if (!hasPendingRequest && !actionBlockReason) {
         setOpenRequest(true);
       }
       // Clear param
@@ -97,7 +95,7 @@ export default function StudentGuidancePage() {
       newParams.delete("action");
       setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams, hasPendingRequest, setOpenRequest, setSearchParams]);
+  }, [searchParams, hasPendingRequest, isThesisDetailPending, actionBlockReason, setOpenRequest, setSearchParams]);
 
   const [rescheduleGuidance, setRescheduleGuidance] = useState<{ id: string; supervisorId: string } | null>(null);
   const [cancelGuidanceId, setCancelGuidanceId] = useState<string | null>(null);
@@ -140,7 +138,8 @@ export default function StudentGuidancePage() {
     if (!cancelGuidanceId) return null;
     return (items || []).find(g => g.id === cancelGuidanceId) || null;
   }, [cancelGuidanceId, items]);
-  const isAcceptedCancel = cancelTargetGuidance?.status === 'accepted';
+  // Legacy 'rescheduled' is a scheduled session: cancelling it also requires a reason.
+  const isAcceptedCancel = cancelTargetGuidance?.status === 'accepted' || cancelTargetGuidance?.status === 'rescheduled';
 
   const supervisorsQuery = useQuery({
     queryKey: ['student-supervisors'],
@@ -149,11 +148,15 @@ export default function StudentGuidancePage() {
 
   const thesisId = supervisorsQuery.data?.thesisId ?? '';
 
+  // Fetch milestones for guidance dialog
+  const milestonesQuery = useMilestones(thesisId);
+  const milestones = milestonesQuery.data?.milestones ?? [];
+
   const breadcrumb = useMemo(() => [{ label: 'Tugas Akhir' }, { label: 'Bimbingan' }], []);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
-    setTitle(undefined);
+    setTitle('Bimbingan Tugas Akhir');
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   const columns = useMemo(() => getGuidanceTableColumns({
@@ -183,6 +186,7 @@ export default function StudentGuidancePage() {
     onExport: (guidanceId: string) => {
       setExportGuidanceId(guidanceId);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [items, supervisorFilter, setSupervisorFilter, status, setStatus, setPage, openDocumentPreview, navigate, thesisDetail?.student?.nim, thesisDetail?.student?.name, selectedIds, exportableIds]);
 
   const handleReschedule = async (data: { requestedDate: string; studentNotes: string }) => {
@@ -205,25 +209,18 @@ export default function StudentGuidancePage() {
     }
   };
 
-  // P0-03: Tampilkan phase badge agar mahasiswa tahu apakah ini logbook
-  // proposal (pra-TA-04) atau logbook tugas akhir penuh (pasca-TA-04).
-  const phaseLabel = guidancePhase === 'proposal' ? 'Logbook Proposal' : 'Logbook Tugas Akhir';
-  const phaseDescription = guidancePhase === 'proposal'
-    ? 'Sesi bimbingan untuk fase pra-TA-04 (penyusunan & revisi proposal). Tidak ada minimum jumlah sesi.'
-    : 'Sesi bimbingan untuk fase Tugas Akhir penuh (pasca-pengesahan TA-04 oleh KaDep).';
-
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-base font-semibold tracking-tight sm:text-lg">{phaseLabel}</h1>
-        <p className="text-xs text-muted-foreground sm:text-sm">{phaseDescription}</p>
+        <h1 className="text-2xl font-bold">Bimbingan Tugas Akhir</h1>
+        <p className="text-muted-foreground">Jadwal bimbingan Tugas Akhir</p>
       </div>
 
       <TabsNav
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone', end: true },
+          { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone' },
         ]}
       />
 
@@ -242,31 +239,27 @@ export default function StudentGuidancePage() {
             />
           )}
 
-          {/* P1-07 (canon §5.5): Logbook proposal HARUS terbuka sejak pembimbing resmi
-              tercatat — bukan menunggu TA-04 disetujui. Gate yang benar:
-              !thesisId (mahasiswa belum punya thesis sama sekali) ATAU
-              hasNoSupervisor (thesis ada tapi pembimbing belum tercatat).
-              isProposal=true berarti masih di fase Metopen — logbook tetap aktif
-              dengan phase=proposal. */}
-          {(!thesisId || (thesisDetail?.supervisors?.length ?? 0) === 0) ? (
+          {!thesisId || isNotInThesisPhase ? (
             <RequirementsNotMet
-              title="Pembimbing Resmi Belum Ditetapkan"
-              description="Logbook bimbingan terbuka setelah pembimbing resmi tercatat. Pastikan pengajuan TA-01/TA-02 sudah disetujui."
+              title="Syarat Mata Kuliah Belum Terpenuhi"
+              description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
               requirements={[
                 {
-                  label: "Pembimbing resmi tercatat",
+                  label: "Mengambil mata kuliah Tugas Akhir",
                   met: false,
-                  description: "Pembimbing resmi tercatat setelah TA-01 disetujui dosen atau TA-02 difinalisasi KaDep.",
+                  description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
                 },
               ]}
-              homeUrl="/metopel"
+              homeUrl="/dashboard"
             />
           ) : isThesisInactive ? (
             <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
               <h3 className="text-lg font-semibold mb-2">Tugas Akhir Tidak Aktif</h3>
-              <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{thesisDetail?.status}</strong>. Anda tidak dapat mengakses fitur bimbingan.</p>
+              <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{getThesisStatusLabel(thesisDetail?.status)}</strong>. Anda tidak dapat mengakses fitur bimbingan.</p>
             </div>
           ) : (
+            <>
+            <ThesisActionBlockedAlert reason={actionBlockReason} />
             <CustomTable
               columns={columns as any}
               data={displayItems}
@@ -318,11 +311,12 @@ export default function StudentGuidancePage() {
                   />
                   <Button
                     onClick={() => setOpenRequest(true)}
-                    disabled={hasPendingRequest}
+                    disabled={hasPendingRequest || !!actionBlockReason}
                     title={
-                      hasPendingRequest
-                        ? `Anda masih memiliki pengajuan yang belum direspon (${pendingRequestInfo?.dateStr}). Tunggu hingga dosen menyetujui atau menolak pengajuan tersebut.`
-                        : 'Ajukan bimbingan baru'
+                      actionBlockReason
+                        ?? (hasPendingRequest
+                          ? `Anda masih memiliki pengajuan yang belum direspon (${pendingRequestInfo?.dateStr}). Tunggu hingga dosen menyetujui atau menolak pengajuan tersebut.`
+                          : 'Ajukan bimbingan baru')
                     }
                   >
                     Ajukan Bimbingan
@@ -330,11 +324,12 @@ export default function StudentGuidancePage() {
                 </div>
               }
             />
+            </>
           )}
         </>
       )}
 
-      <DocumentPreviewDialog
+      <AuthenticatedDocumentPreviewDialog
         open={docOpen}
         onOpenChange={setDocOpen}
         fileName={docInfo?.fileName ?? undefined}
@@ -345,10 +340,11 @@ export default function StudentGuidancePage() {
         open={openRequest}
         onOpenChange={setOpenRequest}
         supervisors={supervisorsQuery.data?.supervisors || []}
-        phase={guidancePhase}
+        milestones={milestones}
         onSubmitted={() => {
           qc.invalidateQueries({ queryKey: ['student-guidance'] });
           qc.invalidateQueries({ queryKey: ['notification-unread'] });
+          qc.invalidateQueries({ queryKey: ['milestones'] });
         }}
       />
 
@@ -375,11 +371,12 @@ export default function StudentGuidancePage() {
             <AlertDialogDescription>
               {isAcceptedCancel
                 ? 'Bimbingan yang sudah disetujui akan dibatalkan. Silakan isi alasan pembatalan.'
-                : 'Pengajuan bimbingan akan dibatalkan dan dosen pembimbing akan diberitahu. Anda dapat mengajukan bimbingan baru setelah membatalkan pengajuan ini.'}
+                : 'Pengajuan bimbingan akan dibatalkan dan dosen pembimbing akan diberitahu. Isi alasan pembatalan; Anda dapat mengajukan bimbingan baru setelahnya.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {isAcceptedCancel && (
+          {/* K19: a reason is required for every cancellation */}
+          {(
             <div className="py-2">
               <label className="text-sm font-medium mb-1.5 block">Alasan Pembatalan <span className="text-destructive">*</span></label>
               <textarea
@@ -408,18 +405,19 @@ export default function StudentGuidancePage() {
               </AlertDialogAction>
             ) : (
               <AlertDialogAction
-                disabled={isCancelling}
+                disabled={isCancelling || !cancelReason.trim()}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={async (e) => {
                   e.preventDefault();
                   if (!cancelGuidanceId) return;
                   setIsCancelling(true);
                   try {
-                    await cancelStudentGuidance(cancelGuidanceId);
+                    await cancelStudentGuidance(cancelGuidanceId, { reason: cancelReason.trim() });
                     toast.success('Pengajuan bimbingan berhasil dibatalkan');
                     qc.invalidateQueries({ queryKey: ['student-guidance'] });
                     qc.invalidateQueries({ queryKey: ['notification-unread'] });
                     setCancelGuidanceId(null);
+                    setCancelReason('');
                   } catch (error: any) {
                     toast.error(error.message || 'Gagal membatalkan pengajuan bimbingan');
                   } finally {

@@ -39,8 +39,8 @@ import { RequestSupervisor2Dialog } from "@/components/bimbingan/RequestSupervis
 import { getPendingSupervisor2Request } from "@/services/studentGuidance.service";
 import { PendingRequestCard } from "@/components/bimbingan/PendingRequestCard";
 import { toast } from "sonner";
-import { ThesisProposalForm } from "@/components/thesis/ThesisProposalForm";
-import { PendingApprovalCard } from "@/components/thesis/PendingApprovalCard";
+import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
+import { getGuidanceActionBlockReason } from "@/lib/thesisLabels";
 import { RequirementsNotMet } from "@/components/shared/RequirementsNotMet";
 import { SeminarReadinessStatusCard } from "@/components/milestone/student/SeminarReadinessStatusCard";
 
@@ -85,7 +85,7 @@ export default function TugasAkhirOverviewPage() {
     const thesisId = supervisorsData?.thesisId || "";
     const hasThesis = !!thesisId;
 
-    const { data: thesisDetail, isLoading: isLoadingThesis } = useQuery({
+    const { data: thesisDetail, isLoading: isLoadingThesis, isError: isThesisDetailError } = useQuery({
         queryKey: ["my-thesis-detail"],
         queryFn: getMyThesisDetail,
         enabled: hasThesis,
@@ -109,11 +109,12 @@ export default function TugasAkhirOverviewPage() {
     );
 
     // Determines statuses
-    const isFailed = thesisDetail?.status === "Gagal";
-    const isCancelled = thesisDetail?.status === "Dibatalkan";
-    const isProposed = thesisDetail?.status === "Diajukan";
-    // Show dashboard only if active and NOT proposed (proposed has its own view)
-    const isThesisActive = thesisDetail?.status !== "Dibatalkan" && thesisDetail?.status !== "Gagal" && thesisDetail?.status !== "Diajukan";
+    // K15: "Dibatalkan" and "Diajukan" no longer exist; a stopped thesis is `failed`, and the
+    // detail endpoint only returns TA-phase theses (proposal-phase students get 404).
+    const isFailed = thesisDetail?.status === "failed";
+    const isThesisActive = thesisDetail?.status !== "failed";
+    // K14: the quick action stays visible but disabled with a reason unless status is `research`.
+    const guidanceBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status) : null;
 
 
 
@@ -146,29 +147,14 @@ export default function TugasAkhirOverviewPage() {
     };
 
     if (isLoadingThesis || isLoadingMilestones || isLoadingHistory) {
-        return <Loading size="lg" text="Memuat data tugas akhir..." />;
-    }
-
-    if (thesisDetail?.isProposal) {
         return (
-            <div className="flex h-full w-full items-center justify-center p-6">
-                <RequirementsNotMet
-                    title="Tugas Akhir Belum Aktif"
-                    description="Halaman Overview Tugas Akhir hanya dapat diakses setelah proposal Anda disetujui (TA-04 terbit). Saat ini Anda masih dalam tahap penyusunan proposal."
-                    requirements={[
-                        {
-                            label: "Status Fase: Tugas Akhir Aktif",
-                            met: false,
-                            description: "Saat ini Anda masih tercatat di fase Proposal."
-                        }
-                    ]}
-                    homeUrl="/tugas-akhir/bimbingan/student"
-                />
+            <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+                <Loading size="lg" text="Memuat data tugas akhir..." />
             </div>
         );
     }
 
-    if ((!hasThesis || thesisDetail?.isProposal) && (!historyData?.theses || historyData.theses.length === 0)) {
+    if ((!hasThesis || isThesisDetailError) && (!historyData?.theses || historyData.theses.length === 0)) {
         return (
             <RequirementsNotMet
                 title="Syarat Mata Kuliah Belum Terpenuhi"
@@ -186,7 +172,12 @@ export default function TugasAkhirOverviewPage() {
     }
 
     return (
-        <div className="flex flex-1 flex-col p-6 w-full">
+        <div className="p-6 space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold">Tugas Akhir</h1>
+                <p className="text-muted-foreground">Status terkini dan riwayat tugas akhir Anda</p>
+            </div>
+
             <Tabs defaultValue={hasThesis ? "overview" : "history"} className="space-y-6 w-full">
                 <TabsList>
                     <TabsTrigger value="overview" disabled={!isThesisActive && !hasThesis}>Status Terkini</TabsTrigger>
@@ -195,11 +186,6 @@ export default function TugasAkhirOverviewPage() {
 
                 {/* --- TAB: OVERVIEW (CURRENT THESIS) --- */}
                 <TabsContent value="overview" className="w-full space-y-6">
-                    {/* If Proposed (Diajukan) -> Show Pending Card */}
-                    {isProposed && (
-                        <PendingApprovalCard status={thesisDetail?.status || "Diajukan"} />
-                    )}
-
                     {/* If Failed (Gagal) -> Show warning message, must go to department */}
                     {isFailed && (
                         <div className="space-y-6">
@@ -239,37 +225,6 @@ export default function TugasAkhirOverviewPage() {
                         </div>
                     )}
 
-                    {/* If Cancelled (Dibatalkan) -> Show Proposal Form */}
-                    {isCancelled && (
-                        <div className="space-y-6">
-                            <Card className="w-full border-destructive/20 bg-destructive/5">
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
-                                                <AlertCircle className="h-6 w-6 text-destructive" />
-                                            </div>
-                                            <div>
-                                                <CardTitle className="text-xl text-destructive">Tugas Akhir Tidak Aktif</CardTitle>
-                                                <CardDescription>Status tugas akhir Anda saat ini: <strong>{thesisDetail?.status}</strong></CardDescription>
-                                            </div>
-                                        </div>
-                                        <Badge variant="destructive">
-                                            {thesisDetail?.status}
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground">
-                                        Tugas Akhir Anda sebelumnya telah dibatalkan.
-                                        Anda dapat mengajukan judul baru di bawah ini. Dosen pembimbing akan disalin otomatis dari penugasan sebelumnya.
-                                    </p>
-                                </CardContent>
-                            </Card>
-
-                            <ThesisProposalForm />
-                        </div>
-                    )}
 
                     {isThesisActive && (
                         <>
@@ -286,15 +241,7 @@ export default function TugasAkhirOverviewPage() {
                                                 <CardDescription>Detail status pengerjaan tugas akhir Anda</CardDescription>
                                             </div>
                                         </div>
-                                        {thesisDetail?.status && (
-                                            <Badge
-                                                variant={
-                                                    thesisDetail.status === "aktif" ? "default" : "secondary"
-                                                }
-                                            >
-                                                {thesisDetail.status.toUpperCase()}
-                                            </Badge>
-                                        )}
+                                        {thesisDetail?.status && <ThesisStatusBadge status={thesisDetail.status} />}
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
@@ -410,9 +357,9 @@ export default function TugasAkhirOverviewPage() {
 
                                         {isSeminarCompleted && thesisId && (
                                             <div className="mt-4">
-                                                <DefenceRequestCard
-                                                    thesisId={thesisId}
-                                                    className="mt-0 border-primary/20 bg-primary/5"
+                                                <DefenceRequestCard 
+                                                    thesisId={thesisId} 
+                                                    className="mt-0 border-primary/20 bg-primary/5" 
                                                 />
                                             </div>
                                         )}
@@ -421,7 +368,8 @@ export default function TugasAkhirOverviewPage() {
                             </Card>
 
                             {/* DOKUMEN TUGAS AKHIR */}
-                            {(thesisDetail?.document || thesisDetail?.proposalDocument || (thesisDetail?.uploadedFiles && thesisDetail.uploadedFiles.length > 0)) && (
+                            {/* Always shown: an empty latest-report slot reads "Belum ada dokumen" */}
+                            {thesisDetail && (
                                 <Card className="w-full">
                                     <CardHeader className="pb-4">
                                         <div className="flex items-center gap-3">
@@ -447,8 +395,7 @@ export default function TugasAkhirOverviewPage() {
                                                     <Button variant="ghost" size="icon" className="shrink-0" asChild>
                                                         <a
                                                             href={(() => {
-                                                                const path = thesisDetail.proposalDocument?.filePath;
-                                                                if (!path) return '#';
+                                                                const path = thesisDetail.proposalDocument!.filePath;
                                                                 let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
                                                                 const token = localStorage.getItem('accessToken');
                                                                 if (token && path.includes('thesis/')) url += `?token=${token}`;
@@ -464,7 +411,16 @@ export default function TugasAkhirOverviewPage() {
                                             )}
 
                                             {/* Latest Draft */}
-                                            {thesisDetail.document && (
+                                            {!thesisDetail.document?.filePath && (
+                                                <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed">
+                                                    <FileText className="h-8 w-8 text-muted-foreground shrink-0" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm text-muted-foreground italic">Belum ada dokumen</p>
+                                                        <p className="text-xs text-muted-foreground">Draft Terbaru</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {thesisDetail.document?.filePath && (
                                                 <div className="flex items-center gap-3 p-3 rounded-lg border bg-green-50/50">
                                                     <FileText className="h-8 w-8 text-green-500 shrink-0" />
                                                     <div className="min-w-0 flex-1">
@@ -474,8 +430,7 @@ export default function TugasAkhirOverviewPage() {
                                                     <Button variant="ghost" size="icon" className="shrink-0" asChild>
                                                         <a
                                                             href={(() => {
-                                                                const path = thesisDetail.document?.filePath;
-                                                                if (!path) return '#';
+                                                                const path = thesisDetail.document!.filePath;
                                                                 let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
                                                                 const token = localStorage.getItem('accessToken');
                                                                 if (token && path.includes('thesis/')) url += `?token=${token}`;
@@ -511,7 +466,6 @@ export default function TugasAkhirOverviewPage() {
                                                                 <a
                                                                     href={(() => {
                                                                         const path = file.filePath;
-                                                                        if (!path) return '#';
                                                                         let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
                                                                         const token = localStorage.getItem('accessToken');
                                                                         if (token && path.includes('thesis/')) url += `?token=${token}`;
@@ -543,12 +497,17 @@ export default function TugasAkhirOverviewPage() {
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
                                             onClick={() => navigate('/tugas-akhir/bimbingan/student?action=create')}
+                                            disabled={!!guidanceBlockReason}
+                                            title={guidanceBlockReason ?? undefined}
                                         >
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
                                                 <Plus className="h-4 w-4 text-primary" />
                                             </div>
                                             <span>Ajukan Bimbingan</span>
                                         </Button>
+                                        {guidanceBlockReason && (
+                                            <p className="text-xs text-muted-foreground">{guidanceBlockReason}</p>
+                                        )}
                                         <Button
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
@@ -699,15 +658,7 @@ export default function TugasAkhirOverviewPage() {
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
-                                            <Badge
-                                                variant={
-                                                    thesis.status === "aktif" || thesis.status === "Selesai"
-                                                        ? "default"
-                                                        : "secondary"
-                                                }
-                                            >
-                                                {thesis.status.toUpperCase()}
-                                            </Badge>
+                                            <ThesisStatusBadge status={thesis.status} />
                                             <span className="text-xs text-muted-foreground">
                                                 {formatDateId(thesis.createdAt)}
                                             </span>
@@ -756,7 +707,7 @@ export default function TugasAkhirOverviewPage() {
                                                     </span>
                                                 </span>
                                             </div>
-                                            {(thesis.status === "Gagal" || thesis.rating === "FAILED") && thesis.supervisors && thesis.supervisors.length > 0 && (
+                                            {(thesis.status === "failed" || thesis.rating === "FAILED") && thesis.supervisors && thesis.supervisors.length > 0 && (
                                                 <div className="flex items-start gap-2 text-muted-foreground md:col-span-2 mt-2 pt-2 border-t border-border/50">
                                                     <GraduationCap className="h-4 w-4 mt-0.5 shrink-0" />
                                                     <div className="flex flex-col gap-1.5 w-full">

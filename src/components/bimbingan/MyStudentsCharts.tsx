@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { MyStudentItem } from "@/services/lecturerGuidance.service";
+import { getThesisRatingLabel } from "@/lib/thesisLabels";
 
 interface MyStudentsChartsProps {
   students: MyStudentItem[];
@@ -16,13 +17,6 @@ const RATING_COLORS: Record<string, string> = {
   CANCELLED: "#64748b",
 };
 
-const RATING_LABELS: Record<string, string> = {
-  ONGOING: "Ongoing",
-  SLOW: "Slow",
-  AT_RISK: "At Risk",
-  FAILED: "Failed",
-  CANCELLED: "Cancelled",
-};
 
 const PROGRESS_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"];
 
@@ -36,7 +30,7 @@ export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
     });
     return Object.entries(counts).map(([key, count]) => ({
       id: key,
-      name: RATING_LABELS[key] || key,
+      name: getThesisRatingLabel(key),
       value: key,
       count,
     }));

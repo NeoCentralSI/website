@@ -35,11 +35,9 @@ export function MonitoringSummaryCards({ summary, isLoading }: MonitoringSummary
 
   const cards = [
     {
-      title: "Mahasiswa aktif (semua fase)",
+      title: "Total Mahasiswa Aktif",
       value: summary?.totalActiveTheses ?? 0,
-      description: summary?.definitionLabel
-        ? `Pasca-proposal: ${summary.supervisorLoadThesisCount ?? summary.totalPostProposalTheses ?? 0} tesis. ${summary.periodLabel ? `Periode ${summary.periodLabel}.` : ""}`
-        : "Termasuk fase proposal. Bukan angka kartu beban pasca-proposal.",
+      description: "Mahasiswa dengan tugas akhir aktif",
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-50",

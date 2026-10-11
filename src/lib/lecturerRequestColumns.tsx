@@ -1,11 +1,12 @@
 import { Button } from '@/components/ui/button';
 import StatusBadge from '@/components/thesis/StatusBadge';
-import { EyeIcon, FileTextIcon, XCircleIcon, DownloadIcon } from 'lucide-react';
-import { toTitleCaseName, formatDateId, formatThesisDocName } from '@/lib/text';
-import { getApiUrl } from '@/config/api';
+import { EyeIcon, XCircleIcon, CalendarClockIcon } from 'lucide-react';
+import { toTitleCaseName, formatThesisDocName } from '@/lib/text';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
 import { useNavigate } from 'react-router-dom';
+import { GUIDANCE_STATUS_LABELS } from '@/lib/thesisLabels';
+import { DateTimeCell, GuidanceDocCell, STICKY_ACTION_COLUMN_CLASS, TruncatedText } from '@/lib/guidanceCells';
 
 interface GetLecturerRequestColumnsOptions {
   allRequests: GuidanceItem[];
@@ -18,22 +19,22 @@ interface GetLecturerRequestColumnsOptions {
   onOpenDetail?: (guidance: GuidanceItem) => void;
   onViewDocument?: (fileName?: string | null, filePath?: string | null) => void;
   onCancel?: (guidanceId: string) => void;
+  /** K19: move an accepted session (lecturer). */
+  onReschedule?: (guidance: GuidanceItem) => void;
 }
 
 export const getLecturerRequestColumns = (
   options: GetLecturerRequestColumnsOptions
 ): Column<GuidanceItem>[] => {
-  const { allRequests, studentFilter, setStudentFilter, statusFilter, setStatusFilter, setPage, navigate, onOpenDetail, onViewDocument, onCancel } =
+  const { allRequests, studentFilter, setStudentFilter, statusFilter, setStatusFilter, setPage, navigate, onOpenDetail, onViewDocument, onCancel, onReschedule } =
     options;
 
   return [
     {
       key: 'tanggal',
       header: 'Tanggal',
-      accessor: (r) =>
-        r.requestedDateFormatted ||
-        r.approvedDateFormatted ||
-        (r.requestedDate ? formatDateId(r.requestedDate) : '-'),
+      // C6: the effective schedule (approvedDate ?? requestedDate)
+      render: (r) => <DateTimeCell date={r.approvedDate ?? r.requestedDate} />,
     },
     {
       key: 'student',
@@ -57,7 +58,7 @@ export const getLecturerRequestColumns = (
     {
       key: 'notes',
       header: 'Catatan',
-      accessor: (r) => String((r as any)?.notes ?? '-') as any,
+      render: (r) => <TruncatedText text={(r as any)?.notes} />,
     },
     {
       key: 'doc',
@@ -65,51 +66,12 @@ export const getLecturerRequestColumns = (
       render: (r) => {
         const filePath = (r as any)?.document?.filePath as string | undefined;
         const fileName = (r as any)?.document?.fileName as string | undefined;
-        if (!filePath) return <span className="text-muted-foreground">-</span>;
-
-        const isPdf = filePath.toLowerCase().endsWith('.pdf');
-        const isDocx = filePath.toLowerCase().endsWith('.docx') || filePath.toLowerCase().endsWith('.doc');
-        const displayName = formatThesisDocName((r as any)?.studentNim, r.studentName);
-
-        if (isDocx) {
-          const downloadUrl = (() => {
-            let url = filePath.startsWith('/') ? getApiUrl(filePath) : getApiUrl(`/${filePath}`);
-            const token = localStorage.getItem('accessToken');
-            if (token && filePath.includes('thesis/')) {
-              url += (url.includes('?') ? '&' : '?') + `token=${token}`;
-            }
-            return url;
-          })();
-
-          return (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1.5 max-w-[220px] text-green-600 hover:text-green-700 hover:bg-green-50"
-              asChild
-              title={`Download ${displayName}`}
-            >
-              <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
-                <DownloadIcon className="size-4 shrink-0" />
-                <span className="truncate text-xs">{displayName}</span>
-              </a>
-            </Button>
-          );
-        }
-
-        if (!isPdf) return <span className="text-muted-foreground">-</span>;
-
         return (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1.5 max-w-[220px]"
-            onClick={() => onViewDocument?.(fileName, filePath)}
-            title={`Lihat ${displayName}`}
-          >
-            <FileTextIcon className="size-4 shrink-0" />
-            <span className="truncate text-xs">{displayName}</span>
-          </Button>
+          <GuidanceDocCell
+            filePath={filePath}
+            displayName={formatThesisDocName((r as any)?.studentNim, r.studentName)}
+            onViewPdf={() => onViewDocument?.(fileName, filePath as string)}
+          />
         );
       },
     },
@@ -126,22 +88,30 @@ export const getLecturerRequestColumns = (
         },
         options: [
           { label: 'Semua', value: '' },
-          { label: 'Menunggu', value: 'requested' },
-          { label: 'Diterima', value: 'accepted' },
-          { label: 'Ditolak', value: 'rejected' },
-          { label: 'Selesai', value: 'completed' },
-          { label: 'Dibatalkan', value: 'cancelled' },
-          { label: 'Menunggu Catatan', value: 'summary_pending' },
+          ...(['requested', 'accepted', 'summary_pending', 'summary_rejected', 'completed', 'rejected', 'cancelled'] as const).map((value) => ({ label: GUIDANCE_STATUS_LABELS[value], value })),
         ],
       },
     },
     {
       key: 'action',
       header: 'Aksi',
+      className: STICKY_ACTION_COLUMN_CLASS,
       render: (r) => {
-        const isCancellable = r.status === 'accepted';
+        // K19: legacy 'rescheduled' is a scheduled session like 'accepted'.
+        const isCancellable = r.status === 'accepted' || r.status === 'rescheduled';
         return (
           <div className="flex items-center gap-1">
+            {isCancellable && onReschedule && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onReschedule(r)}
+                title="Ubah jadwal"
+              >
+                <CalendarClockIcon className="size-4" />
+              </Button>
+            )}
             {isCancellable && onCancel && (
               <Button
                 variant="ghost"

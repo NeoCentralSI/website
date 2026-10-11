@@ -8,6 +8,7 @@ import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { Spinner } from '@/components/ui/spinner';
 import type { SupervisorBusySlot } from '@/services/studentGuidance.service';
 import { getSupervisorAvailability } from '@/services/studentGuidance.service';
+import { formatDateTimeWib } from '@/lib/text';
 
 interface GuidanceRescheduleDialogProps {
   onReschedule: (data: { requestedDate: string; studentNotes: string }) => Promise<boolean>;
@@ -88,7 +89,7 @@ export function GuidanceRescheduleDialog({ onReschedule, trigger, open: external
         });
         if (conflict) {
           const label = conflict.studentName ? `dengan ${conflict.studentName}` : 'dengan mahasiswa lain';
-          const range = `${new Date(conflict.start).toLocaleString('id-ID')} - ${new Date(conflict.end).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+          const range = `${formatDateTimeWib(conflict.start)} s.d. ${formatDateTimeWib(conflict.end)}`;
           setSlotConflict(`Jadwal bentrok ${label} pada ${range}. Pilih waktu lain.`);
         } else {
           setSlotConflict(null);

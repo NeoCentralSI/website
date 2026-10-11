@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import { FileTextIcon, ExternalLink } from "lucide-react";
 import StatusBadge from "@/components/thesis/StatusBadge";
 import type { GuidanceItem } from "@/services/lecturerGuidance.service";
 import { approveGuidanceRequest, rejectGuidanceRequest } from "@/services/lecturerGuidance.service";
 import { toast } from "sonner";
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 
 type Props = {
   guidance: GuidanceItem | null;
@@ -30,6 +31,9 @@ export default function GuidanceRequestDetailDialog({
   const [mode, setMode] = useState<'view' | 'approve' | 'reject'>('view');
   const [approveFeedback, setApproveFeedback] = useState("");
   const [rejectFeedback, setRejectFeedback] = useState("");
+  // K19: optional alternative time suggested with a rejection
+  const [rejectSuggested, setRejectSuggested] = useState<Date | null>(null);
+  const suggestedInPast = !!rejectSuggested && rejectSuggested.getTime() <= Date.now();
   const [submitting, setSubmitting] = useState(false);
 
   if (!guidance) return null;
@@ -65,15 +69,21 @@ export default function GuidanceRequestDetailDialog({
       toast.error("Mohon isi alasan penolakan");
       return;
     }
+    if (suggestedInPast) {
+      toast.error("Usulan waktu harus di masa depan");
+      return;
+    }
 
     setSubmitting(true);
     try {
       await rejectGuidanceRequest(guidance.id, {
-        rejectionReason: rejectFeedback,
+        reason: rejectFeedback.trim(),
+        suggestedDate: rejectSuggested ? rejectSuggested.toISOString() : null,
       });
       toast.success("Bimbingan ditolak");
       setMode('view');
       setRejectFeedback("");
+      setRejectSuggested(null);
       onUpdated?.();
       onOpenChange(false);
     } catch (e: any) {
@@ -87,6 +97,7 @@ export default function GuidanceRequestDetailDialog({
     setMode('view');
     setApproveFeedback("");
     setRejectFeedback("");
+    setRejectSuggested(null);
     onOpenChange(false);
   };
 
@@ -124,16 +135,13 @@ export default function GuidanceRequestDetailDialog({
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Jadwal Diminta</Label>
                   <div className="font-medium">
-                    {(guidance as any)?.requestedDateFormatted ||
-                      (guidance as any)?.approvedDateFormatted ||
-                      (guidance.requestedDate ? formatDateId(guidance.requestedDate) : '-')}
+                    {formatDateTimeWib(guidance.approvedDate ?? guidance.requestedDate, { withWeekday: true })}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Tanggal Pengajuan</Label>
                   <div className="text-sm">
-                    {(guidance as any)?.createdAtFormatted ||
-                      ((guidance as any)?.createdAt ? formatDateId((guidance as any).createdAt as string) : '-')}
+                    {formatDateTimeWib((guidance as any)?.createdAt as string | undefined)}
                   </div>
                 </div>
               </div>
@@ -162,9 +170,9 @@ export default function GuidanceRequestDetailDialog({
                 )}
 
               {/* Dokumen - Compact */}
-              {fileName && fileName !== "null" && fileName !== "" && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">File Thesis</Label>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">File Thesis</Label>
+                {fileName && fileName !== "null" && fileName !== "" ? (
                   <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
                     <FileTextIcon className="size-4 text-muted-foreground shrink-0" />
                     <span className="flex-1 text-sm truncate">{fileName}</span>
@@ -179,8 +187,10 @@ export default function GuidanceRequestDetailDialog({
                       </Button>
                     )}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Belum ada dokumen</p>
+                )}
+              </div>
 
               {/* Links - Compact */}
               {(guidance as any)?.documentUrl && 
@@ -248,6 +258,15 @@ export default function GuidanceRequestDetailDialog({
                   Mahasiswa akan menerima notifikasi dengan alasan ini
                 </p>
               </div>
+
+              <div className="space-y-2">
+                <Label>Usulan waktu lain (opsional)</Label>
+                <DateTimePicker value={rejectSuggested} onChange={setRejectSuggested} min={new Date()} />
+                {suggestedInPast && <p className="text-xs text-destructive">Usulan waktu harus di masa depan.</p>}
+                <p className="text-xs text-muted-foreground">
+                  Mahasiswa melihat usulan ini lalu mengajukan bimbingan baru.
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -300,7 +319,7 @@ export default function GuidanceRequestDetailDialog({
               <Button
                 variant="destructive"
                 onClick={handleReject}
-                disabled={submitting || !rejectFeedback.trim()}
+                disabled={submitting || !rejectFeedback.trim() || suggestedInPast}
               >
                 {submitting ? (
                   <>

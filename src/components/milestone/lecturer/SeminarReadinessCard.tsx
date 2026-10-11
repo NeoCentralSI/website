@@ -244,7 +244,7 @@ export function SeminarReadinessCard({
                 {!readinessStatus.guidanceProgress?.isComplete && (
                   <p className="text-sm text-muted-foreground flex items-center">
                     <AlertCircle className="h-4 w-4 mr-2 text-yellow-500" />
-                    Minimal 8 sesi bimbingan harus berstatus 'completed'.
+                    Minimal 8 sesi bimbingan harus berstatus Selesai.
                   </p>
                 )}
               </div>

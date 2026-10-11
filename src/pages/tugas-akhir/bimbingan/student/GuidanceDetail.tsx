@@ -10,6 +10,8 @@ import { GuidanceRescheduleDialog } from '@/components/thesis/GuidanceReschedule
 import { GuidanceCancelDialog } from '@/components/thesis/GuidanceCancelDialog';
 import { GuidanceNotesDialog } from '@/components/thesis/GuidanceNotesDialog';
 import { toTitleCaseName } from '@/lib/text';
+import { getGuidanceStatusLabel } from '@/lib/thesisLabels';
+import { formatDateTimeWib } from '@/lib/text';
 
 export default function GuidanceDetailPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -29,7 +31,7 @@ export default function GuidanceDetailPage() {
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4">
       <Button variant="secondary" onClick={() => navigate(-1)} className="mb-4">
         Kembali
       </Button>
@@ -48,14 +50,12 @@ export default function GuidanceDetailPage() {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Status</div>
-                <div className="font-medium capitalize">{guidance.status}</div>
+                <div className="font-medium">{getGuidanceStatusLabel(guidance.status)}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Terjadwal</div>
                 <div className="font-medium">
-                  {guidance.approvedDateFormatted ||
-                    guidance.requestedDateFormatted ||
-                    (guidance.requestedDate ? new Date(guidance.requestedDate).toLocaleString() : '-')}
+                  {formatDateTimeWib(guidance.approvedDate ?? guidance.requestedDate, { withWeekday: true })}
                 </div>
               </div>
               <div>

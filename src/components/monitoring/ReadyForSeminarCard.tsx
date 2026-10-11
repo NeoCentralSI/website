@@ -5,7 +5,7 @@ import EmptyState from "@/components/ui/empty-state";
 import { GraduationCap, CheckCircle2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import type { ReadyForSeminarStudent } from "@/services/monitoring.service";
 
 interface ReadyForSeminarCardProps {
@@ -91,7 +91,7 @@ export function ReadyForSeminarCard({ students, isLoading, showViewAll = true }:
                   </Badge>
                   {student.approvedAt && (
                     <span className="text-xs text-muted-foreground">
-                      {formatDateId(student.approvedAt)}
+                      {formatDateTimeWib(student.approvedAt)}
                     </span>
                   )}
                 </div>

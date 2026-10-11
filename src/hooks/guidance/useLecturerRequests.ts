@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
 import { getPendingRequests } from '@/services/lecturerGuidance.service';
-import { toTitleCaseName, formatDateId } from '@/lib/text';
+import { toTitleCaseName, formatDateTimeWib } from '@/lib/text';
 
 export const useLecturerRequests = () => {
   const queryClient = useQueryClient();
@@ -47,11 +47,7 @@ export const useLecturerRequests = () => {
       const needle = q.toLowerCase();
       arr = arr.filter((it) => {
         const name = toTitleCaseName(it.studentName || it.studentId || '').toLowerCase();
-        const when = (
-          (it as any)?.requestedDateFormatted ||
-          (it as any)?.approvedDateFormatted ||
-          (it.requestedDate ? formatDateId(it.requestedDate) : '')
-        ).toLowerCase();
+        const when = formatDateTimeWib(it.approvedDate ?? it.requestedDate).toLowerCase();
         const notes = String((it as any)?.notes ?? '').toLowerCase();
         return name.includes(needle) || when.includes(needle) || notes.includes(needle);
       });
