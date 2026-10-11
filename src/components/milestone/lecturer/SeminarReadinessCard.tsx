@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useSeminarReadinessManagement } from "@/hooks/milestone/useMilestone";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { ROLES } from "@/lib/roles";
 
@@ -226,7 +226,7 @@ export function SeminarReadinessCard({
         {/* Approved At */}
         {seminarReadiness?.approvedAt && (
           <p className="text-xs text-muted-foreground">
-            Disetujui penuh pada: {formatDateId(seminarReadiness.approvedAt)}
+            Disetujui penuh pada: {formatDateTimeWib(seminarReadiness.approvedAt)}
           </p>
         )}
 

@@ -27,7 +27,7 @@ import {
 import { CheckCircle2, XCircle, AlertCircle, FileText, Clock, Download, ExternalLink } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useDefenceReadinessManagement } from "@/hooks/milestone/useMilestone";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { ROLES } from "@/lib/roles";
 import { openAuthenticatedFileOrToast, downloadAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
@@ -169,7 +169,7 @@ export function DefenceReadinessCard({
               <p className="truncate" title={finalDocument.fileName}>
                 {finalDocument.fileName}
               </p>
-              <p>Diupload: {formatDateId(finalDocument.uploadedAt)}</p>
+              <p>Diupload: {formatDateTimeWib(finalDocument.uploadedAt)}</p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -212,7 +212,7 @@ export function DefenceReadinessCard({
 
         {hasRequestedDefence && defenceReadiness?.requestedAt && (
           <p className="text-xs text-muted-foreground pl-6">
-            Diajukan: {formatDateId(defenceReadiness.requestedAt)}
+            Diajukan: {formatDateTimeWib(defenceReadiness.requestedAt)}
           </p>
         )}
 
@@ -279,7 +279,7 @@ export function DefenceReadinessCard({
         {/* Approved At */}
         {defenceReadiness?.approvedAt && (
           <p className="text-xs text-muted-foreground">
-            Disetujui penuh pada: {formatDateId(defenceReadiness.approvedAt)}
+            Disetujui penuh pada: {formatDateTimeWib(defenceReadiness.approvedAt)}
           </p>
         )}
 
