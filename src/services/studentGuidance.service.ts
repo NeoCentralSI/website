@@ -1,6 +1,6 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, ThesisTerminationReason } from '@/lib/thesisLabels';
 
 // K19: "rescheduled" is legacy data (treated as "accepted"); "summary_rejected" = summary needs a revision.
 export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending" | "rescheduled" | "summary_rejected";
@@ -473,6 +473,8 @@ export interface MyThesisDetail {
   }>;
   stats: {
     totalGuidances: number;
+    /** Sessions with status Selesai (research phase). */
+    completedGuidances?: number;
     totalMilestones: number;
     completedMilestones: number;
     inProgressMilestones?: number;
@@ -574,10 +576,17 @@ export interface ThesisHistoryItem {
   topic: string;
   academicYear: string;
   createdAt: string;
+  /** Why and when a stopped thesis ended (status `failed`); null otherwise. */
+  terminationReason?: ThesisTerminationReason | null;
+  terminationNote?: string | null;
+  terminatedAt?: string | null;
+  statusChangedAt?: string | null;
   stats: {
     guidances: number;
-    completedMilestones: number;
+    /** A count, or "0/n" for a stopped thesis. */
+    completedMilestones: number | string;
   };
+  supervisors?: Array<{ id: string; name: string | null; role: string | null }>;
 }
 
 export const getStudentThesisHistory = async (): Promise<{ success: boolean; theses: ThesisHistoryItem[] }> => {

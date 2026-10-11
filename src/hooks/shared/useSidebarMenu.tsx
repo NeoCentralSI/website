@@ -185,20 +185,18 @@ export const useSidebarMenu = () => {
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
-        ...(canAccessTugasAkhir
-          ? [
-              {
-                title: "Tugas Akhir",
-                url: "#",
-                icon: FileText,
-                items: [
-                  { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                  { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-                  { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-                ],
-              } as SidebarNavItem,
-            ]
-          : []),
+        // Tugas Akhir is always shown; without a thesis its pages show an empty state.
+        {
+          title: "Tugas Akhir",
+          url: "#",
+          icon: FileText,
+          items: [
+            { title: "Overview", url: "/tugas-akhir" },
+            { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+            { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+            { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+          ],
+        },
         // Yudisium — leaf item (no children)
         {
           title: "Yudisium",

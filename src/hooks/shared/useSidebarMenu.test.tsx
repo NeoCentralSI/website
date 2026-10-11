@@ -100,7 +100,7 @@ describe("useSidebarMenu", () => {
     } as unknown as ReturnType<typeof useAdvisorAccessState>);
   });
 
-  it("hides Tugas Akhir menu when student is Metopen-eligible but not enrolled in MK Tugas Akhir", () => {
+  it("always shows the Tugas Akhir menu, Overview first, even without MK Tugas Akhir", () => {
     vi.mocked(useStudentEligibility).mockReturnValue({
       isLoading: false,
       sks: 100,
@@ -123,7 +123,8 @@ describe("useSidebarMenu", () => {
     const { result } = renderHook(() => useSidebarMenu());
 
     const taMenu = result.current.navMain.find((item) => item.title === "Tugas Akhir");
-    expect(taMenu).toBeUndefined();
+    expect(taMenu?.items?.map((item) => item.title)).toEqual(["Overview", "Bimbingan", "Seminar Hasil", "Sidang TA"]);
+    expect(taMenu?.items?.[0].url).toBe("/tugas-akhir");
 
     const metopenMenu = result.current.navMain.find((item) => item.title === "Metode Penelitian");
     expect(metopenMenu).toBeDefined();

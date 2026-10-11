@@ -12,7 +12,6 @@ import InternshipLetterVerification from './pages/kerja-praktik/public/Internshi
 import OfficialDocumentVerificationPage from './pages/public/OfficialDocumentVerification'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
-import TugasAkhirGuard from './pages/guards/TugasAkhirGuard'
 import MetopelGuard from './pages/guards/MetopelGuard'
 import RoleGuard from './pages/guards/RoleGuard'
 import { ROLES, LECTURER_ROLES } from './lib/roles'
@@ -192,14 +191,12 @@ function App() {
               </Route>
 
               <Route element={<ProtectedLayout />}>
-                <Route element={<TugasAkhirGuard />}>
-                  {/* Thesis Seminar list pages — explicit paths take priority over /:id */}
-                  <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntryPage />} />
-                  <Route path="/tugas-akhir/sidang" element={<ThesisDefenceEntryPage />} />
-                  {/* Unified detail route for all roles */}
-                  <Route path="/tugas-akhir/seminar-hasil/:id" element={<ThesisSeminarDetailPage />} />
-                  <Route path="/tugas-akhir/sidang/:id" element={<ThesisDefenceDetailPage />} />
-                </Route>
+                {/* Thesis Seminar list pages — explicit paths take priority over /:id */}
+                <Route path="/tugas-akhir/seminar-hasil" element={<ThesisSeminarEntryPage />} />
+                <Route path="/tugas-akhir/sidang" element={<ThesisDefenceEntryPage />} />
+                {/* Unified detail route for all roles */}
+                <Route path="/tugas-akhir/seminar-hasil/:id" element={<ThesisSeminarDetailPage />} />
+                <Route path="/tugas-akhir/sidang/:id" element={<ThesisDefenceDetailPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profil />} />
 
@@ -243,8 +240,10 @@ function App() {
                     <Route path="/metopel/arsip" element={<MetopelOverviewArsip />} />
                   </Route>
 
-                  <Route path="tugas-akhir" element={<TugasAkhirGuard />}>
+                  {/* The student Tugas Akhir pages are always reachable; without a thesis they show an empty state. */}
+                  <Route path="tugas-akhir">
                     <Route index element={<TugasAkhirOverviewPage />} />
+                    <Route path="riwayat" element={<TugasAkhirOverviewPage />} />
                     {/* Removed bimbingan/ route to allow BimbinganEntry to handle role-based redirection */}
                     <Route path="bimbingan/student" element={<StudentGuidance />} />
                     <Route path="bimbingan/student/milestone" element={<StudentMilestonePage />} />
