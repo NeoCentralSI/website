@@ -704,7 +704,6 @@ export interface StudentDetail {
     status: string | null;
     topic: string | null;
     startDate: string | null;
-    deadlineDate: string | null;
     supervisors: Array<{
       id: string;
       role: string;
@@ -867,7 +866,6 @@ export interface KadepQuickActionsStats {
 export interface FailedThesis {
   id: string;
   title: string;
-  rating: string;
   createdAt: string;
   student: {
     id: string;

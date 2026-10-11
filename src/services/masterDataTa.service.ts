@@ -1,6 +1,6 @@
 import { getApiUrl } from '@/config/api';
 import { apiRequest } from './auth.service';
-import type { ThesisLifecycleStatus, ThesisRating, ThesisTerminationReason } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, ThesisTerminationReason } from '@/lib/thesisLabels';
 
 export interface SupervisorData {
     lecturerId: string;
@@ -12,7 +12,9 @@ export interface SupervisorData {
 export interface MasterDataThesis {
     id: string;
     title: string | null;
-    rating: ThesisRating | null;
+    /** Nilai turunan, baca-saja; null bila TA tidak berstatus Penelitian. */
+    activityLevel: ThesisActivityLevel | null;
+    supervisionClock?: SupervisionClock | null;
     startDate: string | null;
     status: ThesisLifecycleStatus;
     statusBeforeLeave?: ThesisLifecycleStatus | null;

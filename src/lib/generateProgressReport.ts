@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { ProgressReportData } from "@/services/monitoring.service";
 import logoUrl from "@/assets/images/neocentral-logo.png";
-import { getThesisRatingLabel } from "@/lib/thesisLabels";
+import { getThesisActivityLabel } from "@/lib/thesisLabels";
 
 // Extend jsPDF type for autoTable
 declare module "jspdf" {
@@ -24,12 +24,11 @@ const COLORS = {
   border: "#e5e7eb",
 };
 
-// Rating color mapping
-const RATING_COLORS: Record<string, string> = {
-  ONGOING: COLORS.success,
-  SLOW: COLORS.warning,
-  AT_RISK: COLORS.danger,
-  FAILED: COLORS.danger,
+// Activity level color mapping
+const ACTIVITY_COLORS: Record<string, string> = {
+  active: COLORS.success,
+  slow: COLORS.warning,
+  at_risk: COLORS.danger,
 };
 
 
@@ -157,7 +156,7 @@ export async function generateProgressReportPDF(data: ProgressReportData): Promi
       thesis.nim,
       thesis.name,
       pembimbingText,
-      getThesisRatingLabel(thesis.rating),
+      getThesisActivityLabel(thesis.activityLevel),
       thesis.guidanceCompleted.toString(),
       `${thesis.progressPercent}%`,
     ];
@@ -171,7 +170,7 @@ export async function generateProgressReportPDF(data: ProgressReportData): Promi
         "NIM",
         "Nama Mahasiswa",
         "Pembimbing",
-        "Rating",
+        "Aktivitas",
         "Jml. Bimbingan",
         "Progress Milestone",
       ],
@@ -197,16 +196,16 @@ export async function generateProgressReportPDF(data: ProgressReportData): Promi
       1: { cellWidth: 25 }, // NIM
       2: { cellWidth: 38 }, // Nama
       3: { cellWidth: 45 }, // Pembimbing
-      4: { cellWidth: 18, halign: "center" }, // Rating
+      4: { cellWidth: 18, halign: "center" }, // Aktivitas
       5: { cellWidth: 22, halign: "center" }, // Jml Bimbingan
       6: { cellWidth: 25, halign: "center" }, // Progress
     },
     didParseCell: (hookData) => {
-      // Color rating column (index 4)
+      // Color activity column (index 4)
       if (hookData.section === "body" && hookData.column.index === 4) {
-        const rating = data.theses[hookData.row.index]?.rating;
-        if (rating) {
-          hookData.cell.styles.textColor = RATING_COLORS[rating] || COLORS.secondary;
+        const level = data.theses[hookData.row.index]?.activityLevel;
+        if (level) {
+          hookData.cell.styles.textColor = ACTIVITY_COLORS[level] || COLORS.secondary;
           hookData.cell.styles.fontStyle = "bold";
         }
       }

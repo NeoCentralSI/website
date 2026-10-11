@@ -21,7 +21,7 @@ import { ExportExcelDialog } from "./ExportExcelDialog";
 import { ImportMasterDataDialog } from "./ImportMasterDataDialog";
 import { Upload } from "lucide-react";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
-import { ThesisRatingBadge } from "@/components/shared/ThesisRatingBadge";
+import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
 import {
     getAllowedThesisStatusOptions,
     getTerminationReasonOptions,
@@ -38,7 +38,6 @@ interface FormState {
     thesisTopicId: string;
     academicYearId: string;
     startDate: string;
-    rating: string | null;
     status: ThesisLifecycleStatus;
     /** Status when the dialog opened (null = new thesis); K21 transitions start from here. */
     originalStatus: ThesisLifecycleStatus | null;
@@ -56,7 +55,6 @@ const emptyForm: FormState = {
     thesisTopicId: "none",
     academicYearId: "none",
     startDate: "",
-    rating: null,
     status: "research",
     originalStatus: null,
     statusBeforeLeave: null,
@@ -145,7 +143,6 @@ export function DataMasterTaPanel() {
             thesisTopicId: thesis.topic?.id || "none",
             academicYearId: thesis.academicYear?.id || "none",
             startDate: thesis.startDate ? new Date(thesis.startDate).toISOString().split('T')[0] : "",
-            rating: thesis.rating ?? null,
             status: thesis.status,
             originalStatus: thesis.status,
             statusBeforeLeave: thesis.statusBeforeLeave ?? null,
@@ -178,7 +175,7 @@ export function DataMasterTaPanel() {
             return;
         }
 
-        // K21: rating is never sent (computed by the rating job); supervisors of a closed
+        // The activity level is derived and never sent; supervisors of a closed
         // thesis are not editable; status is sent only when it changes.
         const closed = isClosedStatus(formState.originalStatus);
         const payload: Record<string, unknown> = {
@@ -251,16 +248,12 @@ export function DataMasterTaPanel() {
             )
         },
         {
-            key: "rating",
-            header: "Rating",
+            // Read-only: derived from the last activity date (only for a research thesis).
+            key: "activity",
+            header: "Aktivitas",
             width: 90,
             className: "text-center",
-            render: (t) => {
-                if (!t.rating || t.status === "completed") {
-                    return <span className="text-muted-foreground text-xs font-mono">-</span>;
-                }
-                return <ThesisRatingBadge rating={t.rating} className="text-xs" />;
-            }
+            render: (t) => <ThesisActivityBadge level={t.activityLevel} className="text-xs" />
         },
         {
             key: "status",
@@ -426,18 +419,9 @@ export function DataMasterTaPanel() {
                                                 onChange={(date) => setFormState(prev => ({ ...prev, startDate: date ? date.toISOString().split('T')[0] : "" }))}
                                                 showPastDates={true}
                                             />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label>Rating</Label>
-                                            {/* K21: rating is computed by the rating job, shown only */}
-                                            <div className="flex h-9 items-center gap-2">
-                                                {formState.rating ? (
-                                                    <ThesisRatingBadge rating={formState.rating} />
-                                                ) : (
-                                                    <span className="text-sm text-muted-foreground">-</span>
-                                                )}
-                                                <span className="text-xs text-muted-foreground">dihitung otomatis</span>
-                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Masa bimbingan dihitung dari tanggal ini (masa BSS tidak dihitung).
+                                            </p>
                                         </div>
                                     </>
                                 )}

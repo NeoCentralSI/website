@@ -59,8 +59,6 @@ function buildThesis(overrides: Partial<MyThesisDetail> = {}): MyThesisDetail {
     id: "thesis-1",
     title: "Sistem Rekomendasi Tugas Akhir",
     status: "research",
-    rating: null,
-    deadlineDate: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
     student: { id: "stu-1", name: "Mahasiswa Uji", nim: "2211520001", email: "mhs@example.test" },

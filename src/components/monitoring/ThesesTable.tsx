@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomTable } from "@/components/layout/CustomTable";
 import type { Column } from "@/components/layout/CustomTable";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,8 +29,7 @@ import {
 import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
 import { useRole } from "@/hooks/shared/useRole";
-import { toTitleCaseName, formatDateShortId, formatDateTimeWib } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
 import { sendWarningToStudent } from "@/services/monitoring.service";
 import { useMutation } from "@tanstack/react-query";
@@ -39,28 +37,15 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
-import { getThesisStatusLabel, THESIS_RATING_LABELS } from "@/lib/thesisLabels";
+import { getThesisActivityOptions, getThesisStatusLabel } from "@/lib/thesisLabels";
+import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
+import { SupervisionClockCell } from "@/components/shared/SupervisionClockCell";
 
 
 
 
-// Rating badge config
-const getRatingConfig = (rating?: string) => {
-  switch (rating) {
-    case "ONGOING":
-      return { variant: "outline" as const, label: THESIS_RATING_LABELS.ONGOING, className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
-    case "SLOW":
-      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.SLOW, className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", needsWarning: true };
-    case "AT_RISK":
-      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.AT_RISK, className: "", needsWarning: true };
-    case "FAILED":
-      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.FAILED, className: "", needsWarning: true };
-    case "CANCELLED":
-      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.CANCELLED, className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
-    default:
-      return { variant: "outline" as const, label: THESIS_RATING_LABELS.ONGOING, className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
-  }
-};
+/** A warning can be sent while the activity level is Lambat or Berisiko. */
+const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
 
 function getProgressColor(percent: number): string {
   if (percent >= 80) return "bg-green-500";
@@ -72,10 +57,11 @@ function getProgressColor(percent: number): string {
 interface ThesesTableProps {
   isSyncing?: boolean;
   academicYear?: string;
-  initialRating?: string;
+  /** Initial activity filter (`active` | `slow` | `at_risk`), e.g. from `?activity=`. */
+  initialActivity?: string;
 }
 
-export function ThesesTable({ isSyncing = false, academicYear, initialRating }: ThesesTableProps) {
+export function ThesesTable({ isSyncing = false, academicYear, initialActivity }: ThesesTableProps) {
   const navigate = useNavigate();
   const { isKadep } = useRole();
   // Backend rule: only KaDep may warn any thesis from monitoring; supervisors warn
@@ -103,17 +89,17 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
 
   const handleSendWarning = () => {
     const thesis = warningDialog.thesis;
-    if (!thesis?.id || !thesis?.rating) return;
+    if (!thesis?.id || !needsWarning(thesis.activityLevel)) return;
     sendWarningMutation.mutate({
       thesisId: thesis.id,
-      warningType: thesis.rating as WarningType,
+      warningType: thesis.activityLevel,
     });
   };
   // Filter state for dropdowns (backend filtering)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [lecturerFilter, setLecturerFilter] = useState<string | undefined>(undefined);
   const [topicFilter, setTopicFilter] = useState<string | undefined>(undefined);
-  const [ratingFilter, setRatingFilter] = useState<string | undefined>(initialRating);
+  const [activityFilter, setActivityFilter] = useState<string | undefined>(initialActivity);
 
   // Frontend pagination & search state
   const [frontendSearch, setFrontendSearch] = useState("");
@@ -135,15 +121,15 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
   const isLoadingAny = isLoading || isFetching || isSyncing;
   const { data: filterOptions } = useFilterOptions();
 
-  // Frontend search & rating filter applied to ALL data
+  // Frontend search & activity filter applied to ALL data (the activity level is derived)
   const searchFilteredData = useMemo(() => {
     if (!data?.data) return [];
 
     let filtered = data.data;
 
-    // Apply rating filter (frontend)
-    if (ratingFilter) {
-      filtered = filtered.filter((thesis) => thesis.rating === ratingFilter);
+    // Apply activity filter (frontend)
+    if (activityFilter) {
+      filtered = filtered.filter((thesis) => thesis.activityLevel === activityFilter);
     }
 
     // Apply search filter
@@ -160,7 +146,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
     }
 
     return filtered;
-  }, [data?.data, frontendSearch, ratingFilter]);
+  }, [data?.data, frontendSearch, activityFilter]);
 
   // Frontend pagination - slice the search-filtered data
   const paginatedData = useMemo(() => {
@@ -168,15 +154,15 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
     return searchFilteredData.slice(startIndex, startIndex + pageSize);
   }, [searchFilteredData, page, pageSize]);
 
-  const handleFilterChange = useCallback((key: 'status' | 'lecturerId' | 'topicId' | 'rating', value: string | undefined) => {
+  const handleFilterChange = useCallback((key: 'status' | 'lecturerId' | 'topicId' | 'activity', value: string | undefined) => {
     if (key === 'status') {
       setStatusFilter(value === "all" ? undefined : value);
     } else if (key === 'lecturerId') {
       setLecturerFilter(value === "all" ? undefined : value);
     } else if (key === 'topicId') {
       setTopicFilter(value === "all" ? undefined : value);
-    } else if (key === 'rating') {
-      setRatingFilter(value === "all" ? undefined : value);
+    } else if (key === 'activity') {
+      setActivityFilter(value === "all" ? undefined : value);
     }
     setPage(1); // Reset to first page when filter changes
   }, []);
@@ -199,12 +185,12 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
     setStatusFilter(undefined);
     setLecturerFilter(undefined);
     setTopicFilter(undefined);
-    setRatingFilter(undefined);
+    setActivityFilter(undefined);
     setFrontendSearch("");
     setPage(1);
   }, []);
 
-  const hasActiveFilters = statusFilter || lecturerFilter || topicFilter || ratingFilter || frontendSearch;
+  const hasActiveFilters = statusFilter || lecturerFilter || topicFilter || activityFilter || frontendSearch;
 
   const columns: Column<ThesisListItem>[] = [
     {
@@ -328,43 +314,30 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
       ),
     },
     {
-      key: "deadlineDate",
-      header: "Deadline",
-      render: (thesis) => (
-        <span className={cn(
-          "text-sm font-medium whitespace-nowrap",
-          thesis.rating === 'FAILED' ? "text-destructive" : "text-muted-foreground"
-        )}>
-          {thesis.deadlineDate ? formatDateShortId(thesis.deadlineDate) : "-"}
-        </span>
-      ),
+      key: "supervisionClock",
+      header: "Masa Bimbingan",
+      render: (thesis) => <SupervisionClockCell clock={thesis.supervisionClock} />,
     },
     {
-      key: "rating",
-      header: "Rating",
-      render: (thesis) => {
-        const config = getRatingConfig(thesis.rating);
-        return (
-          <div className="flex items-center gap-2">
-            <Badge variant={config.variant} className={cn("whitespace-nowrap", config.className)}>
-              {config.label}
-            </Badge>
-            {config.needsWarning && (
-              <AlertTriangle className="h-4 w-4 text-orange-500 animate-pulse" />
-            )}
-          </div>
-        );
-      },
+      key: "activity",
+      header: "Aktivitas",
+      render: (thesis) => (
+        <div className="flex items-center gap-2">
+          <ThesisActivityBadge level={thesis.activityLevel} className="whitespace-nowrap" />
+          {needsWarning(thesis.activityLevel) && (
+            <AlertTriangle className="h-4 w-4 text-orange-500" aria-label="Perlu perhatian" />
+          )}
+        </div>
+      ),
     },
     {
       key: "actions",
       header: "Aksi",
       className: "text-center w-24",
       render: (thesis) => {
-        const config = getRatingConfig(thesis.rating);
         return (
           <div className="flex items-center justify-center gap-1">
-            {config.needsWarning && canSendWarning && (
+            {needsWarning(thesis.activityLevel) && canSendWarning && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -463,16 +436,16 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
       </Select>
 
       <Select
-        value={ratingFilter || "all"}
-        onValueChange={(value) => handleFilterChange("rating", value)}
+        value={activityFilter || "all"}
+        onValueChange={(value) => handleFilterChange("activity", value)}
       >
         <SelectTrigger className="w-36">
-          <SelectValue placeholder="Rating" />
+          <SelectValue placeholder="Aktivitas" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Semua Rating</SelectItem>
-          {(Object.keys(THESIS_RATING_LABELS) as (keyof typeof THESIS_RATING_LABELS)[]).map((rating) => (
-            <SelectItem key={rating} value={rating}>{THESIS_RATING_LABELS[rating]}</SelectItem>
+          <SelectItem value="all">Semua Aktivitas</SelectItem>
+          {getThesisActivityOptions().map((option) => (
+            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -533,13 +506,8 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
                   <p className="text-sm">{warningDialog.thesis?.student.nim}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>Status saat ini:</span>
-                  <Badge
-                    variant={getRatingConfig(warningDialog.thesis?.rating).variant}
-                    className={getRatingConfig(warningDialog.thesis?.rating).className}
-                  >
-                    {getRatingConfig(warningDialog.thesis?.rating).label}
-                  </Badge>
+                  <span>Aktivitas saat ini:</span>
+                  <ThesisActivityBadge level={warningDialog.thesis?.activityLevel} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Mahasiswa akan menerima notifikasi push dan in-app notification untuk mengingatkan progress tugas akhir mereka.

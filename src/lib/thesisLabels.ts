@@ -7,7 +7,25 @@
 export type ThesisLifecycleStatus = "proposal" | "research" | "on_leave" | "completed" | "failed";
 export type ThesisPhase = "proposal" | "research";
 export type ThesisTerminationReason = "supervision_evaluation" | "withdrawn" | "dropped_out" | "other";
-export type ThesisRating = "ONGOING" | "SLOW" | "AT_RISK" | "FAILED" | "CANCELLED";
+/** Tingkat aktivitas TA fase penelitian. Nilai turunan dari tanggal aktivitas terakhir, tidak disimpan. */
+export type ThesisActivityLevel = "active" | "slow" | "at_risk";
+/** Evaluasi bimbingan yang jatuh tempo. Nilai turunan dari masa bimbingan, tidak disimpan. */
+export type EvaluationDue = "six_month" | "extension_follow_up" | "one_year";
+
+/** Masa bimbingan: dihitung dari tanggal mulai, tidak menghitung masa cuti (BSS). */
+export interface SupervisionClock {
+  startedAt: string | null;
+  elapsedDays: number | null;
+  elapsedMonths: number | null;
+  /** Contoh: "7 bulan 12 hari"; "-" bila tanggal mulai belum diisi. */
+  elapsedLabel: string;
+  sixMonthAt: string | null;
+  oneYearAt: string | null;
+  extensionUntil: string | null;
+  evaluationDue: EvaluationDue | null;
+  /** True selama TA berstatus BSS: masa bimbingan berhenti. */
+  isPaused: boolean;
+}
 /** Status sesi bimbingan (`GuidanceStatus`, K19). */
 export type GuidanceSessionStatus =
   | "requested"
@@ -46,12 +64,23 @@ export const THESIS_TERMINATION_REASON_LABELS: Record<ThesisTerminationReason, s
   other: "Lainnya",
 };
 
-export const THESIS_RATING_LABELS: Record<ThesisRating, string> = {
-  ONGOING: "Lancar",
-  SLOW: "Lambat",
-  AT_RISK: "Berisiko",
-  FAILED: "Gagal (lama)",
-  CANCELLED: "Dibatalkan (lama)",
+export const THESIS_ACTIVITY_LABELS: Record<ThesisActivityLevel, string> = {
+  active: "Lancar",
+  slow: "Lambat",
+  at_risk: "Berisiko",
+};
+
+/** Aturan tiap tingkat aktivitas, ditampilkan sebagai tooltip badge. */
+export const THESIS_ACTIVITY_DESCRIPTIONS: Record<ThesisActivityLevel, string> = {
+  active: "Ada aktivitas dalam 60 hari terakhir.",
+  slow: "Tanpa aktivitas selama 60 sampai 120 hari.",
+  at_risk: "Tanpa aktivitas lebih dari 120 hari.",
+};
+
+export const EVALUATION_DUE_LABELS: Record<EvaluationDue, string> = {
+  six_month: "Evaluasi 6 bulan jatuh tempo",
+  extension_follow_up: "Tindak lanjut perpanjangan jatuh tempo",
+  one_year: "Evaluasi 1 tahun jatuh tempo",
 };
 
 /** `rescheduled` adalah data lama yang diperlakukan sama dengan `accepted` (K19). */
@@ -95,12 +124,17 @@ export const THESIS_PHASE_VARIANTS: Record<ThesisPhase, ThesisBadgeVariant> = {
   research: "info",
 };
 
-export const THESIS_RATING_VARIANTS: Record<ThesisRating, ThesisBadgeVariant> = {
-  ONGOING: "success",
-  SLOW: "warning",
-  AT_RISK: "destructive",
-  FAILED: "outline",
-  CANCELLED: "outline",
+export const THESIS_ACTIVITY_VARIANTS: Record<ThesisActivityLevel, ThesisBadgeVariant> = {
+  active: "success",
+  slow: "warning",
+  at_risk: "destructive",
+};
+
+/** Warna tingkat aktivitas untuk grafik (hex). */
+export const THESIS_ACTIVITY_CHART_COLORS: Record<ThesisActivityLevel, string> = {
+  active: "#22c55e",
+  slow: "#f59e0b",
+  at_risk: "#ef4444",
 };
 
 /** Warna status TA untuk grafik (hex) dan bar/titik (kelas Tailwind), satu peta per enum. */
@@ -120,8 +154,8 @@ export const THESIS_STATUS_BG_CLASSES: Record<ThesisLifecycleStatus, string> = {
   failed: "bg-red-500 text-white",
 };
 
-/** Nilai rating yang dihitung job harian; FAILED/CANCELLED hanya data lama. */
-export const ACTIVE_THESIS_RATINGS: ThesisRating[] = ["ONGOING", "SLOW", "AT_RISK"];
+/** Tingkat aktivitas, dari yang paling baik. */
+export const THESIS_ACTIVITY_LEVELS: ThesisActivityLevel[] = ["active", "slow", "at_risk"];
 
 /** Status TA yang masih berjalan (belum selesai atau gagal). */
 export const OPEN_THESIS_STATUSES: ThesisLifecycleStatus[] = ["proposal", "research", "on_leave"];
@@ -134,7 +168,8 @@ function labelOf<K extends string>(labels: Record<K, string>) {
 export const getThesisStatusLabel = labelOf(THESIS_STATUS_LABELS);
 export const getThesisPhaseLabel = labelOf(THESIS_PHASE_LABELS);
 export const getThesisTerminationReasonLabel = labelOf(THESIS_TERMINATION_REASON_LABELS);
-export const getThesisRatingLabel = labelOf(THESIS_RATING_LABELS);
+export const getThesisActivityLabel = labelOf(THESIS_ACTIVITY_LABELS);
+export const getEvaluationDueLabel = labelOf(EVALUATION_DUE_LABELS);
 export const getGuidanceStatusLabel = labelOf(GUIDANCE_STATUS_LABELS);
 export const getGuidanceActorLabel = labelOf(GUIDANCE_ACTOR_LABELS);
 export const getMilestoneStatusLabel = labelOf(MILESTONE_STATUS_LABELS);
@@ -147,8 +182,8 @@ export function getThesisPhaseVariant(value: string | null | undefined): ThesisB
   return THESIS_PHASE_VARIANTS[value as ThesisPhase] ?? "outline";
 }
 
-export function getThesisRatingVariant(value: string | null | undefined): ThesisBadgeVariant {
-  return THESIS_RATING_VARIANTS[value as ThesisRating] ?? "outline";
+export function getThesisActivityVariant(value: string | null | undefined): ThesisBadgeVariant {
+  return THESIS_ACTIVITY_VARIANTS[value as ThesisActivityLevel] ?? "outline";
 }
 
 /**
@@ -198,9 +233,9 @@ export function getThesisStatusOptions(): { value: ThesisLifecycleStatus; label:
   }));
 }
 
-/** Opsi dropdown rating untuk input baru (tanpa FAILED/CANCELLED). */
-export function getThesisRatingOptions(): { value: ThesisRating; label: string }[] {
-  return ACTIVE_THESIS_RATINGS.map((value) => ({ value, label: THESIS_RATING_LABELS[value] }));
+/** Opsi filter tingkat aktivitas. */
+export function getThesisActivityOptions(): { value: ThesisActivityLevel; label: string }[] {
+  return THESIS_ACTIVITY_LEVELS.map((value) => ({ value, label: THESIS_ACTIVITY_LABELS[value] }));
 }
 
 /**

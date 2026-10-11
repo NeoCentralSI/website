@@ -3,37 +3,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { MyStudentItem } from "@/services/lecturerGuidance.service";
-import { getThesisRatingLabel } from "@/lib/thesisLabels";
+import { THESIS_ACTIVITY_CHART_COLORS, THESIS_ACTIVITY_LEVELS, getThesisActivityLabel, type ThesisActivityLevel } from "@/lib/thesisLabels";
 
 interface MyStudentsChartsProps {
   students: MyStudentItem[];
 }
 
-const RATING_COLORS: Record<string, string> = {
-  ONGOING: "#22c55e",
-  SLOW: "#eab308",
-  AT_RISK: "#f97316",
-  FAILED: "#ef4444",
-  CANCELLED: "#64748b",
-};
-
+const activityColor = (level: string) => THESIS_ACTIVITY_CHART_COLORS[level as ThesisActivityLevel] || "#64748b";
 
 const PROGRESS_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"];
 
 export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
-  // Compute rating distribution
-  const ratingData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    students.forEach((s) => {
-      const rating = s.thesisRating || "ONGOING";
-      counts[rating] = (counts[rating] || 0) + 1;
-    });
-    return Object.entries(counts).map(([key, count]) => ({
-      id: key,
-      name: getThesisRatingLabel(key),
-      value: key,
-      count,
-    }));
+  // Activity distribution: only research theses have an activity level
+  const activityData = useMemo(() => {
+    return THESIS_ACTIVITY_LEVELS
+      .map((level) => ({
+        id: level as string,
+        name: getThesisActivityLabel(level),
+        value: level as string,
+        count: students.filter((s) => s.activityLevel === level).length,
+      }))
+      .filter((row) => row.count > 0);
   }, [students]);
 
   // Compute guidance distribution
@@ -77,11 +67,11 @@ export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
 
   if (students.length === 0) return null;
 
-  const ratingTotal = ratingData.reduce((sum, r) => sum + r.count, 0);
+  const activityTotal = activityData.reduce((sum, r) => sum + r.count, 0);
 
-  const ratingConfig: ChartConfig = {};
-  ratingData.forEach((r) => {
-    ratingConfig[r.name] = { label: r.name, color: RATING_COLORS[r.value] || "#64748b" };
+  const activityConfig: ChartConfig = {};
+  activityData.forEach((r) => {
+    activityConfig[r.name] = { label: r.name, color: activityColor(r.value) };
   });
 
   const guidanceConfig: ChartConfig = {
@@ -94,25 +84,25 @@ export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      {/* Rating Distribution */}
+      {/* Activity Distribution */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Distribusi Rating Progress</CardTitle>
+          <CardTitle className="text-sm font-medium">Distribusi Aktivitas</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={ratingConfig} className="h-50 w-full">
+          <ChartContainer config={activityConfig} className="h-50 w-full">
             <PieChart>
               <ChartTooltip
                 content={
                   <ChartTooltipContent
                     formatter={(value, name) => (
-                      <span>{name}: {value} ({ratingTotal > 0 ? Math.round((Number(value) / ratingTotal) * 100) : 0}%)</span>
+                      <span>{name}: {value} ({activityTotal > 0 ? Math.round((Number(value) / activityTotal) * 100) : 0}%)</span>
                     )}
                   />
                 }
               />
               <Pie
-                data={ratingData}
+                data={activityData}
                 dataKey="count"
                 nameKey="name"
                 cx="50%"
@@ -124,8 +114,8 @@ export function MyStudentsCharts({ students }: MyStudentsChartsProps) {
                 labelLine={false}
                 fontSize={10}
               >
-                {ratingData.map((entry) => (
-                  <Cell key={entry.id} fill={RATING_COLORS[entry.value] || "#64748b"} />
+                {activityData.map((entry) => (
+                  <Cell key={entry.id} fill={activityColor(entry.value)} />
                 ))}
               </Pie>
               <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 10 }} />

@@ -17,7 +17,6 @@ import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toTitleCaseName, formatDateShortId, formatDateTimeWib } from "@/lib/text";
 import { STICKY_ACTION_COLUMN_CLASS } from "@/lib/guidanceCells";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,43 +36,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { Eye, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft } from "lucide-react";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
 import { IncomingTransfersSection } from "@/components/bimbingan/IncomingTransfersSection";
 import { TransferStudentsDialog } from "@/components/bimbingan/TransferStudentsDialog";
 import { MyStudentsCharts } from "@/components/bimbingan/MyStudentsCharts";
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
-import { THESIS_RATING_LABELS } from '@/lib/thesisLabels';
+import { ThesisActivityBadge } from '@/components/shared/ThesisActivityBadge';
+import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
 
-const getDaysRemaining = (deadlineDate?: string | null) => {
-  if (!deadlineDate) return null;
-  const deadline = new Date(deadlineDate);
-  const now = new Date();
-  const diffTime = deadline.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
-};
-
-const getRatingConfig = (rating?: string) => {
-  switch (rating) {
-    case "ONGOING":
-      return { variant: "outline" as const, label: THESIS_RATING_LABELS.ONGOING, className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
-    case "SLOW":
-      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.SLOW, className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", needsWarning: true };
-    case "AT_RISK":
-      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.AT_RISK, className: "", needsWarning: true };
-    case "FAILED":
-      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.FAILED, className: "bg-red-500 text-white hover:bg-red-600", needsWarning: true };
-    case "CANCELLED":
-      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.CANCELLED, className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
-    default:
-      return { variant: "secondary" as const, label: "-", className: "", needsWarning: false };
-  }
-};
+/** A warning can be sent while the activity level is Lambat or Berisiko. */
+const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
 
 export default function LecturerMyStudentsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -121,10 +97,10 @@ export default function LecturerMyStudentsPage() {
 
   const handleSendWarning = () => {
     const student = warningDialog.student;
-    if (!student?.thesisId || !student?.thesisRating) return;
+    if (!student?.thesisId || !needsWarning(student.activityLevel)) return;
     sendWarningMutation.mutate({
       thesisId: student.thesisId,
-      warningType: student.thesisRating as WarningType,
+      warningType: student.activityLevel,
     });
   };
 
@@ -251,63 +227,29 @@ export default function LecturerMyStudentsPage() {
       ),
     },
     {
-      key: 'deadline',
-      header: 'Sisa Waktu',
-      render: (row) => {
-        const days = getDaysRemaining(row.deadlineDate);
-        if (days === null) return <span className="text-muted-foreground">-</span>;
-
-        if (days < 0) {
-          return (
-            <Badge variant="destructive" className="items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Lewat {Math.abs(days)} hari
-            </Badge>
-          );
-        }
-
-        if (days <= 30) {
-          return (
-            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {days} hari
-            </Badge>
-          );
-        }
-
-        return (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{days} hari</span>
-          </div>
-        );
-      }
+      key: 'supervisionClock',
+      header: 'Masa Bimbingan',
+      render: (row) => <SupervisionClockCell clock={row.supervisionClock} />,
     },
     {
-      key: 'thesisRating',
-      header: 'Rating',
-      render: (row) => {
-        const config = getRatingConfig(row.thesisRating);
-        return (
-          <div className="flex items-center gap-2">
-            <Badge variant={config.variant} className={cn("whitespace-nowrap", config.className)}>
-              {config.label}
-            </Badge>
-            {config.needsWarning && (
-              <AlertTriangle className="h-4 w-4 text-orange-500 animate-pulse" />
-            )}
-          </div>
-        );
-      },
+      key: 'activity',
+      header: 'Aktivitas',
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <ThesisActivityBadge level={row.activityLevel} className="whitespace-nowrap" />
+          {needsWarning(row.activityLevel) && (
+            <AlertTriangle className="h-4 w-4 text-orange-500" aria-label="Perlu perhatian" />
+          )}
+        </div>
+      ),
     },
     {
       key: 'actions',
       header: 'Aksi',
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (row) => {
-        const config = getRatingConfig(row.thesisRating);
         // Only an active supervisor relation may send a warning (backend rule).
-        const canWarn = config.needsWarning && (row.supervisorStatus ?? "active") === "active";
+        const canWarn = needsWarning(row.activityLevel) && (row.supervisorStatus ?? "active") === "active";
         return (
           <div className="flex items-center gap-1">
             {canWarn && (
@@ -468,13 +410,8 @@ export default function LecturerMyStudentsPage() {
                   <p className="text-sm">{warningDialog.student?.identityNumber}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>Status saat ini:</span>
-                  <Badge
-                    variant={getRatingConfig(warningDialog.student?.thesisRating).variant}
-                    className={getRatingConfig(warningDialog.student?.thesisRating).className}
-                  >
-                    {getRatingConfig(warningDialog.student?.thesisRating).label}
-                  </Badge>
+                  <span>Aktivitas saat ini:</span>
+                  <ThesisActivityBadge level={warningDialog.student?.activityLevel} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Mahasiswa akan menerima notifikasi push dan in-app notification untuk mengingatkan progress tugas akhir mereka.

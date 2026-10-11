@@ -31,7 +31,9 @@ import { openAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
 import Lottie from 'lottie-react';
 import emptyAnimation from '@/assets/lottie/empty.json';
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
-import { getGuidanceStatusLabel, getThesisRatingLabel, getThesisStatusLabel } from '@/lib/thesisLabels';
+import { getGuidanceStatusLabel, getThesisStatusLabel } from '@/lib/thesisLabels';
+import { ThesisActivityBadge } from '@/components/shared/ThesisActivityBadge';
+import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -145,12 +147,12 @@ export default function StudentProgressDetail() {
       </div>
 
       {/* Inactive Thesis Alert */}
-      {(data.status === 'failed' || data.rating === 'FAILED' || data.rating === 'CANCELLED') && (
+      {data.status === 'failed' && (
         <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800 dark:bg-red-950/50 dark:border-red-900 dark:text-red-200">
           <AlertTriangle className="h-5 w-5 !text-red-600 dark:!text-red-400" />
           <AlertTitle className="font-semibold">Perhatian: Tugas Akhir Tidak Aktif</AlertTitle>
           <AlertDescription className="mt-2 text-red-700 dark:text-red-300">
-            Tugas akhir ini sudah tidak aktif karena memiliki status <strong>{data.status === 'failed' ? getThesisStatusLabel(data.status) : getThesisRatingLabel(data.rating)}</strong>.
+            Tugas akhir ini sudah tidak aktif karena memiliki status <strong>{getThesisStatusLabel(data.status)}</strong>.
             Mahasiswa bersangkutan perlu mengulang pengajuan judul pada periode selanjutnya atau berkoordinasi dengan pihak prodi.
           </AlertDescription>
         </Alert>
@@ -286,6 +288,7 @@ export default function StudentProgressDetail() {
                 <div>
                   <p className="text-xs text-muted-foreground">Aktivitas Terakhir</p>
                   <p className="text-sm font-medium">{formatDateTimeWib(data.lastActivity)}</p>
+                  <div className="mt-1"><ThesisActivityBadge level={data.activityLevel} /></div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -297,8 +300,8 @@ export default function StudentProgressDetail() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div>
-                    <p className="text-xs text-muted-foreground">Deadline</p>
-                    <p className="text-sm font-medium">{data.deadlineDate ? formatDateShortId(data.deadlineDate) : '-'}</p>
+                    <p className="text-xs text-muted-foreground">Masa Bimbingan</p>
+                    <SupervisionClockCell clock={data.supervisionClock} className="font-medium" />
                   </div>
                 </div>
               </div>

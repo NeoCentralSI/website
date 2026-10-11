@@ -23,7 +23,7 @@ interface ImportResult {
     updated: number;
     failed: number;
     errors: string[];
-    /** K21: columns the import ignores (e.g. "Rating", computed by the rating job). */
+    /** Columns the import ignores (e.g. "Aktivitas", which is derived, never stored). */
     ignoredColumns?: string[];
 }
 
@@ -210,7 +210,7 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
 
                             {result.ignoredColumns && result.ignoredColumns.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                    Kolom diabaikan: {result.ignoredColumns.join(", ")} (rating dihitung otomatis oleh sistem).
+                                    Kolom diabaikan: {result.ignoredColumns.join(", ")} (nilai ini dihitung otomatis oleh sistem).
                                     Status "Gagal" wajib disertai kolom "Alasan Penghentian".
                                 </p>
                             )}

@@ -431,10 +431,6 @@ export default function MahasiswaDetail() {
                     <p className="text-muted-foreground">Mulai</p>
                     <p className="font-medium">{activeThesis.startDate ? formatDateId(activeThesis.startDate) : '-'}</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Deadline</p>
-                    <p className="font-medium">{activeThesis.deadlineDate ? formatDateId(activeThesis.deadlineDate) : '-'}</p>
-                  </div>
                 </div>
 
                 {/* Supervisors */}

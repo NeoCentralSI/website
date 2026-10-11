@@ -3,12 +3,12 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  ACTIVE_THESIS_RATINGS,
   getAllowedThesisStatusOptions,
   getGuidanceActionBlockReason,
   THESIS_STATUS_TRANSITIONS,
-  getThesisRatingLabel,
-  getThesisRatingOptions,
+  getThesisActivityLabel,
+  getThesisActivityOptions,
+  getEvaluationDueLabel,
   getThesisStatusLabel,
   getThesisStatusOptions,
   GUIDANCE_ACTOR_LABELS,
@@ -16,8 +16,11 @@ import {
   MILESTONE_STATUS_LABELS,
   THESIS_PHASE_LABELS,
   THESIS_PHASE_VARIANTS,
-  THESIS_RATING_LABELS,
-  THESIS_RATING_VARIANTS,
+  THESIS_ACTIVITY_LABELS,
+  THESIS_ACTIVITY_VARIANTS,
+  THESIS_ACTIVITY_DESCRIPTIONS,
+  THESIS_ACTIVITY_LEVELS,
+  EVALUATION_DUE_LABELS,
   THESIS_STATUS_LABELS,
   THESIS_STATUS_VARIANTS,
   THESIS_TERMINATION_REASON_LABELS,
@@ -50,7 +53,6 @@ const CASES = [
   ["ThesisLifecycleStatus", THESIS_STATUS_LABELS, "THESIS_STATUS_LABELS"],
   ["ThesisPhase", THESIS_PHASE_LABELS, "THESIS_PHASE_LABELS"],
   ["ThesisTerminationReason", THESIS_TERMINATION_REASON_LABELS, "THESIS_TERMINATION_REASON_LABELS"],
-  ["ThesisRating", THESIS_RATING_LABELS, "THESIS_RATING_LABELS"],
   // Paket B: guidance session status (K19), cancelling party, milestone status (K20)
   ["GuidanceStatus", GUIDANCE_STATUS_LABELS, "GUIDANCE_STATUS_LABELS"],
   ["GuidanceActor", GUIDANCE_ACTOR_LABELS, "GUIDANCE_ACTOR_LABELS"],
@@ -64,6 +66,13 @@ describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
   });
 
   it.each(CASES)("%s labels are identical to the backend map", (_enumName, labels, exportName) => {
+    expect({ ...labels }).toEqual(backendMap(exportName));
+  });
+
+  it.each([
+    ["THESIS_ACTIVITY_LABELS", THESIS_ACTIVITY_LABELS],
+    ["EVALUATION_DUE_LABELS", EVALUATION_DUE_LABELS],
+  ] as const)("%s (derived, no schema enum) are identical to the backend map", (exportName, labels) => {
     expect({ ...labels }).toEqual(backendMap(exportName));
   });
 
@@ -90,23 +99,32 @@ describe("thesisLabels", () => {
   it("gives every status, phase and rating a badge variant", () => {
     expect(Object.keys(THESIS_STATUS_VARIANTS).sort()).toEqual(Object.keys(THESIS_STATUS_LABELS).sort());
     expect(Object.keys(THESIS_PHASE_VARIANTS).sort()).toEqual(Object.keys(THESIS_PHASE_LABELS).sort());
-    expect(Object.keys(THESIS_RATING_VARIANTS).sort()).toEqual(Object.keys(THESIS_RATING_LABELS).sort());
+    expect(Object.keys(THESIS_ACTIVITY_VARIANTS).sort()).toEqual(Object.keys(THESIS_ACTIVITY_LABELS).sort());
     expect(THESIS_STATUS_VARIANTS).toMatchObject({
       research: "info", proposal: "secondary", on_leave: "warning", completed: "success", failed: "destructive",
     });
-    expect(THESIS_RATING_VARIANTS).toMatchObject({ ONGOING: "success", SLOW: "warning", AT_RISK: "destructive" });
+    expect(THESIS_ACTIVITY_VARIANTS).toEqual({ active: "success", slow: "warning", at_risk: "destructive" });
   });
 
-  it("offers every status as an option, and only active ratings for new input", () => {
+  it("offers every status as an option", () => {
     expect(getThesisStatusOptions().map((o) => o.value).sort()).toEqual(Object.keys(THESIS_STATUS_LABELS).sort());
-    expect(getThesisRatingOptions().map((o) => o.value)).toEqual(ACTIVE_THESIS_RATINGS);
-    expect(getThesisRatingOptions().map((o) => o.value)).not.toContain("FAILED");
+  });
+
+  it("labels the derived activity levels and due evaluations, with a rule text per level", () => {
+    expect(THESIS_ACTIVITY_LABELS).toEqual({ active: "Lancar", slow: "Lambat", at_risk: "Berisiko" });
+    expect(getThesisActivityOptions().map((o) => o.value)).toEqual(THESIS_ACTIVITY_LEVELS);
+    expect(Object.keys(THESIS_ACTIVITY_DESCRIPTIONS).sort()).toEqual([...THESIS_ACTIVITY_LEVELS].sort());
+    expect(THESIS_ACTIVITY_DESCRIPTIONS.slow).toContain("60 sampai 120 hari");
+    expect(THESIS_ACTIVITY_DESCRIPTIONS.at_risk).toContain("lebih dari 120 hari");
+    expect(getThesisActivityLabel(null)).toBe("-");
+    expect(getEvaluationDueLabel("one_year")).toBe("Evaluasi 1 tahun jatuh tempo");
+    expect(Object.keys(EVALUATION_DUE_LABELS).sort()).toEqual(["extension_follow_up", "one_year", "six_month"]);
   });
 
   it("falls back to '-' for empty values and to the raw value for unknown ones", () => {
     expect(getThesisStatusLabel(null)).toBe("-");
     expect(getThesisStatusLabel("on_leave")).toBe("Berhenti Studi Sementara (BSS)");
-    expect(getThesisRatingLabel("AT_RISK")).toBe("Berisiko");
+    expect(getThesisActivityLabel("at_risk")).toBe("Berisiko");
     expect(getThesisStatusLabel("unknown_value")).toBe("unknown_value");
   });
 

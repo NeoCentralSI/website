@@ -1,39 +1,27 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, Legend } from "recharts";
-import type { RatingDistribution } from "@/services/monitoring.service";
+import type { ActivityDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
-import { getThesisRatingLabel } from "@/lib/thesisLabels";
+import { THESIS_ACTIVITY_CHART_COLORS, getThesisActivityLabel, type ThesisActivityLevel } from "@/lib/thesisLabels";
 
-interface RatingDistributionChartProps {
-  ratingDistribution: RatingDistribution[] | undefined;
+interface ActivityDistributionChartProps {
+  activityDistribution: ActivityDistribution[] | undefined;
   isLoading: boolean;
 }
 
-const RATING_COLORS: Record<string, string> = {
-  ONGOING: "#22c55e",
-  Ongoing: "#22c55e",
-  SLOW: "#eab308",
-  Slow: "#eab308",
-  AT_RISK: "#f97316",
-  "At Risk": "#f97316",
-  FAILED: "#ef4444",
-  Gagal: "#ef4444",
-  CANCELLED: "#64748b",
-  Cancelled: "#64748b",
-};
-
-function getColor(rating: string, index: number): string {
-  return RATING_COLORS[rating] || `hsl(${index * 90}, 70%, 50%)`;
+function getColor(level: string, index: number): string {
+  return THESIS_ACTIVITY_CHART_COLORS[level as ThesisActivityLevel] || `hsl(${index * 90}, 70%, 50%)`;
 }
 
-export function RatingDistributionChart({ ratingDistribution, isLoading }: RatingDistributionChartProps) {
+/** Sebaran tingkat aktivitas TA berstatus Penelitian (Lancar / Lambat / Berisiko). */
+export function ActivityDistributionChart({ activityDistribution, isLoading }: ActivityDistributionChartProps) {
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Distribusi Rating Progress</CardTitle>
+          <CardTitle className="text-base">Distribusi Aktivitas</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-62.5">
           <Loading size="md" text="Memuat..." />
@@ -43,7 +31,7 @@ export function RatingDistributionChart({ ratingDistribution, isLoading }: Ratin
   }
 
   // Label from the enum value (single source: lib/thesisLabels).
-  const data = (ratingDistribution ?? []).map((r) => ({ ...r, name: getThesisRatingLabel(r.value) }));
+  const data = (activityDistribution ?? []).map((r) => ({ ...r, name: getThesisActivityLabel(r.value) }));
   const total = data.reduce((sum, r) => sum + r.count, 0);
 
   const chartConfig: ChartConfig = {};
@@ -54,11 +42,11 @@ export function RatingDistributionChart({ ratingDistribution, isLoading }: Ratin
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Distribusi Rating Progress</CardTitle>
+        <CardTitle className="text-base">Distribusi Aktivitas</CardTitle>
       </CardHeader>
       <CardContent>
         {data.length === 0 || total === 0 ? (
-          <EmptyState size="sm" title="Tidak Ada Data" description="Belum ada data rating" />
+          <EmptyState size="sm" title="Tidak Ada Data" description="Belum ada tugas akhir berstatus Penelitian" />
         ) : (
           <ChartContainer config={chartConfig} className="h-62.5 w-full">
             <PieChart>

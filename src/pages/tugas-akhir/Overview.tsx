@@ -129,23 +129,6 @@ export default function TugasAkhirOverviewPage() {
         }
     };
 
-    const getRemainingTime = () => {
-        const deadlineDate = thesisDetail?.deadlineDate;
-        if (!deadlineDate) return "-";
-
-        const deadline = new Date(deadlineDate);
-        const now = new Date();
-        const diffTime = deadline.getTime() - now.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) return `Terlewat ${Math.abs(diffDays)} Hari`;
-        if (diffDays < 30) return `${diffDays} Hari`;
-
-        const months = Math.floor(diffDays / 30);
-        const days = diffDays % 30;
-        return days > 0 ? `${months} Bulan ${days} Hari` : `${months} Bulan`;
-    };
-
     if (isLoadingThesis || isLoadingMilestones || isLoadingHistory) {
         return (
             <div className="flex h-[calc(100vh-200px)] items-center justify-center">
@@ -257,10 +240,10 @@ export default function TugasAkhirOverviewPage() {
                                                         <span>Topik: <span className="text-foreground font-medium">{thesisDetail.topic.name}</span></span>
                                                     </div>
                                                 )}
-                                                {/* Sisa Waktu */}
+                                                {/* Masa bimbingan (dihitung dari tanggal mulai, tidak disimpan) */}
                                                 <div className="flex items-center gap-2 text-muted-foreground">
                                                     <Clock className="h-4 w-4" />
-                                                    <span>Sisa Waktu: <span className="text-foreground font-medium">{getRemainingTime()} (Estimasi)</span></span>
+                                                    <span>Masa Bimbingan: <span className="text-foreground font-medium">{thesisDetail?.supervisionClock?.elapsedLabel ?? "-"}</span></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -658,7 +641,7 @@ export default function TugasAkhirOverviewPage() {
                                                     </span>
                                                 </span>
                                             </div>
-                                            {(thesis.status === "failed" || thesis.rating === "FAILED") && thesis.supervisors && thesis.supervisors.length > 0 && (
+                                            {thesis.status === "failed" && thesis.supervisors && thesis.supervisors.length > 0 && (
                                                 <div className="flex items-start gap-2 text-muted-foreground md:col-span-2 mt-2 pt-2 border-t border-border/50">
                                                     <GraduationCap className="h-4 w-4 mt-0.5 shrink-0" />
                                                     <div className="flex flex-col gap-1.5 w-full">

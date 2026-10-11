@@ -1,6 +1,6 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { ThesisRating } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel } from '@/lib/thesisLabels';
 
 // ========== Types ==========
 
@@ -36,8 +36,10 @@ export interface AtRiskStudent {
     email: string;
   };
   status: string;
+  activityLevel?: ThesisActivityLevel | null;
   lastActivity: string;
   daysSinceActivity: number;
+  supervisionClock?: SupervisionClock | null;
   supervisors: SupervisorInfo[];
 }
 
@@ -71,7 +73,8 @@ export interface SupervisorLoad {
   students: SupervisorLoadStudent[];
 }
 
-export interface RatingDistribution {
+/** Jumlah TA berstatus Penelitian per tingkat aktivitas (nilai turunan). */
+export interface ActivityDistribution {
   id: string;
   name: string;
   value: string;
@@ -103,7 +106,7 @@ export interface GuidanceTrend {
 export interface MonitoringDashboard {
   summary: ProgressStats;
   statusDistribution: StatusDistribution[];
-  ratingDistribution: RatingDistribution[];
+  activityDistribution: ActivityDistribution[];
   topicDistribution: TopicDistribution[];
   batchDistribution: BatchDistribution[];
   progressDistribution: ProgressBucket[];
@@ -117,7 +120,11 @@ export interface MonitoringDashboard {
 export interface ThesisListItem {
   id: string;
   title: string;
-  rating: ThesisRating;
+  /** Nilai turunan; null bila TA tidak berstatus Penelitian. */
+  activityLevel: ThesisActivityLevel | null;
+  daysSinceActivity: number | null;
+  supervisionClock: SupervisionClock | null;
+  startDate: string | null;
   topic: {
     id: string;
     name: string;
@@ -149,8 +156,7 @@ export interface ThesisListItem {
     hasPembimbing2: boolean;
     isFullyApproved: boolean;
   };
-  lastActivity: string;
-  deadlineDate: string | null;
+  lastActivity: string | null;
   createdAt: string;
 }
 
@@ -211,13 +217,14 @@ export interface ThesisDetail {
   id: string;
   title: string;
   status: string | null;
-  rating: string;
+  activityLevel: ThesisActivityLevel | null;
+  daysSinceActivity: number | null;
+  supervisionClock: SupervisionClock | null;
   topic: string | null;
   academicYear: string | null;
   startDate: string | null;
-  deadlineDate: string | null;
   createdAt: string;
-  lastActivity: string;
+  lastActivity: string | null;
   seminarApproval: {
     supervisor1: boolean;
     supervisor2: boolean;
@@ -442,7 +449,8 @@ export async function getThesisDetail(thesisId: string): Promise<ThesisDetail> {
   return result.data;
 }
 
-export type WarningType = 'SLOW' | 'AT_RISK' | 'FAILED';
+/** Peringatan dikirim menurut tingkat aktivitas. */
+export type WarningType = 'slow' | 'at_risk';
 
 /**
  * Send warning notification to student about thesis progress (for monitoring role: Kadep, Sekdep, GKM)
@@ -491,7 +499,10 @@ export interface ReportThesisItem {
   title: string;
   topic: string;
   status: string;
-  rating: string;
+  activityLevel: ThesisActivityLevel | null;
+  /** Masa bimbingan, mis. "7 bulan 12 hari". */
+  supervisionLabel: string;
+  evaluationDue: string | null;
   pembimbing1: string;
   pembimbing2: string;
   guidanceTotal: number;
@@ -500,7 +511,6 @@ export interface ReportThesisItem {
   milestoneCompleted: number;
   progressPercent: number;
   startDate: string | null;
-  deadlineDate: string | null;
   createdAt: string;
 }
 
@@ -519,14 +529,14 @@ export interface ProgressReportData {
   generatedAt: string;
   summary: ReportSummary;
   statusDistribution: StatusDistribution[];
-  ratingDistribution: RatingDistribution[];
+  activityDistribution: ActivityDistribution[];
   theses: ReportThesisItem[];
 }
 
 export interface ReportFilterOptions {
   academicYearId?: string;
   statusIds?: string[];
-  ratings?: string[];
+  activityLevels?: string[];
 }
 
 /**
@@ -536,7 +546,7 @@ export async function getProgressReport(options: ReportFilterOptions = {}): Prom
   const params = new URLSearchParams();
   if (options.academicYearId && options.academicYearId !== 'all') params.append('academicYear', options.academicYearId);
   if (options.statusIds?.length) params.append('statusIds', options.statusIds.join(','));
-  if (options.ratings?.length) params.append('ratings', options.ratings.join(','));
+  if (options.activityLevels?.length) params.append('activityLevels', options.activityLevels.join(','));
 
   const url = `${getApiUrl("/thesisGuidance/monitoring/report")}?${params.toString()}`;
 
@@ -556,7 +566,7 @@ export async function downloadProgressReportPdf(options: ReportFilterOptions = {
   const params = new URLSearchParams();
   if (options.academicYearId && options.academicYearId !== 'all') params.append('academicYear', options.academicYearId);
   if (options.statusIds?.length) params.append('statusIds', options.statusIds.join(','));
-  if (options.ratings?.length) params.append('ratings', options.ratings.join(','));
+  if (options.activityLevels?.length) params.append('activityLevels', options.activityLevels.join(','));
 
   const url = `${getApiUrl("/thesisGuidance/monitoring/report/download")}?${params.toString()}`;
 

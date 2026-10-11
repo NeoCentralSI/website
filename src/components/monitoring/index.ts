@@ -1,8 +1,7 @@
 export { MonitoringSummaryCards } from "./MonitoringSummaryCards";
 export { StatusDistributionCard } from "./StatusDistributionCard";
-export { RatingDistributionCard } from "./RatingDistributionCard";
 export { StatusDistributionChart } from "./StatusDistributionChart";
-export { RatingDistributionChart } from "./RatingDistributionChart";
+export { ActivityDistributionChart } from "./ActivityDistributionChart";
 export { TopicDistributionChart } from "./TopicDistributionChart";
 export { BatchDistributionChart } from "./BatchDistributionChart";
 export { ProgressDistributionChart } from "./ProgressDistributionChart";

@@ -4,7 +4,7 @@ import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import {
   MonitoringSummaryCards,
   StatusDistributionChart,
-  RatingDistributionChart,
+  ActivityDistributionChart,
   TopicDistributionChart,
   BatchDistributionChart,
   ProgressDistributionChart,
@@ -32,7 +32,7 @@ import { toast } from "sonner";
 
 export default function MonitoringDashboard() {
   const [searchParams] = useSearchParams();
-  const initialRating = searchParams.get("rating") || undefined;
+  const initialActivity = searchParams.get("activity") || undefined;
 
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
@@ -170,8 +170,8 @@ export default function MonitoringDashboard() {
           statusDistribution={data?.statusDistribution}
           isLoading={isLoadingAny}
         />
-        <RatingDistributionChart
-          ratingDistribution={data?.ratingDistribution}
+        <ActivityDistributionChart
+          activityDistribution={data?.activityDistribution}
           isLoading={isLoadingAny}
         />
         <ProgressDistributionChart
@@ -210,7 +210,7 @@ export default function MonitoringDashboard() {
       </div>
 
       {/* Full Table */}
-      <ThesesTable isSyncing={isSyncing} academicYear={academicYearFilter} initialRating={initialRating} />
+      <ThesesTable isSyncing={isSyncing} academicYear={academicYearFilter} initialActivity={initialActivity} />
     </div>
   );
 }

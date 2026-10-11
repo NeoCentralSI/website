@@ -54,10 +54,8 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading, show
         setSending(true);
         try {
             const thesisIds = allStudents.map(s => s.thesisId);
-            // Send as AT_RISK if there's any at-risk, or just generic SLOW for batch?
-            // User requested "batch peringatan ke semua daftar mahasiswa"
-            // We'll use SLOW as the baseline or handle based on the mix
-            await sendBatchWarnings(thesisIds, 'SLOW');
+            // One batch for the whole list, sent with the baseline "slow" wording.
+            await sendBatchWarnings(thesisIds, 'slow');
             toast.success(`Berhasil mengirim peringatan ke ${thesisIds.length} mahasiswa`);
         } catch (error: any) {
             toast.error(error.message || "Gagal mengirim peringatan batch");

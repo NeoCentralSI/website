@@ -12,7 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import EmptyState from "@/components/ui/empty-state";
-import { FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
+import { Activity, FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
+import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
+import { SupervisionClockCell } from "@/components/shared/SupervisionClockCell";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
@@ -419,33 +421,16 @@ export default function LecturerMyStudentDetailPage() {
                                     <Calendar className="h-4 w-4" />
                                     <span>Mulai: <span className="text-foreground font-medium">{detailData.startDate ? formatDateShortId(detailData.startDate) : '-'}</span></span>
                                 </div>
-                                {/* Sisa Waktu */}
+                                {/* Masa bimbingan dan aktivitas: nilai turunan (E3) */}
+                                <div className="flex items-start gap-2 text-muted-foreground">
+                                    <Clock className="h-4 w-4 mt-0.5" />
+                                    <span className="shrink-0">Masa Bimbingan:</span>
+                                    <SupervisionClockCell clock={detailData.supervisionClock} className="text-foreground font-medium" />
+                                </div>
                                 <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Clock className="h-4 w-4" />
-                                    <span>Sisa Waktu: <span className="text-foreground font-medium">
-                                        {detailData.deadlineDate ? (() => {
-                                            const days = Math.ceil((new Date(detailData.deadlineDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                                            if (days < 0) return `Terlewat ${Math.abs(days)} Hari`;
-                                            if (days < 30) return `${days} Hari`;
-                                            const months = Math.floor(days / 30);
-                                            const rem = days % 30;
-                                            return rem > 0 ? `${months} Bulan ${rem} Hari` : `${months} Bulan`;
-                                        })() : '-'}
-                                    </span></span>
-                                    {detailData.deadlineDate && (() => {
-                                        const days = Math.ceil((new Date(detailData.deadlineDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                                        if (days < 0) return (
-                                            <Badge variant="destructive" className="h-5 px-1.5 text-[10px] font-normal">
-                                                Expired
-                                            </Badge>
-                                        );
-                                        if (days <= 30) return (
-                                            <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-normal text-orange-600 bg-orange-50 border-orange-200">
-                                                Segera
-                                            </Badge>
-                                        );
-                                        return null;
-                                    })()}
+                                    <Activity className="h-4 w-4" />
+                                    <span>Aktivitas:</span>
+                                    <ThesisActivityBadge level={detailData.activityLevel} />
                                 </div>
                             </div>
                         </div>

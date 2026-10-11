@@ -1,6 +1,6 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { ThesisLifecycleStatus, ThesisRating } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus } from '@/lib/thesisLabels';
 
 // K19: "rescheduled" is legacy data (treated as "accepted"); "summary_rejected" = summary needs a revision.
 export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending" | "rescheduled" | "summary_rejected";
@@ -413,9 +413,12 @@ export interface MyThesisDetail {
   id: string;
   title: string;
   status: ThesisLifecycleStatus;
-  rating: ThesisRating | null;
+  /** Nilai turunan (E3); null bila TA tidak berstatus Penelitian. */
+  activityLevel?: ThesisActivityLevel | null;
+  lastActivityAt?: string | null;
+  daysSinceActivity?: number | null;
+  supervisionClock?: SupervisionClock | null;
   startDate?: string | null;
-  deadlineDate?: string | null;
   createdAt: string;
   updatedAt: string;
   student: {

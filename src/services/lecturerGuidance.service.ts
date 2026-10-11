@@ -1,6 +1,6 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { ThesisLifecycleStatus, ThesisRating } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus } from '@/lib/thesisLabels';
 
 // Types (align with backend contracts as needed)
 // "rescheduled" and "summary_rejected" are legacy statuses written before the guidance revival.
@@ -17,7 +17,11 @@ export interface MyStudentItem {
   thesisTitle?: string;
   thesisStatus?: ThesisLifecycleStatus | null;
   roles?: string[]; // e.g., ["pembimbing1"]
-  thesisRating?: ThesisRating;
+  /** Nilai turunan (E3); null bila TA tidak berstatus Penelitian. */
+  activityLevel?: ThesisActivityLevel | null;
+  lastActivityAt?: string | null;
+  daysSinceActivity?: number | null;
+  supervisionClock?: SupervisionClock | null;
   latestMilestone?: string;
   // Milestone progress info
   totalMilestones?: number;
@@ -28,7 +32,6 @@ export interface MyStudentItem {
   lastGuidanceDate?: string | null;
   /** ISO; format di frontend (C5). */
   lastGuidanceAt?: string | null;
-  deadlineDate?: string | null;
   startDate?: string | null;
 }
 
@@ -84,11 +87,12 @@ export interface StudentDetail {
   thesisId: string;
   title: string;
   status: ThesisLifecycleStatus;
-  rating: ThesisRating | null;
+  activityLevel: ThesisActivityLevel | null;
+  lastActivityAt: string | null;
+  daysSinceActivity: number | null;
+  supervisionClock: SupervisionClock | null;
   startDate: string | null;
   startDateFormatted: string | null;
-  deadlineDate: string | null;
-  deadlineDateFormatted: string | null;
   student: {
     id: string;
     fullName: string;
@@ -196,7 +200,8 @@ export const getMyStudents = async (params?: { roles?: string; status?: MyStuden
   return res.json();
 };
 
-export type WarningType = "SLOW" | "AT_RISK" | "FAILED";
+/** Peringatan dikirim menurut tingkat aktivitas. */
+export type WarningType = "slow" | "at_risk";
 
 export const sendWarningToStudent = async (thesisId: string, warningType: WarningType): Promise<{ success: boolean; message: string }> => {
   const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS}/${thesisId}/send-warning`), {
