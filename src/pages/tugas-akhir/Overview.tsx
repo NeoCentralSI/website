@@ -31,7 +31,7 @@ import { useMilestones, useDefenceReadinessStatus } from "@/hooks/milestone";
 import { DefenceRequestCard } from "@/components/milestone";
 import { Loading } from "@/components/ui/spinner";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import { getApiUrl } from "@/config/api";
+import { openAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -392,21 +392,7 @@ export default function TugasAkhirOverviewPage() {
                                                         <p className="text-sm font-medium truncate">{thesisDetail.proposalDocument.fileName}</p>
                                                         <p className="text-xs text-muted-foreground">Proposal</p>
                                                     </div>
-                                                    <Button variant="ghost" size="icon" className="shrink-0" asChild>
-                                                        <a
-                                                            href={(() => {
-                                                                const path = thesisDetail.proposalDocument!.filePath;
-                                                                let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
-                                                                const token = localStorage.getItem('accessToken');
-                                                                if (token && path.includes('thesis/')) url += `?token=${token}`;
-                                                                return url;
-                                                            })()}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                        >
-                                                            <Download className="h-4 w-4" />
-                                                        </a>
-                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="shrink-0" aria-label="Buka berkas" onClick={() => openAuthenticatedFileOrToast(thesisDetail.proposalDocument!.filePath)}><Download className="h-4 w-4" /></Button>
                                                 </div>
                                             )}
 
@@ -427,21 +413,7 @@ export default function TugasAkhirOverviewPage() {
                                                         <p className="text-sm font-medium truncate">{thesisDetail.document.fileName}</p>
                                                         <p className="text-xs text-muted-foreground">Draft Terbaru</p>
                                                     </div>
-                                                    <Button variant="ghost" size="icon" className="shrink-0" asChild>
-                                                        <a
-                                                            href={(() => {
-                                                                const path = thesisDetail.document!.filePath;
-                                                                let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
-                                                                const token = localStorage.getItem('accessToken');
-                                                                if (token && path.includes('thesis/')) url += `?token=${token}`;
-                                                                return url;
-                                                            })()}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                        >
-                                                            <Download className="h-4 w-4" />
-                                                        </a>
-                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="shrink-0" aria-label="Buka berkas" onClick={() => openAuthenticatedFileOrToast(thesisDetail.document!.filePath)}><Download className="h-4 w-4" /></Button>
                                                 </div>
                                             )}
                                         </div>
@@ -462,21 +434,7 @@ export default function TugasAkhirOverviewPage() {
                                                             {idx === 0 && (
                                                                 <Badge variant="outline" className="text-[10px] shrink-0">Terbaru</Badge>
                                                             )}
-                                                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
-                                                                <a
-                                                                    href={(() => {
-                                                                        const path = file.filePath;
-                                                                        let url = path.startsWith('/') ? getApiUrl(path) : getApiUrl(`/${path}`);
-                                                                        const token = localStorage.getItem('accessToken');
-                                                                        if (token && path.includes('thesis/')) url += `?token=${token}`;
-                                                                        return url;
-                                                                    })()}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                >
-                                                                    <Download className="h-3.5 w-3.5" />
-                                                                </a>
-                                                            </Button>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label="Buka berkas" onClick={() => openAuthenticatedFileOrToast(file.filePath)}><Download className="h-3.5 w-3.5" /></Button>
                                                         </div>
                                                     ))}
                                                 </div>
