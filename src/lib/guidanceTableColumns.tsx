@@ -2,13 +2,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import StatusBadge from '@/components/thesis/StatusBadge';
-import { EyeIcon, FileTextIcon, CalendarClock, XCircle, AlertCircle, CheckCircle2, Download, DownloadIcon } from 'lucide-react';
+import { EyeIcon, CalendarClock, XCircle, AlertCircle, CheckCircle2, Download } from 'lucide-react';
 import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
 import type { Column } from '@/components/layout/CustomTable';
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { formatThesisDocName } from '@/lib/text';
-import { getApiUrl } from '@/config/api';
+import { formatThesisDocName, formatDateTimeWib } from '@/lib/text';
+import { GUIDANCE_ACTOR_LABELS, GUIDANCE_STATUS_LABELS } from '@/lib/thesisLabels';
+import { DateTimeCell, GuidanceDocCell, STICKY_ACTION_COLUMN_CLASS } from '@/lib/guidanceCells';
 
 interface GetGuidanceTableColumnsOptions {
   items: GuidanceItem[];
@@ -117,79 +118,34 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
     {
       key: 'time',
       header: 'Waktu',
-      accessor: (r) =>
-        r.approvedDateFormatted ||
-        r.requestedDateFormatted ||
-        (r.approvedDate
-          ? new Date(r.approvedDate).toLocaleString()
-          : r.requestedDate
-            ? new Date(r.requestedDate).toLocaleString()
-            : '-'),
+      // C6: the effective schedule (approvedDate ?? requestedDate)
+      render: (r) => <DateTimeCell date={r.approvedDate ?? r.requestedDate} />,
     },
     {
       key: 'doc',
       header: 'Dokumen',
-      render: (r) => {
-        const filePath = r.document?.filePath;
-        if (!filePath) return <span className="text-muted-foreground">-</span>;
-
-        const isPdf = filePath.toLowerCase().endsWith('.pdf');
-        const isDocx = filePath.toLowerCase().endsWith('.docx') || filePath.toLowerCase().endsWith('.doc');
-        const displayName = formatThesisDocName(studentNim, studentName);
-
-        if (isDocx) {
-          const downloadUrl = (() => {
-            let url = filePath.startsWith('/') ? getApiUrl(filePath) : getApiUrl(`/${filePath}`);
-            const token = localStorage.getItem('accessToken');
-            if (token && filePath.includes('thesis/')) {
-              url += (url.includes('?') ? '&' : '?') + `token=${token}`;
-            }
-            return url;
-          })();
-
-          return (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1.5 max-w-[200px] text-green-600 hover:text-green-700 hover:bg-green-50"
-              asChild
-              title={`Download ${displayName}`}
-            >
-              <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
-                <DownloadIcon className="size-4 shrink-0" />
-                <span className="truncate text-xs">{displayName}</span>
-              </a>
-            </Button>
-          );
-        }
-
-        return (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1.5 max-w-[200px]"
-            disabled={!isPdf}
-            onClick={() => {
-              onViewDocument(r.document?.fileName, r.document?.filePath);
-            }}
-            title={isPdf ? `Lihat ${displayName}` : 'Tidak ada dokumen PDF'}
-          >
-            <FileTextIcon className="size-4 shrink-0" />
-            <span className="truncate text-xs">{isPdf ? displayName : '-'}</span>
-          </Button>
-        );
-      },
+      render: (r) => (
+        <GuidanceDocCell
+          filePath={r.document?.filePath}
+          displayName={formatThesisDocName(studentNim, studentName)}
+          onViewPdf={() => onViewDocument(r.document?.fileName, r.document?.filePath)}
+        />
+      ),
     },
     {
       key: 'status',
       header: 'Status',
       render: (r) => {
-        // Check if needs summary (accepted or summary_pending without sessionSummary)
-        const needsSummary = (r.status === 'accepted' || r.status === 'summary_pending') && !r.sessionSummary;
+        // K19: a scheduled session (legacy "rescheduled" included) needs a summary, and a
+        // summary sent back by the lecturer (summary_rejected) needs a revision.
+        const isScheduled = r.status === 'accepted' || r.status === 'rescheduled';
+        const needsSummary = (isScheduled && !r.sessionSummary) || r.status === 'summary_rejected';
         const hasSummary = !!r.sessionSummary;
         const isCompleted = r.status === 'completed';
+        const context = getGuidanceStatusContext(r);
 
         return (
+          <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <StatusBadge status={r.status} />
             {needsSummary && (
@@ -223,6 +179,12 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
               </TooltipProvider>
             )}
           </div>
+          {context && (
+            <p className="max-w-[260px] text-xs text-muted-foreground line-clamp-2" title={context}>
+              {context}
+            </p>
+          )}
+          </div>
         );
       },
       filter: {
@@ -234,12 +196,9 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
         },
         options: [
           { label: 'Semua', value: '' },
-          { label: 'Menunggu', value: 'requested' },
-          { label: 'Diterima', value: 'accepted' },
-          { label: 'Ditolak', value: 'rejected' },
-          { label: 'Selesai', value: 'completed' },
-          { label: 'Dibatalkan', value: 'cancelled' },
-          { label: 'Menunggu Catatan', value: 'summary_pending' },
+          ...(['requested', 'accepted', 'summary_pending', 'summary_rejected', 'completed', 'rejected', 'cancelled'] as const).map(
+            (value) => ({ label: GUIDANCE_STATUS_LABELS[value], value }),
+          ),
         ],
       },
     },
@@ -275,10 +234,11 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
     {
       key: 'action',
       header: 'Aksi',
+      className: STICKY_ACTION_COLUMN_CLASS,
       render: (r) => {
-        const isRejected = r.status === 'rejected';
         const isRequested = r.status === 'requested';
-        const isAccepted = r.status === 'accepted';
+        // K19: legacy "rescheduled" is a scheduled session like "accepted".
+        const isAccepted = r.status === 'accepted' || r.status === 'rescheduled';
         const isCancellable = isRequested || isAccepted;
 
         return (
@@ -289,7 +249,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => onReschedule(r.id)}
-                title="Reschedule jadwal bimbingan"
+                title="Ubah jadwal pengajuan"
               >
                 <CalendarClock className="size-4" />
               </Button>
@@ -310,8 +270,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
               size="icon"
               className="h-8 w-8"
               onClick={() => navigate(`/tugas-akhir/bimbingan/student/session/${r.id}`)}
-              title={isRejected ? 'Bimbingan ditolak' : 'Detail'}
-              disabled={isRejected}
+              title="Detail"
             >
               <EyeIcon className="size-4" />
             </Button>
@@ -323,3 +282,29 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
 
   return columns;
 };
+
+/**
+ * K19 context shown under a session status: rejection reason + suggested time, lecturer
+ * reschedule reason, cancellation (who + why), or the lecturer's summary revision notes.
+ */
+export function getGuidanceStatusContext(r: GuidanceItem): string | null {
+  const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  if (r.status === 'rejected') {
+    const reason = text(r.rejectionReason);
+    const suggested = r.suggestedDate ? formatDateTimeWib(r.suggestedDate) : null;
+    return [reason && `Alasan: ${reason}`, suggested && `Usulan waktu dosen: ${suggested}`].filter(Boolean).join(' · ') || null;
+  }
+  if (r.status === 'cancelled') {
+    const reason = text(r.cancelReason) ?? text(r.rejectionReason);
+    const by = r.cancelledBy ? `Dibatalkan oleh ${GUIDANCE_ACTOR_LABELS[r.cancelledBy].toLowerCase()}` : 'Dibatalkan';
+    return reason ? `${by}: ${reason}` : null;
+  }
+  if (r.status === 'summary_rejected') {
+    const notes = text(r.supervisorFeedback);
+    return notes ? `Perlu diperbaiki: ${notes}` : null;
+  }
+  if ((r.status === 'accepted' || r.status === 'rescheduled') && text(r.rescheduleReason)) {
+    return `Jadwal diubah dosen: ${text(r.rescheduleReason)}`;
+  }
+  return null;
+}

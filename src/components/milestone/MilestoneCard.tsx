@@ -6,7 +6,8 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { MilestoneStatusBadge } from "./MilestoneStatusBadge";
 import type { Milestone, MilestoneStatus } from "@/types/milestone.types";
-import { formatDateId } from "@/lib/text";
+import { formatDateShortId, formatDateTimeWib } from "@/lib/text";
+import { MilestoneNotes } from "./MilestoneNotes";
 import {
   Calendar,
   Clock,
@@ -102,11 +103,11 @@ export function MilestoneCard({
   return (
     <div
       className={cn(
-        "relative border-b transition-all hover:bg-muted/50",
-        isCompleted && "bg-green-50/20",
-        isRevisionNeeded && "bg-orange-50/20",
-        isPendingReview && "bg-amber-50/20",
-        isInProgress && "bg-blue-50/10",
+        "relative rounded-lg border bg-card transition-all hover:shadow-sm",
+        isCompleted && "border-green-200/70 bg-green-50/30",
+        isRevisionNeeded && "border-orange-200/70 bg-orange-50/30",
+        isPendingReview && "border-amber-200/70 bg-amber-50/30",
+        isInProgress && "border-blue-200/70",
         !isCompleted && !isRevisionNeeded && !isInProgress && "border-border/60",
         isProgressUpdating && "opacity-60"
       )}
@@ -166,7 +167,7 @@ export function MilestoneCard({
           {milestone.targetDate && (
             <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
               <Calendar className="h-2.5 w-2.5" />
-              {formatDateId(milestone.targetDate)}
+              {formatDateShortId(milestone.targetDate)}
             </span>
           )}
           {deadlineInfo && (
@@ -182,7 +183,7 @@ export function MilestoneCard({
               {deadlineInfo.text}
             </span>
           )}
-          {milestone.supervisorNotes && (
+          {(milestone.supervisorNotes || milestone.feedback) && (
             <span className="inline-flex items-center gap-1 text-[10px] text-blue-600">
               <MessageSquare className="h-2.5 w-2.5" />
               Catatan
@@ -282,28 +283,25 @@ export function MilestoneCard({
             {milestone.startedAt && (
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                Mulai: {formatDateId(milestone.startedAt)}
+                Mulai: {formatDateTimeWib(milestone.startedAt)}
               </span>
             )}
             {milestone.completedAt && (
               <span className="flex items-center gap-1 text-green-600">
                 <CheckCircle className="h-3 w-3" />
-                Selesai: {formatDateId(milestone.completedAt)}
+                Selesai: {formatDateTimeWib(milestone.completedAt)}
               </span>
             )}
           </div>
 
-          {/* Supervisor notes */}
-          {milestone.supervisorNotes && (
-            <div className="p-2 rounded-md bg-blue-50/80 border border-blue-100">
-              <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide mb-0.5">
-                Catatan Pembimbing
-              </p>
-              <p className="text-xs text-blue-800 leading-relaxed">
-                {milestone.supervisorNotes}
-              </p>
-            </div>
-          )}
+          {/* C9: decision notes (Pembimbing 1) and supervisor feedback are separate blocks */}
+          <MilestoneNotes
+            status={milestone.status}
+            supervisorNotes={milestone.supervisorNotes}
+            feedback={milestone.feedback}
+            feedbackByName={milestone.feedbackByName}
+            feedbackAt={milestone.feedbackAt}
+          />
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-1 pt-0.5">

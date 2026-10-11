@@ -33,7 +33,7 @@ import {
     History,
 } from "lucide-react";
 import { formatDateId } from "@/lib/text";
-import { getApiUrl } from "@/config/api";
+import { openAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
 import {
     getProposalVersions,
     getProposalSubmissionStatus,
@@ -53,16 +53,6 @@ function formatFileSize(bytes: number | null): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function getFileUrl(url: string | null): string {
-    if (!url) return "#";
-    const fullUrl = url.startsWith("http") ? url : getApiUrl(url);
-    const token = localStorage.getItem("accessToken");
-    if (token && url.includes("thesis/")) {
-        return fullUrl + (fullUrl.includes("?") ? "&" : "?") + `token=${token}`;
-    }
-    return fullUrl;
 }
 
 interface UploadDialogProps {
@@ -199,10 +189,15 @@ function VersionItem({ version }: VersionItemProps) {
                     <Clock className="h-3 w-3" /> {formatDateId(version.createdAt)}
                 </p>
             </div>
-            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" asChild>
-                <a href={getFileUrl(version.url)} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-4 w-4" />
-                </a>
+            <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 h-8 w-8"
+                aria-label="Buka berkas"
+                disabled={!version.url}
+                onClick={() => openAuthenticatedFileOrToast(version.url)}
+            >
+                <Download className="h-4 w-4" />
             </Button>
         </div>
     );

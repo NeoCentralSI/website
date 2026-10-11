@@ -396,6 +396,8 @@ export const useSidebarMenu = () => {
         icon: Database,
         items: [
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" },
+          // Guidance revival: persetujuan transfer mahasiswa bimbingan (baseline)
+          { title: "Pergantian Pembimbing", url: "/kelola/tugas-akhir/kadep/pergantian-pembimbing" },
           { title: "Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
@@ -543,20 +545,24 @@ export const useSidebarMenu = () => {
         });
       }
 
-      // F2-7 / OQ-2.4 (2026-06-10): item "Monitoring" TA dicabut dari GKM —
-      // akses monitoring hanya KaDep + Sekdep (selaras guard route FE + backend).
-      if (role.pembimbing) {
-        menuItems.push({
-          title: "Tugas Akhir",
-          url: "#",
-          icon: FileText,
-          items: [
-            { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-            { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-            { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-          ],
-        });
-      }
+      // Guidance revival: Monitoring TA untuk GKM dipulihkan dari baseline (akses baca
+      // dashboard/detail; guard route FE + backend memakai DEPARTMENT_ROLES). Item
+      // bimbingan/seminar/sidang tetap hanya untuk akun yang juga pembimbing.
+      menuItems.push({
+        title: "Tugas Akhir",
+        url: "#",
+        icon: FileText,
+        items: [
+          ...(role.pembimbing
+            ? [
+                { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+                { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+                { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+              ]
+            : []),
+          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
+        ],
+      });
 
       appendSharedEventMenus(menuItems);
       menuItems.push({

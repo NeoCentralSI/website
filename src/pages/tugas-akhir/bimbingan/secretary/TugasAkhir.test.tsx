@@ -20,6 +20,9 @@ vi.mock("@/components/ui/tabs-nav", () => ({
 vi.mock("@/components/kelola/DataMasterTaPanel", () => ({
   DataMasterTaPanel: () => <table aria-label="Data master TA" />,
 }));
+vi.mock("@/components/milestone/TemplateManagementPanel", () => ({
+  TemplateManagementPanel: () => <div>Pengelolaan template milestone</div>,
+}));
 vi.mock("@/components/kelola/TopicManagementPanel", () => ({
   TopicManagementPanel: () => <div>Pengelolaan topik</div>,
 }));
@@ -66,6 +69,7 @@ describe("KelolaTugasAkhirPage", () => {
 
   it.each([
     ["topik", "Pengelolaan topik"],
+    ["milestone", "Pengelolaan template milestone"],
     ["cpmk", "Pengelolaan CPMK"],
     ["rubrik-seminar", "Rubrik seminar"],
     ["rubrik-sidang", "Rubrik sidang"],
@@ -91,5 +95,16 @@ describe("KelolaTugasAkhirPage", () => {
 
     expect(screen.getByRole("navigation", { name: "Tab pengelolaan TA" })).toBeInTheDocument();
     expect(screen.getByRole("table", { name: "Data master TA" })).toBeInTheDocument();
+  });
+
+  it("does not mount the master-data panel (GET /master-data-ta) on the Milestone tab for Sekdep", () => {
+    vi.mocked(useRole).mockReturnValue({
+      isKadep: () => false,
+    } as ReturnType<typeof useRole>);
+    context.pathname = "/kelola/tugas-akhir/milestone";
+    render(<KelolaTugasAkhirPage />);
+
+    expect(screen.getByText("Pengelolaan template milestone")).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Data master TA" })).not.toBeInTheDocument();
   });
 });

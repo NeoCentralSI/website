@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
 import { listStudentGuidance } from '@/services/studentGuidance.service';
+import { formatDateTimeWib } from '@/lib/text';
 
 export function useStudentGuidance() {
   const queryClient = useQueryClient();
@@ -65,14 +66,8 @@ export function useStudentGuidance() {
   const pendingRequestInfo = useMemo(() => {
     const pending = items.find((item) => item.status === 'requested');
     if (!pending) return null;
-    const dateStr =
-      pending.approvedDateFormatted ||
-      pending.requestedDateFormatted ||
-      (pending.approvedDate
-        ? new Date(pending.approvedDate).toLocaleString()
-        : pending.requestedDate
-          ? new Date(pending.requestedDate).toLocaleString()
-          : 'belum ditentukan');
+    const scheduled = pending.approvedDate ?? pending.requestedDate;
+    const dateStr = scheduled ? formatDateTimeWib(scheduled) : 'belum ditentukan';
     return {
       id: pending.id,
       dateStr,
@@ -93,15 +88,7 @@ export function useStudentGuidance() {
       arr = arr.filter((it) => {
         const sup = (it.supervisorName || it.supervisorId || '').toString().toLowerCase();
         const statusText = it.status.toString().toLowerCase();
-        const when = (
-          it.approvedDateFormatted ||
-          it.requestedDateFormatted ||
-          (it.approvedDate
-            ? new Date(it.approvedDate).toLocaleString()
-            : it.requestedDate
-              ? new Date(it.requestedDate).toLocaleString()
-              : '')
-        ).toLowerCase();
+        const when = formatDateTimeWib(it.approvedDate ?? it.requestedDate).toLowerCase();
         return sup.includes(needle) || statusText.includes(needle) || when.includes(needle);
       });
     }

@@ -1,36 +1,37 @@
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { getGuidanceStatusLabel } from "@/lib/thesisLabels";
 
 export type StatusBadgeProps = {
   status: "requested" | "accepted" | "rejected" | "summary_pending" | "completed" | "cancelled" | string;
   className?: string;
 };
 
-const variantByStatus: Record<string, "default" | "secondary" | "destructive" | "outline" | "warning" | "success" | "info"> = {
-  requested: "warning", // Maps to primary/10
-  accepted: "info", // Maps to blue-100
-  rejected: "destructive",
-  summary_pending: "default", // Maps to purple/primary
-  completed: "success", // Maps to green-100
-  cancelled: "secondary", // Maps to gray-100
-};
-
-const labelByStatus: Record<string, string> = {
-  requested: "Menunggu",
-  accepted: "Terjadwal",
-  rejected: "Ditolak",
-  summary_pending: "Menunggu Approval",
-  completed: "Selesai",
-  cancelled: "Dibatalkan",
+// Session status colours; labels come from lib/thesisLabels (GUIDANCE_STATUS_LABELS).
+// Legacy "rescheduled" is treated exactly like "accepted" (K19).
+const colorByStatus: Record<string, string> = {
+  requested: "bg-amber-100 text-amber-800 border-amber-200",
+  accepted: "bg-blue-100 text-blue-800 border-blue-200",
+  rescheduled: "bg-blue-100 text-blue-800 border-blue-200",
+  rejected: "bg-red-500 text-white border-transparent",
+  summary_pending: "bg-purple-100 text-purple-800 border-purple-200",
+  summary_rejected: "bg-orange-100 text-orange-800 border-orange-200",
+  completed: "bg-green-100 text-green-800 border-green-200",
+  cancelled: "bg-gray-100 text-gray-800 border-gray-200",
 };
 
 export default function StatusBadge({ status, className }: StatusBadgeProps) {
   const key = String(status || "").toLowerCase();
-  const variant = variantByStatus[key] || "secondary";
-  const label = labelByStatus[key] || status;
+  const color = colorByStatus[key] || "bg-secondary text-secondary-foreground";
 
   return (
-    <Badge variant={variant} className={className}>
-      {label}
-    </Badge>
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+        color,
+        className
+      )}
+    >
+      {getGuidanceStatusLabel(key)}
+    </span>
   );
 }

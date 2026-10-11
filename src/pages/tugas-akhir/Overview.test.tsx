@@ -10,6 +10,7 @@ import {
   getPendingSupervisor2Request,
   getStudentSupervisors,
   getStudentThesisHistory,
+  type MyThesisDetail,
 } from "@/services/studentGuidance.service";
 
 vi.mock("@/services/studentGuidance.service", () => ({
@@ -53,6 +54,37 @@ vi.mock("lottie-react", () => ({
   default: () => <div data-testid="lottie-mock" />,
 }));
 
+function buildThesis(overrides: Partial<MyThesisDetail> = {}): MyThesisDetail {
+  return {
+    id: "thesis-1",
+    title: "Sistem Rekomendasi Tugas Akhir",
+    status: "research",
+    rating: null,
+    deadlineDate: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    student: { id: "stu-1", name: "Mahasiswa Uji", nim: "2211520001", email: "mhs@example.test" },
+    topic: null,
+    academicYear: null,
+    document: null,
+    proposalDocument: null,
+    uploadedFiles: [],
+    supervisors: [{ id: "sup-1", name: "Dr. P1", email: "p1@example.test", role: "Pembimbing 1" }],
+    examiners: [],
+    stats: {
+      totalGuidances: 0,
+      totalSessions: 0,
+      totalMilestones: 0,
+      completedMilestones: 0,
+      inProgressMilestones: 0,
+      overdueMilestones: 0,
+      milestoneProgress: 0,
+    },
+    seminarApproval: { pembimbing1: false, pembimbing2: false },
+    ...overrides,
+  };
+}
+
 function renderWithLayout(children: ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -79,34 +111,12 @@ describe("TugasAkhirOverviewPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getStudentSupervisors).mockResolvedValue({
+      success: true,
       thesisId: "thesis-1",
       supervisors: [{ id: "sup-1", name: "Dr. P1", email: "p1@example.test", role: "Pembimbing 1" }],
     });
-    vi.mocked(getMyThesisDetail).mockResolvedValue({
-      id: "thesis-1",
-      title: "Sistem Rekomendasi Tugas Akhir",
-      status: "Bimbingan",
-      rating: "ONGOING",
-      deadlineDate: null,
-      isProposal: false,
-      supervisors: [{
-        id: "sup-1",
-        name: "Dr. P1",
-        email: "p1@example.test",
-        identityNumber: "198001012010011001",
-        role: "Pembimbing 1",
-      }],
-      stats: {
-        totalGuidances: 0,
-        totalSessions: 0,
-        totalMilestones: 0,
-        completedMilestones: 0,
-        inProgressMilestones: 0,
-        overdueMilestones: 0,
-        milestoneProgress: 0,
-      },
-    });
-    vi.mocked(getStudentThesisHistory).mockResolvedValue({ theses: [] });
+    vi.mocked(getMyThesisDetail).mockResolvedValue(buildThesis());
+    vi.mocked(getStudentThesisHistory).mockResolvedValue({ success: true, theses: [] });
     vi.mocked(getPendingSupervisor2Request).mockResolvedValue(null);
   });
 
@@ -121,30 +131,19 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.getByText("Sistem Rekomendasi Tugas Akhir")).toBeInTheDocument();
   });
 
-  it("shows requirements not met when thesis is still in proposal phase", async () => {
-    vi.mocked(getMyThesisDetail).mockResolvedValue({
-      id: "thesis-1",
-      title: "Proposal TA",
-      status: "Diajukan",
-      rating: "ONGOING",
-      deadlineDate: null,
-      isProposal: true,
-      supervisors: [],
-      stats: {
-        totalGuidances: 0,
-        totalSessions: 0,
-        totalMilestones: 0,
-        completedMilestones: 0,
-        inProgressMilestones: 0,
-        overdueMilestones: 0,
-        milestoneProgress: 0,
-      },
-    });
-
+  it("shows the status label (not the enum value) and 'Belum ada dokumen' without a report", async () => {
     renderWithLayout(<TugasAkhirOverviewPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Tugas Akhir Belum Aktif")).toBeInTheDocument();
+      expect(screen.getByText("Informasi Tugas Akhir")).toBeInTheDocument();
     });
+
+    expect(screen.getByText("Penelitian")).toBeInTheDocument();
+    expect(screen.queryByText(/^research$/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Belum ada dokumen")).toBeInTheDocument();
   });
+
+  // Guidance revival: the "Tugas Akhir Belum Aktif" proposal-phase copy came from the
+  // post-baseline TA-04 alignment and was released with it.
+
 });

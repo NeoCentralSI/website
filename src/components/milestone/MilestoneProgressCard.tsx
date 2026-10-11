@@ -40,7 +40,7 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
   const stats = [
     {
       label: "Selesai",
-      value: progress.completed,
+      value: progress.completed ?? 0,
       icon: CheckCircle2,
       color: "text-green-600",
       bg: "bg-green-50 border-green-100",
@@ -48,7 +48,7 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
     },
     {
       label: "Dikerjakan",
-      value: progress.inProgress,
+      value: progress.inProgress ?? 0,
       icon: Loader2,
       color: "text-blue-600",
       bg: "bg-blue-50 border-blue-100",
@@ -56,7 +56,7 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
     },
     {
       label: "Revisi",
-      value: progress.revisionNeeded,
+      value: progress.revisionNeeded ?? 0,
       icon: AlertCircle,
       color: "text-orange-600",
       bg: "bg-orange-50 border-orange-100",
@@ -64,7 +64,7 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
     },
     {
       label: "Belum Mulai",
-      value: progress.notStarted,
+      value: progress.notStarted ?? 0,
       icon: Circle,
       color: "text-gray-500",
       bg: "bg-gray-50 border-gray-100",

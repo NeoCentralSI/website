@@ -64,7 +64,8 @@ type ThesisHistoryItem = {
         completedMilestones: number | string;
     };
 };
-import { PendingApprovalCard } from "@/components/thesis/PendingApprovalCard";
+import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
+import { getGuidanceActionBlockReason } from "@/lib/thesisLabels";
 import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 
 function getProposalStatusLabel(status: string | null | undefined) {
@@ -142,11 +143,12 @@ export default function TugasAkhirOverviewPage() {
     );
 
     // Determines statuses
-    const isFailed = thesisDetail?.status === "Gagal";
-    const isCancelled = thesisDetail?.status === "Dibatalkan";
-    const isProposed = thesisDetail?.status === "Diajukan";
-    // Show dashboard only if active and NOT proposed (proposed has its own view)
-    const isThesisActive = thesisDetail?.status !== "Dibatalkan" && thesisDetail?.status !== "Gagal" && thesisDetail?.status !== "Diajukan";
+    // K15: "Dibatalkan" and "Diajukan" no longer exist; a stopped thesis is `failed`
+    // (its card below already offers the TA-01/TA-02 re-apply path).
+    const isFailed = thesisDetail?.status === "failed";
+    const isThesisActive = thesisDetail?.status !== "failed";
+    // K14: the quick action stays visible but disabled with a reason unless status is `research`.
+    const guidanceBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status) : null;
 
     const copyEmail = async (id: string, email: string) => {
         try {
@@ -322,11 +324,6 @@ export default function TugasAkhirOverviewPage() {
 
             {activeTab === "overview" && (
                 <div className="space-y-6">
-                    {/* If Proposed (Diajukan) -> Show Pending Card */}
-                    {isProposed && (
-                        <PendingApprovalCard status={thesisDetail?.status || "Diajukan"} />
-                    )}
-
                     {/* If Failed (Gagal) -> Show warning + sediakan jalur digital re-apply (P1-03).
                         Canon §5.2 + §5.9: TA-02 jalur dept terbuka untuk mahasiswa Failed sebagai
                         re-apply digital. Eskalasi ke departemen fisik hanya bila TA-02 digital
@@ -378,47 +375,6 @@ export default function TugasAkhirOverviewPage() {
                         </div>
                     )}
 
-                    {/* If Cancelled (Dibatalkan) -> route back to advisor request flow */}
-                    {isCancelled && (
-                        <div className="space-y-6">
-                            <Card className="w-full border-destructive/20 bg-destructive/5">
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
-                                                <AlertCircle className="h-6 w-6 text-destructive" />
-                                            </div>
-                                            <div>
-                                                <CardTitle className="text-xl text-destructive">Tugas Akhir Tidak Aktif</CardTitle>
-                                                <CardDescription>Status tugas akhir Anda saat ini: <strong>{thesisDetail?.status}</strong></CardDescription>
-                                            </div>
-                                        </div>
-                                        <Badge variant="destructive">
-                                            {thesisDetail?.status}
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        <p className="text-sm text-muted-foreground">
-                                            Tugas Akhir Anda sebelumnya telah dibatalkan. Pengajuan ulang harus dimulai dari alur TA-01/TA-02 agar draft,
-                                            histori submission, dan penetapan pembimbing tetap tercatat pada jalur resmi.
-                                        </p>
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            <Button onClick={() => navigate("/metopel/cari-pembimbing")}>
-                                                <BookOpen className="mr-2 h-4 w-4" />
-                                                Ajukan TA-01/TA-02
-                                            </Button>
-                                            <Button variant="outline" onClick={() => navigate("/metopel")}>
-                                                <FileText className="mr-2 h-4 w-4" />
-                                                Lihat Overview Metopel
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
 
                     {/* Banner sukses promosi aktif — status sistem, tanpa unduh PDF. */}
                     {isThesisActive && ta04Accepted && (
@@ -466,15 +422,7 @@ export default function TugasAkhirOverviewPage() {
                                                 <CardDescription>Detail status pengerjaan tugas akhir Anda</CardDescription>
                                             </div>
                                         </div>
-                                        {thesisDetail?.status && (
-                                            <Badge
-                                                variant={
-                                                    thesisDetail.status === "aktif" ? "default" : "secondary"
-                                                }
-                                            >
-                                                {thesisDetail.status.toUpperCase()}
-                                            </Badge>
-                                        )}
+                                        {thesisDetail?.status && <ThesisStatusBadge status={thesisDetail.status} />}
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
@@ -627,12 +575,17 @@ export default function TugasAkhirOverviewPage() {
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
                                             onClick={() => navigate('/tugas-akhir/bimbingan/student?action=create')}
+                                            disabled={!!guidanceBlockReason}
+                                            title={guidanceBlockReason ?? undefined}
                                         >
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3 group-hover:bg-primary/20 transition-colors">
                                                 <Plus className="h-4 w-4 text-primary" />
                                             </div>
                                             <span>Ajukan Bimbingan</span>
                                         </Button>
+                                        {guidanceBlockReason && (
+                                            <p className="text-xs text-muted-foreground">{guidanceBlockReason}</p>
+                                        )}
                                         <Button
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all group"
@@ -734,15 +687,7 @@ export default function TugasAkhirOverviewPage() {
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
-                                            <Badge
-                                                variant={
-                                                    thesis.status === "aktif" || thesis.status === "Selesai"
-                                                        ? "default"
-                                                        : "secondary"
-                                                }
-                                            >
-                                                {thesis.status.toUpperCase()}
-                                            </Badge>
+                                            <ThesisStatusBadge status={thesis.status} />
                                             <span className="text-xs text-muted-foreground">
                                                 {formatDateId(thesis.createdAt)}
                                             </span>
@@ -782,7 +727,7 @@ export default function TugasAkhirOverviewPage() {
                                                     </span>
                                                 </span>
                                             </div>
-                                            {(thesis.status === "Gagal" || thesis.rating === "FAILED") && thesis.supervisors && thesis.supervisors.length > 0 && (
+                                            {(thesis.status === "failed" || thesis.rating === "FAILED") && thesis.supervisors && thesis.supervisors.length > 0 && (
                                                 <div className="flex items-start gap-2 text-muted-foreground md:col-span-2 mt-2 pt-2 border-t border-border/50">
                                                     <GraduationCap className="h-4 w-4 mt-0.5 shrink-0" />
                                                     <div className="flex flex-col gap-1.5 w-full">

@@ -25,6 +25,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { formatDateTimeWib } from "@/lib/text";
 
 export default function PendingApprovalList() {
   const queryClient = useQueryClient();
@@ -91,7 +92,7 @@ export default function PendingApprovalList() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
                         <Calendar className="h-3 w-3" />
-                        <span>{guidance.approvedDateFormatted || "-"}</span>
+                        <span>{formatDateTimeWib(guidance.approvedDate)}</span>
                         {guidance.milestoneName && (
                           <>
                             <span className="text-muted-foreground/50">•</span>
@@ -150,7 +151,7 @@ export default function PendingApprovalList() {
 
                 <div className="text-xs text-muted-foreground pt-2 flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  Dikirim: {guidance.summarySubmittedAtFormatted || "-"}
+                  Dikirim: {formatDateTimeWib(guidance.summarySubmittedAt)}
                 </div>
 
                 <div className="pt-2">

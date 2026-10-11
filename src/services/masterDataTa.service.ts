@@ -1,5 +1,6 @@
 import { getApiUrl } from '@/config/api';
 import { apiRequest } from './auth.service';
+import type { ThesisLifecycleStatus, ThesisRating, ThesisTerminationReason } from '@/lib/thesisLabels';
 
 export interface SupervisorData {
     lecturerId: string;
@@ -11,10 +12,12 @@ export interface SupervisorData {
 export interface MasterDataThesis {
     id: string;
     title: string | null;
-    rating: string;
+    rating: ThesisRating | null;
     startDate: string | null;
-    status: string;
-    thesisStatusId: string;
+    status: ThesisLifecycleStatus;
+    statusBeforeLeave?: ThesisLifecycleStatus | null;
+    terminationReason?: ThesisTerminationReason | null;
+    terminationNote?: string | null;
     student: {
         id: string;
         nim: string;
@@ -30,13 +33,6 @@ export interface MasterDataThesis {
         year: string;
     } | null;
     supervisors: SupervisorData[];
-    isProposal: boolean;
-}
-
-export interface ThesisStatusData {
-    id: string;
-    name: string;
-    description: string | null;
 }
 
 export const getMasterDataTheses = async (): Promise<MasterDataThesis[]> => {
@@ -44,16 +40,6 @@ export const getMasterDataTheses = async (): Promise<MasterDataThesis[]> => {
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Gagal mengambil master data tugas akhir");
-    }
-    const result = await response.json();
-    return result.data;
-};
-
-export const getMasterDataThesisStatuses = async (): Promise<ThesisStatusData[]> => {
-    const response = await apiRequest(getApiUrl('/master-data-ta/statuses'));
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Gagal mengambil status tugas akhir");
     }
     const result = await response.json();
     return result.data;

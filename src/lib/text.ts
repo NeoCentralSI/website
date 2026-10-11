@@ -116,6 +116,30 @@ export function formatDateShortId(date?: string | Date | null): string {
   }
 }
 
+/**
+ * Tanggal + jam bahasa Indonesia, selalu zona Asia/Jakarta, jam 24 jam dengan titik:
+ * `14 Oktober 2026 14.00 WIB`, atau `Rabu, 14 Oktober 2026 14.00 WIB` bila `withWeekday`.
+ * Nilai kosong/tidak valid → `-`. Tanggal tanpa jam: pakai `formatDateShortId`.
+ */
+export function formatDateTimeWib(date?: string | Date | null, options: { withWeekday?: boolean } = {}): string {
+  if (!date) return "-";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "-";
+  const parts = new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(d);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
+  const text = `${get("day")} ${get("month")} ${get("year")} ${get("hour")}.${get("minute")} WIB`;
+  return options.withWeekday ? `${get("weekday")}, ${text}` : text;
+}
+
 export function getInitials(name?: string | null): string {
   if (!name) return "??";
   const parts = name.trim().split(/\s+/);

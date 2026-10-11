@@ -23,6 +23,8 @@ interface ImportResult {
     updated: number;
     failed: number;
     errors: string[];
+    /** K21: columns the import ignores (e.g. "Rating", computed by the rating job). */
+    ignoredColumns?: string[];
 }
 
 export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataDialogProps) {
@@ -55,8 +57,9 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
             "Judul Tugas Akhir",
             "Topik",
             "Tahun Ajaran",
-            "Rating",
             "Status",
+            "Alasan Penghentian",
+            "Catatan Penghentian",
             "Pembimbing 1",
             "Pembimbing 2",
             "Tanggal Mulai"
@@ -70,8 +73,9 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
                 "Judul Tugas Akhir": "Pengembangan Sistem Informasi Geografis...",
                 "Topik": "Sistem Informasi",
                 "Tahun Ajaran": "2024 - Ganjil",
-                "Rating": "ONGOING",
-                "Status": "Bimbingan",
+                "Status": "Penelitian",
+                "Alasan Penghentian": "-",
+                "Catatan Penghentian": "-",
                 "Pembimbing 1": "Ricky Akbar M.Kom",
                 "Pembimbing 2": "Husnil Kamil, M.T.",
                 "Tanggal Mulai": format(new Date(), "yyyy-MM-dd")
@@ -203,6 +207,13 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
                                     <p className="text-xs text-muted-foreground uppercase font-semibold">Gagal</p>
                                 </div>
                             </div>
+
+                            {result.ignoredColumns && result.ignoredColumns.length > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                    Kolom diabaikan: {result.ignoredColumns.join(", ")} (rating dihitung otomatis oleh sistem).
+                                    Status "Gagal" wajib disertai kolom "Alasan Penghentian".
+                                </p>
+                            )}
 
                             {result.errors.length > 0 && (
                                 <ScrollArea className="h-[200px] w-full border rounded-md p-4 bg-red-50/50">

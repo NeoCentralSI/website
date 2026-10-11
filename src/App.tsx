@@ -31,7 +31,7 @@ const Profil = lazy(() => import('./pages/profil/Profil'))
 // Tugas Akhir - Bimbingan
 const BimbinganEntry = lazy(() => import('./pages/tugas-akhir/bimbingan/BimbinganEntry'))
 const StudentGuidance = lazy(() => import('./pages/tugas-akhir/bimbingan/student/StudentGuidance'));
-const MilestoneManagement = lazy(() => import('./pages/tugas-akhir/bimbingan/student/MilestoneManagement'));
+const StudentMilestonePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/Milestone'));
 const CompletedHistory = lazy(() => import('./pages/tugas-akhir/bimbingan/student/CompletedHistory'));
 const StudentGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/GuidanceSession'))
 const LecturerRequestsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/Requests'))
@@ -39,6 +39,7 @@ const LecturerGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbi
 const LecturerMyStudentsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/MyStudents'))
 const LecturerMyStudentDetailPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'))
 const SecretaryKelolaTugasAkhirPage = lazy(() => import('./pages/tugas-akhir/bimbingan/secretary/TugasAkhir'))
+const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
 // Tugas Akhir - Seminar Hasil
 const ThesisSeminarEntryPage = lazy(() => import('./pages/thesis-seminar/ThesisSeminarEntry'))
 const ThesisSeminarDetailPage = lazy(() => import('./pages/thesis-seminar/ThesisSeminarDetail'))
@@ -246,10 +247,10 @@ function App() {
                     <Route index element={<TugasAkhirOverviewPage />} />
                     {/* Removed bimbingan/ route to allow BimbinganEntry to handle role-based redirection */}
                     <Route path="bimbingan/student" element={<StudentGuidance />} />
-                    <Route path="bimbingan/student/milestone" element={<MilestoneManagement />} />
+                    <Route path="bimbingan/student/milestone" element={<StudentMilestonePage />} />
                     <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
                     <Route path="bimbingan/student/history" element={<CompletedHistory />} />
-                    {/* DangerZone removed per SIMPTA canon v2.1 refactor; redirect to TA overview */}
+                    {/* DangerZone (TA-05) is not restored in the guidance revival (GUIDANCE_REVIVAL_PLAN e1); redirect to TA overview */}
                     <Route path="bimbingan/danger-zone" element={<Navigate to="/tugas-akhir" replace />} />
                     {/* Seminar Hasil and Sidang handled by top-level routes (thesis-seminar/, thesis-defence/) */}
                   </Route>
@@ -308,9 +309,9 @@ function App() {
                   <Route path="/dosen/inbox-pembimbing" element={<InboxPembimbing />} />
                 </Route>
 
-                {/* Monitoring TA — HANYA KaDep + Sekdep (audit pass 2 F2-7 / OQ-2.4:
-                    selaras guard backend /thesisGuidance/monitoring; GKM & Admin dicabut). */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
+                {/* Monitoring TA — KaDep, Sekdep, GKM (guidance revival: akses GKM baseline dipulihkan,
+                    selaras guard backend /thesisGuidance/monitoring = DEPARTMENT_ROLES). */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.GKM]} />}>
                   <Route path="/tugas-akhir/monitoring" element={<MonitoringDashboard />} />
                   <Route path="/tugas-akhir/monitoring/:thesisId" element={<StudentProgressDetail />} />
                 </Route>
@@ -336,7 +337,7 @@ function App() {
                   <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                   <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
                   {/* F2-12: route '/kelola/tugas-akhir/monitor' dihapus — tidak ada tab 'monitor' di TugasAkhir.tsx. */}
-                  <Route path="/kelola/tugas-akhir/milestone" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
+                  <Route path="/kelola/tugas-akhir/milestone" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/cpmk" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
@@ -415,6 +416,8 @@ function App() {
                   <Route path="/kelola/tugas-akhir/kadep" element={<DSSKadep />} />
                   <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<DSSKadep />} />
                   <Route path="/kelola/tugas-akhir/kadep/pengesahan-judul" element={<DSSKadep />} />
+                  {/* Persetujuan transfer mahasiswa bimbingan (baseline guidance; path lama dipakai DSSKadep) */}
+                  <Route path="/kelola/tugas-akhir/kadep/pergantian-pembimbing" element={<KelolaTugasAkhirKadepPage />} />
                   {/* Kerja Praktik Kadep (non-SIMPTA, from origin/main) */}
                   <Route path="/kelola/kerja-praktik/kadep" element={<Navigate to="/kelola/kerja-praktik/kadep/monitoring" replace />} />
                   <Route path="/kelola/kerja-praktik/kadep/monitoring" element={<KadepInternshipManagementPage />} />

@@ -11,17 +11,11 @@ import { ComboBox } from "@/components/ui/combobox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Settings2 } from "lucide-react";
 import type { SupervisorBusySlot, SupervisorsResponse } from "@/services/studentGuidance.service";
-import type { GuidancePhase } from "@/services/studentGuidance.service";
 import { getSupervisorAvailability, requestStudentGuidance } from "@/services/studentGuidance.service";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-
-/** Tipe minimal item agenda opsional yang bisa ditautkan ke sesi bimbingan. */
-export interface GuidanceMilestoneItem {
-  id: string;
-  title: string;
-  status: string;
-}
+import type { Milestone } from "@/types/milestone.types";
+import { formatDateTimeWib } from "@/lib/text";
 
 const DURATION_OPTIONS = [
   { value: '30', label: '30 menit' },
@@ -34,14 +28,11 @@ export type RequestGuidanceDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   supervisors?: SupervisorsResponse["supervisors"];
-  /** Item yang bisa dipilih: Milestone TA atau MetopenTask. Gunakan GuidanceMilestoneItem. */
-  milestones?: GuidanceMilestoneItem[];
-  /** Phase: 'proposal' untuk bimbingan proposal, 'thesis' atau undefined untuk bimbingan TA */
-  phase?: GuidancePhase;
+  milestones?: Milestone[];
   onSubmitted?: () => void;
 };
 
-export default function RequestGuidanceDialog({ open, onOpenChange, supervisors = [], milestones = [], phase, onSubmitted }: RequestGuidanceDialogProps) {
+export default function RequestGuidanceDialog({ open, onOpenChange, supervisors = [], milestones = [], onSubmitted }: RequestGuidanceDialogProps) {
   const [when, setWhen] = useState<Date | null>(null);
   const [duration, setDuration] = useState('60');
   const [note, setNote] = useState("");
@@ -97,7 +88,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
         });
         if (conflict) {
           const label = conflict.studentName ? `dengan ${conflict.studentName}` : "dengan mahasiswa lain";
-          const range = `${new Date(conflict.start).toLocaleString("id-ID")} - ${new Date(conflict.end).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
+          const range = `${formatDateTimeWib(conflict.start)} s.d. ${formatDateTimeWib(conflict.end)}`;
           setSlotConflict(`Jadwal bentrok ${label} pada ${range}. Pilih waktu lain.`);
         } else {
           setSlotConflict(null);
@@ -125,11 +116,11 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
         documentUrl: documentUrl || undefined,
         supervisorId: resolvedSupervisorId || undefined,
         milestoneIds: selectedMilestoneIds.length ? selectedMilestoneIds : undefined,
-        phase,
       });
     },
     onSuccess: (res) => {
-      const whenFmt = res?.guidance?.requestedDateFormatted || res?.guidance?.approvedDateFormatted;
+      const when = res?.guidance?.requestedDate ?? res?.guidance?.approvedDate;
+      const whenFmt = when ? formatDateTimeWib(when) : null;
       const msg = whenFmt ? `Pengajuan bimbingan terkirim • ${whenFmt}` : "Pengajuan bimbingan terkirim";
       toast.success(msg, { id: "guidance-requested" });
       onOpenChange(false);
@@ -155,12 +146,9 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
     ...supervisors.map((s) => ({ label: s.name || s.id, value: s.id }))
   ];
 
-  const isProposal = phase === "proposal";
+  const activeMilestones = milestones.filter((m) => m.status !== "completed");
 
-  const activeMilestones = (milestones || []).filter((m) => m.status !== "completed");
-
-  // Agenda tautan bersifat opsional. Source of truth logbook adalah sesi bimbingan itu sendiri.
-  const canSubmit = !!when && !slotConflict && !checkingAvailability;
+  const canSubmit = !!when && !slotConflict && !checkingAvailability && selectedMilestoneIds.length > 0;
 
   const toggleMilestone = (id: string) => {
     setSelectedMilestoneIds((prev) =>
@@ -236,9 +224,7 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
 
           {/* Optional: File Upload */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              {isProposal ? "Unggah file proposal (opsional)" : "Unggah file thesis (opsional)"}
-            </Label>
+            <Label className="text-sm font-medium">Unggah file thesis (opsional)</Label>
             <Input
               type="file"
               accept=".pdf,application/pdf"
@@ -249,12 +235,11 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
             </p>
           </div>
 
-          {/* Agenda opsional */}
+          {/* Required: Milestone Selection */}
           {activeMilestones.length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                {isProposal ? "Agenda Proposal yang Dibahas" : "Agenda Bimbingan yang Dibahas"}
-                <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
+                Milestone yang Dibahas <span className="text-destructive">*</span>
               </Label>
               <div className="space-y-1 rounded-lg border p-3 max-h-32 overflow-auto">
                 {activeMilestones.map((m) => (
@@ -274,6 +259,15 @@ export default function RequestGuidanceDialog({ open, onOpenChange, supervisors 
                   </label>
                 ))}
               </div>
+              {selectedMilestoneIds.length === 0 && (
+                <p className="text-xs text-destructive">Pilih minimal 1 milestone</p>
+              )}
+            </div>
+          )}
+
+          {activeMilestones.length === 0 && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+              <p className="text-sm text-yellow-800">Tidak ada milestone aktif. Buat milestone terlebih dahulu di halaman Milestone sebelum mengajukan bimbingan.</p>
             </div>
           )}
 

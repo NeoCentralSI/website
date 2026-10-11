@@ -78,6 +78,7 @@ import {
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { triggerSiaSync } from '@/services/sia.service';
 import { toast } from 'sonner';
+import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
 import type {
   DevToolsMetopenEligibility,
   DevToolsThesisCourseEligibility,
@@ -328,7 +329,7 @@ function ThesisPanel({ studentId, studentName, onDeleteThesis, isSubmitting }: {
         <TableBody>{theses.map((t) => (
           <TableRow key={t.id}>
             <TableCell className="text-sm max-w-[200px] truncate">{t.title || '(tanpa judul)'}</TableCell>
-            <TableCell><Badge variant="secondary">{t.status}</Badge></TableCell>
+            <TableCell><ThesisStatusBadge status={t.status} /></TableCell>
             <TableCell className="min-w-[180px]">
               <Select
                 value={t.academicYearId ?? ''}

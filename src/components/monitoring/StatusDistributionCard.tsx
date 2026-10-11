@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StatusDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
-import { getThesisStatusStyle } from "@/lib/monitoring/thesisStatus";
+import { getThesisStatusLabel, THESIS_STATUS_BG_CLASSES, type ThesisLifecycleStatus } from "@/lib/thesisLabels";
 
 interface StatusDistributionCardProps {
   statusDistribution: StatusDistribution[] | undefined;
@@ -10,7 +10,7 @@ interface StatusDistributionCardProps {
 }
 
 function getStatusColor(status: string): string {
-  return getThesisStatusStyle(status).barClassName;
+  return THESIS_STATUS_BG_CLASSES[status as ThesisLifecycleStatus] || "bg-gray-500";
 }
 
 export function StatusDistributionCard({ statusDistribution, isLoading }: StatusDistributionCardProps) {
@@ -60,7 +60,7 @@ export function StatusDistributionCard({ statusDistribution, isLoading }: Status
             return (
               <div key={status.id} className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium">{status.name}</span>
+                  <span className="font-medium">{getThesisStatusLabel(status.name)}</span>
                   <span className="text-muted-foreground">
                     {status.count} ({percentage}%)
                   </span>

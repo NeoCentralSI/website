@@ -28,13 +28,8 @@ import {
   Shield,
   Award
 } from 'lucide-react';
-
-const STATUS_COLORS: Record<string, string> = {
-  'Berjalan': 'bg-blue-100 text-blue-700 border-blue-200',
-  'Selesai': 'bg-green-100 text-green-700 border-green-200',
-  'Dibatalkan': 'bg-red-500 text-white border-red-600',
-  'Menunggu': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-};
+import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
+import { getThesisStatusLabel } from '@/lib/thesisLabels';
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -115,8 +110,8 @@ export default function MahasiswaDetail() {
     );
   }
 
-  const activeThesis = data.theses.find((t) => t.status !== 'Selesai' && t.status !== 'Dibatalkan');
-  const completedTheses = data.theses.filter((t) => t.status === 'Selesai');
+  const activeThesis = data.theses.find((t) => t.status !== 'completed' && t.status !== 'failed');
+  const completedTheses = data.theses.filter((t) => t.status === 'completed');
   const metopenEligibility = data.metopenEligibility;
 
   return (
@@ -387,7 +382,7 @@ export default function MahasiswaDetail() {
                       <div className="rounded-lg border p-3 sm:col-span-2">
                         <p className="text-xs text-muted-foreground">Konteks arsip / thesis terkait</p>
                         <p className="mt-1 font-medium">{metopenEligibility.thesisTitle || 'Tanpa judul'}</p>
-                        <p className="text-sm text-muted-foreground">{metopenEligibility.thesisStatus || '-'}</p>
+                        <p className="text-sm text-muted-foreground">{getThesisStatusLabel(metopenEligibility.thesisStatus)}</p>
                       </div>
                     )}
                   </div>
@@ -411,9 +406,7 @@ export default function MahasiswaDetail() {
                     {activeThesis.title || <span className="italic text-muted-foreground">Judul belum ditentukan</span>}
                   </h3>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <Badge className={STATUS_COLORS[activeThesis.status || ''] || 'bg-muted text-muted-foreground'}>
-                      {activeThesis.status || 'Tidak diketahui'}
-                    </Badge>
+                    <ThesisStatusBadge status={activeThesis.status} />
                     {activeThesis.topic && (
                       <Badge variant="outline">{activeThesis.topic}</Badge>
                     )}

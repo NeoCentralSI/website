@@ -4,15 +4,15 @@ import { PieChart, Pie, Cell, Legend } from "recharts";
 import type { StatusDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
-import { getThesisStatusStyle } from "@/lib/monitoring/thesisStatus";
+import { getThesisStatusLabel, THESIS_STATUS_CHART_COLORS, type ThesisLifecycleStatus } from "@/lib/thesisLabels";
 
 interface StatusDistributionChartProps {
   statusDistribution: StatusDistribution[] | undefined;
   isLoading: boolean;
 }
 
-function getColor(status: string): string {
-  return getThesisStatusStyle(status).chartColor;
+function getColor(status: string, index: number): string {
+  return THESIS_STATUS_CHART_COLORS[status as ThesisLifecycleStatus] || `hsl(${index * 45}, 70%, 50%)`;
 }
 
 export function StatusDistributionChart({ statusDistribution, isLoading }: StatusDistributionChartProps) {
@@ -29,12 +29,15 @@ export function StatusDistributionChart({ statusDistribution, isLoading }: Statu
     );
   }
 
-  const data = (statusDistribution ?? []).filter(s => s.count > 0);
+  // API sends the enum value in `name`; keep it as `status` and show the label (lib/thesisLabels).
+  const data = (statusDistribution ?? [])
+    .filter(s => s.count > 0)
+    .map(s => ({ ...s, status: s.name, name: getThesisStatusLabel(s.name) }));
   const total = data.reduce((sum, s) => sum + s.count, 0);
 
   const chartConfig: ChartConfig = {};
-  data.forEach((s) => {
-    chartConfig[s.name] = { label: s.name, color: getColor(s.name) };
+  data.forEach((s, i) => {
+    chartConfig[s.name] = { label: s.name, color: getColor(s.status, i) };
   });
 
   return (
@@ -70,8 +73,8 @@ export function StatusDistributionChart({ statusDistribution, isLoading }: Statu
                 labelLine={false}
                 fontSize={11}
               >
-                {data.map((entry) => (
-                  <Cell key={entry.id} fill={getColor(entry.name)} />
+                {data.map((entry, index) => (
+                  <Cell key={entry.id} fill={getColor(entry.status, index)} />
                 ))}
               </Pie>
               <Legend

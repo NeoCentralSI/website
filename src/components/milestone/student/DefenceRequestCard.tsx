@@ -17,13 +17,14 @@ import {
 import { CheckCircle2, XCircle, Clock, FileText, Upload, PartyPopper, AlertCircle, ExternalLink, Download } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useDefenceReadinessStatus, useRequestDefence } from "@/hooks/milestone/useMilestone";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { ROLES } from "@/lib/roles";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { getApiUrl } from "@/config/api";
 import { apiRequest } from "@/services/auth.service";
+import { getThesisStatusLabel } from "@/lib/thesisLabels";
 
 interface DefenceRequestCardProps {
   thesisId: string;
@@ -195,7 +196,7 @@ export function DefenceRequestCard({
         {/* Status Badge */}
         <div className="flex items-center justify-between text-sm">
           <span>Status Thesis</span>
-          <Badge variant="default">{thesisStatus?.name || "Unknown"}</Badge>
+          <Badge variant="default">{getThesisStatusLabel(thesisStatus?.name)}</Badge>
         </div>
 
         {/* Fully Approved Alert */}
@@ -220,7 +221,7 @@ export function DefenceRequestCard({
                   {finalDocument.fileName}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Diupload: {formatDateId(finalDocument.uploadedAt)}
+                  Diupload: {formatDateTimeWib(finalDocument.uploadedAt)}
                 </p>
                 <div className="flex gap-2 mt-2">
                   <Button
@@ -403,14 +404,14 @@ export function DefenceRequestCard({
         {/* Approval Date */}
         {defenceReadiness?.approvedAt && (
           <p className="text-xs text-muted-foreground">
-            Disetujui penuh pada: {formatDateId(defenceReadiness.approvedAt)}
+            Disetujui penuh pada: {formatDateTimeWib(defenceReadiness.approvedAt)}
           </p>
         )}
 
         {/* Request Date */}
         {hasRequestedDefence && defenceReadiness?.requestedAt && !isFullyApproved && (
           <p className="text-xs text-muted-foreground">
-            Diajukan pada: {formatDateId(defenceReadiness.requestedAt)}
+            Diajukan pada: {formatDateTimeWib(defenceReadiness.requestedAt)}
           </p>
         )}
       </CardContent>

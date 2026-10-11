@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2, Clock, Loader2, PartyPopper, AlertCircle, Bell, Target, GraduationCap } from "lucide-react";
 import { useSeminarReadinessStatus, useRemindSeminarApproval } from "@/hooks/milestone/useMilestone";
 import { Button } from "@/components/ui/button";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { ROLES } from "@/lib/roles";
 import { Progress } from "@/components/ui/progress";
@@ -297,7 +297,7 @@ export function SeminarReadinessStatusCard({
       {/* Approval Date */}
       {seminarReadiness?.approvedAt && variant === "card" && (
         <p className="text-[10px] text-muted-foreground italic">
-          Disetujui penuh pada: {formatDateId(seminarReadiness.approvedAt)}
+          Disetujui penuh pada: {formatDateTimeWib(seminarReadiness.approvedAt)}
         </p>
       )}
     </div>

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { Download } from "lucide-react";
 import { getGuidanceForExport, generateGuidanceLogPdf } from "@/services/studentGuidance.service";
-import { toTitleCaseName } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import { toast } from "sonner";
 
 interface GuidanceExportDialogProps {
@@ -117,7 +117,7 @@ export default function GuidanceExportDialog({
                 <tr>
                   <td className="border px-3 py-2 align-top">
                     <div className="space-y-1">
-                      <p className="font-medium">{guidance.approvedDateFormatted || "-"}</p>
+                      <p className="font-medium">{formatDateTimeWib(guidance.approvedDate, { withWeekday: true })}</p>
                       {guidance.duration && (
                         <p className="text-xs text-muted-foreground">
                           {guidance.duration} menit
@@ -155,7 +155,7 @@ export default function GuidanceExportDialog({
 
             {/* Footer */}
             <div className="text-xs text-muted-foreground pt-2 border-t">
-              <p>Diselesaikan: {guidance.completedAtFormatted || "-"}</p>
+              <p>Diselesaikan: {formatDateTimeWib(guidance.completedAt, { withWeekday: true })}</p>
             </div>
           </div>
         ) : null}

@@ -28,12 +28,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
-import { Ta03ScoreSummary } from "./Ta03ScoreSummary";
-import { Ta04StatusBadge } from "./Ta04StatusBadge";
 import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
 import { useRole } from "@/hooks/shared/useRole";
-import { getThesisStatusStyle } from "@/lib/monitoring/thesisStatus";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { toTitleCaseName, formatDateShortId, formatDateTimeWib } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
 import { sendWarningToStudent } from "@/services/monitoring.service";
@@ -41,29 +38,27 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
+import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
+import { getThesisStatusLabel, THESIS_RATING_LABELS } from "@/lib/thesisLabels";
 
 
 
-function getStatusBadge(status: string) {
-  const { label, className } = getThesisStatusStyle(status);
-  return <Badge className={cn("whitespace-nowrap", className)}>{label}</Badge>;
-}
 
 // Rating badge config
 const getRatingConfig = (rating?: string) => {
   switch (rating) {
     case "ONGOING":
-      return { variant: "outline" as const, label: "Ongoing", className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
+      return { variant: "outline" as const, label: THESIS_RATING_LABELS.ONGOING, className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
     case "SLOW":
-      return { variant: "secondary" as const, label: "Slow", className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", needsWarning: true };
+      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.SLOW, className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", needsWarning: true };
     case "AT_RISK":
-      return { variant: "destructive" as const, label: "At Risk", className: "", needsWarning: true };
+      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.AT_RISK, className: "", needsWarning: true };
     case "FAILED":
-      return { variant: "destructive" as const, label: "Gagal", className: "", needsWarning: true };
+      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.FAILED, className: "", needsWarning: true };
     case "CANCELLED":
-      return { variant: "secondary" as const, label: "Cancelled", className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
+      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.CANCELLED, className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
     default:
-      return { variant: "outline" as const, label: "Ongoing", className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
+      return { variant: "outline" as const, label: THESIS_RATING_LABELS.ONGOING, className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
   }
 };
 
@@ -82,8 +77,10 @@ interface ThesesTableProps {
 
 export function ThesesTable({ isSyncing = false, academicYear, initialRating }: ThesesTableProps) {
   const navigate = useNavigate();
-  const { isGkm, isSekdep } = useRole();
-  const canSendWarning = !isGkm() && !isSekdep();
+  const { isKadep } = useRole();
+  // Backend rule: only KaDep may warn any thesis from monitoring; supervisors warn
+  // their own active students from the lecturer page. GKM/Sekdep roles alone may not.
+  const canSendWarning = isKadep();
   
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
@@ -239,17 +236,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
     {
       key: "status",
       header: "Status",
-      render: (thesis) => getStatusBadge(thesis.status),
-    },
-    {
-      key: "ta04",
-      header: "TA-04",
-      render: (thesis) => <Ta04StatusBadge ta04={thesis.ta04} />,
-    },
-    {
-      key: "ta03",
-      header: "Nilai TA-03",
-      render: (thesis) => <Ta03ScoreSummary ta03={thesis.ta03} />,
+      render: (thesis) => <ThesisStatusBadge status={thesis.status} />,
     },
     {
       key: "progress",
@@ -336,7 +323,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
       ),
       render: (thesis) => (
         <span className="text-sm text-muted-foreground whitespace-nowrap">
-          {formatDateId(thesis.lastActivity)}
+          {formatDateTimeWib(thesis.lastActivity)}
         </span>
       ),
     },
@@ -348,7 +335,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
           "text-sm font-medium whitespace-nowrap",
           thesis.rating === 'FAILED' ? "text-destructive" : "text-muted-foreground"
         )}>
-          {thesis.deadlineDate ? formatDateId(thesis.deadlineDate) : "-"}
+          {thesis.deadlineDate ? formatDateShortId(thesis.deadlineDate) : "-"}
         </span>
       ),
     },
@@ -435,7 +422,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
           <SelectItem value="all">Semua Status</SelectItem>
           {filterOptions?.statuses.map((status) => (
             <SelectItem key={status.value} value={status.value}>
-              {status.label} ({status.count})
+              {getThesisStatusLabel(status.value)} ({status.count})
             </SelectItem>
           ))}
         </SelectContent>
@@ -484,11 +471,9 @@ export function ThesesTable({ isSyncing = false, academicYear, initialRating }: 
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Semua Rating</SelectItem>
-          <SelectItem value="ONGOING">Ongoing</SelectItem>
-          <SelectItem value="SLOW">Slow</SelectItem>
-          <SelectItem value="AT_RISK">At Risk</SelectItem>
-          <SelectItem value="FAILED">Gagal</SelectItem>
-          <SelectItem value="CANCELLED">Cancelled</SelectItem>
+          {(Object.keys(THESIS_RATING_LABELS) as (keyof typeof THESIS_RATING_LABELS)[]).map((rating) => (
+            <SelectItem key={rating} value={rating}>{THESIS_RATING_LABELS[rating]}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

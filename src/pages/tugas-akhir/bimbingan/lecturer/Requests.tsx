@@ -3,12 +3,13 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { TabsNav } from '@/components/ui/tabs-nav';
 import CustomTable from '@/components/layout/CustomTable';
-import DocumentPreviewDialog from '@/components/thesis/DocumentPreviewDialog';
+import AuthenticatedDocumentPreviewDialog from '@/components/thesis/AuthenticatedDocumentPreviewDialog';
 import GuidanceRequestDetailDialog from '@/components/thesis/GuidanceRequestDetailDialog';
 import { useLecturerGuidanceDialogs } from '@/hooks/guidance';
 import { getLecturerRequestColumns } from '@/lib/lecturerRequestColumns';
 import type { GuidanceItem } from '@/services/lecturerGuidance.service';
-import { getPendingRequests, getScheduledGuidances, cancelGuidanceByLecturer } from '@/services/lecturerGuidance.service';
+import { getPendingRequests, getScheduledGuidances, cancelGuidanceByLecturer, rescheduleGuidanceByLecturer } from '@/services/lecturerGuidance.service';
+import { LecturerRescheduleDialog } from '@/components/thesis/LecturerGuidanceDialogs';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loading, Spinner } from '@/components/ui/spinner';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -24,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { formatDateTimeWib } from '@/lib/text';
 
 export default function LecturerBimbinganPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -50,11 +52,8 @@ export default function LecturerBimbinganPage() {
 
   // Merge both data sources into a single list, sorted by date (newest first)
   const allGuidances = useMemo(() => {
-    // getPendingRequests returns { requests: GuidanceItem[] }; getScheduledGuidances returns GuidanceItem[]
-    const requestsRaw = requestsQuery.data?.requests;
-    const scheduledRaw = scheduledQuery.data;
-    const requests = Array.isArray(requestsRaw) ? requestsRaw : [];
-    const scheduled = Array.isArray(scheduledRaw) ? scheduledRaw : [];
+    const requests = requestsQuery.data?.requests || [];
+    const scheduled = scheduledQuery.data?.guidances || [];
 
     // Combine and deduplicate by id
     const map = new Map<string, GuidanceItem>();
@@ -111,7 +110,7 @@ export default function LecturerBimbinganPage() {
 
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
-    setTitle(undefined);
+    setTitle('Bimbingan Tugas Akhir');
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   // Client-side filtering
@@ -141,6 +140,9 @@ export default function LecturerBimbinganPage() {
   const total = filteredItems.length;
   const paginatedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize);
 
+  // K19: the lecturer moves an accepted session
+  const [rescheduleTarget, setRescheduleTarget] = useState<GuidanceItem | null>(null);
+
   const columns = getLecturerRequestColumns({
     allRequests: allGuidances,
     studentFilter,
@@ -156,6 +158,7 @@ export default function LecturerBimbinganPage() {
     onCancel: (guidanceId: string) => {
       setCancelGuidanceId(guidanceId);
     },
+    onReschedule: (guidance: GuidanceItem) => setRescheduleTarget(guidance),
   });
 
   // Tabs
@@ -172,8 +175,8 @@ export default function LecturerBimbinganPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-base font-semibold tracking-tight sm:text-lg">Bimbingan Tugas Akhir</h1>
-        <p className="text-xs text-muted-foreground sm:text-sm">Kelola permintaan dan jadwal bimbingan mahasiswa</p>
+        <h1 className="text-2xl font-bold">Bimbingan Tugas Akhir</h1>
+        <p className="text-muted-foreground">Kelola permintaan dan jadwal bimbingan mahasiswa</p>
       </div>
 
       <TabsNav tabs={tabs} />
@@ -212,7 +215,25 @@ export default function LecturerBimbinganPage() {
         />
       )}
 
-      <DocumentPreviewDialog
+      <LecturerRescheduleDialog
+        open={!!rescheduleTarget}
+        onOpenChange={(o) => !o && setRescheduleTarget(null)}
+        currentDateText={rescheduleTarget ? formatDateTimeWib(rescheduleTarget.approvedDate ?? rescheduleTarget.requestedDate) : null}
+        onSubmit={async (data) => {
+          if (!rescheduleTarget) return false;
+          try {
+            await rescheduleGuidanceByLecturer(rescheduleTarget.id, data);
+            toast.success('Jadwal bimbingan diubah');
+            refetch();
+            return true;
+          } catch (e) {
+            toast.error((e as Error)?.message || 'Gagal mengubah jadwal');
+            return false;
+          }
+        }}
+      />
+
+      <AuthenticatedDocumentPreviewDialog
         open={docOpen}
         onOpenChange={setDocOpen}
         fileName={docInfo?.fileName || undefined}

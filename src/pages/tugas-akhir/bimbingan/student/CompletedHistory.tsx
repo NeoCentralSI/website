@@ -5,6 +5,7 @@ import { TabsNav } from '@/components/ui/tabs-nav';
 import CompletedGuidanceHistory from '@/components/thesis/CompletedGuidanceHistory';
 import { useQuery } from '@tanstack/react-query';
 import { getStudentSupervisors } from '@/services/studentGuidance.service';
+import { getThesisStatusLabel } from '@/lib/thesisLabels';
 
 export default function CompletedHistoryPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -31,34 +32,32 @@ export default function CompletedHistoryPage() {
     enabled: hasThesis,
   });
 
-  const isThesisInactive = thesisDetail?.status === "Gagal" || thesisDetail?.status === "Dibatalkan" || thesisDetail?.status === "Selesai";
+  const isThesisInactive = thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
 
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
-    setTitle(undefined);
+    setTitle('Riwayat Bimbingan');
   }, [breadcrumb, setBreadcrumbs, setTitle]);
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-base font-semibold tracking-tight sm:text-lg">Riwayat Bimbingan</h1>
-          <p className="text-xs text-muted-foreground sm:text-sm">Arsip seluruh kegiatan bimbingan</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Riwayat Bimbingan</h1>
+        <p className="text-muted-foreground">Arsip seluruh kegiatan bimbingan</p>
       </div>
 
       <TabsNav
         preserveSearch
         tabs={[
           { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/student', end: true },
-          { label: 'Riwayat Bimbingan', to: '/tugas-akhir/bimbingan/student/history', end: true },
+          { label: 'Milestone', to: '/tugas-akhir/bimbingan/student/milestone' },
         ]}
       />
 
       {isThesisInactive ? (
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
           <h3 className="text-lg font-semibold mb-2">Tugas Akhir Tidak Aktif</h3>
-          <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{thesisDetail?.status}</strong>. Anda tidak dapat mengakses riwayat bimbingan.</p>
+          <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{getThesisStatusLabel(thesisDetail?.status)}</strong>. Anda tidak dapat mengakses riwayat bimbingan.</p>
         </div>
       ) : (
         <CompletedGuidanceHistory />

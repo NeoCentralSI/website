@@ -1,5 +1,13 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { formatDateTimeWib } from "@/lib/text";
+
+/** Session schedule from a push payload, as "14 Oktober 2026 14.00 WIB"; "" when the payload has none. */
+function scheduleText(data: Record<string, string | undefined> | undefined): string {
+  const iso = data?.scheduledAt || data?.approvedDate || data?.requestedDate;
+  const text = formatDateTimeWib(iso);
+  return text === "-" ? "" : text;
+}
 
 export type ThesisPushEventType =
   | "thesis-guidance:requested"
@@ -25,7 +33,7 @@ export function useThesisRealtimeHandlers() {
     switch (type) {
       case "thesis-guidance:requested": {
         if (role === "supervisor") {
-          const when = payload?.data?.requestedDateFormatted || payload?.data?.requestedDate || "";
+          const when = scheduleText(payload?.data);
           const msg = when ? `Permintaan bimbingan baru • ${when}` : "Permintaan bimbingan baru";
           toast(msg, { id: "guidance-requested" });
           if (payload?.data?.playSound === "true") playBeep();
@@ -37,7 +45,7 @@ export function useThesisRealtimeHandlers() {
         return true;
       }
       case "thesis-guidance:rescheduled": {
-        const when = payload?.data?.requestedDateFormatted || payload?.data?.requestedDate || "";
+        const when = scheduleText(payload?.data);
         const msg = when ? `Jadwal bimbingan diperbarui • ${when}` : "Jadwal bimbingan diperbarui";
         toast(msg, { id: "guidance-rescheduled" });
         qc.invalidateQueries({ queryKey: ["student-guidance"] });
@@ -132,7 +140,7 @@ export function useThesisRealtimeHandlers() {
     switch (type) {
       case 'thesis-guidance:requested': {
         if (role === 'supervisor') {
-          const when = msg?.data?.requestedDateFormatted || msg?.data?.requestedDate || '';
+          const when = scheduleText(msg?.data);
           const t = when ? `Permintaan bimbingan baru • ${when}` : 'Permintaan bimbingan baru';
           toast(t, { id: 'guidance-requested' });
           if (msg?.data?.playSound === 'true') playBeep();

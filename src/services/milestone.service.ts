@@ -81,10 +81,18 @@ const ENDPOINTS = {
 /**
  * Get all milestone templates
  */
-export async function getTemplates(topicId?: string): Promise<MilestoneTemplate[]> {
+export interface TemplateListOptions {
+  /** Template management (Sekdep) also needs deactivated templates. */
+  includeInactive?: boolean;
+}
+
+export async function getTemplates(topicId?: string, options: TemplateListOptions = {}): Promise<MilestoneTemplate[]> {
   const url = new URL(getApiUrl(ENDPOINTS.TEMPLATES));
   if (topicId) {
     url.searchParams.set("topicId", topicId);
+  }
+  if (options.includeInactive) {
+    url.searchParams.set("includeInactive", "true");
   }
 
   const response = await apiRequest(url.toString());
@@ -114,8 +122,12 @@ export async function getTopics(): Promise<ThesisTopic[]> {
 /**
  * Get template topics with count
  */
-export async function getTemplateTopics(): Promise<TemplateTopic[]> {
-  const response = await apiRequest(getApiUrl(ENDPOINTS.TEMPLATE_CATEGORIES));
+export async function getTemplateTopics(options: TemplateListOptions = {}): Promise<TemplateTopic[]> {
+  const url = new URL(getApiUrl(ENDPOINTS.TEMPLATE_CATEGORIES));
+  if (options.includeInactive) {
+    url.searchParams.set("includeInactive", "true");
+  }
+  const response = await apiRequest(url.toString());
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Gagal mengambil topik template");

@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { MasterDataThesis } from "@/services/masterDataTa.service";
+import { getThesisRatingLabel, getThesisStatusLabel, getThesisTerminationReasonLabel, THESIS_RATING_LABELS, THESIS_STATUS_LABELS } from "@/lib/thesisLabels";
 
 interface ExportExcelDialogProps {
     open: boolean;
@@ -16,13 +17,8 @@ interface ExportExcelDialogProps {
     academicYears: { id: string; year: string; semester: string }[];
 }
 
-const RATINGS = [
-    { id: "ONGOING", label: "Ongoing" },
-    { id: "SLOW", label: "Lambat" },
-    { id: "AT_RISK", label: "Berisiko" },
-    { id: "FAILED", label: "Gagal" },
-    { id: "CANCELLED", label: "Dibatalkan" },
-];
+const RATINGS = Object.entries(THESIS_RATING_LABELS).map(([id, label]) => ({ id, label }));
+const STATUS_ORDER = Object.keys(THESIS_STATUS_LABELS);
 
 export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }: ExportExcelDialogProps) {
     const [academicYearId, setAcademicYearId] = useState<string>("all");
@@ -31,7 +27,7 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
 
     const uniqueStatuses = useMemo(() => {
         const statuses = new Set(theses.map(t => t.status).filter(Boolean));
-        return Array.from(statuses).sort();
+        return Array.from(statuses).sort((a, b) => STATUS_ORDER.indexOf(a) - STATUS_ORDER.indexOf(b));
     }, [theses]);
 
     const handleExport = () => {
@@ -56,8 +52,11 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
             "Judul Tugas Akhir": t.title || "-",
             "Topik": t.topic?.name || "-",
             "Tahun Ajaran": t.academicYear ? `${t.academicYear.year} - ${t.academicYear.semester}` : "-",
-            "Rating": t.rating || "-",
-            "Status": t.status || "-",
+            "Rating": getThesisRatingLabel(t.rating),
+            "Status": getThesisStatusLabel(t.status),
+            // K21: same columns as the import, so an exported file imports back
+            "Alasan Penghentian": t.terminationReason ? getThesisTerminationReasonLabel(t.terminationReason) : "-",
+            "Catatan Penghentian": t.terminationNote || "-",
             "Pembimbing 1": t.supervisors.find(s => s.roleName === "Pembimbing 1")?.name || "-",
             "Pembimbing 2": t.supervisors.find(s => s.roleName === "Pembimbing 2")?.name || "-",
             "Tanggal Mulai": t.startDate ? format(new Date(t.startDate), "dd MMM yyyy") : "-"
@@ -76,6 +75,8 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
             { wch: 15 },
             { wch: 15 },
             { wch: 15 },
+            { wch: 30 },
+            { wch: 30 },
             { wch: 30 },
             { wch: 30 },
             { wch: 15 },
@@ -159,7 +160,7 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
                                             htmlFor={`status-${status}`}
                                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                                         >
-                                            {status}
+                                            {getThesisStatusLabel(status)}
                                         </Label>
                                     </div>
                                 ))}

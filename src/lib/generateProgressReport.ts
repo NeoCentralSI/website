@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { ProgressReportData } from "@/services/monitoring.service";
 import logoUrl from "@/assets/images/neocentral-logo.png";
+import { getThesisRatingLabel } from "@/lib/thesisLabels";
 
 // Extend jsPDF type for autoTable
 declare module "jspdf" {
@@ -31,13 +32,6 @@ const RATING_COLORS: Record<string, string> = {
   FAILED: COLORS.danger,
 };
 
-// Rating labels
-const RATING_LABELS: Record<string, string> = {
-  ONGOING: "Ongoing",
-  SLOW: "Lambat",
-  AT_RISK: "Berisiko",
-  FAILED: "Gagal",
-};
 
 // Neo Central Logo cache
 let logoBase64Cache: string | null = null;
@@ -163,7 +157,7 @@ export async function generateProgressReportPDF(data: ProgressReportData): Promi
       thesis.nim,
       thesis.name,
       pembimbingText,
-      RATING_LABELS[thesis.rating] || thesis.rating,
+      getThesisRatingLabel(thesis.rating),
       thesis.guidanceCompleted.toString(),
       `${thesis.progressPercent}%`,
     ];

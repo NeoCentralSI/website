@@ -170,14 +170,12 @@ export const API_CONFIG = {
       GUIDANCE_CANCEL: (id: string) => `/thesisGuidance/student/guidance/${id}/cancel`,
       GUIDANCE_NOTES: (id: string) => `/thesisGuidance/student/guidance/${id}/notes`,
       PROGRESS: '/thesisGuidance/student/progress',
-      PROGRESS_COMPLETE: '/thesisGuidance/student/progress/complete',
       HISTORY: '/thesisGuidance/student/history',
       SUPERVISORS: '/thesisGuidance/student/supervisors',
       SUPERVISOR_AVAILABILITY: (supervisorId: string) => `/thesisGuidance/student/supervisors/${supervisorId}/availability`,
       // Session Summary
       NEEDS_SUMMARY: '/thesisGuidance/student/needs-summary',
       SUBMIT_SUMMARY: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/submit-summary`,
-      COMPLETE_SESSION: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/complete`,
       COMPLETED_HISTORY: '/thesisGuidance/student/completed-history',
       EXPORT_GUIDANCE: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/export`,
       GENERATE_LOG: '/thesisGuidance/student/guidance/generate-log',
@@ -232,10 +230,21 @@ export const API_CONFIG = {
         STUDENT_PROPOSAL_VERSIONS: (thesisId: string) => `/thesisGuidance/lecturer/students/${thesisId}/proposal/versions`,
         STUDENT_INFORMAL_LOGS: (thesisId: string) =>
           `/thesisGuidance/lecturer/students/${thesisId}/metopen/informal-logs`,
+      // Transfer mahasiswa bimbingan antar dosen (dipulihkan dari baseline guidance)
+      TRANSFER_ELIGIBLE_LECTURERS: '/thesisGuidance/lecturer/transfer/eligible-lecturers',
+      TRANSFER_REQUEST: '/thesisGuidance/lecturer/transfer/request',
+      TRANSFER_INCOMING: '/thesisGuidance/lecturer/transfer/incoming',
+      TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/approve`,
+      TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/reject`,
       },
     THESIS_MONITORING: {
       DASHBOARD: '/thesisGuidance/monitoring/dashboard',
-      // Transfer endpoints removed per SIMPTA canon v2.1 refactor — Path C escalation replaces pergantian
+      // Persetujuan transfer oleh KaDep (dipulihkan dari baseline guidance)
+      TRANSFERS_PENDING: '/kadep-transfers/pending',
+      TRANSFERS_ALL: '/kadep-transfers/all',
+      TRANSFERS_REPORT_DOWNLOAD: '/kadep-transfers/report/download',
+      TRANSFER_APPROVE: (notifId: string) => `/kadep-transfers/${notifId}/approve`,
+      TRANSFER_REJECT: (notifId: string) => `/kadep-transfers/${notifId}/reject`,
     },
     THESIS_SEMINAR: {
       // --- Shared / Global ---
