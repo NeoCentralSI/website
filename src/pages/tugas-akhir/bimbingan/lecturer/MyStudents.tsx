@@ -41,12 +41,21 @@ import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
 import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
-import { IncomingTransfersSection } from "@/components/bimbingan/IncomingTransfersSection";
-import { TransferStudentsDialog } from "@/components/bimbingan/TransferStudentsDialog";
+import { LecturerThesisChangeRequestPanel } from "@/components/thesis-change-request/LecturerThesisChangeRequestPanel";
+import { LecturerTransferStudentsDialog, type TransferStudent } from "@/components/thesis-change-request/LecturerTransferStudentsDialog";
+import { useAuth } from "@/hooks/shared/useAuth";
 import { MyStudentsCharts } from "@/components/bimbingan/MyStudentsCharts";
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
 import { ThesisActivityBadge } from '@/components/shared/ThesisActivityBadge';
 import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
+
+/** Supervisor position of a "my students" row, from the role name the API sends. */
+function toSupervisorPosition(roleName?: string | null): TransferStudent["position"] {
+  const normalized = String(roleName ?? "").toLowerCase().replace(/[\s_]/g, "");
+  if (normalized === "pembimbing1") return "pembimbing_1";
+  if (normalized === "pembimbing2") return "pembimbing_2";
+  return null;
+}
 
 /** A warning can be sent while the activity level is Lambat or Berisiko. */
 const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
@@ -66,7 +75,8 @@ export default function LecturerMyStudentsPage() {
   const [pageSize, setPageSize] = useState(10);
   const queryClient = useQueryClient();
 
-  // Student selection state for transfer
+  // Student selection state for "Alihkan Mahasiswa"
+  const { user } = useAuth();
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
@@ -302,6 +312,26 @@ export default function LecturerMyStudentsPage() {
     return data.students.filter((s: MyStudentItem) => selectedStudentIds.has(s.studentId));
   }, [data?.students, selectedStudentIds]);
 
+  // "Alihkan Mahasiswa" hands over this lecturer's own active position on a research thesis.
+  const transferStudents = useMemo<TransferStudent[]>(
+    () =>
+      selectedStudents
+        .filter((s) => s.thesisId && s.thesisStatus === "research" && (s.supervisorStatus ?? "active") === "active")
+        .map((s) => ({
+          thesisId: s.thesisId as string,
+          name: s.fullName,
+          identityNumber: s.identityNumber ?? null,
+          position: toSupervisorPosition(s.roles?.[0]),
+        })),
+    [selectedStudents],
+  );
+  const transferBlockReason =
+    selectedStudents.length === 0
+      ? "Centang mahasiswa yang akan dialihkan lebih dulu."
+      : transferStudents.length !== selectedStudents.length
+        ? "Hanya mahasiswa dengan tugas akhir berstatus Penelitian yang masih Anda bimbing yang dapat dialihkan."
+        : null;
+
   // Define tabs for reuse
   const tabs = [
     { label: 'Bimbingan', to: '/tugas-akhir/bimbingan/lecturer/requests' },
@@ -322,10 +352,11 @@ export default function LecturerMyStudentsPage() {
         <MyStudentsCharts students={data.students} />
       )}
 
-      {/* Incoming Transfer Requests Section */}
-      <IncomingTransfersSection />
+      {/* Pengajuan Perubahan Tugas Akhir: menunggu persetujuan dosen ini, berjalan, dan riwayat */}
+      <LecturerThesisChangeRequestPanel />
 
-      {/* Pembimbing 2 Requests Section */}
+      {/* Permintaan Pembimbing 2 fase proposal (alur Metode Penelitian). Untuk TA fase
+          penelitian, Pembimbing 2 ditambahkan lewat Pengajuan Perubahan di atas. */}
       <Supervisor2RequestsSection />
 
       {/* Loading state - tabs tetap render, loading di content */}
@@ -372,17 +403,28 @@ export default function LecturerMyStudentsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {selectedStudents.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5"
-                  onClick={() => setTransferDialogOpen(true)}
-                >
-                  <ArrowRightLeft className="h-4 w-4" />
-                  Transfer ({selectedStudents.length})
-                </Button>
-              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {/* The wrapper keeps the tooltip working while the button is disabled. */}
+                    <span tabIndex={transferBlockReason ? 0 : -1}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        disabled={!!transferBlockReason}
+                        onClick={() => setTransferDialogOpen(true)}
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                        Alihkan Mahasiswa{transferStudents.length > 0 ? ` (${transferStudents.length})` : ''}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{transferBlockReason ?? 'Alihkan mahasiswa terpilih ke dosen lain'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <RefreshButton
                 onClick={() => refetch()}
                 isRefreshing={isFetching && !isLoading}
@@ -442,11 +484,12 @@ export default function LecturerMyStudentsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Transfer Students Dialog */}
-      <TransferStudentsDialog
+      {/* Alihkan Mahasiswa: one change request per selected student, same batch */}
+      <LecturerTransferStudentsDialog
         open={transferDialogOpen}
         onOpenChange={setTransferDialogOpen}
-        selectedStudents={selectedStudents}
+        students={transferStudents}
+        currentLecturerId={user?.id}
         onSuccess={() => {
           setSelectedStudentIds(new Set());
           queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });

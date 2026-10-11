@@ -35,9 +35,7 @@ import { openAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { RequestSupervisor2Dialog } from "@/components/bimbingan/RequestSupervisor2Dialog";
-import { getPendingSupervisor2Request } from "@/services/studentGuidance.service";
-import { PendingRequestCard } from "@/components/bimbingan/PendingRequestCard";
+import { StudentThesisChangeRequestCard } from "@/components/thesis-change-request/StudentThesisChangeRequestCard";
 import { toast } from "sonner";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
 import { getGuidanceActionBlockReason } from "@/lib/thesisLabels";
@@ -77,11 +75,6 @@ export default function TugasAkhirOverviewPage() {
         queryFn: getStudentSupervisors,
     });
 
-    const { data: pendingRequest } = useQuery({
-        queryKey: ['pending-supervisor2-request'],
-        queryFn: getPendingSupervisor2Request,
-    });
-
     const thesisId = supervisorsData?.thesisId || "";
     const hasThesis = !!thesisId;
 
@@ -102,11 +95,6 @@ export default function TugasAkhirOverviewPage() {
 
     const { data: defenceStatus } = useDefenceReadinessStatus(thesisId);
     const isSeminarCompleted = defenceStatus?.requirementsMet === true;
-
-    const hasPembimbing2 = thesisDetail?.supervisors?.some((s: any) =>
-        (s.role || "").toLowerCase().includes("pembimbing 2") ||
-        (s.role || "").toLowerCase().includes("pembimbing2")
-    );
 
     // Determines statuses
     // K15: "Dibatalkan" and "Diajukan" no longer exist; a stopped thesis is `failed`, and the
@@ -256,13 +244,6 @@ export default function TugasAkhirOverviewPage() {
                                                 <GraduationCap className="h-4 w-4" /> Dosen Pembimbing
                                             </span>
 
-                                            {/* Pending Request Card */}
-                                            {pendingRequest && (
-                                                <div className="mb-4">
-                                                    <PendingRequestCard request={pendingRequest} />
-                                                </div>
-                                            )}
-
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {thesisDetail?.supervisors && thesisDetail.supervisors.length > 0 && thesisDetail.supervisors
                                                     .sort((a: any, b: any) => {
@@ -312,20 +293,6 @@ export default function TugasAkhirOverviewPage() {
                                                         );
                                                     })}
 
-                                                {/* Request Pembimbing 2 Logic */}
-                                                {(!hasPembimbing2 && !pendingRequest && (thesisDetail?.supervisors?.length || 0) > 0) && (
-                                                    <div className="flex items-center justify-center p-3 rounded-xl border border-dashed hover:bg-background/50 transition-colors min-h-25">
-                                                        <div className="text-center space-y-2 w-full">
-                                                            <p className="text-xs text-muted-foreground">Belum ada Pembimbing 2?</p>
-                                                            <div className="flex justify-center">
-                                                                <RequestSupervisor2Dialog
-                                                                    hasPembimbing2={!!hasPembimbing2}
-                                                                    hasPendingRequest={!!pendingRequest}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
 
@@ -342,6 +309,9 @@ export default function TugasAkhirOverviewPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Pengajuan Perubahan Tugas Akhir (judul, ganti/tambah pembimbing) */}
+                            <StudentThesisChangeRequestCard />
 
                             {/* DOKUMEN TUGAS AKHIR */}
                             {/* Always shown: an empty latest-report slot reads "Belum ada dokumen" */}

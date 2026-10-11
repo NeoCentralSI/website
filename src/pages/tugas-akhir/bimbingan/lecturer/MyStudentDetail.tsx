@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import EmptyState from "@/components/ui/empty-state";
 import { Activity, FileText, CheckCircle2, Clock, AlertTriangle, AlertCircle, Download, ArrowLeft, BookOpen, Calendar, Bell, PartyPopper, Plus } from "lucide-react";
 import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
+import { LecturerThesisChangeRequestCard } from "@/components/thesis-change-request/LecturerThesisChangeRequestCard";
 import { SupervisionClockCell } from "@/components/shared/SupervisionClockCell";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
@@ -380,7 +381,8 @@ export default function LecturerMyStudentDetailPage() {
                 </Alert>
             )}
 
-            {/* Guidance revival: TA-05 change-request review card is not restored (GUIDANCE_REVIVAL_PLAN e1) */}
+            {/* Pengajuan Perubahan Tugas Akhir: "Ajukan Perubahan" untuk Pembimbing 1, pengajuan berjalan, riwayat */}
+            {thesisId && <LecturerThesisChangeRequestCard thesisId={thesisId} />}
 
             {/* Seminar Readiness Card - sembunyikan jika mahasiswa sudah lulus seminar */}
             {!isSeminarCompleted && detailData.status === "research" && thesisId && (

@@ -21,6 +21,11 @@ import {
   THESIS_ACTIVITY_DESCRIPTIONS,
   THESIS_ACTIVITY_LEVELS,
   EVALUATION_DUE_LABELS,
+  CHANGE_REQUEST_TYPE_LABELS,
+  CHANGE_REQUEST_STATUS_LABELS,
+  CHANGE_REQUEST_STATUS_VARIANTS,
+  CHANGE_REQUEST_STEP_LABELS,
+  SUPERVISOR_POSITION_LABELS,
   THESIS_STATUS_LABELS,
   THESIS_STATUS_VARIANTS,
   THESIS_TERMINATION_REASON_LABELS,
@@ -57,6 +62,10 @@ const CASES = [
   ["GuidanceStatus", GUIDANCE_STATUS_LABELS, "GUIDANCE_STATUS_LABELS"],
   ["GuidanceActor", GUIDANCE_ACTOR_LABELS, "GUIDANCE_ACTOR_LABELS"],
   ["MilestoneStatus", MILESTONE_STATUS_LABELS, "MILESTONE_STATUS_LABELS"],
+  // Paket E (E4): Pengajuan Perubahan Tugas Akhir
+  ["ThesisChangeRequestType", CHANGE_REQUEST_TYPE_LABELS, "CHANGE_REQUEST_TYPE_LABELS"],
+  ["ThesisChangeRequestStatus", CHANGE_REQUEST_STATUS_LABELS, "CHANGE_REQUEST_STATUS_LABELS"],
+  ["ThesisSupervisorPosition", SUPERVISOR_POSITION_LABELS, "SUPERVISOR_POSITION_LABELS"],
 ] as const;
 
 describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
@@ -74,6 +83,11 @@ describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
     ["EVALUATION_DUE_LABELS", EVALUATION_DUE_LABELS],
   ] as const)("%s (derived, no schema enum) are identical to the backend map", (exportName, labels) => {
     expect({ ...labels }).toEqual(backendMap(exportName));
+  });
+
+  it("change request steps: every ThesisChangeApprovalRole plus the Kadep step, same as the backend", () => {
+    expect(Object.keys(CHANGE_REQUEST_STEP_LABELS).sort()).toEqual([...enumValues("ThesisChangeApprovalRole"), "kadep"].sort());
+    expect({ ...CHANGE_REQUEST_STEP_LABELS }).toEqual(backendMap("CHANGE_REQUEST_STEP_LABELS"));
   });
 
   it("offers every status from the schema as an option, in schema order", () => {
@@ -104,6 +118,10 @@ describe("thesisLabels", () => {
       research: "info", proposal: "secondary", on_leave: "warning", completed: "success", failed: "destructive",
     });
     expect(THESIS_ACTIVITY_VARIANTS).toEqual({ active: "success", slow: "warning", at_risk: "destructive" });
+  });
+
+  it("gives every change request status a badge variant", () => {
+    expect(Object.keys(CHANGE_REQUEST_STATUS_VARIANTS).sort()).toEqual(Object.keys(CHANGE_REQUEST_STATUS_LABELS).sort());
   });
 
   it("offers every status as an option", () => {

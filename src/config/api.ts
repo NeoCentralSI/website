@@ -230,21 +230,9 @@ export const API_CONFIG = {
         STUDENT_PROPOSAL_VERSIONS: (thesisId: string) => `/thesisGuidance/lecturer/students/${thesisId}/proposal/versions`,
         STUDENT_INFORMAL_LOGS: (thesisId: string) =>
           `/thesisGuidance/lecturer/students/${thesisId}/metopen/informal-logs`,
-      // Transfer mahasiswa bimbingan antar dosen (dipulihkan dari baseline guidance)
-      TRANSFER_ELIGIBLE_LECTURERS: '/thesisGuidance/lecturer/transfer/eligible-lecturers',
-      TRANSFER_REQUEST: '/thesisGuidance/lecturer/transfer/request',
-      TRANSFER_INCOMING: '/thesisGuidance/lecturer/transfer/incoming',
-      TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/approve`,
-      TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/reject`,
       },
     THESIS_MONITORING: {
       DASHBOARD: '/thesisGuidance/monitoring/dashboard',
-      // Persetujuan transfer oleh KaDep (dipulihkan dari baseline guidance)
-      TRANSFERS_PENDING: '/kadep-transfers/pending',
-      TRANSFERS_ALL: '/kadep-transfers/all',
-      TRANSFERS_REPORT_DOWNLOAD: '/kadep-transfers/report/download',
-      TRANSFER_APPROVE: (notifId: string) => `/kadep-transfers/${notifId}/approve`,
-      TRANSFER_REJECT: (notifId: string) => `/kadep-transfers/${notifId}/reject`,
     },
     THESIS_SEMINAR: {
       // --- Shared / Global ---

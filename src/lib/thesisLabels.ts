@@ -83,6 +83,46 @@ export const EVALUATION_DUE_LABELS: Record<EvaluationDue, string> = {
   one_year: "Evaluasi 1 tahun jatuh tempo",
 };
 
+/** Jenis Pengajuan Perubahan Tugas Akhir (`ThesisChangeRequestType`, K10). */
+export type ChangeRequestType = "title" | "supervisor" | "both";
+export type ChangeRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
+/** Posisi pembimbing yang diubah (`ThesisSupervisorPosition`). */
+export type SupervisorPosition = "pembimbing_1" | "pembimbing_2";
+/** Langkah persetujuan: `ThesisChangeApprovalRole` ditambah langkah akhir Ketua Departemen. */
+export type ChangeRequestStepKey = "main_supervisor" | "previous_supervisor" | "new_supervisor" | "kadep";
+
+export const CHANGE_REQUEST_TYPE_LABELS: Record<ChangeRequestType, string> = {
+  title: "Judul",
+  supervisor: "Pembimbing",
+  both: "Judul dan Pembimbing",
+};
+
+export const CHANGE_REQUEST_STATUS_LABELS: Record<ChangeRequestStatus, string> = {
+  pending: "Menunggu Persetujuan",
+  approved: "Disetujui",
+  rejected: "Ditolak",
+  cancelled: "Dibatalkan",
+};
+
+export const CHANGE_REQUEST_STATUS_VARIANTS: Record<ChangeRequestStatus, ThesisBadgeVariant> = {
+  pending: "warning",
+  approved: "success",
+  rejected: "destructive",
+  cancelled: "outline",
+};
+
+export const CHANGE_REQUEST_STEP_LABELS: Record<ChangeRequestStepKey, string> = {
+  main_supervisor: "Pembimbing 1",
+  previous_supervisor: "Pembimbing Sebelumnya",
+  new_supervisor: "Pembimbing Baru",
+  kadep: "Ketua Departemen",
+};
+
+export const SUPERVISOR_POSITION_LABELS: Record<SupervisorPosition, string> = {
+  pembimbing_1: "Pembimbing 1",
+  pembimbing_2: "Pembimbing 2",
+};
+
 /** `rescheduled` adalah data lama yang diperlakukan sama dengan `accepted` (K19). */
 export const GUIDANCE_STATUS_LABELS: Record<GuidanceSessionStatus, string> = {
   requested: "Menunggu Persetujuan",
@@ -173,6 +213,10 @@ export const getEvaluationDueLabel = labelOf(EVALUATION_DUE_LABELS);
 export const getGuidanceStatusLabel = labelOf(GUIDANCE_STATUS_LABELS);
 export const getGuidanceActorLabel = labelOf(GUIDANCE_ACTOR_LABELS);
 export const getMilestoneStatusLabel = labelOf(MILESTONE_STATUS_LABELS);
+export const getChangeRequestTypeLabel = labelOf(CHANGE_REQUEST_TYPE_LABELS);
+export const getChangeRequestStatusLabel = labelOf(CHANGE_REQUEST_STATUS_LABELS);
+export const getChangeRequestStepLabel = labelOf(CHANGE_REQUEST_STEP_LABELS);
+export const getSupervisorPositionLabel = labelOf(SUPERVISOR_POSITION_LABELS);
 
 export function getThesisStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
   return THESIS_STATUS_VARIANTS[value as ThesisLifecycleStatus] ?? "outline";

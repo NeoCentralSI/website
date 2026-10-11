@@ -31,12 +31,8 @@ vi.mock("@/hooks/milestone", () => ({
   })),
 }));
 
-vi.mock("@/components/bimbingan/RequestSupervisor2Dialog", () => ({
-  RequestSupervisor2Dialog: () => <div>Request Supervisor 2 Dialog</div>,
-}));
-
-vi.mock("@/components/bimbingan/PendingRequestCard", () => ({
-  PendingRequestCard: () => <div>Pending Request Card</div>,
+vi.mock("@/components/thesis-change-request/StudentThesisChangeRequestCard", () => ({
+  StudentThesisChangeRequestCard: () => <div>Perubahan Tugas Akhir Card</div>,
 }));
 
 vi.mock("@/components/thesis/PendingApprovalCard", () => ({
