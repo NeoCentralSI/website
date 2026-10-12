@@ -121,15 +121,15 @@ export default function LecturerMyStudentsPage() {
     });
   };
 
-  // Filter data based on search query
+  // Filter data based on search query: name, NIM, thesis title (and email, as before)
   const filteredData = useMemo(() => {
     if (!data?.students) return [];
-    if (!searchQuery.trim()) return data.students;
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return data.students;
 
-    const query = searchQuery.toLowerCase();
     return data.students.filter((student: MyStudentItem) =>
-      toTitleCaseName(student.fullName).toLowerCase().includes(query) ||
-      student.email?.toLowerCase().includes(query)
+      [student.fullName, student.identityNumber, student.thesisTitle, student.email]
+        .some((value) => value?.toLowerCase().includes(query))
     );
   }, [data?.students, searchQuery]);
 
@@ -393,6 +393,7 @@ export default function LecturerMyStudentsPage() {
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           searchValue={searchQuery}
+          searchPlaceholder="Cari nama, NIM, atau judul..."
           onSearchChange={(val) => {
             setSearchQuery(val);
             setPage(1); // Reset to page 1 on search

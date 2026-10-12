@@ -73,6 +73,8 @@ export type CustomTableProps<T> = {
 	onPageSizeChange?: (size: number) => void;
 	searchValue?: string;
 	onSearchChange?: (value: string) => void;
+	/** Tells what the search box matches; "Cari..." when omitted. */
+	searchPlaceholder?: string;
 	enableColumnFilters?: boolean;
 	actions?: React.ReactNode;
 	emptyText?: string;
@@ -111,6 +113,7 @@ export function CustomTable<T extends object>({
 	onPageSizeChange,
 	searchValue,
 	onSearchChange,
+	searchPlaceholder = "Cari...",
 	enableColumnFilters,
 	actions,
 	emptyText = "Tidak ada data",
@@ -133,7 +136,7 @@ export function CustomTable<T extends object>({
 							<div className="relative w-full sm:max-w-md">
 								<SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 								<Input
-									placeholder="Cari..."
+									placeholder={searchPlaceholder}
 									className="pl-8 pr-8"
 									value={searchValue ?? ''}
 									onChange={(e) => onSearchChange?.(e.target.value)}

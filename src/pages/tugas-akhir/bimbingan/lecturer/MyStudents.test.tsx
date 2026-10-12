@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -120,5 +120,52 @@ describe("LecturerMyStudentsPage table", () => {
     expect(within(tableRow).getByText("Belum pernah")).toBeInTheDocument();
     // No warning for a thesis without an activity level.
     expect(within(tableRow).queryByText("Kirim Peringatan")).not.toBeInTheDocument();
+  });
+});
+
+describe("LecturerMyStudentsPage search", () => {
+  const students = [
+    row(),
+    row({ studentId: "s2", thesisId: "t2", fullName: "NABIL RIZKI", email: "nabil@example.test", identityNumber: "2211523030", thesisTitle: "Analisis Sentimen Ulasan Aplikasi" }),
+    row({ studentId: "s3", thesisId: "t3", fullName: "FATHUR RAHMAN", email: "fathur@example.test", identityNumber: "2011522001", thesisTitle: undefined }),
+  ];
+  const shownNames = () => ["Ilham Nofaldi", "Nabil Rizki", "Fathur Rahman"].filter((name) => screen.queryByText(name));
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getMyStudents).mockResolvedValue({ success: true, count: students.length, students });
+  });
+
+  it("matches the name, the NIM and the thesis title, in any letter case", async () => {
+    renderPage();
+    await screen.findByText("Ilham Nofaldi");
+    const search = screen.getByPlaceholderText("Cari nama, NIM, atau judul...");
+    expect(shownNames()).toHaveLength(3);
+
+    fireEvent.change(search, { target: { value: "nabil" } });
+    expect(shownNames()).toEqual(["Nabil Rizki"]);
+
+    // NIM: a whole number or its beginning.
+    fireEvent.change(search, { target: { value: "2011522001" } });
+    expect(shownNames()).toEqual(["Fathur Rahman"]);
+    fireEvent.change(search, { target: { value: "22115" } });
+    expect(shownNames()).toEqual(["Ilham Nofaldi", "Nabil Rizki"]);
+
+    // Thesis title; a student without a title is simply not matched.
+    fireEvent.change(search, { target: { value: "analisis SENTIMEN" } });
+    expect(shownNames()).toEqual(["Nabil Rizki"]);
+    fireEvent.change(search, { target: { value: " monitoring tugas akhir " } });
+    expect(shownNames()).toEqual(["Ilham Nofaldi"]);
+
+    fireEvent.change(search, { target: { value: "" } });
+    expect(shownNames()).toHaveLength(3);
+  });
+
+  it("shows the empty text when nothing matches", async () => {
+    renderPage();
+    await screen.findByText("Ilham Nofaldi");
+    fireEvent.change(screen.getByPlaceholderText("Cari nama, NIM, atau judul..."), { target: { value: "tidak ada yang cocok" } });
+    expect(shownNames()).toEqual([]);
+    expect(screen.getByText("Tidak ada mahasiswa bimbingan")).toBeInTheDocument();
   });
 });
