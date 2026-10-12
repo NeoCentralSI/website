@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sendBatchWarnings, type AtRiskStudent, type ThesisDetailDefence, type ThesisDetailSeminar } from "@/services/monitoring.service";
@@ -11,7 +12,7 @@ import { ThesisEventCard } from "./ThesisEventCard";
 vi.mock("lottie-react", () => ({ default: () => null }));
 vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true }) }));
 vi.mock("@/services/monitoring.service", () => ({ sendBatchWarnings: vi.fn() }));
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
 
 const wrap = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
@@ -157,8 +158,30 @@ describe("monitoring list cards", () => {
         />,
       );
 
+    const ALL_SENT = "Peringatan dikirim ke 3 mahasiswa (2 Berisiko, 1 Lambat).";
+    const allSent = {
+      success: true,
+      message: ALL_SENT,
+      sentCount: 3,
+      sentCounts: { slow: 1, at_risk: 2 },
+      sent: [
+        { thesisId: "t1", studentName: "Muhammad Ilham Nofaldi Pratama", warningType: "at_risk" as const },
+        { thesisId: "t3", studentName: "Fathur Rahman", warningType: "at_risk" as const },
+        { thesisId: "t2", studentName: "Nabil Rizki", warningType: "slow" as const },
+      ],
+      notSent: [],
+    };
+    const confirmSend = async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Peringatkan/ }));
+      fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Kirim ke 3 Mahasiswa" }));
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    };
+
     beforeEach(() => {
-      vi.mocked(sendBatchWarnings).mockReset().mockResolvedValue({ success: true, message: "ok" });
+      vi.mocked(toast.success).mockClear();
+      vi.mocked(toast.warning).mockClear();
+      vi.mocked(toast.error).mockClear();
+      vi.mocked(sendBatchWarnings).mockReset().mockResolvedValue(allSent);
     });
 
     it("asks for confirmation with the number of recipients before anything is sent", async () => {
@@ -188,13 +211,84 @@ describe("monitoring list cards", () => {
       fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Kirim ke 3 Mahasiswa" }));
 
       await waitFor(() => expect(sendBatchWarnings).toHaveBeenCalledTimes(1));
-      // Berisiko first (same order as the list), one batch.
-      expect(sendBatchWarnings).toHaveBeenCalledWith(["t1", "t3", "t2"], "slow");
+      // Berisiko first (same order as the list), one batch; the level is not sent, the server derives it.
+      expect(sendBatchWarnings).toHaveBeenCalledWith(["t1", "t3", "t2"]);
       await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     });
 
+    it("shows the message of the server with the number actually sent", async () => {
+      renderCard();
+      await confirmSend();
+
+      expect(toast.success).toHaveBeenCalledTimes(1);
+      expect(toast.success).toHaveBeenCalledWith(ALL_SENT);
+      expect(toast.warning).not.toHaveBeenCalled();
+    });
+
+    it("says how many were not sent, and why, when the server skipped some", async () => {
+      const message = "Peringatan dikirim ke 1 mahasiswa (1 Berisiko, 0 Lambat). 2 tidak dikirim.";
+      vi.mocked(sendBatchWarnings).mockResolvedValue({
+        success: true,
+        message,
+        sentCount: 1,
+        sentCounts: { slow: 0, at_risk: 1 },
+        sent: [allSent.sent[0]],
+        notSent: [
+          { thesisId: "t3", studentName: "Fathur Rahman", reason: "active", reasonLabel: "Aktivitas tugas akhir Lancar" },
+          { thesisId: "t2", studentName: "Nabil Rizki", reason: "active", reasonLabel: "Aktivitas tugas akhir Lancar" },
+        ],
+      });
+      renderCard();
+      await confirmSend();
+
+      // Three were asked for, one was sent: the toast must not claim three.
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(toast.warning).toHaveBeenCalledTimes(1);
+      expect(toast.warning).toHaveBeenCalledWith(message, { description: "Tidak dikirim: Aktivitas tugas akhir Lancar (2)" });
+    });
+
+    it("does not report success when nothing was sent, and groups the reasons", async () => {
+      const message = "Tidak ada peringatan yang dikirim. 3 tidak dikirim.";
+      vi.mocked(sendBatchWarnings).mockResolvedValue({
+        success: true,
+        message,
+        sentCount: 0,
+        sentCounts: { slow: 0, at_risk: 0 },
+        sent: [],
+        notSent: [
+          { thesisId: "t1", studentName: "A", reason: "active", reasonLabel: "Aktivitas tugas akhir Lancar" },
+          { thesisId: "t3", studentName: "B", reason: "not_research", reasonLabel: "Tugas akhir tidak berstatus Penelitian" },
+          { thesisId: "t2", studentName: "C", reason: "active", reasonLabel: "Aktivitas tugas akhir Lancar" },
+        ],
+      });
+      renderCard();
+      await confirmSend();
+
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(toast.warning).toHaveBeenCalledWith(message, {
+        description: "Tidak dikirim: Aktivitas tugas akhir Lancar (2), Tugas akhir tidak berstatus Penelitian (1)",
+      });
+    });
+
+    it("still shows the message of a backend that sends no counts", async () => {
+      vi.mocked(sendBatchWarnings).mockResolvedValue({ success: true, message: "Peringatan berhasil dikirim ke 3 mahasiswa." });
+      renderCard();
+      await confirmSend();
+
+      expect(toast.success).toHaveBeenCalledWith("Peringatan berhasil dikirim ke 3 mahasiswa.");
+    });
+
+    it("shows the error of the server when the batch is refused", async () => {
+      vi.mocked(sendBatchWarnings).mockRejectedValue(new Error("Hanya Ketua Departemen yang dapat mengirim peringatan massal"));
+      renderCard();
+      await confirmSend();
+
+      expect(toast.error).toHaveBeenCalledWith("Hanya Ketua Departemen yang dapat mengirim peringatan massal");
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
     it("stays open while the batch is being sent, so it cannot be sent twice", async () => {
-      let finish: (value: { success: boolean; message: string }) => void = () => {};
+      let finish: (value: typeof allSent) => void = () => {};
       vi.mocked(sendBatchWarnings).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
       renderCard();
       fireEvent.click(screen.getByRole("button", { name: /Peringatkan/ }));
@@ -207,7 +301,7 @@ describe("monitoring list cards", () => {
       fireEvent.click(sendingButton);
       expect(sendBatchWarnings).toHaveBeenCalledTimes(1);
 
-      finish({ success: true, message: "ok" });
+      finish(allSent);
       await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     });
   });

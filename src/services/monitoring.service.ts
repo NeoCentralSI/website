@@ -601,16 +601,36 @@ export async function downloadProgressReportPdf(options: ReportFilterOptions = {
   return response.blob();
 }
 
+/** One thesis of a batch that received no warning, with the reason from the server. */
+export interface BatchWarningNotSent {
+  thesisId: string;
+  studentName: string | null;
+  reason: 'active' | 'not_research' | 'not_found' | 'no_student' | 'failed';
+  reasonLabel: string;
+}
+
+export interface BatchWarningResult {
+  success: boolean;
+  /** Ready to show: how many were warned per level and how many were not. */
+  message: string;
+  // The counts and lists are missing when the backend predates per-thesis levels.
+  sentCount?: number;
+  sentCounts?: Record<WarningType, number>;
+  sent?: { thesisId: string; studentName: string; warningType: WarningType }[];
+  notSent?: BatchWarningNotSent[];
+}
+
 /**
- * Send batch warning notifications to students (for management roles)
+ * Send batch warning notifications to students (for management roles). The server words
+ * each warning for the activity level of that thesis and skips the ones that need none.
  */
-export async function sendBatchWarnings(thesisIds: string[], warningType: WarningType): Promise<{ success: boolean; message: string }> {
+export async function sendBatchWarnings(thesisIds: string[]): Promise<BatchWarningResult> {
   const response = await apiRequest(
     getApiUrl(ENDPOINTS.BATCH_WARNING),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ thesisIds, warningType }),
+      body: JSON.stringify({ thesisIds }),
     }
   );
   if (!response.ok) {

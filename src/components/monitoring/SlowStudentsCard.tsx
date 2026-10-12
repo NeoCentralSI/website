@@ -17,8 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRole } from "@/hooks/shared/useRole";
 import { toTitleCaseName } from "@/lib/text";
-import { sendBatchWarnings, type AtRiskStudent } from "@/services/monitoring.service";
+import { sendBatchWarnings, type AtRiskStudent, type BatchWarningNotSent } from "@/services/monitoring.service";
 import { InactiveDaysText, MonitoringListCard, MonitoringListRow } from "./MonitoringListCard";
+
+/** "Aktivitas tugas akhir Lancar (2), Tugas akhir tidak berstatus Penelitian (1)" */
+function summarizeNotSent(notSent: BatchWarningNotSent[]): string {
+  const counts = new Map<string, number>();
+  for (const item of notSent) counts.set(item.reasonLabel, (counts.get(item.reasonLabel) ?? 0) + 1);
+  return [...counts].map(([label, count]) => `${label} (${count})`).join(", ");
+}
 
 interface SlowStudentsCardProps {
   slowStudents: AtRiskStudent[] | undefined;
@@ -54,10 +61,15 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading }: Sl
 
     setSending(true);
     try {
-      const thesisIds = allStudents.map((student) => student.thesisId);
-      // One batch for the whole list, sent with the baseline "slow" wording.
-      await sendBatchWarnings(thesisIds, "slow");
-      toast.success(`Berhasil mengirim peringatan ke ${thesisIds.length} mahasiswa`);
+      // One batch for the whole list; the server words each warning for the level of that thesis.
+      const result = await sendBatchWarnings(allStudents.map((student) => student.thesisId));
+      const notSent = result.notSent ?? [];
+      if (notSent.length === 0) {
+        toast.success(result.message);
+      } else {
+        // The message of the server already says how many were sent and how many were not.
+        toast.warning(result.message, { description: `Tidak dikirim: ${summarizeNotSent(notSent)}` });
+      }
     } catch (error) {
       toast.error((error as Error)?.message || "Gagal mengirim peringatan batch");
     } finally {
