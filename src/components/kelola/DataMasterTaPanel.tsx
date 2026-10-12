@@ -22,6 +22,7 @@ import { ImportMasterDataDialog } from "./ImportMasterDataDialog";
 import { Upload } from "lucide-react";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
 import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
+import { SearchableCombobox, type ComboboxOption } from "@/components/shared/SearchableCombobox";
 import {
     getAllowedThesisStatusOptions,
     getTerminationReasonOptions,
@@ -68,6 +69,29 @@ const emptyForm: FormState = {
 const terminationReasonOptions = getTerminationReasonOptions();
 const isClosedStatus = (s: ThesisLifecycleStatus | null) => s === "completed" || s === "failed";
 
+// Two lines high, so a short hint and a long one keep the two columns level.
+const FIELD_HINT_CLASS = "min-h-8 text-xs text-muted-foreground";
+const NO_LECTURER_OPTION: ComboboxOption = { value: "none", label: "-- Silahkan Pilih --" };
+// The full BSS label is too long for a one-line hint.
+const SHORT_STATUS_LABELS: Partial<Record<ThesisLifecycleStatus, string>> = { on_leave: "BSS" };
+
+/** "A", "A atau B", "A, B, atau C". */
+function joinWithOr(items: string[]): string {
+    if (items.length <= 2) return items.join(" atau ");
+    return `${items.slice(0, -1).join(", ")}, atau ${items[items.length - 1]}`;
+}
+
+/** Always-present hint under the status field, so the row keeps its height. */
+function getStatusHint(original: ThesisLifecycleStatus | null, statusBeforeLeave: ThesisLifecycleStatus | null): string {
+    if (!original) return "Status awal tugas akhir yang didata.";
+    if (isClosedStatus(original)) return `Tugas akhir berstatus "${THESIS_STATUS_LABELS[original]}" tidak dapat diubah lagi.`;
+    if (original === "on_leave") return "Dari BSS, tugas akhir hanya dapat kembali ke status sebelumnya atau dihentikan.";
+    const targets = getAllowedThesisStatusOptions(original, statusBeforeLeave)
+        .filter((option) => option.value !== original)
+        .map((option) => SHORT_STATUS_LABELS[option.value] ?? option.label);
+    return `Dapat diubah menjadi ${joinWithOr(targets)}.`;
+}
+
 export function DataMasterTaPanel() {
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
@@ -89,9 +113,28 @@ export function DataMasterTaPanel() {
     const { data: topics = [] } = useQuery({ queryKey: ["topics"], queryFn: getTopics });
     const { data: academicYearsData } = useQuery({ queryKey: ["admin-academic-years"], queryFn: () => getAcademicYearsAPI({ pageSize: 100 }) });
 
-    const students = studentsData?.students || [];
-    const lecturers = lecturersData?.lecturers || [];
+    const students = studentsData?.students;
+    const lecturers = lecturersData?.lecturers;
     const academicYears = academicYearsData?.academicYears || [];
+
+    const studentOptions = useMemo<ComboboxOption[]>(
+        () => (students ?? []).map((s) => ({
+            value: s.id,
+            label: s.identityNumber ? `${s.fullName} (${s.identityNumber})` : s.fullName,
+        })),
+        [students],
+    );
+    const lecturerOptions = useMemo<ComboboxOption[]>(
+        () => [
+            NO_LECTURER_OPTION,
+            ...(lecturers ?? []).map((l) => ({
+                value: l.id,
+                label: l.fullName,
+                keywords: l.identityNumber ? [l.identityNumber] : undefined,
+            })),
+        ],
+        [lecturers],
+    );
 
     // Mutations
     const createMutation = useMutation({
@@ -129,6 +172,10 @@ export function DataMasterTaPanel() {
         const start = (page - 1) * pageSize;
         return filteredTheses.slice(start, start + pageSize);
     }, [filteredTheses, page, pageSize]);
+
+    // While editing, the student cannot change: show them even before the student list loads.
+    const editedStudent = formState.id ? theses.find((t) => t.id === formState.id)?.student : undefined;
+    const editedStudentLabel = editedStudent ? `${editedStudent.name} (${editedStudent.nim})` : undefined;
 
     const handleStartCreate = () => {
         setFormState({ ...emptyForm });
@@ -321,7 +368,10 @@ export function DataMasterTaPanel() {
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
                 searchValue={search}
-                onSearchChange={setSearch}
+                onSearchChange={(value) => {
+                    setSearch(value);
+                    setPage(1);
+                }}
                 emptyText="Tidak ada data tugas akhir ditemukan"
                 actions={
                     <div className="flex items-center gap-2">
@@ -353,18 +403,17 @@ export function DataMasterTaPanel() {
                         <div className="space-y-4 py-4 pr-3">
                             <div className="grid gap-2">
                                 <Label>Mahasiswa *</Label>
-                                <Select
+                                <SearchableCombobox
+                                    ariaLabel="Pilih mahasiswa"
+                                    options={studentOptions}
                                     value={formState.studentId}
-                                    onValueChange={(v) => setFormState(prev => ({ ...prev, studentId: v }))}
+                                    onChange={(v) => setFormState(prev => ({ ...prev, studentId: v }))}
                                     disabled={!!formState.id} // Disable changing student if editing
-                                >
-                                    <SelectTrigger><SelectValue placeholder="Pilih mahasiswa..." /></SelectTrigger>
-                                    <SelectContent>
-                                        {students.map(s => (
-                                            <SelectItem key={s.id} value={s.id}>{s.fullName} ({s.identityNumber})</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    placeholder="Pilih mahasiswa..."
+                                    searchPlaceholder="Cari nama atau NIM..."
+                                    emptyText="Mahasiswa tidak ditemukan."
+                                    fallbackLabel={editedStudentLabel}
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -376,8 +425,8 @@ export function DataMasterTaPanel() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
+                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                                <div className="grid content-start gap-2">
                                     <Label>Topik</Label>
                                     <Select
                                         value={formState.thesisTopicId}
@@ -393,7 +442,7 @@ export function DataMasterTaPanel() {
                                     </Select>
                                 </div>
                                 {formState.id && (
-                                    <div className="grid gap-2">
+                                    <div className="grid content-start gap-2">
                                         <Label>Tahun Ajaran</Label>
                                         <Select
                                             value={formState.academicYearId}
@@ -411,22 +460,20 @@ export function DataMasterTaPanel() {
                                 )}
 
                                 {formState.id && (
-                                    <>
-                                        <div className="grid gap-2">
-                                            <Label>Tanggal Mulai</Label>
-                                            <DatePicker
-                                                value={formState.startDate ? new Date(formState.startDate) : undefined}
-                                                onChange={(date) => setFormState(prev => ({ ...prev, startDate: date ? date.toISOString().split('T')[0] : "" }))}
-                                                showPastDates={true}
-                                            />
-                                            <p className="text-xs text-muted-foreground">
-                                                Masa bimbingan dihitung dari tanggal ini (masa BSS tidak dihitung).
-                                            </p>
-                                        </div>
-                                    </>
+                                    <div className="grid content-start gap-2">
+                                        <Label>Tanggal Mulai</Label>
+                                        <DatePicker
+                                            value={formState.startDate ? new Date(formState.startDate) : undefined}
+                                            onChange={(date) => setFormState(prev => ({ ...prev, startDate: date ? date.toISOString().split('T')[0] : "" }))}
+                                            showPastDates={true}
+                                        />
+                                        <p className={FIELD_HINT_CLASS}>
+                                            Masa bimbingan dihitung dari tanggal ini (masa BSS tidak dihitung).
+                                        </p>
+                                    </div>
                                 )}
 
-                                <div className="grid gap-2">
+                                <div className="grid content-start gap-2">
                                     <Label>Status Tugas Akhir</Label>
                                     <Select
                                         value={formState.status}
@@ -440,20 +487,13 @@ export function DataMasterTaPanel() {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {isClosedStatus(formState.originalStatus) && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Tugas akhir berstatus "{THESIS_STATUS_LABELS[formState.originalStatus as ThesisLifecycleStatus]}" tidak dapat diubah lagi.
-                                        </p>
-                                    )}
-                                    {formState.originalStatus === "on_leave" && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Dari BSS, tugas akhir hanya dapat kembali ke status sebelumnya atau dihentikan.
-                                        </p>
-                                    )}
+                                    <p className={FIELD_HINT_CLASS}>
+                                        {getStatusHint(formState.originalStatus, formState.statusBeforeLeave)}
+                                    </p>
                                 </div>
 
                                 {formState.status === "failed" && formState.originalStatus !== "failed" && (
-                                    <div className="col-span-2 grid gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                                    <div className="grid gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 sm:col-span-2">
                                         <Alert variant="destructive" className="border-0 bg-transparent p-0">
                                             <AlertCircle className="h-4 w-4" />
                                             <AlertTitle>Hentikan tugas akhir</AlertTitle>
@@ -491,38 +531,32 @@ export function DataMasterTaPanel() {
 
                             <div className="border-t pt-4 mt-4">
                                 <Label className="text-base mb-4 block">Pembimbing</Label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
+                                <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+                                    <div className="grid content-start gap-2">
                                         <Label>Pembimbing 1 *</Label>
-                                        <Select
+                                        <SearchableCombobox
+                                            ariaLabel="Pilih pembimbing 1"
+                                            options={lecturerOptions}
                                             value={formState.pembimbing1}
-                                            onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing1: v }))}
+                                            onChange={(v) => setFormState(prev => ({ ...prev, pembimbing1: v }))}
                                             disabled={isClosedStatus(formState.originalStatus)}
-                                        >
-                                            <SelectTrigger><SelectValue placeholder="Pilih pembimbing 1..." /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
-                                                {lecturers.map(l => (
-                                                    <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            placeholder="Pilih pembimbing 1..."
+                                            searchPlaceholder="Cari nama atau NIP..."
+                                            emptyText="Dosen tidak ditemukan."
+                                        />
                                     </div>
-                                    <div className="grid gap-2">
+                                    <div className="grid content-start gap-2">
                                         <Label>Pembimbing 2 (Opsional)</Label>
-                                        <Select
+                                        <SearchableCombobox
+                                            ariaLabel="Pilih pembimbing 2"
+                                            options={lecturerOptions}
                                             value={formState.pembimbing2}
-                                            onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing2: v }))}
+                                            onChange={(v) => setFormState(prev => ({ ...prev, pembimbing2: v }))}
                                             disabled={isClosedStatus(formState.originalStatus)}
-                                        >
-                                            <SelectTrigger><SelectValue placeholder="Pilih pembimbing 2..." /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
-                                                {lecturers.map(l => (
-                                                    <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            placeholder="Pilih pembimbing 2..."
+                                            searchPlaceholder="Cari nama atau NIP..."
+                                            emptyText="Dosen tidak ditemukan."
+                                        />
                                     </div>
                                 </div>
                             </div>
