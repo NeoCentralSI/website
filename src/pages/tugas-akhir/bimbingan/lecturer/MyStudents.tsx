@@ -57,6 +57,13 @@ function toSupervisorPosition(roleName?: string | null): TransferStudent["positi
   return null;
 }
 
+/**
+ * Fixed layout: every column but "Mahasiswa" has a width, so the table fills the card
+ * without a horizontal scrollbar at 1366 px with the sidebar open. Below the minimum
+ * width (phones) it scrolls, with the action column pinned to the right.
+ */
+const MY_STUDENTS_TABLE_CLASS = "table-fixed min-w-[960px]";
+
 /** A warning can be sent while the activity level is Lambat or Berisiko. */
 const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
 
@@ -136,6 +143,7 @@ export default function LecturerMyStudentsPage() {
   const columns: Column<MyStudentItem>[] = useMemo(() => [
     {
       key: 'select',
+      width: 44,
       header: () => {
         const allSelected = paginatedData.length > 0 && paginatedData.every(s => selectedStudentIds.has(s.studentId));
         return (
@@ -169,37 +177,40 @@ export default function LecturerMyStudentsPage() {
       ),
     },
     {
+      // The only column without a width: it takes what the fixed columns leave.
       key: 'fullName',
       header: 'Mahasiswa',
       render: (row) => (
-        <div className="space-y-0.5">
-          <div className="font-medium">{toTitleCaseName(row.fullName)}</div>
-          <div className="text-xs text-muted-foreground">{row.identityNumber || '-'}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'thesisTitle',
-      header: 'Judul Tugas Akhir',
-      render: (row) => (
-        <div className="space-y-1">
-          <div className="max-w-[220px] whitespace-normal break-words line-clamp-2 font-medium" title={row.thesisTitle}>
-            {row.thesisTitle || '-'}
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <span className="truncate font-semibold" title={toTitleCaseName(row.fullName)}>{toTitleCaseName(row.fullName)}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{row.identityNumber || '-'}</span>
           </div>
+          {row.thesisTitle ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="truncate text-sm text-muted-foreground">{row.thesisTitle}</p>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-sm">{row.thesisTitle}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <p className="text-sm text-muted-foreground">Judul belum ditentukan</p>
+          )}
           {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="text-xs" />}
         </div>
       ),
     },
     {
       key: 'progress',
-      header: 'Progress Milestone',
+      header: 'Milestone',
+      width: 150,
       render: (row) => {
         const total = row.totalMilestones || 0;
         const completed = row.completedMilestones || 0;
         const progress = row.milestoneProgress || 0;
 
         return (
-          <div className="space-y-1.5 min-w-24">
+          <div className="min-w-0 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1 text-muted-foreground">
                 <Milestone className="h-3 w-3" />
@@ -209,7 +220,7 @@ export default function LecturerMyStudentsPage() {
             </div>
             <Progress value={progress} className="h-2" />
             {row.latestMilestone && (
-              <div className="text-xs text-muted-foreground truncate max-w-28" title={row.latestMilestone}>
+              <div className="truncate text-xs text-muted-foreground" title={row.latestMilestone}>
                 {row.latestMilestone}
               </div>
             )}
@@ -220,15 +231,17 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'guidanceCount',
       header: 'Bimbingan',
+      width: 150,
       render: (row) => (
-        <div className="space-y-0.5 text-sm">
+        <div className="min-w-0 space-y-1 text-sm">
           <div className="flex items-center gap-1">
             <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="font-medium">{row.completedGuidanceCount || 0}x</span>
+            <span className="font-medium">{row.completedGuidanceCount || 0} sesi</span>
           </div>
           {row.lastGuidanceAt || row.lastGuidanceDate ? (
-            <div className="text-xs text-muted-foreground" title={formatDateTimeWib(row.lastGuidanceAt)}>
-              Terakhir: {row.lastGuidanceAt ? formatDateShortId(row.lastGuidanceAt) : row.lastGuidanceDate}
+            <div className="flex flex-wrap gap-x-1 text-xs text-muted-foreground" title={formatDateTimeWib(row.lastGuidanceAt)}>
+              <span>Terakhir:</span>
+              <span className="whitespace-nowrap">{row.lastGuidanceAt ? formatDateShortId(row.lastGuidanceAt) : row.lastGuidanceDate}</span>
             </div>
           ) : (
             <div className="text-xs text-muted-foreground">Belum pernah</div>
@@ -239,11 +252,13 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'supervisionClock',
       header: 'Masa Bimbingan',
-      render: (row) => <SupervisionClockCell clock={row.supervisionClock} />,
+      width: 190,
+      render: (row) => <SupervisionClockCell clock={row.supervisionClock} wrap />,
     },
     {
       key: 'activity',
       header: 'Aktivitas',
+      width: 124,
       render: (row) => (
         <div className="flex items-center gap-2">
           <ThesisActivityBadge level={row.activityLevel} className="whitespace-nowrap" />
@@ -256,12 +271,13 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'actions',
       header: 'Aksi',
+      width: 96,
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (row) => {
         // Only an active supervisor relation may send a warning (backend rule).
         const canWarn = needsWarning(row.activityLevel) && (row.supervisorStatus ?? "active") === "active";
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-end gap-1">
             {canWarn && (
               <TooltipProvider>
                 <Tooltip>
@@ -370,6 +386,7 @@ export default function LecturerMyStudentsPage() {
           data={paginatedData}
           loading={isLoading}
           isRefreshing={isFetching && !isLoading}
+          tableClassName={MY_STUDENTS_TABLE_CLASS}
           total={filteredData.length}
           page={page}
           pageSize={pageSize}
