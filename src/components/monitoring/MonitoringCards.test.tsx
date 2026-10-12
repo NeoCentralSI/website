@@ -1,8 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AtRiskStudent, ThesisDetailDefence, ThesisDetailSeminar } from "@/services/monitoring.service";
+import { sendBatchWarnings, type AtRiskStudent, type ThesisDetailDefence, type ThesisDetailSeminar } from "@/services/monitoring.service";
 import { ReadyForSeminarCard } from "./ReadyForSeminarCard";
 import { SlowStudentsCard } from "./SlowStudentsCard";
 import { SupervisorLoadCard } from "./SupervisorLoadCard";
@@ -10,6 +10,8 @@ import { ThesisEventCard } from "./ThesisEventCard";
 
 vi.mock("lottie-react", () => ({ default: () => null }));
 vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true }) }));
+vi.mock("@/services/monitoring.service", () => ({ sendBatchWarnings: vi.fn() }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const wrap = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
@@ -138,9 +140,76 @@ describe("monitoring list cards", () => {
     expect(screen.queryByText(/at risk/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/hari lalu/)).not.toBeInTheDocument();
 
-    // The email is secondary text (a mail link), not a pill with buttons.
-    expect(within(rows[0]).getByRole("link", { name: "ilham.nofaldi@student.example.test" })).toHaveAttribute("href", "mailto:ilham.nofaldi@student.example.test");
+    // No email on the card: name, NIM, activity badge and days only.
+    expect(screen.queryByText(/@/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(document.querySelector('a[href^="mailto:"]')).toBeNull();
     expect(screen.getByRole("button", { name: /Peringatkan/ })).toBeInTheDocument();
+  });
+
+  describe("mass warning", () => {
+    const renderCard = () =>
+      wrap(
+        <SlowStudentsCard
+          isLoading={false}
+          atRiskStudents={[atRisk(), atRisk({ thesisId: "t3", student: { name: "FATHUR RAHMAN", nim: "2011522001", email: "" } })]}
+          slowStudents={[atRisk({ thesisId: "t2", student: { name: "NABIL RIZKI", nim: "2211523030", email: "" }, daysSinceActivity: 75 })]}
+        />,
+      );
+
+    beforeEach(() => {
+      vi.mocked(sendBatchWarnings).mockReset().mockResolvedValue({ success: true, message: "ok" });
+    });
+
+    it("asks for confirmation with the number of recipients before anything is sent", async () => {
+      renderCard();
+      fireEvent.click(screen.getByRole("button", { name: /Peringatkan/ }));
+
+      const dialog = await screen.findByRole("alertdialog");
+      expect(within(dialog).getByText("Kirim Peringatan Massal")).toBeInTheDocument();
+      expect(within(dialog).getByText("3 mahasiswa")).toBeInTheDocument();
+      expect(dialog).toHaveTextContent("(2 Berisiko, 1 Lambat)");
+      expect(within(dialog).getByRole("button", { name: "Kirim ke 3 Mahasiswa" })).toBeInTheDocument();
+      expect(sendBatchWarnings).not.toHaveBeenCalled();
+    });
+
+    it("sends nothing when the confirmation is cancelled", async () => {
+      renderCard();
+      fireEvent.click(screen.getByRole("button", { name: /Peringatkan/ }));
+      fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Batal" }));
+
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+      expect(sendBatchWarnings).not.toHaveBeenCalled();
+    });
+
+    it("sends one batch to every listed thesis after confirming, then closes", async () => {
+      renderCard();
+      fireEvent.click(screen.getByRole("button", { name: /Peringatkan/ }));
+      fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Kirim ke 3 Mahasiswa" }));
+
+      await waitFor(() => expect(sendBatchWarnings).toHaveBeenCalledTimes(1));
+      // Berisiko first (same order as the list), one batch.
+      expect(sendBatchWarnings).toHaveBeenCalledWith(["t1", "t3", "t2"], "slow");
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    });
+
+    it("stays open while the batch is being sent, so it cannot be sent twice", async () => {
+      let finish: (value: { success: boolean; message: string }) => void = () => {};
+      vi.mocked(sendBatchWarnings).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+      renderCard();
+      fireEvent.click(screen.getByRole("button", { name: /Peringatkan/ }));
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Kirim ke 3 Mahasiswa" }));
+
+      const sendingButton = await within(dialog).findByRole("button", { name: "Mengirim..." });
+      expect(sendingButton).toBeDisabled();
+      expect(within(dialog).getByRole("button", { name: "Batal" })).toBeDisabled();
+      fireEvent.click(sendingButton);
+      expect(sendBatchWarnings).toHaveBeenCalledTimes(1);
+
+      finish({ success: true, message: "ok" });
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    });
   });
 
   it("shows every lecturer of the load list and every student ready for seminar", () => {
