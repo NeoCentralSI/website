@@ -199,31 +199,35 @@ export interface ThesisDetailGuidance {
   createdAt: string;
 }
 
-export interface ThesisDetailScore {
-  scorerName: string;
-  rubric: string | null;
-  score: number | null;
-}
-
-export interface ThesisDetailSeminar {
+/** Fields the Seminar and Sidang cards share (read-only, from the monitoring detail). */
+export interface ThesisDetailEvent {
   id: string;
+  /** `ThesisSeminarStatus` / `ThesisDefenceStatus`; shown through `ThesisEventStatusBadge`. */
   status: string;
-  result: string | null;
-  scheduledAt: string | null;
+  /** Calendar date (ISO, midnight UTC). */
+  date: string | null;
+  /** Time of day (ISO on 1970-01-01, read in UTC), as stored by the seminar and defence modules. */
+  startTime: string | null;
   endTime: string | null;
   room: string | null;
-  scores: ThesisDetailScore[];
+  /** Examiners that are still assigned, in order. */
+  examiners: { order: number | null; name: string | null }[];
+  finalScore: number | null;
+  resultFinalizedAt: string | null;
+  revisionFinalizedAt: string | null;
+  /** A revision is done once a supervisor has approved it. */
+  revisions: { total: number; completed: number };
+  examinerCount: number;
+  scoredCount: number;
   averageScore: number | null;
 }
 
-export interface ThesisDetailDefence {
-  id: string;
-  status: string | null;
-  scheduledAt: string | null;
-  endTime: string | null;
-  room: string | null;
-  scores: ThesisDetailScore[];
-  averageScore: number | null;
+export type ThesisDetailSeminar = ThesisDetailEvent;
+
+export interface ThesisDetailDefence extends ThesisDetailEvent {
+  grade: string | null;
+  examinerAverageScore: number | null;
+  supervisorScore: number | null;
 }
 
 export interface ThesisDetail {

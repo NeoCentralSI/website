@@ -193,8 +193,8 @@ export default function MonitoringDashboard() {
         />
       </div>
 
-      {/* Quick Lists */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {/* Quick lists: two columns on a wide screen, one on a narrow one */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <EvaluationDueCard students={data?.evaluationDueStudents} isLoading={isLoadingAny} />
         <SlowStudentsCard
           slowStudents={data?.slowStudents}
