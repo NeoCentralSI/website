@@ -29,6 +29,8 @@ export interface LecturerReadinessCardProps {
   thesisId: string;
   studentName: string;
   className?: string;
+  /** Requirements above the approvals instead of beside them, for a half-width card. */
+  stacked?: boolean;
 }
 
 /**
@@ -36,7 +38,7 @@ export interface LecturerReadinessCardProps {
  * approval, the latest guidance attachment, and Setujui / Batalkan Persetujuan. The two
  * kinds share this card so they stay symmetric.
  */
-export function LecturerReadinessCard({ kind, thesisId, studentName, className }: LecturerReadinessCardProps & { kind: ReadinessKind }) {
+export function LecturerReadinessCard({ kind, thesisId, studentName, className, stacked }: LecturerReadinessCardProps & { kind: ReadinessKind }) {
   const seminar = useSeminarReadinessManagement(kind === "seminar" ? thesisId : undefined);
   const defence = useDefenceReadinessManagement(kind === "defence" ? thesisId : undefined);
   const { readinessStatus, isLoading, approve, revoke, isApproving, isRevoking } = kind === "seminar" ? seminar : defence;
@@ -83,7 +85,7 @@ export function LecturerReadinessCard({ kind, thesisId, studentName, className }
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className={cn("grid gap-4", !stacked && "md:grid-cols-2")}>
           <ReadinessRequirementList requirements={readinessStatus.requirements} />
           <ReadinessSupervisorList supervisors={readinessStatus.supervisors} />
         </div>
