@@ -1,21 +1,25 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import EmptyState from "@/components/ui/empty-state";
-import { formatDateId } from "@/lib/text";
-import { History, ChevronDown, ChevronUp, FileText, MessageSquare, Clock, CheckCircle2, XCircle, AlertCircle, ExternalLink } from "lucide-react";
+import AuthenticatedDocumentPreviewDialog from "@/components/thesis/AuthenticatedDocumentPreviewDialog";
+import StatusBadge from "@/components/thesis/StatusBadge";
+import { openAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
+import { formatDateTimeWib } from "@/lib/text";
+import { History, ChevronDown, ChevronUp, FileText, MessageSquare, XCircle, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { GuidanceItem } from "@/services/lecturerGuidance.service";
-import { getApiUrl } from "@/config/api";
 
-const GUIDANCE_STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ElementType }> = {
-    completed: { label: "Selesai", variant: "default", icon: CheckCircle2 },
-    accepted: { label: "Diterima", variant: "secondary", icon: CheckCircle2 },
-    summary_pending: { label: "Menunggu Ringkasan", variant: "secondary", icon: Clock },
-    requested: { label: "Menunggu", variant: "outline", icon: Clock },
-    rejected: { label: "Ditolak", variant: "destructive", icon: XCircle },
-    cancelled: { label: "Dibatalkan", variant: "outline", icon: AlertCircle },
-};
+const DOCUMENT_CHIP_CLASS =
+    "inline-flex max-w-full items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs text-blue-600 transition-colors hover:text-blue-800";
+
+/**
+ * `documentUrl` is a link the student typed (Google Docs, Overleaf, ...). Only such an
+ * outside address may be a plain link: a path into /uploads needs the Authorization
+ * header, which a link cannot send.
+ */
+function isOutsideLink(url: string): boolean {
+    return /^https?:\/\//i.test(url) && !url.includes("/uploads/");
+}
 
 interface GuidanceHistorySectionProps {
     guidanceHistory: {
@@ -26,16 +30,12 @@ interface GuidanceHistorySectionProps {
 
 export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySectionProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [preview, setPreview] = useState<{ fileName: string; filePath: string } | null>(null);
 
     const completedCount = useMemo(() =>
         guidanceHistory.items.filter(g => g.status === "completed").length,
         [guidanceHistory.items]
     );
-
-    const getDocumentUrl = (path: string): string => {
-        if (path.startsWith("http://") || path.startsWith("https://")) return path;
-        return getApiUrl(path);
-    };
 
     return (
         <Card className="h-full">
@@ -52,9 +52,8 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
                 {guidanceHistory.items.length > 0 ? (
                     <div className="h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent space-y-2">
                         {guidanceHistory.items.map((g) => {
-                            const statusInfo = GUIDANCE_STATUS_MAP[g.status] || { label: g.status, variant: "outline" as const, icon: Clock };
-                            const StatusIcon = statusInfo.icon;
                             const isExpanded = expandedId === g.id;
+                            const externalLink = g.documentUrl && g.documentUrl !== "null" ? g.documentUrl : null;
 
                             return (
                                 <div
@@ -68,39 +67,28 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
                                     <button
                                         type="button"
                                         className="flex items-center justify-between w-full p-3 text-left"
+                                        aria-expanded={isExpanded}
                                         onClick={() => setExpandedId(isExpanded ? null : g.id)}
                                     >
-                                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                                            <StatusIcon className={cn(
-                                                "h-4 w-4 shrink-0",
-                                                g.status === "completed" && "text-green-500",
-                                                g.status === "accepted" && "text-blue-500",
-                                                g.status === "rejected" && "text-red-500",
-                                                g.status === "requested" && "text-yellow-500",
-                                                g.status === "summary_pending" && "text-blue-400",
-                                            )} />
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <p className="text-sm font-medium truncate">
-                                                        {g.milestoneTitles && g.milestoneTitles.length > 0
-                                                            ? g.milestoneTitles.join(", ")
-                                                            : g.milestoneName || "Bimbingan"}
-                                                    </p>
-                                                    {g.duration && (
-                                                        <span className="text-[10px] text-muted-foreground shrink-0">
-                                                            {g.duration} menit
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {g.approvedDateFormatted || g.requestedDateFormatted || (g.createdAt ? formatDateId(g.createdAt) : "-")}
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="text-sm font-medium truncate">
+                                                    {g.milestoneTitles && g.milestoneTitles.length > 0
+                                                        ? g.milestoneTitles.join(", ")
+                                                        : g.milestoneName || "Bimbingan"}
                                                 </p>
+                                                {g.duration && (
+                                                    <span className="text-[10px] text-muted-foreground shrink-0">
+                                                        {g.duration} menit
+                                                    </span>
+                                                )}
                                             </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                {formatDateTimeWib(g.approvedDate ?? g.requestedDate ?? g.createdAt)}
+                                            </p>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0 ml-2">
-                                            <Badge variant={statusInfo.variant} className="text-[10px] h-5 px-1.5 font-normal">
-                                                {statusInfo.label}
-                                            </Badge>
+                                            <StatusBadge status={g.status} />
                                             {isExpanded ? (
                                                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
                                             ) : (
@@ -152,32 +140,42 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
 
                                             {/* Document & External URL */}
                                             <div className="flex flex-wrap gap-2">
-                                                {g.document && (
-                                                    <a
-                                                        href={getDocumentUrl(g.document.filePath ?? "")}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1.5 rounded-md border border-blue-200 transition-colors"
+                                                {g.document?.filePath && (
+                                                    // A protected upload: fetched with the Authorization header, never linked.
+                                                    <button
+                                                        type="button"
+                                                        className={DOCUMENT_CHIP_CLASS}
+                                                        title="Buka dokumen"
+                                                        onClick={() => setPreview({ fileName: g.document!.fileName, filePath: g.document!.filePath })}
                                                     >
-                                                        <FileText className="h-3.5 w-3.5" />
-                                                        {g.document.fileName}
-                                                    </a>
+                                                        <FileText className="h-3.5 w-3.5 shrink-0" />
+                                                        <span className="truncate">{g.document.fileName}</span>
+                                                    </button>
                                                 )}
-                                                {g.documentUrl && (
+                                                {externalLink && (isOutsideLink(externalLink) ? (
                                                     <a
-                                                        href={getDocumentUrl(g.documentUrl)}
+                                                        href={externalLink}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1.5 rounded-md border border-blue-200 transition-colors"
+                                                        className={DOCUMENT_CHIP_CLASS}
                                                     >
-                                                        <ExternalLink className="h-3.5 w-3.5" />
+                                                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                                                         Dokumen Eksternal
                                                     </a>
-                                                )}
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        className={DOCUMENT_CHIP_CLASS}
+                                                        onClick={() => void openAuthenticatedFileOrToast(externalLink)}
+                                                    >
+                                                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                                                        Dokumen Eksternal
+                                                    </button>
+                                                ))}
                                             </div>
 
                                             {/* No notes/feedback message */}
-                                            {!g.studentNotes && !g.supervisorFeedback && !g.rejectionReason && !g.document && !g.documentUrl && (
+                                            {!g.studentNotes && !g.supervisorFeedback && !g.rejectionReason && !g.document?.filePath && !externalLink && (
                                                 <p className="text-xs text-muted-foreground italic pt-2">
                                                     Tidak ada catatan atau dokumen pada sesi ini.
                                                 </p>
@@ -197,6 +195,12 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
                     />
                 )}
             </CardContent>
+            <AuthenticatedDocumentPreviewDialog
+                open={preview !== null}
+                onOpenChange={(open) => { if (!open) setPreview(null); }}
+                fileName={preview?.fileName}
+                filePath={preview?.filePath}
+            />
         </Card>
     );
 }
