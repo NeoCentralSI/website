@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import EmptyState from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
+import { SearchField, STALE_RESULT_CLASS } from '@/components/shared/SearchField';
+import { usePagedSearch } from '@/hooks/shared/usePagedSearch';
 import {
   useDepartmentChangeRequests,
   useKadepBatchDecision,
   useKadepDecision,
 } from '@/hooks/thesis-change-request/useThesisChangeRequest';
 import { toTitleCaseName } from '@/lib/text';
+import { cn } from '@/lib/utils';
 import type { ThesisChangeRequest } from '@/types/thesis-change-request.types';
 import { groupByBatch } from './thesisChangeRequestGroups';
 import {
@@ -85,17 +87,10 @@ function RequestRow({ request, canDecide, onDecide }: {
  */
 export function KadepThesisChangeRequestPanel() {
   const [scope, setScope] = useState<Scope>('pending');
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const { search, setSearch, debouncedSearch, page, setPage } = usePagedSearch();
   const [dialog, setDialog] = useState<DialogTarget | null>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1); }, 400);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  const { data, isLoading } = useDepartmentChangeRequests({ scope, search: debouncedSearch, page, pageSize: PAGE_SIZE });
+  const { data, isLoading, isFetching, isPlaceholderData } = useDepartmentChangeRequests({ scope, search: debouncedSearch, page, pageSize: PAGE_SIZE });
   const decision = useKadepDecision();
   const batchDecision = useKadepBatchDecision();
   const groups = useMemo(() => groupByBatch(data?.data ?? []), [data?.data]);
@@ -150,15 +145,12 @@ export function KadepThesisChangeRequestPanel() {
     <Card className="p-4">
       <CardContent className="space-y-3 p-0">
         <LocalTabsNav tabs={tabs} activeTab={scope} onTabChange={(value) => { setScope(value as Scope); setPage(1); }} />
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Cari nama, NIM, atau judul..."
-            className="pl-8"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <SearchField
+          value={search}
+          onChange={setSearch}
+          placeholder="Cari nama, NIM, atau judul..."
+          isSearching={isFetching && !isLoading}
+        />
 
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
@@ -170,7 +162,7 @@ export function KadepThesisChangeRequestPanel() {
             className="py-8"
           />
         ) : (
-          <div className="space-y-4">
+          <div className={cn('space-y-4', isPlaceholderData && STALE_RESULT_CLASS)}>
             {groups.map((group) => {
               const isBatch = !!group.batchId && group.requests.length > 1;
               const rows = group.requests.map((request) => (

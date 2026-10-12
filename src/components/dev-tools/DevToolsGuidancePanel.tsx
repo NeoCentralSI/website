@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CalendarClock } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { Button } from '@/components/ui/button';
 import StatusBadge from '@/components/thesis/StatusBadge';
 import { useDevToolsGuidances, useDevToolsMutations } from '@/hooks/dev-tools/useDevTools';
+import { usePagedSearch } from '@/hooks/shared/usePagedSearch';
 import { formatDateTimeWib } from '@/lib/text';
 import { GUIDANCE_STATUS_LABELS } from '@/lib/thesisLabels';
 import type { DevToolsGuidance } from '@/types/devTools.types';
@@ -21,17 +22,10 @@ const STATUS_OPTIONS = [
 
 export function DevToolsGuidancePanel() {
   const mutations = useDevToolsMutations();
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const { search, setSearch, debouncedSearch, page, setPage } = usePagedSearch();
   const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [editing, setEditing] = useState<DevToolsGuidance | null>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 400);
-    return () => clearTimeout(t);
-  }, [search]);
 
   const { data, isLoading, isFetching } = useDevToolsGuidances({ search: debouncedSearch, status, page, pageSize });
 
@@ -77,7 +71,7 @@ export function DevToolsGuidancePanel() {
         </Button>
       ),
     },
-  ], [status]);
+  ], [status, setPage]);
 
   return (
     <>
@@ -86,6 +80,7 @@ export function DevToolsGuidancePanel() {
         data={data?.data ?? []}
         loading={isLoading}
         isRefreshing={isFetching && !isLoading}
+        subtleRefresh
         total={data?.meta.total ?? 0}
         page={page}
         pageSize={pageSize}

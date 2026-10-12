@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   BookOpen,
@@ -9,14 +9,12 @@ import {
   KeyRound,
   Pencil,
   RotateCcw,
-  Search,
   Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import EmptyState from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -44,7 +42,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
+import { SearchField, STALE_RESULT_CLASS } from '@/components/shared/SearchField';
 import { useDevToolsMutations, useDevToolsStudents } from '@/hooks/dev-tools/useDevTools';
+import { SEARCH_DEBOUNCE_MS, useDebounce } from '@/hooks/useDebounce';
+import { cn } from '@/lib/utils';
 import { formatDateTimeWib } from '@/lib/text';
 import type { DevToolsStudent } from '@/types/devTools.types';
 import { DevToolsEditStudentDialog } from './DevToolsEditStudentDialog';
@@ -155,7 +156,7 @@ function StudentDetail({ student, mutations }: {
 export function DevToolsStudentPanel() {
   const mutations = useDevToolsMutations();
   const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debouncedSearch = useDebounce(search.trim(), SEARCH_DEBOUNCE_MS);
   const [statusFilter, setStatusFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editStudent, setEditStudent] = useState<DevToolsStudent | null>(null);
@@ -164,20 +165,20 @@ export function DevToolsStudentPanel() {
   const [resetProgressTarget, setResetProgressTarget] = useState<DevToolsStudent | null>(null);
   const [pwTarget, setPwTarget] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 400); return () => clearTimeout(t); }, [search]);
-
   const effectiveStatus = statusFilter === 'all' ? '' : statusFilter;
-  const { data: students, isLoading } = useDevToolsStudents(debouncedSearch, effectiveStatus);
+  const { data: students, isLoading, isFetching, isPlaceholderData } = useDevToolsStudents(debouncedSearch, effectiveStatus);
   const toggleExpand = useCallback((id: string) => setExpandedId((prev) => (prev === id ? null : id)), []);
 
   return (
     <Card className="p-4">
       <CardContent className="p-0 space-y-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input placeholder="Cari nama, NIM, atau email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
-          </div>
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="Cari nama, NIM, atau email..."
+            isSearching={isFetching && !isLoading}
+          />
           <div className="flex-1" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-48" aria-label="Filter status mahasiswa"><SelectValue placeholder="Semua Status" /></SelectTrigger>
@@ -189,7 +190,7 @@ export function DevToolsStudentPanel() {
         <div className="rounded-md border border-black/10">
           {isLoading ? <div className="flex justify-center py-12"><Spinner className="h-6 w-6" /></div>
           : !students?.length ? <EmptyState title="Tidak Ada Data" description="Tidak ada mahasiswa ditemukan." size="sm" className="py-8" />
-          : <Table className="table-fixed"><TableHeader><TableRow>
+          : <Table className={cn('table-fixed', isPlaceholderData && STALE_RESULT_CLASS)}><TableHeader><TableRow>
             <TableHead className="w-10" /><TableHead>Nama / NIM</TableHead><TableHead className="w-32">Status</TableHead>
             <TableHead className="w-14 text-center">SKS</TableHead><TableHead className="w-14 text-center">Sem</TableHead>
             <TableHead className="w-36">Metopen</TableHead><TableHead className="w-36">MK TA</TableHead><TableHead className="w-40">Tugas Akhir</TableHead>

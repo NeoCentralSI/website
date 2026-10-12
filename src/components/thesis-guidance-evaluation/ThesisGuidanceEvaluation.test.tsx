@@ -230,6 +230,27 @@ describe('KadepThesisGuidanceEvaluationPanel', () => {
     await waitFor(() => expect(service.decideEvaluation).toHaveBeenCalledWith('eval-1', { approve: false, notes: 'Dasar belum cukup.' }));
   });
 
+  // Paket E2: the search goes to the server after the shared pause and keeps the old rows.
+  it('keeps the rows, the focus and the typed text while a search is on its way', async () => {
+    vi.mocked(service.getDepartmentEvaluations).mockResolvedValue({ data: [evaluation()], meta });
+    wrap(<KadepThesisGuidanceEvaluationPanel />);
+    expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();
+
+    vi.mocked(service.getDepartmentEvaluations).mockImplementation(() => new Promise(() => {}));
+    const input = screen.getByPlaceholderText('Cari nama, NIM, atau judul...') as HTMLInputElement;
+    input.focus();
+    fireEvent.change(input, { target: { value: ' ilham ' } });
+
+    await waitFor(() =>
+      expect(service.getDepartmentEvaluations).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'ilham', page: 1 })),
+    );
+    expect(screen.getByText('Ilham Nofaldi')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Memuat hasil pencarian' })).toBeInTheDocument();
+    expect(screen.queryByText('Tidak ada evaluasi bimbingan yang menunggu keputusan.')).not.toBeInTheDocument();
+    expect(input).toHaveFocus();
+    expect(input.value).toBe(' ilham ');
+  });
+
   it('approves without notes', async () => {
     vi.mocked(service.getDepartmentEvaluations).mockResolvedValue({ data: [evaluation()], meta });
     vi.mocked(service.decideEvaluation).mockResolvedValue({ success: true, message: 'Evaluasi disetujui', data: evaluation({ status: 'approved' }) });

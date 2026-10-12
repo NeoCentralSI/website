@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
-import { KeyRound, Search, Trash2, UserPlus } from 'lucide-react';
+import { useState } from 'react';
+import { KeyRound, Trash2, UserPlus } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import EmptyState from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import {
   AlertDialog,
@@ -25,7 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SearchField, STALE_RESULT_CLASS } from '@/components/shared/SearchField';
 import { useDevToolsMutations, useDevToolsUsers } from '@/hooks/dev-tools/useDevTools';
+import { SEARCH_DEBOUNCE_MS, useDebounce } from '@/hooks/useDebounce';
+import { cn } from '@/lib/utils';
 import { DevToolsCreateUserDialog } from './DevToolsCreateUserDialog';
 import { DevToolsPasswordDialog } from './DevToolsPasswordDialog';
 import { BoolIcon, TruncatedText } from './DevToolsShared';
@@ -33,22 +35,23 @@ import { BoolIcon, TruncatedText } from './DevToolsShared';
 export function DevToolsUserPanel() {
   const mutations = useDevToolsMutations();
   const [search, setSearch] = useState('');
-  const [debounced, setDebounced] = useState('');
+  const debounced = useDebounce(search.trim(), SEARCH_DEBOUNCE_MS);
   const [deleteId, setDeleteId] = useState<{ id: string; name: string } | null>(null);
   const [pwTarget, setPwTarget] = useState<{ id: string; name: string } | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setDebounced(search), 400); return () => clearTimeout(t); }, [search]);
 
-  const { data: allUsers, isLoading: usersLoading } = useDevToolsUsers(debounced);
+  const { data: allUsers, isLoading: usersLoading, isFetching, isPlaceholderData } = useDevToolsUsers(debounced);
 
   return (
     <Card className="p-4">
       <CardContent className="p-0 space-y-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input placeholder="Cari semua user (nama, NIM/NIP, email)..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
-          </div>
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="Cari semua user (nama, NIM/NIP, email)..."
+            isSearching={isFetching && !usersLoading}
+          />
           <div className="flex-1" />
           <Button onClick={() => setCreateOpen(true)} size="sm"><UserPlus className="h-4 w-4 mr-1.5" />Buat User Baru</Button>
         </div>
@@ -56,7 +59,7 @@ export function DevToolsUserPanel() {
         <div className="rounded-md border border-black/10">
           {usersLoading ? <div className="flex justify-center py-12"><Spinner className="h-6 w-6" /></div>
           : !allUsers?.length ? <EmptyState title="Tidak Ada Data" description="Tidak ada user ditemukan." size="sm" className="py-8" />
-          : <Table className="table-fixed"><TableHeader><TableRow>
+          : <Table className={cn('table-fixed', isPlaceholderData && STALE_RESULT_CLASS)}><TableHeader><TableRow>
             <TableHead>Nama</TableHead><TableHead className="w-40">NIM/NIP</TableHead><TableHead className="w-20">Tipe</TableHead><TableHead>Email</TableHead>
             <TableHead>Roles</TableHead><TableHead className="w-20 text-center">Verified</TableHead><TableHead className="w-24 text-right">Aksi</TableHead>
           </TableRow></TableHeader><TableBody>

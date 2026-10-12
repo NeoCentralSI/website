@@ -147,6 +147,80 @@ describe('DevTools panels', () => {
     );
   });
 
+  // Paket E2: a server-side search keeps the old rows, the focus and the typed text.
+  it('Student panel keeps the rows and the focus while a search is on its way', async () => {
+    wrap(<DevToolsStudentPanel />);
+    expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();
+
+    let resolveSearch: (rows: DevToolsStudent[]) => void = () => {};
+    vi.mocked(devToolsService.getStudents).mockImplementation(
+      () => new Promise<DevToolsStudent[]>((resolve) => { resolveSearch = resolve; }),
+    );
+
+    const input = screen.getByPlaceholderText('Cari nama, NIM, atau email...') as HTMLInputElement;
+    input.focus();
+    fireEvent.change(input, { target: { value: 'nabil' } });
+    // Nothing is asked of the server before the typing pause ends.
+    expect(devToolsService.getStudents).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => expect(devToolsService.getStudents).toHaveBeenLastCalledWith('nabil', undefined));
+    // Old rows stay (dimmed), with a small indicator in the search box: no full spinner, no empty state.
+    expect(screen.getByText('Ilham Nofaldi')).toBeInTheDocument();
+    expect(screen.getByRole('table').className).toContain('opacity-60');
+    expect(screen.getByRole('status', { name: 'Memuat hasil pencarian' })).toBeInTheDocument();
+    expect(screen.queryByText('Tidak ada mahasiswa ditemukan.')).not.toBeInTheDocument();
+    expect(input).toHaveFocus();
+    expect(input.value).toBe('nabil');
+
+    resolveSearch([{ ...student, id: 's2', fullName: 'Nabil Rizki', identityNumber: '2211523030' }]);
+    expect(await screen.findByText('Nabil Rizki')).toBeInTheDocument();
+    expect(screen.queryByText('Ilham Nofaldi')).not.toBeInTheDocument();
+    expect(screen.getByRole('table').className).not.toContain('opacity-60');
+    expect(screen.queryByRole('status', { name: 'Memuat hasil pencarian' })).not.toBeInTheDocument();
+    expect(input).toHaveFocus();
+    expect(input.value).toBe('nabil');
+  });
+
+  it('User panel sends the trimmed keyword after the pause and keeps the rows meanwhile', async () => {
+    wrap(<DevToolsUserPanel />);
+    expect(await screen.findByText('Admin SI')).toBeInTheDocument();
+
+    vi.mocked(devToolsService.getUsers).mockImplementation(() => new Promise(() => {}));
+    fireEvent.change(screen.getByPlaceholderText(/Cari semua user/), { target: { value: ' admin ' } });
+
+    await waitFor(() => expect(devToolsService.getUsers).toHaveBeenLastCalledWith('admin'));
+    expect(screen.getByText('Admin SI')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Memuat hasil pencarian' })).toBeInTheDocument();
+  });
+
+  it('Guidance panel goes back to page 1 for a new keyword and never covers the table', async () => {
+    vi.mocked(devToolsService.getGuidances).mockResolvedValue({
+      data: [guidance],
+      meta: { page: 1, pageSize: 10, total: 25, totalPages: 3 },
+    });
+    wrap(<DevToolsGuidancePanel />);
+    expect(await screen.findByText('Husnil Kamil')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: '2' }));
+    await waitFor(() => expect(devToolsService.getGuidances).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, search: undefined })));
+    await waitFor(() => expect(screen.getByRole('table')).not.toHaveAttribute('aria-busy'));
+
+    vi.mocked(devToolsService.getGuidances).mockImplementation(() => new Promise(() => {}));
+    const input = screen.getByPlaceholderText('Cari...') as HTMLInputElement;
+    input.focus();
+    fireEvent.change(input, { target: { value: 'ilham' } });
+
+    await waitFor(() => expect(devToolsService.getGuidances).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, search: 'ilham' })));
+    // The new keyword is never asked for the old page.
+    expect(vi.mocked(devToolsService.getGuidances).mock.calls.some(([params]) => params?.search === 'ilham' && params?.page !== 1)).toBe(false);
+    // The row stays, the table is only dimmed, and the input is untouched.
+    expect(screen.getByText('Husnil Kamil')).toBeInTheDocument();
+    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('table').className).toContain('opacity-60');
+    expect(input).toHaveFocus();
+    expect(input.value).toBe('ilham');
+  });
+
   it('page shows the warning banner and the four tabs in order, routed by path', async () => {
     const setBreadcrumbs = vi.fn();
     const setTitle = vi.fn();
