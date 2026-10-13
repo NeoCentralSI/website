@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sendBatchWarnings, type AtRiskStudent, type ThesisDetailDefence, type ThesisDetailSeminar } from "@/services/monitoring.service";
-import { ReadyForSeminarCard } from "./ReadyForSeminarCard";
+import { ReadyToRegisterCard } from "./ready-to-register-card";
 import { SlowStudentsCard } from "./SlowStudentsCard";
 import { SupervisorLoadCard } from "./SupervisorLoadCard";
 import { ThesisEventCard } from "./ThesisEventCard";
@@ -328,7 +328,7 @@ describe("monitoring list cards", () => {
     });
   });
 
-  it("shows every lecturer of the load list and every student ready for seminar", () => {
+  it("shows every lecturer of the load list and every student ready to register", () => {
     wrap(
       <>
         <SupervisorLoadCard
@@ -337,10 +337,11 @@ describe("monitoring list cards", () => {
             lecturerId: `l${i}`, lecturerName: `DOSEN NOMOR ${i}`, lecturerNip: `19800101200${i}`, lecturerEmail: null, studentCount: 10 - i, students: [],
           }))}
         />
-        <ReadyForSeminarCard
+        <ReadyToRegisterCard
+          kind="seminar"
           isLoading={false}
           students={Array.from({ length: 5 }, (_, i) => ({
-            thesisId: `t${i}`, title: `Judul ${i}`, student: { name: `MAHASISWA KE ${i}`, nim: `221152200${i}`, email: "" }, supervisors: [], approvedAt: "2026-10-14T07:00:00.000Z",
+            thesisId: `t${i}`, title: `Judul ${i}`, student: { name: `MAHASISWA KE ${i}`, nim: `221152200${i}` }, supervisors: [],
           }))}
         />
       </>,
@@ -349,9 +350,9 @@ describe("monitoring list cards", () => {
     expect(screen.getByText("Beban Bimbingan")).toBeInTheDocument();
     expect(screen.getByText("Dosen Nomor 9")).toBeInTheDocument();
     expect(screen.getByText("10 mahasiswa")).toBeInTheDocument();
-    expect(screen.getByText("Siap Seminar")).toBeInTheDocument();
+    expect(screen.getByText("Siap Mendaftar")).toBeInTheDocument();
     expect(screen.getByText("Mahasiswa Ke 4")).toBeInTheDocument();
-    expect(screen.getAllByText("14 Oktober 2026 14.00 WIB")).toHaveLength(5);
+    expect(screen.getAllByText("Acc Seminar")).toHaveLength(5);
     expect(screen.queryByText("Lihat Semua")).not.toBeInTheDocument();
   });
 
@@ -360,7 +361,7 @@ describe("monitoring list cards", () => {
       <>
         <SlowStudentsCard isLoading={false} atRiskStudents={[]} slowStudents={[]} />
         <SupervisorLoadCard isLoading={false} loads={[]} />
-        <ReadyForSeminarCard isLoading={false} students={[]} />
+        <ReadyToRegisterCard kind="defence" isLoading={false} students={[]} />
       </>,
     );
     expect(screen.getAllByText("Tidak Ada Data")).toHaveLength(3);

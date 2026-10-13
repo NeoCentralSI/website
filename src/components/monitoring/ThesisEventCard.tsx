@@ -5,7 +5,8 @@ import { Award, ExternalLink, GraduationCap } from "lucide-react";
 import { ThesisEventStatusBadge, type ThesisEventStatus } from "@/components/shared/ThesisEventStatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import EmptyState from "@/components/ui/empty-state";
-import { formatDateShortId, formatDateTimeWib, toTitleCaseName } from "@/lib/text";
+import { formatDateTimeWib, toTitleCaseName } from "@/lib/text";
+import { THESIS_EVENT_DETAIL_PATH, scheduleText } from "@/lib/thesis-event-schedule";
 import type { ThesisDetailDefence, ThesisDetailEvent } from "@/services/monitoring.service";
 
 type EventKind = "seminar" | "defence";
@@ -14,35 +15,18 @@ const EVENT_COPY: Record<EventKind, { title: string; icon: typeof Award; detailP
   seminar: {
     title: "Seminar Hasil",
     icon: GraduationCap,
-    detailPath: "/tugas-akhir/seminar-hasil",
+    detailPath: THESIS_EVENT_DETAIL_PATH.seminar,
     emptyTitle: "Belum Ada Seminar",
     emptyDescription: "Mahasiswa belum mendaftar seminar hasil.",
   },
   defence: {
     title: "Sidang",
     icon: Award,
-    detailPath: "/tugas-akhir/sidang",
+    detailPath: THESIS_EVENT_DETAIL_PATH.defence,
     emptyTitle: "Belum Ada Sidang",
     emptyDescription: "Mahasiswa belum mendaftar sidang.",
   },
 };
-
-/** The seminar and defence modules store the time of day on 1970-01-01 and read it in UTC. */
-function timeOfDay(value: string | null): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (isNaN(date.getTime())) return null;
-  return `${String(date.getUTCHours()).padStart(2, "0")}.${String(date.getUTCMinutes()).padStart(2, "0")}`;
-}
-
-function scheduleText(event: ThesisDetailEvent): string {
-  if (!event.date) return "Belum dijadwalkan";
-  const day = formatDateShortId(event.date);
-  const start = timeOfDay(event.startTime);
-  const end = timeOfDay(event.endTime);
-  if (!start) return day;
-  return `${day}, ${start}${end ? ` – ${end}` : ""} WIB`;
-}
 
 const scoreFormat = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
 

@@ -53,7 +53,7 @@ export function MonitoringSummaryCards({ summary, isLoading }: MonitoringSummary
     {
       title: "Siap Seminar",
       value: summary?.totalReadyForSeminar ?? 0,
-      description: "Menunggu jadwal seminar",
+      description: "Disetujui pembimbing, belum mendaftar",
       icon: GraduationCap,
       color: "text-amber-600",
       bgColor: "bg-amber-50",

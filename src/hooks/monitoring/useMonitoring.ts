@@ -7,6 +7,7 @@ import {
   getStudentsReadyForSeminar,
   getSupervisorLoads,
   getThesisDetail,
+  getThesisEventMonitoring,
   type ThesesFilters,
   type MonitoringDashboard,
   type ThesesListResponse,
@@ -15,6 +16,8 @@ import {
   type ReadyForSeminarStudent,
   type SupervisorLoad,
   type ThesisDetail,
+  type ThesisEventKind,
+  type ThesisEventMonitoring,
 } from "@/services/monitoring.service";
 
 // Query keys
@@ -27,6 +30,7 @@ export const monitoringKeys = {
   atRisk: (academicYear?: string) => [...monitoringKeys.all, "at-risk", academicYear] as const,
   readySeminar: (academicYear?: string) => [...monitoringKeys.all, "ready-seminar", academicYear] as const,
   supervisorLoads: (academicYear?: string) => [...monitoringKeys.all, "supervisor-loads", academicYear] as const,
+  events: (kind: ThesisEventKind, academicYear?: string) => [...monitoringKeys.all, "events", kind, academicYear] as const,
 };
 
 /**
@@ -39,6 +43,19 @@ export function useMonitoringDashboard(academicYear?: string, options: { enabled
     queryFn: () => getMonitoringDashboard(academicYear),
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchOnWindowFocus: true,
+    enabled: options.enabled ?? true,
+  });
+}
+
+/**
+ * Hook to fetch the Seminar Hasil or Sidang tab of the monitoring page. `enabled: false`
+ * holds the request back until the semester filter is known.
+ */
+export function useThesisEventMonitoring(kind: ThesisEventKind, academicYear?: string, options: { enabled?: boolean } = {}) {
+  return useQuery<ThesisEventMonitoring, Error>({
+    queryKey: monitoringKeys.events(kind, academicYear),
+    queryFn: () => getThesisEventMonitoring(kind, academicYear),
+    staleTime: 2 * 60 * 1000, // 2 minutes
     enabled: options.enabled ?? true,
   });
 }

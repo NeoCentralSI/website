@@ -318,9 +318,88 @@ export interface ThesesFilters {
   pageSize?: number;
 }
 
+// ========== Seminar Hasil and Sidang tabs ==========
+
+export type ThesisEventKind = "seminar" | "defence";
+
+/** One seminar or defence as the monitoring tabs show it (read-only). */
+export interface MonitoringEvent {
+  id: string;
+  thesisId: string;
+  title: string | null;
+  student: { name: string | null; nim: string | null };
+  /** `ThesisSeminarStatus` / `ThesisDefenceStatus`; shown through `ThesisEventStatusBadge`. */
+  status: string;
+  /** Calendar date (ISO, midnight UTC). */
+  date: string | null;
+  /** Time of day (ISO on 1970-01-01, read in UTC). */
+  startTime: string | null;
+  endTime: string | null;
+  room: string | null;
+  /** Examiners that are still assigned, in order. */
+  examiners: { order: number | null; name: string | null }[];
+  finalScore: number | null;
+  /** Defences only. */
+  grade?: string | null;
+  registeredAt: string | null;
+  resultFinalizedAt: string | null;
+  revisionFinalizedAt: string | null;
+}
+
+export type EventAttentionReason = "document_verification" | "scheduling" | "result_finalization" | "revision";
+
+/** A seminar or defence of "Perlu Perhatian", with the reason decided by the server. */
+export interface MonitoringEventAttention extends MonitoringEvent {
+  attention: {
+    reason: EventAttentionReason;
+    reasonLabel: string;
+    /** The date the wait is counted from. */
+    since: string;
+    /** Whole days it has waited. */
+    days: number;
+  };
+}
+
+/** A thesis whose supervisors all approved readiness and that has no standing registration. */
+export interface ReadyToRegisterStudent {
+  thesisId: string;
+  title: string | null;
+  student: { name: string | null; nim: string | null };
+  supervisors: SupervisorInfo[];
+}
+
+export interface ThesisEventSummary {
+  total: number;
+  /** registered, verified, examiner_assigned */
+  inProcess: number;
+  scheduled: number;
+  /** passed and passed_with_revision */
+  passed: number;
+  /** passed_with_revision whose revision is not final; a part of `passed` */
+  revisionPending: number;
+  /** failed and cancelled */
+  notPassed: number;
+  /** Defences only: average final score of the ones that passed; null when there is none. */
+  averageFinalScore?: number | null;
+}
+
+export interface ThesisEventMonitoring {
+  kind: ThesisEventKind;
+  summary: ThesisEventSummary;
+  readyToRegister: ReadyToRegisterStudent[];
+  /** Scheduled today or later, nearest first, at most ten. */
+  upcoming: MonitoringEvent[];
+  upcomingTotal: number;
+  attention: MonitoringEventAttention[];
+  /** Every seminar or defence of the semester, latest first. */
+  items: MonitoringEvent[];
+}
+
 // ========== Endpoints ==========
 
 const ENDPOINTS = {
+  SEMINARS: "/thesisGuidance/monitoring/seminars",
+  DEFENCES: "/thesisGuidance/monitoring/defences",
   DASHBOARD: "/thesisGuidance/monitoring/dashboard",
   THESES: "/thesisGuidance/monitoring/theses",
   THESIS_DETAIL: "/thesisGuidance/monitoring/theses",
@@ -344,6 +423,21 @@ export async function getMonitoringDashboard(academicYear?: string): Promise<Mon
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Gagal mengambil data monitoring");
+  }
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Seminar Hasil or Sidang of a semester for the monitoring tabs (every semester without `academicYear`)
+ */
+export async function getThesisEventMonitoring(kind: ThesisEventKind, academicYear?: string): Promise<ThesisEventMonitoring> {
+  const endpoint = kind === "defence" ? ENDPOINTS.DEFENCES : ENDPOINTS.SEMINARS;
+  const url = academicYear && academicYear !== "all" ? `${endpoint}?academicYear=${academicYear}` : endpoint;
+  const response = await apiRequest(getApiUrl(url));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || (kind === "defence" ? "Gagal mengambil data sidang" : "Gagal mengambil data seminar hasil"));
   }
   const result = await response.json();
   return result.data;

@@ -1,21 +1,12 @@
 import { useEffect, useId, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw, Calendar, FileDown, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import {
-  MonitoringSummaryCards,
-  StatusDistributionChart,
-  ActivityDistributionChart,
-  TopicDistributionChart,
-  BatchDistributionChart,
-  ProgressDistributionChart,
-  SlowStudentsCard,
-  EvaluationDueCard,
-  ReadyForSeminarCard,
-  SupervisorLoadCard,
-  ThesesTable,
-  GuidanceTrendChart,
-} from "@/components/monitoring";
-import { ALL_SEMESTERS, useMonitoringDashboard, useMonitoringSemester } from "@/hooks/monitoring";
+import { GuidanceMonitoringTab, ThesisEventMonitoringTab } from "@/components/monitoring";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -23,27 +14,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Calendar, FileDown, Loader2 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
-import { Loading } from "@/components/ui/spinner";
+import { LocalTabsNav } from "@/components/ui/tabs-nav";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ALL_SEMESTERS, monitoringKeys, useMonitoringSemester } from "@/hooks/monitoring";
 import { downloadProgressReportPdf } from "@/services/monitoring.service";
-import { toast } from "sonner";
+
+type MonitoringTab = "bimbingan" | "seminar" | "sidang";
+
+const DEFAULT_TAB: MonitoringTab = "bimbingan";
+const TABS: { value: MonitoringTab; label: string }[] = [
+  { value: "bimbingan", label: "Bimbingan" },
+  { value: "seminar", label: "Seminar Hasil" },
+  { value: "sidang", label: "Sidang" },
+];
+
+/** What the Semester filter means on each tab, for one semester and for every semester. */
+const SCOPE_TEXT: Record<MonitoringTab, { semester: string; all: string; now: string }> = {
+  bimbingan: {
+    semester: "Menampilkan tugas akhir yang berjalan pada semester ini.",
+    all: "Menampilkan tugas akhir dari semua semester.",
+    now: "Indikator aktivitas dan evaluasi menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
+  },
+  seminar: {
+    semester: "Menampilkan seminar hasil yang tanggalnya jatuh pada semester ini.",
+    all: "Menampilkan seminar hasil dari semua semester.",
+    now: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
+  },
+  sidang: {
+    semester: "Menampilkan sidang yang tanggalnya jatuh pada semester ini.",
+    all: "Menampilkan sidang dari semua semester.",
+    now: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
+  },
+};
+
+const REPORT_ONLY_GUIDANCE = "Laporan hanya memuat data bimbingan. Buka tab Bimbingan untuk mengunduhnya.";
 
 export default function MonitoringDashboard() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialActivity = searchParams.get("activity") || undefined;
+  const requestedTab = searchParams.get("tab");
+  const activeTab = TABS.find((tab) => tab.value === requestedTab)?.value ?? DEFAULT_TAB;
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const queryClient = useQueryClient();
   const semesterFieldId = useId();
 
-  // Semester filter (`?semester=`): theses that run in the semester; the running one by default.
+  // Semester filter (`?semester=`), shared by the three tabs; the running semester by default.
   const semester = useMonitoringSemester();
   const academicYearFilter = semester.academicYear;
-  const { data, isLoading, isFetching, refetch } = useMonitoringDashboard(academicYearFilter, { enabled: semester.isReady });
+  const isFetchingAny = useIsFetching({ queryKey: monitoringKeys.all }) > 0;
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
   useEffect(() => {
@@ -54,17 +74,22 @@ export default function MonitoringDashboard() {
     setTitle("Monitoring Tugas Akhir");
   }, [setBreadcrumbs, setTitle]);
 
-  // Check if any operation is in progress
-  const isLoadingAny = isLoading || isFetching || isSyncing;
+  const isLoadingAny = isFetchingAny || isSyncing;
+
+  const handleTabChange = (tab: string) => {
+    setSearchParams((previous) => {
+      const params = new URLSearchParams(previous);
+      if (tab === DEFAULT_TAB) params.delete("tab");
+      else params.set("tab", tab);
+      return params;
+    }, { replace: true });
+  };
 
   const handleRefresh = async () => {
     setIsSyncing(true);
     try {
-      // Invalidate and refetch all monitoring data
-      await Promise.all([
-        refetch(),
-        queryClient.invalidateQueries({ queryKey: monitoringKeys.all }),
-      ]);
+      // Every monitoring query; the ones on screen are fetched again right away
+      await queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
     } catch (error) {
       console.error('[Monitoring] Refresh failed:', error);
     } finally {
@@ -80,7 +105,7 @@ export default function MonitoringDashboard() {
       };
 
       const blob = await downloadProgressReportPdf(options);
-      
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -89,32 +114,41 @@ export default function MonitoringDashboard() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast.success("Laporan berhasil diunduh");
-    } catch (error: any) {
-      toast.error(error.message || "Gagal mengunduh laporan");
+    } catch (error) {
+      toast.error((error as Error)?.message || "Gagal mengunduh laporan");
     } finally {
       setIsDownloadingPDF(false);
     }
   };
 
-  // Full blank loading on browser reload (no cached data), and while the default semester is resolved
-  if (!semester.isReady || (isLoading && !data)) {
-    return (
-      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
-        <Loading size="lg" text="Memuat data monitoring..." />
-      </div>
-    );
-  }
+  const scope = SCOPE_TEXT[activeTab];
+  const isReportTab = activeTab === "bimbingan";
+  const downloadButton = (
+    <Button
+      variant="outline"
+      className="flex items-center gap-2"
+      onClick={handleDownloadPDF}
+      disabled={!isReportTab || isDownloadingPDF || isLoadingAny || !semester.isReady}
+    >
+      {isDownloadingPDF ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <FileDown className="h-4 w-4" />
+      )}
+      {isDownloadingPDF ? "Mengunduh..." : "Download Laporan"}
+    </Button>
+  );
 
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Monitoring Tugas Akhir</h1>
-        <p className="text-muted-foreground">Pantau progres, bimbingan, dan kesiapan mahasiswa tugas akhir</p>
+        <p className="text-muted-foreground">Pantau bimbingan, seminar hasil, dan sidang tugas akhir per semester</p>
       </div>
 
-      {/* Semester filter and reload */}
+      {/* Semester filter, reload and report */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-3">
@@ -122,7 +156,8 @@ export default function MonitoringDashboard() {
               <Calendar className="h-5 w-5 text-muted-foreground" />
               Semester
             </label>
-            <Select value={semester.value} onValueChange={semester.setSemester}>
+            {/* "" keeps the select controlled while the default semester is being resolved */}
+            <Select value={semester.value ?? ""} onValueChange={semester.setSemester}>
               <SelectTrigger id={semesterFieldId} className="w-56">
                 <SelectValue placeholder="Pilih semester" />
               </SelectTrigger>
@@ -136,90 +171,42 @@ export default function MonitoringDashboard() {
               </SelectContent>
             </Select>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {semester.isAll
-              ? "Menampilkan tugas akhir dari semua semester."
-              : "Menampilkan tugas akhir yang berjalan pada semester ini."}
-          </p>
-          {semester.isPastOrOtherSemester && (
-            <p className="text-sm text-amber-700">
-              Indikator aktivitas dan evaluasi menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">{semester.isAll ? scope.all : scope.semester}</p>
+          {semester.isPastOrOtherSemester && <p className="text-sm text-amber-700">{scope.now}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAny}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingAny ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button
-            variant="outline"
-            className="flex items-center gap-2"
-            onClick={handleDownloadPDF}
-            disabled={isDownloadingPDF || isLoadingAny}
-          >
-            {isDownloadingPDF ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileDown className="h-4 w-4" />
-            )}
-            {isDownloadingPDF ? "Mengunduh..." : "Download Laporan"}
-          </Button>
+          {isReportTab ? downloadButton : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {/* A disabled button gets no pointer events; the wrapper carries the reason. */}
+                <span tabIndex={0} title={REPORT_ONLY_GUIDANCE}>{downloadButton}</span>
+              </TooltipTrigger>
+              <TooltipContent>{REPORT_ONLY_GUIDANCE}</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
 
+      <LocalTabsNav tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
 
-      {/* Summary Cards */}
-      <MonitoringSummaryCards summary={data?.summary} isLoading={isLoadingAny} />
-
-      {/* Distribution Charts */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <StatusDistributionChart
-          statusDistribution={data?.statusDistribution}
-          isLoading={isLoadingAny}
+      {activeTab === "bimbingan" && (
+        <GuidanceMonitoringTab
+          academicYear={academicYearFilter}
+          enabled={semester.isReady}
+          isSyncing={isSyncing}
+          initialActivity={initialActivity}
         />
-        <ActivityDistributionChart
-          activityDistribution={data?.activityDistribution}
-          isLoading={isLoadingAny}
-        />
-        <ProgressDistributionChart
-          progressDistribution={data?.progressDistribution}
-          isLoading={isLoadingAny}
-        />
-        <TopicDistributionChart
-          topicDistribution={data?.topicDistribution}
-          isLoading={isLoadingAny}
-        />
-        <BatchDistributionChart
-          batchDistribution={data?.batchDistribution}
-          isLoading={isLoadingAny}
-        />
-        <GuidanceTrendChart
-          guidanceTrend={data?.guidanceTrend}
-          isLoading={isLoadingAny}
-        />
-      </div>
-
-      {/* Quick lists: two columns on a wide screen, one on a narrow one */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <EvaluationDueCard students={data?.evaluationDueStudents} isLoading={isLoadingAny} />
-        <SlowStudentsCard
-          slowStudents={data?.slowStudents}
-          atRiskStudents={data?.atRiskStudents}
-          isLoading={isLoadingAny}
-        />
-        <SupervisorLoadCard
-          loads={data?.supervisorLoads}
-          isLoading={isLoadingAny}
-        />
-        <ReadyForSeminarCard
-          students={data?.readyForSeminar}
-          isLoading={isLoadingAny}
-        />
-      </div>
-
-      {/* Full Table */}
-      <ThesesTable isSyncing={isSyncing} academicYear={academicYearFilter} initialActivity={initialActivity} />
+      )}
+      {activeTab === "seminar" && (
+        <ThesisEventMonitoringTab kind="seminar" academicYear={academicYearFilter} enabled={semester.isReady} />
+      )}
+      {activeTab === "sidang" && (
+        <ThesisEventMonitoringTab kind="defence" academicYear={academicYearFilter} enabled={semester.isReady} />
+      )}
     </div>
   );
 }

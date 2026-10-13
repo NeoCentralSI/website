@@ -6,10 +6,11 @@ export { TopicDistributionChart } from "./TopicDistributionChart";
 export { BatchDistributionChart } from "./BatchDistributionChart";
 export { ProgressDistributionChart } from "./ProgressDistributionChart";
 export { AtRiskStudentsCard } from "./AtRiskStudentsCard";
-export { ReadyForSeminarCard } from "./ReadyForSeminarCard";
+export { ReadyToRegisterCard } from "./ready-to-register-card";
 export { SlowStudentsCard } from "./SlowStudentsCard";
 export { EvaluationDueCard } from "./EvaluationDueCard";
 export { SupervisorLoadCard } from "./SupervisorLoadCard";
 export { ThesesTable } from "./ThesesTable";
 export { GuidanceTrendChart } from "./MonthlyTrendChart";
-
+export { GuidanceMonitoringTab } from "./guidance-monitoring-tab";
+export { ThesisEventMonitoringTab } from "./thesis-event-monitoring-tab";
