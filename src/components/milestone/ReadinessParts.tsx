@@ -3,7 +3,7 @@ import { CheckCircle2, Circle, Paperclip, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { openAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
-import { formatDateTimeWib, formatRoleName, toTitleCaseName } from "@/lib/text";
+import { formatDateTimeWib, formatRoleName, formatLecturerName } from "@/lib/text";
 import type {
   ReadinessAttachment,
   ReadinessRequirement,
@@ -82,7 +82,7 @@ export function ReadinessSupervisorList({ supervisors }: { supervisors: Readines
                   <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
                 <div className="min-w-0">
-                  <p className="truncate" title={supervisor.name}>{toTitleCaseName(supervisor.name) || "-"}</p>
+                  <p className="truncate" title={supervisor.name}>{formatLecturerName(supervisor.name) || "-"}</p>
                   <p className="text-xs text-muted-foreground">{formatRoleName(supervisor.role)}</p>
                 </div>
               </div>

@@ -29,7 +29,7 @@ import {
 import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
 import { useThesesList, useFilterOptions, monitoringKeys } from "@/hooks/monitoring";
 import { useRole } from "@/hooks/shared/useRole";
-import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib, formatLecturerName } from "@/lib/text";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
 import { sendWarningToStudent } from "@/services/monitoring.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -253,12 +253,12 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity }
         <div className="space-y-0.5 text-sm">
           {thesis.supervisors.pembimbing1 && (
             <p className="truncate max-w-37.5" title={thesis.supervisors.pembimbing1}>
-              1. {toTitleCaseName(thesis.supervisors.pembimbing1)}
+              1. {formatLecturerName(thesis.supervisors.pembimbing1)}
             </p>
           )}
           {thesis.supervisors.pembimbing2 && (
             <p className="truncate max-w-37.5 text-muted-foreground" title={thesis.supervisors.pembimbing2}>
-              2. {toTitleCaseName(thesis.supervisors.pembimbing2)}
+              2. {formatLecturerName(thesis.supervisors.pembimbing2)}
             </p>
           )}
         </div>
@@ -433,7 +433,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity }
           <SelectItem value="all">Semua Pembimbing</SelectItem>
           {filterOptions?.supervisors.map((supervisor) => (
             <SelectItem key={supervisor.value} value={supervisor.value}>
-              {toTitleCaseName(supervisor.label)}
+              {formatLecturerName(supervisor.label)}
             </SelectItem>
           ))}
         </SelectContent>

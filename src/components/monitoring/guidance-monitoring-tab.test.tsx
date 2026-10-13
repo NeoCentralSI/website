@@ -78,14 +78,17 @@ describe("GuidanceMonitoringTab", () => {
     expect(screen.getByText("Beban Bimbingan")).toBeInTheDocument();
   });
 
-  it("no longer lists the students ready for seminar: that card moved to the Seminar Hasil tab", async () => {
+  it("says nothing about students ready for seminar: list and number are on the Seminar Hasil tab", async () => {
     renderTab();
     await screen.findByTestId("theses-table");
 
     expect(screen.queryByText("Siap Mendaftar")).not.toBeInTheDocument();
     expect(screen.queryByText("Uji Mon Siap Daftar Seminar")).not.toBeInTheDocument();
     expect(screen.queryByText("Acc Seminar")).not.toBeInTheDocument();
-    // The number of the summary row stays.
-    expect(screen.getByText("Siap Seminar")).toBeInTheDocument();
+    // The summary row has three numbers; "Siap Seminar" is not one of them any more.
+    expect(screen.queryByText("Siap Seminar")).not.toBeInTheDocument();
+    expect(screen.getByText("Total Mahasiswa Aktif")).toBeInTheDocument();
+    expect(screen.getByText("Rata-rata Progress")).toBeInTheDocument();
+    expect(screen.getByText("Mahasiswa Berisiko")).toBeInTheDocument();
   });
 });

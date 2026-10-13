@@ -20,7 +20,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useSubmitTransfer, useSupervisorOptions } from '@/hooks/thesis-change-request/useThesisChangeRequest';
-import { toTitleCaseName } from '@/lib/text';
+import { toTitleCaseName, formatLecturerName } from '@/lib/text';
 import { SUPERVISOR_POSITION_LABELS, type SupervisorPosition } from '@/lib/thesisLabels';
 
 export interface TransferStudent {
@@ -110,7 +110,7 @@ export function LecturerTransferStudentsDialog({ open, onOpenChange, students, c
                 <SelectTrigger id="transfer-target"><SelectValue placeholder="Pilih dosen" /></SelectTrigger>
                 <SelectContent>
                   {candidates.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>{toTitleCaseName(option.name)}</SelectItem>
+                    <SelectItem key={option.id} value={option.id}>{formatLecturerName(option.name)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

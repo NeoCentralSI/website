@@ -22,7 +22,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useSubmitChangeRequest, useSupervisorOptions } from '@/hooks/thesis-change-request/useThesisChangeRequest';
-import { toTitleCaseName } from '@/lib/text';
+import { formatLecturerName } from '@/lib/text';
 import {
   CHANGE_REQUEST_TYPE_LABELS,
   SUPERVISOR_POSITION_LABELS,
@@ -175,7 +175,7 @@ export function ThesisChangeRequestFormDialog({ open, onOpenChange, context }: {
               </div>
               <div className="space-y-2">
                 <Label>{SUPERVISOR_POSITION_LABELS[position]} saat ini</Label>
-                <Input readOnly value={current ? toTitleCaseName(current.name) : 'Belum ada (pembimbing akan ditambahkan)'} />
+                <Input readOnly value={current ? formatLecturerName(current.name) : 'Belum ada (pembimbing akan ditambahkan)'} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="change-new-supervisor">{current ? 'Pembimbing pengganti' : 'Pembimbing yang ditambahkan'}</Label>
@@ -186,7 +186,7 @@ export function ThesisChangeRequestFormDialog({ open, onOpenChange, context }: {
                     <SelectTrigger id="change-new-supervisor"><SelectValue placeholder="Pilih dosen" /></SelectTrigger>
                     <SelectContent>
                       {candidates.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>{toTitleCaseName(option.name)}</SelectItem>
+                        <SelectItem key={option.id} value={option.id}>{formatLecturerName(option.name)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

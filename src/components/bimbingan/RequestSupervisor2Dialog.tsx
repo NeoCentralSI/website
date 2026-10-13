@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import EmptyState from "@/components/ui/empty-state";
 import { toast } from "sonner";
-import { toTitleCaseName } from "@/lib/text";
+import { formatLecturerName } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import {
   getAvailableSupervisors2,
@@ -160,7 +160,7 @@ export function RequestSupervisor2Dialog({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {toTitleCaseName(lecturer.fullName || "")}
+                        {formatLecturerName(lecturer.fullName || "")}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {lecturer.identityNumber || ""}

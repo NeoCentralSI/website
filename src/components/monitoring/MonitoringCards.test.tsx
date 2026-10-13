@@ -333,9 +333,12 @@ describe("monitoring list cards", () => {
       <>
         <SupervisorLoadCard
           isLoading={false}
-          loads={Array.from({ length: 10 }, (_, i) => ({
-            lecturerId: `l${i}`, lecturerName: `DOSEN NOMOR ${i}`, lecturerNip: `19800101200${i}`, lecturerEmail: null, studentCount: 10 - i, students: [],
-          }))}
+          loads={[
+            ...Array.from({ length: 10 }, (_, i) => ({
+              lecturerId: `l${i}`, lecturerName: `DOSEN NOMOR ${i}`, lecturerNip: `19800101200${i}`, lecturerEmail: null, studentCount: 10 - i, students: [],
+            })),
+            { lecturerId: "l-husnil", lecturerName: "HUSNIL KAMIL, M.T", lecturerNip: "198201182008121002", lecturerEmail: null, studentCount: 0, students: [] },
+          ]}
         />
         <ReadyToRegisterCard
           kind="seminar"
@@ -349,6 +352,8 @@ describe("monitoring list cards", () => {
 
     expect(screen.getByText("Beban Bimbingan")).toBeInTheDocument();
     expect(screen.getByText("Dosen Nomor 9")).toBeInTheDocument();
+    // A lecturer's degree keeps its capitals.
+    expect(screen.getByText("Husnil Kamil, M.T")).toBeInTheDocument();
     expect(screen.getByText("10 mahasiswa")).toBeInTheDocument();
     expect(screen.getByText("Siap Mendaftar")).toBeInTheDocument();
     expect(screen.getByText("Mahasiswa Ke 4")).toBeInTheDocument();

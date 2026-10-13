@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getThesisEventMonitoring,
@@ -55,7 +55,7 @@ const scheduledNextWeek = (overrides: Partial<MonitoringEvent> = {}) =>
     startTime: "1970-01-01T09:00:00.000Z",
     endTime: "1970-01-01T11:00:00.000Z",
     room: "Ruang Seminar SI",
-    examiners: [{ order: 1, name: "FAJRIL AKBAR" }, { order: 2, name: "HARIS SURYAMEN" }],
+    examiners: [{ order: 1, name: "FAJRIL AKBAR, M.Sc" }, { order: 2, name: "Haris Suryamen, M.Sc" }],
     ...overrides,
   });
 
@@ -112,6 +112,12 @@ beforeEach(() => {
   role.isAdmin = false;
   role.isDosen = true;
   vi.mocked(getThesisEventMonitoring).mockResolvedValue(seminarData());
+  // The shared badge compares the schedule with the clock: Tuesday 13 October 2026, midday.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 9, 13, 12, 0, 0));
+});
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
@@ -159,7 +165,8 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
     expect(upcoming.getByText("Uji Mon Seminar Terjadwal")).toBeInTheDocument();
     expect(upcoming.getByText("(2211529105)")).toBeInTheDocument();
     expect(upcoming.getByText("Sistem Informasi Pengelolaan Jurnal Departemen")).toHaveClass("truncate");
-    expect(upcoming.getByText("Penguji: Fajril Akbar, Haris Suryamen")).toBeInTheDocument();
+    // Lecturers' names are tidied, their degrees are left as written (not "M.sc").
+    expect(upcoming.getByText("Penguji: Fajril Akbar, M.Sc, Haris Suryamen, M.Sc")).toBeInTheDocument();
     // One schedule, one row: nothing is said about a remainder.
     expect(upcoming.queryByText(/jadwal terdekat/)).not.toBeInTheDocument();
   });
@@ -216,8 +223,9 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
     expect(within(rows[1]).getByText("Menunggu Verifikasi")).toBeInTheDocument();
     expect(within(rows[1]).getByText("Belum dijadwalkan")).toBeInTheDocument();
     expect(within(rows[2]).getByText("Menunggu Jadwal")).toBeInTheDocument();
-    // Held five days ago and not final: the table shows the stored status.
-    expect(within(rows[3]).getByText("Terjadwalkan")).toBeInTheDocument();
+    // Scheduled five days ago and not final: the display status of the seminar module.
+    expect(within(rows[3]).getByText("Sedang Berlangsung")).toBeInTheDocument();
+    expect(within(rows[3]).queryByText("Terjadwalkan")).not.toBeInTheDocument();
     expect(within(rows[4]).getByText("Lulus")).toBeInTheDocument();
     expect(within(rows[4]).getAllByRole("cell")[4]).toHaveTextContent("82,5");
     expect(within(rows[5]).getByText("Tidak Lulus")).toBeInTheDocument();
@@ -252,6 +260,11 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
     expect(await screen.findByRole("option", { name: "Menunggu Penetapan Penguji" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("option", { name: "Terjadwalkan" }));
     await waitFor(() => expect(bodyRows()).toHaveLength(2));
+    // The filter goes by the stored status: both scheduled seminars, also the one whose
+    // badge already reads "Sedang Berlangsung". The summary card counts the same two.
+    expect(within(bodyRows()[0]).getByText("Terjadwalkan")).toBeInTheDocument();
+    expect(within(bodyRows()[1]).getByText("Sedang Berlangsung")).toBeInTheDocument();
+    expect(summary("Terjadwal")).toHaveTextContent(/^2$/);
     expect(getThesisEventMonitoring).toHaveBeenCalledTimes(1);
 
     fireEvent.change(screen.getByPlaceholderText("Cari nama atau NIM..."), { target: { value: "tidak ada" } });

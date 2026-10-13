@@ -611,10 +611,15 @@ export interface ReportThesisItem {
   title: string;
   topic: string;
   status: string;
+  /** Teks yang dicetak laporan untuk status, mis. "Penelitian". */
+  statusLabel: string;
   activityLevel: ThesisActivityLevel | null;
+  /** "Lancar" / "Lambat" / "Berisiko"; "-" bila TA tidak berstatus Penelitian. */
+  activityLabel: string;
   /** Masa bimbingan, mis. "7 bulan 12 hari". */
   supervisionLabel: string;
   evaluationDue: string | null;
+  evaluationDueLabel: string | null;
   pembimbing1: string;
   pembimbing2: string;
   guidanceTotal: number;
@@ -638,6 +643,8 @@ export interface ReportSummary {
 
 export interface ProgressReportData {
   academicYear: string;
+  /** Subjudul laporan, mis. "Tugas Akhir yang Berjalan pada Semester Ganjil 2026/2027". */
+  periodTitle: string;
   generatedAt: string;
   summary: ReportSummary;
   statusDistribution: StatusDistribution[];

@@ -1,6 +1,6 @@
 import { CalendarClock } from "lucide-react";
 
-import { formatDateShortId, toTitleCaseName } from "@/lib/text";
+import { formatDateShortId, toTitleCaseName, formatLecturerName } from "@/lib/text";
 import { timeRangeText } from "@/lib/thesis-event-schedule";
 import type { MonitoringEvent, ThesisEventKind } from "@/services/monitoring.service";
 import { MonitoringListCard } from "./MonitoringListCard";
@@ -31,7 +31,7 @@ export function UpcomingEventsCard({ kind, events, total, isLoading }: UpcomingE
       emptyDescription={`Belum ada ${copy.noun} yang terjadwal ke depan.`}
     >
       {rows.map((event) => {
-        const examiners = event.examiners.map((examiner) => toTitleCaseName(examiner.name)).join(", ");
+        const examiners = event.examiners.map((examiner) => formatLecturerName(examiner.name)).join(", ");
         return (
           <li key={event.id} className="flex flex-col gap-1.5 py-2.5 sm:flex-row sm:gap-4">
             <div className="shrink-0 sm:w-44">

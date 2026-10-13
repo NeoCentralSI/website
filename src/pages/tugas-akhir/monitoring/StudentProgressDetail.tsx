@@ -2,7 +2,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useThesisDetail } from '@/hooks/monitoring';
-import { toTitleCaseName, formatRoleName, formatDateShortId, formatDateTimeWib } from '@/lib/text';
+import { toTitleCaseName, formatRoleName, formatDateShortId, formatDateTimeWib, formatLecturerName } from '@/lib/text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -334,7 +334,7 @@ export default function StudentProgressDetail() {
                     {data.supervisors.map((sup, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded-md">
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{toTitleCaseName(sup.name)}</p>
+                          <p className="text-sm font-medium truncate">{formatLecturerName(sup.name)}</p>
                           <p className="text-xs text-muted-foreground truncate">{sup.email}</p>
                         </div>
                         <Badge variant="outline" className="text-xs shrink-0 ml-2">
@@ -355,7 +355,7 @@ export default function StudentProgressDetail() {
                     {data.examiners.map((ex, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded-md">
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{toTitleCaseName(ex.name)}</p>
+                          <p className="text-sm font-medium truncate">{formatLecturerName(ex.name)}</p>
                           <p className="text-xs text-muted-foreground truncate">{ex.email}</p>
                         </div>
                         <Badge variant="outline" className="text-xs shrink-0 ml-2">

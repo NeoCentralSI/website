@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Users,
   AlertTriangle,
-  GraduationCap,
   TrendingUp
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,8 +15,8 @@ interface MonitoringSummaryCardsProps {
 export function MonitoringSummaryCards({ summary, isLoading }: MonitoringSummaryCardsProps) {
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-3">
+        {[...Array(3)].map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Skeleton className="h-4 w-24" />
@@ -51,14 +50,6 @@ export function MonitoringSummaryCards({ summary, isLoading }: MonitoringSummary
       bgColor: "bg-green-50",
     },
     {
-      title: "Siap Seminar",
-      value: summary?.totalReadyForSeminar ?? 0,
-      description: "Disetujui pembimbing, belum mendaftar",
-      icon: GraduationCap,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
-    },
-    {
       title: "Mahasiswa Berisiko",
       value: summary?.totalAtRisk ?? 0,
       description: "Tidak ada aktivitas > 4 bulan",
@@ -68,8 +59,9 @@ export function MonitoringSummaryCards({ summary, isLoading }: MonitoringSummary
     },
   ];
 
+  // Students ready for the seminar are listed on the Seminar Hasil tab ("Siap Mendaftar").
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-3">
       {cards.map((card) => (
         <Card key={card.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

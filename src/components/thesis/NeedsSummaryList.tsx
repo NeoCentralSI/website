@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, User, Edit3, AlertCircle, Target, ArrowRight } from "lucide-react";
 import { getGuidancesNeedingSummary, type GuidanceNeedingSummary } from "@/services/studentGuidance.service";
-import { toTitleCaseName } from "@/lib/text";
+import { formatLecturerName } from "@/lib/text";
 import { formatDateTimeWib } from "@/lib/text";
 
 export default function NeedsSummaryList() {
@@ -64,7 +64,7 @@ export default function NeedsSummaryList() {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <User className="h-3.5 w-3.5" />
-                      <span>{toTitleCaseName(guidance.supervisorName || "-")}</span>
+                      <span>{formatLecturerName(guidance.supervisorName || "-")}</span>
                     </div>
                     {guidance.milestoneName && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">

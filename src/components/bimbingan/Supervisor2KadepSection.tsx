@@ -22,7 +22,7 @@ import {
   rejectSupervisor2KadepRequest,
   type Supervisor2KadepRequestItem,
 } from "@/services/lecturerGuidance.service";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { toTitleCaseName, formatDateId, formatLecturerName } from "@/lib/text";
 import { UserPlus, CheckCircle2, XCircle } from "lucide-react";
 
 /**
@@ -148,7 +148,7 @@ export function Supervisor2KadepSection() {
                 <p>
                   Calon Pembimbing 2:{" "}
                   <span className="font-medium text-foreground">
-                    {toTitleCaseName(req.lecturerName)}
+                    {formatLecturerName(req.lecturerName)}
                   </span>
                 </p>
                 <p>Dosen bersedia sejak: {formatDateId(req.requestedAt)}</p>
@@ -220,7 +220,7 @@ export function Supervisor2KadepSection() {
                   {decisionDialog.mode === "approve" ? (
                     <>
                       <span className="font-medium text-foreground">
-                        {activeRequest ? toTitleCaseName(activeRequest.lecturerName) : ""}
+                        {activeRequest ? formatLecturerName(activeRequest.lecturerName) : ""}
                       </span>{" "}
                       akan ditetapkan sebagai Pembimbing 2 untuk{" "}
                       <span className="font-medium text-foreground">
@@ -234,7 +234,7 @@ export function Supervisor2KadepSection() {
                       <span className="font-medium text-foreground">
                         {activeRequest ? toTitleCaseName(activeRequest.studentName) : ""}
                       </span>{" "}
-                      (dosen: {activeRequest ? toTitleCaseName(activeRequest.lecturerName) : ""})
+                      (dosen: {activeRequest ? formatLecturerName(activeRequest.lecturerName) : ""})
                       akan ditutup. Mahasiswa dan dosen akan dinotifikasi.
                     </>
                   )}

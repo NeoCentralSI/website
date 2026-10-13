@@ -4,7 +4,7 @@ import { ChevronRight, ClipboardCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
-import { toTitleCaseName } from "@/lib/text";
+import { toTitleCaseName, formatLecturerName } from "@/lib/text";
 import { getEvaluationDueLabel } from "@/lib/thesisLabels";
 import type { EvaluationDueStudent } from "@/services/monitoring.service";
 import { MonitoringListCard, MonitoringListRow } from "./MonitoringListCard";
@@ -40,7 +40,7 @@ export function EvaluationDueCard({ students, isLoading }: EvaluationDueCardProp
           secondary={
             <>
               Masa bimbingan {row.supervisionClock.elapsedLabel}
-              {row.supervisors[0]?.name ? ` · ${toTitleCaseName(row.supervisors[0].name)}` : ""}
+              {row.supervisors[0]?.name ? ` · ${formatLecturerName(row.supervisors[0].name)}` : ""}
             </>
           }
           trailing={

@@ -1,4 +1,4 @@
-import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
+import { formatDateTimeWib, formatLecturerName } from "@/lib/text";
 
 interface MilestoneNotesProps {
   status: string;
@@ -34,7 +34,7 @@ export function MilestoneNotes({ status, supervisorNotes, feedback, feedbackByNa
           <p className="text-xs text-amber-900 leading-relaxed whitespace-pre-wrap">{feedback}</p>
           {(feedbackByName || feedbackAt) && (
             <p className="mt-1 text-[10px] text-amber-700/80">
-              {[feedbackByName ? toTitleCaseName(feedbackByName) : null, feedbackAt ? formatDateTimeWib(feedbackAt) : null]
+              {[feedbackByName ? formatLecturerName(feedbackByName) : null, feedbackAt ? formatDateTimeWib(feedbackAt) : null]
                 .filter(Boolean)
                 .join(" · ")}
             </p>

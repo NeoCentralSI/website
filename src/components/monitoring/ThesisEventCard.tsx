@@ -5,7 +5,7 @@ import { Award, ExternalLink, GraduationCap } from "lucide-react";
 import { ThesisEventStatusBadge, type ThesisEventStatus } from "@/components/shared/ThesisEventStatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import EmptyState from "@/components/ui/empty-state";
-import { formatDateTimeWib, toTitleCaseName } from "@/lib/text";
+import { formatDateTimeWib, formatLecturerName } from "@/lib/text";
 import { THESIS_EVENT_DETAIL_PATH, scheduleText } from "@/lib/thesis-event-schedule";
 import type { ThesisDetailDefence, ThesisDetailEvent } from "@/services/monitoring.service";
 
@@ -70,7 +70,7 @@ function EventBlock({ kind, event, canOpenDetail }: { kind: EventKind; event: Th
                 {event.examiners.map((examiner, index) => (
                   <li key={`${examiner.order}-${examiner.name}`}>
                     <span className="font-normal text-muted-foreground">Penguji {examiner.order ?? index + 1}: </span>
-                    {toTitleCaseName(examiner.name) || "-"}
+                    {formatLecturerName(examiner.name) || "-"}
                   </li>
                 ))}
               </ul>

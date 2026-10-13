@@ -1,7 +1,7 @@
 import { ArrowRight, CheckCircle2, Circle, MinusCircle, XCircle } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { formatDateTimeWib, toTitleCaseName } from '@/lib/text';
+import { formatDateTimeWib, formatLecturerName } from '@/lib/text';
 import {
   CHANGE_REQUEST_STATUS_VARIANTS,
   getChangeRequestStatusLabel,
@@ -20,7 +20,7 @@ export function ThesisChangeRequestTypeBadge({ request }: { request: ThesisChang
   return <Badge variant="secondary">{getChangeRequestTypeLabel(request.requestType)}</Badge>;
 }
 
-const personName = (person: { name: string | null } | null | undefined) => toTitleCaseName(person?.name) || '-';
+const personName = (person: { name: string | null } | null | undefined) => formatLecturerName(person?.name) || '-';
 
 function stepState(step: ChangeRequestStep, isCurrent: boolean): { icon: React.ReactNode; text: string } {
   if (step.status === 'approved') return { icon: <CheckCircle2 className="h-4 w-4 text-green-600" />, text: 'Disetujui' };
@@ -105,7 +105,7 @@ export function SupervisorLoadNote({ load, name }: { load: SupervisorLoad | null
   if (!load) return null;
   return (
     <p className={load.isFull ? 'text-xs text-amber-700' : 'text-xs text-muted-foreground'}>
-      Beban bimbingan {name ? `${toTitleCaseName(name)} ` : ''}saat ini: {load.activeCount} dari {load.quotaMax} mahasiswa.
+      Beban bimbingan {name ? `${formatLecturerName(name)} ` : ''}saat ini: {load.activeCount} dari {load.quotaMax} mahasiswa.
       {load.isFull ? ' Kuota sudah penuh; keputusan tetap di tangan Ketua Departemen.' : ''}
     </p>
   );

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
-import { formatDateShortId, formatRoleName, toTitleCaseName } from "@/lib/text";
+import { formatDateShortId, formatRoleName, formatLecturerName } from "@/lib/text";
 import { getThesisTerminationReasonLabel } from "@/lib/thesisLabels";
 import { getMyThesisDetail, getStudentThesisHistory, type ThesisHistoryItem } from "@/services/studentGuidance.service";
 import { isShownAsCurrentThesis } from "./studentThesisTabs";
@@ -63,7 +63,7 @@ function HistoryCard({ thesis }: { thesis: ThesisHistoryItem }) {
             <ul className="space-y-0.5">
               {supervisors.map((supervisor) => (
                 <li key={`${supervisor.id}-${supervisor.role}`}>
-                  {formatRoleName(supervisor.role)}: <span className="font-medium text-foreground">{toTitleCaseName(supervisor.name) || "-"}</span>
+                  {formatRoleName(supervisor.role)}: <span className="font-medium text-foreground">{formatLecturerName(supervisor.name) || "-"}</span>
                 </li>
               ))}
             </ul>

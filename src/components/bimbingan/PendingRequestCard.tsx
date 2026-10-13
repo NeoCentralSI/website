@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { toTitleCaseName, formatDateId } from "@/lib/text";
+import { formatDateId, formatLecturerName } from "@/lib/text";
 import { cancelSupervisor2Request, type PendingSupervisor2Request } from "@/services/studentGuidance.service";
 import { Clock, X } from "lucide-react";
 
@@ -56,7 +56,7 @@ export function PendingRequestCard({ request }: PendingRequestCardProps) {
           <p className="text-sm font-medium text-foreground">
             Permintaan Pembimbing 2 ke{" "}
             <span className="font-semibold">
-              {request.lecturerName ? toTitleCaseName(request.lecturerName) : "Dosen"}
+              {request.lecturerName ? formatLecturerName(request.lecturerName) : "Dosen"}
             </span>
           </p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -82,7 +82,7 @@ export function PendingRequestCard({ request }: PendingRequestCardProps) {
               <AlertDialogTitle>Batalkan Permintaan?</AlertDialogTitle>
               <AlertDialogDescription>
                 Apakah Anda yakin ingin membatalkan permintaan Pembimbing 2 ke{" "}
-                {request.lecturerName ? toTitleCaseName(request.lecturerName) : "dosen"} ini?
+                {request.lecturerName ? formatLecturerName(request.lecturerName) : "dosen"} ini?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -6,7 +6,7 @@ import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { formatDateShortId, toTitleCaseName } from "@/lib/text";
+import { formatDateShortId, formatLecturerName } from "@/lib/text";
 import type { StudentDetail } from "@/services/lecturerGuidance.service";
 
 /** Completed sessions needed before the results seminar; the readiness status overrides it. */
@@ -85,7 +85,7 @@ export function StudentThesisSummaryCard({ detail, topicName, supervisors, guida
                                     <ul className="space-y-1">
                                         {supervisors.map((supervisor) => (
                                             <li key={`${supervisor.roleLabel}-${supervisor.name}`} className="flex flex-wrap items-baseline gap-x-2">
-                                                <span className="[overflow-wrap:anywhere]">{toTitleCaseName(supervisor.name) || "-"}</span>
+                                                <span className="[overflow-wrap:anywhere]">{formatLecturerName(supervisor.name) || "-"}</span>
                                                 <span className="text-xs font-normal text-muted-foreground">{supervisor.roleLabel}</span>
                                             </li>
                                         ))}

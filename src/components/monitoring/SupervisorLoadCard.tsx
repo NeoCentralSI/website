@@ -4,7 +4,7 @@ import { Eye, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatRoleName, toTitleCaseName } from "@/lib/text";
+import { formatRoleName, toTitleCaseName, formatLecturerName } from "@/lib/text";
 import type { SupervisorLoad } from "@/services/monitoring.service";
 import { MonitoringListCard, MonitoringListRow } from "./MonitoringListCard";
 
@@ -32,7 +32,7 @@ export function SupervisorLoadCard({ loads, isLoading }: SupervisorLoadCardProps
         {rows.map((load) => (
           <MonitoringListRow
             key={load.lecturerId}
-            name={toTitleCaseName(load.lecturerName)}
+            name={formatLecturerName(load.lecturerName)}
             identityNumber={load.lecturerNip}
             trailing={
               <div className="flex items-center gap-1">
@@ -58,7 +58,7 @@ export function SupervisorLoadCard({ loads, isLoading }: SupervisorLoadCardProps
       <Dialog open={!!selectedLoad} onOpenChange={(open) => !open && setSelectedLoad(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{selectedLoad ? toTitleCaseName(selectedLoad.lecturerName) : "Mahasiswa Bimbingan"}</DialogTitle>
+            <DialogTitle>{selectedLoad ? formatLecturerName(selectedLoad.lecturerName) : "Mahasiswa Bimbingan"}</DialogTitle>
             <DialogDescription>
               {selectedLoad?.studentCount ?? 0} mahasiswa bimbingan aktif
             </DialogDescription>

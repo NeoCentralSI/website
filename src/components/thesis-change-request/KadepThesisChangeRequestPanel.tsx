@@ -12,7 +12,7 @@ import {
   useKadepBatchDecision,
   useKadepDecision,
 } from '@/hooks/thesis-change-request/useThesisChangeRequest';
-import { toTitleCaseName } from '@/lib/text';
+import { toTitleCaseName, formatLecturerName } from '@/lib/text';
 import { cn } from '@/lib/utils';
 import type { ThesisChangeRequest } from '@/types/thesis-change-request.types';
 import { groupByBatch } from './thesisChangeRequestGroups';
@@ -169,8 +169,8 @@ export function KadepThesisChangeRequestPanel() {
                 <RequestRow key={request.id} request={request} canDecide={scope === 'pending'} onDecide={openSingle} />
               ));
               if (!isBatch) return <div key={group.requests[0].id}>{rows}</div>;
-              const from = toTitleCaseName(group.requests[0].supervisor?.replaced?.name) || '-';
-              const to = toTitleCaseName(group.requests[0].supervisor?.next?.name) || '-';
+              const from = formatLecturerName(group.requests[0].supervisor?.replaced?.name) || '-';
+              const to = formatLecturerName(group.requests[0].supervisor?.next?.name) || '-';
               return (
                 <div key={group.batchId} className="space-y-3 rounded-lg border border-dashed bg-muted/30 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">

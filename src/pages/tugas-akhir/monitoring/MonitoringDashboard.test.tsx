@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { downloadProgressReportPdf, getFilterOptions, type FilterOptions } from "@/services/monitoring.service";
@@ -213,6 +214,23 @@ describe("MonitoringDashboard — tabs", () => {
       expect(screen.getByTitle(REPORT_REASON)).toContainElement(disabled);
     }
     expect(downloadProgressReportPdf).toHaveBeenCalledTimes(1);
+    click.mockRestore();
+  });
+
+  it("shows the message of the server when the PDF service is not running", async () => {
+    const PDF_DOWN = "Layanan pembuat PDF sedang tidak aktif. Hubungi admin sistem.";
+    vi.mocked(downloadProgressReportPdf).mockRejectedValue(new Error(PDF_DOWN));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    renderPage();
+    await screen.findByTestId("tab-bimbingan");
+
+    fireEvent.click(screen.getByRole("button", { name: /Download Laporan/ }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(PDF_DOWN));
+    expect(toast.success).not.toHaveBeenCalled();
+    // Nothing is saved, and the button can be used again.
+    expect(click).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByRole("button", { name: /Download Laporan/ })).toBeEnabled());
     click.mockRestore();
   });
 });

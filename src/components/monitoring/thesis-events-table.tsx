@@ -39,9 +39,11 @@ interface ThesisEventsTableProps {
 }
 
 /**
- * Every seminar or defence of the semester (read-only). The status is the stored one, shown
- * with the badge of the seminar and defence modules; search and the status filter run in
- * the browser.
+ * Every seminar or defence of the semester (read-only). The Status column shows what the
+ * seminar and defence modules show: their badge is given the schedule, so it derives the
+ * display status itself (a scheduled event whose start has passed reads "Sedang
+ * Berlangsung"). The status filter, like the summary cards, goes by the stored status.
+ * Search and the filter run in the browser.
  */
 export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: ThesisEventsTableProps) {
   const [search, setSearch] = useState("");
@@ -85,7 +87,14 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
     {
       key: "status",
       header: "Status",
-      render: (event) => <ThesisEventStatusBadge status={event.status as ThesisEventStatus} className="whitespace-nowrap" />,
+      render: (event) => (
+        <ThesisEventStatusBadge
+          status={event.status as ThesisEventStatus}
+          scheduledDate={event.date}
+          startTime={event.startTime}
+          className="whitespace-nowrap"
+        />
+      ),
     },
     {
       key: "date",

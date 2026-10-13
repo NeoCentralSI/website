@@ -1,7 +1,7 @@
 import { CheckSquare, Square } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { formatDateTimeWib, toTitleCaseName } from '@/lib/text';
+import { formatDateTimeWib, formatLecturerName } from '@/lib/text';
 import {
   GUIDANCE_EVALUATION_OBSERVATION_LABELS,
   GUIDANCE_EVALUATION_STATUS_VARIANTS,
@@ -43,7 +43,7 @@ export function ThesisGuidanceEvaluationSummary({ evaluation }: { evaluation: Th
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Diisi oleh</dt>
-          <dd>{toTitleCaseName(evaluation.supervisor?.name) || '-'} · {formatDateTimeWib(evaluation.createdAt)}</dd>
+          <dd>{formatLecturerName(evaluation.supervisor?.name) || '-'} · {formatDateTimeWib(evaluation.createdAt)}</dd>
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Jumlah pertemuan tercatat</dt>
@@ -84,7 +84,7 @@ export function ThesisGuidanceEvaluationSummary({ evaluation }: { evaluation: Th
 
       {evaluation.decision && (
         <p className="text-xs text-muted-foreground">
-          Keputusan Ketua Departemen: {toTitleCaseName(evaluation.decision.by?.name) || '-'} · {formatDateTimeWib(evaluation.decision.at)}
+          Keputusan Ketua Departemen: {formatLecturerName(evaluation.decision.by?.name) || '-'} · {formatDateTimeWib(evaluation.decision.at)}
           {evaluation.decision.notes ? ` · ${evaluation.decision.notes}` : ''}
         </p>
       )}

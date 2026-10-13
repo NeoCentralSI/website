@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
-import { formatRoleName, toTitleCaseName } from "@/lib/text";
+import { formatRoleName, formatLecturerName } from "@/lib/text";
 import type { MyThesisDetail } from "@/services/studentGuidance.service";
 
 type Supervisor = MyThesisDetail["supervisors"][number];
@@ -59,7 +59,7 @@ export function StudentThesisSummaryCard({ thesis }: { thesis: MyThesisDetail })
               {supervisors.map((supervisor) => (
                 <li key={supervisor.id} className="space-y-1.5 rounded-lg border p-3">
                   <Badge variant="outline" className="text-xs">{formatRoleName(supervisor.role)}</Badge>
-                  <p className="text-sm font-medium leading-tight">{toTitleCaseName(supervisor.name) || "-"}</p>
+                  <p className="text-sm font-medium leading-tight">{formatLecturerName(supervisor.name) || "-"}</p>
                   {supervisor.email && (
                     <p className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Mail className="h-3 w-3 shrink-0" />
