@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import {
@@ -15,7 +15,7 @@ import {
   ThesesTable,
   GuidanceTrendChart,
 } from "@/components/monitoring";
-import { useMonitoringDashboard, useFilterOptions } from "@/hooks/monitoring";
+import { ALL_SEMESTERS, useMonitoringDashboard, useMonitoringSemester } from "@/hooks/monitoring";
 import {
   Select,
   SelectContent,
@@ -35,15 +35,15 @@ export default function MonitoringDashboard() {
   const [searchParams] = useSearchParams();
   const initialActivity = searchParams.get("activity") || undefined;
 
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const queryClient = useQueryClient();
+  const semesterFieldId = useId();
 
-  // Pass academicYear filter to hooks
-  const academicYearFilter = selectedAcademicYear === "all" ? undefined : selectedAcademicYear;
-  const { data, isLoading, isFetching, refetch } = useMonitoringDashboard(academicYearFilter);
-  const { data: filterOptions } = useFilterOptions();
+  // Semester filter (`?semester=`): theses that run in the semester; the running one by default.
+  const semester = useMonitoringSemester();
+  const academicYearFilter = semester.academicYear;
+  const { data, isLoading, isFetching, refetch } = useMonitoringDashboard(academicYearFilter, { enabled: semester.isReady });
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
   useEffect(() => {
@@ -98,13 +98,8 @@ export default function MonitoringDashboard() {
     }
   };
 
-  const displayAcademicYear =
-    selectedAcademicYear === "all"
-      ? "Semua Semester"
-      : filterOptions?.academicYears?.find((ay) => ay.value === selectedAcademicYear)?.label || "";
-
-  // Full blank loading on browser reload (no cached data)
-  if (isLoading && !data) {
+  // Full blank loading on browser reload (no cached data), and while the default semester is resolved
+  if (!semester.isReady || (isLoading && !data)) {
     return (
       <div className="flex h-[calc(100vh-200px)] items-center justify-center">
         <Loading size="lg" text="Memuat data monitoring..." />
@@ -119,26 +114,38 @@ export default function MonitoringDashboard() {
         <p className="text-muted-foreground">Pantau progres, bimbingan, dan kesiapan mahasiswa tugas akhir</p>
       </div>
 
-      {/* Academic Year Filter and Reload */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <Calendar className="h-5 w-5 text-muted-foreground" />
-          <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
-            <SelectTrigger className="w-50">
-              <SelectValue placeholder="Pilih Tahun Ajaran" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Semester</SelectItem>
-              {filterOptions?.academicYears?.map((ay) => (
-                <SelectItem key={ay.value} value={ay.value}>
-                  {ay.label} {ay.isActive && "(Aktif)"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-muted-foreground">
-            Menampilkan: <span className="font-medium text-foreground">{displayAcademicYear}</span>
-          </span>
+      {/* Semester filter and reload */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-3">
+            <label htmlFor={semesterFieldId} className="flex items-center gap-2 text-sm font-medium">
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+              Semester
+            </label>
+            <Select value={semester.value} onValueChange={semester.setSemester}>
+              <SelectTrigger id={semesterFieldId} className="w-56">
+                <SelectValue placeholder="Pilih semester" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_SEMESTERS}>Semua Semester</SelectItem>
+                {semester.semesters.map((ay) => (
+                  <SelectItem key={ay.value} value={ay.value}>
+                    {ay.label.trim()}{ay.isActive ? " (Berjalan)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {semester.isAll
+              ? "Menampilkan tugas akhir dari semua semester."
+              : "Menampilkan tugas akhir yang berjalan pada semester ini."}
+          </p>
+          {semester.isPastOrOtherSemester && (
+            <p className="text-sm text-amber-700">
+              Indikator aktivitas dan evaluasi menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAny}>

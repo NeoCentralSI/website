@@ -151,7 +151,8 @@ export interface ThesisListItem {
   };
   status: string;
   academicYear: string;
-  startSemester: string;
+  /** Semester the thesis started in (column "Mulai"); null when it started outside every semester. */
+  startSemester: string | null;
   progress: {
     completed: number;
     total: number;

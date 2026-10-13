@@ -27,12 +27,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
-import { useThesesList, useFilterOptions } from "@/hooks/monitoring";
+import { useThesesList, useFilterOptions, monitoringKeys } from "@/hooks/monitoring";
 import { useRole } from "@/hooks/shared/useRole";
 import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
 import { sendWarningToStudent } from "@/services/monitoring.service";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
@@ -67,7 +67,8 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity }
   // Backend rule: only KaDep may warn any thesis from monitoring; supervisors warn
   // their own active students from the lecturer page. GKM/Sekdep roles alone may not.
   const canSendWarning = isKadep();
-  
+  const queryClient = useQueryClient();
+
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
@@ -81,6 +82,8 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity }
     onSuccess: (data) => {
       toast.success(data.message || "Peringatan berhasil dikirim");
       setWarningDialog({ open: false, thesis: null });
+      // The cards and this table read the same theses: fetch them again.
+      void queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Gagal mengirim peringatan");
@@ -205,9 +208,10 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity }
     },
     {
       key: "startSemester",
-      header: "Mulai TA",
+      // The semester the thesis started in; the Semester filter is about when it runs.
+      header: "Mulai",
       render: (thesis) => (
-        <span className="whitespace-nowrap">{thesis.startSemester || thesis.academicYear}</span>
+        <span className="whitespace-nowrap">{thesis.startSemester || "-"}</span>
       ),
     },
     {

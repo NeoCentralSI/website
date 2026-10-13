@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { toast } from "sonner";
@@ -14,7 +15,12 @@ vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true
 vi.mock("@/services/monitoring.service", () => ({ sendBatchWarnings: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
 
-const wrap = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
+const wrap = (ui: React.ReactNode) =>
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>,
+  );
 
 const seminar = (overrides: Partial<ThesisDetailSeminar> = {}): ThesisDetailSeminar => ({
   id: "sem-1",
@@ -280,11 +286,27 @@ describe("monitoring list cards", () => {
 
     it("shows the error of the server when the batch is refused", async () => {
       vi.mocked(sendBatchWarnings).mockRejectedValue(new Error("Hanya Ketua Departemen yang dapat mengirim peringatan massal"));
+      const invalidate = vi.spyOn(QueryClient.prototype, "invalidateQueries");
       renderCard();
       await confirmSend();
 
       expect(toast.error).toHaveBeenCalledWith("Hanya Ketua Departemen yang dapat mengirim peringatan massal");
       expect(toast.success).not.toHaveBeenCalled();
+      // Nothing was sent, so nothing is fetched again.
+      expect(invalidate).not.toHaveBeenCalled();
+      invalidate.mockRestore();
+    });
+
+    it("fetches the monitoring data again once the batch is sent, so the list is not stale", async () => {
+      const invalidate = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+      renderCard();
+      expect(invalidate).not.toHaveBeenCalled();
+      await confirmSend();
+
+      // Every monitoring query: the cards, the charts and the table.
+      expect(invalidate).toHaveBeenCalledTimes(1);
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ["monitoring"] });
+      invalidate.mockRestore();
     });
 
     it("stays open while the batch is being sent, so it cannot be sent twice", async () => {

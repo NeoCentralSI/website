@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Bell } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
 import { useRole } from "@/hooks/shared/useRole";
 import { toTitleCaseName } from "@/lib/text";
 import { sendBatchWarnings, type AtRiskStudent, type BatchWarningNotSent } from "@/services/monitoring.service";
@@ -40,6 +42,7 @@ interface SlowStudentsCardProps {
  */
 export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading }: SlowStudentsCardProps) {
   const { isKadep } = useRole();
+  const queryClient = useQueryClient();
   const [sending, setSending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -70,6 +73,8 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading }: Sl
         // The message of the server already says how many were sent and how many were not.
         toast.warning(result.message, { description: `Tidak dikirim: ${summarizeNotSent(notSent)}` });
       }
+      // What the server skipped is no longer Lambat or Berisiko: fetch the lists again.
+      void queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
     } catch (error) {
       toast.error((error as Error)?.message || "Gagal mengirim peringatan batch");
     } finally {

@@ -30,14 +30,16 @@ export const monitoringKeys = {
 };
 
 /**
- * Hook to fetch monitoring dashboard data
+ * Hook to fetch monitoring dashboard data. `enabled: false` holds the request back until
+ * the semester filter is known.
  */
-export function useMonitoringDashboard(academicYear?: string) {
+export function useMonitoringDashboard(academicYear?: string, options: { enabled?: boolean } = {}) {
   return useQuery<MonitoringDashboard, Error>({
     queryKey: monitoringKeys.dashboard(academicYear),
     queryFn: () => getMonitoringDashboard(academicYear),
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchOnWindowFocus: true,
+    enabled: options.enabled ?? true,
   });
 }
 
