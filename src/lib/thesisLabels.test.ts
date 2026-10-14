@@ -36,6 +36,13 @@ import {
   THESIS_STATUS_LABELS,
   THESIS_STATUS_VARIANTS,
   THESIS_TERMINATION_REASON_LABELS,
+  SUPERVISOR_REQUEST_STATUS_LABELS,
+  SUPERVISOR_REQUEST_STATUS_VARIANTS,
+  SUPERVISOR_REQUEST_ROUTE_LABELS,
+  SUPERVISION_LOAD_LEVEL_LABELS,
+  SUPERVISION_LOAD_LEVEL_VARIANTS,
+  RESEARCH_METHOD_RESULT_LABELS,
+  RESEARCH_METHOD_RESULT_VARIANTS,
 } from "@/lib/thesisLabels";
 
 const BACKEND = resolve(__dirname, "../../../backend");
@@ -77,6 +84,10 @@ const CASES = [
   ["GuidanceEvaluationType", GUIDANCE_EVALUATION_TYPE_LABELS, "GUIDANCE_EVALUATION_TYPE_LABELS"],
   ["GuidanceEvaluationRecommendation", GUIDANCE_EVALUATION_RECOMMENDATION_LABELS, "GUIDANCE_EVALUATION_RECOMMENDATION_LABELS"],
   ["GuidanceEvaluationStatus", GUIDANCE_EVALUATION_STATUS_LABELS, "GUIDANCE_EVALUATION_STATUS_LABELS"],
+  // Paket P: Pengajuan Pembimbing and Metode Penelitian
+  ["ThesisSupervisorRequestStatus", SUPERVISOR_REQUEST_STATUS_LABELS, "SUPERVISOR_REQUEST_STATUS_LABELS"],
+  ["SupervisorRequestRoute", SUPERVISOR_REQUEST_ROUTE_LABELS, "SUPERVISOR_REQUEST_ROUTE_LABELS"],
+  ["ResearchMethodAssessmentResult", RESEARCH_METHOD_RESULT_LABELS, "RESEARCH_METHOD_RESULT_LABELS"],
 ] as const;
 
 describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
@@ -92,6 +103,7 @@ describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
   it.each([
     ["THESIS_ACTIVITY_LABELS", THESIS_ACTIVITY_LABELS],
     ["EVALUATION_DUE_LABELS", EVALUATION_DUE_LABELS],
+    ["SUPERVISION_LOAD_LEVEL_LABELS", SUPERVISION_LOAD_LEVEL_LABELS],
   ] as const)("%s (derived, no schema enum) are identical to the backend map", (exportName, labels) => {
     expect({ ...labels }).toEqual(backendMap(exportName));
   });
@@ -133,6 +145,12 @@ describe("thesisLabels", () => {
       research: "info", proposal: "secondary", on_leave: "warning", completed: "success", failed: "destructive",
     });
     expect(THESIS_ACTIVITY_VARIANTS).toEqual({ active: "success", slow: "warning", at_risk: "destructive" });
+  });
+
+  it("gives every proposal status, load level and result a badge variant", () => {
+    expect(Object.keys(SUPERVISOR_REQUEST_STATUS_VARIANTS).sort()).toEqual(Object.keys(SUPERVISOR_REQUEST_STATUS_LABELS).sort());
+    expect(Object.keys(SUPERVISION_LOAD_LEVEL_VARIANTS).sort()).toEqual(Object.keys(SUPERVISION_LOAD_LEVEL_LABELS).sort());
+    expect(Object.keys(RESEARCH_METHOD_RESULT_VARIANTS).sort()).toEqual(Object.keys(RESEARCH_METHOD_RESULT_LABELS).sort());
   });
 
   it("gives every change request status a badge variant", () => {

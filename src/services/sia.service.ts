@@ -23,40 +23,22 @@ export interface SiaStudent {
   cplScores?: SiaCplScore[];
 }
 
-export interface MetopenSiaOperationRow {
-  requestId?: string | null;
-  thesisId?: string | null;
-  studentId?: string | null;
-  studentName?: string | null;
-  identityNumber?: string | null;
-  takingThesisCourse?: boolean | null;
-  requestStatus?: string | null;
-  releaseReason?: string | null;
-  periodClosed?: boolean;
-  attendanceAutoZeroed?: boolean;
-  finalScore?: number | null;
-  academicYearId?: string | null;
-}
-
-export interface MetopenSiaOperations {
-  activeYear: { id: string; label: string; year: string; semester: string } | null;
-  sync: {
-    lastRun: string | null;
-    fetched: number;
-    dbUpdated: number;
-    error: string | null;
-    durationMs: number;
-  };
-  coverage: {
-    complete: boolean;
-    coverageLabel?: string;
-    studentsWithSnapshot: number;
+/** `GET /sia/sync/status`: the last sync and how many students have flags for the running semester. */
+export interface SiaSyncStatus {
+  lastRun: string | null;
+  fetched?: number;
+  dbUpdated?: number;
+  periodSnapshotsCreated?: number;
+  error?: string | null;
+  durationMs?: number;
+  periodSnapshots: {
+    academicYear: { id: string; semester: string; year: string };
     totalStudents: number;
-    pendingCreate: number;
+    studentsWithFlags: number;
+    studentsWithoutFlags: number;
+    takingResearchMethod: number;
+    takingThesisCourse: number;
   } | null;
-  waitingKrs: MetopenSiaOperationRow[];
-  exceptions: MetopenSiaOperationRow[];
-  missingAcademicYear: MetopenSiaOperationRow[];
 }
 
 function authHeaders() {
@@ -79,17 +61,14 @@ export const getCachedStudentsFromSia = async (): Promise<SiaStudent[]> => {
   return json?.data || [];
 };
 
-export const getMetopenSiaOperations = async (): Promise<MetopenSiaOperations> => {
-  const response = await fetch(getApiUrl('/sia/metopen-operations'), {
-    method: 'GET',
-    headers: authHeaders(),
-  });
+export const getSiaSyncStatus = async (): Promise<SiaSyncStatus> => {
+  const response = await fetch(getApiUrl('/sia/sync/status'), { method: 'GET', headers: authHeaders() });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({} as { message?: string }));
-    throw new Error(errorData.message || 'Gagal memuat operasi Metopel/SIA');
+    throw new Error(errorData.message || 'Gagal memuat status sinkronisasi SIA');
   }
   const json = await response.json();
-  return json.data as MetopenSiaOperations;
+  return json.data as SiaSyncStatus;
 };
 
 export const triggerSiaSync = async () => {
@@ -107,18 +86,6 @@ export const triggerSiaSync = async () => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({} as { message?: string }));
     throw new Error(errorData.message || `Gagal menjalankan sync SIA (HTTP ${response.status}).`);
-  }
-  return response.json();
-};
-
-export const releaseWaitingKrsBooking = async (requestId: string) => {
-  const response = await fetch(getApiUrl(`/sia/waiting-krs/${requestId}/release`), {
-    method: 'POST',
-    headers: authHeaders(),
-  });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({} as { message?: string }));
-    throw new Error(errorData.message || 'Gagal melepas booking menunggu KRS TA');
   }
   return response.json();
 };

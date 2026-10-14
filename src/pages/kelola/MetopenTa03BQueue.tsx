@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { MetopenAttendanceUploadCard } from "@/components/metopen/MetopenAttendanceUploadCard";
-import { MetopenSiaOperationsCard } from "@/components/master-data";
+import { SiaSyncStatusCard } from "@/components/master-data";
 import { MetricAction } from "@/components/metopen/MetricAction";
 import { ResearchMethodScoreReadOnly } from "@/components/metopen/ResearchMethodScoreReadOnly";
 import { RubricGradingForm } from "@/components/metopen/RubricGradingForm";
@@ -325,7 +325,7 @@ export default function MetopenTa03BQueue() {
                 </CardContent>
             </Card>
 
-            <MetopenSiaOperationsCard />
+            <SiaSyncStatusCard />
 
             <MetopenAttendanceUploadCard />
 

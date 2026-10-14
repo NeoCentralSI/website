@@ -42,6 +42,7 @@ import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
 import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
 import { LecturerThesisChangeRequestPanel } from "@/components/thesis-change-request/LecturerThesisChangeRequestPanel";
+import { LecturerSupervisorRequestPanel } from "@/components/thesis-proposal/LecturerSupervisorRequestPanel";
 import { LecturerTransferStudentsDialog, type TransferStudent } from "@/components/thesis-change-request/LecturerTransferStudentsDialog";
 import { useAuth } from "@/hooks/shared/useAuth";
 import { MyStudentsCharts } from "@/components/bimbingan/MyStudentsCharts";
@@ -362,6 +363,9 @@ export default function LecturerMyStudentsPage() {
       </div>
 
       <TabsNav tabs={tabs} />
+
+      {/* Permohonan Pembimbing (Paket P, K16): pengajuan mahasiswa yang menunggu keputusan dosen ini */}
+      <LecturerSupervisorRequestPanel />
 
       {/* Distribution Charts */}
       {!isLoading && data?.students && data.students.length > 0 && (

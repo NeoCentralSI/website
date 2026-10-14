@@ -13,6 +13,7 @@ vi.mock("@/hooks/shared/useAuth", () => ({ useAuth: () => ({ user: { id: "l1" } 
 vi.mock("@/components/bimbingan/Supervisor2RequestsSection", () => ({ Supervisor2RequestsSection: () => null }));
 vi.mock("@/components/bimbingan/MyStudentsCharts", () => ({ MyStudentsCharts: () => null }));
 vi.mock("@/components/thesis-change-request/LecturerThesisChangeRequestPanel", () => ({ LecturerThesisChangeRequestPanel: () => null }));
+vi.mock("@/components/thesis-proposal/LecturerSupervisorRequestPanel", () => ({ LecturerSupervisorRequestPanel: () => null }));
 vi.mock("@/components/thesis-change-request/LecturerTransferStudentsDialog", () => ({ LecturerTransferStudentsDialog: () => null }));
 
 const LONG_TITLE = "Rancang Bangun Sistem Informasi Monitoring Tugas Akhir Berbasis Web pada Departemen Sistem Informasi Universitas Andalas";

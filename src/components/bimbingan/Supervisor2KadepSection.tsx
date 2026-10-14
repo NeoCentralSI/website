@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLecturerQuotaAvailability } from "@/hooks/master-data/useSupervisionQuota";
+import { useSupervisionLoadOverview } from "@/hooks/thesis-proposal/useSupervisionQuota";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner, Loading } from "@/components/ui/spinner";
@@ -28,7 +28,7 @@ import { UserPlus, CheckCircle2, XCircle } from "lucide-react";
 /**
  * Antrean persetujuan akhir Pembimbing 2 oleh KaDep (audit pass 2 F2-5 / OQ-2.2).
  * Dosen target sudah menyatakan bersedia; KaDep memutuskan penetapan resmi.
- * Approve → thesis_participants P2 dibuat; jika TA-04 sudah batch, periode perlu difinalisasi ulang.
+ * Approve → relasi Pembimbing 2 dibuat; Penetapan Pembimbing periode itu perlu diterbitkan ulang.
  */
 export function Supervisor2KadepSection() {
   const queryClient = useQueryClient();
@@ -43,11 +43,11 @@ export function Supervisor2KadepSection() {
     queryKey: ["kadep-supervisor2-requests"],
     queryFn: getSupervisor2KadepRequests,
   });
-  const quotaByLecturer = useLecturerQuotaAvailability(requests.map((req) => req.lecturerId));
+  const { data: loadOverview, isLoading: loadLoading, isError: loadError } = useSupervisionLoadOverview();
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["kadep-supervisor2-requests"] });
-    queryClient.invalidateQueries({ queryKey: ["quota-check"] });
+    queryClient.invalidateQueries({ queryKey: ["supervision-quotas"] });
   };
 
   const approveMutation = useMutation({
@@ -96,23 +96,20 @@ export function Supervisor2KadepSection() {
     );
   }
 
+  // As before, a full lecturer is not blocked (the Head of Department decides); only a
+  // lecturer who closed intake is. A failed load read does not block (fail open).
   const quotaGate = (lecturerId: string) => {
-    const check = quotaByLecturer.get(lecturerId);
-    if (!check || check.isError || !check.availability) {
-      return {
-        blocked: false,
-        checking: Boolean(check?.isLoading),
-        figures: check?.availability,
-        reason: null as string | null,
-        quotaFull: false,
-      };
+    const row = loadOverview?.lecturers.find((lecturer) => lecturer.lecturerId === lecturerId);
+    if (loadError || !row) {
+      return { blocked: false, checking: loadLoading, figures: null, reason: null as string | null, quotaFull: false };
     }
+    const hardLimit = loadOverview?.applicable.hardLimit ?? 0;
     return {
-      blocked: check.availability.allowed === false,
+      blocked: !row.acceptingRequests,
       checking: false,
-      figures: check.availability,
-      reason: check.availability.reason ?? null,
-      quotaFull: check.availability.trafficLight === "red" && check.availability.allowed !== false,
+      figures: { currentCount: row.activeCount, quotaMax: hardLimit, remaining: Math.max(0, hardLimit - row.activeCount) },
+      reason: row.acceptingRequests ? null : "Dosen sedang menutup penerimaan permintaan pembimbing.",
+      quotaFull: row.level === "full" && row.acceptingRequests,
     };
   };
 
@@ -125,8 +122,8 @@ export function Supervisor2KadepSection() {
       <Card className="border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-900">
         Dosen target telah menyatakan bersedia. Persetujuan Anda menetapkan Pembimbing 2
         secara resmi (sesuai ketentuan Panduan TA: perubahan komposisi pembimbing disetujui
-        Ketua Departemen). Jika Formulir TA-04 periode sudah pernah difinalisasi,
-        batch perlu diperbarui agar memuat komposisi pembimbing terbaru.
+        Ketua Departemen). Bila Penetapan Pembimbing periode itu sudah diterbitkan,
+        terbitkan versi barunya agar memuat susunan pembimbing terbaru.
       </Card>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -154,15 +151,15 @@ export function Supervisor2KadepSection() {
                 <p>Dosen bersedia sejak: {formatDateId(req.requestedAt)}</p>
                 {figures && typeof figures.currentCount === "number" ? (
                   <p className="text-foreground">
-                    Kuota calon P2: {figures.currentCount}/{figures.quotaMax}
+                    Beban calon P2: {figures.currentCount}/{figures.quotaMax}
                     {typeof figures.remaining === "number" ? ` (sisa ${figures.remaining})` : ""}
                   </p>
                 ) : gate.checking ? (
-                  <p>Memeriksa kuota calon Pembimbing 2…</p>
+                  <p>Memeriksa beban calon Pembimbing 2…</p>
                 ) : null}
                 {gate.quotaFull ? (
                   <p className="text-muted-foreground">
-                    Kuota calon Pembimbing 2 penuh. Persetujuan tetap dapat menetapkan overquota sah.
+                    Calon Pembimbing 2 sudah mencapai batas bimbingan. Persetujuan tetap dapat diberikan.
                   </p>
                 ) : null}
                 {gate.blocked && gate.reason ? (

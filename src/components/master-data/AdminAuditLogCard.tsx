@@ -10,8 +10,7 @@ const ACTION_LABEL: Record<string, string> = {
   USER_ROLES_UPDATED: 'Ubah peran',
   ACADEMIC_YEAR_CREATED: 'Buat periode akademik',
   ACADEMIC_YEAR_UPDATED: 'Ubah periode akademik',
-  QUOTA_DEFAULT_UPDATED: 'Ubah kuota default',
-  QUOTA_LECTURER_UPDATED: 'Ubah kuota dosen',
+  SUPERVISION_LIMIT_UPDATED: 'Ubah batas bimbingan',
 };
 
 export function AdminAuditLogCard() {

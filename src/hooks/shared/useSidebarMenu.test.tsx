@@ -1,18 +1,8 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSidebarMenu } from "./useSidebarMenu";
-import { useAdvisorAccessState } from "./useAdvisorAccessState";
-import { useStudentEligibility } from "./useStudentEligibility";
 import { useAvatarBlob } from "@/hooks/profile";
 import { useAuth, useRole } from "@/hooks/shared";
-
-vi.mock("./useAdvisorAccessState", () => ({
-  useAdvisorAccessState: vi.fn(),
-}));
-
-vi.mock("./useStudentEligibility", () => ({
-  useStudentEligibility: vi.fn(),
-}));
 
 vi.mock("@/hooks/profile", () => ({
   useAvatarBlob: vi.fn(),
@@ -66,239 +56,19 @@ describe("useSidebarMenu", () => {
     vi.mocked(useAvatarBlob).mockReturnValue("");
     mockAuthUser();
     mockRole({ isStudent: true });
-    vi.mocked(useStudentEligibility).mockReturnValue({
-      isLoading: false,
-      sks: 120,
-      hasTugasAkhirCourse: true,
-      canAccessKerjaPraktek: true,
-      canAccessTugasAkhir: true,
-      canAccessMetopel: true,
-      isMetopenReadOnly: false,
-      isMetopenOnlyTrack: false,
-      requirements: {
-        kerjaPraktek: { sks: { met: true, current: 120, required: 90 } },
-        // BR-25: Tidak ada lagi check `sks >= 110` di tugasAkhir; gate hanya
-        // berdasarkan snapshot SIA `taking_thesis_course` yang dikemas di
-        // requirement `course`.
-        tugasAkhir: {
-          course: { met: true, description: "OK" },
-          module: { met: true, description: "OK" },
-        },
-        metopel: {
-          eligibility: { met: true, description: "OK" },
-        },
-      },
-    } as unknown as ReturnType<typeof useStudentEligibility>);
-    vi.mocked(useAdvisorAccessState).mockReturnValue({
-      data: {
-        canBrowseCatalog: true,
-        hasBlockingRequest: false,
-        hasOfficialSupervisor: false,
-        canOpenLogbook: false,
-      },
-      isLoading: false,
-    } as unknown as ReturnType<typeof useAdvisorAccessState>);
   });
 
-  it("always shows the Tugas Akhir menu, Overview first, even without MK Tugas Akhir", () => {
-    vi.mocked(useStudentEligibility).mockReturnValue({
-      isLoading: false,
-      sks: 100,
-      hasTugasAkhirCourse: false,
-      canAccessKerjaPraktek: true,
-      canAccessTugasAkhir: false,
-      canAccessMetopel: true,
-      isMetopenReadOnly: false,
-      isMetopenOnlyTrack: true,
-      requirements: {
-        kerjaPraktek: { sks: { met: true, current: 100, required: 90 } },
-        tugasAkhir: {
-          course: { met: false, description: "Belum MK TA" },
-          module: { met: false, description: "Gunakan Metopen" },
-        },
-        metopel: { eligibility: { met: true, description: "OK" } },
-      },
-    } as unknown as ReturnType<typeof useStudentEligibility>);
-
+  // K14 (Paket P): one Tugas Akhir menu for students, no separate Metode Penelitian menu.
+  it("gives students Tugas Akhir > Overview, Proposal, Bimbingan, Seminar Hasil, Sidang and no Metode Penelitian menu", () => {
     const { result } = renderHook(() => useSidebarMenu());
 
     const taMenu = result.current.navMain.find((item) => item.title === "Tugas Akhir");
-    expect(taMenu?.items?.map((item) => item.title)).toEqual(["Overview", "Bimbingan", "Seminar Hasil", "Sidang TA"]);
-    expect(taMenu?.items?.[0].url).toBe("/tugas-akhir");
-
-    const metopenMenu = result.current.navMain.find((item) => item.title === "Metode Penelitian");
-    expect(metopenMenu).toBeDefined();
+    expect(taMenu?.items?.map((item) => item.title)).toEqual(["Overview", "Proposal", "Bimbingan", "Seminar Hasil", "Sidang TA"]);
+    expect(taMenu?.items?.[1].url).toBe("/tugas-akhir/proposal");
+    expect(result.current.navMain.find((item) => item.title.startsWith("Metode Penelitian"))).toBeUndefined();
   });
 
-  it("shows Metopen proposal and informal logbook when Metopen-only track has official supervisor", () => {
-    vi.mocked(useStudentEligibility).mockReturnValue({
-      isLoading: false,
-      sks: 100,
-      hasTugasAkhirCourse: false,
-      canAccessKerjaPraktek: true,
-      canAccessTugasAkhir: false,
-      canAccessMetopel: true,
-      isMetopenReadOnly: false,
-      isMetopenOnlyTrack: true,
-      requirements: {
-        kerjaPraktek: { sks: { met: true, current: 100, required: 90 } },
-        tugasAkhir: {
-          course: { met: false, description: "Belum MK TA" },
-          module: { met: false, description: "Gunakan Metopen" },
-        },
-        metopel: { eligibility: { met: true, description: "OK" } },
-      },
-    } as unknown as ReturnType<typeof useStudentEligibility>);
-
-    vi.mocked(useAdvisorAccessState).mockReturnValue({
-      data: {
-        canBrowseCatalog: false,
-        hasBlockingRequest: false,
-        hasOfficialSupervisor: true,
-        canOpenLogbook: true,
-      },
-      isLoading: false,
-    } as unknown as ReturnType<typeof useAdvisorAccessState>);
-
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find((item) => item.title === "Metode Penelitian");
-    const urls = metopenMenu?.items.map((i) => i.url) ?? [];
-    expect(urls).toContain("/metopel/proposal");
-    expect(urls).toContain("/metopel/logbook");
-  });
-
-  it("shows advisor search only when students can still browse the catalog", () => {
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    const itemTitles = metopenMenu?.items.map((item) => item.title) ?? [];
-
-    expect(itemTitles).toContain("Ringkasan");
-    expect(itemTitles).toContain("Cari Pembimbing");
-  });
-
-  it("hides advisor search after an official supervisor is assigned", () => {
-    vi.mocked(useAdvisorAccessState).mockReturnValue({
-      data: {
-        canBrowseCatalog: false,
-        hasBlockingRequest: false,
-        hasOfficialSupervisor: true,
-        canOpenLogbook: true,
-      },
-      isLoading: false,
-    } as unknown as ReturnType<typeof useAdvisorAccessState>);
-
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    const itemTitles = metopenMenu?.items.map((item) => item.title) ?? [];
-
-    expect(itemTitles).toContain("Ringkasan");
-    expect(itemTitles).not.toContain("Cari Pembimbing");
-  });
-
-  it("does not retitle Metopel as archive when eligibility is read-only but TA is not promoted", () => {
-    vi.mocked(useStudentEligibility).mockReturnValue({
-      isLoading: false,
-      sks: 120,
-      hasTugasAkhirCourse: true,
-      canAccessKerjaPraktek: true,
-      canAccessTugasAkhir: true,
-      canAccessMetopel: true,
-      isMetopenReadOnly: true,
-      isMetopenOnlyTrack: false,
-      requirements: {
-        kerjaPraktek: { sks: { met: true, current: 120, required: 90 } },
-        tugasAkhir: {
-          course: { met: true, description: "OK" },
-          module: { met: true, description: "OK" },
-        },
-        metopel: { eligibility: { met: true, description: "OK" } },
-      },
-    } as unknown as ReturnType<typeof useStudentEligibility>);
-
-    vi.mocked(useAdvisorAccessState).mockReturnValue({
-      data: {
-        canBrowseCatalog: true,
-        hasBlockingRequest: false,
-        hasOfficialSupervisor: false,
-        canOpenLogbook: false,
-        requestStatus: "booking_approved",
-      },
-      isLoading: false,
-    } as unknown as ReturnType<typeof useAdvisorAccessState>);
-
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const archiveMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian (Arsip)",
-    );
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    const itemTitles = metopenMenu?.items.map((item) => item.title) ?? [];
-
-    expect(archiveMenu).toBeUndefined();
-    expect(metopenMenu).toBeDefined();
-    expect(itemTitles).toContain("Cari Pembimbing");
-  });
-
-  it("titles Metopel as archive after promotion to active_official", () => {
-    vi.mocked(useAdvisorAccessState).mockReturnValue({
-      data: {
-        canBrowseCatalog: false,
-        hasBlockingRequest: false,
-        hasOfficialSupervisor: true,
-        canOpenLogbook: true,
-        requestStatus: "active_official",
-      },
-      isLoading: false,
-    } as unknown as ReturnType<typeof useAdvisorAccessState>);
-
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian (Arsip)",
-    );
-    const itemTitles = metopenMenu?.items.map((item) => item.title) ?? [];
-
-    expect(metopenMenu).toBeDefined();
-    expect(itemTitles).toContain("Ringkasan");
-    expect(itemTitles).not.toContain("Cari Pembimbing");
-  });
-
-  it("does not title Metopel as archive after period-close even if KRS TA is true", () => {
-    vi.mocked(useAdvisorAccessState).mockReturnValue({
-      data: {
-        canBrowseCatalog: true,
-        hasBlockingRequest: false,
-        hasOfficialSupervisor: false,
-        canOpenLogbook: false,
-        requestStatus: "released",
-        hasTakenMetopen: true,
-        takingThesisCourse: true,
-        isMetopenArchive: false,
-        metopenReadOnly: false,
-      },
-      isLoading: false,
-    } as unknown as ReturnType<typeof useAdvisorAccessState>);
-
-    const { result } = renderHook(() => useSidebarMenu());
-
-    expect(
-      result.current.navMain.find((item) => item.title === "Metode Penelitian (Arsip)"),
-    ).toBeUndefined();
-    expect(
-      result.current.navMain.find((item) => item.title === "Metode Penelitian"),
-    ).toBeDefined();
-  });
-
-  it("shows Inbox Pembimbing for lecturers with supervisor roles", () => {
+  it("moves Permohonan Pembimbing out of the menu (a panel on Mahasiswa Bimbingan, K16)", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isPembimbing: true });
 
@@ -309,11 +79,10 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
-      { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
     ]);
   });
 
-  it("does not expose Inbox Pembimbing to lecturer roles without supervisor capability", () => {
+  it("gives lecturers without supervisor capability no Metode Penelitian menu", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true });
 
@@ -340,56 +109,21 @@ describe("useSidebarMenu", () => {
     ]);
   });
 
-  it("shows the Kadep decision surface instead of a static guide page", () => {
+  it("gives Kadep Tugas Akhir > Penetapan Pembimbing and Kelola > Batas Bimbingan", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true });
 
     const { result } = renderHook(() => useSidebarMenu());
 
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu?.items).toEqual([
-      {
-        title: "Keputusan TA-01 s.d. TA-04",
-        url: "/kelola/tugas-akhir/kadep",
-      },
-      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
-    ]);
+    const taMenu = result.current.navMain.find((item) => item.title === "Tugas Akhir");
+    expect(taMenu?.items?.[0]).toEqual({ title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
+    const kelolaMenu = result.current.navMain.find((item) => item.title === "Kelola");
+    expect(kelolaMenu?.items).toContainEqual({ title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" });
+    expect(kelolaMenu?.items).toContainEqual({ title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" });
+    expect(result.current.navMain.find((item) => item.title === "Metode Penelitian")).toBeUndefined();
   });
 
-  it("keeps the Kadep decision menu distinct from Kelola master data", () => {
-    mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
-    mockRole({ isDosen: true, isKadep: true });
-
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    const kelolaMenu = result.current.navMain.find(
-      (item) => item.title === "Kelola",
-    );
-
-    expect(metopenMenu?.items).toContainEqual({
-      title: "Keputusan TA-01 s.d. TA-04",
-      url: "/kelola/tugas-akhir/kadep",
-    });
-    expect(metopenMenu?.items).toContainEqual({
-      title: "Kuota Dosen",
-      url: "/kelola/metopen/kuota-dosen",
-    });
-    expect(kelolaMenu?.items).toContainEqual({
-      title: "Tugas Akhir",
-      url: "/kelola/tugas-akhir/master-data",
-    });
-    expect(kelolaMenu?.items).not.toContainEqual({
-      title: "Tugas Akhir",
-      url: "/kelola/tugas-akhir/kadep",
-    });
-  });
-
-  it("adds Inbox Pembimbing to Kadep only when the account is also a supervisor", () => {
+  it("keeps the supervisor scoring item for a Kadep who is also a supervisor", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true, isPembimbing: true });
 
@@ -399,13 +133,7 @@ describe("useSidebarMenu", () => {
       (item) => item.title === "Metode Penelitian",
     );
     expect(metopenMenu?.items).toEqual([
-      {
-        title: "Keputusan TA-01 s.d. TA-04",
-        url: "/kelola/tugas-akhir/kadep",
-      },
-      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
       { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
-      { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
     ]);
   });
 
@@ -422,9 +150,9 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
-      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
     ]);
     const kelolaMenu = result.current.navMain.find((item) => item.title === "Kelola");
+    expect(kelolaMenu?.items).toContainEqual({ title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" });
     expect(kelolaMenu?.items).toContainEqual({
       title: "Metode Penelitian",
       url: "/kelola/metode-penelitian",
@@ -481,13 +209,12 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
-      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
       { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
     ]);
   });
 
-  it("shows both TA-03B and Inbox Pembimbing for Sekdep who also has coordinator and supervisor roles", () => {
+  it("shows both scoring queues for Sekdep who also has coordinator and supervisor roles", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
     mockRole({
       isDosen: true,
@@ -503,11 +230,9 @@ describe("useSidebarMenu", () => {
     );
     expect(metopenMenu?.items).toEqual([
       { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
-      { title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" },
       { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
       { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
       { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
-      { title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" },
     ]);
   });
 
@@ -534,7 +259,6 @@ describe("useSidebarMenu", () => {
 
     expect(titles).toEqual(
       expect.arrayContaining([
-        "Metode Penelitian",
         "Tugas Akhir",
         "Yudisium",
         "Pengumuman",

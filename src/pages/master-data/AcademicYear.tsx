@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AcademicYearFormDialog,
   AcademicYearTable,
-  MetopenSiaOperationsCard,
+  SiaSyncStatusCard,
 } from '@/components/master-data';
 
 import { useAcademicYears, useAcademicYearForm } from '@/hooks/master-data';
@@ -103,7 +103,7 @@ export default function AcademicYearPage() {
         </AlertDescription>
       </Alert>
 
-      <MetopenSiaOperationsCard canMutate />
+      <SiaSyncStatusCard canMutate />
 
       <AcademicYearTable
         data={academicYears}

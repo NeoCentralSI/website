@@ -14,9 +14,6 @@ import { useMemo } from "react";
 import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
-import { useAdvisorAccessState } from "./useAdvisorAccessState";
-import { useStudentEligibility } from "./useStudentEligibility";
-import { isMetopenArchiveMode } from "@/lib/metopelArchive";
 import { ENV } from "@/config/env";
 
 type SidebarLeafItem = { title: string; url: string };
@@ -64,18 +61,6 @@ export const useSidebarMenu = () => {
   const isKoordinatorMetopenRole = isKoordinatorMetopen();
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
-  const isStudentUser = Boolean(authUser?.id) && isStudentRole;
-  const { canAccessMetopel, canAccessTugasAkhir, hasTugasAkhirCourse, isMetopenOnlyTrack } =
-    useStudentEligibility();
-  const { data: advisorAccess } = useAdvisorAccessState(isStudentUser && canAccessMetopel);
-  const isMetopenArchive = isMetopenArchiveMode({
-    isMetopenArchive: advisorAccess?.isMetopenArchive,
-    hasTakenMetopen: advisorAccess?.hasTakenMetopen,
-    takingThesisCourse: advisorAccess?.takingThesisCourse,
-    metopenReadOnly: advisorAccess?.metopenReadOnly,
-    requestStatus: advisorAccess?.requestStatus,
-    latestRequestStatus: advisorAccess?.latestRequest?.status,
-  });
 
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
@@ -118,15 +103,9 @@ export const useSidebarMenu = () => {
     const buildMetopenItems = ({
       coordinatorLabel,
       coordinatorUrl,
-      includeInboxPembimbing = role.pembimbing,
     }: {
       coordinatorLabel?: string;
       coordinatorUrl?: string;
-      /**
-       * Default mengikuti role Pembimbing 1/2 aktif. Opsi ini hanya dipakai
-       * untuk menutup inbox pada surface tertentu tanpa memberi akses baru.
-       */
-      includeInboxPembimbing?: boolean;
     } = {}): SidebarLeafItem[] => {
       const items: SidebarLeafItem[] = [];
 
@@ -141,10 +120,6 @@ export const useSidebarMenu = () => {
         items.push({ title: coordinatorLabel, url: coordinatorUrl });
       }
 
-      if (role.kadep || role.sekdep) {
-        items.push({ title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" });
-      }
-
       if (role.pembimbing) {
         // BR-20: antrean penilaian TA-03A — P1 input rubrik + P2 co-sign.
         items.push({ title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" });
@@ -155,10 +130,6 @@ export const useSidebarMenu = () => {
         // Dashboard monitoring progress Metopen per mahasiswa eligible SIA:
         // status pembimbing + rincian nilai 4 bucket (mirror xlsx download).
         items.push({ title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" });
-      }
-
-      if (includeInboxPembimbing && role.pembimbing) {
-        items.push({ title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" });
       }
 
       return items;
@@ -185,13 +156,16 @@ export const useSidebarMenu = () => {
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
-        // Tugas Akhir is always shown; without a thesis its pages show an empty state.
+        // K14: Tugas Akhir is always shown (Overview, Proposal, Bimbingan, Seminar Hasil, Sidang);
+        // without a thesis its pages show an empty state or actions disabled with a reason.
+        // The separate "Metode Penelitian" menu for students is gone (Paket P).
         {
           title: "Tugas Akhir",
           url: "#",
           icon: FileText,
           items: [
             { title: "Overview", url: "/tugas-akhir" },
+            { title: "Proposal", url: "/tugas-akhir/proposal" },
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
             { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
             { title: "Sidang TA", url: "/tugas-akhir/sidang" },
@@ -212,39 +186,6 @@ export const useSidebarMenu = () => {
           items: [],
         },
       ];
-
-      if (canAccessMetopel || canAccessTugasAkhir) {
-        const metopenItems = [{ title: "Ringkasan", url: "/metopel" }];
-        const canOpenAdvisorSearch =
-          !isMetopenArchive &&
-          !(advisorAccess?.hasOfficialSupervisor ?? false) &&
-          (Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest));
-
-        if (canOpenAdvisorSearch) {
-          metopenItems.push({ title: "Cari Pembimbing", url: "/metopel/cari-pembimbing" });
-        }
-
-        const showMetopenProposal =
-          isMetopenOnlyTrack &&
-          (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenArchive);
-        const showMetopenInformalLogbook =
-          isMetopenOnlyTrack &&
-          (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenArchive);
-        if (showMetopenProposal) {
-          metopenItems.push({ title: "Proposal", url: "/metopel/proposal" });
-        }
-        if (showMetopenInformalLogbook) {
-          metopenItems.push({ title: "Catatan informal", url: "/metopel/logbook" });
-        }
-        metopenItems.push({ title: "Alur Proposal", url: "/metopel/arsip" });
-
-        studentNav.splice(2, 0, {
-          title: isMetopenArchive ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
-          url: "#",
-          icon: BookOpen,
-          items: metopenItems,
-        });
-      }
 
       return {
         user: {
@@ -355,21 +296,22 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      menuItems.push({
-        title: "Metode Penelitian",
-        url: "#",
-        icon: BookOpen,
-        items: buildMetopenItems({
-          coordinatorLabel: "Keputusan TA-01 s.d. TA-04",
-          coordinatorUrl: "/kelola/tugas-akhir/kadep",
-        }),
-      });
+      const kadepMetopenItems = buildMetopenItems();
+      if (kadepMetopenItems.length > 0) {
+        menuItems.push({
+          title: "Metode Penelitian",
+          url: "#",
+          icon: BookOpen,
+          items: kadepMetopenItems,
+        });
+      }
 
       menuItems.push({
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
         items: [
+          { title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" },
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
           { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang TA", url: "/tugas-akhir/sidang" },
@@ -396,6 +338,7 @@ export const useSidebarMenu = () => {
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" },
           // Keputusan Kadep: Pengajuan Perubahan Tugas Akhir dan Evaluasi Bimbingan
           { title: "Persetujuan Tugas Akhir", url: "/kelola/tugas-akhir/kadep/perubahan" },
+          { title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" },
           { title: "Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
@@ -490,6 +433,7 @@ export const useSidebarMenu = () => {
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Metode Penelitian", url: "/kelola/metode-penelitian" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
+          { title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" },
           { title: "Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "CPL", url: "/kelola/cpl" },
@@ -680,7 +624,7 @@ export const useSidebarMenu = () => {
                 url: "/master-data/hari-libur",
               },
               {
-                title: "Kuota Bimbingan",
+                title: "Batas Bimbingan",
                 url: "/master-data/kuota-bimbingan",
               },
             ],
@@ -726,19 +670,6 @@ export const useSidebarMenu = () => {
     // user deps
     authUser?.fullName, authUser?.email,
     avatarBlobUrl,
-    advisorAccess?.canBrowseCatalog,
-    advisorAccess?.hasBlockingRequest,
-    advisorAccess?.hasBookedSupervisor,
-    advisorAccess?.hasOfficialSupervisor,
-    advisorAccess?.isMetopenArchive,
-    advisorAccess?.hasTakenMetopen,
-    advisorAccess?.takingThesisCourse,
-    advisorAccess?.metopenReadOnly,
-    canAccessMetopel,
-    canAccessTugasAkhir,
-    isMetopenArchive,
-    hasTugasAkhirCourse,
-    isMetopenOnlyTrack,
   ]);
 
   return menuData;

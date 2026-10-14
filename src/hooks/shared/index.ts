@@ -6,4 +6,3 @@ export { useRealtimeNotifications } from './useRealtimeNotifications';
 export { useFirstVisitDelay } from './useFirstVisitDelay';
 export { useActiveAcademicYear } from './useActiveAcademicYear';
 export { useStudentEligibility } from './useStudentEligibility';
-export { useAdvisorAccessState } from './useAdvisorAccessState';

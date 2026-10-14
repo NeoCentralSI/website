@@ -255,6 +255,83 @@ export const THESIS_ACTIVITY_LEVELS: ThesisActivityLevel[] = ["active", "slow", 
 /** Status TA yang masih berjalan (belum selesai atau gagal). */
 export const OPEN_THESIS_STATUSES: ThesisLifecycleStatus[] = ["proposal", "research", "on_leave"];
 
+/** Status Pengajuan Pembimbing (`ThesisSupervisorRequestStatus`, K10). */
+export type SupervisorRequestStatus =
+  | "pending"
+  | "under_review"
+  | "pending_kadep"
+  | "revision_requested"
+  | "accepted"
+  | "assigned"
+  | "rejected_by_lecturer"
+  | "rejected_by_kadep"
+  | "redirected"
+  | "withdrawn"
+  | "cancelled"
+  | "closed";
+export type SupervisorRequestRoute = "direct" | "over_quota" | "department";
+/** Beban bimbingan dosen terhadap batas yang berlaku (dihitung, rencana 10.1). */
+export type SupervisionLoadLevel = "available" | "near_limit" | "full";
+export type ResearchMethodResult = "passed" | "failed";
+
+export const SUPERVISOR_REQUEST_STATUS_LABELS: Record<SupervisorRequestStatus, string> = {
+  pending: "Menunggu Dosen",
+  under_review: "Sedang Ditinjau Dosen",
+  pending_kadep: "Menunggu Ketua Departemen",
+  revision_requested: "Perlu Revisi",
+  accepted: "Disetujui, Menunggu Penetapan Pembimbing",
+  assigned: "Pembimbing Ditetapkan",
+  rejected_by_lecturer: "Ditolak Dosen",
+  rejected_by_kadep: "Ditolak Ketua Departemen",
+  redirected: "Dialihkan Ketua Departemen, Menunggu Penetapan Pembimbing",
+  withdrawn: "Ditarik",
+  cancelled: "Dibatalkan",
+  closed: "Ditutup",
+};
+
+export const SUPERVISOR_REQUEST_ROUTE_LABELS: Record<SupervisorRequestRoute, string> = {
+  direct: "Pilih Dosen Sendiri",
+  over_quota: "Pengajuan di Atas Kuota",
+  department: "Ditetapkan Departemen",
+};
+
+export const SUPERVISION_LOAD_LEVEL_LABELS: Record<SupervisionLoadLevel, string> = {
+  available: "Tersedia",
+  near_limit: "Mendekati Batas",
+  full: "Penuh",
+};
+
+export const RESEARCH_METHOD_RESULT_LABELS: Record<ResearchMethodResult, string> = {
+  passed: "Lulus",
+  failed: "Tidak Lulus",
+};
+
+export const SUPERVISOR_REQUEST_STATUS_VARIANTS: Record<SupervisorRequestStatus, ThesisBadgeVariant> = {
+  pending: "warning",
+  under_review: "info",
+  pending_kadep: "warning",
+  revision_requested: "warning",
+  accepted: "info",
+  assigned: "success",
+  rejected_by_lecturer: "destructive",
+  rejected_by_kadep: "destructive",
+  redirected: "info",
+  withdrawn: "outline",
+  cancelled: "outline",
+  closed: "outline",
+};
+
+export const SUPERVISION_LOAD_LEVEL_VARIANTS: Record<SupervisionLoadLevel, ThesisBadgeVariant> = {
+  available: "success",
+  near_limit: "warning",
+  full: "destructive",
+};
+
+export const RESEARCH_METHOD_RESULT_VARIANTS: Record<ResearchMethodResult, ThesisBadgeVariant> = {
+  passed: "success",
+  failed: "destructive",
+};
+
 function labelOf<K extends string>(labels: Record<K, string>) {
   return (value: string | null | undefined): string =>
     value ? (labels[value as K] ?? String(value)) : "-";
@@ -276,6 +353,23 @@ export const getGuidanceEvaluationTypeLabel = labelOf(GUIDANCE_EVALUATION_TYPE_L
 export const getGuidanceEvaluationStageLabel = labelOf(GUIDANCE_EVALUATION_STAGE_LABELS);
 export const getGuidanceEvaluationRecommendationLabel = labelOf(GUIDANCE_EVALUATION_RECOMMENDATION_LABELS);
 export const getGuidanceEvaluationStatusLabel = labelOf(GUIDANCE_EVALUATION_STATUS_LABELS);
+
+export const getSupervisorRequestStatusLabel = labelOf(SUPERVISOR_REQUEST_STATUS_LABELS);
+export const getSupervisorRequestRouteLabel = labelOf(SUPERVISOR_REQUEST_ROUTE_LABELS);
+export const getSupervisionLoadLevelLabel = labelOf(SUPERVISION_LOAD_LEVEL_LABELS);
+export const getResearchMethodResultLabel = labelOf(RESEARCH_METHOD_RESULT_LABELS);
+
+export function getSupervisorRequestStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
+  return SUPERVISOR_REQUEST_STATUS_VARIANTS[value as SupervisorRequestStatus] ?? "outline";
+}
+
+export function getSupervisionLoadLevelVariant(value: string | null | undefined): ThesisBadgeVariant {
+  return SUPERVISION_LOAD_LEVEL_VARIANTS[value as SupervisionLoadLevel] ?? "outline";
+}
+
+export function getResearchMethodResultVariant(value: string | null | undefined): ThesisBadgeVariant {
+  return RESEARCH_METHOD_RESULT_VARIANTS[value as ResearchMethodResult] ?? "outline";
+}
 
 export function getThesisStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
   return THESIS_STATUS_VARIANTS[value as ThesisLifecycleStatus] ?? "outline";
