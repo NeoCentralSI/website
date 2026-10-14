@@ -298,6 +298,8 @@ export type SupervisionLoadLevel = "available" | "near_limit" | "full";
 export type ResearchMethodResult = "passed" | "failed";
 /** Versi Penetapan Pembimbing per periode: hanya satu yang berlaku. */
 export type AssignmentBatchStatus = "current" | "superseded";
+/** Keputusan proses kelulusan (naik ke Penelitian, K13). */
+export type PromotionDecision = "promote" | "wait_sia" | "wait_thesis_course" | "wait_next_period";
 
 export const SUPERVISOR_REQUEST_STATUS_LABELS: Record<SupervisorRequestStatus, string> = {
   pending: "Menunggu Dosen",
@@ -334,6 +336,20 @@ export const RESEARCH_METHOD_RESULT_LABELS: Record<ResearchMethodResult, string>
 export const ASSIGNMENT_BATCH_STATUS_LABELS: Record<AssignmentBatchStatus, string> = {
   current: "Berlaku",
   superseded: "Digantikan",
+};
+
+export const PROMOTION_DECISION_LABELS: Record<PromotionDecision, string> = {
+  promote: "Siap Naik",
+  wait_sia: "Menunggu Data SIA",
+  wait_thesis_course: "Menunggu KRS Tugas Akhir",
+  wait_next_period: "Menunggu Periode Berikutnya",
+};
+
+export const PROMOTION_DECISION_VARIANTS: Record<PromotionDecision, ThesisBadgeVariant> = {
+  promote: "success",
+  wait_sia: "warning",
+  wait_thesis_course: "outline",
+  wait_next_period: "outline",
 };
 
 export const SUPERVISOR_REQUEST_STATUS_VARIANTS: Record<SupervisorRequestStatus, ThesisBadgeVariant> = {
@@ -394,6 +410,11 @@ export const getSupervisorRequestRouteLabel = labelOf(SUPERVISOR_REQUEST_ROUTE_L
 export const getSupervisionLoadLevelLabel = labelOf(SUPERVISION_LOAD_LEVEL_LABELS);
 export const getResearchMethodResultLabel = labelOf(RESEARCH_METHOD_RESULT_LABELS);
 export const getAssignmentBatchStatusLabel = labelOf(ASSIGNMENT_BATCH_STATUS_LABELS);
+export const getPromotionDecisionLabel = labelOf(PROMOTION_DECISION_LABELS);
+
+export function getPromotionDecisionVariant(value: string | null | undefined): ThesisBadgeVariant {
+  return PROMOTION_DECISION_VARIANTS[value as PromotionDecision] ?? "outline";
+}
 
 export function getSupervisorRequestStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
   return SUPERVISOR_REQUEST_STATUS_VARIANTS[value as SupervisorRequestStatus] ?? "outline";

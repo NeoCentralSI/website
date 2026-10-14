@@ -20,7 +20,7 @@ import {
   getPendingRequests,
   getSupervisor2Requests,
 } from "@/services/lecturerGuidance.service";
-import { assessmentService } from "@/services/assessment.service";
+import { getSupervisorQueue } from "@/services/research-method/research-method.service";
 import { getKadepQueue, getLecturerInbox } from "@/services/thesis-proposal/supervisor-request.service";
 import { getAssignmentOverview } from "@/services/thesis-proposal/supervisor-assignment.service";
 import { useLottie } from 'lottie-react';
@@ -83,9 +83,9 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     enabled: showSupervisorActions,
   });
 
-  const { data: supervisorScoringQueue, isLoading: loadingSupervisorScoring } = useQuery({
-    queryKey: ["supervisor-scoring-queue", academicYear?.id],
-    queryFn: () => assessmentService.getSupervisorScoringQueue(academicYear!.id),
+  const { data: supervisorQueue, isLoading: loadingSupervisorScoring } = useQuery({
+    queryKey: ["research-method", "supervisor-queue", academicYear?.id ?? "current"],
+    queryFn: () => getSupervisorQueue(academicYear!.id),
     enabled: showSupervisorActions && Boolean(academicYear?.id),
   });
 
@@ -110,13 +110,12 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const pendingSupervisor2Count = supervisor2RequestsData?.length || 0;
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
-  const pendingSupervisorScoringCount = supervisorScoringQueue?.items?.length || 0;
+  const pendingSupervisorScoringCount = supervisorQueue?.rows?.filter((row) => row.canScore).length || 0;
   const pendingKadepCount = (kadepQueue?.department?.length || 0) + (kadepQueue?.overQuota?.length || 0);
   const pendingAssignmentCount = assignmentOverview?.needsIssue ? assignmentOverview.newCount : 0;
   const pendingSupervisorRequestCount = supervisorInbox?.waiting?.length || 0;
 
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
-  const firstSupervisorScoringThesisId = supervisorScoringQueue?.items?.[0]?.thesisId;
 
   const supervisorActions: QuickAction[] = showSupervisorActions
     ? [
@@ -167,16 +166,14 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           loading: loadingApprovals,
         },
         {
-          id: "pending-ta03a",
-          title: "Penilaian TA-03A",
+          id: "pending-proposal-score",
+          title: "Nilai Proposal",
           description: "Proposal final yang menunggu nilai pembimbing",
           count: pendingSupervisorScoringCount,
           icon: ShieldCheck,
           color: "text-purple-600",
           bgColor: "bg-purple-50",
-          link: firstSupervisorScoringThesisId
-            ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstSupervisorScoringThesisId}`
-            : "/tugas-akhir/bimbingan/lecturer/my-students",
+          link: "/tugas-akhir/proposal",
           loading: loadingSupervisorScoring,
         },
       ]

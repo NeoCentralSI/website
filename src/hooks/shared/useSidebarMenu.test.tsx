@@ -68,184 +68,103 @@ describe("useSidebarMenu", () => {
     expect(result.current.navMain.find((item) => item.title.startsWith("Metode Penelitian"))).toBeUndefined();
   });
 
-  it("moves Permohonan Pembimbing out of the menu (a panel on Mahasiswa Bimbingan, K16)", () => {
+  const menuOf = (title: string) => {
+    const { result } = renderHook(() => useSidebarMenu());
+    return result.current.navMain.find((item) => item.title === title);
+  };
+  const COORDINATOR_ITEMS = [
+    { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
+    { title: "Presensi", url: "/metode-penelitian/presensi" },
+    { title: "Penilaian Proposal", url: "/metode-penelitian/penilaian" },
+  ];
+
+  // Paket P: supervisors score in Tugas Akhir > Proposal (no Metode Penelitian menu, K16).
+  it("gives supervisors Tugas Akhir > Proposal and no Metode Penelitian menu", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isPembimbing: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu?.items).toEqual([
-      { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
-    ]);
+    expect(menuOf("Metode Penelitian")).toBeUndefined();
+    expect(menuOf("Tugas Akhir")?.items?.[0]).toEqual({ title: "Proposal", url: "/tugas-akhir/proposal" });
   });
 
-  it("gives lecturers without supervisor capability no Metode Penelitian menu", () => {
+  it("gives lecturers without supervisor capability neither menu item", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu).toBeUndefined();
+    expect(menuOf("Metode Penelitian")).toBeUndefined();
+    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).not.toContain("Proposal");
   });
 
-  it("adds the TA-03B queue for KOORDINATOR_METOPEN without exposing the old guide hub", () => {
+  it("gives the Research Method coordinator Monitoring Kelas, Presensi, Penilaian Proposal", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isKoordinatorMetopen: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu?.items).toEqual([
-      { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
-      { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
-    ]);
+    expect(menuOf("Metode Penelitian")?.items).toEqual(COORDINATOR_ITEMS);
   });
 
-  it("gives Kadep Tugas Akhir > Penetapan Pembimbing and Kelola > Batas Bimbingan", () => {
+  it("gives Kadep Tugas Akhir > Penetapan Pembimbing, Kelola > Batas Bimbingan, and Monitoring Kelas", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const taMenu = result.current.navMain.find((item) => item.title === "Tugas Akhir");
-    expect(taMenu?.items?.[0]).toEqual({ title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
-    const kelolaMenu = result.current.navMain.find((item) => item.title === "Kelola");
+    expect(menuOf("Tugas Akhir")?.items?.[0]).toEqual({ title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
+    const kelolaMenu = menuOf("Kelola");
     expect(kelolaMenu?.items).toContainEqual({ title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" });
     expect(kelolaMenu?.items).toContainEqual({ title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" });
-    expect(result.current.navMain.find((item) => item.title === "Metode Penelitian")).toBeUndefined();
+    expect(menuOf("Metode Penelitian")?.items).toEqual([{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }]);
   });
 
-  it("keeps the supervisor scoring item for a Kadep who is also a supervisor", () => {
+  it("adds Tugas Akhir > Proposal for a Kadep who is also a supervisor", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true, isPembimbing: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu?.items).toEqual([
-      { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
-    ]);
+    expect(menuOf("Tugas Akhir")?.items?.slice(0, 2).map((item) => item.title)).toEqual(["Penetapan Pembimbing", "Proposal"]);
   });
 
-  // BR-24: Sekdep-only tidak mendapat antrean operasional (TA-03A/B, inbox).
-  // Master CPMK & rubrik Metopen tetap wajib karena kewenangan Sekdep (FR-SCR / persona).
-  it("exposes Metopen master CPMK menu to Sekdep-only without operational queues (BR-24)", () => {
+  // BR-24: Sekdep-only gets no operational queues; master data stays in Kelola > Metode
+  // Penelitian (K18: the duplicate "CPMK & Rubrik Penilaian" entry is gone).
+  it("gives Sekdep read-only Monitoring Kelas and the master data under Kelola (BR-24, K18)", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
     mockRole({ isDosen: true, isSekdep: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu?.items).toEqual([
-      { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
-    ]);
-    const kelolaMenu = result.current.navMain.find((item) => item.title === "Kelola");
+    expect(menuOf("Metode Penelitian")?.items).toEqual([{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }]);
+    const kelolaMenu = menuOf("Kelola");
     expect(kelolaMenu?.items).toContainEqual({ title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" });
-    expect(kelolaMenu?.items).toContainEqual({
-      title: "Metode Penelitian",
-      url: "/kelola/metode-penelitian",
-    });
+    expect(kelolaMenu?.items).toContainEqual({ title: "Metode Penelitian", url: "/kelola/metode-penelitian" });
     const kelolaTitles = kelolaMenu?.items.map((item) => item.title) ?? [];
-    expect(kelolaTitles.indexOf("Metode Penelitian")).toBeLessThan(
-      kelolaTitles.indexOf("Tugas Akhir"),
-    );
-    const titles = metopenMenu?.items.map((item) => item.title) ?? [];
-    expect(titles).not.toContain("Penilaian TA-03A");
-    expect(titles).not.toContain("Penilaian TA-03B");
-    expect(titles).not.toContain("Monitoring Kelas");
-    expect(titles).not.toContain("Inbox Pembimbing");
+    expect(kelolaTitles.indexOf("Metode Penelitian")).toBeLessThan(kelolaTitles.indexOf("Tugas Akhir"));
   });
 
   it("limits Sekdep Tugas Akhir menu to read-only pages (BR-24)", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
     mockRole({ isDosen: true, isSekdep: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const taMenu = result.current.navMain.find(
-      (item) => item.title === "Tugas Akhir",
-    );
-    const itemTitles = taMenu?.items.map((item) => item.title) ?? [];
-
+    const itemTitles = menuOf("Tugas Akhir")?.items.map((item) => item.title) ?? [];
     expect(itemTitles).toEqual(["Penetapan Pembimbing", "Monitoring"]);
-    expect(itemTitles).not.toContain("Bimbingan");
-    expect(itemTitles).not.toContain("Seminar Hasil");
-    expect(itemTitles).not.toContain("Sidang TA");
   });
 
   it("restores Tugas Akhir operational items when Sekdep is also a supervisor", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
     mockRole({ isDosen: true, isSekdep: true, isPembimbing: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const taMenu = result.current.navMain.find(
-      (item) => item.title === "Tugas Akhir",
-    );
-    const itemTitles = taMenu?.items.map((item) => item.title) ?? [];
-
-    expect(itemTitles).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA", "Penetapan Pembimbing", "Monitoring"]);
+    const itemTitles = menuOf("Tugas Akhir")?.items.map((item) => item.title) ?? [];
+    expect(itemTitles).toEqual(["Proposal", "Bimbingan", "Seminar Hasil", "Sidang TA", "Penetapan Pembimbing", "Monitoring"]);
   });
-  it("keeps Sekdep TA-03B queue when Sekdep also has KOORDINATOR_METOPEN role", () => {
+
+  it("gives a Sekdep who is also the coordinator the coordinator's items", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
-    mockRole({ isDosen: true, isSekdep: true, isKoordinatorMetopen: true });
+    mockRole({ isDosen: true, isSekdep: true, isKoordinatorMetopen: true, isPembimbing: true });
 
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu?.items).toEqual([
-      { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
-      { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
-      { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
-    ]);
+    expect(menuOf("Metode Penelitian")?.items).toEqual(COORDINATOR_ITEMS);
+    expect(menuOf("Tugas Akhir")?.items?.[0]).toEqual({ title: "Proposal", url: "/tugas-akhir/proposal" });
   });
 
-  it("shows both scoring queues for Sekdep who also has coordinator and supervisor roles", () => {
-    mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
-    mockRole({
-      isDosen: true,
-      isSekdep: true,
-      isPembimbing: true,
-      isKoordinatorMetopen: true,
-    });
-
-    const { result } = renderHook(() => useSidebarMenu());
-
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu?.items).toEqual([
-      { title: "CPMK & Rubrik Penilaian", url: "/kelola/metopen/cpmk-rubrik" },
-      { title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" },
-      { title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" },
-      { title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" },
-    ]);
-  });
-
-  it("gives GKM read-only TA monitoring without Metopen inbox or supervisor items (guidance revival)", () => {
+  it("gives GKM read-only TA monitoring without Metode Penelitian or supervisor items (guidance revival)", () => {
     mockAuthUser({ id: "gkm-1", fullName: "GKM Uji" });
     mockRole({ isDosen: true, isGkm: true });
 
     const { result } = renderHook(() => useSidebarMenu());
 
-    const metopenMenu = result.current.navMain.find(
-      (item) => item.title === "Metode Penelitian",
-    );
-    expect(metopenMenu).toBeUndefined();
+    expect(result.current.navMain.find((item) => item.title === "Metode Penelitian")).toBeUndefined();
 
     const taMenu = result.current.navMain.find(
       (item) => item.title === "Tugas Akhir",

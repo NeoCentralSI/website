@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { StudentFinalProposalSection } from '@/components/thesis-proposal/StudentFinalProposalSection';
+import { StudentResearchMethodScoreSection } from '@/components/thesis-proposal/StudentResearchMethodScoreSection';
 import { StudentSupervisorAssignmentSection } from '@/components/thesis-proposal/StudentSupervisorAssignmentSection';
 import { StudentSupervisorRequestSection } from '@/components/thesis-proposal/StudentSupervisorRequestSection';
 
@@ -24,6 +25,7 @@ export default function StudentThesisProposal() {
       <StudentSupervisorRequestSection />
       <StudentSupervisorAssignmentSection />
       <StudentFinalProposalSection />
+      <StudentResearchMethodScoreSection />
     </div>
   );
 }

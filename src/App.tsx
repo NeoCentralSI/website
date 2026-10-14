@@ -115,12 +115,10 @@ const ScienceGroupPage = lazy(() => import('./pages/master-data/ScienceGroup'))
 const RoomPage = lazy(() => import('./pages/master-data/Room'))
 const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvailability'))
 // Kelola
-const KelolaMetopenPage = lazy(() => import('./pages/kelola/KelolaMetopen'))
-const MetopenCpmkRubricPage = lazy(() => import('./pages/kelola/MetopenCpmkRubric'))
 const ResearchMethodPage = lazy(() => import('./pages/master-data/ResearchMethod'))
-const MetopenTa03AQueuePage = lazy(() => import('./pages/kelola/MetopenTa03AQueue'))
-const MetopenTa03BQueuePage = lazy(() => import('./pages/kelola/MetopenTa03BQueue'))
-const MetopenMonitoringPage = lazy(() => import('./pages/kelola/MetopenMonitoring'))
+const ResearchMethodMonitoringPage = lazy(() => import('./pages/research-method/ClassMonitoring'))
+const ResearchMethodAttendancePage = lazy(() => import('./pages/research-method/Attendance'))
+const ResearchMethodAssessmentPage = lazy(() => import('./pages/research-method/ProposalAssessment'))
 const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
 
 // Pengumuman
@@ -337,8 +335,8 @@ function App() {
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/syarat-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/syarat-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
-                  {/* Legacy bookmark: rubrik Metopen pindah ke surface Metopen (KC-20260717-04). */}
-                  <Route path="/kelola/tugas-akhir/rubrik-metopen" element={<Navigate to="/kelola/metopen/cpmk-rubrik" replace />} />
+                  {/* Old bookmark: the Research Method rubrics live in Kelola > Metode Penelitian (K18). */}
+                  <Route path="/kelola/tugas-akhir/rubrik-metopen" element={<Navigate to="/kelola/metode-penelitian" replace />} />
                   <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 </Route>
 
@@ -349,30 +347,27 @@ function App() {
                   <Route path="/kelola/cpl/:curriculumId/:cplId" element={<CplDetailPage />} />
                 </Route>
 
-                {/* Kelola Metopen - Koordinator Metopen, Sekdep, Kadep (canon v2.1 BR-19) */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METOPEN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN]} />}>
-                  <Route path="/kelola/metopen" element={<KelolaMetopenPage />} />
+                {/* Metode Penelitian (Paket P): the coordinator runs the class; Kadep, Sekdep and Admin read. */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METOPEN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
+                  <Route path="/metode-penelitian/monitoring" element={<ResearchMethodMonitoringPage />} />
+                  <Route path="/metode-penelitian/presensi" element={<ResearchMethodAttendancePage />} />
+                  <Route path="/metode-penelitian/penilaian" element={<ResearchMethodAssessmentPage />} />
+                  <Route path="/metode-penelitian" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
+                  {/* Old addresses of the Metopen module */}
+                  <Route path="/kelola/metopen" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
+                  <Route path="/kelola/metopen/monitoring" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
+                  <Route path="/kelola/metopen/ta03b" element={<Navigate to="/metode-penelitian/penilaian" replace />} />
                 </Route>
+                <Route path="/kelola/metopen/ta03a" element={<Navigate to="/tugas-akhir/proposal" replace />} />
+                <Route path="/kelola/metopen/cpmk-rubrik" element={<Navigate to="/kelola/metode-penelitian" replace />} />
                 {/* Batas Bimbingan (Paket P, 10.1): Kadep and Sekdep set the limits and see every lecturer's load. */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.KETUA_DEPARTEMEN, ROLES.SEKRETARIS_DEPARTEMEN]} />}>
                   <Route path="/kelola/tugas-akhir/batas-bimbingan" element={<SupervisionQuotaPage />} />
                   <Route path="/kelola/metopen/kuota-dosen" element={<Navigate to="/kelola/tugas-akhir/batas-bimbingan" replace />} />
                 </Route>
-                {/* Master CPMK + rubrik TA-03 — Sekdep only (selaras routes/rubric-metopen.route.js). */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN]} />}>
-                  <Route path="/kelola/metopen/cpmk-rubrik" element={<MetopenCpmkRubricPage />} />
-                </Route>
-                {/* Data master Metode Penelitian versi baru yang berdiri independen. */}
+                {/* Kelola > Metode Penelitian: Template Milestone, CPMK, Rubrik Penilaian (K18). */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_METOPEN]} />}>
                   <Route path="/kelola/metode-penelitian" element={<ResearchMethodPage />} />
-                </Route>
-                {/* TA-03A: penilaian Pembimbing — bagian rangkaian Metopen (BR-20). RBAC = SUPERVISOR_ROLES (P1+P2). */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.PEMBIMBING_1, ROLES.PEMBIMBING_2]} />}>
-                  <Route path="/kelola/metopen/ta03a" element={<MetopenTa03AQueuePage />} />
-                </Route>
-                <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METOPEN]} />}>
-                  <Route path="/kelola/metopen/ta03b" element={<MetopenTa03BQueuePage />} />
-                  <Route path="/kelola/metopen/monitoring" element={<MetopenMonitoringPage />} />
                 </Route>
 
                 {/* Kelola - Sekretaris */}

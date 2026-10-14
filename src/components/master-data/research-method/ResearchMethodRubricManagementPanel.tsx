@@ -126,6 +126,13 @@ export function ResearchMethodRubricManagementPanel({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {summary && combinedTotal !== 100 && (
+          <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {combinedTotal > 100
+              ? `Jumlah bobot pembimbing dan koordinator ${combinedTotal}, melebihi 100. Kurangi skor maksimum kriteria.`
+              : `Jumlah bobot pembimbing (${supervisorTotal}) dan koordinator (${coordinatorTotal}) baru ${combinedTotal} dari 100; nilai akhir tertinggi hanya ${combinedTotal}. Lengkapi kriteria sampai tepat 100.`}
+          </p>
+        )}
         <div className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
           <div className="flex w-fit gap-1 rounded-lg border bg-background p-1 shadow-sm">
             {ASSESSOR_OPTIONS.map((option) => (

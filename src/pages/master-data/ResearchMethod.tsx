@@ -5,6 +5,7 @@ import { useOutletContext } from "react-router-dom";
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { ResearchMethodCpmkManagementPanel } from "@/components/master-data/research-method/ResearchMethodCpmkManagementPanel";
 import { ResearchMethodMilestoneTemplatePanel } from "@/components/master-data/research-method/ResearchMethodMilestoneTemplatePanel";
+import { ResearchMethodMinimumScoreCard } from "@/components/master-data/research-method/ResearchMethodMinimumScoreCard";
 import { useRole } from "@/hooks/shared/useRole";
 import { ResearchMethodRubricManagementPanel } from "@/components/master-data/research-method/ResearchMethodRubricManagementPanel";
 import {
@@ -88,6 +89,8 @@ export default function ResearchMethod() {
         activeTab={tab}
         onTabChange={(value) => setTab(value as Tab)}
       />
+
+      {tab !== "template" && <ResearchMethodMinimumScoreCard academicYearId={academicYearId} canEdit={isSekdep()} />}
 
       {tab === "template" ? (
         <ResearchMethodMilestoneTemplatePanel canEdit={isSekdep()} />

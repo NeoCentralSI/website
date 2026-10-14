@@ -245,6 +245,8 @@ export interface FinalProposalAttempt {
   finalScore: number | null;
   result: ResearchMethodResult | null;
   attendanceAutoZeroed: boolean;
+  minimumScore?: number;
+  attendance?: { attendancePercentage: number; isEligible: boolean } | null;
 }
 
 export interface FinalProposalState {

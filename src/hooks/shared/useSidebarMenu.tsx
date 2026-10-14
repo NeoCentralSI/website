@@ -85,55 +85,24 @@ export const useSidebarMenu = () => {
     };
 
     /**
-     * Build menu Metopen per role.
-     *
-     * Pertimbangan canon SIMPTA v2.2:
-     * - "Inbox Pembimbing" hanya relevan untuk user yang punya role
-     *   Pembimbing 1 / Pembimbing 2. Role struktural seperti Sekdep/GKM tidak
-     *   boleh menutupi kemampuan pembimbing bila user yang sama memang
-     *   multi-role, tetapi juga tidak boleh memberi inbox ke user non-pembimbing.
-     * - "CPMK & Rubrik Penilaian" khusus Sekdep (master MetopenCpmk + rubrik
-     *   TA-03). Bukan operasional antrean; bukan bagian Kelola Tugas Akhir.
-     * - "Penilaian TA-03A" untuk Pembimbing 1 master + Pembimbing 2 co-sign
-     *   (BR-20). Antrean menggabungkan P1 pending input + P2 pending co-sign
-     *   supaya konsensus mufakat satu jendela navigasi.
-     * - "Penilaian TA-03B" tetap khusus role Koordinator Metopen
-     *   (Koordinator Metopen) sesuai BR-19.
+     * Metode Penelitian (Paket P, plan 6): the coordinator runs the class (Monitoring Kelas,
+     * Presensi, Penilaian Proposal); Kadep and Sekdep follow it read-only in Monitoring Kelas.
+     * Supervisors score in Tugas Akhir > Proposal; Sekdep's master data is Kelola > Metode Penelitian.
      */
-    const buildMetopenItems = ({
-      coordinatorLabel,
-      coordinatorUrl,
-    }: {
-      coordinatorLabel?: string;
-      coordinatorUrl?: string;
-    } = {}): SidebarLeafItem[] => {
-      const items: SidebarLeafItem[] = [];
-
-      if (role.sekdep) {
-        items.push({
-          title: "CPMK & Rubrik Penilaian",
-          url: "/kelola/metopen/cpmk-rubrik",
-        });
-      }
-
-      if (coordinatorLabel && coordinatorUrl) {
-        items.push({ title: coordinatorLabel, url: coordinatorUrl });
-      }
-
-      if (role.pembimbing) {
-        // BR-20: antrean penilaian TA-03A — P1 input rubrik + P2 co-sign.
-        items.push({ title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" });
-      }
-
+    const buildResearchMethodItems = (): SidebarLeafItem[] => {
       if (role.koordinatorMetopen) {
-        items.push({ title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" });
-        // Dashboard monitoring progress Metopen per mahasiswa eligible SIA:
-        // status pembimbing + rincian nilai 4 bucket (mirror xlsx download).
-        items.push({ title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" });
+        return [
+          { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
+          { title: "Presensi", url: "/metode-penelitian/presensi" },
+          { title: "Penilaian Proposal", url: "/metode-penelitian/penilaian" },
+        ];
       }
-
-      return items;
+      if (role.kadep || role.sekdep) return [{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }];
+      return [];
     };
+
+    /** Tugas Akhir > Proposal for supervisors: their proposal-phase students and "Nilai Proposal". */
+    const proposalItems: SidebarLeafItem[] = role.pembimbing ? [{ title: "Proposal", url: "/tugas-akhir/proposal" }] : [];
 
     // STUDENT MENU
     if (role.student) {
@@ -221,13 +190,13 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      const metopenItems = buildMetopenItems();
-      if (metopenItems.length > 0) {
+      const researchMethodItems = buildResearchMethodItems();
+      if (researchMethodItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: metopenItems,
+          items: researchMethodItems,
         });
       }
 
@@ -237,6 +206,7 @@ export const useSidebarMenu = () => {
         url: "#",
         icon: FileText,
         items: [
+          ...proposalItems,
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
           { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang TA", url: "/tugas-akhir/sidang" },
@@ -296,13 +266,13 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      const kadepMetopenItems = buildMetopenItems();
-      if (kadepMetopenItems.length > 0) {
+      const kadepResearchMethodItems = buildResearchMethodItems();
+      if (kadepResearchMethodItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: kadepMetopenItems,
+          items: kadepResearchMethodItems,
         });
       }
 
@@ -312,6 +282,7 @@ export const useSidebarMenu = () => {
         icon: FileText,
         items: [
           { title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" },
+          ...proposalItems,
           { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
           { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
           { title: "Sidang TA", url: "/tugas-akhir/sidang" },
@@ -388,13 +359,13 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      const metopenItems = buildMetopenItems();
-      if (metopenItems.length > 0) {
+      const researchMethodItems = buildResearchMethodItems();
+      if (researchMethodItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: metopenItems,
+          items: researchMethodItems,
         });
       }
 
@@ -405,6 +376,7 @@ export const useSidebarMenu = () => {
         items: [
           ...(role.pembimbing
             ? [
+                ...proposalItems,
                 { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
                 { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
                 { title: "Sidang TA", url: "/tugas-akhir/sidang" },
@@ -479,13 +451,13 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      const metopenItems = buildMetopenItems();
-      if (metopenItems.length > 0) {
+      const researchMethodItems = buildResearchMethodItems();
+      if (researchMethodItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: metopenItems,
+          items: researchMethodItems,
         });
       }
 
@@ -499,6 +471,7 @@ export const useSidebarMenu = () => {
         items: [
           ...(role.pembimbing
             ? [
+                ...proposalItems,
                 { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
                 { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
                 { title: "Sidang TA", url: "/tugas-akhir/sidang" },
