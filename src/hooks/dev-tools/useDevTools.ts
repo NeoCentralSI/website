@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { devToolsService } from '@/services/devTools.service';
-import type { UpdateStudentDto, UpdateUserDto, CreateUserDto, UpdateGuidanceScheduleDto } from '@/types/devTools.types';
+import type { UpdateStudentDto, UpdateUserDto, CreateUserDto, UpdateGuidanceScheduleDto, SetPeriodFlagsDto } from '@/types/devTools.types';
 
 const QK = {
   students: 'devtools-students',
@@ -129,14 +129,10 @@ export function useDevToolsMutations() {
     deleteThesis: (id: string) => wrap(() => devToolsService.deleteThesis(id)),
     changePassword: (id: string, password: string) => wrap(() => devToolsService.changePassword(id, password)),
     createUser: (data: CreateUserDto) => wrap(() => devToolsService.createUser(data)),
-    setMetopenEligibility: (studentId: string, eligibleMetopen: boolean | null) =>
-      wrap(() => devToolsService.setMetopenEligibility(studentId, eligibleMetopen)),
-    setThesisCourseEligibility: (studentId: string, takingThesisCourse: boolean | null) =>
-      wrap(() => devToolsService.setThesisCourseEligibility(studentId, takingThesisCourse)),
+    setPeriodFlags: (studentId: string, data: SetPeriodFlagsDto) =>
+      wrap(() => devToolsService.setPeriodFlags(studentId, data)),
     setThesisAcademicYear: (thesisId: string, academicYearId: string) =>
       wrap(() => devToolsService.setThesisAcademicYear(thesisId, academicYearId)),
-    closeMetopenPeriod: (closedAcademicYearId: string, dryRun: boolean, force = false) =>
-      wrap(() => devToolsService.closeMetopenPeriod(closedAcademicYearId, dryRun, force)),
     updateGuidanceSchedule: (id: string, data: UpdateGuidanceScheduleDto) =>
       wrap(() => devToolsService.updateGuidanceSchedule(id, data)),
   };

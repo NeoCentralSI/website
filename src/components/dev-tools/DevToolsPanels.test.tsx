@@ -40,14 +40,12 @@ const student: DevToolsStudent = {
   internshipCompleted: true,
   kknCompleted: false,
   currentSemester: 9,
-  metopenEligibility: {
-    eligibleMetopen: true, hasExternalStatus: true, source: 'devtools', updatedAt: '2026-10-01T03:00:00.000Z',
-    readOnly: false, canAccess: true, canSubmit: true, thesisId: 't1', thesisTitle: 'Judul', thesisStatus: 'research',
+  periodFlags: {
+    academicYearId: 'ay-1',
+    eligibleResearchMethod: true, eligibilitySource: 'devtools', eligibilityCapturedAt: '2026-10-01T03:00:00.000Z',
+    takingThesisCourse: false, thesisCourseSource: 'sia', thesisCourseCapturedAt: null,
   },
-  thesisCourseEligibility: {
-    takingThesisCourse: true, hasExternalStatus: true, source: 'devtools', updatedAt: null, canAccess: true,
-  },
-  latestThesis: { id: 't1', status: 'on_leave', title: 'Judul', proposalStatus: null },
+  latestThesis: { id: 't1', status: 'on_leave', title: 'Judul' },
 };
 
 const guidance: DevToolsGuidance = {
@@ -114,14 +112,15 @@ describe('DevTools panels', () => {
 
     fireEvent.click(screen.getByText('Ilham Nofaldi'));
     expect(await screen.findByText('KKN')).toBeInTheDocument();
-    expect(screen.getByText('Eligibility Metopen')).toBeInTheDocument();
+    expect(screen.getByText('Mengambil Metode Penelitian (semester berjalan)')).toBeInTheDocument();
     expect(screen.getByText('1 Oktober 2026 10.00 WIB')).toBeInTheDocument();
+    expect(screen.getByText('DevTools')).toBeInTheDocument();
   });
 
-  it('Period panel renders the close-period scenario', async () => {
+  it('Period panel offers the SIA sync and no period close (K2)', () => {
     wrap(<DevToolsPeriodPanel />);
-    expect(screen.getByText('Skenario tutup periode Metopel')).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Dry-run' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Jalankan Sinkronisasi SIA' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dry-run' })).not.toBeInTheDocument();
   });
 
   it('Guidance panel shows the status badge and WIB dates, and saves only changed dates', async () => {

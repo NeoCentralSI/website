@@ -52,10 +52,10 @@ import { DevToolsEditStudentDialog } from './DevToolsEditStudentDialog';
 import { DevToolsPasswordDialog } from './DevToolsPasswordDialog';
 import {
   BoolIcon,
-  MetopenEligibilityBadge,
+  ResearchMethodFlagBadge,
   STUDENT_STATUSES,
   StudentStatusBadge,
-  ThesisCourseEligibilityBadge,
+  ThesisCourseFlagBadge,
   TruncatedText,
 } from './DevToolsShared';
 import { DevToolsThesisTable } from './DevToolsThesisTable';
@@ -75,8 +75,7 @@ function StudentDetail({ student, mutations }: {
   student: DevToolsStudent; mutations: ReturnType<typeof useDevToolsMutations>;
 }) {
   const { isSubmitting } = mutations;
-  const metopen = student.metopenEligibility;
-  const thesisCourse = student.thesisCourseEligibility;
+  const flags = student.periodFlags;
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 rounded-md border bg-background p-3">
@@ -92,26 +91,25 @@ function StudentDetail({ student, mutations }: {
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <BookOpen className="h-4 w-4 text-emerald-700" />
-              Eligibility Metopen
+              Mengambil Metode Penelitian (semester berjalan)
             </div>
             <p className="text-xs text-muted-foreground">
-              Gate fase proposal. Jika aktif, mahasiswa boleh mengakses alur Metode Penelitian sebelum MK Tugas Akhir.
+              Penanda SIA yang membuka Pengajuan Pembimbing di Tugas Akhir &gt; Proposal.
             </p>
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Status"><MetopenEligibilityBadge metopenEligibility={metopen} /></Field>
-              <Field label="Sumber backend">{metopen.source ?? 'Belum ada snapshot'}</Field>
-              <Field label="Diperbarui">{formatDateTimeWib(metopen.updatedAt)}</Field>
-              <Field label="Akses Metopel">{metopen.canAccess ? 'Menu Metopel terbuka' : 'Menu Metopel tertutup'}</Field>
+              <Field label="Status"><ResearchMethodFlagBadge value={flags.eligibleResearchMethod} /></Field>
+              <Field label="Sumber">{flags.eligibilitySource === 'devtools' ? 'DevTools' : flags.eligibilitySource === 'sia' ? 'SIA' : '-'}</Field>
+              <Field label="Diperbarui">{formatDateTimeWib(flags.eligibilityCapturedAt)}</Field>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => mutations.setMetopenEligibility(student.id, true)} disabled={isSubmitting}>
-                Set Eligible Metopen
+              <Button size="sm" onClick={() => mutations.setPeriodFlags(student.id, { eligibleResearchMethod: true })} disabled={isSubmitting}>
+                Tandai Mengambil
               </Button>
-              <Button size="sm" variant="outline" onClick={() => mutations.setMetopenEligibility(student.id, false)} disabled={isSubmitting}>
-                Set Tidak Eligible
+              <Button size="sm" variant="outline" onClick={() => mutations.setPeriodFlags(student.id, { eligibleResearchMethod: false })} disabled={isSubmitting}>
+                Tandai Tidak Mengambil
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => mutations.setMetopenEligibility(student.id, null)} disabled={isSubmitting}>
-                Kosongkan Snapshot
+              <Button size="sm" variant="ghost" onClick={() => mutations.setPeriodFlags(student.id, { eligibleResearchMethod: null })} disabled={isSubmitting}>
+                Kosongkan
               </Button>
             </div>
           </CardContent>
@@ -121,26 +119,25 @@ function StudentDetail({ student, mutations }: {
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <GraduationCap className="h-4 w-4 text-blue-700" />
-              Eligibility Tugas Akhir
+              Mengambil Tugas Akhir (semester berjalan)
             </div>
             <p className="text-xs text-muted-foreground">
-              Snapshot MK Tugas Akhir. Jika aktif, modul Tugas Akhir terbuka dan catatan informal Metopen ditutup.
+              KRS Tugas Akhir dari SIA. Dipakai saat Naik ke Penelitian setelah lulus Metode Penelitian.
             </p>
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Status"><ThesisCourseEligibilityBadge thesisCourseEligibility={thesisCourse} /></Field>
-              <Field label="Sumber backend">{thesisCourse.source ?? 'Belum ada snapshot'}</Field>
-              <Field label="Diperbarui">{formatDateTimeWib(thesisCourse.updatedAt)}</Field>
-              <Field label="Akses Tugas Akhir">{thesisCourse.canAccess ? 'Modul TA terbuka' : 'Modul TA tertutup'}</Field>
+              <Field label="Status"><ThesisCourseFlagBadge value={flags.takingThesisCourse} /></Field>
+              <Field label="Sumber">{flags.thesisCourseSource === 'devtools' ? 'DevTools' : flags.thesisCourseSource === 'sia' ? 'SIA' : '-'}</Field>
+              <Field label="Diperbarui">{formatDateTimeWib(flags.thesisCourseCapturedAt)}</Field>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => mutations.setThesisCourseEligibility(student.id, true)} disabled={isSubmitting}>
-                Set MK TA Aktif
+              <Button size="sm" onClick={() => mutations.setPeriodFlags(student.id, { takingThesisCourse: true })} disabled={isSubmitting}>
+                Tandai Mengambil
               </Button>
-              <Button size="sm" variant="outline" onClick={() => mutations.setThesisCourseEligibility(student.id, false)} disabled={isSubmitting}>
-                Set Belum MK TA
+              <Button size="sm" variant="outline" onClick={() => mutations.setPeriodFlags(student.id, { takingThesisCourse: false })} disabled={isSubmitting}>
+                Tandai Tidak Mengambil
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => mutations.setThesisCourseEligibility(student.id, null)} disabled={isSubmitting}>
-                Kosongkan Snapshot
+              <Button size="sm" variant="ghost" onClick={() => mutations.setPeriodFlags(student.id, { takingThesisCourse: null })} disabled={isSubmitting}>
+                Kosongkan
               </Button>
             </div>
           </CardContent>
@@ -193,7 +190,7 @@ export function DevToolsStudentPanel() {
           : <Table className={cn('table-fixed', isPlaceholderData && STALE_RESULT_CLASS)}><TableHeader><TableRow>
             <TableHead className="w-10" /><TableHead>Nama / NIM</TableHead><TableHead className="w-32">Status</TableHead>
             <TableHead className="w-14 text-center">SKS</TableHead><TableHead className="w-14 text-center">Sem</TableHead>
-            <TableHead className="w-36">Metopen</TableHead><TableHead className="w-36">MK TA</TableHead><TableHead className="w-40">Tugas Akhir</TableHead>
+            <TableHead className="w-36">Metode Penelitian</TableHead><TableHead className="w-36">Tugas Akhir (KRS)</TableHead><TableHead className="w-40">Tugas Akhir</TableHead>
             <TableHead className="w-44 text-right">Aksi</TableHead>
           </TableRow></TableHeader><TableBody>
             {students.map((s) => {
@@ -208,8 +205,8 @@ export function DevToolsStudentPanel() {
                   <TableCell><StudentStatusBadge status={s.status} /></TableCell>
                   <TableCell className="text-center text-sm">{s.sksCompleted}</TableCell>
                   <TableCell className="text-center text-sm">{s.currentSemester ?? '-'}</TableCell>
-                  <TableCell><MetopenEligibilityBadge metopenEligibility={s.metopenEligibility} /></TableCell>
-                  <TableCell><ThesisCourseEligibilityBadge thesisCourseEligibility={s.thesisCourseEligibility} /></TableCell>
+                  <TableCell><ResearchMethodFlagBadge value={s.periodFlags.eligibleResearchMethod} /></TableCell>
+                  <TableCell><ThesisCourseFlagBadge value={s.periodFlags.takingThesisCourse} /></TableCell>
                   <TableCell>
                     {s.latestThesis ? <ThesisStatusBadge status={s.latestThesis.status} /> : <span className="text-xs text-muted-foreground">-</span>}
                   </TableCell>

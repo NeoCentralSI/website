@@ -7,11 +7,7 @@ import { Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import type {
-  DevToolsMetopenEligibility,
-  DevToolsThesisCourseEligibility,
-  StudentStatus,
-} from '@/types/devTools.types';
+import type { StudentStatus } from '@/types/devTools.types';
 
 export const STUDENT_STATUSES: { value: StudentStatus; label: string }[] = [
   { value: 'active', label: 'Aktif' },
@@ -49,24 +45,18 @@ export function StudentStatusBadge({ status }: { status: string }) {
   );
 }
 
-export function MetopenEligibilityBadge({ metopenEligibility }: { metopenEligibility: DevToolsMetopenEligibility }) {
-  if (!metopenEligibility.hasExternalStatus) {
-    return <Badge variant="outline" className="text-xs">Belum ada status</Badge>;
-  }
-  if (metopenEligibility.eligibleMetopen) {
-    return <Badge variant="default" className="text-xs bg-emerald-600">Eligible</Badge>;
-  }
-  return <Badge variant="outline" className="text-xs border-red-200 text-red-700">Tidak eligible</Badge>;
+/** "Mengambil Metode Penelitian" flag of a semester. */
+export function ResearchMethodFlagBadge({ value }: { value: boolean | null }) {
+  if (value === null) return <Badge variant="outline" className="text-xs">Belum ada data</Badge>;
+  if (value) return <Badge variant="default" className="text-xs bg-emerald-600">Mengambil</Badge>;
+  return <Badge variant="outline" className="text-xs border-red-200 text-red-700">Tidak mengambil</Badge>;
 }
 
-export function ThesisCourseEligibilityBadge({ thesisCourseEligibility }: { thesisCourseEligibility: DevToolsThesisCourseEligibility }) {
-  if (!thesisCourseEligibility.hasExternalStatus) {
-    return <Badge variant="outline" className="text-xs">Belum ada status</Badge>;
-  }
-  if (thesisCourseEligibility.takingThesisCourse) {
-    return <Badge variant="default" className="text-xs bg-blue-600">MK TA aktif</Badge>;
-  }
-  return <Badge variant="outline" className="text-xs border-slate-300 text-slate-700">Belum MK TA</Badge>;
+/** "Mengambil Tugas Akhir" (KRS TA) flag of a semester. */
+export function ThesisCourseFlagBadge({ value }: { value: boolean | null }) {
+  if (value === null) return <Badge variant="outline" className="text-xs">Belum ada data</Badge>;
+  if (value) return <Badge variant="default" className="text-xs bg-blue-600">Mengambil</Badge>;
+  return <Badge variant="outline" className="text-xs border-slate-300 text-slate-700">Tidak mengambil</Badge>;
 }
 
 /** One-line text that never widens the table; the full value is in the tooltip. */

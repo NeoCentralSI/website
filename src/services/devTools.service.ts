@@ -14,7 +14,7 @@ import type {
   DevToolsUserListItem,
   RoleOption,
   DevToolsAcademicYear,
-  CloseMetopenPeriodResult,
+  SetPeriodFlagsDto,
   DevToolsGuidanceList,
   UpdateGuidanceScheduleDto,
 } from '@/types/devTools.types';
@@ -121,23 +121,11 @@ export const devToolsService = {
     return parseJson<RoleOption[]>(response, 'Gagal memuat daftar role');
   },
 
-  // --- Metopen Eligibility Snapshot ---
-  setMetopenEligibility: async (studentId: string, eligibleMetopen: boolean | null): Promise<string> => {
-    const url = getApiUrl(`${BASE}/metopen-eligibility/${studentId}`);
-    const response = await apiRequest(url, {
-      method: 'PATCH',
-      body: JSON.stringify({ eligibleMetopen }),
-    });
-    return parseMsg(response, 'Gagal mengubah snapshot eligibility Metopen');
-  },
-
-  setThesisCourseEligibility: async (studentId: string, takingThesisCourse: boolean | null): Promise<string> => {
-    const url = getApiUrl(`${BASE}/thesis-course-eligibility/${studentId}`);
-    const response = await apiRequest(url, {
-      method: 'PATCH',
-      body: JSON.stringify({ takingThesisCourse }),
-    });
-    return parseMsg(response, 'Gagal mengubah snapshot MK Tugas Akhir');
+  // --- SIA flags per semester (plan 10.6) ---
+  setPeriodFlags: async (studentId: string, data: SetPeriodFlagsDto): Promise<string> => {
+    const url = getApiUrl(`${BASE}/students/${studentId}/period-flags`);
+    const response = await apiRequest(url, { method: 'PATCH', body: JSON.stringify(data) });
+    return parseMsg(response, 'Gagal mengubah penanda SIA');
   },
 
   // --- Thesis ---
@@ -166,24 +154,6 @@ export const devToolsService = {
       body: JSON.stringify({ academicYearId }),
     });
     return parseMsg(response, 'Gagal menandai thesis ke tahun ajaran');
-  },
-
-  closeMetopenPeriod: async (
-    closedAcademicYearId: string,
-    dryRun: boolean,
-    force = false,
-  ): Promise<CloseMetopenPeriodResult> => {
-    const url = getApiUrl(`${BASE}/scenarios/close-metopen-period`);
-    const response = await apiRequest(url, {
-      method: 'POST',
-      body: JSON.stringify({ closedAcademicYearId, dryRun, force }),
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error((err as { message?: string }).message || 'Gagal menutup periode Metopel');
-    }
-    const result = await response.json();
-    return result.data as CloseMetopenPeriodResult;
   },
 
   // --- Guidance sessions ---
