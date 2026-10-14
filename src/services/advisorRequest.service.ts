@@ -459,14 +459,6 @@ export const advisorRequestService = {
     return parseResponse<AdvisorRequest>(response);
   },
 
-  /** @deprecated Always throws; promosi aktif hanya via jalur TA-04 batch + otomatis. */
-  assignAdvisor: async (_id: string): Promise<ApiResponse<{ message: string; thesisId: string; assignedLecturerId: string }>> => {
-    void _id;
-    throw new Error(
-      'Penetapan pembimbing mandiri sudah dinonaktifkan. Gunakan keputusan KaDep lalu finalisasi Formulir TA-04 batch.',
-    );
-  },
-
   getDetail: async (id: string): Promise<ApiResponse<AdvisorRequest>> => {
     const url = getApiUrl(`/advisorRequest/${id}`);
     const response = await apiRequest(url);
