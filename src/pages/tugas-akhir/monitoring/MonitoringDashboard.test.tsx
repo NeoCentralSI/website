@@ -69,7 +69,8 @@ describe("MonitoringDashboard — semester filter", () => {
     expect(await screen.findByTestId("tab-bimbingan")).toHaveTextContent("ay-now");
 
     expect(screen.getByLabelText("Semester")).toHaveTextContent("Ganjil 2026/2027 (Berjalan)");
-    expect(screen.getByText("Menampilkan tugas akhir yang berjalan pada semester ini.")).toBeInTheDocument();
+    // Paket E3c: no scope sentence under the filter any more.
+    expect(screen.queryByText(/^Menampilkan /)).not.toBeInTheDocument();
     // The running semester needs no remark about "now".
     expect(screen.queryByText(NOTE)).not.toBeInTheDocument();
     // The default is not written to the address.
@@ -89,7 +90,6 @@ describe("MonitoringDashboard — semester filter", () => {
 
     expect(await screen.findByTestId("tab-bimbingan")).toHaveTextContent("semua");
     expect(screen.getByLabelText("Semester")).toHaveTextContent("Semua Semester");
-    expect(screen.getByText("Menampilkan tugas akhir dari semua semester.")).toBeInTheDocument();
     expect(screen.queryByText(NOTE)).not.toBeInTheDocument();
   });
 
@@ -153,7 +153,6 @@ describe("MonitoringDashboard — tabs", () => {
 
     expect(await screen.findByTestId("tab-seminar")).toHaveTextContent("ay-prev");
     expect(screen.queryByTestId("tab-bimbingan")).not.toBeInTheDocument();
-    expect(screen.getByText("Menampilkan seminar hasil yang tanggalnya jatuh pada semester ini.")).toBeInTheDocument();
     expect(screen.getByText("Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.")).toBeInTheDocument();
   });
 
@@ -164,7 +163,6 @@ describe("MonitoringDashboard — tabs", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sidang" }));
     expect(await screen.findByTestId("tab-defence")).toHaveTextContent("semua");
     expect(screen.getByTestId("location")).toHaveTextContent("?semester=all&tab=sidang");
-    expect(screen.getByText("Menampilkan sidang dari semua semester.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Seminar Hasil" }));
     expect(await screen.findByTestId("tab-seminar")).toHaveTextContent("semua");

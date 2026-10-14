@@ -28,23 +28,11 @@ const TABS: { value: MonitoringTab; label: string }[] = [
   { value: "sidang", label: "Sidang" },
 ];
 
-/** What the Semester filter means on each tab, for one semester and for every semester. */
-const SCOPE_TEXT: Record<MonitoringTab, { semester: string; all: string; now: string }> = {
-  bimbingan: {
-    semester: "Menampilkan tugas akhir yang berjalan pada semester ini.",
-    all: "Menampilkan tugas akhir dari semua semester.",
-    now: "Indikator aktivitas dan evaluasi menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
-  },
-  seminar: {
-    semester: "Menampilkan seminar hasil yang tanggalnya jatuh pada semester ini.",
-    all: "Menampilkan seminar hasil dari semua semester.",
-    now: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
-  },
-  sidang: {
-    semester: "Menampilkan sidang yang tanggalnya jatuh pada semester ini.",
-    all: "Menampilkan sidang dari semua semester.",
-    now: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
-  },
+/** Shown only when another semester than the running one is chosen: what still reflects today. */
+const NOW_NOTE: Record<MonitoringTab, string> = {
+  bimbingan: "Indikator aktivitas dan evaluasi menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
+  seminar: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
+  sidang: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
 };
 
 const REPORT_ONLY_GUIDANCE = "Laporan hanya memuat data bimbingan. Buka tab Bimbingan untuk mengunduhnya.";
@@ -123,7 +111,7 @@ export default function MonitoringDashboard() {
     }
   };
 
-  const scope = SCOPE_TEXT[activeTab];
+  const nowNote = NOW_NOTE[activeTab];
   const isReportTab = activeTab === "bimbingan";
   const downloadButton = (
     <Button
@@ -158,21 +146,21 @@ export default function MonitoringDashboard() {
             </label>
             {/* "" keeps the select controlled while the default semester is being resolved */}
             <Select value={semester.value ?? ""} onValueChange={semester.setSemester}>
-              <SelectTrigger id={semesterFieldId} className="w-56">
+              {/* Wide enough for "Ganjil 2026/2027 (Berjalan)", so no choice is clamped or shifted. */}
+              <SelectTrigger id={semesterFieldId} className="w-72 text-left">
                 <SelectValue placeholder="Pilih semester" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_SEMESTERS}>Semua Semester</SelectItem>
                 {semester.semesters.map((ay) => (
                   <SelectItem key={ay.value} value={ay.value}>
-                    {ay.label.trim()}{ay.isActive ? " (Berjalan)" : ""}
+                    {`${ay.label.trim()}${ay.isActive ? " (Berjalan)" : ""}`}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <p className="text-sm text-muted-foreground">{semester.isAll ? scope.all : scope.semester}</p>
-          {semester.isPastOrOtherSemester && <p className="text-sm text-amber-700">{scope.now}</p>}
+          {semester.isPastOrOtherSemester && <p className="text-sm text-amber-700">{nowNote}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAny}>
