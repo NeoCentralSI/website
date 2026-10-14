@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
 import { formatDateShortId, formatDateTimeWib } from "@/lib/text";
 import { getEvaluationDueLabel } from "@/lib/thesisLabels";
+import { formatPhaseSessionSummary } from "@/components/thesis/ThesisPhaseFilter";
 import type { MyThesisDetail } from "@/services/studentGuidance.service";
 
 /** Completed sessions needed before the results seminar; the readiness status overrides it. */
@@ -49,6 +50,10 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
   const clock = thesis.supervisionClock ?? null;
   const completedGuidances = thesis.stats.completedGuidances ?? 0;
   const required = requiredGuidances ?? DEFAULT_REQUIRED_GUIDANCES;
+  // 10.7: the meters follow the current phase; proposal sessions have no minimum (K27).
+  const isProposalPhase = thesis.currentPhase === "proposal";
+  const proposal = thesis.phases?.proposal;
+  const phaseSummary = formatPhaseSessionSummary(thesis.phases);
 
   return (
     <Card className="w-full">
@@ -99,10 +104,21 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
           </Alert>
         )}
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <Meter label="Sesi bimbingan selesai" done={completedGuidances} total={required} unit="sesi" />
-          <Meter label="Milestone selesai" done={thesis.stats.completedMilestones} total={thesis.stats.totalMilestones} unit="milestone" />
-        </div>
+        {isProposalPhase ? (
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">Sesi bimbingan proposal selesai</p>
+              <p className="text-sm text-muted-foreground">{proposal?.guidances.completed ?? 0} sesi (tanpa jumlah minimum)</p>
+            </div>
+            <Meter label="Milestone proposal selesai" done={proposal?.milestones.completed ?? 0} total={proposal?.milestones.total ?? 0} unit="milestone" />
+          </div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2">
+            <Meter label="Sesi bimbingan selesai" done={completedGuidances} total={required} unit="sesi" />
+            <Meter label="Milestone selesai" done={thesis.stats.completedMilestones} total={thesis.stats.totalMilestones} unit="milestone" />
+          </div>
+        )}
+        {phaseSummary && <p className="text-xs text-muted-foreground">{phaseSummary}</p>}
 
         {!readOnly && (
           <div className="space-y-2 border-t pt-4">

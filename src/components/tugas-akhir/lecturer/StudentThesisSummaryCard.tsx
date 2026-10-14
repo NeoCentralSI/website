@@ -56,9 +56,15 @@ interface StudentThesisSummaryCardProps {
  * supervision time, activity, completed sessions out of the required count and milestones.
  */
 export function StudentThesisSummaryCard({ detail, topicName, supervisors, guidanceProgress }: StudentThesisSummaryCardProps) {
-    const completedMilestones = detail.milestones.filter((milestone) => milestone.status === "completed").length;
-    const completedGuidances = guidanceProgress?.completed
-        ?? detail.guidanceHistory.items.filter((guidance) => guidance.status === "completed").length;
+    // 10.7: the meters follow the current phase; proposal sessions have no minimum (K27).
+    const phase = detail.currentPhase ?? "research";
+    const phaseMilestones = detail.milestones.filter((milestone) => (milestone.phase ?? "research") === phase);
+    const completedMilestones = phaseMilestones.filter((milestone) => milestone.status === "completed").length;
+    const completedGuidances = phase === "research"
+        ? guidanceProgress?.completed
+            ?? detail.guidanceHistory.items.filter((guidance) => guidance.status === "completed" && (guidance.phase ?? "research") === "research").length
+        : detail.phases?.proposal.guidances.completed
+            ?? detail.guidanceHistory.items.filter((guidance) => guidance.status === "completed" && guidance.phase === "proposal").length;
     const requiredGuidances = guidanceProgress?.required ?? DEFAULT_REQUIRED_GUIDANCES;
 
     return (
@@ -99,8 +105,17 @@ export function StudentThesisSummaryCard({ detail, topicName, supervisors, guida
                         </div>
                     </div>
                     <div className="space-y-4 lg:border-l lg:pl-6">
-                        <Meter label="Progres bimbingan" done={completedGuidances} total={requiredGuidances} unit="sesi" />
-                        <Meter label="Progres milestone" done={completedMilestones} total={detail.milestones.length} unit="milestone" />
+                        {phase === "proposal" ? (
+                            <Fact label="Bimbingan proposal">{completedGuidances} sesi selesai (tanpa jumlah minimum)</Fact>
+                        ) : (
+                            <Meter label="Progres bimbingan" done={completedGuidances} total={requiredGuidances} unit="sesi" />
+                        )}
+                        <Meter
+                            label={phase === "proposal" ? "Progres milestone proposal" : "Progres milestone"}
+                            done={completedMilestones}
+                            total={phaseMilestones.length}
+                            unit="milestone"
+                        />
                     </div>
                 </div>
             </CardContent>

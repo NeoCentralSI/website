@@ -1,3 +1,4 @@
+import type { ThesisPhase } from "@/lib/thesisLabels";
 import { getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 import type {
@@ -83,6 +84,8 @@ const ENDPOINTS = {
 export interface TemplateListOptions {
   /** Template management (Sekdep) also needs deactivated templates. */
   includeInactive?: boolean;
+  /** `proposal` reads the general proposal templates (K18); default thesis-phase templates. */
+  phase?: ThesisPhase;
 }
 
 export async function getTemplates(topicId?: string, options: TemplateListOptions = {}): Promise<MilestoneTemplate[]> {
@@ -92,6 +95,9 @@ export async function getTemplates(topicId?: string, options: TemplateListOption
   }
   if (options.includeInactive) {
     url.searchParams.set("includeInactive", "true");
+  }
+  if (options.phase) {
+    url.searchParams.set("phase", options.phase);
   }
 
   const response = await apiRequest(url.toString());
@@ -228,13 +234,27 @@ export async function bulkDeleteTemplates(templateIds: string[]): Promise<{ coun
 /**
  * Get all milestones for a thesis
  */
+export interface MilestoneList {
+  milestones: Milestone[];
+  progress: MilestoneProgress;
+  /** The listed phase (the current phase unless asked otherwise, 10.7). */
+  phase?: ThesisPhase;
+  currentPhase?: ThesisPhase;
+  /** Set when the listed phase is not the current one: the list is read-only. */
+  readOnlyReason?: string | null;
+}
+
 export async function getMilestones(
   thesisId: string,
-  status?: MilestoneStatus
-): Promise<{ milestones: Milestone[]; progress: MilestoneProgress }> {
+  status?: MilestoneStatus,
+  phase?: ThesisPhase,
+): Promise<MilestoneList> {
   const url = new URL(getApiUrl(ENDPOINTS.THESIS_MILESTONES(thesisId)));
   if (status) {
     url.searchParams.set("status", status);
+  }
+  if (phase) {
+    url.searchParams.set("phase", phase);
   }
 
   const response = await apiRequest(url.toString());
@@ -247,6 +267,9 @@ export async function getMilestones(
   return {
     milestones: result.data,
     progress: result.progress,
+    phase: result.phase,
+    currentPhase: result.currentPhase,
+    readOnlyReason: result.readOnlyReason ?? null,
   };
 }
 

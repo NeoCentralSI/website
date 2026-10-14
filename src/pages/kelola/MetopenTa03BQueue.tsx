@@ -18,7 +18,6 @@ import { MetricAction } from "@/components/metopen/MetricAction";
 import { ResearchMethodScoreReadOnly } from "@/components/metopen/ResearchMethodScoreReadOnly";
 import { RubricGradingForm } from "@/components/metopen/RubricGradingForm";
 import { Ta03AcademicYearPicker, Ta03OtherPeriodHint } from "@/components/metopen/Ta03PeriodControls";
-import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -431,7 +430,6 @@ export default function MetopenTa03BQueue() {
                         {selectedItem ? (
                             <>
                                 <ProposalSummaryCard item={selectedItem} />
-                                <ProposalVersionHistory thesisId={selectedItem.thesisId} compact readOnly />
                                 {selectedItem.isScored ? (
                                     <MetopenScoreDetailPanel
                                         score={selectedScoreDetail}

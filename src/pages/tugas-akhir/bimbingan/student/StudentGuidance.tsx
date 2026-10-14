@@ -24,6 +24,7 @@ import BatchExportDialog from '@/components/thesis/BatchExportDialog';
 import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
 import { RequirementsNotMet } from '@/components/shared/RequirementsNotMet';
 import { ThesisActionBlockedAlert } from '@/components/thesis/ThesisActionBlockedAlert';
+import { ThesisPhaseFilter, formatPhaseSessionSummary } from '@/components/thesis/ThesisPhaseFilter';
 import { getGuidanceActionBlockReason, getThesisStatusLabel } from '@/lib/thesisLabels';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
@@ -55,6 +56,8 @@ export default function StudentGuidancePage() {
     setPage,
     pageSize,
     setPageSize,
+    phase,
+    setPhase,
     hasPendingRequest,
     pendingRequestInfo,
     refetch,
@@ -65,11 +68,22 @@ export default function StudentGuidancePage() {
     queryFn: getMyThesisDetail,
   });
 
-  // The detail endpoint only returns a TA-phase thesis; a proposal-phase student gets 404.
+  // The detail endpoint answers 404 only when the student has no thesis at all.
   const isNotInThesisPhase = isThesisDetailError;
   const isThesisInactive = thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
-  // K14: guidance write actions only for status `research`; the button stays visible but disabled.
-  const actionBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", { repeatingProposal: thesisDetail.repeatingProposal }) : null;
+  // K14/K27: guidance writes for status `research`, or `proposal` after Penetapan Pembimbing;
+  // the button stays visible but disabled with the reason.
+  const actionBlockReason = thesisDetail
+    ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", {
+        repeatingProposal: thesisDetail.repeatingProposal,
+        proposalPhaseOpen: thesisDetail.proposalPhaseOpen,
+      })
+    : null;
+
+  // 10.7: the list opens on the current phase; the student may switch to the other phase or all.
+  useEffect(() => {
+    if (phase === null && thesisDetail) setPhase(thesisDetail.currentPhase ?? 'research');
+  }, [phase, thesisDetail, setPhase]);
 
   /* ADDED: Search params for Quick Actions */
   const [searchParams, setSearchParams] = useSearchParams();
@@ -213,7 +227,7 @@ export default function StudentGuidancePage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Bimbingan Tugas Akhir</h1>
-        <p className="text-muted-foreground">Jadwal bimbingan Tugas Akhir</p>
+        <p className="text-muted-foreground">Jadwal bimbingan fase proposal dan penelitian</p>
       </div>
 
       <TabsNav
@@ -241,13 +255,13 @@ export default function StudentGuidancePage() {
 
           {!thesisId || isNotInThesisPhase ? (
             <RequirementsNotMet
-              title="Syarat Mata Kuliah Belum Terpenuhi"
-              description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+              title="Belum Ada Tugas Akhir"
+              description="Bimbingan tersedia setelah Anda memiliki tugas akhir dan pembimbing."
               requirements={[
                 {
-                  label: "Mengambil mata kuliah Tugas Akhir",
+                  label: "Pengajuan pembimbing disetujui",
                   met: false,
-                  description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                  description: "Ajukan pembimbing di Tugas Akhir > Proposal. Bimbingan proposal terbuka setelah Ketua Departemen menerbitkan Penetapan Pembimbing.",
                 },
               ]}
               homeUrl="/dashboard"
@@ -260,6 +274,14 @@ export default function StudentGuidancePage() {
           ) : (
             <>
             <ThesisActionBlockedAlert reason={actionBlockReason} />
+            <ThesisPhaseFilter
+              value={phase ?? ''}
+              onChange={(value) => {
+                setPhase(value);
+                setPage(1);
+              }}
+              summary={formatPhaseSessionSummary(thesisDetail?.phases)}
+            />
             <CustomTable
               columns={columns as any}
               data={displayItems}

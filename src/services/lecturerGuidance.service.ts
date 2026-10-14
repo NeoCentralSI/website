@@ -1,6 +1,6 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, ThesisPhase, ThesisPhaseSummary } from '@/lib/thesisLabels';
 
 // Types (align with backend contracts as needed)
 // "rescheduled" and "summary_rejected" are legacy statuses written before the guidance revival.
@@ -37,6 +37,8 @@ export interface MyStudentItem {
 
 export interface GuidanceItem {
   id: string;
+  /** K27: Jenis sesi (Proposal / Penelitian). */
+  phase?: ThesisPhase;
   studentId?: string;
   studentName?: string;
   studentNim?: string;
@@ -83,7 +85,7 @@ export interface ApproveGuidanceBody {
 }
 
 // API calls
-export interface StudentDetail {
+export interface StudentDetail extends ThesisPhaseSummary {
   thesisId: string;
   title: string;
   status: ThesisLifecycleStatus;
@@ -113,6 +115,7 @@ export interface StudentDetail {
   } | null;
   uploadedFiles: Array<{
     id: string;
+    phase?: ThesisPhase;
     fileName: string;
     filePath: string;
     uploadedAt: string;
@@ -122,6 +125,7 @@ export interface StudentDetail {
     id: string;
     title: string;
     status: string;
+    phase?: ThesisPhase;
     updatedAt: string;
     updatedAtFormatted?: string;
     progressPercentage: number;
@@ -187,7 +191,7 @@ export const getStudentDetail = async (thesisId: string): Promise<{ success: boo
 };
 
 /** K21: list filter; "active" (default) = research + on_leave. */
-export type MyStudentsFilter = "active" | "completed" | "failed" | "all";
+export type MyStudentsFilter = "active" | "proposal" | "completed" | "failed" | "all";
 
 export const getMyStudents = async (params?: { roles?: string; status?: MyStudentsFilter }): Promise<{ success: boolean; count: number; students: MyStudentItem[] }> => {
   const search = new URLSearchParams();
@@ -500,7 +504,7 @@ export const rejectSupervisor2Request = async (requestId: string, reason?: strin
 };
 
 
-// Kept from the active app (guidance revival): Pembimbing 2 KaDep decision, Metopel proposal versions and informal logs (read-only). Not part of the formal TA guidance flow.
+// Kept from the active app (guidance revival): Pembimbing 2 KaDep decision. Not part of the formal TA guidance flow.
 const EP = API_CONFIG.ENDPOINTS.THESIS_LECTURER;
 
 async function handleJson<T = unknown>(response: Response): Promise<T> {
@@ -547,52 +551,4 @@ export async function rejectSupervisor2KadepRequest(
     body: JSON.stringify({ reason }),
   });
   return handleJson<{ message: string }>(response);
-}
-
-export interface ProposalVersion {
-    id: string;
-    version: number;
-    isLatest: boolean;
-    fileName: string | null;
-    fileSize: number | null;
-    description: string | null;
-    mimeType?: string | null;
-    submittedAsFinalAt?: string | null;
-    createdAt: string;
-    url: string | null;
-  }
-
-export async function getStudentProposalVersions(
-  thesisId: string,
-): Promise<{ thesisId: string; versions: ProposalVersion[] }> {
-  const url = getApiUrl(EP.STUDENT_PROPOSAL_VERSIONS(thesisId));
-  const response = await apiRequest(url);
-  return handleJson(response);
-}
-
-/** FR-LOG-08: P1/P2 read-only Metopel informal notes (same item shape as student list). */
-export interface InformalLogItem {
-  id: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  document: {
-    id: string;
-    fileName: string | null;
-    url: string | null;
-    fileSize: number | null;
-    mimeType: string | null;
-  } | null;
-}
-
-export async function getStudentInformalLogs(
-  thesisId: string,
-): Promise<{ thesisId: string; items: InformalLogItem[] }> {
-  const url = getApiUrl(EP.STUDENT_INFORMAL_LOGS(thesisId));
-  const response = await apiRequest(url);
-  const json = await handleJson<{
-    success: boolean;
-    data: { thesisId: string; items: InformalLogItem[] };
-  }>(response);
-  return json.data;
 }

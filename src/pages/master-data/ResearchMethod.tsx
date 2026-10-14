@@ -4,6 +4,8 @@ import { useOutletContext } from "react-router-dom";
 
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { ResearchMethodCpmkManagementPanel } from "@/components/master-data/research-method/ResearchMethodCpmkManagementPanel";
+import { ResearchMethodMilestoneTemplatePanel } from "@/components/master-data/research-method/ResearchMethodMilestoneTemplatePanel";
+import { useRole } from "@/hooks/shared/useRole";
 import { ResearchMethodRubricManagementPanel } from "@/components/master-data/research-method/ResearchMethodRubricManagementPanel";
 import {
   Select,
@@ -18,14 +20,18 @@ import {
   getActiveAcademicYearAPI,
 } from "@/services/admin.service";
 
+// K18: Template Milestone, CPMK, Rubrik Penilaian (Sekdep manages; the coordinator reads).
 const TAB_ITEMS = [
+  { label: "Template Milestone", value: "template" },
   { label: "CPMK", value: "cpmk" },
   { label: "Rubrik Penilaian", value: "rubric" },
 ];
+type Tab = "template" | "cpmk" | "rubric";
 
 export default function ResearchMethod() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const [tab, setTab] = useState<"cpmk" | "rubric">("cpmk");
+  const { isSekdep } = useRole();
+  const [tab, setTab] = useState<Tab>("template");
   const [selectedYear, setSelectedYear] = useState<string>();
 
   const years = useQuery({
@@ -54,11 +60,12 @@ export default function ResearchMethod() {
         <div>
           <h1 className="text-2xl font-bold">Kelola Metode Penelitian</h1>
           <p className="text-muted-foreground">
-            Kelola CPMK serta kriteria dan rubrik penilaian proposal secara
-            terstruktur
+            Kelola template milestone fase proposal, CPMK, serta kriteria dan
+            rubrik penilaian proposal
           </p>
         </div>
-        <div className="w-full md:w-[260px]">
+        {/* The period applies to CPMK and rubrics; proposal templates are general. */}
+        {tab !== "template" && <div className="w-full md:w-[260px]">
           <Select value={academicYearId || ""} onValueChange={setSelectedYear}>
             <SelectTrigger>
               <SelectValue placeholder="Pilih tahun ajaran" />
@@ -73,16 +80,18 @@ export default function ResearchMethod() {
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </div>}
       </div>
 
       <LocalTabsNav
         tabs={TAB_ITEMS}
         activeTab={tab}
-        onTabChange={(value) => setTab(value as "cpmk" | "rubric")}
+        onTabChange={(value) => setTab(value as Tab)}
       />
 
-      {tab === "cpmk" ? (
+      {tab === "template" ? (
+        <ResearchMethodMilestoneTemplatePanel canEdit={isSekdep()} />
+      ) : tab === "cpmk" ? (
         <ResearchMethodCpmkManagementPanel academicYearId={academicYearId} />
       ) : (
         <ResearchMethodRubricManagementPanel academicYearId={academicYearId} />

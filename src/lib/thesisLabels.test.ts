@@ -169,6 +169,10 @@ describe("thesisLabels", () => {
     expect(reason).toContain("Mengulang proposal berdasarkan evaluasi bimbingan.");
     expect(getGuidanceActionBlockReason("proposal")).not.toContain("Mengulang proposal");
     expect(getGuidanceActionBlockReason("research", "Anda", { repeatingProposal: true })).toBeNull();
+    // K27: the proposal phase opens after Penetapan Pembimbing, never while repeating (E5)
+    expect(getGuidanceActionBlockReason("proposal")).toContain("Penetapan Pembimbing");
+    expect(getGuidanceActionBlockReason("proposal", "Anda", { proposalPhaseOpen: true })).toBeNull();
+    expect(getGuidanceActionBlockReason("proposal", "Anda", { proposalPhaseOpen: true, repeatingProposal: true })).toContain("Mengulang proposal");
   });
 
   it("offers every status as an option", () => {

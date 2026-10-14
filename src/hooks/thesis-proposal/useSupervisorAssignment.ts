@@ -12,6 +12,20 @@ export function useMyProposalOverview() {
   return useQuery({ queryKey: supervisorAssignmentKeys.mine(), queryFn: service.getMyProposalOverview });
 }
 
+/** Final proposal upload; the student's overview and the supervisors' views refresh. */
+export function useSubmitFinalProposal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: service.submitFinalProposal,
+    onSuccess: (response) => {
+      toast.success(response.message ?? 'Proposal final diajukan');
+      queryClient.invalidateQueries({ queryKey: supervisorAssignmentKeys.mine() });
+      queryClient.invalidateQueries({ queryKey: ['my-thesis-detail'] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+}
+
 export function useSupervisorAssignmentOverview(academicYearId?: string | null) {
   return useQuery({
     queryKey: supervisorAssignmentKeys.overview(academicYearId),

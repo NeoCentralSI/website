@@ -50,7 +50,7 @@ export function StudentCurrentThesisPanel() {
         description={
           stopped
             ? "Tugas akhir Anda sebelumnya dihentikan. Rinciannya ada di tab Riwayat."
-            : "Tugas akhir tampil di sini setelah judul dan pembimbing Anda ditetapkan lewat Metode Penelitian."
+            : "Tugas akhir tampil di sini setelah pengajuan pembimbing Anda disetujui di Tugas Akhir > Proposal."
         }
         showButton={stopped}
         buttonText="Lihat Riwayat"
@@ -77,7 +77,10 @@ export function StudentCurrentThesisPanel() {
       <StudentThesisProgressCard
         thesis={current}
         requiredGuidances={seminarStatus?.guidanceProgress?.required}
-        guidanceBlockReason={getGuidanceActionBlockReason(current.status, "Anda", { repeatingProposal: current.repeatingProposal })}
+        guidanceBlockReason={getGuidanceActionBlockReason(current.status, "Anda", {
+          repeatingProposal: current.repeatingProposal,
+          proposalPhaseOpen: current.proposalPhaseOpen,
+        })}
       />
       {!seminarPassed && <SeminarReadinessStatusCard thesisId={current.id} />}
       <DefenceReadinessStatusCard thesisId={current.id} />

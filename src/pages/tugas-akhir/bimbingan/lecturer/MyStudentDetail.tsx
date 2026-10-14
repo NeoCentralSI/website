@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOutletContext, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, PartyPopper } from "lucide-react";
@@ -9,6 +9,8 @@ import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarRea
 import { LecturerThesisChangeRequestCard } from "@/components/thesis-change-request/LecturerThesisChangeRequestCard";
 import { LecturerThesisGuidanceEvaluationCard } from "@/components/thesis-guidance-evaluation/LecturerThesisGuidanceEvaluationCard";
 import { ThesisActionBlockedAlert } from "@/components/thesis/ThesisActionBlockedAlert";
+import { ThesisPhaseFilter, formatPhaseSessionSummary, type PhaseFilterValue } from "@/components/thesis/ThesisPhaseFilter";
+import { OtherPhaseMilestones } from "@/components/milestone/OtherPhaseMilestones";
 import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/GuidanceHistorySection";
 import { StudentDetailHeader } from "@/components/tugas-akhir/lecturer/StudentDetailHeader";
 import { StudentDocumentsCard } from "@/components/tugas-akhir/lecturer/StudentDocumentsCard";
@@ -75,16 +77,43 @@ export default function LecturerMyStudentDetailPage() {
     const { data: evaluationContext } = useEvaluationContext(thesisId, !!thesisId);
     const isSeminarCompleted = defenceStatus?.requirementsMet === true;
 
+    // 10.7: milestones of the current phase are worked on; the other phase is read-only below.
+    const currentPhase = detailData?.currentPhase ?? "research";
+    const otherPhase = currentPhase === "proposal" ? "research" : "proposal";
+    const phaseMilestones = useMemo(
+        () => (detailData?.milestones ?? []).filter((m) => (m.phase ?? "research") === currentPhase),
+        [detailData?.milestones, currentPhase],
+    );
+    const otherPhaseMilestones = useMemo(
+        () => (detailData?.milestones ?? []).filter((m) => (m.phase ?? "research") === otherPhase),
+        [detailData?.milestones, otherPhase],
+    );
+    // Guidance history: the current phase by default; Semua · Proposal · Penelitian.
+    const [phaseFilter, setPhaseFilter] = useState<PhaseFilterValue | null>(null);
+    const shownPhase = phaseFilter ?? currentPhase;
+    const guidanceHistory = useMemo(() => {
+        if (!detailData?.guidanceHistory) return null;
+        const items = shownPhase
+            ? detailData.guidanceHistory.items.filter((g) => (g.phase ?? "research") === shownPhase)
+            : detailData.guidanceHistory.items;
+        return { count: items.length, items };
+    }, [detailData?.guidanceHistory, shownPhase]);
+
     const progressPercentage = useMemo(() => {
-        if (!detailData?.milestones?.length) return 0;
-        const completed = detailData.milestones.filter(m => m.status === 'completed').length;
-        return Math.round((completed / detailData.milestones.length) * 100);
-    }, [detailData?.milestones]);
+        if (!phaseMilestones.length) return 0;
+        const completed = phaseMilestones.filter(m => m.status === 'completed').length;
+        return Math.round((completed / phaseMilestones.length) * 100);
+    }, [phaseMilestones]);
 
     // Ended thesis (K15): read-only history.
     const isCancelled = detailData?.status === "failed" || detailData?.status === "completed";
-    // K14: milestone/guidance write actions only for status `research`.
-    const actionBlockReason = detailData ? getGuidanceActionBlockReason(detailData.status, "mahasiswa", { repeatingProposal: detailData.repeatingProposal }) : null;
+    // K14/K27: milestone/guidance writes for `research`, or `proposal` after Penetapan Pembimbing.
+    const actionBlockReason = detailData
+        ? getGuidanceActionBlockReason(detailData.status, "mahasiswa", {
+            repeatingProposal: detailData.repeatingProposal,
+            proposalPhaseOpen: detailData.proposalPhaseOpen,
+        })
+        : null;
 
     const isPembimbing1 = useMemo(() => {
         if (!detailData?.userRole) return false;
@@ -150,7 +179,7 @@ export default function LecturerMyStudentDetailPage() {
     const sideBySide = showSeminarCard && showDefenceCard;
 
     const pending = getStudentDetailPendingCounts({
-        milestones: detailData.milestones,
+        milestones: phaseMilestones,
         isPembimbing1,
         isEnded: isCancelled,
         seminarReadiness: showSeminarCard ? readinessStatus : null,
@@ -197,8 +226,8 @@ export default function LecturerMyStudentDetailPage() {
 
                 {activeTab === "progres" && (
                     <div className="space-y-6">
-                        {/* Alert Banner ketika milestone 100% */}
-                        {!isSeminarCompleted && progressPercentage === 100 && (
+                        {/* Alert Banner ketika milestone 100% (fase penelitian, syarat seminar) */}
+                        {!isSeminarCompleted && currentPhase === "research" && progressPercentage === 100 && (
                             <Alert className={guidanceComplete ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"}>
                                 {guidanceComplete ? (
                                     <PartyPopper className="h-5 w-5 text-green-600" />
@@ -223,17 +252,30 @@ export default function LecturerMyStudentDetailPage() {
                             guidanceProgress={readinessStatus?.guidanceProgress}
                         />
 
+                        <ThesisPhaseFilter
+                            value={shownPhase}
+                            onChange={setPhaseFilter}
+                            summary={formatPhaseSessionSummary(detailData.phases)}
+                        />
+
                         {/* Milestone on the left so that a review is one glance away */}
                         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                            <StudentMilestoneCard
-                                thesisId={thesisId}
-                                milestones={detailData.milestones ?? []}
-                                isPembimbing1={isPembimbing1}
-                                isEnded={isCancelled}
-                                actionBlockReason={actionBlockReason}
-                            />
-                            {detailData.guidanceHistory && (
-                                <GuidanceHistorySection guidanceHistory={detailData.guidanceHistory} />
+                            <div className="space-y-4">
+                                <StudentMilestoneCard
+                                    thesisId={thesisId}
+                                    milestones={phaseMilestones}
+                                    isPembimbing1={isPembimbing1}
+                                    isEnded={isCancelled}
+                                    actionBlockReason={actionBlockReason}
+                                />
+                                <OtherPhaseMilestones
+                                    phase={otherPhase}
+                                    milestones={otherPhaseMilestones}
+                                    reason={otherPhase === "proposal" ? "Fase proposal sudah selesai" : null}
+                                />
+                            </div>
+                            {guidanceHistory && (
+                                <GuidanceHistorySection guidanceHistory={guidanceHistory} />
                             )}
                         </div>
 

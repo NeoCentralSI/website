@@ -1,3 +1,4 @@
+import type { ThesisPhase } from "@/lib/thesisLabels";
 import { MILESTONE_STATUS_LABELS } from "@/lib/thesisLabels";
 // Milestone Status
 export type MilestoneStatus =
@@ -49,6 +50,8 @@ export type UpdateTemplateDto = Partial<CreateTemplateDto>;
 export interface Milestone {
   id: string;
   thesisId: string;
+  /** K27: fase saat milestone dibuat (Proposal / Penelitian). */
+  phase?: ThesisPhase;
   title: string;
   description?: string | null;
   orderIndex: number;

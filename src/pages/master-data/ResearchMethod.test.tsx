@@ -48,6 +48,18 @@ vi.mock(
   }),
 );
 
+vi.mock(
+  "@/components/master-data/research-method/ResearchMethodMilestoneTemplatePanel",
+  () => ({
+    ResearchMethodMilestoneTemplatePanel: ({ canEdit }: { canEdit: boolean }) => (
+      <div data-testid="template-panel">{canEdit ? "kelola" : "baca"}</div>
+    ),
+  }),
+);
+
+const isSekdep = vi.fn(() => true);
+vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isSekdep }) }));
+
 function renderPage() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -91,20 +103,27 @@ describe("ResearchMethod", () => {
     });
   });
 
-  it("menggunakan tahun ajaran aktif dan membuka panel CPMK secara default", async () => {
+  it("membuka Template Milestone secara default (K18); Sekdep mengelola, koordinator membaca", async () => {
     renderPage();
 
     expect(
       screen.getByRole("heading", { name: "Kelola Metode Penelitian" }),
     ).toBeInTheDocument();
+    expect(screen.getByTestId("template-panel")).toHaveTextContent("kelola");
+    expect(setTitle).toHaveBeenCalledWith("Kelola Metode Penelitian");
+  });
+
+  it("panel CPMK memakai tahun ajaran aktif", async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "CPMK" }));
     await waitFor(() =>
       expect(screen.getByTestId("cpmk-panel")).toHaveTextContent("ay-active"),
     );
-    expect(setTitle).toHaveBeenCalledWith("Kelola Metode Penelitian");
   });
 
   it("berpindah ke panel rubrik tanpa kehilangan tahun ajaran", async () => {
     renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "CPMK" }));
 
     await waitFor(() =>
       expect(screen.getByTestId("cpmk-panel")).toHaveTextContent("ay-active"),

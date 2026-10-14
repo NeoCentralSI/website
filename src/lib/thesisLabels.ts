@@ -177,6 +177,29 @@ export const GUIDANCE_EVALUATION_OBSERVATION_LABELS: Record<GuidanceEvaluationOb
 
 /** Alasan aksi bimbingan/milestone terkunci selama TA mengulang proposal (E5). */
 export const REPEAT_PROPOSAL_LOCK_REASON = "Mengulang proposal berdasarkan evaluasi bimbingan.";
+/** Fase proposal belum terbuka (K27): sama dengan pesan backend. */
+export const PROPOSAL_NOT_ASSIGNED_REASON =
+  "Bimbingan dan milestone fase proposal terbuka setelah Ketua Departemen menerbitkan Penetapan Pembimbing.";
+
+/** Pilihan fase di daftar bimbingan dan milestone (10.7): "Semua · Proposal · Penelitian". */
+export const THESIS_PHASE_FILTER_LABELS: Record<ThesisPhase, string> = {
+  proposal: "Proposal",
+  research: "Penelitian",
+};
+
+/** Hitungan satu fase dari backend (`phases.proposal` / `phases.research`). */
+export interface PhaseActivity {
+  guidances: { total: number; completed: number };
+  milestones: { total: number; completed: number };
+}
+
+/** Fase berjalan, Penetapan Pembimbing, dan hitungan per fase pada detail TA (10.7). */
+export interface ThesisPhaseSummary {
+  currentPhase?: ThesisPhase;
+  supervisorAssignedAt?: string | null;
+  proposalPhaseOpen?: boolean;
+  phases?: { proposal: PhaseActivity; research: PhaseActivity };
+}
 
 /** `rescheduled` adalah data lama yang diperlakukan sama dengan `accepted` (K19). */
 export const GUIDANCE_STATUS_LABELS: Record<GuidanceSessionStatus, string> = {
@@ -453,19 +476,22 @@ export function getThesisActivityOptions(): { value: ThesisActivityLevel; label:
 }
 
 /**
- * Alasan aksi bimbingan dinonaktifkan (K14): aksi tulis bimbingan dan milestone hanya untuk
- * TA berstatus `research`. Mengembalikan null bila aksi boleh dilakukan.
+ * Alasan aksi bimbingan dinonaktifkan (K14): aksi tulis bimbingan dan milestone untuk TA
+ * berstatus `research`, atau `proposal` setelah Penetapan Pembimbing (K27). Mengembalikan null
+ * bila aksi boleh dilakukan.
  */
 export function getGuidanceActionBlockReason(
   status: string | null | undefined,
   owner: "Anda" | "mahasiswa" = "Anda",
-  options: { repeatingProposal?: boolean | null } = {},
+  options: { repeatingProposal?: boolean | null; proposalPhaseOpen?: boolean | null } = {},
 ): string | null {
   if (status === "research") return null;
   // TA yang dikembalikan ke proposal oleh evaluasi bimbingan menyebut alasannya (E5).
   if (status === "proposal" && options.repeatingProposal) {
     return `${REPEAT_PROPOSAL_LOCK_REASON} Bimbingan dan milestone terkunci sampai tugas akhir kembali berstatus "${THESIS_STATUS_LABELS.research}".`;
   }
+  // Fase proposal terbuka setelah Penetapan Pembimbing (K27).
+  if (status === "proposal") return options.proposalPhaseOpen ? null : PROPOSAL_NOT_ASSIGNED_REASON;
   if (!status) return owner === "Anda" ? "Anda belum memiliki tugas akhir yang aktif." : "Mahasiswa belum memiliki tugas akhir yang aktif.";
   return `Aksi ini hanya tersedia untuk tugas akhir berstatus "${THESIS_STATUS_LABELS.research}". Status tugas akhir ${owner} saat ini: "${getThesisStatusLabel(status)}".`;
 }

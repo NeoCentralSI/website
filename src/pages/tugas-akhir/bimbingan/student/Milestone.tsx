@@ -36,7 +36,9 @@ import type {
   UpdateMilestoneDto,
 } from "@/types/milestone.types";
 import { ThesisActionBlockedAlert } from "@/components/thesis/ThesisActionBlockedAlert";
-import { getGuidanceActionBlockReason, getThesisStatusLabel } from "@/lib/thesisLabels";
+import { OtherPhaseMilestones } from "@/components/milestone/OtherPhaseMilestones";
+import { ThesisPhaseBadge } from "@/components/shared/ThesisPhaseBadge";
+import { getGuidanceActionBlockReason, getThesisStatusLabel, type ThesisPhase } from "@/lib/thesisLabels";
 
 export default function StudentMilestonePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -65,28 +67,38 @@ export default function StudentMilestonePage() {
     enabled: hasThesis,
   });
 
-  // The detail endpoint only returns a TA-phase thesis; a proposal-phase student gets 404.
+  // The detail endpoint answers 404 only when the student has no thesis at all.
   const isNotInThesisPhase = isThesisDetailError;
+  // 10.7: the current phase is editable; the other phase is listed below, read-only.
+  const currentPhase: ThesisPhase = thesisDetail?.currentPhase ?? "research";
+  const otherPhase: ThesisPhase = currentPhase === "proposal" ? "research" : "proposal";
 
   const isThesisInactive =
     thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
 
-  // K14: milestone write actions only for status `research`; buttons stay visible but disabled.
+  // K14/K27: milestone writes for `research`, or `proposal` after Penetapan Pembimbing;
+  // buttons stay visible but disabled with the reason.
   const actionBlockReason = thesisDetail
-    ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", { repeatingProposal: thesisDetail.repeatingProposal })
+    ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", {
+        repeatingProposal: thesisDetail.repeatingProposal,
+        proposalPhaseOpen: thesisDetail.proposalPhaseOpen,
+      })
     : null;
 
   // Milestones data
 
   const { data: milestonesData, isLoading: isLoadingMilestones } =
-    useMilestones(thesisId);
+    useMilestones(thesisId, undefined, currentPhase, !!thesisDetail);
+
+  const { data: otherPhaseData } = useMilestones(thesisId, undefined, otherPhase, !!thesisDetail);
 
   const milestones = milestonesData?.milestones ?? [];
 
   const progress = milestonesData?.progress ?? null;
 
+  // Proposal templates are general (K18); thesis-phase templates follow the topic.
   const { data: templates = [], isLoading: isLoadingTemplates } =
-    useTemplates();
+    useTemplates(undefined, { phase: currentPhase, enabled: !!thesisDetail });
 
   // Mutations
 
@@ -397,7 +409,8 @@ export default function StudentMilestonePage() {
     );
   };
 
-  const isLoading = isLoadingSupervisors || isLoadingMilestones;
+  // The milestone lists wait for the thesis detail, which says the current phase.
+  const isLoading = isLoadingSupervisors || isLoadingMilestones || (hasThesis && !thesisDetail && !isThesisDetailError);
 
   // Define tabs for reuse
 
@@ -410,8 +423,11 @@ export default function StudentMilestonePage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Milestone Tugas Akhir</h1>
-        <p className="text-muted-foreground">Target dan capaian tugas akhir</p>
+        <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
+          Milestone Tugas Akhir
+          {thesisDetail && <ThesisPhaseBadge phase={currentPhase} />}
+        </h1>
+        <p className="text-muted-foreground">Target dan capaian tugas akhir pada fase berjalan</p>
       </div>
 
       <TabsNav preserveSearch tabs={tabs} />
@@ -423,16 +439,14 @@ export default function StudentMilestonePage() {
         </div>
       ) : !hasThesis || isNotInThesisPhase ? (
         <RequirementsNotMet
-          title="Syarat Mata Kuliah Belum Terpenuhi"
-          description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+          title="Belum Ada Tugas Akhir"
+          description="Milestone tersedia setelah Anda memiliki tugas akhir dan pembimbing."
           requirements={[
             {
-              label: "Mengambil mata kuliah Tugas Akhir",
-
+              label: "Pengajuan pembimbing disetujui",
               met: false,
-
               description:
-                "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                "Ajukan pembimbing di Tugas Akhir > Proposal. Milestone fase proposal terbuka setelah Ketua Departemen menerbitkan Penetapan Pembimbing.",
             },
           ]}
           homeUrl="/dashboard"
@@ -467,7 +481,7 @@ export default function StudentMilestonePage() {
                 onCreateFromTemplates={handleCreateFromTemplates}
                 createDisabledReason={actionBlockReason}
                 templateDisabledReason={
-                  thesisDetail && !thesisDetail.topic
+                  currentPhase === "research" && thesisDetail && !thesisDetail.topic
                     ? "Tugas akhir Anda belum memiliki topik, sehingga template belum dapat dipasang. Topik diisi oleh Admin/Sekretaris Departemen melalui Data Master Tugas Akhir."
                     : null
                 }
@@ -485,6 +499,12 @@ export default function StudentMilestonePage() {
                 onClearSelection={() => setSelectedIds([])}
                 onBulkStart={handleBulkStart}
                 isBulkStarting={isBulkStarting}
+              />
+
+              <OtherPhaseMilestones
+                phase={otherPhase}
+                milestones={otherPhaseData?.milestones ?? []}
+                reason={otherPhaseData?.readOnlyReason}
               />
 
               {/* Create/Edit Dialog */}
@@ -511,6 +531,7 @@ export default function StudentMilestonePage() {
                 isLoading={isLoadingTemplates}
                 isSubmitting={createFromTemplatesMutation.isPending}
                 onSubmit={handleTemplateSubmit}
+                generalOnly={currentPhase === "proposal"}
               />
 
               {/* Start Milestone Target Date Dialog */}

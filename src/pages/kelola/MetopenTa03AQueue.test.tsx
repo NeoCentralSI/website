@@ -40,12 +40,6 @@ vi.mock("@/services/admin.service", () => ({
 vi.mock("@/components/metopen/SupervisorScoreCard", () => ({
   SupervisorScoreCard: ({ thesisId }: { thesisId: string }) => <div>Detail {thesisId}</div>,
 }));
-vi.mock("@/components/metopen/InformalLogReadonlyList", () => ({
-  InformalLogReadonlyList: () => null,
-}));
-vi.mock("@/components/thesis/ProposalVersionHistory", () => ({
-  ProposalVersionHistory: () => null,
-}));
 vi.mock("@/components/ui/empty-state", () => ({
   default: ({ title, description }: { title?: string; description?: string }) => (
     <div>

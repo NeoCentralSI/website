@@ -14,9 +14,7 @@ import {
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { MetricAction } from "@/components/metopen/MetricAction";
 import { SupervisorScoreCard } from "@/components/metopen/SupervisorScoreCard";
-import { InformalLogReadonlyList } from "@/components/metopen/InformalLogReadonlyList";
 import { Ta03AcademicYearPicker, Ta03OtherPeriodHint } from "@/components/metopen/Ta03PeriodControls";
-import { ProposalVersionHistory } from "@/components/thesis/ProposalVersionHistory";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -410,8 +408,6 @@ export default function MetopenTa03AQueue() {
                         {selectedItem ? (
                             <>
                                 <ProposalSummaryCard item={selectedItem} />
-                                <ProposalVersionHistory thesisId={selectedItem.thesisId} compact readOnly />
-                                <InformalLogReadonlyList thesisId={selectedItem.thesisId} compact />
                                 <SupervisorScoreCard
                                     thesisId={selectedItem.thesisId}
                                     academicYearId={selectedAyId}

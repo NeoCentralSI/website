@@ -41,9 +41,6 @@ vi.mock("@/components/metopen/ResearchMethodScoreReadOnly", () => ({
 vi.mock("@/components/metopen/RubricGradingForm", () => ({
   RubricGradingForm: () => <div>Form rubrik</div>,
 }));
-vi.mock("@/components/thesis/ProposalVersionHistory", () => ({
-  ProposalVersionHistory: () => null,
-}));
 vi.mock("@/components/ui/empty-state", () => ({
   default: ({ title, description }: { title?: string; description?: string }) => (
     <div>

@@ -1,12 +1,14 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, ThesisTerminationReason } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, ThesisPhase, ThesisPhaseSummary, ThesisTerminationReason } from '@/lib/thesisLabels';
 
 // K19: "rescheduled" is legacy data (treated as "accepted"); "summary_rejected" = summary needs a revision.
 export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending" | "rescheduled" | "summary_rejected";
 
 export interface GuidanceItem {
   id: string;
+  /** K27: Jenis sesi (Proposal / Penelitian), tetap sejak dibuat. */
+  phase?: ThesisPhase;
   thesisId?: string;
   supervisorId?: string;
   supervisorName?: string;
@@ -409,7 +411,7 @@ export const generateGuidanceLogPdf = async (guidanceIds?: string[]): Promise<Bl
 
 // ========== MY THESIS ==========
 
-export interface MyThesisDetail {
+export interface MyThesisDetail extends ThesisPhaseSummary {
   id: string;
   title: string;
   status: ThesisLifecycleStatus;
@@ -605,116 +607,5 @@ export const proposeThesisAPI = async (data: { title: string; topicId: string })
   return res.json();
 };
 
-// Kept from the active app (guidance revival): Metopel proposal versioning, Pembimbing 2 KaDep stage, ThesisProposalForm. Not part of the formal TA guidance flow.
-const EP = API_CONFIG.ENDPOINTS.THESIS_STUDENT;
-
-async function handleJson<T = unknown>(response: Response): Promise<T> {
-  const json = await response.json().catch(() => ({ message: 'Request gagal' }));
-  if (!response.ok) {
-    throw new Error(json.message || `Request gagal (${response.status})`);
-  }
-  return json as T;
-}
-
 /** Tahap permintaan P2: menunggu kesediaan dosen, lalu persetujuan akhir KaDep. */
 export type Supervisor2RequestStage = 'lecturer' | 'kadep';
-
-export async function proposeThesis(body: {
-  title: string;
-  topicId?: string;
-}): Promise<{ thesis: { id: string; title: string; status: string; message: string } }> {
-  const url = getApiUrl(EP.PROPOSE_THESIS);
-  const response = await apiRequest(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return handleJson(response);
-}
-
-export interface ProposalVersion {
-  id: string;
-  version: number;
-  isLatest: boolean;
-  fileName: string | null;
-  fileSize: number | null;
-  mimeType?: string | null;
-  description: string | null;
-  submittedAsFinalAt?: string | null;
-  createdAt: string;
-  url: string | null;
-}
-
-export interface FinalProposalVersionStatus {
-  id: string;
-  version: number;
-  submittedAsFinalAt: string | null;
-  fileName: string | null;
-  fileSize: number | null;
-  mimeType: string | null;
-  url: string | null;
-}
-
-export interface ProposalSubmissionStatus {
-  thesisId: string;
-  hasSupervisor: boolean;
-  /** Booking P1/P2 sudah ada; belum berarti bimbingan proposal berwenang. */
-  hasBookedSupervisor: boolean;
-  /** Hanya benar setelah TA-04 batch difinalisasi KaDep. */
-  hasOfficialSupervisor: boolean;
-  /** Draf pribadi tetap boleh diunggah; submit final menunggu gate ini. */
-  canSubmitFinalProposal: boolean;
-  guidanceGateOpen: boolean;
-  guidanceGateReason: string | null;
-  proposalStatus: string | null;
-  uploadLocked: boolean;
-  uploadLockedReason: string | null;
-  latestVersion: ProposalVersion | null;
-  finalProposalVersion: FinalProposalVersionStatus | null;
-}
-
-export async function uploadProposalVersion(
-  file: File,
-  description?: string,
-): Promise<{ data: ProposalVersion }> {
-  const formData = new FormData();
-  formData.append('file', file);
-  if (description) formData.append('description', description);
-
-  const url = getApiUrl(EP.PROPOSAL_UPLOAD);
-  const response = await apiRequest(url, {
-    method: 'POST',
-    body: formData,
-  });
-  return handleJson(response);
-}
-
-export async function getProposalVersions(): Promise<{
-  thesisId: string | null;
-  versions: ProposalVersion[];
-}> {
-  const url = getApiUrl(EP.PROPOSAL_VERSIONS);
-  const response = await apiRequest(url);
-  return handleJson(response);
-}
-
-export async function getProposalSubmissionStatus(): Promise<ProposalSubmissionStatus> {
-  const url = getApiUrl(EP.PROPOSAL_STATUS);
-  const response = await apiRequest(url);
-  const json = await handleJson<{ success: boolean; data: ProposalSubmissionStatus }>(response);
-  return json.data;
-}
-
-export async function submitFinalProposal(): Promise<{
-  data: {
-    thesisId: string;
-    finalProposalVersion: ProposalVersion;
-    alreadySubmitted: boolean;
-  };
-}> {
-  const url = getApiUrl(EP.PROPOSAL_SUBMIT_FINAL);
-  const response = await apiRequest(url, {
-    method: 'POST',
-  });
-  return handleJson(response);
-}

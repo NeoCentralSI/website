@@ -235,6 +235,27 @@ export interface IssueAssignmentResult extends AssignmentOverview {
   newlyAssigned?: number;
 }
 
+export interface FinalProposalAttempt {
+  id: string;
+  academicYear: { id: string; label: string | null };
+  file: { fileName: string | null; fileSize: number | null; url: string | null; submittedAt: string | null } | null;
+  supervisorScored: boolean;
+  coordinatorScored: boolean;
+  isFinalized: boolean;
+  finalScore: number | null;
+  result: ResearchMethodResult | null;
+  attendanceAutoZeroed: boolean;
+}
+
+export interface FinalProposalState {
+  academicYear: AcademicYearRef | null;
+  /** Attempt of the running period (one per semester, K2). */
+  current: FinalProposalAttempt | null;
+  canSubmit: boolean;
+  blockReason: string | null;
+  history: FinalProposalAttempt[];
+}
+
 export interface StudentProposalOverview {
   thesis: {
     id: string;
@@ -252,6 +273,7 @@ export interface StudentProposalOverview {
     version: number | null;
     waitingReason: string | null;
   } | null;
+  finalProposal: FinalProposalState;
 }
 
 export type { ResearchMethodResult };

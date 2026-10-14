@@ -4,6 +4,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { GuidanceItem, GuidanceStatus } from '@/services/studentGuidance.service';
 import { listStudentGuidance } from '@/services/studentGuidance.service';
 import { formatDateTimeWib } from '@/lib/text';
+import type { PhaseFilterValue } from '@/components/thesis/ThesisPhaseFilter';
+
+const PHASE_PARAM: Record<string, PhaseFilterValue> = { semua: '', proposal: 'proposal', penelitian: 'research' };
+const phaseParamOf = (value: PhaseFilterValue) => (value === 'research' ? 'penelitian' : value || 'semua');
 
 export function useStudentGuidance() {
   const queryClient = useQueryClient();
@@ -20,6 +24,8 @@ export function useStudentGuidance() {
   const [supervisorFilter, setSupervisorFilter] = useState<string>(initialSupervisor);
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialLimit > 0 ? initialLimit : 10);
+  // 10.7: null until the page picks the current phase as the default.
+  const [phase, setPhase] = useState<PhaseFilterValue | null>(PHASE_PARAM[searchParams.get('fase') ?? ''] ?? null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['student-guidance', { status }],
@@ -50,8 +56,10 @@ export function useStudentGuidance() {
     else sp.delete('page');
     if (pageSize && pageSize !== 10) sp.set('limit', String(pageSize));
     else sp.delete('limit');
+    if (phase !== null) sp.set('fase', phaseParamOf(phase));
+    else sp.delete('fase');
     setSearchParams(sp, { replace: true });
-  }, [status, q, supervisorFilter, page, pageSize, searchParams, setSearchParams]);
+  }, [status, q, supervisorFilter, page, pageSize, phase, searchParams, setSearchParams]);
 
   // Refetch when status changes
   useEffect(() => {
@@ -78,6 +86,9 @@ export function useStudentGuidance() {
   // Client-side filtering and pagination
   const display = useMemo(() => {
     let arr = [...items];
+    if (phase) {
+      arr = arr.filter((it) => it.phase === phase);
+    }
     if (supervisorFilter) {
       arr = arr.filter(
         (it) => (it.supervisorName || it.supervisorId || '').toLowerCase() === supervisorFilter.toLowerCase()
@@ -103,7 +114,7 @@ export function useStudentGuidance() {
     const end = start + pageSize;
     const slice = arr.slice(start, end);
     return { slice, totalCount };
-  }, [items, supervisorFilter, q, page, pageSize]);
+  }, [items, phase, supervisorFilter, q, page, pageSize]);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['student-guidance'] });
@@ -125,6 +136,8 @@ export function useStudentGuidance() {
     setPage,
     pageSize,
     setPageSize,
+    phase,
+    setPhase,
     hasPendingRequest,
     pendingRequestInfo,
     invalidate,

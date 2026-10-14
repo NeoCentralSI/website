@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { formatThesisDocName, formatDateTimeWib } from '@/lib/text';
 import { GUIDANCE_ACTOR_LABELS, GUIDANCE_STATUS_LABELS } from '@/lib/thesisLabels';
 import { DateTimeCell, GuidanceDocCell, STICKY_ACTION_COLUMN_CLASS } from '@/lib/guidanceCells';
+import { ThesisPhaseBadge } from '@/components/shared/ThesisPhaseBadge';
 
 interface GetGuidanceTableColumnsOptions {
   items: GuidanceItem[];
@@ -114,6 +115,12 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
           })),
         ],
       },
+    },
+    {
+      // K27: Jenis sesi (Proposal / Tugas Akhir), tetap sejak dibuat
+      key: 'phase',
+      header: 'Jenis',
+      render: (r) => (r.phase ? <ThesisPhaseBadge phase={r.phase} /> : '-'),
     },
     {
       key: 'time',

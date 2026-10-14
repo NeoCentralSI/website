@@ -6,8 +6,10 @@ import { getMyStudents, sendWarningToStudent, type MyStudentsFilter, type Warnin
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // K21: default "Aktif" (research + on_leave); finished and failed students stay reachable.
+// K27: "Fase Proposal" lists the students whose proposal guidance this lecturer supervises.
 const STUDENT_FILTERS: { value: MyStudentsFilter; label: string }[] = [
   { value: "active", label: "Aktif" },
+  { value: "proposal", label: "Fase Proposal" },
   { value: "completed", label: "Selesai" },
   { value: "failed", label: "Gagal" },
   { value: "all", label: "Semua" },

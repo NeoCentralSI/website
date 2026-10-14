@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import EmptyState from "@/components/ui/empty-state";
 import AuthenticatedDocumentPreviewDialog from "@/components/thesis/AuthenticatedDocumentPreviewDialog";
 import StatusBadge from "@/components/thesis/StatusBadge";
+import { ThesisPhaseBadge } from "@/components/shared/ThesisPhaseBadge";
 import { openAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
 import { formatDateTimeWib } from "@/lib/text";
 import { History, ChevronDown, ChevronUp, FileText, MessageSquare, XCircle, ExternalLink } from "lucide-react";
@@ -77,6 +78,7 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
                                                         ? g.milestoneTitles.join(", ")
                                                         : g.milestoneName || "Bimbingan"}
                                                 </p>
+                                                {g.phase && <ThesisPhaseBadge phase={g.phase} className="text-[10px]" />}
                                                 {g.duration && (
                                                     <span className="text-[10px] text-muted-foreground shrink-0">
                                                         {g.duration} menit

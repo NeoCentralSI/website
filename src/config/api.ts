@@ -185,16 +185,11 @@ export const API_CONFIG = {
       THESIS_HISTORY: '/thesisGuidance/student/thesis-history',
       PROPOSE_THESIS: '/thesisGuidance/student/propose-thesis',
       // Proposal Versioning
-      PROPOSAL_UPLOAD: '/thesisGuidance/student/proposal/upload',
-      PROPOSAL_VERSIONS: '/thesisGuidance/student/proposal/versions',
-      PROPOSAL_STATUS: '/thesisGuidance/student/proposal/status',
-      PROPOSAL_SUBMIT_FINAL: '/thesisGuidance/student/proposal/submit-final',
       // Pembimbing 2 Request
       AVAILABLE_SUPERVISORS_2: '/thesisGuidance/student/available-supervisors-2',
       REQUEST_SUPERVISOR_2: '/thesisGuidance/student/request-supervisor-2',
       PENDING_SUPERVISOR_2: '/thesisGuidance/student/pending-supervisor-2-request',
       CANCEL_SUPERVISOR_2: '/thesisGuidance/student/cancel-supervisor-2-request',
-      METOPEN_INFORMAL_LOGS: '/thesisGuidance/student/metopen/informal-logs',
     },
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',
@@ -226,9 +221,6 @@ export const API_CONFIG = {
     KADEP_SUPERVISOR2_REQUESTS: '/thesisGuidance/kadep/supervisor2-requests',
     KADEP_SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/approve`,
     KADEP_SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/reject`,
-        STUDENT_PROPOSAL_VERSIONS: (thesisId: string) => `/thesisGuidance/lecturer/students/${thesisId}/proposal/versions`,
-        STUDENT_INFORMAL_LOGS: (thesisId: string) =>
-          `/thesisGuidance/lecturer/students/${thesisId}/metopen/informal-logs`,
       },
     THESIS_MONITORING: {
       DASHBOARD: '/thesisGuidance/monitoring/dashboard',
