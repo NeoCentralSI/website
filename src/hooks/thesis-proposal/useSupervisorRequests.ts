@@ -26,8 +26,8 @@ export function useLecturerSupervisorInbox(enabled = true) {
   return useQuery({ queryKey: supervisorRequestKeys.inbox(), queryFn: service.getLecturerInbox, enabled });
 }
 
-export function useKadepSupervisorQueue() {
-  return useQuery({ queryKey: supervisorRequestKeys.kadep(), queryFn: service.getKadepQueue });
+export function useKadepSupervisorQueue(enabled = true) {
+  return useQuery({ queryKey: supervisorRequestKeys.kadep(), queryFn: service.getKadepQueue, enabled });
 }
 
 export function useRequestRecommendations(id: string | null) {

@@ -273,6 +273,8 @@ export type SupervisorRequestRoute = "direct" | "over_quota" | "department";
 /** Beban bimbingan dosen terhadap batas yang berlaku (dihitung, rencana 10.1). */
 export type SupervisionLoadLevel = "available" | "near_limit" | "full";
 export type ResearchMethodResult = "passed" | "failed";
+/** Versi Penetapan Pembimbing per periode: hanya satu yang berlaku. */
+export type AssignmentBatchStatus = "current" | "superseded";
 
 export const SUPERVISOR_REQUEST_STATUS_LABELS: Record<SupervisorRequestStatus, string> = {
   pending: "Menunggu Dosen",
@@ -306,6 +308,11 @@ export const RESEARCH_METHOD_RESULT_LABELS: Record<ResearchMethodResult, string>
   failed: "Tidak Lulus",
 };
 
+export const ASSIGNMENT_BATCH_STATUS_LABELS: Record<AssignmentBatchStatus, string> = {
+  current: "Berlaku",
+  superseded: "Digantikan",
+};
+
 export const SUPERVISOR_REQUEST_STATUS_VARIANTS: Record<SupervisorRequestStatus, ThesisBadgeVariant> = {
   pending: "warning",
   under_review: "info",
@@ -330,6 +337,11 @@ export const SUPERVISION_LOAD_LEVEL_VARIANTS: Record<SupervisionLoadLevel, Thesi
 export const RESEARCH_METHOD_RESULT_VARIANTS: Record<ResearchMethodResult, ThesisBadgeVariant> = {
   passed: "success",
   failed: "destructive",
+};
+
+export const ASSIGNMENT_BATCH_STATUS_VARIANTS: Record<AssignmentBatchStatus, ThesisBadgeVariant> = {
+  current: "success",
+  superseded: "outline",
 };
 
 function labelOf<K extends string>(labels: Record<K, string>) {
@@ -358,6 +370,7 @@ export const getSupervisorRequestStatusLabel = labelOf(SUPERVISOR_REQUEST_STATUS
 export const getSupervisorRequestRouteLabel = labelOf(SUPERVISOR_REQUEST_ROUTE_LABELS);
 export const getSupervisionLoadLevelLabel = labelOf(SUPERVISION_LOAD_LEVEL_LABELS);
 export const getResearchMethodResultLabel = labelOf(RESEARCH_METHOD_RESULT_LABELS);
+export const getAssignmentBatchStatusLabel = labelOf(ASSIGNMENT_BATCH_STATUS_LABELS);
 
 export function getSupervisorRequestStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
   return SUPERVISOR_REQUEST_STATUS_VARIANTS[value as SupervisorRequestStatus] ?? "outline";
@@ -365,6 +378,10 @@ export function getSupervisorRequestStatusVariant(value: string | null | undefin
 
 export function getSupervisionLoadLevelVariant(value: string | null | undefined): ThesisBadgeVariant {
   return SUPERVISION_LOAD_LEVEL_VARIANTS[value as SupervisionLoadLevel] ?? "outline";
+}
+
+export function getAssignmentBatchStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
+  return ASSIGNMENT_BATCH_STATUS_VARIANTS[value as AssignmentBatchStatus] ?? "outline";
 }
 
 export function getResearchMethodResultVariant(value: string | null | undefined): ThesisBadgeVariant {

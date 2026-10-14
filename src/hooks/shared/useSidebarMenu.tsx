@@ -410,6 +410,8 @@ export const useSidebarMenu = () => {
                 { title: "Sidang TA", url: "/tugas-akhir/sidang" },
               ]
             : []),
+          // Read-only: Sekdep sees the period's Penetapan Pembimbing and downloads a complete batch.
+          { title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" },
           { title: "Monitoring", url: "/tugas-akhir/monitoring" },
         ],
       });

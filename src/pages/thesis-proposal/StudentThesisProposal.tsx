@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { StudentSupervisorAssignmentSection } from '@/components/thesis-proposal/StudentSupervisorAssignmentSection';
 import { StudentSupervisorRequestSection } from '@/components/thesis-proposal/StudentSupervisorRequestSection';
 
 /**
@@ -20,6 +21,7 @@ export default function StudentThesisProposal() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <StudentSupervisorRequestSection />
+      <StudentSupervisorAssignmentSection />
     </div>
   );
 }

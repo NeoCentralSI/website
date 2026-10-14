@@ -95,12 +95,12 @@ export function RequestSupervisor2Dialog({
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2">
           <UserPlus className="h-4 w-4" />
-          Request Pembimbing 2
+          Ajukan Pembimbing 2
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Request Pembimbing 2</DialogTitle>
+          <DialogTitle>Ajukan Pembimbing 2</DialogTitle>
           <DialogDescription>
             Pilih dosen yang tersedia untuk menjadi Pembimbing 2 tugas akhir Anda.
           </DialogDescription>

@@ -22,6 +22,7 @@ import {
 } from "@/services/lecturerGuidance.service";
 import { assessmentService } from "@/services/assessment.service";
 import { getKadepQueue, getLecturerInbox } from "@/services/thesis-proposal/supervisor-request.service";
+import { getAssignmentOverview } from "@/services/thesis-proposal/supervisor-assignment.service";
 import { useLottie } from 'lottie-react';
 import completeAnimation from '@/assets/lottie/complete.json';
 import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
@@ -94,6 +95,12 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     enabled: showKadepActions,
   });
 
+  const { data: assignmentOverview, isLoading: loadingAssignment } = useQuery({
+    queryKey: ["thesis-proposal", "supervisor-assignments", "current"],
+    queryFn: () => getAssignmentOverview(),
+    enabled: showKadepActions,
+  });
+
   const { data: supervisorInbox, isLoading: loadingSupervisorInbox } = useQuery({
     queryKey: ["thesis-proposal", "supervisor-requests", "inbox"],
     queryFn: getLecturerInbox,
@@ -105,6 +112,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
   const pendingSupervisorScoringCount = supervisorScoringQueue?.items?.length || 0;
   const pendingKadepCount = (kadepQueue?.department?.length || 0) + (kadepQueue?.overQuota?.length || 0);
+  const pendingAssignmentCount = assignmentOverview?.needsIssue ? assignmentOverview.newCount : 0;
   const pendingSupervisorRequestCount = supervisorInbox?.waiting?.length || 0;
 
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
@@ -184,8 +192,19 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           icon: ShieldCheck,
           color: "text-amber-600",
           bgColor: "bg-amber-50",
-          link: "/kelola/tugas-akhir/kadep/penetapan-pembimbing",
+          link: `/kelola/tugas-akhir/kadep/penetapan-pembimbing?tab=${kadepQueue?.department?.length ? "departemen" : "atas-kuota"}`,
           loading: loadingKadepQueue,
+        },
+        {
+          id: "kadep-supervisor-assignment",
+          title: "Penetapan Pembimbing",
+          description: "Mahasiswa yang disetujui pembimbingnya dan belum ditetapkan",
+          count: pendingAssignmentCount,
+          icon: FileCheck,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          link: "/kelola/tugas-akhir/kadep/penetapan-pembimbing",
+          loading: loadingAssignment,
         },
       ]
     : [];

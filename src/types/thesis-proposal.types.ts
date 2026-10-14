@@ -1,4 +1,5 @@
 import type {
+  AssignmentBatchStatus,
   ResearchMethodResult,
   SupervisionLoadLevel,
   SupervisorRequestRoute,
@@ -186,6 +187,71 @@ export interface SupervisionLoadOverview {
   period: SupervisionLimits | null;
   applicable: SupervisionLimits & { source: 'period' | 'general' | 'default' };
   lecturers: LecturerLoadRow[];
+}
+
+export interface AssignedSupervisor {
+  lecturerId: string;
+  fullName: string | null;
+  role: string | null;
+}
+
+export interface AssignmentEntry {
+  thesisId: string;
+  studentName: string;
+  studentNim: string;
+  title: string;
+  /** Names exactly as printed in the PDF. */
+  supervisorNames: string;
+  supervisors: AssignedSupervisor[];
+  supervisorAssignedAt: string | null;
+  inCurrentBatch: boolean;
+}
+
+export interface AssignmentBatch {
+  id: string;
+  version: number;
+  status: AssignmentBatchStatus;
+  generatedAt: string;
+  generatedBy: { id: string; fullName: string | null } | null;
+  fileName: string;
+  fileSize: number | null;
+  memberCount: number;
+  fileUrl: string;
+}
+
+export interface AssignmentOverview {
+  academicYear: AcademicYearRef;
+  entries: AssignmentEntry[];
+  currentBatch: AssignmentBatch | null;
+  batches: AssignmentBatch[];
+  /** The current batch lists exactly the cohort below. */
+  upToDate: boolean;
+  needsIssue: boolean;
+  newCount: number;
+}
+
+export interface IssueAssignmentResult extends AssignmentOverview {
+  alreadyIssued: boolean;
+  newlyAssigned?: number;
+}
+
+export interface StudentProposalOverview {
+  thesis: {
+    id: string;
+    title: string | null;
+    status: ThesisLifecycleStatus;
+    startDate: string | null;
+    topic: { id: string; name: string } | null;
+    academicYear: AcademicYearRef | null;
+    supervisors: (AssignedSupervisor & { identityNumber: string | null })[];
+  } | null;
+  assignment: {
+    assigned: boolean;
+    assignedAt: string | null;
+    semesterLabel: string | null;
+    version: number | null;
+    waitingReason: string | null;
+  } | null;
 }
 
 export type { ResearchMethodResult };

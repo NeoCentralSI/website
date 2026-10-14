@@ -168,7 +168,7 @@ describe("useSidebarMenu", () => {
     expect(titles).not.toContain("Inbox Pembimbing");
   });
 
-  it("limits Sekdep Tugas Akhir menu to Monitoring read-only (BR-24)", () => {
+  it("limits Sekdep Tugas Akhir menu to read-only pages (BR-24)", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
     mockRole({ isDosen: true, isSekdep: true });
 
@@ -179,7 +179,7 @@ describe("useSidebarMenu", () => {
     );
     const itemTitles = taMenu?.items.map((item) => item.title) ?? [];
 
-    expect(itemTitles).toEqual(["Monitoring"]);
+    expect(itemTitles).toEqual(["Penetapan Pembimbing", "Monitoring"]);
     expect(itemTitles).not.toContain("Bimbingan");
     expect(itemTitles).not.toContain("Seminar Hasil");
     expect(itemTitles).not.toContain("Sidang TA");
@@ -196,7 +196,7 @@ describe("useSidebarMenu", () => {
     );
     const itemTitles = taMenu?.items.map((item) => item.title) ?? [];
 
-    expect(itemTitles).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA", "Monitoring"]);
+    expect(itemTitles).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA", "Penetapan Pembimbing", "Monitoring"]);
   });
   it("keeps Sekdep TA-03B queue when Sekdep also has KOORDINATOR_METOPEN role", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });

@@ -405,10 +405,14 @@ function App() {
                   <Route path="/kelola/yudisium/exit-survey" element={<Navigate to="/yudisium" replace />} />
                 </Route>
 
+                {/* Tugas Akhir > Penetapan Pembimbing (Paket P): Kadep decides and issues; Sekdep reads. */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.KETUA_DEPARTEMEN, ROLES.SEKRETARIS_DEPARTEMEN]} />}>
+                  <Route path="/kelola/tugas-akhir/kadep/penetapan-pembimbing" element={<KadepThesisSupervisorAssignmentPage />} />
+                </Route>
+
                 {/* Kelola - Kadep */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.KETUA_DEPARTEMEN]} />}>
-                  {/* Tugas Akhir > Penetapan Pembimbing (Paket P); the old Kadep addresses go there. */}
-                  <Route path="/kelola/tugas-akhir/kadep/penetapan-pembimbing" element={<KadepThesisSupervisorAssignmentPage />} />
+                  {/* The old Kadep addresses go to Penetapan Pembimbing. */}
                   <Route path="/kelola/tugas-akhir/kadep" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pengesahan-judul" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
