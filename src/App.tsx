@@ -325,7 +325,7 @@ function App() {
                 </Route>
 
                 {/* Kelola Tugas Akhir (topik, CPMK seminar/sidang, rubrik seminar/sidang) — modul TA penuh */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.KOORDINATOR_METOPEN]} />}>
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.KOORDINATOR_METODE_PENELITIAN]} />}>
                   <Route path="/kelola/tugas-akhir" element={<Navigate to="/kelola/tugas-akhir/topik" replace />} />
                   <Route path="/kelola/tugas-akhir/topik" element={<SecretaryKelolaTugasAkhirPage />} />
                   {/* F2-12: route '/kelola/tugas-akhir/monitor' dihapus — tidak ada tab 'monitor' di TugasAkhir.tsx. */}
@@ -348,12 +348,12 @@ function App() {
                 </Route>
 
                 {/* Metode Penelitian (Paket P): the coordinator runs the class; Kadep, Sekdep and Admin read. */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METOPEN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
+                <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METODE_PENELITIAN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
                   <Route path="/metode-penelitian/monitoring" element={<ResearchMethodMonitoringPage />} />
                   <Route path="/metode-penelitian/presensi" element={<ResearchMethodAttendancePage />} />
                   <Route path="/metode-penelitian/penilaian" element={<ResearchMethodAssessmentPage />} />
                   <Route path="/metode-penelitian" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
-                  {/* Old addresses of the Metopen module */}
+                  {/* Old addresses of the former research-method module redirect to the new pages (Paket P) */}
                   <Route path="/kelola/metopen" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
                   <Route path="/kelola/metopen/monitoring" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
                   <Route path="/kelola/metopen/ta03b" element={<Navigate to="/metode-penelitian/penilaian" replace />} />
@@ -366,7 +366,7 @@ function App() {
                   <Route path="/kelola/metopen/kuota-dosen" element={<Navigate to="/kelola/tugas-akhir/batas-bimbingan" replace />} />
                 </Route>
                 {/* Kelola > Metode Penelitian: Template Milestone, CPMK, Rubrik Penilaian (K18). */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_METOPEN]} />}>
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_METODE_PENELITIAN]} />}>
                   <Route path="/kelola/metode-penelitian" element={<ResearchMethodPage />} />
                 </Route>
 
@@ -392,7 +392,7 @@ function App() {
                     <Route path="nilai" element={<div />} />
                   </Route>
                   <Route path="/kelola/kerja-praktik/:proposalId" element={<SekdepInternshipProposalDetailPage />} />
-                  {/* Kelola Tugas Akhir: routes registered under shared Sekdep/Kadep/Koordinator Metopen guard above */}
+                  {/* Kelola Tugas Akhir: routes registered under the shared Sekdep/Kadep/Koordinator Metode Penelitian guard above */}
                   {/* Yudisium Management - Redirect to unified detail if specific actions needed, or keep for list */}
                   <Route path="/kelola/yudisium" element={<Navigate to="/yudisium" replace />} />
                   <Route path="/kelola/yudisium/event" element={<Navigate to="/yudisium" replace />} />

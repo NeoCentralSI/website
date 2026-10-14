@@ -29,7 +29,6 @@ import {
   Award
 } from 'lucide-react';
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
-import { getThesisStatusLabel } from '@/lib/thesisLabels';
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -44,6 +43,11 @@ const CPL_STATUS_LABELS: Record<string, string> = {
   verified: 'Diverifikasi',
   finalized: 'Final',
 };
+
+/** Ya / Tidak / Belum diketahui for one SIA flag. */
+function formatFlag(value: boolean | null) {
+  return value === null ? 'Belum diketahui' : value ? 'Ya' : 'Tidak';
+}
 
 export default function MahasiswaDetail() {
   const navigate = useNavigate();
@@ -112,7 +116,7 @@ export default function MahasiswaDetail() {
 
   const activeThesis = data.theses.find((t) => t.status !== 'completed' && t.status !== 'failed');
   const completedTheses = data.theses.filter((t) => t.status === 'completed');
-  const metopenEligibility = data.metopenEligibility;
+  const semesterFlags = data.student.semesterFlags ?? [];
 
   return (
     <div className="p-6 space-y-6">
@@ -337,59 +341,39 @@ export default function MahasiswaDetail() {
 
         {/* Right Column - Thesis Info */}
         <div className="lg:col-span-2 space-y-6">
-          {metopenEligibility && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Users className="h-4 w-4" />
-                  Status Eligibility Metopen
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {!metopenEligibility.hasExternalStatus ? (
-                      <Badge variant="outline">Belum ada snapshot</Badge>
-                    ) : metopenEligibility.eligibleMetopen ? (
-                      <Badge className="bg-emerald-600">Eligible</Badge>
-                    ) : (
-                      <Badge variant="outline" className="border-red-200 text-red-700">Tidak eligible</Badge>
-                    )}
-                    {metopenEligibility.readOnly && (
-                      <Badge variant="outline" className="border-blue-200 text-blue-700">Arsip TA</Badge>
-                    )}
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground">Sumber snapshot</p>
-                      <p className="mt-1 font-medium">{metopenEligibility.source ?? 'Belum ada sumber'}</p>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground">Terakhir diperbarui</p>
-                      <p className="mt-1 font-medium">
-                        {metopenEligibility.updatedAt ? formatDateId(metopenEligibility.updatedAt) : '-'}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground">Akses menu/guard</p>
-                      <p className="mt-1 font-medium">{metopenEligibility.canAccess ? 'Terbuka' : 'Tertutup'}</p>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground">Akses submit TA-01 / TA-02</p>
-                      <p className="mt-1 font-medium">{metopenEligibility.canSubmit ? 'Diizinkan' : 'Tidak diizinkan'}</p>
-                    </div>
-                    {(metopenEligibility.thesisTitle || metopenEligibility.thesisStatus) && (
-                      <div className="rounded-lg border p-3 sm:col-span-2">
-                        <p className="text-xs text-muted-foreground">Konteks arsip / thesis terkait</p>
-                        <p className="mt-1 font-medium">{metopenEligibility.thesisTitle || 'Tanpa judul'}</p>
-                        <p className="text-sm text-muted-foreground">{getThesisStatusLabel(metopenEligibility.thesisStatus)}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="h-4 w-4" />
+                Mata Kuliah per Semester (SIA)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {semesterFlags.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Belum ada data semester dari SIA.</p>
+              ) : (
+                <ul className="divide-y rounded-lg border text-sm">
+                  {semesterFlags.map((flags) => (
+                    <li key={flags.academicYearId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                      <span className="font-medium">{flags.academicYearLabel}</span>
+                      <span className="flex flex-wrap items-center gap-1">
+                        <Badge variant={flags.takingResearchMethod ? 'default' : 'outline'}>
+                          Metode Penelitian: {formatFlag(flags.takingResearchMethod)}
+                        </Badge>
+                        <Badge variant={flags.takingThesisCourse ? 'default' : 'outline'}>
+                          Tugas Akhir: {formatFlag(flags.takingThesisCourse)}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {flags.source === 'devtools' ? 'DevTools' : flags.source === 'sia' ? 'SIA' : '-'}
+                          {flags.capturedAt ? ` · ${formatDateId(flags.capturedAt)}` : ''}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Active Thesis */}
           {activeThesis && (

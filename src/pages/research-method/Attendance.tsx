@@ -36,7 +36,7 @@ export function getFilesProblem(files: File[]): string | null {
  */
 export default function Attendance() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isKoordinatorMetopen } = useRole();
+  const { isResearchMethodCoordinator } = useRole();
   const { academicYear } = useActiveAcademicYear();
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
   const yearId = academicYearId ?? academicYear?.id ?? null;
@@ -45,7 +45,7 @@ export default function Attendance() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [previewResult, setPreviewResult] = useState<AttendancePreview | null>(null);
-  const canUpload = isKoordinatorMetopen();
+  const canUpload = isResearchMethodCoordinator();
   const filesProblem = getFilesProblem(files);
   const uploadReason = !canUpload ? 'Hanya Koordinator Metode Penelitian yang mengunggah presensi.' : filesProblem ?? (!previewResult ? 'Pratinjau berkas terlebih dahulu.' : null);
 

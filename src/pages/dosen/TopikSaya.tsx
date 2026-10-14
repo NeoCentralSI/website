@@ -24,7 +24,7 @@ export default function TopikSaya() {
       <Alert>
         <AlertTitle>Fitur tidak tersedia</AlertTitle>
         <AlertDescription>
-          Publikasi topik dosen ke mahasiswa belum tersedia. Penentuan pembimbing memakai alur TA-01 dan TA-02.
+          Publikasi topik dosen ke mahasiswa belum tersedia. Penentuan pembimbing memakai Pengajuan Pembimbing di menu Tugas Akhir, halaman Proposal.
         </AlertDescription>
       </Alert>
     </div>

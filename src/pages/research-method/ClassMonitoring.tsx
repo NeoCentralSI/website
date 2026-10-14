@@ -27,8 +27,8 @@ import { passedTitlesUrl, scoreRecapUrl } from '@/services/research-method/resea
  */
 export default function ClassMonitoring() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isKoordinatorMetopen, isKadep, isAdmin } = useRole();
-  const canPromote = isKoordinatorMetopen() || isKadep() || isAdmin();
+  const { isResearchMethodCoordinator, isKadep, isAdmin } = useRole();
+  const canPromote = isResearchMethodCoordinator() || isKadep() || isAdmin();
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const { data, isLoading, error } = useClassMonitoring(academicYearId);

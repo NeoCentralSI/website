@@ -12,6 +12,7 @@ import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { DevToolsGuidancePanel } from '@/components/dev-tools/DevToolsGuidancePanel';
 import { DevToolsPeriodPanel } from '@/components/dev-tools/DevToolsPeriodPanel';
+import { DevToolsProposalPanel } from '@/components/dev-tools/DevToolsProposalPanel';
 import { DevToolsStudentPanel } from '@/components/dev-tools/DevToolsStudentPanel';
 import { DevToolsUserPanel } from '@/components/dev-tools/DevToolsUserPanel';
 
@@ -21,6 +22,7 @@ const TABS = [
   { label: 'User', to: `${DEV_TOOLS_BASE_PATH}/users`, Panel: DevToolsUserPanel },
   { label: 'Mahasiswa', to: `${DEV_TOOLS_BASE_PATH}/mahasiswa`, Panel: DevToolsStudentPanel },
   { label: 'Periode', to: `${DEV_TOOLS_BASE_PATH}/periode`, Panel: DevToolsPeriodPanel },
+  { label: 'Proposal', to: `${DEV_TOOLS_BASE_PATH}/proposal`, Panel: DevToolsProposalPanel },
   { label: 'Bimbingan', to: `${DEV_TOOLS_BASE_PATH}/bimbingan`, Panel: DevToolsGuidancePanel },
 ] as const;
 

@@ -26,12 +26,12 @@ import type { AssessmentView } from '@/types/research-method.types';
  */
 export default function ProposalAssessment() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isKoordinatorMetopen } = useRole();
+  const { isResearchMethodCoordinator } = useRole();
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const { data, isLoading, error } = useCoordinatorQueue(academicYearId);
   const [scoring, setScoring] = useState<AssessmentView | null>(null);
-  const canScore = isKoordinatorMetopen();
+  const canScore = isResearchMethodCoordinator();
 
   useEffect(() => {
     setBreadcrumbs([{ label: 'Metode Penelitian' }, { label: 'Penilaian Proposal' }]);

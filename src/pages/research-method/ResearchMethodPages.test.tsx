@@ -18,7 +18,7 @@ vi.mock('@/services/research-method/research-method.service');
 vi.mock('@/services/admin.service', () => ({ getAcademicYearsAPI: vi.fn(async () => ({ academicYears: [] })) }));
 const roles = vi.hoisted(() => ({ coordinator: false, kadep: false }));
 vi.mock('@/hooks/shared/useRole', () => ({
-  useRole: () => ({ isKoordinatorMetopen: () => roles.coordinator, isKadep: () => roles.kadep, isAdmin: () => false }),
+  useRole: () => ({ isResearchMethodCoordinator: () => roles.coordinator, isKadep: () => roles.kadep, isAdmin: () => false }),
 }));
 vi.mock('react-router-dom', async () => ({
   ...(await vi.importActual<typeof import('react-router-dom')>('react-router-dom')),

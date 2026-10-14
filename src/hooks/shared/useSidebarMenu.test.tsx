@@ -35,7 +35,7 @@ function mockRole(
     isGkm?: boolean;
     isAdmin?: boolean;
     isPembimbing?: boolean;
-    isKoordinatorMetopen?: boolean;
+    isResearchMethodCoordinator?: boolean;
   } = {},
 ) {
   vi.mocked(useRole).mockReturnValue({
@@ -46,7 +46,7 @@ function mockRole(
     isGkm: () => overrides.isGkm ?? false,
     isAdmin: () => overrides.isAdmin ?? false,
     isPembimbing: () => overrides.isPembimbing ?? false,
-    isKoordinatorMetopen: () => overrides.isKoordinatorMetopen ?? false,
+    isResearchMethodCoordinator: () => overrides.isResearchMethodCoordinator ?? false,
   } as ReturnType<typeof useRole>);
 }
 
@@ -97,7 +97,7 @@ describe("useSidebarMenu", () => {
 
   it("gives the Research Method coordinator Monitoring Kelas, Presensi, Penilaian Proposal", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
-    mockRole({ isDosen: true, isKoordinatorMetopen: true });
+    mockRole({ isDosen: true, isResearchMethodCoordinator: true });
 
     expect(menuOf("Metode Penelitian")?.items).toEqual(COORDINATOR_ITEMS);
   });
@@ -152,7 +152,7 @@ describe("useSidebarMenu", () => {
 
   it("gives a Sekdep who is also the coordinator the coordinator's items", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
-    mockRole({ isDosen: true, isSekdep: true, isKoordinatorMetopen: true, isPembimbing: true });
+    mockRole({ isDosen: true, isSekdep: true, isResearchMethodCoordinator: true, isPembimbing: true });
 
     expect(menuOf("Metode Penelitian")?.items).toEqual(COORDINATOR_ITEMS);
     expect(menuOf("Tugas Akhir")?.items?.[0]).toEqual({ title: "Proposal", url: "/tugas-akhir/proposal" });
@@ -243,9 +243,9 @@ describe("useSidebarMenu", () => {
     ];
     const scenarios = [
       { isStudent: true },
-      { isDosen: true, isPembimbing: true, isKoordinatorMetopen: true },
+      { isDosen: true, isPembimbing: true, isResearchMethodCoordinator: true },
       { isDosen: true, isKadep: true, isPembimbing: true },
-      { isDosen: true, isSekdep: true, isPembimbing: true, isKoordinatorMetopen: true },
+      { isDosen: true, isSekdep: true, isPembimbing: true, isResearchMethodCoordinator: true },
       { isAdmin: true },
     ];
 

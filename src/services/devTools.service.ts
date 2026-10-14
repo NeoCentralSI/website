@@ -17,6 +17,9 @@ import type {
   SetPeriodFlagsDto,
   DevToolsGuidanceList,
   UpdateGuidanceScheduleDto,
+  DevToolsSemesterFlags,
+  DevToolsSupervisorRequest,
+  DevToolsSupervisorRequestList,
 } from '@/types/devTools.types';
 
 const BASE = '/devtools';
@@ -119,6 +122,30 @@ export const devToolsService = {
     const url = getApiUrl(`${BASE}/roles`);
     const response = await apiRequest(url);
     return parseJson<RoleOption[]>(response, 'Gagal memuat daftar role');
+  },
+
+  // --- Proposal tab (plan 10.8) ---
+  getSemesterFlags: async (studentId: string): Promise<DevToolsSemesterFlags[]> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/students/${studentId}/period-flags`));
+    return parseJson<DevToolsSemesterFlags[]>(response, 'Gagal memuat penanda SIA');
+  },
+
+  getSupervisorRequests: async (params: { search: string; page: number; pageSize: number }): Promise<DevToolsSupervisorRequestList> => {
+    const url = new URL(getApiUrl(`${BASE}/supervisor-requests`));
+    if (params.search) url.searchParams.set('search', params.search);
+    url.searchParams.set('page', String(params.page));
+    url.searchParams.set('pageSize', String(params.pageSize));
+    const response = await apiRequest(url.toString());
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as { message?: string }).message || 'Gagal memuat pengajuan pembimbing');
+    }
+    return response.json() as Promise<DevToolsSupervisorRequestList>;
+  },
+
+  setSupervisorRequestTime: async (id: string, createdAt: string): Promise<DevToolsSupervisorRequest> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/supervisor-requests/${id}`), { method: 'PATCH', body: JSON.stringify({ createdAt }) });
+    return parseJson<DevToolsSupervisorRequest>(response, 'Gagal mengubah waktu pengajuan');
   },
 
   // --- SIA flags per semester (plan 10.6) ---

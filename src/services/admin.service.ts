@@ -451,32 +451,8 @@ export interface Student {
     internshipCompleted?: boolean;
     kknCompleted?: boolean;
     researchMethodCompleted?: boolean;
-    metopenEligibility?: {
-      canAccess: boolean;
-      eligibleMetopen?: boolean | null;
-      hasExternalEligibility?: boolean;
-      hasExternalStatus?: boolean;
-      readOnly?: boolean;
-      metopenReadOnly?: boolean;
-      canSubmit?: boolean;
-      thesisId?: string | null;
-      thesisTitle?: string | null;
-      thesisStatus?: string | null;
-      source?: string | null;
-      metopenEligibilitySource?: string | null;
-      updatedAt?: string | null;
-      metopenEligibilityUpdatedAt?: string | null;
-    } | null;
-    visibleAcademicYear?: {
-      id?: string | null;
-      label?: string | null;
-      year?: string | number | null;
-      semester?: string | null;
-      isActive?: boolean;
-      sources?: string[];
-    } | null;
-    isInMetopen?: boolean;
-    hasActiveThesis?: boolean;
+    /** SIA flags of the listed period (the chosen one, else the operational one). */
+    semesterFlags?: StudentSemesterFlags | null;
     activeTheses: Array<{
       title: string;
       status?: string | null;
@@ -486,6 +462,16 @@ export interface Student {
       }>;
     }>;
   };
+}
+
+/** SIA flags of one period: taking Metode Penelitian and/or Tugas Akhir (null = unknown). */
+export interface StudentSemesterFlags {
+  academicYearId: string;
+  academicYearLabel: string;
+  takingResearchMethod: boolean | null;
+  takingThesisCourse: boolean | null;
+  source: string | null;
+  capturedAt: string | null;
 }
 
 // Lecturer interface with workload info
@@ -642,21 +628,6 @@ export interface StudentDetail {
   phoneNumber?: string;
   isVerified: boolean;
   createdAt: string;
-  metopenEligibility?: {
-    canAccess: boolean;
-    eligibleMetopen?: boolean | null;
-    hasExternalEligibility?: boolean;
-    hasExternalStatus?: boolean;
-    readOnly?: boolean;
-    metopenReadOnly?: boolean;
-    canSubmit?: boolean;
-    thesisTitle?: string | null;
-    thesisStatus?: string | null;
-    source?: string | null;
-    metopenEligibilitySource?: string | null;
-    updatedAt?: string | null;
-    metopenEligibilityUpdatedAt?: string | null;
-  } | null;
   student: {
     enrollmentYear: number;
     sksCompleted: number;
@@ -669,21 +640,7 @@ export interface StudentDetail {
     internshipCompleted?: boolean | null;
     kknCompleted?: boolean | null;
     researchMethodCompleted?: boolean | null;
-    metopenEligibility?: {
-      canAccess: boolean;
-      eligibleMetopen?: boolean | null;
-      hasExternalEligibility?: boolean;
-      hasExternalStatus?: boolean;
-      readOnly?: boolean;
-      metopenReadOnly?: boolean;
-      canSubmit?: boolean;
-      thesisTitle?: string | null;
-      thesisStatus?: string | null;
-      source?: string | null;
-      metopenEligibilitySource?: string | null;
-      updatedAt?: string | null;
-      metopenEligibilityUpdatedAt?: string | null;
-    } | null;
+    semesterFlags?: StudentSemesterFlags[];
   };
   cplScores?: Array<{
     cplId: string;

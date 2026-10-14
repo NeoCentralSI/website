@@ -23,11 +23,11 @@ export function TabsNav({ tabs, preserveSearch }: { tabs: TabItem[]; preserveSea
             // Jika tab memiliki query param, harus cocok dengan current search
             isActive = pathname === toPath && search === toSearch;
           } else if (t.end) {
-            // Jika tidak ada query param tapi end: true (misal overview /metopel)
+            // Jika tidak ada query param tapi end: true (misal overview /tugas-akhir)
             // maka path harus persis sama, dan kalau current ada search (tab lain) maka false
             isActive = pathname === toPath && (search === "" || !!preserveSearch);
           } else {
-            // match path startsWith (misal /metopel/cari-pembimbing)
+            // match path startsWith (misal /tugas-akhir/proposal)
             isActive = pathname.startsWith(toPath) && pathname !== "/";
           }
 

@@ -223,7 +223,7 @@ export function Supervisor2KadepSection() {
                       <span className="font-medium text-foreground">
                         {activeRequest ? toTitleCaseName(activeRequest.studentName) : ""}
                       </span>
-                      . Jika Formulir TA-04 periode sudah tersedia, KaDep perlu memperbarui batch agar memuat Pembimbing 2.
+                      . Bila Penetapan Pembimbing periode itu sudah terbit, terbitkan versi barunya agar memuat Pembimbing 2.
                     </>
                   ) : (
                     <>

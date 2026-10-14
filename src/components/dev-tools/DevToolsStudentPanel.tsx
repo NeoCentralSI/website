@@ -250,7 +250,7 @@ export function DevToolsStudentPanel() {
 
       <AlertDialog open={!!resetSnapshotTarget} onOpenChange={() => setResetSnapshotTarget(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reset Snapshot Akademik?</AlertDialogTitle>
-          <AlertDialogDescription>Data <strong>{resetSnapshotTarget?.fullName}</strong> akan direset ke kondisi awal: SKS=0, Semester=1, semua flag=false, status=active, dan snapshot Metopen/Tugas Akhir dikosongkan. Riwayat pengajuan, thesis, nilai, dan kuota tidak dihapus.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogDescription>Data <strong>{resetSnapshotTarget?.fullName}</strong> akan direset ke kondisi awal: SKS=0, Semester=1, semua flag=false, status=active, dan flag SIA per semester (Metode Penelitian/Tugas Akhir) dikosongkan. Riwayat pengajuan, thesis, nilai, dan kuota tidak dihapus.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel disabled={mutations.isSubmitting}>Batal</AlertDialogCancel>
             <AlertDialogAction disabled={mutations.isSubmitting} onClick={async () => { if (resetSnapshotTarget) { await mutations.resetStudent(resetSnapshotTarget.id); setResetSnapshotTarget(null); } }}>
               {mutations.isSubmitting ? 'Mereset...' : 'Reset Snapshot'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
@@ -258,7 +258,7 @@ export function DevToolsStudentPanel() {
 
       <AlertDialog open={!!resetProgressTarget} onOpenChange={() => setResetProgressTarget(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reset Progress SIMPTA?</AlertDialogTitle>
-          <AlertDialogDescription>Progress SIMPTA <strong>{resetProgressTarget?.fullName}</strong> akan dihapus: draft dan riwayat TA-01/TA-02, thesis/proposal, catatan Metopen, pembimbing, nilai TA-03, serta link presensi. Snapshot akademik juga direset dan kuota dosen akan dihitung ulang. User tetap ada. Aksi ini tidak dapat dibatalkan.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogDescription>Progress SIMPTA <strong>{resetProgressTarget?.fullName}</strong> akan dihapus: draf dan riwayat Pengajuan Pembimbing, tugas akhir beserta proposal dan bimbingannya, pembimbing, keanggotaan Penetapan Pembimbing, Penilaian Proposal, serta tautan presensi. Snapshot akademik juga direset dan kuota dosen akan dihitung ulang. User tetap ada. Aksi ini tidak dapat dibatalkan.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel disabled={mutations.isSubmitting}>Batal</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={mutations.isSubmitting} onClick={async () => { if (resetProgressTarget) { await mutations.resetStudentProgress(resetProgressTarget.id); setResetProgressTarget(null); if (expandedId === resetProgressTarget.id) setExpandedId(null); } }}>
               {mutations.isSubmitting ? 'Mereset...' : 'Reset Progress'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>

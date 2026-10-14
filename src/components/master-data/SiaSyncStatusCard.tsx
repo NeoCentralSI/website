@@ -53,6 +53,7 @@ export function SiaSyncStatusCard({ canMutate = false }: { canMutate?: boolean }
               <p className="text-xs text-muted-foreground">Terakhir dijalankan</p>
               <p className="font-medium">{data?.lastRun ? formatDateTimeWib(data.lastRun) : 'Belum pernah'}</p>
               {data?.error ? <p className="text-xs text-destructive">{data.error}</p> : null}
+              {data?.periodFlagsError ? <p className="text-xs text-destructive">Penanda semester: {data.periodFlagsError}</p> : null}
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Mahasiswa dengan penanda semester berjalan</p>

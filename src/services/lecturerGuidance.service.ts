@@ -138,18 +138,6 @@ export interface StudentDetail extends ThesisPhaseSummary {
     feedbackByName?: string | null;
     feedbackAt?: string | null;
   }[];
-  // Superset kept for the Metopen SupervisorScoreCard; the restored guidance API does not send it.
-  researchMethodScore?: {
-    id?: string;
-    supervisorScore?: number | null;
-    lecturerScore?: number | null;
-    finalScore?: number | null;
-    isFinalized?: boolean;
-    attendanceAutoZeroedAt?: string | null;
-    attendanceAutoZeroReason?: string | null;
-    periodClosedAt?: string | null;
-    periodClosedReason?: string | null;
-  } | null;
   guidanceHistory: {
     count: number;
     items: GuidanceItem[];

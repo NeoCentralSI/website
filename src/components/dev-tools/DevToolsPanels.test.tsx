@@ -220,7 +220,7 @@ describe('DevTools panels', () => {
     expect(input.value).toBe('ilham');
   });
 
-  it('page shows the warning banner and the four tabs in order, routed by path', async () => {
+  it('page shows the warning banner and the five tabs in order, routed by path', async () => {
     const setBreadcrumbs = vi.fn();
     const setTitle = vi.fn();
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -237,7 +237,8 @@ describe('DevTools panels', () => {
       </QueryClientProvider>,
     );
     expect(screen.getByText(/Hanya untuk Pengembangan/)).toBeInTheDocument();
-    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['User', 'Mahasiswa', 'Periode', 'Bimbingan']);
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['User', 'Mahasiswa', 'Periode', 'Proposal', 'Bimbingan']);
+    expect(screen.getByRole('link', { name: 'Proposal' })).toHaveAttribute('href', '/admin/dev-tools/proposal');
     expect(screen.getByRole('link', { name: 'User' })).toHaveAttribute('href', '/admin/dev-tools/users');
     expect(await screen.findByText('Husnil Kamil')).toBeInTheDocument();
     expect(devToolsService.getUsers).not.toHaveBeenCalled();

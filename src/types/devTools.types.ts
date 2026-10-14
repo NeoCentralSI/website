@@ -16,6 +16,30 @@ export interface DevToolsPeriodFlags {
   thesisCourseCapturedAt: string | null;
 }
 
+/** One semester row of the Proposal tab (every period, flags may be empty). */
+export interface DevToolsSemesterFlags extends DevToolsPeriodFlags {
+  academicYearLabel: string;
+  isActive: boolean;
+}
+
+/** Pengajuan Pembimbing in the Proposal tab: the sending time drives the 72-hour rule. */
+export interface DevToolsSupervisorRequest {
+  id: string;
+  status: string;
+  route: string;
+  createdAt: string;
+  withdrawAvailableAt: string;
+  proposedTitle: string | null;
+  academicYearLabel: string | null;
+  student: { fullName: string | null; nim: string | null };
+  lecturerName: string | null;
+}
+
+export interface DevToolsSupervisorRequestList {
+  data: DevToolsSupervisorRequest[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+}
+
 export interface SetPeriodFlagsDto {
   academicYearId?: string;
   eligibleResearchMethod?: boolean | null;

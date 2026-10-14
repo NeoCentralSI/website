@@ -73,18 +73,6 @@ export const updateMasterDataThesis = async (id: string, payload: any): Promise<
     return result.data;
 };
 
-export const syncSiaData = async (): Promise<any> => {
-    const response = await apiRequest(getApiUrl(`/master-data-ta/sync-sia`), {
-        method: 'POST'
-    });
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Gagal melakukan sinkronisasi dengan SIA");
-    }
-    const result = await response.json();
-    return result.data;
-};
-
 export const importMasterDataTheses = async (rows: any[]): Promise<any> => {
     const response = await apiRequest(getApiUrl('/master-data-ta/import'), {
         method: 'POST',

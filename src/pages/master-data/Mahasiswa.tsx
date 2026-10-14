@@ -28,8 +28,8 @@ import { Switch } from '@/components/ui/switch';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
-  const { isAdmin, isKoordinatorMetopen, isLoading: isRoleLoading } = useRole();
-  const showSyncButton = () => isAdmin() && !isKoordinatorMetopen();
+  const { isAdmin, isResearchMethodCoordinator, isLoading: isRoleLoading } = useRole();
+  const showSyncButton = () => isAdmin() && !isResearchMethodCoordinator();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const queryClient = useQueryClient();
 
@@ -72,10 +72,10 @@ export default function Mahasiswa() {
 
   useEffect(() => {
     if (isRoleLoading) return;
-    if (!(isAdmin() || isKoordinatorMetopen())) {
+    if (!(isAdmin() || isResearchMethodCoordinator())) {
       navigate('/dashboard');
     }
-  }, [isAdmin, isKoordinatorMetopen, isRoleLoading, navigate]);
+  }, [isAdmin, isResearchMethodCoordinator, isRoleLoading, navigate]);
 
   // Fetch academic years for filter dropdown
   const { data: ayData } = useQuery({
@@ -251,29 +251,28 @@ export default function Mahasiswa() {
         onChange: setProgramFilter,
         options: [
           { value: '', label: 'Semua' },
-          { value: 'metopen', label: 'Metopen tanpa TA aktif' },
-          { value: 'ta', label: 'TA tanpa Metopen' },
-          { value: 'both', label: 'Metopen + TA aktif' },
-          { value: 'none', label: 'Tidak ada TA/Metopen aktif' },
+          { value: 'research-method', label: 'Metode Penelitian saja' },
+          { value: 'thesis', label: 'Tugas Akhir saja' },
+          { value: 'both', label: 'Metode Penelitian + Tugas Akhir' },
+          { value: 'none', label: 'Tidak keduanya' },
         ],
         placeholder: 'Filter program',
       },
+      // SIA flags of the listed period (rencana 10.6): mata kuliah yang diambil semester itu.
       render: (row: Student) => {
-        const activeTheses = row.student?.activeTheses ?? [];
-        const metopenEligibility = row.student?.metopenEligibility;
-        const inMetopen = Boolean(metopenEligibility?.canAccess);
-        const inTA = activeTheses.some((thesis) => thesis.status && String(thesis.status).toLowerCase() !== 'metopel');
-        if (!inMetopen && !inTA) return <span className="text-muted-foreground">—</span>;
+        const flags = row.student?.semesterFlags;
+        if (!flags?.takingResearchMethod && !flags?.takingThesisCourse) return <span className="text-muted-foreground">—</span>;
+        const source = flags.source === 'devtools' ? ' (diubah lewat DevTools)' : '';
         return (
-          <div className="flex flex-wrap gap-1">
-            {inMetopen && (
+          <div className="flex flex-wrap gap-1" title={`Menurut SIA ${flags.academicYearLabel}${source}`}>
+            {flags.takingResearchMethod && (
               <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">
-                {metopenEligibility?.readOnly ? 'Metopen Arsip' : 'Metopen'}
+                Metode Penelitian
               </Badge>
             )}
-            {inTA && (
+            {flags.takingThesisCourse && (
               <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
-                TA
+                Tugas Akhir
               </Badge>
             )}
           </div>

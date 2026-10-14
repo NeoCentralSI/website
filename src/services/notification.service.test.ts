@@ -13,9 +13,9 @@ function item(overrides: Partial<NotificationItem> = {}): NotificationItem {
 
 describe("getNotificationRoute", () => {
   it("returns data.route when it is an in-app path", () => {
-    expect(getNotificationRoute(item({ data: { route: "/metopel" } }))).toBe("/metopel");
-    expect(getNotificationRoute(item({ data: { route: "/kelola/metopen/ta03a" } }))).toBe(
-      "/kelola/metopen/ta03a",
+    expect(getNotificationRoute(item({ data: { route: "/tugas-akhir/proposal" } }))).toBe("/tugas-akhir/proposal");
+    expect(getNotificationRoute(item({ data: { route: "/metode-penelitian/penilaian" } }))).toBe(
+      "/metode-penelitian/penilaian",
     );
   });
 
@@ -26,14 +26,14 @@ describe("getNotificationRoute", () => {
   });
 
   it("does not invent a route when data.route is missing", () => {
-    expect(getNotificationRoute(item({ type: "simpta_ta03_finalized" }))).toBeNull();
-    expect(getNotificationRoute(item({ data: { type: "simpta_ta03_finalized" } }))).toBeNull();
+    expect(getNotificationRoute(item({ type: "research_method_assessment_finalized" }))).toBeNull();
+    expect(getNotificationRoute(item({ data: { type: "research_method_assessment_finalized" } }))).toBeNull();
     expect(getNotificationRoute(item({ data: null }))).toBeNull();
   });
 
   it("rejects absolute and protocol-relative URLs", () => {
     expect(getNotificationRoute(item({ data: { route: "https://evil.example/phish" } }))).toBeNull();
     expect(getNotificationRoute(item({ data: { route: "//evil.example/phish" } }))).toBeNull();
-    expect(getNotificationRoute(item({ data: { route: "/metopel://skip" } }))).toBeNull();
+    expect(getNotificationRoute(item({ data: { route: "/tugas-akhir://skip" } }))).toBeNull();
   });
 });

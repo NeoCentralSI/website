@@ -142,7 +142,7 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items!.map((subItem) => {
                         // Only the most specific matching sub-item should be active.
-                        // E.g. /metopel/tugas must not highlight Overview (/metopel).
+                        // E.g. /tugas-akhir/proposal must not highlight Overview (/tugas-akhir).
                         const matches =
                           hasExplicitActive
                             ? subItem.isActive

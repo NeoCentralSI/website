@@ -11,7 +11,8 @@ export const ROLES = {
   PENGUJI: "Penguji",
   MAHASISWA: "Mahasiswa",
   GKM: "GKM",
-  KOORDINATOR_METOPEN: "Koordinator Matkul Metopen",
+  /** The database value keeps the old name; the UI label is "Koordinator Metode Penelitian". */
+  KOORDINATOR_METODE_PENELITIAN: "Koordinator Matkul Metopen",
   KOORDINATOR_YUDISIUM: "Koordinator Yudisium",
   TIM_PENGELOLA_CPL: "Tim Pengelola CPL",
 } as const;
@@ -32,7 +33,7 @@ export const LECTURER_ROLES = [
   ROLES.KETUA_DEPARTEMEN,
   ROLES.SEKRETARIS_DEPARTEMEN,
   ROLES.GKM,
-  ROLES.KOORDINATOR_METOPEN,
+  ROLES.KOORDINATOR_METODE_PENELITIAN,
   ROLES.KOORDINATOR_YUDISIUM,
   ROLES.TIM_PENGELOLA_CPL,
 ] as const;
@@ -55,7 +56,7 @@ export const formatRoleName = (roleName: string): string => {
     [ROLES.PEMBIMBING_2]: 'Pembimbing 2',
     [ROLES.MAHASISWA]: 'Mahasiswa',
     [ROLES.PENGUJI]: 'Penguji',
-    [ROLES.KOORDINATOR_METOPEN]: 'Koordinator Metopen',
+    [ROLES.KOORDINATOR_METODE_PENELITIAN]: 'Koordinator Metode Penelitian',
     [ROLES.KOORDINATOR_YUDISIUM]: 'Koordinator Yudisium',
     [ROLES.TIM_PENGELOLA_CPL]: 'Tim Pengelola CPL',
   };
@@ -72,7 +73,7 @@ export const roleOptions = [
   { value: ROLES.KETUA_DEPARTEMEN, label: 'Ketua Departemen' },
   { value: ROLES.SEKRETARIS_DEPARTEMEN, label: 'Sekretaris Departemen' },
   { value: ROLES.GKM, label: 'GKM' },
-  { value: ROLES.KOORDINATOR_METOPEN, label: 'Koordinator Matkul Metopen' },
+  { value: ROLES.KOORDINATOR_METODE_PENELITIAN, label: 'Koordinator Metode Penelitian' },
   { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
   { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
 ];

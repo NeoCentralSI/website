@@ -48,7 +48,7 @@ const appendSharedEventMenus = (items: SidebarNavItem[]) => {
 };
 
 export const useSidebarMenu = () => {
-  const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing, isKoordinatorMetopen } = useRole();
+  const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing, isResearchMethodCoordinator } = useRole();
   const { user: authUser } = useAuth();
 
   const isStudentRole = isStudent();
@@ -58,7 +58,7 @@ export const useSidebarMenu = () => {
   const isGkmRole = isGkm();
   const isAdminRole = isAdmin();
   const isPembimbingRole = isPembimbing();
-  const isKoordinatorMetopenRole = isKoordinatorMetopen();
+  const isResearchMethodCoordinatorRole = isResearchMethodCoordinator();
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
 
@@ -72,7 +72,7 @@ export const useSidebarMenu = () => {
       gkm: isGkmRole,
       admin: isAdminRole,
       pembimbing: isPembimbingRole,
-      koordinatorMetopen: isKoordinatorMetopenRole,
+      researchMethodCoordinator: isResearchMethodCoordinatorRole,
     };
 
     // Get user initials for avatar fallback
@@ -90,7 +90,7 @@ export const useSidebarMenu = () => {
      * Supervisors score in Tugas Akhir > Proposal; Sekdep's master data is Kelola > Metode Penelitian.
      */
     const buildResearchMethodItems = (): SidebarLeafItem[] => {
-      if (role.koordinatorMetopen) {
+      if (role.researchMethodCoordinator) {
         return [
           { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
           { title: "Presensi", url: "/metode-penelitian/presensi" },
@@ -223,7 +223,7 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
-      if (role.koordinatorMetopen) {
+      if (role.researchMethodCoordinator) {
         menuItems.push({
           title: "Kelola",
           url: "#",
@@ -332,7 +332,7 @@ export const useSidebarMenu = () => {
     // LECTURER (SEKDEP) MENU
     // Canon SIMPTA v2.0 §4 + Q5 (audit BR-24): Sekdep adalah pengelola data
     // master TA + monitoring read-only. Role Sekdep saja bukan pembimbing
-    // operasional dan bukan co-approver TA-04. Untuk akun multi-role, menu
+    // operasional dan tidak menerbitkan Penetapan Pembimbing (hanya membaca). Untuk akun multi-role, menu
     // operasional tetap mengikuti role tambahan yang benar-benar dimiliki.
     if (role.sekdep) {
       const menuItems = [
@@ -641,7 +641,7 @@ export const useSidebarMenu = () => {
     // Only recompute when role flags or auth user identity change
   }, [
     // role flags
-    isStudentRole, isDosenRole, isKadepRole, isSekdepRole, isGkmRole, isAdminRole, isPembimbingRole, isKoordinatorMetopenRole,
+    isStudentRole, isDosenRole, isKadepRole, isSekdepRole, isGkmRole, isAdminRole, isPembimbingRole, isResearchMethodCoordinatorRole,
     // user deps
     authUser?.fullName, authUser?.email,
     avatarBlobUrl,

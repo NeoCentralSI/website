@@ -16,6 +16,8 @@ const QK = {
   roles: 'devtools-roles',
   academicYears: 'devtools-academic-years',
   guidances: 'devtools-guidances',
+  semesterFlags: 'devtools-semester-flags',
+  supervisorRequests: 'devtools-supervisor-requests',
 } as const;
 
 export function useDevToolsStudents(search: string, statusFilter: string) {
@@ -85,6 +87,23 @@ export function useDevToolsGuidances(params: { search: string; status: string; p
   });
 }
 
+export function useDevToolsSemesterFlags(studentId: string | null) {
+  return useQuery({
+    queryKey: [QK.semesterFlags, studentId],
+    queryFn: () => devToolsService.getSemesterFlags(studentId!),
+    enabled: !!studentId,
+  });
+}
+
+export function useDevToolsSupervisorRequests(params: { search: string; page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: [QK.supervisorRequests, params.search, params.page, params.pageSize],
+    queryFn: () => devToolsService.getSupervisorRequests(params),
+    staleTime: 15_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
 export function useDevToolsMutations() {
   const qc = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,6 +115,10 @@ export function useDevToolsMutations() {
     qc.invalidateQueries({ queryKey: [QK.users] });
     qc.invalidateQueries({ queryKey: [QK.academicYears] });
     qc.invalidateQueries({ queryKey: [QK.guidances] });
+    qc.invalidateQueries({ queryKey: [QK.semesterFlags] });
+    qc.invalidateQueries({ queryKey: [QK.supervisorRequests] });
+    qc.invalidateQueries({ queryKey: ['thesis-proposal'] });
+    qc.invalidateQueries({ queryKey: ['research-method'] });
   }, [qc]);
 
   const wrap = useCallback(
@@ -135,5 +158,7 @@ export function useDevToolsMutations() {
       wrap(() => devToolsService.setThesisAcademicYear(thesisId, academicYearId)),
     updateGuidanceSchedule: (id: string, data: UpdateGuidanceScheduleDto) =>
       wrap(() => devToolsService.updateGuidanceSchedule(id, data)),
+    setSupervisorRequestTime: (id: string, createdAt: string) =>
+      wrap(() => devToolsService.setSupervisorRequestTime(id, createdAt), 'Waktu pengajuan pembimbing diubah'),
   };
 }

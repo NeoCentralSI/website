@@ -7,7 +7,7 @@ import { hasAnyRole } from '@/lib/roles';
 const AUTH_ME_QUERY_KEY = ['auth', 'me'] as const;
 
 export interface RoleRouteGuardProps {
-  /** Role names allowed to access (e.g. ['Admin', 'Koordinator Matkul Metopen']). Must match backend ROLES. */
+  /** Role names allowed to access (e.g. [ROLES.ADMIN, ROLES.KETUA_DEPARTEMEN]). Must match backend ROLES. */
   allowedRoles: string[];
   /** Where to redirect when not allowed. Default /dashboard */
   redirectTo?: string;

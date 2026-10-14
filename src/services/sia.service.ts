@@ -29,6 +29,10 @@ export interface SiaSyncStatus {
   fetched?: number;
   dbUpdated?: number;
   periodSnapshotsCreated?: number;
+  /** Semester flags read from SIA's per-semester endpoint (plan 10.6). */
+  periodFlagsUpdated?: number;
+  periodFlagsUnknownStudents?: number;
+  periodFlagsError?: string | null;
   error?: string | null;
   durationMs?: number;
   periodSnapshots: {

@@ -27,8 +27,8 @@ function record(overrides: Partial<NotificationRecord> = {}): NotificationRecord
     message: "Dosen pembimbing menolak pengajuan Anda.",
     isRead: false,
     createdAt: "2026-08-13T00:00:00.000Z",
-    type: "advisor_request_rejected_by_dosen",
-    data: { route: "/metopel" },
+    type: "supervisor_request_rejected",
+    data: { route: "/tugas-akhir/proposal" },
     ...overrides,
   };
 }
@@ -58,7 +58,7 @@ describe("NotificationItem", () => {
     await waitFor(() => {
       expect(onMarkRead).toHaveBeenCalledWith("n1");
       expect(onNavigate).toHaveBeenCalledTimes(1);
-      expect(navigateMock).toHaveBeenCalledWith("/metopel");
+      expect(navigateMock).toHaveBeenCalledWith("/tugas-akhir/proposal");
     });
   });
 
@@ -67,7 +67,7 @@ describe("NotificationItem", () => {
 
     render(
       <NotificationItem
-        notification={record({ data: { type: "advisor_request_rejected_by_dosen" } })}
+        notification={record({ data: { type: "supervisor_request_rejected" } })}
         onMarkRead={onMarkRead}
         onDelete={vi.fn().mockResolvedValue(undefined)}
       />,
