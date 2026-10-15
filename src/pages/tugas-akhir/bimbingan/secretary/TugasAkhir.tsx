@@ -12,7 +12,7 @@ import { SeminarRequirementManagementPanel } from "@/components/master-data/semi
 import { DefenceRequirementManagementPanel } from "@/components/master-data/defence-requirement/DefenceRequirementManagementPanel";
 import { useRole } from "@/hooks/shared";
 
-/** Master TA penuh (seminar/sidang). CPMK+rubrik Metopen ada di /kelola/metopen/cpmk-rubrik. */
+/** Master TA penuh (seminar/sidang). CPMK dan rubrik Metode Penelitian ada di /kelola/metode-penelitian. */
 const TAB_ITEMS: TabItem[] = [
   { label: "Topik", to: "/kelola/tugas-akhir/topik" },
   // Guidance revival: template milestone TA (baseline "Kelola Milestone")
