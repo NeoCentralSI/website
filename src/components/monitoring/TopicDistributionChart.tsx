@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { TopicDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 
 interface TopicDistributionChartProps {
   topicDistribution: TopicDistribution[] | undefined;
@@ -18,7 +19,7 @@ const TOPIC_COLORS = [
 export function TopicDistributionChart({ topicDistribution, isLoading }: TopicDistributionChartProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
           <CardTitle className="text-base">Distribusi Topik</CardTitle>
         </CardHeader>
@@ -43,7 +44,7 @@ export function TopicDistributionChart({ topicDistribution, isLoading }: TopicDi
   }));
 
   return (
-    <Card>
+    <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="text-base">Distribusi Topik</CardTitle>
       </CardHeader>

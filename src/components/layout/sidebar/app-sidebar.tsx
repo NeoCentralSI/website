@@ -32,6 +32,7 @@ interface SidebarData {
     items?: Array<{
       title: string;
       url: string;
+      badge?: number;
     }>;
   }>;
   navSecondary: Array<{

@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { ProgressBucket } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 
 interface ProgressDistributionChartProps {
   progressDistribution: ProgressBucket[] | undefined;
@@ -15,7 +16,7 @@ const PROGRESS_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", 
 export function ProgressDistributionChart({ progressDistribution, isLoading }: ProgressDistributionChartProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
           <CardTitle className="text-base">Distribusi Progress Milestone</CardTitle>
         </CardHeader>
@@ -39,7 +40,7 @@ export function ProgressDistributionChart({ progressDistribution, isLoading }: P
   }));
 
   return (
-    <Card>
+    <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="text-base">Distribusi Progress Milestone</CardTitle>
       </CardHeader>

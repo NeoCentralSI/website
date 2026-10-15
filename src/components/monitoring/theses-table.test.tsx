@@ -9,7 +9,7 @@ import { ThesesTable } from "./ThesesTable";
 
 vi.mock("lottie-react", () => ({ default: () => null }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true }) }));
+vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true, isSekdep: () => false, isGkm: () => false }) }));
 vi.mock("@/services/monitoring.service", () => ({
   getThesesList: vi.fn(),
   getFilterOptions: vi.fn(),

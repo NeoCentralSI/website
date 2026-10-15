@@ -5,8 +5,8 @@ import { formatDateTimeWib, formatLecturerName } from '@/lib/text';
 import {
   CHANGE_REQUEST_STATUS_VARIANTS,
   getChangeRequestStatusLabel,
+  getChangeRequestKindLabel,
   getChangeRequestStepLabel,
-  getChangeRequestTypeLabel,
   getSupervisorPositionLabel,
   type ChangeRequestStatus,
 } from '@/lib/thesisLabels';
@@ -17,7 +17,7 @@ export function ThesisChangeRequestStatusBadge({ status }: { status: ChangeReque
 }
 
 export function ThesisChangeRequestTypeBadge({ request }: { request: ThesisChangeRequest }) {
-  return <Badge variant="secondary">{getChangeRequestTypeLabel(request.requestType)}</Badge>;
+  return <Badge variant="secondary">{getChangeRequestKindLabel(request)}</Badge>;
 }
 
 const personName = (person: { name: string | null } | null | undefined) => formatLecturerName(person?.name) || '-';

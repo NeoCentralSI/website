@@ -11,10 +11,13 @@ import {
 import { cn } from "@/lib/utils";
 import {
   READINESS_COPY,
+  ReadinessPassedView,
   ReadinessRequirementList,
   ReadinessStateBadge,
   ReadinessSupervisorList,
+  WAITING_FOR_SEMINAR_TEXT,
   isReadinessFullyApproved,
+  isWaitingForSeminar,
   type ReadinessKind,
 } from "../ReadinessParts";
 
@@ -26,7 +29,9 @@ export interface StudentReadinessStatusCardProps {
 /**
  * Student view of seminar/defence readiness: system requirements, every supervisor's
  * approval, and "Minta Persetujuan" (a notification only, nothing is uploaded). The two
- * kinds share this card so they stay symmetric.
+ * kinds share this card so they stay symmetric; both always show, side by side with equal
+ * height (Paket E4, 3.1). A passed event turns the card read-only (3.2); the defence card
+ * first waits for the results seminar (3.3).
  */
 export function StudentReadinessStatusCard({ kind, thesisId, className }: StudentReadinessStatusCardProps & { kind: ReadinessKind }) {
   const seminar = useSeminarReadinessStatus(kind === "seminar" ? thesisId : undefined);
@@ -37,7 +42,7 @@ export function StudentReadinessStatusCard({ kind, thesisId, className }: Studen
 
   if (isLoading) {
     return (
-      <Card className={className}>
+      <Card className={cn("h-full", className)}>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </CardContent>
@@ -48,55 +53,84 @@ export function StudentReadinessStatusCard({ kind, thesisId, className }: Studen
 
   const fullyApproved = readinessStatus.requirementsMet && isReadinessFullyApproved(readinessStatus);
   const requestReason = readinessStatus.requestBlockedReason;
+  const passed = !!readinessStatus.isPassed;
+  const waiting = isWaitingForSeminar(kind, readinessStatus);
+  // A finished thesis (Selesai) is read-only even without a passed event on record.
+  const finished = readinessStatus.thesisStatus === "completed";
 
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn("flex h-full w-full flex-col", className)}>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <CardTitle className="text-lg">{copy.title}</CardTitle>
             <CardDescription>
-              Tidak ada dokumen yang perlu diunggah di sini. Pembimbing membaca draf dari lampiran sesi bimbingan.
+              {passed
+                ? `Kesiapan ${copy.noun} sudah selesai.`
+                : "Tidak ada dokumen yang perlu diunggah di sini. Pembimbing membaca draf dari lampiran sesi bimbingan."}
             </CardDescription>
           </div>
           <ReadinessStateBadge status={readinessStatus} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <ReadinessRequirementList requirements={readinessStatus.requirements} />
-          <ReadinessSupervisorList supervisors={readinessStatus.supervisors} />
-        </div>
-
-        <div className="space-y-2 border-t pt-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              disabled={!!requestReason || requestMutation.isPending}
-              onClick={() => requestMutation.mutate(thesisId)}
-            >
-              {requestMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
-              )}
-              Minta Persetujuan
-            </Button>
-            <Button asChild variant={fullyApproved ? "default" : "outline"}>
-              <Link to={copy.registerPath}>
-                {copy.registerLabel}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+      <CardContent className="flex flex-1 flex-col gap-4">
+        {passed ? (
+          <ReadinessPassedView kind={kind} status={readinessStatus} />
+        ) : waiting ? (
+          <div className="space-y-2">
+            <ReadinessRequirementList requirements={readinessStatus.requirements} />
+            <p className="text-sm text-muted-foreground">{WAITING_FOR_SEMINAR_TEXT}.</p>
           </div>
-          {requestReason && (
-            <p className="text-xs text-muted-foreground">Minta Persetujuan belum tersedia: {requestReason}</p>
-          )}
-          {fullyApproved && (
-            <p className="text-xs text-green-700">
-              Semua pembimbing sudah menyetujui. Lanjutkan pendaftaran {copy.noun} di halamannya.
-            </p>
-          )}
-        </div>
+        ) : (
+          <>
+            <ReadinessRequirementList requirements={readinessStatus.requirements} />
+            <ReadinessSupervisorList supervisors={readinessStatus.supervisors} />
+          </>
+        )}
+
+        {!passed && finished && (
+          <p className="mt-auto border-t pt-4 text-xs text-muted-foreground">
+            Tugas akhir sudah selesai; kesiapan {copy.noun} tidak dapat diubah lagi.
+          </p>
+        )}
+        {!passed && !finished && (
+          <div className="mt-auto space-y-2 border-t pt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span title={requestReason ?? undefined}>
+                <Button
+                  disabled={!!requestReason || requestMutation.isPending}
+                  onClick={() => requestMutation.mutate(thesisId)}
+                >
+                  {requestMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Minta Persetujuan
+                </Button>
+              </span>
+              <Button asChild variant={fullyApproved ? "default" : "outline"}>
+                <Link to={copy.registerPath}>
+                  {copy.registerLabel}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+            {requestReason && (
+              <p className="text-xs text-muted-foreground">
+                Minta Persetujuan belum tersedia: {waiting ? WAITING_FOR_SEMINAR_TEXT : requestReason}
+              </p>
+            )}
+            {fullyApproved && (
+              <p className="text-xs text-green-700">
+                Semua pembimbing sudah menyetujui. Lanjutkan pendaftaran {copy.noun} di halamannya.
+              </p>
+            )}
+          </div>
+        )}
+        {passed && readinessStatus.requestBlockedReason && (
+          <p className="mt-auto border-t pt-4 text-xs text-muted-foreground">{readinessStatus.requestBlockedReason}</p>
+        )}
       </CardContent>
     </Card>
   );

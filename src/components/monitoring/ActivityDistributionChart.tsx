@@ -5,6 +5,7 @@ import type { ActivityDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
 import { THESIS_ACTIVITY_CHART_COLORS, getThesisActivityLabel, type ThesisActivityLevel } from "@/lib/thesisLabels";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 
 interface ActivityDistributionChartProps {
   activityDistribution: ActivityDistribution[] | undefined;
@@ -19,7 +20,7 @@ function getColor(level: string, index: number): string {
 export function ActivityDistributionChart({ activityDistribution, isLoading }: ActivityDistributionChartProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
           <CardTitle className="text-base">Distribusi Aktivitas</CardTitle>
         </CardHeader>
@@ -40,7 +41,7 @@ export function ActivityDistributionChart({ activityDistribution, isLoading }: A
   });
 
   return (
-    <Card>
+    <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="text-base">Distribusi Aktivitas</CardTitle>
       </CardHeader>

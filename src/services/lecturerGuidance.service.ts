@@ -9,6 +9,8 @@ export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed"
 export interface MyStudentItem {
   /** Relation status of the current lecturer to this thesis (active/released). */
   supervisorStatus?: string | null;
+  /** Paket E4 (1.1): this lecturer was replaced; shown under "Semua" only, read-only. */
+  noLongerSupervising?: boolean;
   studentId: string;
   fullName: string;
   email?: string;
@@ -95,6 +97,8 @@ export interface StudentDetail extends ThesisPhaseSummary {
   supervisionClock: SupervisionClock | null;
   /** True while the thesis is back in proposal because of a guidance evaluation (E5). */
   repeatingProposal?: boolean;
+  /** Paket E4 (1.1): the viewer's supervision ended (replaced); the page is read-only. */
+  noLongerSupervising?: boolean;
   startDate: string | null;
   startDateFormatted: string | null;
   student: {

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { BookOpen, GraduationCap, Mail, Target } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,21 @@ function bySupervisorRole(a: Supervisor, b: Supervisor) {
   return key(a.role).localeCompare(key(b.role));
 }
 
+export interface StudentThesisSummaryCardProps {
+  thesis: MyThesisDetail;
+  /** Paket E4 (6): "Ajukan Perubahan" in the card header, and its reason under the header. */
+  headerAction?: ReactNode;
+  headerNote?: ReactNode;
+  /** "Riwayat perubahan judul (N)" under the title and topic. */
+  titleExtras?: ReactNode;
+  /** "Riwayat pembimbing (N)" under the supervisors. */
+  supervisorExtras?: ReactNode;
+  /** The running change request as one status line, and "Riwayat evaluasi (N)". */
+  footer?: ReactNode;
+}
+
 /** "Informasi Tugas Akhir": title, topic, status badge, and every supervisor with their role. */
-export function StudentThesisSummaryCard({ thesis }: { thesis: MyThesisDetail }) {
+export function StudentThesisSummaryCard({ thesis, headerAction, headerNote, titleExtras, supervisorExtras, footer }: StudentThesisSummaryCardProps) {
   const supervisors = [...thesis.supervisors].sort(bySupervisorRole);
 
   return (
@@ -32,8 +46,12 @@ export function StudentThesisSummaryCard({ thesis }: { thesis: MyThesisDetail })
               <CardDescription>Judul, topik, status, dan pembimbing</CardDescription>
             </div>
           </div>
-          <ThesisStatusBadge status={thesis.status} />
+          <div className="flex flex-wrap items-center gap-2">
+            <ThesisStatusBadge status={thesis.status} />
+            {headerAction}
+          </div>
         </div>
+        {headerNote}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -44,6 +62,7 @@ export function StudentThesisSummaryCard({ thesis }: { thesis: MyThesisDetail })
             <Target className="h-4 w-4 shrink-0" />
             <span>Topik: <span className="font-medium text-foreground">{thesis.topic?.name ?? "Belum dipilih"}</span></span>
           </p>
+          {titleExtras}
         </div>
 
         <Separator />
@@ -70,7 +89,15 @@ export function StudentThesisSummaryCard({ thesis }: { thesis: MyThesisDetail })
               ))}
             </ul>
           )}
+          {supervisorExtras}
         </div>
+
+        {footer && (
+          <>
+            <Separator />
+            <div className="space-y-2">{footer}</div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

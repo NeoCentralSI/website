@@ -181,3 +181,88 @@ describe("readiness cards", () => {
     expect(screen.queryByRole("button", { name: "Setujui" })).not.toBeInTheDocument();
   });
 });
+
+describe("readiness cards after the event (Paket E4, 3.2/3.3)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const passedSupervisors = [
+    { id: "l1", name: "HUSNIL KAMIL", email: "h@x.test", role: "Pembimbing 1", hasApproved: true, approvedAt: "2026-09-20T03:00:00.000Z" },
+    { id: "l2", name: "AFRIYANTI", email: "a@x.test", role: "Pembimbing 2", hasApproved: true, approvedAt: "2026-09-21T03:00:00.000Z" },
+  ];
+
+  it("lecturer seminar card after the seminar passed: read-only, each approval with its date, no buttons", async () => {
+    vi.mocked(milestoneService.getSeminarReadinessStatus).mockResolvedValue(seminar({
+      currentUserRole: "Pembimbing 1",
+      currentUserHasApproved: true,
+      supervisors: passedSupervisors,
+      isPassed: true,
+      passedAt: "2026-10-01T03:00:00.000Z",
+      approveBlockedReason: "Seminar hasil sudah lulus. Persetujuan kesiapan seminar tidak dapat diubah lagi.",
+      revokeBlockedReason: "Seminar hasil sudah lulus. Persetujuan kesiapan seminar tidak dapat diubah lagi.",
+    }));
+    wrap(<SeminarReadinessCard thesisId="t1" studentName="ILHAM NOFALDI" />);
+
+    expect(await screen.findByText("Seminar hasil lulus pada 1 Oktober 2026")).toBeInTheDocument();
+    expect(screen.getByText("Lulus")).toBeInTheDocument();
+    expect(screen.getByText("Menyetujui · 20 September 2026")).toBeInTheDocument();
+    expect(screen.getByText("Menyetujui · 21 September 2026")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Setujui|Batalkan Persetujuan/ })).not.toBeInTheDocument();
+    expect(screen.getByText("Seminar hasil sudah lulus. Persetujuan kesiapan seminar tidak dapat diubah lagi.")).toBeInTheDocument();
+  });
+
+  it("student seminar card after the seminar passed: the passed state without Minta Persetujuan", async () => {
+    vi.mocked(milestoneService.getSeminarReadinessStatus).mockResolvedValue(seminar({
+      supervisors: passedSupervisors,
+      isPassed: true,
+      passedAt: "2026-10-01T03:00:00.000Z",
+      requestBlockedReason: "Seminar hasil sudah lulus.",
+    }));
+    wrap(<SeminarReadinessStatusCard thesisId="t1" />);
+
+    expect(await screen.findByText("Seminar hasil lulus pada 1 Oktober 2026")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Minta Persetujuan/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Buka Halaman Seminar Hasil/ })).not.toBeInTheDocument();
+  });
+
+  it("defence card before the seminar passes: only the unmet requirement, without the approval list", async () => {
+    vi.mocked(milestoneService.getDefenceReadinessStatus).mockResolvedValue(defence({
+      currentUserRole: "Pembimbing 1",
+      requirements: [{ key: "seminar", label: "Seminar hasil dinyatakan lulus", met: false, detail: "Belum lulus" }],
+      requirementsMet: false,
+      seminarPassed: false,
+      approveBlockedReason: "Syarat sistem belum terpenuhi.",
+    }));
+    wrap(<DefenceReadinessCard thesisId="t1" studentName="ILHAM NOFALDI" />);
+
+    expect(await screen.findByText("Menunggu seminar hasil lulus.")).toBeInTheDocument();
+    expect(screen.getByText("Seminar hasil dinyatakan lulus")).toBeInTheDocument();
+    expect(screen.queryByText("Husnil Kamil")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Setujui" })).toBeDisabled();
+    expect(screen.getByText("Belum dapat disetujui: Menunggu seminar hasil lulus")).toBeInTheDocument();
+  });
+
+  it("student card of a finished thesis without a passed event on record: no buttons, a read-only note", async () => {
+    vi.mocked(milestoneService.getSeminarReadinessStatus).mockResolvedValue(seminar({
+      thesisStatus: "completed",
+      requestBlockedReason: "Tugas akhir tidak berstatus Penelitian.",
+    }));
+    wrap(<SeminarReadinessStatusCard thesisId="t1" />);
+
+    expect(await screen.findByText("Tugas akhir sudah selesai; kesiapan seminar hasil tidak dapat diubah lagi.")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("defence card after the defence passed: read-only like the seminar card", async () => {
+    vi.mocked(milestoneService.getDefenceReadinessStatus).mockResolvedValue(defence({
+      supervisors: passedSupervisors,
+      seminarPassed: true,
+      isPassed: true,
+      passedAt: "2026-12-01T03:00:00.000Z",
+      requestBlockedReason: "Sidang sudah lulus.",
+    }));
+    wrap(<DefenceReadinessStatusCard thesisId="t1" />);
+
+    expect(await screen.findByText("Sidang lulus pada 1 Desember 2026")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+});

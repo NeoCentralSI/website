@@ -8,13 +8,8 @@ import LecturerMyStudentsPage from "./MyStudents";
 
 vi.mock("lottie-react", () => ({ default: () => null }));
 vi.mock("@/services/lecturerGuidance.service", () => ({ getMyStudents: vi.fn(), sendWarningToStudent: vi.fn() }));
-vi.mock("@/hooks/shared/useAuth", () => ({ useAuth: () => ({ user: { id: "l1" } }) }));
-// Sections around the table have their own tests.
-vi.mock("@/components/bimbingan/Supervisor2RequestsSection", () => ({ Supervisor2RequestsSection: () => null }));
+// The summary charts have their own tests.
 vi.mock("@/components/bimbingan/MyStudentsCharts", () => ({ MyStudentsCharts: () => null }));
-vi.mock("@/components/thesis-change-request/LecturerThesisChangeRequestPanel", () => ({ LecturerThesisChangeRequestPanel: () => null }));
-vi.mock("@/components/thesis-proposal/LecturerSupervisorRequestPanel", () => ({ LecturerSupervisorRequestPanel: () => null }));
-vi.mock("@/components/thesis-change-request/LecturerTransferStudentsDialog", () => ({ LecturerTransferStudentsDialog: () => null }));
 
 const LONG_TITLE = "Rancang Bangun Sistem Informasi Monitoring Tugas Akhir Berbasis Web pada Departemen Sistem Informasi Universitas Andalas";
 
@@ -67,18 +62,35 @@ describe("LecturerMyStudentsPage table", () => {
     renderPage();
     await screen.findByText("Ilham Nofaldi");
 
+    // Paket E4 (4): no selection column; "Alihkan Mahasiswa" moved to Tugas Akhir > Perubahan.
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent?.trim());
-    expect(headers).toEqual(["", "Mahasiswa", "Milestone", "Bimbingan", "Masa Bimbingan", "Aktivitas", "Aksi"]);
+    expect(headers).toEqual(["Mahasiswa", "Milestone", "Bimbingan", "Masa Bimbingan", "Aktivitas", "Aksi"]);
     // Only "Mahasiswa" has no width: it takes what the other columns leave.
     const widths = screen.getAllByRole("columnheader").map((header) => (header as HTMLElement).style.width);
-    expect(widths).toEqual(["44px", "", "150px", "150px", "190px", "124px", "96px"]);
+    expect(widths).toEqual(["", "150px", "150px", "190px", "124px", "96px"]);
     expect(screen.getByRole("table").className).toContain("table-fixed");
+    expect(screen.queryByRole("button", { name: /Alihkan Mahasiswa/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Permohonan Pembimbing")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pengajuan Perubahan")).not.toBeInTheDocument();
+  });
+
+  it("marks a replaced supervisor's student 'Tidak lagi membimbing', read-only (Paket E4, 1.1)", async () => {
+    vi.mocked(getMyStudents).mockResolvedValue({
+      success: true,
+      count: 1,
+      students: [row({ supervisorStatus: "released", noLongerSupervising: true })],
+    });
+    renderPage();
+    const tableRow = (await screen.findByText("Ilham Nofaldi")).closest("tr")!;
+    expect(within(tableRow).getByText("Tidak lagi membimbing")).toBeInTheDocument();
+    expect(within(tableRow).queryByText("Kirim Peringatan")).not.toBeInTheDocument();
+    expect(within(tableRow).getByText("Detail")).toBeInTheDocument();
   });
 
   it("keeps every piece of information of the old columns", async () => {
     renderPage();
     const cells = within((await screen.findByText("Ilham Nofaldi")).closest("tr")!).getAllByRole("cell");
-    const [, student, milestone, guidance, clock, activity, actions] = cells;
+    const [student, milestone, guidance, clock, activity, actions] = cells;
 
     // Mahasiswa: name, NIM, one truncated title line, status badge.
     expect(within(student).getByText("Ilham Nofaldi")).toBeInTheDocument();

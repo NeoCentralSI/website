@@ -37,7 +37,9 @@ const LecturerGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbi
 const LecturerMyStudentsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/MyStudents'))
 const LecturerMyStudentDetailPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/MyStudentDetail'))
 const SecretaryKelolaTugasAkhirPage = lazy(() => import('./pages/tugas-akhir/bimbingan/secretary/TugasAkhir'))
-const KelolaTugasAkhirKadepPage = lazy(() => import('./pages/kelola/kadep/KelolaTugasAkhir'))
+const LecturerSupervisorRequestsPage = lazy(() => import('./pages/tugas-akhir/permohonan/LecturerSupervisorRequests'))
+const ThesisChangeRequestsPage = lazy(() => import('./pages/tugas-akhir/perubahan/ThesisChangeRequests'))
+const ThesisGuidanceEvaluationsPage = lazy(() => import('./pages/tugas-akhir/evaluasi/ThesisGuidanceEvaluations'))
 // Tugas Akhir - Seminar Hasil
 const ThesisSeminarEntryPage = lazy(() => import('./pages/thesis-seminar/ThesisSeminarEntry'))
 const ThesisSeminarDetailPage = lazy(() => import('./pages/thesis-seminar/ThesisSeminarDetail'))
@@ -297,8 +299,11 @@ function App() {
                   <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
                   {/* Seminar Hasil and Sidang lecturer-side handled by unified top-level routes */}
                   <Route path="/jadwal-ketersediaan" element={<LecturerAvailability />} />
-                  {/* Permohonan Pembimbing is a panel on Mahasiswa Bimbingan (K16). */}
-                  <Route path="/dosen/inbox-pembimbing" element={<Navigate to="/tugas-akhir/bimbingan/lecturer/my-students" replace />} />
+                  {/* Paket E4 (4.1-4.3): Permohonan, Perubahan and Evaluasi have their own pages. */}
+                  <Route path="/tugas-akhir/permohonan" element={<LecturerSupervisorRequestsPage />} />
+                  <Route path="/tugas-akhir/perubahan" element={<ThesisChangeRequestsPage />} />
+                  <Route path="/tugas-akhir/evaluasi" element={<ThesisGuidanceEvaluationsPage />} />
+                  <Route path="/dosen/inbox-pembimbing" element={<Navigate to="/tugas-akhir/permohonan" replace />} />
                 </Route>
 
                 {/* Monitoring TA — KaDep, Sekdep, GKM (guidance revival: akses GKM baseline dipulihkan,
@@ -411,10 +416,10 @@ function App() {
                   <Route path="/kelola/tugas-akhir/kadep" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pengesahan-judul" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
-                  {/* Pengajuan Perubahan Tugas Akhir (judul, pembimbing, alihkan mahasiswa); rute lama diarahkan ke sini */}
-                  <Route path="/kelola/tugas-akhir/kadep/perubahan" element={<KelolaTugasAkhirKadepPage />} />
-                  <Route path="/kelola/tugas-akhir/kadep/evaluasi" element={<KelolaTugasAkhirKadepPage />} />
-                  <Route path="/kelola/tugas-akhir/kadep/pergantian-pembimbing" element={<Navigate to="/kelola/tugas-akhir/kadep/perubahan" replace />} />
+                  {/* Paket E4 (4.4): "Persetujuan Tugas Akhir" is gone; its addresses go to the new pages. */}
+                  <Route path="/kelola/tugas-akhir/kadep/perubahan" element={<Navigate to="/tugas-akhir/perubahan" replace />} />
+                  <Route path="/kelola/tugas-akhir/kadep/evaluasi" element={<Navigate to="/tugas-akhir/evaluasi" replace />} />
+                  <Route path="/kelola/tugas-akhir/kadep/pergantian-pembimbing" element={<Navigate to="/tugas-akhir/perubahan" replace />} />
                   {/* Kerja Praktik Kadep (non-SIMPTA, from origin/main) */}
                   <Route path="/kelola/kerja-praktik/kadep" element={<Navigate to="/kelola/kerja-praktik/kadep/monitoring" replace />} />
                   <Route path="/kelola/kerja-praktik/kadep/monitoring" element={<KadepInternshipManagementPage />} />

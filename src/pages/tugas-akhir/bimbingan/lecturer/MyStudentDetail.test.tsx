@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getStudentDetailPendingCounts } from "@/components/tugas-akhir/lecturer/studentDetailPending";
+import { DETAIL_SECTIONS, getStudentDetailActionItems } from "@/components/tugas-akhir/lecturer/studentDetailPending";
+import { useLecturerProposalRevision } from "@/hooks/thesis-proposal/useProposalRevision";
 import { useDefenceReadinessStatus, useSeminarReadinessStatus } from "@/hooks/milestone/useMilestone";
 import { useThesisChangeContext } from "@/hooks/thesis-change-request/useThesisChangeRequest";
 import { useEvaluationContext } from "@/hooks/thesis-guidance-evaluation/useThesisGuidanceEvaluation";
@@ -25,12 +26,16 @@ vi.mock("@/hooks/milestone/useMilestone", () => ({
 }));
 vi.mock("@/hooks/thesis-change-request/useThesisChangeRequest", () => ({ useThesisChangeContext: vi.fn() }));
 vi.mock("@/hooks/thesis-guidance-evaluation/useThesisGuidanceEvaluation", () => ({ useEvaluationContext: vi.fn() }));
+vi.mock("@/hooks/thesis-proposal/useProposalRevision", () => ({ useLecturerProposalRevision: vi.fn() }));
 // The cards have their own tests; here only where they are placed matters.
 vi.mock("@/components/milestone/lecturer/SeminarReadinessCard", () => ({
-  SeminarReadinessCard: ({ stacked }: { stacked?: boolean }) => <div data-testid="seminar-readiness" data-stacked={String(!!stacked)} />,
+  SeminarReadinessCard: () => <div data-testid="seminar-readiness" />,
 }));
 vi.mock("@/components/milestone/lecturer/DefenceReadinessCard", () => ({
-  DefenceReadinessCard: ({ stacked }: { stacked?: boolean }) => <div data-testid="defence-readiness" data-stacked={String(!!stacked)} />,
+  DefenceReadinessCard: () => <div data-testid="defence-readiness" />,
+}));
+vi.mock("@/components/thesis-proposal/LecturerProposalRevisionCard", () => ({
+  LecturerProposalRevisionCard: () => <div data-testid="proposal-revision-card" />,
 }));
 vi.mock("@/components/thesis-change-request/LecturerThesisChangeRequestCard", () => ({
   LecturerThesisChangeRequestCard: () => <div data-testid="change-request-card" />,
@@ -39,8 +44,8 @@ vi.mock("@/components/thesis-guidance-evaluation/LecturerThesisGuidanceEvaluatio
   LecturerThesisGuidanceEvaluationCard: () => <div data-testid="evaluation-card" />,
 }));
 
-const milestone = (id: string, status: string, title = `Milestone ${id}`): StudentDetail["milestones"][number] => ({
-  id, title, status, updatedAt: "2026-10-01T03:00:00.000Z", progressPercentage: status === "completed" ? 100 : 60,
+const milestone = (id: string, status: string, title = `Milestone ${id}`, phase: "proposal" | "research" = "research"): StudentDetail["milestones"][number] => ({
+  id, title, status, phase, updatedAt: "2026-10-01T03:00:00.000Z", progressPercentage: status === "completed" ? 100 : 60,
 });
 
 const detail = (overrides: Partial<StudentDetail> = {}): StudentDetail => ({
@@ -88,11 +93,7 @@ function mockQueries({
   vi.mocked(useDefenceReadinessStatus).mockReturnValue({ data: defence ?? undefined } as never);
   vi.mocked(useThesisChangeContext).mockReturnValue({ data: change ?? undefined } as never);
   vi.mocked(useEvaluationContext).mockReturnValue({ data: evaluation ?? undefined } as never);
-}
-
-function LocationProbe() {
-  const { search } = useLocation();
-  return <output data-testid="search">{search}</output>;
+  vi.mocked(useLecturerProposalRevision).mockReturnValue({ data: undefined } as never);
 }
 
 function renderPage(route = "/tugas-akhir/bimbingan/lecturer/my-students/t1") {
@@ -102,7 +103,7 @@ function renderPage(route = "/tugas-akhir/bimbingan/lecturer/my-students/t1") {
       <MemoryRouter initialEntries={[route]}>
         <Routes>
           <Route element={<Outlet context={{ setBreadcrumbs: vi.fn(), setTitle: vi.fn() }} />}>
-            <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<><LecturerMyStudentDetailPage /><LocationProbe /></>} />
+            <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -110,183 +111,192 @@ function renderPage(route = "/tugas-akhir/bimbingan/lecturer/my-students/t1") {
   );
 }
 
-const tab = (name: RegExp) => screen.getByRole("button", { name });
+const CHANGE_CONTEXT = {
+  thesis: {
+    id: "t1", title: "Judul", status: "research", topic: { id: "tp1", name: "Sistem Informasi" },
+    supervisors: [
+      { lecturerId: "l1", name: "HUSNIL KAMIL", position: "pembimbing_1" },
+      { lecturerId: "l2", name: "RICKY AKBAR", position: "pembimbing_2" },
+    ],
+  },
+  viewerRole: "pembimbing_1", canSubmit: true, blockReason: null, openRequest: null, history: [],
+};
 
-describe("LecturerMyStudentDetailPage", () => {
+const ribbon = () => screen.queryByRole("region", { name: "Perlu tindakan Anda" });
+
+describe("LecturerMyStudentDetailPage (Paket E4, 5: one compact page)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Element.prototype.scrollIntoView = vi.fn();
     vi.mocked(getStudentDetail).mockResolvedValue({ success: true, data: detail() });
     mockQueries();
   });
 
-  it("always shows the header and opens on the Progres tab", async () => {
-    mockQueries({
-      change: {
-        thesis: {
-          id: "t1", title: "Judul", status: "research", topic: { id: "tp1", name: "Sistem Informasi" },
-          supervisors: [
-            { lecturerId: "l1", name: "HUSNIL KAMIL", position: "pembimbing_1" },
-            { lecturerId: "l2", name: "RICKY AKBAR", position: "pembimbing_2" },
-          ],
-        },
-        viewerRole: "pembimbing_1", canSubmit: true, blockReason: null, openRequest: null, history: [],
-      },
-    });
-    renderPage();
+  it("has no tabs: header with the supervisors, one row of info cards, then every section in order", async () => {
+    mockQueries({ change: CHANGE_CONTEXT });
+    const { container } = renderPage();
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Ilham Nofaldi" })).toBeInTheDocument();
-    expect(screen.getByText("2211522028 • ilham@example.test")).toBeInTheDocument();
-    expect(screen.getAllByText("Penelitian").length).toBeGreaterThan(0);
+    expect(await screen.findByRole("heading", { name: "Ilham Nofaldi" })).toBeInTheDocument();
+    expect(screen.getByText(/2211522028/)).toBeInTheDocument();
+    expect(screen.getByText("Penelitian")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Kembali ke Mahasiswa Bimbingan" })).toHaveAttribute("href", "/tugas-akhir/bimbingan/lecturer/my-students");
-
-    // Compact thesis information: title, topic, supervisors, supervision time, activity, progress.
-    expect(screen.getByText("Informasi Tugas Akhir")).toBeInTheDocument();
-    expect(screen.getByText("Sistem Informasi Tugas Akhir")).toBeInTheDocument();
-    expect(screen.getByText("Sistem Informasi")).toBeInTheDocument();
+    // Supervisors in the header.
     expect(screen.getByText("Husnil Kamil")).toBeInTheDocument();
     expect(screen.getByText("Ricky Akbar")).toBeInTheDocument();
-    expect(screen.getByText("7 bulan 12 hari")).toBeInTheDocument();
-    expect(screen.getByText("Lambat")).toBeInTheDocument();
-    expect(screen.getByText("5 dari 8 sesi")).toBeInTheDocument();
-    expect(screen.getByText("1 dari 3 milestone")).toBeInTheDocument();
-    // Enum values never show raw.
-    expect(screen.queryByText("research")).not.toBeInTheDocument();
-    expect(screen.queryByText("pending_review")).not.toBeInTheDocument();
+    for (const name of ["Progres", "Kesiapan Seminar & Sidang", "Evaluasi & Perubahan"]) {
+      expect(screen.queryByRole("button", { name: new RegExp(`^${name}`) })).not.toBeInTheDocument();
+    }
 
-    // Milestone and guidance history sit on this tab; the other tabs' cards do not.
-    expect(screen.getByText("Milestone m2")).toBeInTheDocument();
+    const info = screen.getByRole("region", { name: "Informasi Tugas Akhir" });
+    for (const label of ["Judul", "Topik", "Masa Bimbingan", "Aktivitas", "Progres bimbingan", "Progres milestone"]) {
+      expect(within(info).getByText(label)).toBeInTheDocument();
+    }
+    expect(within(info).getByText("5 dari 8 sesi")).toBeInTheDocument();
+    expect(within(info).getByText("1 dari 3 milestone")).toBeInTheDocument();
+    expect(within(info).getByText("Sistem Informasi")).toBeInTheDocument();
+
+    // Milestone | Riwayat Bimbingan, Kesiapan Seminar | Kesiapan Sidang, Evaluasi | Perubahan.
+    const ids = [...container.querySelectorAll("section[id]")].map((section) => section.id);
+    expect(ids).toEqual([DETAIL_SECTIONS.milestone, DETAIL_SECTIONS.readiness, DETAIL_SECTIONS.evaluation, DETAIL_SECTIONS.change]);
     expect(screen.getByText("Riwayat Bimbingan")).toBeInTheDocument();
-    expect(screen.queryByTestId("seminar-readiness")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("evaluation-card")).not.toBeInTheDocument();
-  });
-
-  it("lets Pembimbing 1 open the review from the milestone that waits, and marks the tab", async () => {
-    renderPage();
-    await screen.findByText("Milestone m2");
-
-    expect(within(tab(/^Progres/)).getByLabelText("1 menunggu tindakan")).toBeInTheDocument();
-    expect(screen.getByText("1 menunggu tinjauan")).toBeInTheDocument();
-
-    const reviewButtons = screen.getAllByRole("button", { name: "Tinjau" });
-    expect(reviewButtons).toHaveLength(1);
-    fireEvent.click(reviewButtons[0]);
-    expect(await screen.findByRole("dialog", { name: "Review Milestone" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Setujui" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Minta Revisi" })).toBeInTheDocument();
-  });
-
-  it("gives Pembimbing 2 feedback only: no review button and no mark on the tab", async () => {
-    vi.mocked(getStudentDetail).mockResolvedValue({ success: true, data: detail({ userRole: "Pembimbing 2" }) });
-    renderPage();
-    await screen.findByText("Milestone m2");
-
-    expect(screen.queryByRole("button", { name: "Tinjau" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Tambah/ })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Beri feedback" })).toHaveLength(3);
-    expect(within(tab(/^Progres/)).queryByLabelText(/menunggu tindakan/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Hanya Pembimbing 1 yang dapat menyetujui atau meminta revisi milestone/)).toBeInTheDocument();
-  });
-
-  it("keeps the active tab in ?tab= and shows the two readiness cards side by side", async () => {
-    renderPage();
-    await screen.findByText("Milestone m2");
-
-    fireEvent.click(tab(/^Kesiapan Seminar & Sidang/));
-    expect(screen.getByTestId("search")).toHaveTextContent("?tab=kesiapan");
-    expect(screen.getByTestId("seminar-readiness")).toHaveAttribute("data-stacked", "true");
-    expect(screen.getByTestId("defence-readiness")).toHaveAttribute("data-stacked", "true");
-    expect(screen.queryByText("Milestone m2")).not.toBeInTheDocument();
-
-    fireEvent.click(tab(/^Evaluasi & Perubahan/));
-    expect(screen.getByTestId("search")).toHaveTextContent("?tab=evaluasi");
+    expect(screen.getByTestId("seminar-readiness")).toBeInTheDocument();
+    expect(screen.getByTestId("defence-readiness")).toBeInTheDocument();
     expect(screen.getByTestId("evaluation-card")).toBeInTheDocument();
     expect(screen.getByTestId("change-request-card")).toBeInTheDocument();
-
-    // The default tab leaves the address clean.
-    fireEvent.click(tab(/^Progres/));
-    expect(screen.getByTestId("search")).toHaveTextContent("");
-    expect(screen.getByText("Milestone m2")).toBeInTheDocument();
   });
 
-  it("opens the tab named in the address and falls back to Progres for an unknown one", async () => {
-    const first = renderPage("/tugas-akhir/bimbingan/lecturer/my-students/t1?tab=evaluasi");
-    expect(await screen.findByTestId("evaluation-card")).toBeInTheDocument();
-    expect(screen.queryByText("Milestone m2")).not.toBeInTheDocument();
-    first.unmount();
-
-    renderPage("/tugas-akhir/bimbingan/lecturer/my-students/t1?tab=tidak-ada");
-    expect(await screen.findByText("Milestone m2")).toBeInTheDocument();
-  });
-
-  it("marks the readiness and evaluation tabs when something waits for this supervisor", async () => {
-    mockQueries({
-      seminar: readiness({ approveBlockedReason: null }),
-      defence: readiness(),
-      change: { thesis: null, viewerRole: "pembimbing_1", canSubmit: false, blockReason: null, history: [], openRequest: { viewer: { canDecideAsLecturer: true, canCancel: false } } },
-      evaluation: { viewerRole: "pembimbing_1", canSubmit: true },
+  it("lists the proposal-phase milestones in the same list, read-only with a Proposal badge, and both phases of guidance (2.3, 2.4)", async () => {
+    vi.mocked(getStudentDetail).mockResolvedValue({
+      success: true,
+      data: detail({
+        milestones: [milestone("m1", "in_progress", "Bab 4 Implementasi"), milestone("p1", "in_progress", "Bab 1 Proposal", "proposal")],
+        guidanceHistory: {
+          count: 2,
+          items: [
+            { id: "g1", status: "completed", phase: "proposal", requestedDate: "2026-04-01T03:00:00.000Z" },
+            { id: "g2", status: "completed", phase: "research", requestedDate: "2026-09-01T03:00:00.000Z" },
+          ] as StudentDetail["guidanceHistory"]["items"],
+        },
+      }),
     });
     renderPage();
-    await screen.findByText("Milestone m2");
 
-    expect(within(tab(/^Kesiapan Seminar & Sidang/)).getByLabelText("1 menunggu tindakan")).toBeInTheDocument();
-    expect(within(tab(/^Evaluasi & Perubahan/)).getByLabelText("2 menunggu tindakan")).toBeInTheDocument();
+    expect(await screen.findByText("Bab 4 Implementasi")).toBeInTheDocument();
+    expect(screen.queryByText("Milestone Fase Proposal")).not.toBeInTheDocument();
+    const proposalItem = screen.getByText("Bab 1 Proposal").closest("div.ml-6") as HTMLElement;
+    expect(within(proposalItem).getByText("Proposal")).toBeInTheDocument();
+    expect(within(proposalItem).queryByRole("button")).not.toBeInTheDocument();
+    // No phase filter on the guidance history; the Jenis badge tells the sessions apart.
+    expect(screen.queryByRole("group", { name: "Fase" })).not.toBeInTheDocument();
+    const history = screen.getByText("Riwayat Bimbingan").closest("[data-slot=card]") as HTMLElement;
+    expect(within(history).getByText("Proposal")).toBeInTheDocument();
+    expect(within(history).getByText("Penelitian")).toBeInTheDocument();
   });
 
-  it("shows only the defence card, full width, once the seminar is passed", async () => {
-    mockQueries({ defence: readiness({ requirementsMet: true }) });
-    renderPage("/tugas-akhir/bimbingan/lecturer/my-students/t1?tab=kesiapan");
-
-    expect(await screen.findByTestId("defence-readiness")).toHaveAttribute("data-stacked", "false");
-    expect(screen.queryByTestId("seminar-readiness")).not.toBeInTheDocument();
-  });
-
-  it("has no readiness to review and no review button for an ended thesis", async () => {
-    vi.mocked(getStudentDetail).mockResolvedValue({ success: true, data: detail({ status: "failed", activityLevel: null }) });
+  it("shows 'Perlu tindakan Anda' for Pembimbing 1 and scrolls to the section of each item", async () => {
+    mockQueries({
+      seminar: readiness({ approveBlockedReason: null }),
+      evaluation: { viewerRole: "pembimbing_1", canSubmit: true },
+      change: { ...CHANGE_CONTEXT, openRequest: { viewer: { canDecideAsLecturer: true, canCancel: false } } },
+    });
     renderPage();
-    expect(await screen.findByText("Tugas Akhir Berakhir")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Tinjau" })).not.toBeInTheDocument();
-    expect(within(tab(/^Progres/)).queryByLabelText(/menunggu tindakan/)).not.toBeInTheDocument();
 
-    fireEvent.click(tab(/^Kesiapan Seminar & Sidang/));
-    expect(screen.getByText("Tidak Ada Kesiapan untuk Ditinjau")).toBeInTheDocument();
-    // The banner belongs to the header area: it stays on every tab.
-    expect(screen.getByText("Tugas Akhir Berakhir")).toBeInTheDocument();
+    const box = await screen.findByRole("region", { name: "Perlu tindakan Anda" });
+    expect(within(box).getByText("Perlu tindakan Anda")).toBeInTheDocument();
+    expect(within(box).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "1 milestone menunggu tinjauan",
+      "Kesiapan seminar hasil menunggu persetujuan Anda",
+      "Evaluasi bimbingan jatuh tempo",
+      "Pengajuan perubahan menunggu persetujuan Anda",
+    ]);
+    fireEvent.click(within(box).getByRole("button", { name: "1 milestone menunggu tinjauan" }));
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toHaveProperty("id", DETAIL_SECTIONS.milestone);
+
+    // The review itself is in the milestone section.
+    fireEvent.click(screen.getByRole("button", { name: /Tinjau/ }));
+    expect(await screen.findByText("Review Milestone")).toBeInTheDocument();
+  });
+
+  it("shows no ribbon when nothing waits, and Pembimbing 2 has no review button", async () => {
+    vi.mocked(getStudentDetail).mockResolvedValue({ success: true, data: detail({ userRole: "Pembimbing 2" }) });
+    mockQueries({ seminar: readiness({ currentUserRole: "Pembimbing 2" }), defence: readiness({ currentUserRole: "Pembimbing 2" }) });
+    renderPage();
+
+    expect(await screen.findByText("Milestone m2")).toBeInTheDocument();
+    expect(ribbon()).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Tinjau/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Beri feedback" }).length).toBeGreaterThan(0);
+  });
+
+  it("an ended thesis is read-only: no ribbon, no review, the readiness cards still shown", async () => {
+    vi.mocked(getStudentDetail).mockResolvedValue({ success: true, data: detail({ status: "failed" }) });
+    mockQueries({ seminar: readiness({ approveBlockedReason: null }) });
+    renderPage();
+
+    expect(await screen.findByText("Tugas Akhir Berakhir")).toBeInTheDocument();
+    expect(ribbon()).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Tinjau/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId("seminar-readiness")).toBeInTheDocument();
+    expect(screen.getByTestId("defence-readiness")).toBeInTheDocument();
+  });
+
+  it("a replaced supervisor reads the page only (Paket E4, 1.1)", async () => {
+    vi.mocked(getStudentDetail).mockResolvedValue({ success: true, data: detail({ noLongerSupervising: true }) });
+    mockQueries({ seminar: readiness({ approveBlockedReason: null }) });
+    renderPage();
+
+    expect(await screen.findByText("Tidak lagi membimbing")).toBeInTheDocument();
+    expect(screen.getByText("Anda tidak lagi membimbing mahasiswa ini. Halaman ini hanya dapat dibaca.")).toBeInTheDocument();
+    expect(ribbon()).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Tinjau/ })).not.toBeInTheDocument();
+    // Only an active Pembimbing 1 adds milestones.
+    expect(screen.queryByRole("button", { name: /Tambah/ })).not.toBeInTheDocument();
+  });
+
+  it("puts the repeated proposal review in section 3 and in the ribbon", async () => {
+    vi.mocked(getStudentDetail).mockResolvedValue({ success: true, data: detail({ status: "proposal", repeatingProposal: true, currentPhase: "proposal" }) });
+    mockQueries();
+    vi.mocked(useLecturerProposalRevision).mockReturnValue({ data: { applicable: true, canReview: true } } as never);
+    renderPage();
+
+    expect(await screen.findByTestId("proposal-revision-card")).toBeInTheDocument();
+    expect(within(ribbon() as HTMLElement).getByRole("button", { name: "Proposal revisi menunggu tinjauan" })).toBeInTheDocument();
   });
 });
 
-describe("getStudentDetailPendingCounts", () => {
-  const base = {
-    milestones: [milestone("m1", "pending_review"), milestone("m2", "pending_review"), milestone("m3", "revision_needed")],
+describe("getStudentDetailActionItems", () => {
+  type ActionInput = Parameters<typeof getStudentDetailActionItems>[0];
+  const base: Record<string, unknown> = {
+    milestones: [milestone("a", "pending_review"), milestone("b", "pending_review"), milestone("c", "in_progress")],
     isPembimbing1: true,
     isEnded: false,
     seminarReadiness: null,
     defenceReadiness: null,
     evaluationContext: null,
     changeContext: null,
+    proposalRevisionWaiting: false,
   };
+  const keys = (input: Record<string, unknown>) =>
+    getStudentDetailActionItems({ ...base, ...input } as unknown as ActionInput).map((item) => item.key);
 
   it("counts milestones waiting for review only for Pembimbing 1 on a running thesis", () => {
-    expect(getStudentDetailPendingCounts(base).progress).toBe(2);
-    expect(getStudentDetailPendingCounts({ ...base, isPembimbing1: false }).progress).toBe(0);
-    expect(getStudentDetailPendingCounts({ ...base, isEnded: true }).progress).toBe(0);
+    expect(getStudentDetailActionItems(base as unknown as ActionInput)[0].label).toBe("2 milestone menunggu tinjauan");
+    expect(keys({ isPembimbing1: false })).toEqual([]);
+    expect(keys({ isEnded: true })).toEqual([]);
   });
 
-  it("counts a readiness card only when this supervisor can approve it now", () => {
-    const canApprove = readiness({ approveBlockedReason: null });
-    expect(getStudentDetailPendingCounts({ ...base, seminarReadiness: canApprove, defenceReadiness: canApprove }).readiness).toBe(2);
-    expect(getStudentDetailPendingCounts({ ...base, seminarReadiness: readiness() }).readiness).toBe(0);
-    expect(getStudentDetailPendingCounts({ ...base, seminarReadiness: readiness({ approveBlockedReason: null, currentUserHasApproved: true }) }).readiness).toBe(0);
-    expect(getStudentDetailPendingCounts({ ...base, seminarReadiness: readiness({ approveBlockedReason: null, currentUserRole: null }) }).readiness).toBe(0);
+  it("lists a readiness card only when this supervisor can approve it now, never after it is passed", () => {
+    expect(keys({ milestones: [], seminarReadiness: readiness({ approveBlockedReason: null }) })).toEqual(["seminar"]);
+    expect(keys({ milestones: [], seminarReadiness: readiness({ approveBlockedReason: null, currentUserHasApproved: true }) })).toEqual([]);
+    expect(keys({ milestones: [], seminarReadiness: readiness() })).toEqual([]);
+    expect(keys({ milestones: [], defenceReadiness: readiness({ approveBlockedReason: null, isPassed: true }) })).toEqual([]);
   });
 
-  it("counts a due evaluation for Pembimbing 1 only, and a change request at the viewer's step", () => {
-    const due = { viewerRole: "pembimbing_1", canSubmit: true } as never;
-    const notMine = { viewerRole: "pembimbing_2", canSubmit: true } as never;
-    const atMyStep = { openRequest: { viewer: { canDecideAsLecturer: true, canCancel: false } } } as never;
-    const elsewhere = { openRequest: { viewer: { canDecideAsLecturer: false, canCancel: true } } } as never;
-    expect(getStudentDetailPendingCounts({ ...base, evaluationContext: due }).evaluation).toBe(1);
-    expect(getStudentDetailPendingCounts({ ...base, evaluationContext: notMine }).evaluation).toBe(0);
-    expect(getStudentDetailPendingCounts({ ...base, evaluationContext: due, changeContext: atMyStep }).evaluation).toBe(2);
-    expect(getStudentDetailPendingCounts({ ...base, changeContext: elsewhere }).evaluation).toBe(0);
+  it("lists a due evaluation for Pembimbing 1 only, and a change request at the viewer's step", () => {
+    expect(keys({ milestones: [], evaluationContext: { viewerRole: "pembimbing_1", canSubmit: true } })).toEqual(["evaluation"]);
+    expect(keys({ milestones: [], evaluationContext: { viewerRole: "pembimbing_2", canSubmit: true } })).toEqual([]);
+    expect(keys({ milestones: [], changeContext: { openRequest: { viewer: { canDecideAsLecturer: true } } } })).toEqual(["change"]);
+    expect(keys({ milestones: [], proposalRevisionWaiting: true })).toEqual(["revision"]);
   });
 });

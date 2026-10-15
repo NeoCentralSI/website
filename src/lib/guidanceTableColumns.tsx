@@ -11,6 +11,8 @@ import { formatThesisDocName, formatDateTimeWib } from '@/lib/text';
 import { GUIDANCE_ACTOR_LABELS, GUIDANCE_STATUS_LABELS } from '@/lib/thesisLabels';
 import { DateTimeCell, GuidanceDocCell, STICKY_ACTION_COLUMN_CLASS } from '@/lib/guidanceCells';
 import { ThesisPhaseBadge } from '@/components/shared/ThesisPhaseBadge';
+import { THESIS_PHASE_FILTER_LABELS } from '@/lib/thesisLabels';
+import type { PhaseFilterValue } from '@/components/thesis/ThesisPhaseFilter';
 
 interface GetGuidanceTableColumnsOptions {
   items: GuidanceItem[];
@@ -36,6 +38,9 @@ interface GetGuidanceTableColumnsOptions {
   onToggleSelectAll?: (ids: string[], selected: boolean) => void;
   /** IDs of exportable items (completed/summary_pending with sessionSummary) */
   exportableIds?: string[];
+  /** Paket E4 (2.2): phase filter in the "Jenis" column header; omitted = no filter. */
+  phase?: PhaseFilterValue;
+  setPhase?: (value: PhaseFilterValue) => void;
 }
 
 export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions): Column<GuidanceItem>[] => {
@@ -57,6 +62,8 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
     onToggleSelect,
     onToggleSelectAll,
     exportableIds,
+    phase,
+    setPhase,
   } = options;
 
   const hasSelection = !!selectedIds && !!onToggleSelect;
@@ -117,10 +124,27 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       },
     },
     {
-      // K27: Jenis sesi (Proposal / Tugas Akhir), tetap sejak dibuat
+      // K27: Jenis sesi (Proposal / Penelitian), tetap sejak dibuat
       key: 'phase',
       header: 'Jenis',
       render: (r) => (r.phase ? <ThesisPhaseBadge phase={r.phase} /> : '-'),
+      ...(setPhase
+        ? {
+            filter: {
+              type: 'select' as const,
+              value: phase ?? '',
+              onChange: (v: string) => {
+                setPhase(v as PhaseFilterValue);
+                setPage(1);
+              },
+              options: [
+                { label: 'Semua', value: '' },
+                { label: THESIS_PHASE_FILTER_LABELS.proposal, value: 'proposal' },
+                { label: THESIS_PHASE_FILTER_LABELS.research, value: 'research' },
+              ],
+            },
+          }
+        : {}),
     },
     {
       key: 'time',

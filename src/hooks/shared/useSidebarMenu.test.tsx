@@ -13,6 +13,11 @@ vi.mock("@/hooks/shared", () => ({
   useRole: vi.fn(),
 }));
 
+const { inbox } = vi.hoisted(() => ({ inbox: { waiting: [] as unknown[] } }));
+vi.mock("@/hooks/thesis-proposal/useSupervisorRequests", () => ({
+  useLecturerSupervisorInbox: (enabled: boolean) => ({ data: enabled ? inbox : undefined }),
+}));
+
 function mockAuthUser(overrides: Partial<NonNullable<ReturnType<typeof useAuth>["user"]>> = {}) {
   vi.mocked(useAuth).mockReturnValue({
     user: {
@@ -54,6 +59,7 @@ describe("useSidebarMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAvatarBlob).mockReturnValue("");
+    inbox.waiting = [];
     mockAuthUser();
     mockRole({ isStudent: true });
   });
@@ -79,12 +85,26 @@ describe("useSidebarMenu", () => {
   ];
 
   // Paket P: supervisors score in Tugas Akhir > Proposal (no Metode Penelitian menu, K16).
-  it("gives supervisors Tugas Akhir > Proposal and no Metode Penelitian menu", () => {
+  // Paket E4 (4.5): Permohonan, Proposal, Bimbingan, Perubahan, Seminar Hasil, Sidang TA, Evaluasi.
+  const SUPERVISOR_TA = ["Permohonan", "Proposal", "Bimbingan", "Perubahan", "Seminar Hasil", "Sidang TA", "Evaluasi"];
+
+  it("gives supervisors the Tugas Akhir order of Paket E4 and no Metode Penelitian menu", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isPembimbing: true });
 
     expect(menuOf("Metode Penelitian")).toBeUndefined();
-    expect(menuOf("Tugas Akhir")?.items?.[0]).toEqual({ title: "Proposal", url: "/tugas-akhir/proposal" });
+    const items = menuOf("Tugas Akhir")?.items ?? [];
+    expect(items.map((item) => item.title)).toEqual(SUPERVISOR_TA);
+    expect(items[0]).toEqual({ title: "Permohonan", url: "/tugas-akhir/permohonan" });
+    expect(items.map((item) => item.url)).toEqual(expect.arrayContaining(["/tugas-akhir/perubahan", "/tugas-akhir/evaluasi"]));
+  });
+
+  it("shows the number of waiting supervisor requests on Permohonan (Paket E4, 4.1)", () => {
+    mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
+    mockRole({ isDosen: true, isPembimbing: true });
+    inbox.waiting = [{ id: "r1" }, { id: "r2" }];
+
+    expect(menuOf("Tugas Akhir")?.items?.[0]).toEqual({ title: "Permohonan", url: "/tugas-akhir/permohonan", badge: 2 });
   });
 
   it("gives lecturers without supervisor capability neither menu item", () => {
@@ -92,7 +112,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isDosen: true });
 
     expect(menuOf("Metode Penelitian")).toBeUndefined();
-    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).not.toContain("Proposal");
+    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA"]);
   });
 
   it("gives the Research Method coordinator Monitoring Kelas, Presensi, Penilaian Proposal", () => {
@@ -102,22 +122,27 @@ describe("useSidebarMenu", () => {
     expect(menuOf("Metode Penelitian")?.items).toEqual(COORDINATOR_ITEMS);
   });
 
-  it("gives Kadep Tugas Akhir > Penetapan Pembimbing, Kelola > Batas Bimbingan, and Monitoring Kelas", () => {
+  it("gives Kadep Tugas Akhir > Monitoring first, Penetapan Pembimbing, Perubahan, Evaluasi; Kelola > Batas Bimbingan; Monitoring Kelas", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true });
 
-    expect(menuOf("Tugas Akhir")?.items?.[0]).toEqual({ title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
+    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual([
+      "Monitoring", "Penetapan Pembimbing", "Bimbingan", "Perubahan", "Seminar Hasil", "Sidang TA", "Evaluasi",
+    ]);
+    expect(menuOf("Tugas Akhir")?.items?.[1]).toEqual({ title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
     const kelolaMenu = menuOf("Kelola");
+    // 4.4: "Persetujuan Tugas Akhir" is gone, replaced by Perubahan and Evaluasi.
+    expect(kelolaMenu?.items.map((item) => item.title)).not.toContain("Persetujuan Tugas Akhir");
     expect(kelolaMenu?.items).toContainEqual({ title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" });
     expect(kelolaMenu?.items).toContainEqual({ title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" });
     expect(menuOf("Metode Penelitian")?.items).toEqual([{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }]);
   });
 
-  it("adds Tugas Akhir > Proposal for a Kadep who is also a supervisor", () => {
+  it("gives a Kadep who is also a supervisor Monitoring, Penetapan Pembimbing, then the supervisor's order", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true, isPembimbing: true });
 
-    expect(menuOf("Tugas Akhir")?.items?.slice(0, 2).map((item) => item.title)).toEqual(["Penetapan Pembimbing", "Proposal"]);
+    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Monitoring", "Penetapan Pembimbing", ...SUPERVISOR_TA]);
   });
 
   // BR-24: Sekdep-only gets no operational queues; master data stays in Kelola > Metode
@@ -139,7 +164,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isDosen: true, isSekdep: true });
 
     const itemTitles = menuOf("Tugas Akhir")?.items.map((item) => item.title) ?? [];
-    expect(itemTitles).toEqual(["Penetapan Pembimbing", "Monitoring"]);
+    expect(itemTitles).toEqual(["Monitoring", "Penetapan Pembimbing"]);
   });
 
   it("restores Tugas Akhir operational items when Sekdep is also a supervisor", () => {
@@ -147,7 +172,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isDosen: true, isSekdep: true, isPembimbing: true });
 
     const itemTitles = menuOf("Tugas Akhir")?.items.map((item) => item.title) ?? [];
-    expect(itemTitles).toEqual(["Proposal", "Bimbingan", "Seminar Hasil", "Sidang TA", "Penetapan Pembimbing", "Monitoring"]);
+    expect(itemTitles).toEqual(["Monitoring", "Penetapan Pembimbing", ...SUPERVISOR_TA]);
   });
 
   it("gives a Sekdep who is also the coordinator the coordinator's items", () => {
@@ -155,7 +180,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isDosen: true, isSekdep: true, isResearchMethodCoordinator: true, isPembimbing: true });
 
     expect(menuOf("Metode Penelitian")?.items).toEqual(COORDINATOR_ITEMS);
-    expect(menuOf("Tugas Akhir")?.items?.[0]).toEqual({ title: "Proposal", url: "/tugas-akhir/proposal" });
+    expect(menuOf("Tugas Akhir")?.items).toContainEqual({ title: "Proposal", url: "/tugas-akhir/proposal" });
   });
 
   it("gives GKM read-only TA monitoring without Metode Penelitian or supervisor items (guidance revival)", () => {

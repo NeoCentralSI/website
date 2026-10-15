@@ -1,9 +1,10 @@
-import { CheckCircle2, Circle, Paperclip, XCircle } from "lucide-react";
+import type { ReactNode } from "react";
+import { CheckCircle2, Circle, GraduationCap, Paperclip, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { openAuthenticatedFileOrToast } from "@/lib/authenticatedFile";
-import { formatDateTimeWib, formatRoleName, formatLecturerName } from "@/lib/text";
+import { formatDateShortId, formatDateTimeWib, formatRoleName, formatLecturerName } from "@/lib/text";
 import type {
   ReadinessAttachment,
   ReadinessRequirement,
@@ -14,20 +15,30 @@ import type {
 export type ReadinessKind = "seminar" | "defence";
 
 /** Texts that differ between the seminar card and the defence card. */
-export const READINESS_COPY: Record<ReadinessKind, { title: string; noun: string; registerLabel: string; registerPath: string }> = {
+export const READINESS_COPY: Record<ReadinessKind, { title: string; noun: string; registerLabel: string; registerPath: string; passedText: string }> = {
   seminar: {
     title: "Kesiapan Seminar Hasil",
     noun: "seminar hasil",
     registerLabel: "Buka Halaman Seminar Hasil",
     registerPath: "/tugas-akhir/seminar-hasil",
+    passedText: "Seminar hasil lulus pada",
   },
   defence: {
     title: "Kesiapan Sidang",
     noun: "sidang",
     registerLabel: "Buka Halaman Sidang",
     registerPath: "/tugas-akhir/sidang",
+    passedText: "Sidang lulus pada",
   },
 };
+
+/** Paket E4 (3.3): the defence card waits for the results seminar and shows only that requirement. */
+export function isWaitingForSeminar(kind: ReadinessKind, status: ReadinessStatusBase & { seminarPassed?: boolean }): boolean {
+  return kind === "defence" && status.seminarPassed === false && !status.isPassed;
+}
+
+/** Text shown on a defence card while the results seminar is not passed. */
+export const WAITING_FOR_SEMINAR_TEXT = "Menunggu seminar hasil lulus";
 
 /** Approval summary of a readiness status, whichever kind it is. */
 export function isReadinessFullyApproved(status: ReadinessStatusBase): boolean {
@@ -35,6 +46,7 @@ export function isReadinessFullyApproved(status: ReadinessStatusBase): boolean {
 }
 
 export function ReadinessStateBadge({ status }: { status: ReadinessStatusBase }) {
+  if (status.isPassed) return <Badge variant="success">Lulus</Badge>;
   if (!status.requirementsMet) return <Badge variant="outline">Syarat Belum Terpenuhi</Badge>;
   if (isReadinessFullyApproved(status)) return <Badge variant="success">Disetujui</Badge>;
   return <Badge variant="warning">Menunggu Persetujuan Pembimbing</Badge>;
@@ -118,4 +130,54 @@ export function ReadinessAttachmentLink({ attachment }: { attachment: ReadinessA
       </span>
     </div>
   );
+}
+
+/**
+ * Paket E4 (3.2): after the seminar (or defence) is passed the card is read-only: when it was
+ * passed and each supervisor's approval with its date. No buttons.
+ */
+export function ReadinessPassedView({ kind, status }: { kind: ReadinessKind; status: ReadinessStatusBase }) {
+  const copy = READINESS_COPY[kind];
+  return (
+    <div className="space-y-4">
+      <p className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-800">
+        <GraduationCap className="h-4 w-4 shrink-0" />
+        {copy.passedText} {status.passedAt ? formatDateShortId(status.passedAt) : "-"}
+      </p>
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Persetujuan pembimbing</p>
+        {status.supervisors.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Tidak ada pembimbing aktif.</p>
+        ) : (
+          <ul className="space-y-2">
+            {status.supervisors.map((supervisor) => (
+              <li key={supervisor.id} className="flex items-center justify-between gap-3 text-sm">
+                <div className="flex min-w-0 items-center gap-2">
+                  {supervisor.hasApproved ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+                  ) : (
+                    <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate" title={supervisor.name}>{formatLecturerName(supervisor.name) || "-"}</p>
+                    <p className="text-xs text-muted-foreground">{formatRoleName(supervisor.role)}</p>
+                  </div>
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {supervisor.hasApproved
+                    ? `Menyetujui${supervisor.approvedAt ? ` · ${formatDateShortId(supervisor.approvedAt)}` : ""}`
+                    : "Tidak menyetujui"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Two readiness cards side by side (one column on narrow screens), equally tall. */
+export function ReadinessCardsRow({ children }: { children: ReactNode }) {
+  return <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">{children}</div>;
 }

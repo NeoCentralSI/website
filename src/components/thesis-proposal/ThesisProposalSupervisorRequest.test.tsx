@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as requests from '@/services/thesis-proposal/supervisor-request.service';
 import type { KadepQueue, LecturerInbox, StudentSupervisorRequests, SupervisorRequest } from '@/types/thesis-proposal.types';
 import { KadepSupervisorRequestQueue } from './KadepSupervisorRequestQueue';
-import { LecturerSupervisorRequestPanel } from './LecturerSupervisorRequestPanel';
+import { LecturerSupervisorRequestTable } from './LecturerSupervisorRequestTable';
 import { getSubmitBlockReason } from './StudentSupervisorRequestForm';
 import { getWithdrawBlockReason, StudentSupervisorRequestSection } from './StudentSupervisorRequestSection';
 
@@ -157,7 +157,7 @@ describe('Permohonan Pembimbing (dosen)', () => {
   it('accepts directly under the hard limit', async () => {
     vi.mocked(requests.getLecturerInbox).mockResolvedValue(inbox('available'));
     vi.mocked(requests.respondAsLecturer).mockResolvedValue({ success: true, message: 'Pengajuan diterima', data: request({ status: 'accepted' }) });
-    wrap(<LecturerSupervisorRequestPanel />);
+    wrap(<LecturerSupervisorRequestTable />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Terima' }));
     fireEvent.click(screen.getAllByRole('button', { name: 'Terima' }).at(-1)!);
@@ -167,7 +167,7 @@ describe('Permohonan Pembimbing (dosen)', () => {
   it('at the hard limit, accepting needs the consideration and forwards to the Head of Department', async () => {
     vi.mocked(requests.getLecturerInbox).mockResolvedValue(inbox('full'));
     vi.mocked(requests.respondAsLecturer).mockResolvedValue({ success: true, data: request({ status: 'pending_kadep' }) });
-    wrap(<LecturerSupervisorRequestPanel />);
+    wrap(<LecturerSupervisorRequestTable />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Terima dan Teruskan' }));
     const forward = screen.getByRole('button', { name: 'Teruskan ke Ketua Departemen' });
@@ -175,6 +175,30 @@ describe('Permohonan Pembimbing (dosen)', () => {
     fireEvent.change(screen.getByLabelText(/Pertimbangan menerima di atas batas/), { target: { value: 'Dua mahasiswa lulus bulan depan.' } });
     fireEvent.click(forward);
     await waitFor(() => expect(requests.respondAsLecturer).toHaveBeenCalledWith('req-1', expect.objectContaining({ lecturerOverquotaReason: 'Dua mahasiswa lulus bulan depan.' })));
+  });
+});
+
+describe('Tugas Akhir > Permohonan (Paket E4, 4.1)', () => {
+  const inbox: LecturerInbox = {
+    academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' },
+    load: { activeCount: 3, softLimit: 8, hardLimit: 10, level: 'available', acceptingRequests: true },
+    waiting: [request()],
+    history: [request({ id: 'req-old', status: 'rejected_by_lecturer', proposedTitle: 'Judul Lama Yang Ditolak', rejectionReason: 'Topik tidak sesuai.' })],
+  };
+
+  it('lists waiting requests in a table with the route label and a Detail modal carrying the old card content', async () => {
+    vi.mocked(requests.getLecturerInbox).mockResolvedValue(inbox);
+    wrap(<LecturerSupervisorRequestTable />);
+
+    expect(await screen.findByText('Budi Santoso')).toBeInTheDocument();
+    expect(screen.getByText('Pilih Dosen Sendiri')).toBeInTheDocument();
+    expect(screen.queryByText('Judul Lama Yang Ditolak')).not.toBeInTheDocument();
+    expect(screen.getByText(/Menampilkan 1-1 dari 1/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Detail' }));
+    expect(await screen.findByText('Detail Permohonan Pembimbing')).toBeInTheDocument();
+    expect(screen.getByText('Rumusan masalah')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tandai Sedang Ditinjau' })).toBeInTheDocument();
   });
 });
 

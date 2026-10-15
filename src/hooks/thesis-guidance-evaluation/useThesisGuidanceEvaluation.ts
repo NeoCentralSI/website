@@ -9,6 +9,7 @@ export const thesisGuidanceEvaluationKeys = {
   context: (thesisId?: string) => ['thesis-guidance-evaluations', 'context', thesisId ?? 'mine'] as const,
   department: (scope: string, search: string, page: number, pageSize: number) =>
     ['thesis-guidance-evaluations', 'department', scope, search, page, pageSize] as const,
+  lecturer: () => ['thesis-guidance-evaluations', 'lecturer'] as const,
 };
 
 export function useEvaluationContext(thesisId?: string, enabled = true) {
@@ -19,12 +20,17 @@ export function useEvaluationContext(thesisId?: string, enabled = true) {
   });
 }
 
-export function useDepartmentEvaluations(params: { scope: 'pending' | 'history'; search: string; page: number; pageSize: number }) {
+export function useDepartmentEvaluations(params: { scope: 'pending' | 'history'; search: string; page: number; pageSize: number }, enabled = true) {
   return useQuery({
     queryKey: thesisGuidanceEvaluationKeys.department(params.scope, params.search, params.page, params.pageSize),
     queryFn: () => service.getDepartmentEvaluations({ ...params, search: params.search || undefined }),
     placeholderData: (previous) => previous,
+    enabled,
   });
+}
+
+export function useSupervisorEvaluations(enabled = true) {
+  return useQuery({ queryKey: thesisGuidanceEvaluationKeys.lecturer(), queryFn: service.getSupervisorEvaluations, enabled });
 }
 
 /** An evaluation may change the thesis status, so every list that shows it is refreshed. */

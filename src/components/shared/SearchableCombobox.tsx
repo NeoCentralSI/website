@@ -67,9 +67,9 @@ export function SearchableCombobox({
           aria-expanded={open}
           aria-label={ariaLabel}
           disabled={disabled}
-          className={cn("w-full justify-between font-normal", !triggerText && "text-muted-foreground", className)}
+          className={cn("w-full min-w-0 justify-between font-normal", !triggerText && "text-muted-foreground", className)}
         >
-          <span className="truncate">{triggerText ?? placeholder}</span>
+          <span className="min-w-0 truncate">{triggerText ?? placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

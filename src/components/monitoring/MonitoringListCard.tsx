@@ -7,6 +7,12 @@ import EmptyState from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+/**
+ * Every card of the Monitoring pages (all three tabs and the detail): the subtitle and the
+ * first list item sit close but not touching, the same in every card (Paket E4, 8).
+ */
+export const MONITORING_CARD_CLASS = "gap-3";
+
 interface MonitoringListCardProps {
   icon: LucideIcon;
   iconClassName?: string;
@@ -41,8 +47,8 @@ export function MonitoringListCard({
   const isEmpty = !isLoading && count === 0;
 
   return (
-    <Card className="flex h-full min-w-0 flex-col">
-      <CardHeader className="pb-3">
+    <Card className={cn("flex h-full min-w-0 flex-col", MONITORING_CARD_CLASS)}>
+      <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">

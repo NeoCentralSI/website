@@ -1,16 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as service from '@/services/thesis-guidance-evaluation/thesis-guidance-evaluation.service';
-import * as changeService from '@/services/thesis-change-request/thesis-change-request.service';
-import type { ThesisGuidanceEvaluation, ThesisGuidanceEvaluationContext } from '@/types/thesis-guidance-evaluation.types';
+import type { SupervisorEvaluationDue, ThesisGuidanceEvaluation, ThesisGuidanceEvaluationContext } from '@/types/thesis-guidance-evaluation.types';
 import { EvaluationDueCard } from '@/components/monitoring/EvaluationDueCard';
-import KelolaTugasAkhirKadep from '@/pages/kelola/kadep/KelolaTugasAkhir';
-import { KadepThesisGuidanceEvaluationPanel } from './KadepThesisGuidanceEvaluationPanel';
 import { LecturerThesisGuidanceEvaluationCard } from './LecturerThesisGuidanceEvaluationCard';
-import { StudentThesisGuidanceEvaluationCard } from './StudentThesisGuidanceEvaluationCard';
+import { ThesisGuidanceEvaluationTable, splitEvaluationRows } from './ThesisGuidanceEvaluationTable';
+import { AcademicWarningAlert, ThesisGuidanceEvaluationHistoryLink, evaluationsOf } from './ThesisGuidanceEvaluationViews';
 
 vi.mock('lottie-react', () => ({ default: () => null }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -18,12 +16,8 @@ vi.mock('@/services/thesis-guidance-evaluation/thesis-guidance-evaluation.servic
   getEvaluationContext: vi.fn(),
   submitEvaluation: vi.fn(),
   getDepartmentEvaluations: vi.fn(),
+  getSupervisorEvaluations: vi.fn(),
   decideEvaluation: vi.fn(),
-}));
-vi.mock('@/services/thesis-change-request/thesis-change-request.service', () => ({
-  getDepartmentChangeRequests: vi.fn(),
-  decideAsKadep: vi.fn(),
-  decideBatchAsKadep: vi.fn(),
 }));
 
 if (!('ResizeObserver' in globalThis)) {
@@ -101,9 +95,8 @@ describe('LecturerThesisGuidanceEvaluationCard', () => {
     expect(await screen.findByText('Evaluasi Bimbingan')).toBeInTheDocument();
     expect(screen.getByText('7 bulan 12 hari')).toBeInTheDocument();
     expect(screen.getByText('Lambat')).toBeInTheDocument();
-    expect(screen.getByText('2 sesi')).toBeInTheDocument();
     expect(screen.getByText('Evaluasi 6 bulan jatuh tempo')).toBeInTheDocument();
-    expect(screen.getByText('Belum Ada Evaluasi')).toBeInTheDocument();
+    expect(screen.getByText('Belum ada evaluasi.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Isi Evaluasi/ }));
     const dialog = await screen.findByRole('dialog');
@@ -162,7 +155,7 @@ describe('LecturerThesisGuidanceEvaluationCard', () => {
     expect(within(dialog).getByRole('button', { name: 'Kirim Evaluasi' })).toBeEnabled();
   });
 
-  it('Pembimbing 2 only reads: no Isi Evaluasi button', async () => {
+  it('Pembimbing 2 only reads: no Isi Evaluasi button; the waiting evaluation is one line with its detail', async () => {
     vi.mocked(service.getEvaluationContext).mockResolvedValue(context({
       viewerRole: 'pembimbing_2',
       canSubmit: false,
@@ -171,19 +164,20 @@ describe('LecturerThesisGuidanceEvaluationCard', () => {
     }));
     wrap(<LecturerThesisGuidanceEvaluationCard thesisId="t1" />);
 
-    expect(await screen.findByText('Menunggu keputusan')).toBeInTheDocument();
+    expect(await screen.findByText(/Evaluasi 6 Bulan menunggu keputusan Ketua Departemen/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Isi Evaluasi/ })).not.toBeInTheDocument();
-    expect(screen.getByText('Menunggu Keputusan Ketua Departemen')).toBeInTheDocument();
-    expect(screen.queryByText('extend_1_month')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Lihat detail' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Detail Evaluasi Bimbingan' });
+    expect(within(dialog).getByText('Menunggu Keputusan Ketua Departemen')).toBeInTheDocument();
+    expect(within(dialog).queryByText('extend_1_month')).not.toBeInTheDocument();
   });
 });
 
-describe('StudentThesisGuidanceEvaluationCard', () => {
-  it('shows the academic warning, the extension deadline and the results', async () => {
-    vi.mocked(service.getEvaluationContext).mockResolvedValue(context({
+describe('Student Overview: warning ribbon and "Riwayat evaluasi (N)" (Paket E4, 6)', () => {
+  it('shows the running warning as a ribbon and the evaluation history in a modal', async () => {
+    const studentContext = context({
       viewerRole: 'student',
       canSubmit: false,
-      blockReason: 'Evaluasi bimbingan diisi oleh Pembimbing 1.',
       stage: null,
       academicWarning: { extensionUntil: '2026-11-09T03:00:00.000Z', followUpDue: false },
       history: [
@@ -194,96 +188,123 @@ describe('StudentThesisGuidanceEvaluationCard', () => {
         }),
         evaluation({ id: 'eval-0', recommendation: 'continue', status: 'approved', requiresKadep: false, observations: { noGuidance: false, noProgress: false, noResponse: false, noRevision: false } }),
       ],
-    }));
-    wrap(<StudentThesisGuidanceEvaluationCard />);
+    });
+    wrap(
+      <>
+        <AcademicWarningAlert warning={studentContext.academicWarning} />
+        <ThesisGuidanceEvaluationHistoryLink evaluations={evaluationsOf(studentContext)} />
+      </>,
+    );
 
-    expect(await screen.findByText('Peringatan akademik')).toBeInTheDocument();
+    expect(screen.getByText('Peringatan akademik')).toBeInTheDocument();
     expect(screen.getByText(/Perpanjangan masa bimbingan 1 bulan berlaku sampai 9 November 2026 10\.00 WIB\./)).toBeInTheDocument();
-    expect(screen.getByText('Batas perpanjangan:')).toBeInTheDocument();
-    expect(screen.getByText('Disetujui')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Riwayat evaluasi (2)' }));
+    const modal = await screen.findByRole('dialog', { name: 'Riwayat Evaluasi Bimbingan' });
+    expect(within(modal).getByText('Disetujui')).toBeInTheDocument();
     // "Lanjut Bimbingan" is recorded without a decision.
-    expect(screen.getByText('Tercatat')).toBeInTheDocument();
-    expect(screen.getByText(/Keputusan Ketua Departemen: Ricky Akbar/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Isi Evaluasi/ })).not.toBeInTheDocument();
+    expect(within(modal).getByText('Tercatat')).toBeInTheDocument();
+    fireEvent.click(within(modal).getAllByRole('button', { name: 'Detail' })[0]);
+    const detail = await screen.findByRole('dialog', { name: 'Detail Evaluasi Bimbingan' });
+    expect(within(detail).getByText('Batas perpanjangan:')).toBeInTheDocument();
+    expect(within(detail).getByText(/Keputusan Ketua Departemen: Ricky Akbar/)).toBeInTheDocument();
+  });
+
+  it('hides the link when there is no evaluation, and the ribbon when nothing runs', () => {
+    const { container } = wrap(
+      <>
+        <AcademicWarningAlert warning={null} />
+        <ThesisGuidanceEvaluationHistoryLink evaluations={[]} />
+      </>,
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 });
 
-describe('KadepThesisGuidanceEvaluationPanel', () => {
-  const meta = { page: 1, pageSize: 20, total: 1, totalPages: 1 };
+describe('Tugas Akhir > Evaluasi (Paket E4, 4.3)', () => {
+  const meta = { page: 1, pageSize: 100, total: 1, totalPages: 1 };
+  const due = (overrides: Partial<SupervisorEvaluationDue> = {}): SupervisorEvaluationDue => ({
+    thesis: { id: 't2', title: 'Judul Jatuh Tempo', status: 'research', student: person('stu-2', 'NABIL RIZKI') },
+    viewerRole: 'pembimbing_1',
+    stage: 'six_month',
+    supervision: { startedAt: '2026-03-01T00:00:00.000Z', elapsedDays: 190, elapsedLabel: '6 bulan 8 hari' },
+    canSubmit: true,
+    blockReason: null,
+    ...overrides,
+  });
 
-  it('lists evaluations waiting for a decision and needs notes to reject', async () => {
-    vi.mocked(service.getDepartmentEvaluations).mockResolvedValue({ data: [evaluation({ recommendation: 'terminate_supervision', evaluationType: 'one_year', stage: 'one_year' })], meta });
-    vi.mocked(service.decideEvaluation).mockResolvedValue({ success: true, message: 'Evaluasi ditolak', data: evaluation({ status: 'rejected' }) });
-    wrap(<KadepThesisGuidanceEvaluationPanel />);
+  it('splits Perlu Tindakan, Menunggu Kadep and Riwayat', () => {
+    const lists = splitEvaluationRows({
+      supervisor: { due: [due()], evaluations: [evaluation({ id: 'p' }), evaluation({ id: 'h', status: 'approved' })] },
+      departmentPending: [evaluation({ id: 'k' })],
+      departmentHistory: [],
+    });
+    expect(lists.action.map((row) => row.id)).toEqual(['due-t2', 'k']);
+    expect(lists.kadep.map((row) => row.id)).toEqual(['k', 'p']);
+    expect(lists.history.map((row) => row.id)).toEqual(['h']);
+  });
+
+  it('a supervisor sees the due theses with "Isi Evaluasi" (Pembimbing 1), which opens the existing form', async () => {
+    vi.mocked(service.getSupervisorEvaluations).mockResolvedValue({
+      due: [due(), due({ thesis: { id: 't3', title: 'TA P2', status: 'research', student: person('stu-3', 'MAHASISWA DUA') }, viewerRole: 'pembimbing_2', canSubmit: false, blockReason: 'Evaluasi bimbingan diisi oleh Pembimbing 1.' })],
+      evaluations: [],
+    });
+    vi.mocked(service.getEvaluationContext).mockResolvedValue(context({ thesis: { id: 't2', title: 'Judul Jatuh Tempo', status: 'research', student: person('stu-2', 'NABIL RIZKI') } }));
+    wrap(<ThesisGuidanceEvaluationTable isSupervisor isKadep={false} />);
+
+    expect(await screen.findByText('Nabil Rizki')).toBeInTheDocument();
+    expect(screen.getByText('Mahasiswa Dua')).toBeInTheDocument();
+    expect(screen.getAllByText('Jatuh Tempo')).toHaveLength(2);
+    expect(screen.getAllByText('Belum diisi')).toHaveLength(2);
+    expect(service.getDepartmentEvaluations).not.toHaveBeenCalled();
+    // Only Pembimbing 1 fills the evaluation.
+    expect(screen.getAllByRole('button', { name: /Isi Evaluasi/ })).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /Isi Evaluasi/ }));
+    await waitFor(() => expect(service.getEvaluationContext).toHaveBeenCalledWith('t2'));
+    expect(await screen.findByRole('button', { name: 'Kirim Evaluasi' })).toBeDisabled();
+  });
+
+  it('the Kadep rejects with notes and approves without', async () => {
+    vi.mocked(service.getDepartmentEvaluations).mockImplementation(async ({ scope }) =>
+      scope === 'pending'
+        ? { data: [evaluation({ recommendation: 'terminate_supervision', evaluationType: 'one_year', stage: 'one_year' })], meta }
+        : { data: [], meta: { ...meta, total: 0 } },
+    );
+    vi.mocked(service.decideEvaluation).mockResolvedValue({ success: true, message: 'ok', data: evaluation({ status: 'rejected' }) });
+    wrap(<ThesisGuidanceEvaluationTable isSupervisor={false} isKadep />);
 
     expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();
     expect(screen.getByText('Evaluasi 1 Tahun')).toBeInTheDocument();
     expect(screen.getByText('Dihentikan')).toBeInTheDocument();
-    expect(screen.getByText(/tugas akhir berstatus Gagal, pembimbing dilepas, dan sesi terbuka dibatalkan/)).toBeInTheDocument();
+    expect(service.getSupervisorEvaluations).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Tolak' }));
-    const dialog = await screen.findByRole('dialog');
+    let dialog = await screen.findByRole('dialog', { name: 'Tolak evaluasi?' });
     expect(within(dialog).getByRole('button', { name: 'Tolak' })).toBeDisabled();
     expect(within(dialog).getByText('Catatan penolakan wajib diisi.')).toBeInTheDocument();
     fireEvent.change(within(dialog).getByLabelText('Catatan penolakan'), { target: { value: 'Dasar belum cukup.' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Tolak' }));
     await waitFor(() => expect(service.decideEvaluation).toHaveBeenCalledWith('eval-1', { approve: false, notes: 'Dasar belum cukup.' }));
-  });
 
-  // Paket E2: the search goes to the server after the shared pause and keeps the old rows.
-  it('keeps the rows, the focus and the typed text while a search is on its way', async () => {
-    vi.mocked(service.getDepartmentEvaluations).mockResolvedValue({ data: [evaluation()], meta });
-    wrap(<KadepThesisGuidanceEvaluationPanel />);
-    expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();
-
-    vi.mocked(service.getDepartmentEvaluations).mockImplementation(() => new Promise(() => {}));
-    const input = screen.getByPlaceholderText('Cari nama, NIM, atau judul...') as HTMLInputElement;
-    input.focus();
-    fireEvent.change(input, { target: { value: ' ilham ' } });
-
-    await waitFor(() =>
-      expect(service.getDepartmentEvaluations).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'ilham', page: 1 })),
-    );
-    expect(screen.getByText('Ilham Nofaldi')).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: 'Memuat hasil pencarian' })).toBeInTheDocument();
-    expect(screen.queryByText('Tidak ada evaluasi bimbingan yang menunggu keputusan.')).not.toBeInTheDocument();
-    expect(input).toHaveFocus();
-    expect(input.value).toBe(' ilham ');
-  });
-
-  it('approves without notes', async () => {
-    vi.mocked(service.getDepartmentEvaluations).mockResolvedValue({ data: [evaluation()], meta });
-    vi.mocked(service.decideEvaluation).mockResolvedValue({ success: true, message: 'Evaluasi disetujui', data: evaluation({ status: 'approved' }) });
-    wrap(<KadepThesisGuidanceEvaluationPanel />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Setujui' }));
-    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Setujui' }));
+    dialog = await screen.findByRole('dialog', { name: 'Setujui evaluasi?' });
+    expect(within(dialog).getByText(/tugas akhir berstatus Gagal, pembimbing dilepas, dan sesi terbuka dibatalkan/)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Setujui' }));
-    await waitFor(() => expect(service.decideEvaluation).toHaveBeenCalledWith('eval-1', { approve: true, notes: null }));
+    await waitFor(() => expect(service.decideEvaluation).toHaveBeenLastCalledWith('eval-1', { approve: true, notes: null }));
   });
-});
 
-describe('Persetujuan Tugas Akhir page', () => {
-  it('has the tabs Perubahan Tugas Akhir and Evaluasi Bimbingan, routed by path', async () => {
-    vi.mocked(service.getDepartmentEvaluations).mockResolvedValue({ data: [], meta: { page: 1, pageSize: 20, total: 0, totalPages: 1 } });
-    vi.mocked(changeService.getDepartmentChangeRequests).mockResolvedValue({ data: [], meta: { page: 1, pageSize: 20, total: 0, totalPages: 1 } });
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/kelola/tugas-akhir/kadep/evaluasi']}>
-          <Routes>
-            <Route element={<Outlet context={{ setBreadcrumbs: vi.fn(), setTitle: vi.fn() }} />}>
-              <Route path="/kelola/tugas-akhir/kadep/:tab" element={<KelolaTugasAkhirKadep />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
+  it('searches by name or NIM in the browser', async () => {
+    vi.mocked(service.getDepartmentEvaluations).mockImplementation(async ({ scope }) =>
+      scope === 'pending'
+        ? { data: [evaluation(), evaluation({ id: 'eval-2', student: person('stu-9', 'SITI AMINAH') })], meta: { ...meta, total: 2 } }
+        : { data: [], meta: { ...meta, total: 0 } },
     );
-
-    expect(screen.getByRole('heading', { name: 'Persetujuan Tugas Akhir' })).toBeInTheDocument();
-    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Perubahan Tugas Akhir', 'Evaluasi Bimbingan']);
-    expect(await screen.findByText('Tidak ada evaluasi bimbingan yang menunggu keputusan.')).toBeInTheDocument();
-    expect(changeService.getDepartmentChangeRequests).not.toHaveBeenCalled();
+    wrap(<ThesisGuidanceEvaluationTable isSupervisor={false} isKadep />);
+    expect(await screen.findByText('Siti Aminah')).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('Cari nama atau NIM...'), { target: { value: 'ID-stu-9' } });
+    expect(screen.queryByText('Ilham Nofaldi')).not.toBeInTheDocument();
+    expect(screen.getByText('Siti Aminah')).toBeInTheDocument();
   });
 });
 

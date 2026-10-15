@@ -24,8 +24,8 @@ export function useStudentGuidance() {
   const [supervisorFilter, setSupervisorFilter] = useState<string>(initialSupervisor);
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialLimit > 0 ? initialLimit : 10);
-  // 10.7: null until the page picks the current phase as the default.
-  const [phase, setPhase] = useState<PhaseFilterValue | null>(PHASE_PARAM[searchParams.get('fase') ?? ''] ?? null);
+  // Paket E4 (2.2): filter in the "Jenis" column header, default Semua.
+  const [phase, setPhase] = useState<PhaseFilterValue>(PHASE_PARAM[searchParams.get('fase') ?? ''] ?? '');
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['student-guidance', { status }],
@@ -56,7 +56,7 @@ export function useStudentGuidance() {
     else sp.delete('page');
     if (pageSize && pageSize !== 10) sp.set('limit', String(pageSize));
     else sp.delete('limit');
-    if (phase !== null) sp.set('fase', phaseParamOf(phase));
+    if (phase) sp.set('fase', phaseParamOf(phase));
     else sp.delete('fase');
     setSearchParams(sp, { replace: true });
   }, [status, q, supervisorFilter, page, pageSize, phase, searchParams, setSearchParams]);

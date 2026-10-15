@@ -35,8 +35,8 @@ import type {
   CreateMilestoneDto,
   UpdateMilestoneDto,
 } from "@/types/milestone.types";
+import { ThesisStoppedAlert } from "@/components/thesis/ThesisStoppedAlert";
 import { ThesisActionBlockedAlert } from "@/components/thesis/ThesisActionBlockedAlert";
-import { OtherPhaseMilestones } from "@/components/milestone/OtherPhaseMilestones";
 import { ThesisPhaseBadge } from "@/components/shared/ThesisPhaseBadge";
 import { getGuidanceActionBlockReason, getThesisStatusLabel, type ThesisPhase } from "@/lib/thesisLabels";
 
@@ -73,8 +73,9 @@ export default function StudentMilestonePage() {
   const currentPhase: ThesisPhase = thesisDetail?.currentPhase ?? "research";
   const otherPhase: ThesisPhase = currentPhase === "proposal" ? "research" : "proposal";
 
-  const isThesisInactive =
-    thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
+  const isThesisInactive = thesisDetail?.status === "completed";
+  // Paket E4 (7): a stopped thesis keeps its milestones visible, read-only, under a ribbon.
+  const isThesisStopped = thesisDetail?.status === "failed";
 
   // K14/K27: milestone writes for `research`, or `proposal` after Penetapan Pembimbing;
   // buttons stay visible but disabled with the reason.
@@ -469,13 +470,17 @@ export default function StudentMilestonePage() {
             <>
               {/* Readiness cards removed, now only shown in Overview */}
 
-              <ThesisActionBlockedAlert reason={actionBlockReason} />
+              {isThesisStopped ? (
+                <ThesisStoppedAlert stoppedAt={thesisDetail?.terminatedAt} />
+              ) : (
+                <ThesisActionBlockedAlert reason={actionBlockReason} />
+              )}
 
               <MilestoneList
                 milestones={milestones}
                 progress={progress ?? null}
                 isLoading={isLoading}
-                isOwner={true}
+                isOwner={!isThesisStopped}
                 isSupervisor={false}
                 onCreateNew={handleCreateNew}
                 onCreateFromTemplates={handleCreateFromTemplates}
@@ -499,12 +504,8 @@ export default function StudentMilestonePage() {
                 onClearSelection={() => setSelectedIds([])}
                 onBulkStart={handleBulkStart}
                 isBulkStarting={isBulkStarting}
-              />
-
-              <OtherPhaseMilestones
-                phase={otherPhase}
-                milestones={otherPhaseData?.milestones ?? []}
-                reason={otherPhaseData?.readOnlyReason}
+                readOnlyMilestones={otherPhaseData?.milestones ?? []}
+                readOnlyPhase={otherPhase}
               />
 
               {/* Create/Edit Dialog */}

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -11,6 +11,9 @@ import {
   type ThesisHistoryItem,
 } from "@/services/studentGuidance.service";
 import { useDefenceReadinessStatus, useSeminarReadinessStatus } from "@/hooks/milestone";
+import { useThesisChangeContext } from "@/hooks/thesis-change-request/useThesisChangeRequest";
+import { useEvaluationContext } from "@/hooks/thesis-guidance-evaluation/useThesisGuidanceEvaluation";
+import type { ThesisChangeRequest } from "@/types/thesis-change-request.types";
 
 vi.mock("@/services/studentGuidance.service", () => ({
   getMyThesisDetail: vi.fn(),
@@ -28,11 +31,13 @@ vi.mock("@/components/milestone/student/SeminarReadinessStatusCard", () => ({
 vi.mock("@/components/milestone/student/DefenceReadinessStatusCard", () => ({
   DefenceReadinessStatusCard: () => <div>Kartu Kesiapan Sidang</div>,
 }));
-vi.mock("@/components/thesis-guidance-evaluation/StudentThesisGuidanceEvaluationCard", () => ({
-  StudentThesisGuidanceEvaluationCard: () => <div>Kartu Evaluasi Bimbingan</div>,
+vi.mock("@/hooks/thesis-change-request/useThesisChangeRequest", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useThesisChangeContext: vi.fn(() => ({ data: undefined })),
 }));
-vi.mock("@/components/thesis-change-request/StudentThesisChangeRequestCard", () => ({
-  StudentThesisChangeRequestCard: () => <div>Kartu Perubahan Tugas Akhir</div>,
+vi.mock("@/hooks/thesis-guidance-evaluation/useThesisGuidanceEvaluation", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useEvaluationContext: vi.fn(() => ({ data: undefined })),
 }));
 vi.mock("lottie-react", () => ({ default: () => <div data-testid="lottie-mock" /> }));
 
@@ -127,6 +132,10 @@ describe("TugasAkhirOverviewPage", () => {
     vi.clearAllMocks();
     vi.mocked(getMyThesisDetail).mockResolvedValue(buildThesis());
     vi.mocked(getStudentThesisHistory).mockResolvedValue({ success: true, theses: [] });
+    vi.mocked(useThesisChangeContext).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof useThesisChangeContext>);
+    vi.mocked(useEvaluationContext).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof useEvaluationContext>);
+    vi.mocked(useSeminarReadinessStatus).mockReturnValue({ data: null, isLoading: false } as unknown as ReturnType<typeof useSeminarReadinessStatus>);
+    vi.mocked(useDefenceReadinessStatus).mockReturnValue({ data: null, isLoading: false } as unknown as ReturnType<typeof useDefenceReadinessStatus>);
   });
 
   it("has the tabs Tugas Akhir Saat Ini and Riwayat", async () => {
@@ -162,24 +171,74 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.getByRole("link", { name: /Ajukan Bimbingan/ })).toHaveAttribute("href", "/tugas-akhir/bimbingan/student?action=create");
   });
 
-  it("shows readiness, change request and evaluation cards; the old document card is gone", async () => {
+  it("shows both readiness cards side by side; no separate change request, evaluation or document card (Paket E4, 3.1, 6)", async () => {
     renderAt("/tugas-akhir");
 
-    expect(await screen.findByText("Kartu Kesiapan Seminar")).toBeInTheDocument();
-    expect(screen.getByText("Kartu Kesiapan Sidang")).toBeInTheDocument();
-    expect(screen.getByText("Kartu Perubahan Tugas Akhir")).toBeInTheDocument();
-    expect(screen.getByText("Kartu Evaluasi Bimbingan")).toBeInTheDocument();
+    const seminar = await screen.findByText("Kartu Kesiapan Seminar");
+    expect(screen.getByText("Kartu Kesiapan Sidang").parentElement).toBe(seminar.parentElement);
+    expect(seminar.parentElement?.className).toContain("lg:grid-cols-2");
+    expect(screen.queryByText("Perubahan Tugas Akhir")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evaluasi Bimbingan")).not.toBeInTheDocument();
     expect(screen.queryByText("Dokumen Tugas Akhir")).not.toBeInTheDocument();
     expect(screen.queryByText("Belum ada dokumen")).not.toBeInTheDocument();
   });
 
-  it("hides the seminar card once the results seminar is passed", async () => {
+  it("keeps the seminar card after the results seminar is passed (Paket E4, 3.2)", async () => {
     vi.mocked(useDefenceReadinessStatus).mockReturnValue({ data: { requirementsMet: true }, isLoading: false } as unknown as ReturnType<typeof useDefenceReadinessStatus>);
-    vi.mocked(useSeminarReadinessStatus).mockReturnValue({ data: { guidanceProgress: { completed: 9, required: 8, isComplete: true } }, isLoading: false } as unknown as ReturnType<typeof useSeminarReadinessStatus>);
+    vi.mocked(useSeminarReadinessStatus).mockReturnValue({ data: { guidanceProgress: { completed: 9, required: 8, isComplete: true }, isPassed: true }, isLoading: false } as unknown as ReturnType<typeof useSeminarReadinessStatus>);
     renderAt("/tugas-akhir");
 
     expect(await screen.findByText("Kartu Kesiapan Sidang")).toBeInTheDocument();
-    expect(screen.queryByText("Kartu Kesiapan Seminar")).not.toBeInTheDocument();
+    expect(screen.getByText("Kartu Kesiapan Seminar")).toBeInTheDocument();
+  });
+
+  it("puts Ajukan Perubahan, the history links, the running request and the evaluation history in the info card; a running warning is a ribbon (Paket E4, 6)", async () => {
+    const change = (overrides: Partial<ThesisChangeRequest>): ThesisChangeRequest => ({
+      id: "c1", thesisId: "thesis-1", batchId: null, requestType: "title", status: "approved", reason: "Alasan.",
+      student: null, thesisTitle: null, title: { previous: "Lama", next: "Baru", newTopic: null }, supervisor: null,
+      requestedBy: null, requestedByStudent: true, steps: [], currentStep: null, decision: null, appliedAt: null,
+      createdAt: "2026-05-01T03:00:00.000Z", viewer: { canDecideAsLecturer: false, canCancel: false }, ...overrides,
+    });
+    vi.mocked(useThesisChangeContext).mockReturnValue({
+      data: {
+        thesis: null, viewerRole: "student", canSubmit: false,
+        blockReason: "Masih ada pengajuan perubahan yang berjalan. Tunggu keputusannya atau batalkan lebih dulu.",
+        openRequest: change({ id: "open", status: "pending", currentStep: "main_supervisor" }),
+        history: [
+          change({ id: "h1" }),
+          change({ id: "h2", requestType: "supervisor", title: null, supervisor: { position: "pembimbing_2", replaced: null, next: { id: "l9", name: "ULLYA", identityNumber: null } } }),
+        ],
+      },
+    } as unknown as ReturnType<typeof useThesisChangeContext>);
+    vi.mocked(useEvaluationContext).mockReturnValue({
+      data: {
+        thesis: null, viewerRole: "student", basis: null, stage: null, allowedRecommendations: [], canSubmit: false, blockReason: null,
+        openEvaluation: null, history: [{ id: "e1", stage: "six_month", status: "approved", requiresKadep: true, createdAt: "2026-09-02T03:00:00.000Z" }],
+        academicWarning: { extensionUntil: "2026-11-09T03:00:00.000Z", followUpDue: false },
+      },
+    } as unknown as ReturnType<typeof useEvaluationContext>);
+    renderAt("/tugas-akhir");
+
+    const card = (await screen.findByText("Informasi Tugas Akhir")).closest("[data-slot=card]") as HTMLElement;
+    expect(within(card).getByRole("button", { name: /Ajukan Perubahan/ })).toBeDisabled();
+    expect(within(card).getByText(/Ajukan Perubahan belum tersedia: Masih ada pengajuan perubahan yang berjalan/)).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Riwayat perubahan judul (1)" })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Riwayat pembimbing (1)" })).toBeInTheDocument();
+    expect(within(card).getByText(/Pengajuan perubahan judul menunggu Pembimbing 1/)).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Riwayat evaluasi (1)" })).toBeInTheDocument();
+    // The ribbon is above the card.
+    const ribbon = screen.getByText("Peringatan akademik").closest("[role=alert]") as HTMLElement;
+    expect(ribbon.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(within(card).getByRole("button", { name: "Riwayat perubahan judul (1)" }));
+    const modal = await screen.findByRole("dialog", { name: "Riwayat Perubahan Judul" });
+    expect(within(modal).getByText("Disetujui")).toBeInTheDocument();
+  });
+
+  it("hides the history links when there is nothing to show", async () => {
+    renderAt("/tugas-akhir");
+    await screen.findByText("Informasi Tugas Akhir");
+    expect(screen.queryByRole("button", { name: /Riwayat perubahan judul|Riwayat pembimbing|Riwayat evaluasi/ })).not.toBeInTheDocument();
   });
 
   it("shows the academic warning with the extension deadline", async () => {
@@ -189,8 +248,10 @@ describe("TugasAkhirOverviewPage", () => {
     }));
     renderAt("/tugas-akhir");
 
+    // Paket E4 (6): one ribbon on top of the page.
     expect(await screen.findByText("Peringatan akademik")).toBeInTheDocument();
-    expect(screen.getByText(/diperpanjang 1 bulan sampai 9 November 2026 10\.00 WIB/)).toBeInTheDocument();
+    expect(screen.getAllByText("Peringatan akademik")).toHaveLength(1);
+    expect(screen.getByText(/Perpanjangan masa bimbingan 1 bulan berlaku sampai 9 November 2026 10\.00 WIB/)).toBeInTheDocument();
     expect(screen.getByText("Tidak ada yang jatuh tempo")).toBeInTheDocument();
   });
 
@@ -218,7 +279,7 @@ describe("TugasAkhirOverviewPage", () => {
     renderAt("/tugas-akhir");
 
     expect(await screen.findByText("Belum Ada Tugas Akhir yang Berjalan")).toBeInTheDocument();
-    expect(screen.getByText(/dihentikan\. Rinciannya ada di tab Riwayat/)).toBeInTheDocument();
+    expect(screen.getByText("Tugas akhir Anda sebelumnya dihentikan. Rincian dapat dilihat pada tab Riwayat.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lihat Riwayat" })).toBeInTheDocument();
     expect(screen.queryByText("Informasi Tugas Akhir")).not.toBeInTheDocument();
   });
@@ -237,14 +298,13 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.getByText("7 bulan 10 hari")).toBeInTheDocument();
     expect(screen.getByText("9 dari 8 sesi")).toBeInTheDocument();
     expect(screen.getByText("4 dari 4 milestone")).toBeInTheDocument();
-    // Read-only: no actions, no readiness, change request or evaluation cards.
+    // Read-only: no actions; the readiness cards stay, in their passed state (Paket E4, 3.1/3.2).
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByText(/Ajukan Bimbingan/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ajukan Perubahan/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Kelola Milestone/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Kartu Kesiapan Seminar")).not.toBeInTheDocument();
-    expect(screen.queryByText("Kartu Kesiapan Sidang")).not.toBeInTheDocument();
-    expect(screen.queryByText("Kartu Perubahan Tugas Akhir")).not.toBeInTheDocument();
-    expect(screen.queryByText("Kartu Evaluasi Bimbingan")).not.toBeInTheDocument();
+    expect(screen.getByText("Kartu Kesiapan Seminar")).toBeInTheDocument();
+    expect(screen.getByText("Kartu Kesiapan Sidang")).toBeInTheDocument();
     expect(screen.queryByText("Belum Ada Tugas Akhir yang Berjalan")).not.toBeInTheDocument();
     // The readiness of a finished thesis is not requested.
     expect(vi.mocked(useSeminarReadinessStatus)).toHaveBeenLastCalledWith(undefined);

@@ -4,6 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { GuidanceTrend } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 
 interface GuidanceTrendChartProps {
   guidanceTrend: GuidanceTrend[] | undefined;
@@ -24,7 +25,7 @@ function formatMonth(month: string): string {
 export function GuidanceTrendChart({ guidanceTrend, isLoading }: GuidanceTrendChartProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
           <CardTitle className="text-base">Tren Jadwal Bimbingan</CardTitle>
         </CardHeader>
@@ -48,7 +49,7 @@ export function GuidanceTrendChart({ guidanceTrend, isLoading }: GuidanceTrendCh
   }));
 
   return (
-    <Card>
+    <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="text-base">Tren Jadwal Bimbingan</CardTitle>
       </CardHeader>

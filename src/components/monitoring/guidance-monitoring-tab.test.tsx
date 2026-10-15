@@ -7,7 +7,7 @@ import { getMonitoringDashboard, type MonitoringDashboard } from "@/services/mon
 import { GuidanceMonitoringTab } from "./guidance-monitoring-tab";
 
 vi.mock("lottie-react", () => ({ default: () => null }));
-vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true }) }));
+vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true, isSekdep: () => false, isGkm: () => false }) }));
 vi.mock("@/services/monitoring.service", () => ({ getMonitoringDashboard: vi.fn(), sendBatchWarnings: vi.fn() }));
 // The charts and the table have their own tests.
 vi.mock("./StatusDistributionChart", () => ({ StatusDistributionChart: () => null }));

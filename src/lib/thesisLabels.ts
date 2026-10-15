@@ -54,7 +54,7 @@ export const THESIS_STATUS_LABELS: Record<ThesisLifecycleStatus, string> = {
 
 export const THESIS_PHASE_LABELS: Record<ThesisPhase, string> = {
   proposal: "Proposal",
-  research: "Tugas Akhir",
+  research: "Penelitian",
 };
 
 export const THESIS_TERMINATION_REASON_LABELS: Record<ThesisTerminationReason, string> = {
@@ -96,6 +96,14 @@ export const CHANGE_REQUEST_TYPE_LABELS: Record<ChangeRequestType, string> = {
   supervisor: "Pembimbing",
   both: "Judul dan Pembimbing",
 };
+
+/** Jenis "Alihkan": pengajuan pembimbing yang dibuat lewat "Alihkan Mahasiswa" (punya `batchId`). */
+export const CHANGE_REQUEST_TRANSFER_LABEL = "Alihkan";
+
+/** Jenis yang tampil di tabel Perubahan (Paket E4, 4.2): Judul / Pembimbing / Judul dan Pembimbing / Alihkan. */
+export function getChangeRequestKindLabel(request: { requestType: ChangeRequestType; batchId?: string | null }): string {
+  return request.batchId ? CHANGE_REQUEST_TRANSFER_LABEL : getChangeRequestTypeLabel(request.requestType);
+}
 
 export const CHANGE_REQUEST_STATUS_LABELS: Record<ChangeRequestStatus, string> = {
   pending: "Menunggu Persetujuan",

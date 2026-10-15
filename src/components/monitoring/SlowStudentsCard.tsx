@@ -37,11 +37,12 @@ interface SlowStudentsCardProps {
 
 /**
  * "Progres Lambat & Berisiko": running theses whose activity level is Lambat or Berisiko,
- * Berisiko first, then the longest without activity. Ketua Departemen can warn them all,
- * after confirming how many students receive the warning.
+ * Berisiko first, then the longest without activity. Ketua Departemen, Sekretaris Departemen
+ * and GKM can warn them all (Paket E4, 8), after confirming how many students receive it.
  */
 export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading }: SlowStudentsCardProps) {
-  const { isKadep } = useRole();
+  const { isKadep, isSekdep, isGkm } = useRole();
+  const canSendWarning = isKadep() || isSekdep() || isGkm();
   const queryClient = useQueryClient();
   const [sending, setSending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -97,7 +98,7 @@ export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading }: Sl
         isLoading={isLoading}
         emptyDescription="Tidak ada mahasiswa dengan progres lambat atau berisiko."
         action={
-          allStudents.length > 0 && isKadep() ? (
+          allStudents.length > 0 && canSendWarning ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setConfirmOpen(true)} disabled={sending}>

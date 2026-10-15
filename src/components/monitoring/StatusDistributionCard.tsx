@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { StatusDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { getThesisStatusLabel, THESIS_STATUS_BG_CLASSES, type ThesisLifecycleStatus } from "@/lib/thesisLabels";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 
 interface StatusDistributionCardProps {
   statusDistribution: StatusDistribution[] | undefined;
@@ -16,7 +17,7 @@ function getStatusColor(status: string): string {
 export function StatusDistributionCard({ statusDistribution, isLoading }: StatusDistributionCardProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
           <CardTitle>Distribusi Status Tugas Akhir</CardTitle>
         </CardHeader>
@@ -43,7 +44,7 @@ export function StatusDistributionCard({ statusDistribution, isLoading }: Status
     .sort((a, b) => b.count - a.count);
 
   return (
-    <Card>
+    <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
         <CardTitle>Distribusi Status Tugas Akhir</CardTitle>
       </CardHeader>

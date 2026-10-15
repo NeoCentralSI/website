@@ -8,6 +8,8 @@ import EmptyState from "@/components/ui/empty-state";
 import { formatDateTimeWib, formatLecturerName } from "@/lib/text";
 import { THESIS_EVENT_DETAIL_PATH, scheduleText } from "@/lib/thesis-event-schedule";
 import type { ThesisDetailDefence, ThesisDetailEvent } from "@/services/monitoring.service";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
+import { cn } from "@/lib/utils";
 
 type EventKind = "seminar" | "defence";
 
@@ -112,7 +114,7 @@ export function ThesisEventCard({ kind, events, canOpenDetail }: ThesisEventCard
   const Icon = copy.icon;
 
   return (
-    <Card className="h-full">
+    <Card className={cn("h-full", MONITORING_CARD_CLASS)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Icon className="h-4 w-4" />

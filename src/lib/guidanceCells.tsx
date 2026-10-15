@@ -3,8 +3,12 @@ import { Button } from '@/components/ui/button';
 import { openAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
 import { formatDateShortId, formatDateTimeWib } from '@/lib/text';
 
-/** Kolom Aksi menempel di kanan (pengaman di layar sempit), tanpa mengubah komponen tabel. */
-export const STICKY_ACTION_COLUMN_CLASS = 'sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)]';
+/**
+ * Kolom Aksi menempel di kanan (pengaman di layar sempit). Paket E4 (0.4): latarnya ikut warna
+ * baris dan hover baris, tanpa bayangan, supaya tidak tampak sebagai blok tersendiri.
+ */
+export const STICKY_ACTION_COLUMN_CLASS =
+  'sticky right-0 z-10 bg-background transition-colors group-hover/row:bg-[color-mix(in_oklab,var(--primary)_5%,var(--background))]';
 
 /** Tanggal lalu jam di baris kedua: "14 Oktober 2026" / "14.00 WIB". */
 export function DateTimeCell({ date }: { date?: string | Date | null }) {

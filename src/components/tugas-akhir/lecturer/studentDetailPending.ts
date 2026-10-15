@@ -14,34 +14,61 @@ export function countMilestonesAwaitingReview(
 
 /** True when the signed-in supervisor can press "Setujui" on this readiness card now. */
 export function isReadinessAwaitingViewer(status: ReadinessStatusBase | null | undefined): boolean {
-    return !!status && !!status.currentUserRole && !status.currentUserHasApproved && !status.approveBlockedReason;
+    return !!status && !!status.currentUserRole && !status.currentUserHasApproved && !status.approveBlockedReason && !status.isPassed;
 }
 
-export interface StudentDetailPendingCounts {
-    /** Tab "Progres": milestones waiting for the viewer's review. */
-    progress: number;
-    /** Tab "Kesiapan Seminar & Sidang": readiness approvals the viewer can give now. */
-    readiness: number;
-    /** Tab "Evaluasi & Perubahan": an evaluation due and a change request at the viewer's step. */
-    evaluation: number;
+/** Section anchors of the single-page student detail (Paket E4, 5). */
+export const DETAIL_SECTIONS = {
+    milestone: "bagian-milestone",
+    revision: "bagian-revisi-proposal",
+    readiness: "bagian-kesiapan",
+    evaluation: "bagian-evaluasi",
+    change: "bagian-perubahan",
+} as const;
+
+export interface DetailActionItem {
+    key: string;
+    label: string;
+    /** Id of the section the item scrolls to. */
+    target: string;
 }
 
-/** What waits for the signed-in supervisor on each tab of the student detail page. */
-export function getStudentDetailPendingCounts(input: {
+/**
+ * "Perlu tindakan Anda" (Paket E4, 5): what waits for the signed-in supervisor on this student,
+ * each with the section it scrolls to. Empty when nothing waits.
+ */
+export function getStudentDetailActionItems(input: {
     milestones: StudentDetail["milestones"] | undefined;
     isPembimbing1: boolean;
     isEnded: boolean;
-    /** Null/undefined when the card is not shown. */
     seminarReadiness: ReadinessStatusBase | null | undefined;
     defenceReadiness: ReadinessStatusBase | null | undefined;
     evaluationContext: ThesisGuidanceEvaluationContext | null | undefined;
     changeContext: ThesisChangeContext | null | undefined;
-}): StudentDetailPendingCounts {
-    const evaluationDue = input.evaluationContext?.viewerRole === "pembimbing_1" && input.evaluationContext.canSubmit;
-    const changeAtMyStep = !!input.changeContext?.openRequest?.viewer.canDecideAsLecturer;
-    return {
-        progress: countMilestonesAwaitingReview(input.milestones, input),
-        readiness: [input.seminarReadiness, input.defenceReadiness].filter(isReadinessAwaitingViewer).length,
-        evaluation: (evaluationDue ? 1 : 0) + (changeAtMyStep ? 1 : 0),
-    };
+    /** A repeated proposal waiting for this supervisor's review. */
+    proposalRevisionWaiting: boolean;
+}): DetailActionItem[] {
+    // An ended thesis (Selesai/Gagal) is read-only: nothing waits for the supervisor.
+    if (input.isEnded) return [];
+    const items: DetailActionItem[] = [];
+    const milestones = countMilestonesAwaitingReview(input.milestones, input);
+    if (milestones > 0) {
+        items.push({ key: "milestone", label: `${milestones} milestone menunggu tinjauan`, target: DETAIL_SECTIONS.milestone });
+    }
+    if (input.proposalRevisionWaiting) {
+        items.push({ key: "revision", label: "Proposal revisi menunggu tinjauan", target: DETAIL_SECTIONS.revision });
+    }
+    if (isReadinessAwaitingViewer(input.seminarReadiness)) {
+        items.push({ key: "seminar", label: "Kesiapan seminar hasil menunggu persetujuan Anda", target: DETAIL_SECTIONS.readiness });
+    }
+    if (isReadinessAwaitingViewer(input.defenceReadiness)) {
+        items.push({ key: "defence", label: "Kesiapan sidang menunggu persetujuan Anda", target: DETAIL_SECTIONS.readiness });
+    }
+    if (input.evaluationContext?.viewerRole === "pembimbing_1" && input.evaluationContext.canSubmit) {
+        items.push({ key: "evaluation", label: "Evaluasi bimbingan jatuh tempo", target: DETAIL_SECTIONS.evaluation });
+    }
+    if (input.changeContext?.openRequest?.viewer.canDecideAsLecturer) {
+        items.push({ key: "change", label: "Pengajuan perubahan menunggu persetujuan Anda", target: DETAIL_SECTIONS.change });
+    }
+    return items;
 }

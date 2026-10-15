@@ -393,15 +393,15 @@ export function DataMasterTaPanel() {
             />
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-x-hidden">
                     <DialogHeader>
                         <DialogTitle>{formState.id ? "Edit Data Tugas Akhir" : "Tambah Data Tugas Akhir"}</DialogTitle>
                         <DialogDescription>Isi form di bawah ini untuk mengelola master data tugas akhir.</DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto px-1">
+                    <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
                         <div className="space-y-4 py-4 pr-3">
-                            <div className="grid gap-2">
+                            <div className="grid min-w-0 gap-2">
                                 <Label>Mahasiswa *</Label>
                                 <SearchableCombobox
                                     ariaLabel="Pilih mahasiswa"
@@ -416,7 +416,7 @@ export function DataMasterTaPanel() {
                                 />
                             </div>
 
-                            <div className="grid gap-2">
+                            <div className="grid min-w-0 gap-2">
                                 <Label>Judul Tugas Akhir</Label>
                                 <Input
                                     value={formState.title}
@@ -425,14 +425,14 @@ export function DataMasterTaPanel() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                                <div className="grid content-start gap-2">
+                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                <div className="grid min-w-0 content-start gap-2">
                                     <Label>Topik</Label>
                                     <Select
                                         value={formState.thesisTopicId}
                                         onValueChange={(v) => setFormState(prev => ({ ...prev, thesisTopicId: v }))}
                                     >
-                                        <SelectTrigger><SelectValue placeholder="Pilih topik..." /></SelectTrigger>
+                                        <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih topik..." /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">-- Tanpa Topik --</SelectItem>
                                             {topics.map(t => (
@@ -442,13 +442,13 @@ export function DataMasterTaPanel() {
                                     </Select>
                                 </div>
                                 {formState.id && (
-                                    <div className="grid content-start gap-2">
+                                    <div className="grid min-w-0 content-start gap-2">
                                         <Label>Tahun Ajaran</Label>
                                         <Select
                                             value={formState.academicYearId}
                                             onValueChange={(v) => setFormState(prev => ({ ...prev, academicYearId: v }))}
                                         >
-                                            <SelectTrigger><SelectValue placeholder="Pilih tahun ajaran..." /></SelectTrigger>
+                                            <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih tahun ajaran..." /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
                                                 {academicYears.map(ay => (
@@ -460,7 +460,7 @@ export function DataMasterTaPanel() {
                                 )}
 
                                 {formState.id && (
-                                    <div className="grid content-start gap-2">
+                                    <div className="grid min-w-0 content-start gap-2">
                                         <Label>Tanggal Mulai</Label>
                                         <DatePicker
                                             value={formState.startDate ? new Date(formState.startDate) : undefined}
@@ -473,14 +473,14 @@ export function DataMasterTaPanel() {
                                     </div>
                                 )}
 
-                                <div className="grid content-start gap-2">
+                                <div className="grid min-w-0 content-start gap-2">
                                     <Label>Status Tugas Akhir</Label>
                                     <Select
                                         value={formState.status}
                                         onValueChange={(v) => setFormState(prev => ({ ...prev, status: v as ThesisLifecycleStatus }))}
                                         disabled={isClosedStatus(formState.originalStatus)}
                                     >
-                                        <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
+                                        <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih status..." /></SelectTrigger>
                                         <SelectContent>
                                             {getAllowedThesisStatusOptions(formState.originalStatus, formState.statusBeforeLeave).map(s => (
                                                 <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
@@ -501,13 +501,13 @@ export function DataMasterTaPanel() {
                                                 Semua pembimbing aktif akan dilepas dan sesi bimbingan yang masih terbuka dibatalkan. Status Gagal tidak dapat diubah lagi.
                                             </AlertDescription>
                                         </Alert>
-                                        <div className="grid gap-2">
+                                        <div className="grid min-w-0 gap-2">
                                             <Label>Alasan penghentian *</Label>
                                             <Select
                                                 value={formState.terminationReason}
                                                 onValueChange={(v) => setFormState(prev => ({ ...prev, terminationReason: v as ThesisTerminationReason }))}
                                             >
-                                                <SelectTrigger><SelectValue placeholder="Pilih alasan..." /></SelectTrigger>
+                                                <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih alasan..." /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="none" disabled>-- Pilih alasan --</SelectItem>
                                                     {terminationReasonOptions.map(r => (
@@ -516,7 +516,7 @@ export function DataMasterTaPanel() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="grid gap-2">
+                                        <div className="grid min-w-0 gap-2">
                                             <Label>Catatan (opsional)</Label>
                                             <Textarea
                                                 value={formState.terminationNote}
@@ -531,8 +531,8 @@ export function DataMasterTaPanel() {
 
                             <div className="border-t pt-4 mt-4">
                                 <Label className="text-base mb-4 block">Pembimbing</Label>
-                                <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
-                                    <div className="grid content-start gap-2">
+                                <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                    <div className="grid min-w-0 content-start gap-2">
                                         <Label>Pembimbing 1 *</Label>
                                         <SearchableCombobox
                                             ariaLabel="Pilih pembimbing 1"
@@ -545,7 +545,7 @@ export function DataMasterTaPanel() {
                                             emptyText="Dosen tidak ditemukan."
                                         />
                                     </div>
-                                    <div className="grid content-start gap-2">
+                                    <div className="grid min-w-0 content-start gap-2">
                                         <Label>Pembimbing 2 (Opsional)</Label>
                                         <SearchableCombobox
                                             ariaLabel="Pilih pembimbing 2"

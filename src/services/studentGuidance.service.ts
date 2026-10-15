@@ -423,6 +423,8 @@ export interface MyThesisDetail extends ThesisPhaseSummary {
   /** True while the thesis is back in proposal because of a guidance evaluation (E5). */
   repeatingProposal?: boolean;
   startDate?: string | null;
+  /** When a failed thesis was stopped (Paket E4, 7); null otherwise. */
+  terminatedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   student: {

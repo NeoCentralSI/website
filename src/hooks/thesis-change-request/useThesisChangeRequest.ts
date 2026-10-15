@@ -35,15 +35,16 @@ export function useSupervisorOptions(position?: SupervisorPosition, enabled = tr
   });
 }
 
-export function useLecturerChangeRequests() {
-  return useQuery({ queryKey: thesisChangeRequestKeys.lecturer(), queryFn: service.getLecturerChangeRequests });
+export function useLecturerChangeRequests(enabled = true) {
+  return useQuery({ queryKey: thesisChangeRequestKeys.lecturer(), queryFn: service.getLecturerChangeRequests, enabled });
 }
 
-export function useDepartmentChangeRequests(params: { scope: 'pending' | 'history'; search: string; page: number; pageSize: number }) {
+export function useDepartmentChangeRequests(params: { scope: 'pending' | 'history'; search: string; page: number; pageSize: number }, enabled = true) {
   return useQuery({
     queryKey: thesisChangeRequestKeys.department(params.scope, params.search, params.page, params.pageSize),
     queryFn: () => service.getDepartmentChangeRequests({ ...params, search: params.search || undefined }),
     placeholderData: (previous) => previous,
+    enabled,
   });
 }
 

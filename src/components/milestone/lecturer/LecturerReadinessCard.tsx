@@ -19,9 +19,12 @@ import { cn } from "@/lib/utils";
 import {
   READINESS_COPY,
   ReadinessAttachmentLink,
+  ReadinessPassedView,
   ReadinessRequirementList,
   ReadinessStateBadge,
   ReadinessSupervisorList,
+  WAITING_FOR_SEMINAR_TEXT,
+  isWaitingForSeminar,
   type ReadinessKind,
 } from "../ReadinessParts";
 
@@ -29,16 +32,16 @@ export interface LecturerReadinessCardProps {
   thesisId: string;
   studentName: string;
   className?: string;
-  /** Requirements above the approvals instead of beside them, for a half-width card. */
-  stacked?: boolean;
 }
 
 /**
  * Supervisor view of seminar/defence readiness: system requirements, every supervisor's
  * approval, the latest guidance attachment, and Setujui / Batalkan Persetujuan. The two
- * kinds share this card so they stay symmetric.
+ * kinds share this card so they stay symmetric; they stand side by side with equal height,
+ * the actions at the bottom (Paket E4, 3.1). Once the event is passed the card is read-only
+ * (3.2); the defence card first waits for the results seminar (3.3).
  */
-export function LecturerReadinessCard({ kind, thesisId, studentName, className, stacked }: LecturerReadinessCardProps & { kind: ReadinessKind }) {
+export function LecturerReadinessCard({ kind, thesisId, studentName, className }: LecturerReadinessCardProps & { kind: ReadinessKind }) {
   const seminar = useSeminarReadinessManagement(kind === "seminar" ? thesisId : undefined);
   const defence = useDefenceReadinessManagement(kind === "defence" ? thesisId : undefined);
   const { readinessStatus, isLoading, approve, revoke, isApproving, isRevoking } = kind === "seminar" ? seminar : defence;
@@ -49,7 +52,7 @@ export function LecturerReadinessCard({ kind, thesisId, studentName, className, 
 
   if (isLoading) {
     return (
-      <Card className={className}>
+      <Card className={cn("h-full", className)}>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </CardContent>
@@ -61,7 +64,10 @@ export function LecturerReadinessCard({ kind, thesisId, studentName, className, 
   const isOwnSupervisor = !!readinessStatus.currentUserRole;
   const hasApproved = readinessStatus.currentUserHasApproved;
   const approveReason = readinessStatus.approveBlockedReason;
+  const revokeReason = readinessStatus.revokeBlockedReason ?? null;
   const isPending = isApproving || isRevoking;
+  const passed = !!readinessStatus.isPassed;
+  const waiting = isWaitingForSeminar(kind, readinessStatus);
 
   const closeDialog = () => { setDialog(null); setNotes(""); };
   const submit = () => {
@@ -72,52 +78,74 @@ export function LecturerReadinessCard({ kind, thesisId, studentName, className, 
   };
 
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn("flex h-full w-full flex-col", className)}>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <CardTitle className="text-lg">{copy.title}</CardTitle>
             <CardDescription>
-              Persetujuan diberikan berdasarkan syarat sistem; mahasiswa tidak mengunggah dokumen untuk meminta persetujuan.
+              {passed
+                ? `Kesiapan ${copy.noun} sudah selesai; persetujuan tidak dapat diubah lagi.`
+                : "Persetujuan diberikan berdasarkan syarat sistem; mahasiswa tidak mengunggah dokumen untuk meminta persetujuan."}
             </CardDescription>
           </div>
           <ReadinessStateBadge status={readinessStatus} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className={cn("grid gap-4", !stacked && "md:grid-cols-2")}>
-          <ReadinessRequirementList requirements={readinessStatus.requirements} />
-          <ReadinessSupervisorList supervisors={readinessStatus.supervisors} />
-        </div>
-
-        <ReadinessAttachmentLink attachment={readinessStatus.latestGuidanceAttachment} />
-
-        {isOwnSupervisor ? (
-          <div className="space-y-2 border-t pt-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {hasApproved ? (
-                <Button variant="outline" disabled={isPending} onClick={() => setDialog("revoke")}>
-                  Batalkan Persetujuan
-                </Button>
-              ) : (
-                <Button disabled={isPending || !!approveReason} onClick={() => setDialog("approve")}>
-                  Setujui
-                </Button>
-              )}
-              {isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-            </div>
-            {!hasApproved && approveReason && (
-              <p className="text-xs text-muted-foreground">Belum dapat disetujui: {approveReason}</p>
-            )}
-            {hasApproved && (
-              <p className="text-xs text-muted-foreground">Anda sudah menyetujui kesiapan {copy.noun} mahasiswa ini.</p>
-            )}
+      <CardContent className="flex flex-1 flex-col gap-4">
+        {passed ? (
+          <ReadinessPassedView kind={kind} status={readinessStatus} />
+        ) : waiting ? (
+          <div className="space-y-2">
+            <ReadinessRequirementList requirements={readinessStatus.requirements} />
+            <p className="text-sm text-muted-foreground">{WAITING_FOR_SEMINAR_TEXT}.</p>
           </div>
         ) : (
-          <p className="border-t pt-4 text-xs text-muted-foreground">
-            Hanya pembimbing aktif tugas akhir ini yang dapat menyetujui atau membatalkan persetujuan.
-          </p>
+          <>
+            <ReadinessRequirementList requirements={readinessStatus.requirements} />
+            <ReadinessSupervisorList supervisors={readinessStatus.supervisors} />
+            <ReadinessAttachmentLink attachment={readinessStatus.latestGuidanceAttachment} />
+          </>
         )}
+
+        <div className="mt-auto border-t pt-4">
+          {passed ? (
+            <p className="text-xs text-muted-foreground">{approveReason ?? revokeReason}</p>
+          ) : isOwnSupervisor ? (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {hasApproved ? (
+                  <span title={revokeReason ?? undefined}>
+                    <Button variant="outline" disabled={isPending || !!revokeReason} onClick={() => setDialog("revoke")}>
+                      Batalkan Persetujuan
+                    </Button>
+                  </span>
+                ) : (
+                  <span title={approveReason ?? undefined}>
+                    <Button disabled={isPending || !!approveReason} onClick={() => setDialog("approve")}>
+                      Setujui
+                    </Button>
+                  </span>
+                )}
+                {isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+              </div>
+              {!hasApproved && approveReason && (
+                <p className="text-xs text-muted-foreground">
+                  Belum dapat disetujui: {waiting ? WAITING_FOR_SEMINAR_TEXT : approveReason}
+                </p>
+              )}
+              {hasApproved && (
+                <p className="text-xs text-muted-foreground">
+                  {revokeReason ?? `Anda sudah menyetujui kesiapan ${copy.noun} mahasiswa ini.`}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Hanya pembimbing aktif tugas akhir ini yang dapat menyetujui atau membatalkan persetujuan.
+            </p>
+          )}
+        </div>
       </CardContent>
 
       <Dialog open={dialog !== null} onOpenChange={(open) => { if (!open) closeDialog(); }}>

@@ -29,6 +29,10 @@ interface GuidanceHistorySectionProps {
     };
 }
 
+/**
+ * Sessions of both phases in one list, told apart by the Jenis badge (Paket E4, 2.3). As tall
+ * as its content; a long list scrolls inside the card at the same max height as Milestone (2.5).
+ */
 export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySectionProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [preview, setPreview] = useState<{ fileName: string; filePath: string } | null>(null);
@@ -39,7 +43,7 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
     );
 
     return (
-        <Card className="h-full">
+        <Card>
             <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base">
                     <History className="h-4 w-4" />
@@ -51,7 +55,7 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
             </CardHeader>
             <CardContent className="px-2 sm:px-6">
                 {guidanceHistory.items.length > 0 ? (
-                    <div className="h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent space-y-2">
+                    <div className="max-h-150 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent space-y-2">
                         {guidanceHistory.items.map((g) => {
                             const isExpanded = expandedId === g.id;
                             const externalLink = g.documentUrl && g.documentUrl !== "null" ? g.documentUrl : null;

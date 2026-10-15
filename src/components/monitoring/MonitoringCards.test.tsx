@@ -11,7 +11,7 @@ import { SupervisorLoadCard } from "./SupervisorLoadCard";
 import { ThesisEventCard } from "./ThesisEventCard";
 
 vi.mock("lottie-react", () => ({ default: () => null }));
-vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true }) }));
+vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isKadep: () => true, isSekdep: () => false, isGkm: () => false }) }));
 vi.mock("@/services/monitoring.service", () => ({ sendBatchWarnings: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
 

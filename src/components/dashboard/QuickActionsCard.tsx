@@ -127,7 +127,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           icon: UserPlus,
           color: "text-amber-600",
           bgColor: "bg-amber-50",
-          link: "/tugas-akhir/bimbingan/lecturer/my-students",
+          link: "/tugas-akhir/permohonan",
           loading: loadingSupervisorInbox,
         },
         {
@@ -138,7 +138,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           icon: UserPlus,
           color: "text-teal-600",
           bgColor: "bg-teal-50",
-          link: "/tugas-akhir/bimbingan/lecturer/my-students",
+          link: "/tugas-akhir/permohonan",
           loading: loadingSupervisor2,
         },
         {

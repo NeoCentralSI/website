@@ -19,8 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { ThesisPhaseBadge } from "@/components/shared/ThesisPhaseBadge";
 import { formatDateTimeWib } from "@/lib/text";
-import { getMilestoneStatusLabel } from "@/lib/thesisLabels";
+import { getMilestoneStatusLabel, type ThesisPhase } from "@/lib/thesisLabels";
 import { cn } from "@/lib/utils";
 import {
     createMilestoneForStudent,
@@ -57,13 +58,22 @@ interface StudentMilestoneCardProps {
     isEnded: boolean;
     /** K14: why milestone write actions are closed; null when they are open. */
     actionBlockReason: string | null;
+    /**
+     * Paket E4 (2.4): milestones of the other phase continue the same list below the current
+     * phase, each with its phase badge, read-only, without action buttons.
+     */
+    readOnlyMilestones?: StudentDetail["milestones"];
+    readOnlyPhase?: ThesisPhase;
 }
+
+/** Shared max height of the Milestone and Riwayat Bimbingan lists (Paket E4, 2.5). */
+export const DETAIL_LIST_MAX_HEIGHT_CLASS = "max-h-150";
 
 /**
  * Supervisor's view of a student's milestones: review (Pembimbing 1), feedback
  * (Pembimbing 1 and 2) and "Tambah" (Pembimbing 1), each with its own dialog.
  */
-export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEnded, actionBlockReason }: StudentMilestoneCardProps) {
+export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEnded, actionBlockReason, readOnlyMilestones = [], readOnlyPhase }: StudentMilestoneCardProps) {
     const queryClient = useQueryClient();
     const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
     const [validatingId, setValidatingId] = useState<string | null>(null);
@@ -179,7 +189,7 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
     const previousFeedback = milestones.find((m) => m.id === feedbackMilestoneId)?.feedback;
 
     return (
-        <Card className="h-full">
+        <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-3 pb-4">
                 <div className="min-w-0 space-y-1">
                     <CardTitle className="flex flex-wrap items-center gap-2 text-base">
@@ -210,11 +220,14 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
                 )}
             </CardHeader>
             <CardContent className="px-2 sm:px-6">
-                <div className="h-150 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                <div className={cn(DETAIL_LIST_MAX_HEIGHT_CLASS, "overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent")}>
                     <div className="relative border-l ml-3 space-y-8 my-2 pt-2">
-                        {milestones.length > 0 ? (
-                            milestones.map((milestone) => {
-                                const canReview = isPembimbing1 && milestone.status === 'pending_review' && !isEnded;
+                        {milestones.length + readOnlyMilestones.length > 0 ? (
+                            [
+                                ...milestones.map((milestone) => ({ milestone, readOnly: false })),
+                                ...readOnlyMilestones.map((milestone) => ({ milestone, readOnly: true })),
+                            ].map(({ milestone, readOnly }) => {
+                                const canReview = !readOnly && isPembimbing1 && milestone.status === 'pending_review' && !isEnded;
                                 return (
                                     <div key={milestone.id} className="ml-6 relative group pb-2">
                                         {validatingId === milestone.id && (
@@ -231,7 +244,7 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
                                         <div className="flex flex-col gap-2">
                                             <div className="flex items-start justify-between gap-2">
                                                 <h4 className="min-w-0 flex-1 font-medium text-sm leading-snug mt-0.5 [overflow-wrap:anywhere]">{milestone.title}</h4>
-                                                <div className="flex shrink-0 items-center gap-1">
+                                                {!readOnly && <div className="flex shrink-0 items-center gap-1">
                                                     {canReview && (
                                                         <Button
                                                             variant="outline"
@@ -274,7 +287,7 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
                                                             <MessageSquare className="h-4 w-4" />
                                                         </Button>
                                                     )}
-                                                </div>
+                                                </div>}
                                             </div>
 
                                             <div className="space-y-1">
@@ -286,13 +299,16 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
                                             </div>
 
                                             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground mt-1">
+                                                {readOnly && (
+                                                    <ThesisPhaseBadge phase={readOnlyPhase ?? milestone.phase} className="text-[10px] h-5 px-1.5" />
+                                                )}
                                                 <Badge variant={STATUS_VARIANTS[milestone.status] || "outline"} className="text-[10px] h-5 px-1.5 font-normal">
                                                     {getMilestoneStatusLabel(milestone.status)}
                                                 </Badge>
-                                                {milestone.progressPercentage === 100 && milestone.status === 'in_progress' && (
+                                                {!readOnly && milestone.progressPercentage === 100 && milestone.status === 'in_progress' && (
                                                     <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal gap-1 animate-pulse text-red-600 border-red-600 bg-transparent">
                                                         <Bell className="h-3 w-3" />
-                                                        Perlu Approval
+                                                        Perlu Persetujuan
                                                     </Badge>
                                                 )}
                                                 {milestone.updatedAt && (

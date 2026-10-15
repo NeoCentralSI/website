@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MilestoneCard } from "./MilestoneCard";
+import type { ThesisPhase } from "@/lib/thesisLabels";
 import { MilestoneProgressCard } from "./MilestoneProgressCard";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/spinner";
@@ -68,6 +69,12 @@ export interface MilestoneListProps {
   onCreateFromTemplates?: () => void;
   /** K14: when set, create buttons stay visible but disabled with this reason. */
   createDisabledReason?: string | null;
+  /**
+   * Paket E4 (2.4): milestones of the other phase, listed after the current phase in the same
+   * list, read-only, each with its phase badge.
+   */
+  readOnlyMilestones?: Milestone[];
+  readOnlyPhase?: ThesisPhase;
   /** K20: "Buat dari Template" only (e.g. the thesis has no topic yet). */
   templateDisabledReason?: string | null;
   onEdit?: (milestone: Milestone) => void;
@@ -99,6 +106,8 @@ export function MilestoneList({
   onCreateFromTemplates,
   createDisabledReason = null,
   templateDisabledReason = null,
+  readOnlyMilestones = [],
+  readOnlyPhase,
   onEdit,
   onDelete,
   onStatusChange,
@@ -485,6 +494,16 @@ export function MilestoneList({
             </div>
           )}
         </div>
+      )}
+
+      {readOnlyMilestones.length > 0 && (
+        <ol className="space-y-3" aria-label="Milestone fase lain (baca saja)">
+          {readOnlyMilestones.map((milestone) => (
+            <li key={milestone.id}>
+              <MilestoneCard milestone={milestone} phase={readOnlyPhase ?? milestone.phase} />
+            </li>
+          ))}
+        </ol>
       )}
     </div>
   );

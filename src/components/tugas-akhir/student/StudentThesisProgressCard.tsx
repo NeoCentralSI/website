@@ -1,13 +1,12 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, History, Plus, Target } from "lucide-react";
+import { History, Plus, Target } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
-import { formatDateShortId, formatDateTimeWib } from "@/lib/text";
+import { formatDateShortId } from "@/lib/text";
 import { getEvaluationDueLabel } from "@/lib/thesisLabels";
 import { formatPhaseSessionSummary } from "@/components/thesis/ThesisPhaseFilter";
 import type { MyThesisDetail } from "@/services/studentGuidance.service";
@@ -94,16 +93,7 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
           )}
         </dl>
 
-        {!readOnly && clock?.extensionUntil && (
-          <Alert className="border-amber-300 bg-amber-50 text-amber-900">
-            <AlertTriangle className="h-4 w-4 !text-amber-600" />
-            <AlertTitle>Peringatan akademik</AlertTitle>
-            <AlertDescription className="text-amber-800">
-              Masa bimbingan diperpanjang 1 bulan sampai {formatDateTimeWib(clock.extensionUntil)}. Setelah batas itu pembimbing mengisi tindak lanjut evaluasi.
-            </AlertDescription>
-          </Alert>
-        )}
-
+        {/* Paket E4 (6): a running warning is the ribbon on top of the Overview, not repeated here. */}
         {isProposalPhase ? (
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-1.5">

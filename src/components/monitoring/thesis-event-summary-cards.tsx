@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { ThesisEventKind, ThesisEventSummary } from "@/services/monitoring.service";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 
 const scoreFormat = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
 
@@ -80,8 +81,8 @@ export function ThesisEventSummaryCards({ kind, summary, isLoading }: ThesisEven
   return (
     <div className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-3", kind === "defence" ? "xl:grid-cols-6" : "xl:grid-cols-5")}>
       {cards.map((card) => (
-        <Card key={card.title}>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+        <Card key={card.title} className={MONITORING_CARD_CLASS}>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
             <div className={cn("shrink-0 rounded-full p-2", card.bgColor)}>
               <card.icon className={cn("h-4 w-4", card.color)} />

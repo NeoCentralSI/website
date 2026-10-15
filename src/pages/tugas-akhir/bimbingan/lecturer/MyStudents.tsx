@@ -16,12 +16,12 @@ const STUDENT_FILTERS: { value: MyStudentsFilter; label: string }[] = [
 ];
 import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { toTitleCaseName, formatDateShortId, formatDateTimeWib } from "@/lib/text";
 import { STICKY_ACTION_COLUMN_CLASS } from "@/lib/guidanceCells";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -38,27 +38,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { Eye, CalendarCheck, Milestone, Bell, AlertTriangle } from "lucide-react";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
-import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
-import { LecturerThesisChangeRequestPanel } from "@/components/thesis-change-request/LecturerThesisChangeRequestPanel";
-import { LecturerSupervisorRequestPanel } from "@/components/thesis-proposal/LecturerSupervisorRequestPanel";
-import { LecturerTransferStudentsDialog, type TransferStudent } from "@/components/thesis-change-request/LecturerTransferStudentsDialog";
-import { useAuth } from "@/hooks/shared/useAuth";
 import { MyStudentsCharts } from "@/components/bimbingan/MyStudentsCharts";
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
 import { ThesisActivityBadge } from '@/components/shared/ThesisActivityBadge';
 import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
-
-/** Supervisor position of a "my students" row, from the role name the API sends. */
-function toSupervisorPosition(roleName?: string | null): TransferStudent["position"] {
-  const normalized = String(roleName ?? "").toLowerCase().replace(/[\s_]/g, "");
-  if (normalized === "pembimbing1") return "pembimbing_1";
-  if (normalized === "pembimbing2") return "pembimbing_2";
-  return null;
-}
 
 /**
  * Fixed layout: every column but "Mahasiswa" has a width, so the table fills the card
@@ -83,12 +70,6 @@ export default function LecturerMyStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const queryClient = useQueryClient();
-
-  // Student selection state for "Alihkan Mahasiswa"
-  const { user } = useAuth();
-  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
@@ -145,41 +126,6 @@ export default function LecturerMyStudentsPage() {
 
   const columns: Column<MyStudentItem>[] = useMemo(() => [
     {
-      key: 'select',
-      width: 44,
-      header: () => {
-        const allSelected = paginatedData.length > 0 && paginatedData.every(s => selectedStudentIds.has(s.studentId));
-        return (
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={(checked) => {
-              const next = new Set(selectedStudentIds);
-              if (checked) {
-                paginatedData.forEach(s => next.add(s.studentId));
-              } else {
-                paginatedData.forEach(s => next.delete(s.studentId));
-              }
-              setSelectedStudentIds(next);
-            }}
-          />
-        );
-      },
-      render: (row) => (
-        <Checkbox
-          checked={selectedStudentIds.has(row.studentId)}
-          onCheckedChange={(checked) => {
-            const next = new Set(selectedStudentIds);
-            if (checked) {
-              next.add(row.studentId);
-            } else {
-              next.delete(row.studentId);
-            }
-            setSelectedStudentIds(next);
-          }}
-        />
-      ),
-    },
-    {
       // The only column without a width: it takes what the fixed columns leave.
       key: 'fullName',
       header: 'Mahasiswa',
@@ -199,7 +145,13 @@ export default function LecturerMyStudentsPage() {
           ) : (
             <p className="text-sm text-muted-foreground">Judul belum ditentukan</p>
           )}
-          {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="text-xs" />}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="text-xs" />}
+            {/* Paket E4 (1.1): a replaced supervisor reads the student under "Semua" only. */}
+            {row.noLongerSupervising && (
+              <Badge variant="outline" className="text-xs text-muted-foreground">Tidak lagi membimbing</Badge>
+            )}
+          </div>
         </div>
       ),
     },
@@ -277,8 +229,9 @@ export default function LecturerMyStudentsPage() {
       width: 96,
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (row) => {
-        // Only an active supervisor relation may send a warning (backend rule).
-        const canWarn = needsWarning(row.activityLevel) && (row.supervisorStatus ?? "active") === "active";
+        // Only an active supervisor relation may send a warning (backend rule); a replaced
+        // supervisor's row is read-only (Paket E4, 1.1).
+        const canWarn = needsWarning(row.activityLevel) && (row.supervisorStatus ?? "active") === "active" && !row.noLongerSupervising;
         return (
           <div className="flex items-center justify-end gap-1">
             {canWarn && (
@@ -323,33 +276,7 @@ export default function LecturerMyStudentsPage() {
         );
       }
     }
-  ], [navigate, selectedStudentIds, paginatedData]);
-
-  // Get selected student items
-  const selectedStudents = useMemo(() => {
-    if (!data?.students) return [];
-    return data.students.filter((s: MyStudentItem) => selectedStudentIds.has(s.studentId));
-  }, [data?.students, selectedStudentIds]);
-
-  // "Alihkan Mahasiswa" hands over this lecturer's own active position on a research thesis.
-  const transferStudents = useMemo<TransferStudent[]>(
-    () =>
-      selectedStudents
-        .filter((s) => s.thesisId && s.thesisStatus === "research" && (s.supervisorStatus ?? "active") === "active")
-        .map((s) => ({
-          thesisId: s.thesisId as string,
-          name: s.fullName,
-          identityNumber: s.identityNumber ?? null,
-          position: toSupervisorPosition(s.roles?.[0]),
-        })),
-    [selectedStudents],
-  );
-  const transferBlockReason =
-    selectedStudents.length === 0
-      ? "Centang mahasiswa yang akan dialihkan lebih dulu."
-      : transferStudents.length !== selectedStudents.length
-        ? "Hanya mahasiswa dengan tugas akhir berstatus Penelitian yang masih Anda bimbing yang dapat dialihkan."
-        : null;
+  ], [navigate]);
 
   // Define tabs for reuse
   const tabs = [
@@ -366,20 +293,11 @@ export default function LecturerMyStudentsPage() {
 
       <TabsNav tabs={tabs} />
 
-      {/* Permohonan Pembimbing (Paket P, K16): pengajuan mahasiswa yang menunggu keputusan dosen ini */}
-      <LecturerSupervisorRequestPanel />
-
-      {/* Distribution Charts */}
+      {/* Paket E4 (4): only the summary and the students table. Permohonan Pembimbing and
+          Pengajuan Perubahan have their own pages under Tugas Akhir. */}
       {!isLoading && data?.students && data.students.length > 0 && (
         <MyStudentsCharts students={data.students} />
       )}
-
-      {/* Pengajuan Perubahan Tugas Akhir: menunggu persetujuan dosen ini, berjalan, dan riwayat */}
-      <LecturerThesisChangeRequestPanel />
-
-      {/* Permintaan Pembimbing 2 fase proposal (alur Metode Penelitian). Untuk TA fase
-          penelitian, Pembimbing 2 ditambahkan lewat Pengajuan Perubahan di atas. */}
-      <Supervisor2RequestsSection />
 
       {/* Loading state - tabs tetap render, loading di content */}
       {isLoading ? (
@@ -413,7 +331,6 @@ export default function LecturerMyStudentsPage() {
                 onValueChange={(v) => {
                   setStudentFilter(v as MyStudentsFilter);
                   setPage(1);
-                  setSelectedStudentIds(new Set());
                 }}
               >
                 <SelectTrigger className="h-9 w-32" aria-label="Filter status tugas akhir">
@@ -427,28 +344,6 @@ export default function LecturerMyStudentsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    {/* The wrapper keeps the tooltip working while the button is disabled. */}
-                    <span tabIndex={transferBlockReason ? 0 : -1}>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5"
-                        disabled={!!transferBlockReason}
-                        onClick={() => setTransferDialogOpen(true)}
-                      >
-                        <ArrowRightLeft className="h-4 w-4" />
-                        Alihkan Mahasiswa{transferStudents.length > 0 ? ` (${transferStudents.length})` : ''}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{transferBlockReason ?? 'Alihkan mahasiswa terpilih ke dosen lain'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
               <RefreshButton
                 onClick={() => refetch()}
                 isRefreshing={isFetching && !isLoading}
@@ -508,17 +403,6 @@ export default function LecturerMyStudentsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Alihkan Mahasiswa: one change request per selected student, same batch */}
-      <LecturerTransferStudentsDialog
-        open={transferDialogOpen}
-        onOpenChange={setTransferDialogOpen}
-        students={transferStudents}
-        currentLecturerId={user?.id}
-        onSuccess={() => {
-          setSelectedStudentIds(new Set());
-          queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
-        }}
-      />
     </div>
   );
 }

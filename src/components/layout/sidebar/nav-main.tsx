@@ -20,6 +20,8 @@ export interface NavSubItem {
   title: string
   url: string
   isActive?: boolean
+  /** Count shown at the right of the sub-item (Paket E4, 4.1); hidden when absent or 0. */
+  badge?: number
 }
 
 export interface NavItem {
@@ -161,6 +163,14 @@ export function NavMain({
                             <SidebarMenuSubButton asChild isActive={isSubActive}>
                               <Link to={subItem.url}>
                                 <span className="truncate">{subItem.title}</span>
+                                {!!subItem.badge && (
+                                  <span
+                                    className="ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-none text-primary-foreground"
+                                    aria-label={`${subItem.badge} menunggu`}
+                                  >
+                                    {subItem.badge}
+                                  </span>
+                                )}
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>

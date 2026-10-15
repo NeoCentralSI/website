@@ -3,6 +3,7 @@ import { apiRequest } from '@/services/auth.service';
 import type {
   DepartmentEvaluations,
   SubmitEvaluationDto,
+  SupervisorEvaluations,
   ThesisGuidanceEvaluation,
   ThesisGuidanceEvaluationContext,
 } from '@/types/thesis-guidance-evaluation.types';
@@ -48,6 +49,12 @@ export async function getDepartmentEvaluations(params: {
   const body = (await response.json().catch(() => ({}))) as Partial<DepartmentEvaluations> & { message?: string };
   if (!response.ok) throw new Error(body.message || 'Gagal memuat evaluasi bimbingan');
   return { data: body.data ?? [], meta: body.meta ?? { page: 1, pageSize: params.pageSize, total: 0, totalPages: 1 } };
+}
+
+/** Paket E4 (4.3): evaluations due on the supervisor's theses and the evaluations they follow. */
+export async function getSupervisorEvaluations(): Promise<SupervisorEvaluations> {
+  const response = await apiRequest(getApiUrl(`${BASE}/lecturer`));
+  return (await parse<SupervisorEvaluations>(response, 'Gagal memuat evaluasi bimbingan')).data;
 }
 
 export async function decideEvaluation(evaluationId: string, dto: { approve: boolean; notes?: string | null }) {

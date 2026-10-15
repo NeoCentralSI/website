@@ -14,9 +14,11 @@ import { useMemo } from "react";
 import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
+import { useLecturerSupervisorInbox } from "@/hooks/thesis-proposal/useSupervisorRequests";
 import { ENV } from "@/config/env";
 
-type SidebarLeafItem = { title: string; url: string };
+/** `badge`: a count shown next to the sub-item, e.g. waiting supervisor requests. */
+type SidebarLeafItem = { title: string; url: string; badge?: number };
 type SidebarNavItem = {
   title: string;
   url: string;
@@ -61,6 +63,9 @@ export const useSidebarMenu = () => {
   const isResearchMethodCoordinatorRole = isResearchMethodCoordinator();
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
+  // Paket E4 (4.1): Tugas Akhir > Permohonan carries the number of waiting supervisor requests.
+  const { data: supervisorInbox } = useLecturerSupervisorInbox(isPembimbingRole);
+  const waitingRequestCount = supervisorInbox?.waiting?.length ?? 0;
 
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
@@ -103,6 +108,29 @@ export const useSidebarMenu = () => {
 
     /** Tugas Akhir > Proposal for supervisors: their proposal-phase students and "Nilai Proposal". */
     const proposalItems: SidebarLeafItem[] = role.pembimbing ? [{ title: "Proposal", url: "/tugas-akhir/proposal" }] : [];
+
+    /**
+     * Paket E4 (4.5): a supervisor's Tugas Akhir order is Permohonan, Proposal, Bimbingan,
+     * Perubahan, Seminar Hasil, Sidang TA, Evaluasi. Permohonan and Proposal are for supervisors;
+     * Perubahan and Evaluasi for supervisors and the Ketua Departemen. A lecturer without the
+     * supervisor role keeps Bimbingan, Seminar Hasil and Sidang TA as before.
+     */
+    const supervisorThesisItems = (): SidebarLeafItem[] => {
+      const decides = role.pembimbing || role.kadep;
+      return [
+        ...(role.pembimbing
+          ? [{ title: "Permohonan", url: "/tugas-akhir/permohonan", ...(waitingRequestCount > 0 ? { badge: waitingRequestCount } : {}) }]
+          : []),
+        ...proposalItems,
+        { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+        ...(decides ? [{ title: "Perubahan", url: "/tugas-akhir/perubahan" }] : []),
+        { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+        { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+        ...(decides ? [{ title: "Evaluasi", url: "/tugas-akhir/evaluasi" }] : []),
+      ];
+    };
+    const MONITORING_ITEM: SidebarLeafItem = { title: "Monitoring", url: "/tugas-akhir/monitoring" };
+    const PENETAPAN_ITEM: SidebarLeafItem = { title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" };
 
     // STUDENT MENU
     if (role.student) {
@@ -205,12 +233,7 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        items: [
-          ...proposalItems,
-          { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-          { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-        ],
+        items: supervisorThesisItems(),
       });
 
       appendSharedEventMenus(menuItems);
@@ -280,14 +303,8 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        items: [
-          { title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" },
-          ...proposalItems,
-          { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-          { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        ],
+        // Paket E4 (4.5): Monitoring first, Penetapan Pembimbing, then the supervisor's items.
+        items: [MONITORING_ITEM, PENETAPAN_ITEM, ...supervisorThesisItems()],
       });
 
       appendSharedEventMenus(menuItems);
@@ -307,8 +324,6 @@ export const useSidebarMenu = () => {
         icon: Database,
         items: [
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" },
-          // Keputusan Kadep: Pengajuan Perubahan Tugas Akhir dan Evaluasi Bimbingan
-          { title: "Persetujuan Tugas Akhir", url: "/kelola/tugas-akhir/kadep/perubahan" },
           { title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" },
           { title: "Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
@@ -373,19 +388,9 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        items: [
-          ...(role.pembimbing
-            ? [
-                ...proposalItems,
-                { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-                { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-              ]
-            : []),
-          // Read-only: Sekdep sees the period's Penetapan Pembimbing and downloads a complete batch.
-          { title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" },
-          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        ],
+        // Paket E4 (4.5): Monitoring first. Read-only Penetapan Pembimbing (Sekdep sees the
+        // period's batch and downloads it), then the supervisor's items for a supervising Sekdep.
+        items: [MONITORING_ITEM, PENETAPAN_ITEM, ...(role.pembimbing ? supervisorThesisItems() : [])],
       });
 
       appendSharedEventMenus(menuItems);
@@ -468,17 +473,8 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        items: [
-          ...(role.pembimbing
-            ? [
-                ...proposalItems,
-                { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-                { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-              ]
-            : []),
-          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        ],
+        // Paket E4 (4.5): Monitoring first, then the supervisor's items for a supervising GKM.
+        items: [MONITORING_ITEM, ...(role.pembimbing ? supervisorThesisItems() : [])],
       });
 
       appendSharedEventMenus(menuItems);
@@ -645,6 +641,7 @@ export const useSidebarMenu = () => {
     // user deps
     authUser?.fullName, authUser?.email,
     avatarBlobUrl,
+    waitingRequestCount,
   ]);
 
   return menuData;

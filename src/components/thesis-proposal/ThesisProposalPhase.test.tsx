@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { OtherPhaseMilestones } from '@/components/milestone/OtherPhaseMilestones';
-import { ThesisPhaseFilter, formatPhaseSessionSummary } from '@/components/thesis/ThesisPhaseFilter';
+import { MilestoneList } from '@/components/milestone/MilestoneList';
+import { formatPhaseSessionSummary } from '@/components/thesis/ThesisPhaseFilter';
+import type { Milestone } from '@/types/milestone.types';
 import * as assignments from '@/services/thesis-proposal/supervisor-assignment.service';
 import type { StudentProposalOverview } from '@/types/thesis-proposal.types';
 import { getFileProblem, StudentFinalProposalSection } from './StudentFinalProposalSection';
@@ -32,37 +33,28 @@ describe('Bimbingan dua fase (10.7)', () => {
     expect(formatPhaseSessionSummary(undefined)).toBeNull();
   });
 
-  it('offers Semua · Proposal · Penelitian and marks the chosen one', () => {
-    const onChange = vi.fn();
-    render(<ThesisPhaseFilter value="proposal" onChange={onChange} summary="Proposal: 3 sesi" />);
-    expect(screen.getByRole('button', { name: 'Proposal' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Semua' }));
-    expect(onChange).toHaveBeenCalledWith('');
-    fireEvent.click(screen.getByRole('button', { name: 'Penelitian' }));
-    expect(onChange).toHaveBeenCalledWith('research');
-  });
-
-  it('the other phase is read-only and unfinished milestones read "Tidak dilanjutkan" (K27)', () => {
+  it('milestones of the other phase continue the same list, read-only, each with its phase badge (Paket E4, 2.4)', () => {
+    const milestone = (id: string, title: string, status: Milestone['status'], phase: Milestone['phase']): Milestone => ({
+      id, thesisId: 't1', title, description: null, targetDate: null, startedAt: null, completedAt: null, status, phase,
+      progressPercentage: status === 'completed' ? 100 : 40, orderIndex: 0, validatedBy: null, validatedAt: null,
+      supervisorNotes: null, feedback: null, studentNotes: null, evidenceUrl: null, evidenceDescription: null,
+      createdAt: '2026-09-01T00:00:00Z', updatedAt: '2026-09-01T00:00:00Z',
+    } as Milestone);
     render(
-      <OtherPhaseMilestones
-        phase="proposal"
-        defaultOpen
-        reason="Fase proposal sudah selesai"
-        milestones={[
-          { id: 'm1', title: 'Bab 1 Pendahuluan', status: 'completed', completedAt: '2026-09-01T00:00:00Z' },
-          { id: 'm2', title: 'Bab 2 Tinjauan Pustaka', status: 'in_progress' },
-        ]}
+      <MilestoneList
+        milestones={[milestone('r1', 'Bab 4 Implementasi', 'in_progress', 'research')]}
+        progress={null}
+        isOwner
+        readOnlyMilestones={[milestone('p1', 'Bab 1 Pendahuluan', 'completed', 'proposal')]}
+        readOnlyPhase="proposal"
       />,
     );
-    expect(screen.getByText('Milestone Fase Proposal')).toBeInTheDocument();
-    expect(screen.getByText(/1 dari 2 selesai · baca saja · Fase proposal sudah selesai/)).toBeInTheDocument();
-    expect(screen.getByText('Tidak dilanjutkan')).toBeInTheDocument();
-    expect(screen.queryByText('in_progress')).not.toBeInTheDocument();
-  });
-
-  it('renders nothing when the other phase has no milestones', () => {
-    const { container } = render(<OtherPhaseMilestones phase="research" milestones={[]} />);
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText('Milestone Fase Proposal')).not.toBeInTheDocument();
+    const readOnly = screen.getByRole('list', { name: 'Milestone fase lain (baca saja)' });
+    expect(within(readOnly).getByText('Bab 1 Pendahuluan')).toBeInTheDocument();
+    expect(within(readOnly).getByText('Proposal')).toBeInTheDocument();
+    // No action buttons on the read-only part.
+    expect(within(readOnly).queryByRole('button', { name: /Edit|Hapus|Mulai|Validasi/ })).not.toBeInTheDocument();
   });
 });
 

@@ -377,6 +377,8 @@ export interface ReadinessSupervisor {
   email: string;
   role: string;
   hasApproved: boolean;
+  /** When the supervisor last approved (audit log); null when unknown or not approved. */
+  approvedAt?: string | null;
 }
 
 export interface ReadinessApproval {
@@ -407,6 +409,11 @@ export interface ReadinessStatusBase {
   requestBlockedReason: string | null;
   /** Why "Setujui" is disabled; null when a supervisor may approve. */
   approveBlockedReason: string | null;
+  /** Why "Batalkan Persetujuan" is disabled (e.g. the event is already passed). */
+  revokeBlockedReason?: string | null;
+  /** Paket E4 (3.2): the seminar (or defence) is passed; the card is read-only. */
+  isPassed?: boolean;
+  passedAt?: string | null;
 }
 
 export interface SeminarReadinessStatus extends ReadinessStatusBase {
@@ -474,6 +481,8 @@ export interface StudentsReadyForSeminarResponse {
 export interface DefenceReadinessStatus extends ReadinessStatusBase {
   defenceReadiness: ReadinessApproval;
   canRegisterDefence: boolean;
+  /** Paket E4 (3.3): before the results seminar is passed the card only shows that requirement. */
+  seminarPassed?: boolean;
 }
 
 export interface DefenceReadinessApprovalResult extends ReadinessApproval {
