@@ -3,6 +3,8 @@ import { apiRequest } from '@/services/auth.service';
 import type {
   BatchDecisionResult,
   ChangeDecisionDto,
+  ChangeRequestInbox,
+  ChangeRequestScope,
   DepartmentChangeRequests,
   LecturerChangeRequests,
   SubmitChangeRequestDto,
@@ -80,6 +82,31 @@ export async function getDepartmentChangeRequests(params: {
   const body = (await response.json().catch(() => ({}))) as Partial<DepartmentChangeRequests> & { message?: string };
   if (!response.ok) throw new Error(body.message || 'Gagal memuat pengajuan perubahan');
   return { data: body.data ?? [], meta: body.meta ?? { page: 1, pageSize: params.pageSize, total: 0, totalPages: 1 } };
+}
+
+/** Tugas Akhir > Perubahan: one page of a filter for the signed-in viewer (Lanjutan Paket E4). */
+export async function getChangeRequestInbox(params: {
+  scope?: ChangeRequestScope;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  /** The open requests of one "Alihkan Mahasiswa" batch instead of a filter. */
+  batchId?: string;
+}): Promise<ChangeRequestInbox> {
+  const query = new URLSearchParams();
+  if (params.scope) query.set('scope', params.scope);
+  if (params.search) query.set('search', params.search);
+  if (params.page) query.set('page', String(params.page));
+  if (params.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params.batchId) query.set('batchId', params.batchId);
+  const response = await apiRequest(getApiUrl(`${BASE}/inbox?${query.toString()}`));
+  const body = (await response.json().catch(() => ({}))) as Partial<ChangeRequestInbox> & { message?: string };
+  if (!response.ok) throw new Error(body.message || 'Gagal memuat pengajuan perubahan');
+  return {
+    data: body.data ?? [],
+    meta: body.meta ?? { page: 1, pageSize: params.pageSize ?? 10, total: 0, totalPages: 1 },
+    counts: body.counts ?? { awaitingMe: 0, inProgress: 0 },
+  };
 }
 
 export async function decideAsKadep(requestId: string, dto: ChangeDecisionDto) {

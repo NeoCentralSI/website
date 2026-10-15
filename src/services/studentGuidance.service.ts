@@ -425,6 +425,8 @@ export interface MyThesisDetail extends ThesisPhaseSummary {
   startDate?: string | null;
   /** When a failed thesis was stopped (Paket E4, 7); null otherwise. */
   terminatedAt?: string | null;
+  /** When a thesis became Selesai (Lanjutan Paket E4); null otherwise. */
+  completedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   student: {

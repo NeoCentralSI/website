@@ -44,7 +44,7 @@ export default function ThesisChangeRequestsPage() {
         )}
       </div>
 
-      <ThesisChangeRequestTable isSupervisor={isSupervisor} isKadep={isHead} />
+      <ThesisChangeRequestTable isKadep={isHead} />
 
       {isSupervisor && (
         <LecturerTransferStudentsDialog open={transferOpen} onOpenChange={setTransferOpen} currentLecturerId={user?.id} />

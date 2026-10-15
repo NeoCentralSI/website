@@ -266,7 +266,7 @@ describe("TugasAkhirOverviewPage", () => {
   });
 
   it("shows an empty state when the student has no thesis", async () => {
-    vi.mocked(getMyThesisDetail).mockRejectedValue(new Error("Active thesis not found for this student"));
+    vi.mocked(getMyThesisDetail).mockRejectedValue(new Error("Tugas akhir aktif tidak ditemukan"));
     renderAt("/tugas-akhir");
 
     expect(await screen.findByText("Belum Ada Tugas Akhir yang Berjalan")).toBeInTheDocument();

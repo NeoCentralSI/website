@@ -87,6 +87,22 @@ export interface SupervisorEvaluationDue {
   blockReason: string | null;
 }
 
+/** Lanjutan Paket E4: filters of Tugas Akhir > Evaluasi, filtered and paged on the server. */
+export type EvaluationScope = 'action' | 'kadep' | 'history';
+
+/** A due evaluation not filled yet, or a filled evaluation. */
+export type EvaluationRow =
+  | { kind: 'due'; id: string; due: SupervisorEvaluationDue }
+  | { kind: 'evaluation'; id: string; evaluation: ThesisGuidanceEvaluation };
+
+export interface EvaluationInbox {
+  data: EvaluationRow[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+  /** Rows per open filter, for the filter labels. */
+  counts: { action: number; kadep: number };
+  viewer: { isKadep: boolean; isSupervisor: boolean };
+}
+
 /** GET /thesis-guidance-evaluations/lecturer: what the Evaluasi page shows a supervisor. */
 export interface SupervisorEvaluations {
   due: SupervisorEvaluationDue[];

@@ -11,7 +11,7 @@ import { useRole } from '@/hooks/shared';
  */
 export default function ThesisGuidanceEvaluationsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isPembimbing, isKadep } = useRole();
+  const { isKadep } = useRole();
   const breadcrumb = useMemo(() => [{ label: 'Tugas Akhir' }, { label: 'Evaluasi' }], []);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function ThesisGuidanceEvaluationsPage() {
         <p className="text-muted-foreground">Evaluasi masa bimbingan 6 bulan dan 1 tahun beserta keputusan Ketua Departemen.</p>
       </div>
 
-      <ThesisGuidanceEvaluationTable isSupervisor={isPembimbing()} isKadep={isKadep()} />
+      <ThesisGuidanceEvaluationTable isKadep={isKadep()} />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import * as service from '@/services/thesis-guidance-evaluation/thesis-guidance-evaluation.service';
-import type { SubmitEvaluationDto } from '@/types/thesis-guidance-evaluation.types';
+import type { EvaluationScope, SubmitEvaluationDto } from '@/types/thesis-guidance-evaluation.types';
 
 export const thesisGuidanceEvaluationKeys = {
   all: ['thesis-guidance-evaluations'] as const,
@@ -10,6 +10,7 @@ export const thesisGuidanceEvaluationKeys = {
   department: (scope: string, search: string, page: number, pageSize: number) =>
     ['thesis-guidance-evaluations', 'department', scope, search, page, pageSize] as const,
   lecturer: () => ['thesis-guidance-evaluations', 'lecturer'] as const,
+  inbox: (params: object) => ['thesis-guidance-evaluations', 'inbox', params] as const,
 };
 
 export function useEvaluationContext(thesisId?: string, enabled = true) {
@@ -31,6 +32,15 @@ export function useDepartmentEvaluations(params: { scope: 'pending' | 'history';
 
 export function useSupervisorEvaluations(enabled = true) {
   return useQuery({ queryKey: thesisGuidanceEvaluationKeys.lecturer(), queryFn: service.getSupervisorEvaluations, enabled });
+}
+
+/** Tugas Akhir > Evaluasi: a filter page from the server; the old page stays while the next loads. */
+export function useEvaluationInbox(params: { scope: EvaluationScope; search: string; page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: thesisGuidanceEvaluationKeys.inbox(params),
+    queryFn: () => service.getEvaluationInbox({ ...params, search: params.search || undefined }),
+    placeholderData: (previous) => previous,
+  });
 }
 
 /** An evaluation may change the thesis status, so every list that shows it is refreshed. */

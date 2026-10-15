@@ -110,6 +110,16 @@ export interface LecturerChangeRequests {
   history: ThesisChangeRequest[];
 }
 
+/** Lanjutan Paket E4: filters of Tugas Akhir > Perubahan, filtered and paged on the server. */
+export type ChangeRequestScope = 'awaitingMe' | 'inProgress' | 'history';
+
+export interface ChangeRequestInbox {
+  data: ThesisChangeRequest[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+  /** Open requests per filter, for the filter labels. */
+  counts: { awaitingMe: number; inProgress: number };
+}
+
 export interface DepartmentChangeRequests {
   data: ThesisChangeRequest[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ClipboardCheck, Eye } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
@@ -8,12 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Spinner } from '@/components/ui/spinner';
-import { useClientTable } from '@/hooks/shared/useClientTable';
-import {
-  useDepartmentEvaluations,
-  useEvaluationContext,
-  useSupervisorEvaluations,
-} from '@/hooks/thesis-guidance-evaluation/useThesisGuidanceEvaluation';
+import { usePagedSearch } from '@/hooks/shared/usePagedSearch';
+import { useEvaluationContext, useEvaluationInbox } from '@/hooks/thesis-guidance-evaluation/useThesisGuidanceEvaluation';
 import { DateTimeCell, STICKY_ACTION_COLUMN_CLASS } from '@/lib/guidanceCells';
 import { toTitleCaseName } from '@/lib/text';
 import {
@@ -21,17 +17,10 @@ import {
   getGuidanceEvaluationRecommendationLabel,
   getGuidanceEvaluationStageLabel,
 } from '@/lib/thesisLabels';
-import type { SupervisorEvaluationDue, ThesisGuidanceEvaluation } from '@/types/thesis-guidance-evaluation.types';
+import type { EvaluationRow, EvaluationScope } from '@/types/thesis-guidance-evaluation.types';
 import { LecturerThesisGuidanceEvaluationFormDialog } from './LecturerThesisGuidanceEvaluationFormDialog';
 import { ThesisGuidanceEvaluationDecisionDialog, type EvaluationDecisionState } from './ThesisGuidanceEvaluationDecisionDialog';
 import { ThesisGuidanceEvaluationStatusBadge, ThesisGuidanceEvaluationSummary } from './ThesisGuidanceEvaluationParts';
-
-export type EvaluationScope = 'action' | 'kadep' | 'history';
-
-/** A due evaluation not filled yet, or a filled evaluation. */
-export type EvaluationRow =
-  | { kind: 'due'; id: string; due: SupervisorEvaluationDue }
-  | { kind: 'evaluation'; id: string; evaluation: ThesisGuidanceEvaluation };
 
 const SCOPE_OPTIONS: { value: EvaluationScope; label: string }[] = [
   { value: 'action', label: 'Perlu Tindakan' },
@@ -45,37 +34,7 @@ const EMPTY_TEXT: Record<EvaluationScope, string> = {
   history: 'Belum ada riwayat evaluasi.',
 };
 
-/** The department lists are read whole (the server caps a page at 100) and filtered here. */
-const DEPARTMENT_PAGE = { search: '', page: 1, pageSize: 100 } as const;
 const TABLE_CLASS = 'table-fixed min-w-[960px]';
-
-function uniqueEvaluations(evaluations: ThesisGuidanceEvaluation[]): ThesisGuidanceEvaluation[] {
-  const seen = new Set<string>();
-  return evaluations.filter((evaluation) => (seen.has(evaluation.id) ? false : (seen.add(evaluation.id), true)));
-}
-
-/**
- * Paket E4 (4.3): rows per status filter. "Perlu Tindakan" is, for a supervisor, a due thesis
- * not filled by Pembimbing 1 yet and, for the Ketua Departemen, an evaluation waiting for his
- * decision; "Menunggu Kadep" the filled ones waiting for the department; "Riwayat" the rest.
- */
-export function splitEvaluationRows(input: {
-  supervisor?: { due: SupervisorEvaluationDue[]; evaluations: ThesisGuidanceEvaluation[] } | null;
-  departmentPending?: ThesisGuidanceEvaluation[] | null;
-  departmentHistory?: ThesisGuidanceEvaluation[] | null;
-}): Record<EvaluationScope, EvaluationRow[]> {
-  const asRow = (evaluation: ThesisGuidanceEvaluation): EvaluationRow => ({ kind: 'evaluation', id: evaluation.id, evaluation });
-  const departmentPending = input.departmentPending ?? [];
-  const own = input.supervisor?.evaluations ?? [];
-  const due: EvaluationRow[] = (input.supervisor?.due ?? []).map((item) => ({ kind: 'due', id: `due-${item.thesis.id}`, due: item }));
-  const pending = uniqueEvaluations([...departmentPending, ...own.filter((evaluation) => evaluation.status === 'pending')]);
-  const history = uniqueEvaluations([...(input.departmentHistory ?? []), ...own.filter((evaluation) => evaluation.status !== 'pending')]);
-  return {
-    action: [...due, ...departmentPending.map(asRow)],
-    kadep: pending.map(asRow),
-    history: history.map(asRow),
-  };
-}
 
 /** Loads the thesis context and opens the existing "Isi Evaluasi" form. */
 function EvaluationFormLauncher({ thesisId, onClose }: { thesisId: string; onClose: () => void }) {
@@ -94,45 +53,31 @@ const studentOf = (row: EvaluationRow) => (row.kind === 'due' ? row.due.thesis.s
 const thesisTitleOf = (row: EvaluationRow) => (row.kind === 'due' ? row.due.thesis.title : row.evaluation.thesisTitle);
 
 export interface ThesisGuidanceEvaluationTableProps {
-  isSupervisor: boolean;
+  /** Ketua Departemen: Setujui / Tolak; "Menunggu Kadep" is hidden (it repeats "Perlu Tindakan"). */
   isKadep: boolean;
 }
 
 /**
  * Tugas Akhir > Evaluasi (Paket E4, 4.3): due and filled guidance evaluations in one table.
  * "Isi Evaluasi" opens the existing form for Pembimbing 1; the Ketua Departemen approves or
- * rejects. Replaces the evaluation part of "Persetujuan Tugas Akhir" (4.4).
+ * rejects. Replaces the evaluation part of "Persetujuan Tugas Akhir" (4.4). Lanjutan Paket E4:
+ * the server filters, searches and pages (no row limit).
  */
-export function ThesisGuidanceEvaluationTable({ isSupervisor, isKadep }: ThesisGuidanceEvaluationTableProps) {
-  const supervisor = useSupervisorEvaluations(isSupervisor);
-  const departmentPending = useDepartmentEvaluations({ scope: 'pending', ...DEPARTMENT_PAGE }, isKadep);
-  const departmentHistory = useDepartmentEvaluations({ scope: 'history', ...DEPARTMENT_PAGE }, isKadep);
-
+export function ThesisGuidanceEvaluationTable({ isKadep }: ThesisGuidanceEvaluationTableProps) {
   const [scope, setScope] = useState<EvaluationScope>('action');
+  const { search, setSearch, debouncedSearch, page, setPage } = usePagedSearch();
+  const [pageSize, setPageSize] = useState(10);
+  const inbox = useEvaluationInbox({ scope, search: debouncedSearch, page, pageSize });
   const [detail, setDetail] = useState<EvaluationRow | null>(null);
   const [formThesisId, setFormThesisId] = useState<string | null>(null);
   const [decision, setDecision] = useState<EvaluationDecisionState>(null);
 
-  const lists = useMemo(
-    () =>
-      splitEvaluationRows({
-        supervisor: isSupervisor ? supervisor.data : null,
-        departmentPending: isKadep ? departmentPending.data?.data : null,
-        departmentHistory: isKadep ? departmentHistory.data?.data : null,
-      }),
-    [isSupervisor, isKadep, supervisor.data, departmentPending.data, departmentHistory.data],
-  );
-  const table = useClientTable(lists[scope], (row) => [studentOf(row)?.name, studentOf(row)?.identityNumber]);
-
-  const isLoading = (isSupervisor && supervisor.isLoading) || (isKadep && (departmentPending.isLoading || departmentHistory.isLoading));
-  const isFetching = supervisor.isFetching || departmentPending.isFetching || departmentHistory.isFetching;
-  const refetch = () => {
-    if (isSupervisor) void supervisor.refetch();
-    if (isKadep) {
-      void departmentPending.refetch();
-      void departmentHistory.refetch();
-    }
-  };
+  const counts = inbox.data?.counts;
+  // Lanjutan Paket E4 (4): for the Ketua Departemen "Menunggu Kadep" equals "Perlu Tindakan".
+  const scopeOptions = SCOPE_OPTIONS.filter((option) => !(isKadep && option.value === 'kadep'));
+  const isLoading = inbox.isLoading;
+  const isFetching = inbox.isFetching;
+  const refetch = () => void inbox.refetch();
 
   const kadepCanDecide = (row: EvaluationRow) => isKadep && row.kind === 'evaluation' && row.evaluation.status === 'pending';
 
@@ -218,27 +163,28 @@ export function ThesisGuidanceEvaluationTable({ isSupervisor, isKadep }: ThesisG
     <>
       <CustomTable
         columns={columns}
-        data={table.pageRows}
+        data={inbox.data?.data ?? []}
         loading={isLoading}
         isRefreshing={isFetching && !isLoading}
+        subtleRefresh
         tableClassName={TABLE_CLASS}
-        total={table.total}
-        page={table.page}
-        pageSize={table.pageSize}
-        onPageChange={table.setPage}
-        onPageSizeChange={table.setPageSize}
-        searchValue={table.search}
-        onSearchChange={table.setSearch}
+        total={inbox.data?.meta.total ?? 0}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        searchValue={search}
+        onSearchChange={setSearch}
         searchPlaceholder="Cari nama atau NIM..."
-        emptyText={table.search ? 'Tidak ditemukan' : EMPTY_TEXT[scope]}
+        emptyText={debouncedSearch ? 'Tidak ditemukan' : EMPTY_TEXT[scope]}
         rowKey={(row) => row.id}
         actions={
           <div className="flex items-center gap-2">
             <TableStatusFilter
               value={scope}
-              onChange={(value) => { setScope(value); table.resetPage(); }}
-              options={SCOPE_OPTIONS.map((option) =>
-                option.value === 'history' ? option : { ...option, label: `${option.label} (${lists[option.value].length})` },
+              onChange={(value) => { setScope(value); setPage(1); }}
+              options={scopeOptions.map((option) =>
+                option.value === 'history' || !counts ? option : { ...option, label: `${option.label} (${counts[option.value]})` },
               )}
               label="Filter status evaluasi"
             />

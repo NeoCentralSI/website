@@ -23,9 +23,9 @@ import GuidanceExportDialog from '@/components/thesis/GuidanceExportDialog';
 import BatchExportDialog from '@/components/thesis/BatchExportDialog';
 import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
 import { RequirementsNotMet } from '@/components/shared/RequirementsNotMet';
-import { ThesisStoppedAlert } from '@/components/thesis/ThesisStoppedAlert';
+import { ThesisClosedAlert } from '@/components/thesis/ThesisClosedAlert';
 import { ThesisActionBlockedAlert } from '@/components/thesis/ThesisActionBlockedAlert';
-import { getGuidanceActionBlockReason, getThesisStatusLabel } from '@/lib/thesisLabels';
+import { getGuidanceActionBlockReason } from '@/lib/thesisLabels';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
 import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
@@ -70,9 +70,10 @@ export default function StudentGuidancePage() {
 
   // The detail endpoint answers 404 only when the student has no thesis at all.
   const isNotInThesisPhase = isThesisDetailError;
-  const isThesisInactive = thesisDetail?.status === "completed";
-  // Paket E4 (7): a stopped thesis keeps its sessions visible, read-only, under a ribbon.
-  const isThesisStopped = thesisDetail?.status === "failed";
+  // Paket E4 (7) and its Lanjutan: a stopped or finished thesis keeps its sessions visible,
+  // read-only, under a ribbon with the day it was closed.
+  const closedStatus = thesisDetail?.status === "failed" || thesisDetail?.status === "completed" ? thesisDetail.status : null;
+  const isThesisStopped = !!closedStatus;
   // K14/K27: guidance writes for status `research`, or `proposal` after Penetapan Pembimbing;
   // the button stays visible but disabled with the reason.
   const actionBlockReason = thesisDetail
@@ -264,15 +265,10 @@ export default function StudentGuidancePage() {
               ]}
               homeUrl="/dashboard"
             />
-          ) : isThesisInactive ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
-              <h3 className="text-lg font-semibold mb-2">Tugas Akhir Tidak Aktif</h3>
-              <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{getThesisStatusLabel(thesisDetail?.status)}</strong>. Anda tidak dapat mengakses fitur bimbingan.</p>
-            </div>
           ) : (
             <>
-            {isThesisStopped ? (
-              <ThesisStoppedAlert stoppedAt={thesisDetail?.terminatedAt} />
+            {closedStatus ? (
+              <ThesisClosedAlert status={closedStatus} closedAt={closedStatus === 'failed' ? thesisDetail?.terminatedAt : thesisDetail?.completedAt} />
             ) : (
               <ThesisActionBlockedAlert reason={actionBlockReason} />
             )}

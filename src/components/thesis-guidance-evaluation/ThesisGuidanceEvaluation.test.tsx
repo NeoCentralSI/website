@@ -4,10 +4,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as service from '@/services/thesis-guidance-evaluation/thesis-guidance-evaluation.service';
-import type { SupervisorEvaluationDue, ThesisGuidanceEvaluation, ThesisGuidanceEvaluationContext } from '@/types/thesis-guidance-evaluation.types';
+import type { EvaluationRow, SupervisorEvaluationDue, ThesisGuidanceEvaluation, ThesisGuidanceEvaluationContext } from '@/types/thesis-guidance-evaluation.types';
 import { EvaluationDueCard } from '@/components/monitoring/EvaluationDueCard';
 import { LecturerThesisGuidanceEvaluationCard } from './LecturerThesisGuidanceEvaluationCard';
-import { ThesisGuidanceEvaluationTable, splitEvaluationRows } from './ThesisGuidanceEvaluationTable';
+import { ThesisGuidanceEvaluationTable } from './ThesisGuidanceEvaluationTable';
 import { AcademicWarningAlert, ThesisGuidanceEvaluationHistoryLink, evaluationsOf } from './ThesisGuidanceEvaluationViews';
 
 vi.mock('lottie-react', () => ({ default: () => null }));
@@ -17,6 +17,7 @@ vi.mock('@/services/thesis-guidance-evaluation/thesis-guidance-evaluation.servic
   submitEvaluation: vi.fn(),
   getDepartmentEvaluations: vi.fn(),
   getSupervisorEvaluations: vi.fn(),
+  getEvaluationInbox: vi.fn(),
   decideEvaluation: vi.fn(),
 }));
 
@@ -221,8 +222,8 @@ describe('Student Overview: warning ribbon and "Riwayat evaluasi (N)" (Paket E4,
   });
 });
 
-describe('Tugas Akhir > Evaluasi (Paket E4, 4.3)', () => {
-  const meta = { page: 1, pageSize: 100, total: 1, totalPages: 1 };
+describe('Tugas Akhir > Evaluasi (Paket E4, 4.3; server paging in the Lanjutan)', () => {
+  const meta = (total: number, page = 1, pageSize = 10) => ({ page, pageSize, total, totalPages: Math.max(Math.ceil(total / pageSize), 1) });
   const due = (overrides: Partial<SupervisorEvaluationDue> = {}): SupervisorEvaluationDue => ({
     thesis: { id: 't2', title: 'Judul Jatuh Tempo', status: 'research', student: person('stu-2', 'NABIL RIZKI') },
     viewerRole: 'pembimbing_1',
@@ -232,52 +233,49 @@ describe('Tugas Akhir > Evaluasi (Paket E4, 4.3)', () => {
     blockReason: null,
     ...overrides,
   });
+  const dueRow = (item: SupervisorEvaluationDue): EvaluationRow => ({ kind: 'due', id: `due-${item.thesis.id}`, due: item });
+  const evalRow = (item: ThesisGuidanceEvaluation): EvaluationRow => ({ kind: 'evaluation', id: item.id, evaluation: item });
+  const inbox = (data: EvaluationRow[], viewer = { isKadep: false, isSupervisor: true }) => ({ data, meta: meta(data.length), counts: { action: data.length, kadep: 0 }, viewer });
 
-  it('splits Perlu Tindakan, Menunggu Kadep and Riwayat', () => {
-    const lists = splitEvaluationRows({
-      supervisor: { due: [due()], evaluations: [evaluation({ id: 'p' }), evaluation({ id: 'h', status: 'approved' })] },
-      departmentPending: [evaluation({ id: 'k' })],
-      departmentHistory: [],
-    });
-    expect(lists.action.map((row) => row.id)).toEqual(['due-t2', 'k']);
-    expect(lists.kadep.map((row) => row.id)).toEqual(['k', 'p']);
-    expect(lists.history.map((row) => row.id)).toEqual(['h']);
-  });
+  const optionNames = async () => {
+    fireEvent.click(screen.getByRole('combobox', { name: 'Filter status evaluasi' }));
+    return (await screen.findAllByRole('option')).map((option) => option.textContent);
+  };
 
-  it('a supervisor sees the due theses with "Isi Evaluasi" (Pembimbing 1), which opens the existing form', async () => {
-    vi.mocked(service.getSupervisorEvaluations).mockResolvedValue({
-      due: [due(), due({ thesis: { id: 't3', title: 'TA P2', status: 'research', student: person('stu-3', 'MAHASISWA DUA') }, viewerRole: 'pembimbing_2', canSubmit: false, blockReason: 'Evaluasi bimbingan diisi oleh Pembimbing 1.' })],
-      evaluations: [],
-    });
+  it('a supervisor sees the due theses with "Isi Evaluasi" (Pembimbing 1), and all three filters', async () => {
+    vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([
+      dueRow(due()),
+      dueRow(due({ thesis: { id: 't3', title: 'TA P2', status: 'research', student: person('stu-3', 'MAHASISWA DUA') }, viewerRole: 'pembimbing_2', canSubmit: false, blockReason: 'Evaluasi bimbingan diisi oleh Pembimbing 1.' })),
+    ]));
     vi.mocked(service.getEvaluationContext).mockResolvedValue(context({ thesis: { id: 't2', title: 'Judul Jatuh Tempo', status: 'research', student: person('stu-2', 'NABIL RIZKI') } }));
-    wrap(<ThesisGuidanceEvaluationTable isSupervisor isKadep={false} />);
+    wrap(<ThesisGuidanceEvaluationTable isKadep={false} />);
 
     expect(await screen.findByText('Nabil Rizki')).toBeInTheDocument();
-    expect(screen.getByText('Mahasiswa Dua')).toBeInTheDocument();
+    expect(service.getEvaluationInbox).toHaveBeenCalledWith({ scope: 'action', search: undefined, page: 1, pageSize: 10 });
     expect(screen.getAllByText('Jatuh Tempo')).toHaveLength(2);
     expect(screen.getAllByText('Belum diisi')).toHaveLength(2);
-    expect(service.getDepartmentEvaluations).not.toHaveBeenCalled();
     // Only Pembimbing 1 fills the evaluation.
     expect(screen.getAllByRole('button', { name: /Isi Evaluasi/ })).toHaveLength(1);
+    expect(await optionNames()).toEqual(['Perlu Tindakan (2)', 'Menunggu Kadep (0)', 'Riwayat']);
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
 
     fireEvent.click(screen.getByRole('button', { name: /Isi Evaluasi/ }));
     await waitFor(() => expect(service.getEvaluationContext).toHaveBeenCalledWith('t2'));
     expect(await screen.findByRole('button', { name: 'Kirim Evaluasi' })).toBeDisabled();
   });
 
-  it('the Kadep rejects with notes and approves without', async () => {
-    vi.mocked(service.getDepartmentEvaluations).mockImplementation(async ({ scope }) =>
-      scope === 'pending'
-        ? { data: [evaluation({ recommendation: 'terminate_supervision', evaluationType: 'one_year', stage: 'one_year' })], meta }
-        : { data: [], meta: { ...meta, total: 0 } },
+  it('Ketua Departemen: no "Menunggu Kadep" filter (it repeats Perlu Tindakan); rejects with notes and approves without', async () => {
+    vi.mocked(service.getEvaluationInbox).mockResolvedValue(
+      inbox([evalRow(evaluation({ recommendation: 'terminate_supervision', evaluationType: 'one_year', stage: 'one_year' }))], { isKadep: true, isSupervisor: false }),
     );
     vi.mocked(service.decideEvaluation).mockResolvedValue({ success: true, message: 'ok', data: evaluation({ status: 'rejected' }) });
-    wrap(<ThesisGuidanceEvaluationTable isSupervisor={false} isKadep />);
+    wrap(<ThesisGuidanceEvaluationTable isKadep />);
 
     expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();
     expect(screen.getByText('Evaluasi 1 Tahun')).toBeInTheDocument();
     expect(screen.getByText('Dihentikan')).toBeInTheDocument();
-    expect(service.getSupervisorEvaluations).not.toHaveBeenCalled();
+    expect(await optionNames()).toEqual(['Perlu Tindakan (1)', 'Riwayat']);
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Tolak' }));
     let dialog = await screen.findByRole('dialog', { name: 'Tolak evaluasi?' });
@@ -294,17 +292,32 @@ describe('Tugas Akhir > Evaluasi (Paket E4, 4.3)', () => {
     await waitFor(() => expect(service.decideEvaluation).toHaveBeenLastCalledWith('eval-1', { approve: true, notes: null }));
   });
 
-  it('searches by name or NIM in the browser', async () => {
-    vi.mocked(service.getDepartmentEvaluations).mockImplementation(async ({ scope }) =>
-      scope === 'pending'
-        ? { data: [evaluation(), evaluation({ id: 'eval-2', student: person('stu-9', 'SITI AMINAH') })], meta: { ...meta, total: 2 } }
-        : { data: [], meta: { ...meta, total: 0 } },
-    );
-    wrap(<ThesisGuidanceEvaluationTable isSupervisor={false} isKadep />);
-    expect(await screen.findByText('Siti Aminah')).toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText('Cari nama atau NIM...'), { target: { value: 'ID-stu-9' } });
-    expect(screen.queryByText('Ilham Nofaldi')).not.toBeInTheDocument();
-    expect(screen.getByText('Siti Aminah')).toBeInTheDocument();
+  it('searches on the server by name or NIM', async () => {
+    vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([evalRow(evaluation())], { isKadep: true, isSupervisor: false }));
+    wrap(<ThesisGuidanceEvaluationTable isKadep />);
+    expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('Cari nama atau NIM...'), { target: { value: ' ID-stu-9 ' } });
+    await waitFor(() => expect(service.getEvaluationInbox).toHaveBeenLastCalledWith({ scope: 'action', search: 'ID-stu-9', page: 1, pageSize: 10 }));
+  });
+
+  it('pages past the first hundred rows: page 11 of 150 shows rows 101-110', async () => {
+    const rows = Array.from({ length: 150 }, (_, i) => evalRow(evaluation({ id: `ev-${i + 1}`, student: person(`s${i + 1}`, `MAHASISWA ${i + 1}`) })));
+    vi.mocked(service.getEvaluationInbox).mockImplementation(async ({ page, pageSize }) => ({
+      data: rows.slice((page - 1) * pageSize, page * pageSize),
+      meta: meta(150, page, pageSize),
+      counts: { action: 150, kadep: 0 },
+      viewer: { isKadep: true, isSupervisor: false },
+    }));
+    wrap(<ThesisGuidanceEvaluationTable isKadep />);
+
+    expect(await screen.findByText('Menampilkan 1-10 dari 150')).toBeInTheDocument();
+    for (let next = 2; next <= 11; next += 1) {
+      fireEvent.click(screen.getByRole('link', { name: 'Go to next page' }));
+      await screen.findByText(`Menampilkan ${(next - 1) * 10 + 1}-${next * 10} dari 150`);
+    }
+    expect(screen.getByText('Mahasiswa 101')).toBeInTheDocument();
+    expect(screen.queryByText('Mahasiswa 100')).not.toBeInTheDocument();
+    expect(vi.mocked(service.getEvaluationInbox).mock.calls.at(-1)?.[0]).toMatchObject({ page: 11, pageSize: 10 });
   });
 });
 

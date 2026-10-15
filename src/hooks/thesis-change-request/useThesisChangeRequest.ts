@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import * as service from '@/services/thesis-change-request/thesis-change-request.service';
 import type {
   ChangeDecisionDto,
+  ChangeRequestScope,
   SubmitChangeRequestDto,
   SubmitTransferDto,
 } from '@/types/thesis-change-request.types';
@@ -16,6 +17,7 @@ export const thesisChangeRequestKeys = {
   department: (scope: string, search: string, page: number, pageSize: number) =>
     ['thesis-change-requests', 'department', scope, search, page, pageSize] as const,
   supervisorOptions: (position?: SupervisorPosition) => ['thesis-change-requests', 'supervisor-options', position ?? 'all'] as const,
+  inbox: (params: object) => ['thesis-change-requests', 'inbox', params] as const,
 };
 
 export function useThesisChangeContext(thesisId?: string, enabled = true) {
@@ -43,6 +45,19 @@ export function useDepartmentChangeRequests(params: { scope: 'pending' | 'histor
   return useQuery({
     queryKey: thesisChangeRequestKeys.department(params.scope, params.search, params.page, params.pageSize),
     queryFn: () => service.getDepartmentChangeRequests({ ...params, search: params.search || undefined }),
+    placeholderData: (previous) => previous,
+    enabled,
+  });
+}
+
+/** Tugas Akhir > Perubahan: a filter page from the server; the old page stays while the next loads. */
+export function useChangeRequestInbox(
+  params: { scope?: ChangeRequestScope; search?: string; page?: number; pageSize?: number; batchId?: string },
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: thesisChangeRequestKeys.inbox(params),
+    queryFn: () => service.getChangeRequestInbox(params),
     placeholderData: (previous) => previous,
     enabled,
   });

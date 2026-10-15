@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Eye, Users } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
@@ -6,18 +6,17 @@ import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
 import { TableStatusFilter } from '@/components/shared/TableStatusFilter';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { useClientTable } from '@/hooks/shared/useClientTable';
+import { usePagedSearch } from '@/hooks/shared/usePagedSearch';
 import {
-  useDepartmentChangeRequests,
+  useChangeRequestInbox,
   useKadepBatchDecision,
   useKadepDecision,
-  useLecturerChangeRequests,
   useLecturerDecision,
 } from '@/hooks/thesis-change-request/useThesisChangeRequest';
 import { DateTimeCell, STICKY_ACTION_COLUMN_CLASS, TruncatedText } from '@/lib/guidanceCells';
 import { formatLecturerName, toTitleCaseName } from '@/lib/text';
 import { getChangeRequestStepLabel } from '@/lib/thesisLabels';
-import type { ThesisChangeRequest } from '@/types/thesis-change-request.types';
+import type { ChangeRequestScope, ThesisChangeRequest } from '@/types/thesis-change-request.types';
 import { ThesisChangeRequestDecisionDialog, type ChangeDecisionDialogState } from './ThesisChangeRequestDecisionDialog';
 import {
   SupervisorLoadNote,
@@ -27,10 +26,10 @@ import {
   ThesisChangeRequestSummary,
   ThesisChangeRequestTypeBadge,
 } from './ThesisChangeRequestParts';
-import { splitChangeRequests, summarizeChange, type ChangeRequestScope } from './thesisChangeRequestGroups';
+import { summarizeChange } from './thesisChangeRequestGroups';
 
-/** The department lists are read whole (the server caps a page at 100) and filtered here. */
-const DEPARTMENT_PAGE = { search: '', page: 1, pageSize: 100 } as const;
+/** A batch of "Alihkan Mahasiswa" is one lecturer's students: one page holds it. */
+const BATCH_PAGE_SIZE = 100;
 
 const SCOPE_OPTIONS: { value: ChangeRequestScope; label: string }[] = [
   { value: 'awaitingMe', label: 'Menunggu Saya' },
@@ -56,54 +55,38 @@ type DialogTarget =
   | { kind: 'batch'; batchId: string; state: ChangeDecisionDialogState };
 
 export interface ThesisChangeRequestTableProps {
-  /** Pembimbing 1/2: requests at the viewer's lecturer step, the ones running elsewhere, history. */
-  isSupervisor: boolean;
-  /** Ketua Departemen: the department's requests, its own decision and "Putuskan Langsung". */
+  /** Ketua Departemen: its own decision, "Putuskan Langsung" and the batch modal. */
   isKadep: boolean;
 }
 
 /**
  * Tugas Akhir > Perubahan (Paket E4, 4.2): one table for every role, the content by role.
  * Status filter Menunggu Saya (default), Sedang Berjalan, Riwayat; search by name or NIM.
- * Setujui / Tolak on the rows waiting for the viewer; the Ketua Departemen may also decide
- * directly, and decides an "Alihkan Mahasiswa" batch together from its group modal.
+ * Lanjutan Paket E4: the server filters, searches and pages (no row limit); the old rows stay,
+ * slightly dimmed, while the next page loads. Setujui / Tolak on the rows waiting for the
+ * viewer; the Ketua Departemen may also decide directly, and decides an "Alihkan Mahasiswa"
+ * batch together from its group modal.
  */
-export function ThesisChangeRequestTable({ isSupervisor, isKadep }: ThesisChangeRequestTableProps) {
-  const lecturer = useLecturerChangeRequests(isSupervisor);
-  const departmentPending = useDepartmentChangeRequests({ scope: 'pending', ...DEPARTMENT_PAGE }, isKadep);
-  const departmentHistory = useDepartmentChangeRequests({ scope: 'history', ...DEPARTMENT_PAGE }, isKadep);
+export function ThesisChangeRequestTable({ isKadep }: ThesisChangeRequestTableProps) {
+  const [scope, setScope] = useState<ChangeRequestScope>('awaitingMe');
+  const { search, setSearch, debouncedSearch, page, setPage } = usePagedSearch();
+  const [pageSize, setPageSize] = useState(10);
+  const inbox = useChangeRequestInbox({ scope, search: debouncedSearch || undefined, page, pageSize });
   const lecturerDecision = useLecturerDecision();
   const kadepDecision = useKadepDecision();
   const batchDecision = useKadepBatchDecision();
 
-  const [scope, setScope] = useState<ChangeRequestScope>('awaitingMe');
   const [detail, setDetail] = useState<ThesisChangeRequest | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogTarget | null>(null);
 
-  const lists = useMemo(
-    () =>
-      splitChangeRequests({
-        lecturer: isSupervisor ? lecturer.data : null,
-        departmentPending: isKadep ? departmentPending.data?.data : null,
-        departmentHistory: isKadep ? departmentHistory.data?.data : null,
-      }),
-    [isSupervisor, isKadep, lecturer.data, departmentPending.data, departmentHistory.data],
-  );
-  const rows = lists[scope];
-  const table = useClientTable(rows, (row) => [row.student?.name, row.student?.identityNumber]);
-  const openRequests = useMemo(() => [...lists.awaitingMe, ...lists.inProgress], [lists]);
-  const groupRequests = groupId ? openRequests.filter((request) => request.batchId === groupId) : [];
+  const batch = useChangeRequestInbox({ batchId: groupId ?? undefined, pageSize: BATCH_PAGE_SIZE }, !!groupId);
+  const groupRequests = groupId ? batch.data?.data ?? [] : [];
+  const counts = inbox.data?.counts;
 
-  const isLoading = (isSupervisor && lecturer.isLoading) || (isKadep && (departmentPending.isLoading || departmentHistory.isLoading));
-  const isFetching = lecturer.isFetching || departmentPending.isFetching || departmentHistory.isFetching;
-  const refetch = () => {
-    if (isSupervisor) void lecturer.refetch();
-    if (isKadep) {
-      void departmentPending.refetch();
-      void departmentHistory.refetch();
-    }
-  };
+  const isLoading = inbox.isLoading;
+  const isFetching = inbox.isFetching;
+  const refetch = () => void inbox.refetch();
 
   const decideAsLecturer = (request: ThesisChangeRequest, approve: boolean) =>
     setDialog({
@@ -240,27 +223,28 @@ export function ThesisChangeRequestTable({ isSupervisor, isKadep }: ThesisChange
     <>
       <CustomTable
         columns={columns}
-        data={table.pageRows}
+        data={inbox.data?.data ?? []}
         loading={isLoading}
         isRefreshing={isFetching && !isLoading}
+        subtleRefresh
         tableClassName={TABLE_CLASS}
-        total={table.total}
-        page={table.page}
-        pageSize={table.pageSize}
-        onPageChange={table.setPage}
-        onPageSizeChange={table.setPageSize}
-        searchValue={table.search}
-        onSearchChange={table.setSearch}
+        total={inbox.data?.meta.total ?? 0}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        searchValue={search}
+        onSearchChange={setSearch}
         searchPlaceholder="Cari nama atau NIM..."
-        emptyText={table.search ? 'Tidak ditemukan' : EMPTY_TEXT[scope]}
+        emptyText={debouncedSearch ? 'Tidak ditemukan' : EMPTY_TEXT[scope]}
         rowKey={(row) => row.id}
         actions={
           <div className="flex items-center gap-2">
             <TableStatusFilter
               value={scope}
-              onChange={(value) => { setScope(value); table.resetPage(); }}
+              onChange={(value) => { setScope(value); setPage(1); }}
               options={SCOPE_OPTIONS.map((option) =>
-                option.value === 'history' ? option : { ...option, label: `${option.label} (${lists[option.value].length})` },
+                option.value === 'history' || !counts ? option : { ...option, label: `${option.label} (${counts[option.value]})` },
               )}
               label="Filter status pengajuan"
             />

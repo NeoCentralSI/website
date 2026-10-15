@@ -2,6 +2,8 @@ import { getApiUrl } from '@/config/api';
 import { apiRequest } from '@/services/auth.service';
 import type {
   DepartmentEvaluations,
+  EvaluationInbox,
+  EvaluationScope,
   SubmitEvaluationDto,
   SupervisorEvaluations,
   ThesisGuidanceEvaluation,
@@ -55,6 +57,21 @@ export async function getDepartmentEvaluations(params: {
 export async function getSupervisorEvaluations(): Promise<SupervisorEvaluations> {
   const response = await apiRequest(getApiUrl(`${BASE}/lecturer`));
   return (await parse<SupervisorEvaluations>(response, 'Gagal memuat evaluasi bimbingan')).data;
+}
+
+/** Tugas Akhir > Evaluasi: one page of a filter for the signed-in viewer (Lanjutan Paket E4). */
+export async function getEvaluationInbox(params: { scope: EvaluationScope; search?: string; page: number; pageSize: number }): Promise<EvaluationInbox> {
+  const query = new URLSearchParams({ scope: params.scope, page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.search) query.set('search', params.search);
+  const response = await apiRequest(getApiUrl(`${BASE}/inbox?${query.toString()}`));
+  const body = (await response.json().catch(() => ({}))) as Partial<EvaluationInbox> & { message?: string };
+  if (!response.ok) throw new Error(body.message || 'Gagal memuat evaluasi bimbingan');
+  return {
+    data: body.data ?? [],
+    meta: body.meta ?? { page: 1, pageSize: params.pageSize, total: 0, totalPages: 1 },
+    counts: body.counts ?? { action: 0, kadep: 0 },
+    viewer: body.viewer ?? { isKadep: false, isSupervisor: false },
+  };
 }
 
 export async function decideEvaluation(evaluationId: string, dto: { approve: boolean; notes?: string | null }) {

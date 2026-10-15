@@ -11,35 +11,6 @@ export function groupByBatch(requests: ThesisChangeRequest[]): { batchId: string
   return groups;
 }
 
-export type ChangeRequestScope = 'awaitingMe' | 'inProgress' | 'history';
-
-function uniqueById(requests: ThesisChangeRequest[]): ThesisChangeRequest[] {
-  const seen = new Set<string>();
-  return requests.filter((request) => (seen.has(request.id) ? false : (seen.add(request.id), true)));
-}
-
-/**
- * Paket E4 (4.2): one list per status filter of the Perubahan page. "Menunggu Saya" holds the
- * requests at the viewer's lecturer step and, for the Ketua Departemen, those at the department
- * step; "Sedang Berjalan" the other open requests; "Riwayat" the closed ones, newest first.
- */
-export function splitChangeRequests(input: {
-  lecturer?: { awaitingMe: ThesisChangeRequest[]; inProgress: ThesisChangeRequest[]; history: ThesisChangeRequest[] } | null;
-  departmentPending?: ThesisChangeRequest[] | null;
-  departmentHistory?: ThesisChangeRequest[] | null;
-}): Record<ChangeRequestScope, ThesisChangeRequest[]> {
-  const departmentPending = input.departmentPending ?? [];
-  const awaitingMe = uniqueById([
-    ...departmentPending.filter((request) => request.currentStep === 'kadep' || request.viewer.canDecideAsLecturer),
-    ...(input.lecturer?.awaitingMe ?? []),
-  ]);
-  const waitingIds = new Set(awaitingMe.map((request) => request.id));
-  const inProgress = uniqueById([...departmentPending, ...(input.lecturer?.inProgress ?? [])]).filter((request) => !waitingIds.has(request.id));
-  const closedAt = (request: ThesisChangeRequest) => new Date(request.decision?.at ?? request.createdAt).getTime();
-  const history = uniqueById([...(input.departmentHistory ?? []), ...(input.lecturer?.history ?? [])]).sort((a, b) => closedAt(b) - closedAt(a));
-  return { awaitingMe, inProgress, history };
-}
-
 /** "Judul lama → Judul baru; Pembimbing 2: A → B", for the table's summary column. */
 export function summarizeChange(request: ThesisChangeRequest, formatName: (name: string | null | undefined) => string): string {
   const parts: string[] = [];
