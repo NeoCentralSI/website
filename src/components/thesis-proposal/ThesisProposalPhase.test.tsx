@@ -78,6 +78,7 @@ describe('Proposal final (10.3)', () => {
       history: [],
       ...finalProposal,
     },
+    proposalRevision: { applicable: false, evaluation: null, current: null, history: [], canSubmit: false, blockReason: null, replacesCurrent: false },
   });
 
   it('checks the file before sending', () => {

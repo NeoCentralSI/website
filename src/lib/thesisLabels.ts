@@ -300,6 +300,8 @@ export type ResearchMethodResult = "passed" | "failed";
 export type AssignmentBatchStatus = "current" | "superseded";
 /** Keputusan proses kelulusan (naik ke Penelitian, K13). */
 export type PromotionDecision = "promote" | "wait_sia" | "wait_thesis_course" | "wait_next_period";
+/** Proposal revisi TA yang mengulang proposal (Lanjutan Paket P). */
+export type ProposalRevisionStatus = "submitted" | "revision_requested" | "approved";
 
 export const SUPERVISOR_REQUEST_STATUS_LABELS: Record<SupervisorRequestStatus, string> = {
   pending: "Menunggu Dosen",
@@ -343,6 +345,18 @@ export const PROMOTION_DECISION_LABELS: Record<PromotionDecision, string> = {
   wait_sia: "Menunggu Data SIA",
   wait_thesis_course: "Menunggu KRS Tugas Akhir",
   wait_next_period: "Menunggu Periode Berikutnya",
+};
+
+export const PROPOSAL_REVISION_STATUS_LABELS: Record<ProposalRevisionStatus, string> = {
+  submitted: "Menunggu Tinjauan Pembimbing 1",
+  revision_requested: "Perlu Revisi",
+  approved: "Disetujui",
+};
+
+export const PROPOSAL_REVISION_STATUS_VARIANTS: Record<ProposalRevisionStatus, ThesisBadgeVariant> = {
+  submitted: "warning",
+  revision_requested: "destructive",
+  approved: "success",
 };
 
 export const PROMOTION_DECISION_VARIANTS: Record<PromotionDecision, ThesisBadgeVariant> = {
@@ -414,6 +428,12 @@ export const getPromotionDecisionLabel = labelOf(PROMOTION_DECISION_LABELS);
 
 export function getPromotionDecisionVariant(value: string | null | undefined): ThesisBadgeVariant {
   return PROMOTION_DECISION_VARIANTS[value as PromotionDecision] ?? "outline";
+}
+
+export const getProposalRevisionStatusLabel = labelOf(PROPOSAL_REVISION_STATUS_LABELS);
+
+export function getProposalRevisionStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
+  return PROPOSAL_REVISION_STATUS_VARIANTS[value as ProposalRevisionStatus] ?? "outline";
 }
 
 export function getSupervisorRequestStatusVariant(value: string | null | undefined): ThesisBadgeVariant {
@@ -509,7 +529,7 @@ export function getGuidanceActionBlockReason(
   if (status === "research") return null;
   // TA yang dikembalikan ke proposal oleh evaluasi bimbingan menyebut alasannya (E5).
   if (status === "proposal" && options.repeatingProposal) {
-    return `${REPEAT_PROPOSAL_LOCK_REASON} Bimbingan dan milestone terkunci sampai tugas akhir kembali berstatus "${THESIS_STATUS_LABELS.research}".`;
+    return `${REPEAT_PROPOSAL_LOCK_REASON} Bimbingan dan milestone terkunci sampai Pembimbing 1 menyetujui proposal revisi (Tugas Akhir > Proposal).`;
   }
   // Fase proposal terbuka setelah Penetapan Pembimbing (K27).
   if (status === "proposal") return options.proposalPhaseOpen ? null : PROPOSAL_NOT_ASSIGNED_REASON;

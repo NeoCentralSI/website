@@ -258,6 +258,40 @@ export interface FinalProposalState {
   history: FinalProposalAttempt[];
 }
 
+export type ProposalRevisionStatus = 'submitted' | 'revision_requested' | 'approved';
+
+/** One upload of a revised proposal (TA mengulang proposal lewat evaluasi bimbingan). */
+export interface ProposalRevision {
+  id: string;
+  status: ProposalRevisionStatus;
+  file: { fileName: string; fileSize: number; url: string; submittedAt: string };
+  reviewNotes: string | null;
+  reviewedAt: string | null;
+  reviewerName: string | null;
+}
+
+interface ProposalRevisionCycle {
+  /** True only for a thesis in Proposal sent back by an approved "Mengulang Proposal" evaluation. */
+  applicable: boolean;
+  evaluation: { id: string; approvedAt: string | null } | null;
+  current: ProposalRevision | null;
+  history: ProposalRevision[];
+}
+
+export interface StudentProposalRevisionState extends ProposalRevisionCycle {
+  canSubmit: boolean;
+  blockReason: string | null;
+  /** The next upload replaces the one still waiting for review. */
+  replacesCurrent: boolean;
+}
+
+export interface LecturerProposalRevisionState extends ProposalRevisionCycle {
+  canReview: boolean;
+  reviewBlockReason: string | null;
+}
+
+export type ProposalRevisionAction = 'approve' | 'request_revision';
+
 export interface StudentProposalOverview {
   thesis: {
     id: string;
@@ -276,6 +310,7 @@ export interface StudentProposalOverview {
     waitingReason: string | null;
   } | null;
   finalProposal: FinalProposalState;
+  proposalRevision: StudentProposalRevisionState;
 }
 
 export type { ResearchMethodResult };

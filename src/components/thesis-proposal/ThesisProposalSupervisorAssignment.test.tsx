@@ -117,6 +117,7 @@ describe('Penetapan Pembimbing (mahasiswa)', () => {
       waitingReason: assigned ? null : 'Pengajuan Anda sudah disetujui. Bimbingan proposal dan proposal final terbuka setelah Ketua Departemen menerbitkan Penetapan Pembimbing.',
     },
     finalProposal: { academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' }, current: null, canSubmit: assigned, blockReason: assigned ? null : 'Proposal final dapat diajukan setelah Ketua Departemen menerbitkan Penetapan Pembimbing.', history: [] },
+    proposalRevision: { applicable: false, evaluation: null, current: null, history: [], canSubmit: false, blockReason: null, replacesCurrent: false },
   });
 
   it('shows the waiting reason and never a PDF download', async () => {

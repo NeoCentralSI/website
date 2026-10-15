@@ -8,6 +8,7 @@ import { DefenceReadinessCard } from "@/components/milestone/lecturer/DefenceRea
 import { SeminarReadinessCard } from "@/components/milestone/lecturer/SeminarReadinessCard";
 import { LecturerThesisChangeRequestCard } from "@/components/thesis-change-request/LecturerThesisChangeRequestCard";
 import { LecturerThesisGuidanceEvaluationCard } from "@/components/thesis-guidance-evaluation/LecturerThesisGuidanceEvaluationCard";
+import { LecturerProposalRevisionCard } from "@/components/thesis-proposal/LecturerProposalRevisionCard";
 import { ThesisActionBlockedAlert } from "@/components/thesis/ThesisActionBlockedAlert";
 import { ThesisPhaseFilter, formatPhaseSessionSummary, type PhaseFilterValue } from "@/components/thesis/ThesisPhaseFilter";
 import { OtherPhaseMilestones } from "@/components/milestone/OtherPhaseMilestones";
@@ -243,6 +244,11 @@ export default function LecturerMyStudentDetailPage() {
                                         : "Mahasiswa telah menyelesaikan milestone, namun syarat minimal 8 sesi bimbingan belum terpenuhi. Approval seminar dapat diberikan setelah syarat bimbingan tercapai."}
                                 </AlertDescription>
                             </Alert>
+                        )}
+
+                        {/* Mengulang proposal (evaluasi bimbingan): Pembimbing 1 meninjau proposal revisi */}
+                        {detailData.status === "proposal" && detailData.repeatingProposal && (
+                            <LecturerProposalRevisionCard thesisId={thesisId} />
                         )}
 
                         <StudentThesisSummaryCard
