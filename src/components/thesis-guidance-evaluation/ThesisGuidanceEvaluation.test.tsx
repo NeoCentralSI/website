@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as service from '@/services/thesis-guidance-evaluation/thesis-guidance-evaluation.service';
 import type { EvaluationInboxRow, ThesisGuidanceEvaluation, ThesisGuidanceEvaluationContext } from '@/types/thesis-guidance-evaluation.types';
 import { EvaluationDueCard } from '@/components/monitoring/EvaluationDueCard';
+import { expectColumnFits } from '@/test/columnFit';
 import { LecturerThesisGuidanceEvaluationCard } from './LecturerThesisGuidanceEvaluationCard';
 import { ThesisGuidanceEvaluationTable } from './ThesisGuidanceEvaluationTable';
 import { AcademicWarningAlert, ThesisGuidanceEvaluationHistoryLink, evaluationsOf } from './ThesisGuidanceEvaluationViews';
@@ -15,8 +16,6 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/services/thesis-guidance-evaluation/thesis-guidance-evaluation.service', () => ({
   getEvaluationContext: vi.fn(),
   submitEvaluation: vi.fn(),
-  getDepartmentEvaluations: vi.fn(),
-  getSupervisorEvaluations: vi.fn(),
   getEvaluationInbox: vi.fn(),
   decideEvaluation: vi.fn(),
 }));
@@ -242,8 +241,9 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
     await screen.findAllByText('Ilham Nofaldi');
     expect(service.getEvaluationInbox).toHaveBeenCalledWith({ status: undefined, search: undefined, page: 1, pageSize: 10 });
     const table = screen.getByRole('table');
+    // Paket E6 (1): the masa bimbingan sits under the stage.
     expect(within(table).getAllByRole('columnheader').map((header) => header.textContent?.trim())).toEqual([
-      'Mahasiswa', 'Tahap', 'Keputusan Pembimbing', 'Masa Bimbingan', 'Tanggal', 'Status', 'Aksi',
+      'Mahasiswa', 'Tahap', 'Keputusan Pembimbing', 'Tanggal', 'Status', 'Aksi',
     ]);
     const rows = within(table).getAllByRole('row').slice(1);
     expect(within(rows[0]).getByText('Menunggu Keputusan Anda')).toBeInTheDocument();
@@ -262,6 +262,18 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
     ]);
     fireEvent.click(screen.getByRole('menuitem', { name: 'Tercatat' }));
     await waitFor(() => expect(service.getEvaluationInbox).toHaveBeenLastCalledWith({ status: 'recorded', search: undefined, page: 1, pageSize: 10 }));
+  });
+
+  it('Paket E6 (1): the longest status and the date stay inside their cells', async () => {
+    vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([row({ createdAt: '2026-09-11T03:00:00.000Z' })]));
+    wrap(<ThesisGuidanceEvaluationTable />);
+    await screen.findByText('Ilham Nofaldi');
+    const table = screen.getByRole('table');
+    const header = (name: string) => within(table).getByRole('columnheader', { name: new RegExp(name) });
+    const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
+    expectColumnFits(header('Status'), cells[4], 'Menunggu Keputusan Anda');
+    expectColumnFits(header('Tanggal'), cells[3], '11 September 2026');
+    expect(within(cells[1]).getByText(/Masa bimbingan/)).toBeInTheDocument();
   });
 
   it('rejects with notes and approves without, from the row icons', async () => {

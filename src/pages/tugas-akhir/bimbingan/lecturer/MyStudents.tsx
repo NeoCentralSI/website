@@ -19,6 +19,7 @@ import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toTitleCaseName, formatDateShortId, formatDateTimeWib } from "@/lib/text";
 import { STICKY_ACTION_COLUMN_CLASS } from "@/lib/guidanceCells";
+import { CLIP_CELL } from "@/lib/tableColumnWidths";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -61,11 +62,12 @@ import { ThesisActivityBadge } from '@/components/shared/ThesisActivityBadge';
 import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
 
 /**
- * Fixed layout: every column but "Mahasiswa" has a width, so the table fills the card
- * without a horizontal scrollbar at 1366 px with the sidebar open. Below the minimum
- * width (phones) it scrolls, with the action column pinned to the right.
+ * Fixed layout: every column but "Mahasiswa" has a width, so the table fills the card. Paket E6
+ * (1): the minimum width keeps "Mahasiswa" as wide as its longest badge ("Berhenti Studi
+ * Sementara (BSS)", MY_STUDENTS_NAME_MIN_WIDTH) next to the fixed columns (782 px, Aksi with four
+ * icons); below it the table scrolls, with the action column pinned to the right.
  */
-const MY_STUDENTS_TABLE_CLASS = "table-fixed min-w-[960px]";
+const MY_STUDENTS_TABLE_CLASS = "table-fixed min-w-[1014px]";
 
 /** A warning can be sent while the activity level is Lambat or Berisiko. */
 const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
@@ -206,6 +208,7 @@ export default function LecturerMyStudentsPage() {
       // The only column without a width: it takes what the fixed columns leave.
       key: 'fullName',
       header: 'Mahasiswa',
+      className: CLIP_CELL,
       render: (row) => (
         <div className="min-w-0 space-y-1.5">
           <div className="flex min-w-0 items-baseline gap-2">
@@ -222,8 +225,8 @@ export default function LecturerMyStudentsPage() {
           ) : (
             <p className="text-sm text-muted-foreground">Judul belum ditentukan</p>
           )}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="text-xs" />}
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="max-w-full truncate text-xs" />}
             {/* Paket E5 (3.2): a running change request; the marker opens its detail. */}
             {row.changeRequest?.hasOpenRequest && row.thesisId && (
               <button
@@ -231,12 +234,12 @@ export default function LecturerMyStudentsPage() {
                 onClick={() => setOpenRequestThesisId(row.thesisId as string)}
                 title="Lihat pengajuan perubahan yang sedang berjalan"
               >
-                <Badge variant="warning" className="whitespace-nowrap text-xs">Perubahan berjalan</Badge>
+                <Badge variant="warning" className="max-w-full truncate whitespace-nowrap text-xs">Perubahan berjalan</Badge>
               </button>
             )}
             {/* Paket E4 (1.1): a replaced supervisor reads the student under "Semua" only. */}
             {row.noLongerSupervising && (
-              <Badge variant="outline" className="text-xs text-muted-foreground">Tidak lagi membimbing</Badge>
+              <Badge variant="outline" className="max-w-full truncate text-xs text-muted-foreground">Tidak lagi membimbing</Badge>
             )}
           </div>
         </div>
@@ -245,7 +248,8 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'progress',
       header: 'Milestone',
-      width: 150,
+      width: 140,
+      className: CLIP_CELL,
       render: (row) => {
         const total = row.totalMilestones || 0;
         const completed = row.completedMilestones || 0;
@@ -273,7 +277,8 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'guidanceCount',
       header: 'Bimbingan',
-      width: 150,
+      width: 140,
+      className: CLIP_CELL,
       render: (row) => (
         <div className="min-w-0 space-y-1 text-sm">
           <div className="flex items-center gap-1">
@@ -294,13 +299,15 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'supervisionClock',
       header: 'Masa Bimbingan',
-      width: 190,
+      width: 170,
+      className: CLIP_CELL,
       render: (row) => <SupervisionClockCell clock={row.supervisionClock} wrap />,
     },
     {
       key: 'activity',
       header: 'Aktivitas',
       width: 124,
+      className: CLIP_CELL,
       render: (row) => (
         <div className="flex items-center gap-2">
           <ThesisActivityBadge level={row.activityLevel} className="whitespace-nowrap" />
@@ -313,7 +320,8 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'actions',
       header: 'Aksi',
-      width: 152,
+      // Four icons at most: Isi Evaluasi, Ajukan Perubahan, Kirim Peringatan, Detail.
+      width: 164,
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (row) => {
         // Only an active supervisor relation may send a warning (backend rule); a replaced

@@ -8,6 +8,7 @@ import { LecturerTransferStudentsDialog, toTransferStudents } from './LecturerTr
 import { ThesisChangeRequestCard } from './ThesisChangeRequestCard';
 import { ThesisChangeRequestTable } from './ThesisChangeRequestTable';
 import { ThesisChangeRequestMiniTable } from './ThesisChangeRequestViews';
+import { expectColumnFits } from '@/test/columnFit';
 import { groupByBatch, summarizeChange } from './thesisChangeRequestGroups';
 
 vi.mock('lottie-react', () => ({ default: () => null }));
@@ -18,14 +19,19 @@ vi.mock('@/services/thesis-change-request/thesis-change-request.service', () => 
   getSupervisorOptions: vi.fn(),
   submitChangeRequest: vi.fn(),
   submitTransfer: vi.fn(),
-  getLecturerChangeRequests: vi.fn(),
   decideAsLecturer: vi.fn(),
   cancelChangeRequest: vi.fn(),
-  getDepartmentChangeRequests: vi.fn(),
   getChangeRequestInbox: vi.fn(),
   decideAsKadep: vi.fn(),
   decideBatchAsKadep: vi.fn(),
 }));
+
+// cmdk (the searchable lecturer picker) needs ResizeObserver, which jsdom does not provide.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;
 
 const person = (id: string, name: string) => ({ id, name, identityNumber: `ID-${id}` });
 
@@ -86,10 +92,10 @@ function wrap(ui: React.ReactNode) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(service.getSupervisorOptions).mockResolvedValue([
-    { id: 'l1', name: 'HUSNIL KAMIL', identityNumber: '1', positions: ['pembimbing_1', 'pembimbing_2'] },
-    { id: 'l2', name: 'AFRIYANTI', identityNumber: '2', positions: ['pembimbing_1', 'pembimbing_2'] },
-    { id: 'l3', name: 'AINA HUBBY', identityNumber: '3', positions: ['pembimbing_1', 'pembimbing_2'] },
-    { id: 'l4', name: 'ULLYA MEGA', identityNumber: '4', positions: ['pembimbing_2'] },
+    { id: 'l1', name: 'HUSNIL KAMIL', identityNumber: '198001', positions: ['pembimbing_1', 'pembimbing_2'], load: { activeCount: 31, quotaMax: 10, isFull: true } },
+    { id: 'l2', name: 'AFRIYANTI', identityNumber: '198002', positions: ['pembimbing_1', 'pembimbing_2'], load: { activeCount: 6, quotaMax: 10, isFull: false } },
+    { id: 'l3', name: 'AINA HUBBY', identityNumber: '198003', positions: ['pembimbing_1', 'pembimbing_2'], load: { activeCount: 9, quotaMax: 10, isFull: false } },
+    { id: 'l4', name: 'ULLYA MEGA', identityNumber: '198004', positions: ['pembimbing_2'], load: { activeCount: 7, quotaMax: 10, isFull: false } },
   ]);
 });
 
@@ -138,6 +144,23 @@ describe('ThesisChangeRequestCard (compact, Paket E4, 5)', () => {
     const confirm = await screen.findByRole('alertdialog');
     fireEvent.click(within(confirm).getByRole('button', { name: 'Batalkan Pengajuan' }));
     await waitFor(() => expect(service.cancelChangeRequest).toHaveBeenCalledWith('req-1'));
+  });
+
+  it('K34 (Paket E6): a kind the rules block is disabled with its reason', async () => {
+    const supervisorReason = 'Perubahan pembimbing hanya dapat diajukan sampai sebelum pendaftaran seminar hasil. Tugas akhir ini sudah terdaftar atau lulus seminar hasil.';
+    vi.mocked(service.getThesisChangeContext).mockResolvedValue(context({
+      viewerRole: 'pembimbing_1',
+      typeBlocks: { title: null, supervisor: supervisorReason, both: supervisorReason },
+    }));
+    wrap(<ThesisChangeRequestCard thesisId="t1" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Ajukan Perubahan/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(`Pembimbing tidak tersedia: ${supervisorReason}`)).toBeInTheDocument();
+    expect(within(dialog).getByText(`Judul dan Pembimbing tidak tersedia: ${supervisorReason}`)).toBeInTheDocument();
+    fireEvent.keyDown(within(dialog).getByRole('combobox', { name: 'Jenis perubahan' }), { key: 'ArrowDown' });
+    expect(await screen.findByRole('option', { name: 'Pembimbing' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('option', { name: 'Judul' })).not.toHaveAttribute('aria-disabled', 'true');
   });
 
   it('submits a title change with the current title prefilled and a reason', async () => {
@@ -221,6 +244,31 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
 
     fireEvent.change(screen.getByPlaceholderText('Cari nama, NIM, atau judul...'), { target: { value: ' 2211522 ' } });
     await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenLastCalledWith({ status: 'in_progress', kind: 'transfer', search: '2211522', page: 1, pageSize: 10 }));
+  });
+
+  it('Paket E6 (1): the longest jenis, status and date stay inside their cells', async () => {
+    vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep({ requestType: 'both', createdAt: '2026-09-30T03:00:00.000Z' })]));
+    wrap(<ThesisChangeRequestTable />);
+    await screen.findByText('Ilham Nofaldi');
+    const table = screen.getByRole('table');
+    const header = (name: string) => within(table).getByRole('columnheader', { name: new RegExp(`^${name}`) });
+    const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
+    expectColumnFits(header('Jenis'), cells[1], 'Judul dan Pembimbing');
+    expectColumnFits(header('Tanggal'), cells[3], '30 September 2026');
+    expectColumnFits(header('Status'), cells[4], 'Menunggu Keputusan Anda');
+  });
+
+  it('Paket E6 (6): a request the rules block now is marked, and Setujui waits with the reason', async () => {
+    const reason = 'Pengajuan ini tidak dapat disetujui saat ini. Perubahan judul tidak dapat diajukan selama seminar hasil sedang berproses. Pengajuan tetap menunggu dan dapat ditolak.';
+    vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep({ applyBlockReason: reason })]));
+    wrap(<ThesisChangeRequestTable />);
+    const tableRow = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
+    expect(within(tableRow).getByText('Terblokir')).toHaveAttribute('title', reason);
+    const approve = within(tableRow).getByRole('button', { name: 'Setujui' });
+    expect(approve).toBeDisabled();
+    expect(approve.parentElement).toHaveAttribute('title', `Setujui: ${reason}`);
+    // Rejecting stays possible.
+    expect(within(tableRow).getByRole('button', { name: 'Tolak' })).toBeEnabled();
   });
 
   it('pages past the first hundred rows: page 11 of 150 shows rows 101-110', async () => {
@@ -319,11 +367,15 @@ describe('LecturerTransferStudentsDialog (Paket E5, 3.3: the students ticked in 
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.getByText(/Hanya dosen yang memiliki peran Pembimbing 1 yang ditampilkan/)).toBeInTheDocument();
 
-    fireEvent.click(await screen.findByRole('combobox'));
+    // Paket E6 (4): a searchable picker (name or NIP) with each lecturer's load at the right.
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Dosen tujuan' }));
     const options = (await screen.findAllByRole('option')).map((option) => option.textContent);
     // Not the lecturer themselves, and not a lecturer without the Pembimbing 1 role.
-    expect(options).toEqual(['Afriyanti', 'Aina Hubby']);
-    fireEvent.click(screen.getByRole('option', { name: 'Aina Hubby' }));
+    expect(options).toEqual(['Afriyanti6/10', 'Aina Hubby9/10']);
+    fireEvent.change(screen.getByPlaceholderText('Cari nama atau NIP...'), { target: { value: '198003' } });
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(1));
+    fireEvent.click(screen.getByRole('option', { name: /^Aina Hubby/ }));
+    expect(screen.getByRole('combobox', { name: 'Dosen tujuan' })).toHaveTextContent('Aina Hubby');
 
     fireEvent.change(screen.getByLabelText('Alasan pengalihan'), { target: { value: 'Penugasan studi lanjut.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Ajukan Pengalihan' }));
@@ -343,9 +395,20 @@ describe('ThesisChangeRequestMiniTable (Paket E5, 1.1 and 1.2)', () => {
     expect(table.className).toContain('table-fixed');
     const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
     expect(within(cells[0]).getByText('9 Oktober 2026')).toBeInTheDocument();
-    expect(within(cells[2]).getByText('Disetujui').className).toContain('whitespace-nowrap');
-    fireEvent.click(within(cells[3]).getByRole('button', { name: 'Lihat Detail' }));
+    // Paket E6 (1): jenis and status stacked in one column as wide as the longest badge.
+    expect(within(cells[1]).getByText('Disetujui').className).toContain('whitespace-nowrap');
+    fireEvent.click(within(cells[2]).getByRole('button', { name: 'Lihat Detail' }));
     expect(onDetail).toHaveBeenCalled();
+  });
+
+  it('Paket E6 (1): the longest badge and date stay inside their cells', () => {
+    wrap(<ThesisChangeRequestMiniTable requests={[request({ requestType: 'both', createdAt: '2026-09-30T03:00:00.000Z' })]} onDetail={() => {}} />);
+    const table = screen.getByRole('table');
+    const headers = within(table).getAllByRole('columnheader');
+    const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
+    expectColumnFits(headers[0], cells[0], '30 September 2026');
+    expectColumnFits(headers[1], cells[1], 'Menunggu Persetujuan');
+    expectColumnFits(headers[1], cells[1], 'Judul dan Pembimbing');
   });
 });
 

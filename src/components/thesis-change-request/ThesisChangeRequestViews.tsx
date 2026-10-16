@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCancelChangeRequest, useLecturerDecision } from '@/hooks/thesis-change-request/useThesisChangeRequest';
 import { DateTimeCell } from '@/lib/guidanceCells';
+import { BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
 import { toTitleCaseName } from '@/lib/text';
 import { getChangeRequestStepLabel } from '@/lib/thesisLabels';
 import type { ThesisChangeRequest } from '@/types/thesis-change-request.types';
@@ -71,11 +72,18 @@ export function ThesisChangeRequestDetailDialog({ request, onClose }: { request:
           <>
             {request.viewer.canDecideAsLecturer && (
               <>
-                <span className="mr-auto text-xs text-muted-foreground">
-                  Anda menyetujui sebagai {request.currentStep ? getChangeRequestStepLabel(request.currentStep) : '-'}.
-                </span>
+                {request.applyBlockReason ? (
+                  <span className="mr-auto text-xs text-destructive">{request.applyBlockReason}</span>
+                ) : (
+                  <span className="mr-auto text-xs text-muted-foreground">
+                    Anda menyetujui sebagai {request.currentStep ? getChangeRequestStepLabel(request.currentStep) : '-'}.
+                  </span>
+                )}
                 <Button size="sm" variant="outline" onClick={() => openDecision(false)}>Tolak</Button>
-                <Button size="sm" onClick={() => openDecision(true)}>Setujui</Button>
+                {/* Paket E6: while the rules block approving, Setujui waits with the reason. */}
+                <span title={request.applyBlockReason ?? undefined}>
+                  <Button size="sm" disabled={!!request.applyBlockReason} onClick={() => openDecision(true)}>Setujui</Button>
+                </span>
               </>
             )}
             {request.viewer.canCancel && (
@@ -139,7 +147,9 @@ export function ThesisChangeRequestDetailDialog({ request, onClose }: { request:
 
 /**
  * Mini history table of one thesis: tanggal, jenis, status, Detail (Paket E4, 5 and 6; Paket E5:
- * the table standard, with a fixed layout, a two-line date and the detail as an icon).
+ * the table standard, with a fixed layout, a two-line date and the detail as an icon). Paket E6
+ * (1): jenis and status are stacked in one column as wide as the longest badge, so the table
+ * fits a half-width card without a badge leaving its cell.
  */
 export function ThesisChangeRequestMiniTable({ requests, onDetail, emptyText = 'Belum ada riwayat pengajuan.' }: {
   requests: ThesisChangeRequest[];
@@ -149,21 +159,24 @@ export function ThesisChangeRequestMiniTable({ requests, onDetail, emptyText = '
   if (requests.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   return (
     <div className="overflow-x-auto rounded-md border">
-      <Table className="table-fixed min-w-[400px]">
+      <Table className="table-fixed min-w-[412px]">
         <TableHeader>
           <TableRow>
-            <TableHead style={{ width: 120 }}>Tanggal</TableHead>
-            <TableHead>Jenis</TableHead>
-            <TableHead style={{ width: 160 }}>Status</TableHead>
+            <TableHead style={{ width: DATE_COLUMN_WIDTH }}>Tanggal</TableHead>
+            <TableHead style={{ width: BADGE_COLUMN_WIDTH.changeMiniKindStatus }}>Jenis dan Status</TableHead>
             <TableHead style={{ width: 64 }} className="text-center">Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {requests.map((request) => (
             <TableRow key={request.id}>
-              <TableCell><DateTimeCell date={request.decision?.at ?? request.createdAt} /></TableCell>
-              <TableCell><ThesisChangeRequestTypeBadge request={request} /></TableCell>
-              <TableCell><ThesisChangeRequestStatusBadge status={request.status} /></TableCell>
+              <TableCell className={CLIP_CELL}><DateTimeCell date={request.decision?.at ?? request.createdAt} /></TableCell>
+              <TableCell className={CLIP_CELL}>
+                <div className="flex flex-col items-start gap-1">
+                  <ThesisChangeRequestTypeBadge request={request} />
+                  <ThesisChangeRequestStatusBadge status={request.status} />
+                </div>
+              </TableCell>
               <TableCell className="text-center">
                 <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => onDetail(request)} />
               </TableCell>

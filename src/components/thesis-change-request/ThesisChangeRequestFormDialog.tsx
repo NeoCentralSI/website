@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableCombobox } from '@/components/shared/SearchableCombobox';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useSubmitChangeRequest, useSupervisorOptions } from '@/hooks/thesis-change-request/useThesisChangeRequest';
@@ -31,8 +32,10 @@ import {
 } from '@/lib/thesisLabels';
 import { getTopics } from '@/services/topic.service';
 import type { ThesisChangeContext } from '@/types/thesis-change-request.types';
+import { toSupervisorComboboxOptions } from './supervisorOptions';
 
 const KEEP_TOPIC = 'keep';
+const CHANGE_TYPES = Object.keys(CHANGE_REQUEST_TYPE_LABELS) as ChangeRequestType[];
 const MIN_REASON = 10;
 
 /**
@@ -45,7 +48,10 @@ export function ThesisChangeRequestFormDialog({ open, onOpenChange, context }: {
   context: ThesisChangeContext;
 }) {
   const thesis = context.thesis;
-  const [requestType, setRequestType] = useState<ChangeRequestType>('title');
+  // K34 (Paket E6): a kind the rules block now is disabled with its reason.
+  const blockOf = (type: ChangeRequestType) => context.typeBlocks?.[type] ?? null;
+  const firstOpenType = CHANGE_TYPES.find((type) => !blockOf(type)) ?? 'title';
+  const [requestType, setRequestType] = useState<ChangeRequestType>(firstOpenType);
   const [newTitle, setNewTitle] = useState('');
   const [newTopicId, setNewTopicId] = useState(KEEP_TOPIC);
   const [position, setPosition] = useState<SupervisorPosition>('pembimbing_1');
@@ -60,13 +66,13 @@ export function ThesisChangeRequestFormDialog({ open, onOpenChange, context }: {
 
   useEffect(() => {
     if (!open) return;
-    setRequestType('title');
+    setRequestType(firstOpenType);
     setNewTitle(thesis?.title ?? '');
     setNewTopicId(KEEP_TOPIC);
     setPosition('pembimbing_1');
     setNewSupervisorId('');
     setReason('');
-  }, [open, thesis?.title]);
+  }, [open, thesis?.title, firstOpenType]);
 
   const supervisors = thesis?.supervisors ?? [];
   const current = supervisors.find((s) => s.position === position) ?? null;
@@ -126,11 +132,18 @@ export function ThesisChangeRequestFormDialog({ open, onOpenChange, context }: {
             <Select value={requestType} onValueChange={(value) => setRequestType(value as ChangeRequestType)}>
               <SelectTrigger id="change-type"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(Object.keys(CHANGE_REQUEST_TYPE_LABELS) as ChangeRequestType[]).map((value) => (
-                  <SelectItem key={value} value={value}>{CHANGE_REQUEST_TYPE_LABELS[value]}</SelectItem>
+                {CHANGE_TYPES.map((value) => (
+                  <SelectItem key={value} value={value} disabled={!!blockOf(value)}>
+                    {CHANGE_REQUEST_TYPE_LABELS[value]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {CHANGE_TYPES.filter((value) => blockOf(value)).map((value) => (
+              <p key={value} className="text-xs text-muted-foreground">
+                {CHANGE_REQUEST_TYPE_LABELS[value]} tidak tersedia: {blockOf(value)}
+              </p>
+            ))}
           </div>
 
           {changesTitle && (
@@ -178,18 +191,20 @@ export function ThesisChangeRequestFormDialog({ open, onOpenChange, context }: {
                 <Input readOnly value={current ? formatLecturerName(current.name) : 'Belum ada (pembimbing akan ditambahkan)'} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="change-new-supervisor">{current ? 'Pembimbing pengganti' : 'Pembimbing yang ditambahkan'}</Label>
+                <Label>{current ? 'Pembimbing pengganti' : 'Pembimbing yang ditambahkan'}</Label>
                 {optionsLoading ? (
                   <Spinner className="h-5 w-5" />
                 ) : (
-                  <Select value={newSupervisorId} onValueChange={setNewSupervisorId}>
-                    <SelectTrigger id="change-new-supervisor"><SelectValue placeholder="Pilih dosen" /></SelectTrigger>
-                    <SelectContent>
-                      {candidates.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>{formatLecturerName(option.name)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  // Paket E6 (4): the same searchable picker as "Alihkan", with each lecturer's load.
+                  <SearchableCombobox
+                    ariaLabel={current ? 'Pembimbing pengganti' : 'Pembimbing yang ditambahkan'}
+                    options={toSupervisorComboboxOptions(candidates)}
+                    value={newSupervisorId}
+                    onChange={setNewSupervisorId}
+                    placeholder="Pilih dosen"
+                    searchPlaceholder="Cari nama atau NIP..."
+                    emptyText="Dosen tidak ditemukan."
+                  />
                 )}
                 <p className="text-xs text-muted-foreground">
                   Hanya dosen dengan peran {SUPERVISOR_POSITION_LABELS[position]} yang ditampilkan. Satu pengajuan mengubah satu posisi.

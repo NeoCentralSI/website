@@ -9,6 +9,7 @@ import {
   type MonitoringEventAttention,
   type ThesisEventMonitoring,
 } from "@/services/monitoring.service";
+import { expectColumnFits } from "@/test/columnFit";
 import { ThesisEventMonitoringTab } from "./thesis-event-monitoring-tab";
 
 const role = vi.hoisted(() => ({ isAdmin: false, isDosen: true }));
@@ -285,6 +286,21 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
 
     fireEvent.change(screen.getByPlaceholderText("Cari nama atau NIM..."), { target: { value: "tidak ada" } });
     expect(await screen.findByText("Tidak ada seminar hasil yang cocok dengan pencarian atau filter.")).toBeInTheDocument();
+  });
+
+  it("Paket E6 (1): the longest status and date stay inside their cells", async () => {
+    const data = seminarData();
+    vi.mocked(getThesisEventMonitoring).mockResolvedValue({
+      ...data,
+      items: [event("verified", { id: "sem-verified", date: "2026-09-30T00:00:00.000Z", student: { name: "UJI LABEL TERPANJANG", nim: "2211529199" } })],
+    });
+    renderTab();
+    const table = await screen.findByRole("table");
+    await within(table).findByText("Uji Label Terpanjang");
+    const header = (name: string) => within(table).getByRole("columnheader", { name: new RegExp(name) });
+    const cells = within(within(table).getAllByRole("row")[1]).getAllByRole("cell");
+    expectColumnFits(header("Status"), cells[2], "Menunggu Penetapan Penguji");
+    expectColumnFits(header("Tanggal Pelaksanaan"), cells[3], "30 September 2026");
   });
 
   it("has no detail link for a viewer who may not open the seminar page", async () => {

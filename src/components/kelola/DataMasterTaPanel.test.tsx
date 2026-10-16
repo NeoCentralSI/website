@@ -81,6 +81,18 @@ describe("DataMasterTaPanel form", () => {
     vi.mocked(createMasterDataThesis).mockResolvedValue({});
   });
 
+  it("Paket E6 (2): the title is clamped to two lines with an ellipsis and the topic badge ends with one", async () => {
+    renderPanel();
+    const title = await screen.findByText("Sistem Informasi Tugas Akhir");
+    expect(title.className).toContain("line-clamp-2");
+    expect(title.className).toContain("whitespace-normal");
+    expect(title).toHaveAttribute("title", "Sistem Informasi Tugas Akhir");
+    const topic = screen.getByText("Tanpa Topik");
+    expect(topic.className).toContain("truncate");
+    expect(topic.className).toContain("inline-block");
+    expect(topic).toHaveAttribute("title", "Tanpa Topik");
+  });
+
   it("picks the student from a combobox searched by name or NIM and shows 'Nama (NIM)'", async () => {
     renderPanel();
     await screen.findByText("Sistem Informasi Tugas Akhir");

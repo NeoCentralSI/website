@@ -1,10 +1,8 @@
 import { getApiUrl } from '@/config/api';
 import { apiRequest } from '@/services/auth.service';
 import type {
-  DepartmentEvaluations,
   EvaluationInbox,
   SubmitEvaluationDto,
-  SupervisorEvaluations,
   ThesisGuidanceEvaluation,
   ThesisGuidanceEvaluationContext,
 } from '@/types/thesis-guidance-evaluation.types';
@@ -38,26 +36,6 @@ export async function getEvaluationContext(thesisId?: string): Promise<ThesisGui
 export async function submitEvaluation(dto: SubmitEvaluationDto) {
   const response = await apiRequest(getApiUrl(BASE), { method: 'POST', body: JSON.stringify(dto) });
   return parse<ThesisGuidanceEvaluation>(response, 'Gagal mengirim evaluasi bimbingan');
-}
-
-export async function getDepartmentEvaluations(params: {
-  scope: 'pending' | 'history';
-  search?: string;
-  page: number;
-  pageSize: number;
-}): Promise<DepartmentEvaluations> {
-  const query = new URLSearchParams({ scope: params.scope, page: String(params.page), pageSize: String(params.pageSize) });
-  if (params.search) query.set('search', params.search);
-  const response = await apiRequest(getApiUrl(`${BASE}/department?${query.toString()}`));
-  const body = (await response.json().catch(() => ({}))) as Partial<DepartmentEvaluations> & { message?: string };
-  if (!response.ok) throw new Error(body.message || 'Gagal memuat evaluasi bimbingan');
-  return { data: body.data ?? [], meta: body.meta ?? { page: 1, pageSize: params.pageSize, total: 0, totalPages: 1 } };
-}
-
-/** Paket E4 (4.3): evaluations due on the supervisor's theses and the evaluations they follow. */
-export async function getSupervisorEvaluations(): Promise<SupervisorEvaluations> {
-  const response = await apiRequest(getApiUrl(`${BASE}/lecturer`));
-  return (await parse<SupervisorEvaluations>(response, 'Gagal memuat evaluasi bimbingan')).data;
 }
 
 /** Tugas Akhir > Evaluasi (Ketua Departemen): one page sorted by status priority (Paket E5). */

@@ -13,6 +13,7 @@ import {
   useKadepDecision,
 } from '@/hooks/thesis-change-request/useThesisChangeRequest';
 import { DateTimeCell } from '@/lib/guidanceCells';
+import { ACTIONS_3_WIDTH, BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
 import { formatLecturerName, toTitleCaseName } from '@/lib/text';
 import {
   CHANGE_REQUEST_TRANSFER_LABEL,
@@ -30,7 +31,7 @@ import {
   ThesisChangeRequestSteps,
   ThesisChangeRequestSummary,
   ThesisChangeRequestTypeBadge,
-  ThesisChangeRequestViewStatusBadge,
+  ThesisChangeRequestRowStatus,
 } from './ThesisChangeRequestParts';
 import { summarizeChange } from './thesisChangeRequestGroups';
 
@@ -54,8 +55,11 @@ const KIND_OPTIONS: { label: string; value: ChangeRequestKindFilter | '' }[] = [
   { label: CHANGE_REQUEST_TRANSFER_LABEL, value: 'transfer' },
 ];
 
-/** Fixed widths except "Mahasiswa dan Perubahan", so the table fits 1366 px with the sidebar open. */
-const TABLE_CLASS = 'table-fixed min-w-[900px]';
+/**
+ * Fixed widths except "Mahasiswa dan Perubahan" (Paket E6, 1): the badge and date columns fit
+ * their longest text and the free-text column narrows instead; below 1000 px the table scrolls.
+ */
+const TABLE_CLASS = 'table-fixed min-w-[1000px]';
 
 const lecturerStepsDone = (request: ThesisChangeRequest) => request.currentStep === 'kadep';
 const studentName = (request: ThesisChangeRequest) => toTitleCaseName(request.student?.name) || 'mahasiswa';
@@ -140,6 +144,7 @@ export function ThesisChangeRequestTable() {
       // The summary sits under the student instead of a narrow column of its own (1.2).
       key: 'student',
       header: 'Mahasiswa dan Perubahan',
+      className: CLIP_CELL,
       render: (row) => {
         const summary = summarizeChange(row, formatLecturerName);
         return (
@@ -156,7 +161,8 @@ export function ThesisChangeRequestTable() {
     {
       key: 'kind',
       header: 'Jenis',
-      width: 160,
+      width: BADGE_COLUMN_WIDTH.changeKind,
+      className: CLIP_CELL,
       render: (row) => <ThesisChangeRequestTypeBadge request={row} />,
       filter: {
         type: 'select',
@@ -169,14 +175,16 @@ export function ThesisChangeRequestTable() {
       key: 'step',
       header: 'Langkah Berjalan',
       width: 150,
+      className: CLIP_CELL,
       render: (row) => <span className="block truncate text-sm" title={row.currentStep ? getChangeRequestStepLabel(row.currentStep) : undefined}>{row.currentStep ? getChangeRequestStepLabel(row.currentStep) : '-'}</span>,
     },
-    { key: 'createdAt', header: 'Tanggal', width: 120, render: (row) => <DateTimeCell date={row.createdAt} /> },
+    { key: 'createdAt', header: 'Tanggal', width: DATE_COLUMN_WIDTH, className: CLIP_CELL, render: (row) => <DateTimeCell date={row.createdAt} /> },
     {
       key: 'status',
       header: 'Status',
-      width: 200,
-      render: (row) => <ThesisChangeRequestViewStatusBadge status={row.viewStatus} />,
+      width: BADGE_COLUMN_WIDTH.decisionStatus,
+      className: CLIP_CELL,
+      render: (row) => <ThesisChangeRequestRowStatus status={row.viewStatus} blockReason={row.applyBlockReason} />,
       filter: {
         type: 'select',
         value: status,
@@ -187,7 +195,7 @@ export function ThesisChangeRequestTable() {
     {
       key: 'actions',
       header: 'Aksi',
-      width: 128,
+      width: ACTIONS_3_WIDTH,
       className: 'text-center',
       render: (row) => (
         <div className="flex items-center justify-center gap-1">
@@ -197,7 +205,14 @@ export function ThesisChangeRequestTable() {
           )}
           {row.status === 'pending' && !row.batchId && lecturerStepsDone(row) && (
             <>
-              <TableIconAction icon={Check} label="Setujui" tone="approve" onClick={() => decideAsKadep(row, true)} />
+              <TableIconAction
+                icon={Check}
+                label="Setujui"
+                tone="approve"
+                disabled={!!row.applyBlockReason}
+                disabledReason={row.applyBlockReason}
+                onClick={() => decideAsKadep(row, true)}
+              />
               <TableIconAction icon={X} label="Tolak" onClick={() => decideAsKadep(row, false)} />
             </>
           )}
@@ -247,13 +262,17 @@ export function ThesisChangeRequestTable() {
         description={detail ? `${toTitleCaseName(detail.student?.name) || '-'} · ${detail.student?.identityNumber ?? '-'}` : undefined}
         footer={detail && detailCanDecide ? (
           <>
-            {!lecturerStepsDone(detail) && (
+            {detail.applyBlockReason ? (
+              <span className="mr-auto text-xs text-destructive">{detail.applyBlockReason}</span>
+            ) : !lecturerStepsDone(detail) && (
               <span className="mr-auto text-xs text-amber-700">
                 Langkah dosen belum selesai. Anda tetap dapat memutuskan langsung dengan alasan.
               </span>
             )}
             <Button size="sm" variant="outline" onClick={() => decideAsKadep(detail, false)}>Tolak</Button>
-            <Button size="sm" onClick={() => decideAsKadep(detail, true)}>Setujui</Button>
+            <span title={detail.applyBlockReason ?? undefined}>
+              <Button size="sm" disabled={!!detail.applyBlockReason} onClick={() => decideAsKadep(detail, true)}>Setujui</Button>
+            </span>
           </>
         ) : undefined}
       >
@@ -304,7 +323,7 @@ export function ThesisChangeRequestTable() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <ThesisChangeRequestViewStatusBadge status={request.viewStatus} />
+                <ThesisChangeRequestRowStatus status={request.viewStatus} blockReason={request.applyBlockReason} />
                 <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(request)} />
               </div>
             </li>

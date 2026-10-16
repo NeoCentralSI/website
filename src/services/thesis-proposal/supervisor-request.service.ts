@@ -12,7 +12,7 @@ import type {
   SupervisorRequestInput,
 } from '@/types/thesis-proposal.types';
 import { getApiUrl } from '@/config/api';
-import type { LecturerInboxKind } from '@/lib/thesisLabels';
+import type { LecturerInboxJenis } from '@/lib/thesisLabels';
 import { apiRequest } from '@/services/auth.service';
 import { getJson, parse, send } from './api';
 
@@ -34,7 +34,7 @@ export const getLecturerInbox = () =>
   getJson<LecturerInbox>(`${BASE}/supervisor-requests/inbox`, 'Gagal memuat permohonan pembimbing');
 /** Tugas Akhir > Permohonan (Paket E5): Pengajuan Pembimbing and the lecturer's Perubahan TA steps. */
 export async function getLecturerApprovalInbox(params: {
-  kind?: LecturerInboxKind;
+  kind?: LecturerInboxJenis;
   status?: string;
   search?: string;
   page: number;

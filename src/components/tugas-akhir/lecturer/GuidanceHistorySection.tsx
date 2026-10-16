@@ -43,7 +43,8 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
     );
 
     return (
-        <Card>
+        // Paket E6 (5): fills its column so it is as tall as Milestone beside it.
+        <Card className="flex-1">
             <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base">
                     <History className="h-4 w-4" />

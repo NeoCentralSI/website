@@ -55,6 +55,8 @@ export interface ThesisChangeRequest {
   decision: { by: ChangeRequestPerson | null; notes: string | null; at: string } | null;
   appliedAt: string | null;
   createdAt: string;
+  /** Paket E6: why this open request may not be approved now (K34, K8); null when it may. */
+  applyBlockReason?: string | null;
   /** Only sent to the new supervisor and the Ketua Departemen. */
   newSupervisorLoad?: SupervisorLoad | null;
   viewer: { canDecideAsLecturer: boolean; canCancel: boolean };
@@ -73,6 +75,11 @@ export interface ThesisChangeContext {
   canSubmit: boolean;
   /** Why "Ajukan Perubahan" is disabled; null when it is available. */
   blockReason: string | null;
+  /**
+   * K34 (Paket E6): why each kind cannot be submitted now (null when it can); the kind choice of
+   * "Ajukan Perubahan" disables a blocked kind with its reason.
+   */
+  typeBlocks?: Record<ChangeRequestType, string | null>;
   openRequest: ThesisChangeRequest | null;
   history: ThesisChangeRequest[];
 }
@@ -82,6 +89,8 @@ export interface SupervisorOption {
   name: string;
   identityNumber: string | null;
   positions: SupervisorPosition[];
+  /** Paket E6 (4): shown at the right of the option in the searchable picker. */
+  load?: SupervisorLoad | null;
 }
 
 export interface SubmitChangeRequestDto {
@@ -105,12 +114,6 @@ export interface ChangeDecisionDto {
   notes?: string | null;
 }
 
-export interface LecturerChangeRequests {
-  awaitingMe: ThesisChangeRequest[];
-  inProgress: ThesisChangeRequest[];
-  history: ThesisChangeRequest[];
-}
-
 /** A row of a change-request table, with the status it shows this viewer (Paket E5, 1.5). */
 export type ThesisChangeRequestRow = ThesisChangeRequest & { viewStatus: ChangeRequestViewStatus };
 
@@ -125,11 +128,6 @@ export interface ChangeRequestInbox {
   data: ThesisChangeRequestRow[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };
   counts: { awaitingDecision: number; inProgress: number };
-}
-
-export interface DepartmentChangeRequests {
-  data: ThesisChangeRequest[];
-  meta: { page: number; pageSize: number; total: number; totalPages: number };
 }
 
 export interface BatchDecisionResult {

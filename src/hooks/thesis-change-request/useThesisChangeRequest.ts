@@ -13,9 +13,6 @@ import type { ChangeRequestViewStatus, SupervisorPosition } from '@/lib/thesisLa
 export const thesisChangeRequestKeys = {
   all: ['thesis-change-requests'] as const,
   context: (thesisId?: string) => ['thesis-change-requests', 'context', thesisId ?? 'mine'] as const,
-  lecturer: () => ['thesis-change-requests', 'lecturer'] as const,
-  department: (scope: string, search: string, page: number, pageSize: number) =>
-    ['thesis-change-requests', 'department', scope, search, page, pageSize] as const,
   supervisorOptions: (position?: SupervisorPosition) => ['thesis-change-requests', 'supervisor-options', position ?? 'all'] as const,
   inbox: (params: object) => ['thesis-change-requests', 'inbox', params] as const,
 };
@@ -34,19 +31,6 @@ export function useSupervisorOptions(position?: SupervisorPosition, enabled = tr
     queryFn: () => service.getSupervisorOptions(position),
     enabled,
     staleTime: 5 * 60_000,
-  });
-}
-
-export function useLecturerChangeRequests(enabled = true) {
-  return useQuery({ queryKey: thesisChangeRequestKeys.lecturer(), queryFn: service.getLecturerChangeRequests, enabled });
-}
-
-export function useDepartmentChangeRequests(params: { scope: 'pending' | 'history'; search: string; page: number; pageSize: number }, enabled = true) {
-  return useQuery({
-    queryKey: thesisChangeRequestKeys.department(params.scope, params.search, params.page, params.pageSize),
-    queryFn: () => service.getDepartmentChangeRequests({ ...params, search: params.search || undefined }),
-    placeholderData: (previous) => previous,
-    enabled,
   });
 }
 

@@ -13,10 +13,10 @@ import { LecturerProposalRevisionCard } from "@/components/thesis-proposal/Lectu
 import { ThesisActionBlockedAlert } from "@/components/thesis/ThesisActionBlockedAlert";
 import { GuidanceHistorySection } from "@/components/tugas-akhir/lecturer/GuidanceHistorySection";
 import { StudentDetailActionRibbon } from "@/components/tugas-akhir/lecturer/StudentDetailActionRibbon";
-import { StudentDetailHeader, type SummarySupervisor } from "@/components/tugas-akhir/lecturer/StudentDetailHeader";
+import { StudentDetailHeader } from "@/components/tugas-akhir/lecturer/StudentDetailHeader";
 import { StudentDocumentsCard } from "@/components/tugas-akhir/lecturer/StudentDocumentsCard";
 import { StudentMilestoneCard } from "@/components/tugas-akhir/lecturer/StudentMilestoneCard";
-import { StudentThesisSummaryCard } from "@/components/tugas-akhir/lecturer/StudentThesisSummaryCard";
+import { StudentThesisSummaryCard, type SummarySupervisor } from "@/components/tugas-akhir/lecturer/StudentThesisSummaryCard";
 import { DETAIL_SECTIONS, getStudentDetailActionItems } from "@/components/tugas-akhir/lecturer/studentDetailPending";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import EmptyState from "@/components/ui/empty-state";
@@ -35,9 +35,10 @@ const MY_STUDENTS_PATH = "/tugas-akhir/bimbingan/lecturer/my-students";
 const NO_LONGER_SUPERVISING_REASON = "Anda tidak lagi membimbing mahasiswa ini. Halaman ini hanya dapat dibaca.";
 
 /**
- * Bimbingan > Mahasiswa > detail (supervisor), one compact page (Paket E4, 5): header with the
- * supervisors and the "Perlu tindakan Anda" ribbon; Informasi Tugas Akhir in one row of cards;
- * Milestone | Riwayat Bimbingan; Kesiapan Seminar | Kesiapan Sidang; Evaluasi | Perubahan.
+ * Bimbingan > Mahasiswa > detail (supervisor), one compact page (Paket E4, 5; Paket E6, 5):
+ * header with the name and NIM and the "Perlu tindakan Anda" ribbon; one "Informasi Tugas
+ * Akhir" card (title, topic, supervisors, supervision time, activity, progress); Milestone |
+ * Riwayat Bimbingan of equal height; Kesiapan Seminar | Kesiapan Sidang; Evaluasi | Perubahan.
  */
 export default function LecturerMyStudentDetailPage() {
     const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -111,7 +112,7 @@ export default function LecturerMyStudentDetailPage() {
         }
     }, [detailData, setBreadcrumbs]);
 
-    // Supervisors for the header: the change context knows the positions; the readiness
+    // Supervisors for the information card: the change context knows the positions; the readiness
     // status is the fallback while it loads or when it has no thesis.
     const supervisors = useMemo<SummarySupervisor[]>(() => {
         const fromContext = changeContext?.thesis?.supervisors ?? [];
@@ -169,7 +170,6 @@ export default function LecturerMyStudentDetailPage() {
                 <StudentDetailHeader
                     student={detailData.student}
                     status={detailData.status}
-                    supervisors={supervisors}
                     onRefresh={() => void refetch()}
                     isRefreshing={isFetching && !isLoading}
                 />
@@ -197,10 +197,11 @@ export default function LecturerMyStudentDetailPage() {
 
             {!isReadOnly && <ThesisActionBlockedAlert reason={actionBlockReason} />}
 
-            {/* 2. Informasi Tugas Akhir, one row of small cards */}
+            {/* 2. Informasi Tugas Akhir, one card */}
             <StudentThesisSummaryCard
                 detail={detailData}
                 topicName={changeContext?.thesis?.topic?.name}
+                supervisors={supervisors}
                 guidanceProgress={readinessStatus?.guidanceProgress}
             />
 
@@ -210,8 +211,9 @@ export default function LecturerMyStudentDetailPage() {
                     <LecturerProposalRevisionCard thesisId={thesisId} />
                 </section>
             )}
-            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-                <section id={DETAIL_SECTIONS.milestone} className="min-w-0 scroll-mt-6">
+            {/* Paket E6 (5): both columns stretch to the same height; each list scrolls inside. */}
+            <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+                <section id={DETAIL_SECTIONS.milestone} className="flex min-w-0 scroll-mt-6 flex-col">
                     <StudentMilestoneCard
                         thesisId={thesisId}
                         milestones={phaseMilestones}
@@ -222,7 +224,7 @@ export default function LecturerMyStudentDetailPage() {
                         readOnlyPhase={otherPhase}
                     />
                 </section>
-                <section className="min-w-0">
+                <section className="flex min-w-0 flex-col">
                     <GuidanceHistorySection guidanceHistory={detailData.guidanceHistory} />
                 </section>
             </div>

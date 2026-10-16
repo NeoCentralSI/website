@@ -15,6 +15,7 @@ import type {
   StudentSupervisorRequests,
   SupervisorRequest,
 } from '@/types/thesis-proposal.types';
+import { expectColumnFits } from '@/test/columnFit';
 import { KadepSupervisorRequestQueue } from './KadepSupervisorRequestQueue';
 import { LecturerApprovalInboxTable } from './LecturerApprovalInboxTable';
 import { getSubmitBlockReason } from './StudentSupervisorRequestForm';
@@ -252,10 +253,10 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
       'Mahasiswa', 'Jenis', 'Usulan', 'Tanggal Masuk', 'Status', 'Aksi',
     ]);
     const rows = within(table).getAllByRole('row').slice(1);
-    expect(within(rows[0]).getByText('Pengajuan Pembimbing')).toBeInTheDocument();
-    expect(within(rows[0]).getByText('Pilih Dosen Sendiri')).toBeInTheDocument();
+    // Paket E6 (3): Jenis is one badge; the details stay in Usulan.
+    expect(within(rows[0]).getAllByRole('cell')[1]).toHaveTextContent(/^Pengajuan Pembimbing$/);
     expect(within(rows[0]).getByText('Menunggu Dosen')).toBeInTheDocument();
-    expect(within(rows[1]).getByText('Perubahan TA')).toBeInTheDocument();
+    expect(within(rows[1]).getAllByRole('cell')[1]).toHaveTextContent(/^Perubahan Pembimbing$/);
     expect(within(rows[1]).getByText('Pembimbing 1: Husnil Kamil → Aina Hubby')).toBeInTheDocument();
     expect(within(rows[1]).getByText('Menunggu Persetujuan Anda')).toBeInTheDocument();
     // A long status is short in the cell, the full label in its tooltip (1.2).
@@ -264,16 +265,42 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
     expect(screen.queryByRole('combobox', { name: /Filter/ })).not.toBeInTheDocument();
 
     openMenu(within(screen.getByRole('columnheader', { name: /Jenis/ })).getByRole('button'));
-    expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual(['Semua', 'Pengajuan Pembimbing', 'Perubahan TA']);
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Perubahan TA' }));
-    await waitFor(() => expect(requests.getLecturerApprovalInbox).toHaveBeenLastCalledWith({ kind: 'change_request', status: undefined, search: undefined, page: 1, pageSize: 10 }));
+    expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
+      'Semua', 'Pengajuan Pembimbing', 'Perubahan Judul', 'Perubahan Pembimbing', 'Perubahan Judul & Pembimbing',
+    ]);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Perubahan Pembimbing' }));
+    await waitFor(() => expect(requests.getLecturerApprovalInbox).toHaveBeenLastCalledWith({ kind: 'change_supervisor', status: undefined, search: undefined, page: 1, pageSize: 10 }));
 
     openMenu(within(screen.getByRole('columnheader', { name: /Status/ })).getByRole('button'));
     expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
       'Semua', 'Menunggu Persetujuan Anda', 'Sedang Berjalan', 'Disetujui', 'Ditolak', 'Dibatalkan',
     ]);
     fireEvent.click(screen.getByRole('menuitem', { name: 'Menunggu Persetujuan Anda' }));
-    await waitFor(() => expect(requests.getLecturerApprovalInbox).toHaveBeenLastCalledWith({ kind: 'change_request', status: 'awaiting_me', search: undefined, page: 1, pageSize: 10 }));
+    await waitFor(() => expect(requests.getLecturerApprovalInbox).toHaveBeenLastCalledWith({ kind: 'change_supervisor', status: 'awaiting_me', search: undefined, page: 1, pageSize: 10 }));
+  });
+
+  it('Paket E6 (1): the longest jenis, status and date stay inside their cells', async () => {
+    vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([
+      changeRow({ requestType: 'both', title: { previous: 'Lama', next: 'Baru', newTopic: null }, createdAt: '2026-09-30T03:00:00.000Z' }),
+    ]));
+    wrap(<LecturerApprovalInboxTable />);
+    await screen.findByText('Nabil Rizki');
+    const table = screen.getByRole('table');
+    const header = (name: string) => within(table).getByRole('columnheader', { name: new RegExp(`^${name}`) });
+    const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
+    expectColumnFits(header('Jenis'), cells[1], 'Perubahan Judul & Pembimbing');
+    expectColumnFits(header('Tanggal Masuk'), cells[3], '30 September 2026');
+    expectColumnFits(header('Status'), cells[4], 'Menunggu Persetujuan Anda');
+  });
+
+  it('Paket E6 (6): a change step the rules block now is marked, and Setujui waits with the reason', async () => {
+    const reason = 'Pengajuan ini tidak dapat disetujui saat ini. Perubahan judul tidak dapat diajukan selama seminar hasil sedang berproses. Pengajuan tetap menunggu dan dapat ditolak.';
+    vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([changeRow({ applyBlockReason: reason })]));
+    wrap(<LecturerApprovalInboxTable />);
+    const tableRow = (await screen.findByText('Nabil Rizki')).closest('tr')!;
+    expect(within(tableRow).getByText('Terblokir')).toHaveAttribute('title', reason);
+    expect(within(tableRow).getByRole('button', { name: 'Setujui' })).toBeDisabled();
+    expect(within(tableRow).getByRole('button', { name: 'Tolak' })).toBeEnabled();
   });
 
   it('approves the lecturer\'s own Perubahan TA step from the row', async () => {

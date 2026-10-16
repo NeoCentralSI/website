@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import * as service from '@/services/thesis-proposal/supervisor-request.service';
-import type { LecturerInboxKind } from '@/lib/thesisLabels';
+import type { LecturerInboxJenis } from '@/lib/thesisLabels';
 import type { KadepDecisionDto, LecturerResponseDto, SupervisorRequestInput } from '@/types/thesis-proposal.types';
 
 export const supervisorRequestKeys = {
@@ -33,7 +33,7 @@ export function useLecturerSupervisorInbox(enabled = true) {
  * sorted by status priority; the old page stays while the next loads.
  */
 export function useLecturerApprovalInbox(
-  params: { kind?: LecturerInboxKind; status?: string; search?: string; page: number; pageSize: number },
+  params: { kind?: LecturerInboxJenis; status?: string; search?: string; page: number; pageSize: number },
   enabled = true,
 ) {
   return useQuery({

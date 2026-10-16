@@ -132,25 +132,29 @@ describe("LecturerMyStudentDetailPage (Paket E4, 5: one compact page)", () => {
     mockQueries();
   });
 
-  it("has no tabs: header with the supervisors, one row of info cards, then every section in order", async () => {
+  it("has no tabs: a quiet header, one Informasi Tugas Akhir card, then every section in order (Paket E6, 5)", async () => {
     mockQueries({ change: CHANGE_CONTEXT });
     const { container } = renderPage();
 
     expect(await screen.findByRole("heading", { name: "Ilham Nofaldi" })).toBeInTheDocument();
-    expect(screen.getByText(/2211522028/)).toBeInTheDocument();
+    // The subtitle is the NIM only: no email, no supervisors in the header.
+    expect(screen.getByText("2211522028")).toBeInTheDocument();
+    expect(screen.queryByText(/ilham@example\.test/)).not.toBeInTheDocument();
     expect(screen.getByText("Penelitian")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Kembali ke Mahasiswa Bimbingan" })).toHaveAttribute("href", "/tugas-akhir/bimbingan/lecturer/my-students");
-    // Supervisors in the header.
-    expect(screen.getByText("Husnil Kamil")).toBeInTheDocument();
-    expect(screen.getByText("Ricky Akbar")).toBeInTheDocument();
     for (const name of ["Progres", "Kesiapan Seminar & Sidang", "Evaluasi & Perubahan"]) {
       expect(screen.queryByRole("button", { name: new RegExp(`^${name}`) })).not.toBeInTheDocument();
     }
 
     const info = screen.getByRole("region", { name: "Informasi Tugas Akhir" });
-    for (const label of ["Judul", "Topik", "Masa Bimbingan", "Aktivitas", "Progres bimbingan", "Progres milestone"]) {
+    expect(within(info).getByText("Informasi Tugas Akhir")).toBeInTheDocument();
+    for (const label of ["Judul", "Topik", "Pembimbing 1", "Pembimbing 2", "Masa Bimbingan", "Aktivitas", "Progres bimbingan", "Progres milestone"]) {
       expect(within(info).getByText(label)).toBeInTheDocument();
     }
+    // The supervisors are in the card.
+    expect(within(info).getByText("Husnil Kamil")).toBeInTheDocument();
+    expect(within(info).getByText("Ricky Akbar")).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-slot="card"]').length).toBeGreaterThan(0);
     expect(within(info).getByText("5 dari 8 sesi")).toBeInTheDocument();
     expect(within(info).getByText("1 dari 3 milestone")).toBeInTheDocument();
     expect(within(info).getByText("Sistem Informasi")).toBeInTheDocument();
@@ -159,6 +163,16 @@ describe("LecturerMyStudentDetailPage (Paket E4, 5: one compact page)", () => {
     const ids = [...container.querySelectorAll("section[id]")].map((section) => section.id);
     expect(ids).toEqual([DETAIL_SECTIONS.milestone, DETAIL_SECTIONS.readiness, DETAIL_SECTIONS.evaluation, DETAIL_SECTIONS.change]);
     expect(screen.getByText("Riwayat Bimbingan")).toBeInTheDocument();
+    // Paket E6 (5): Milestone and Riwayat Bimbingan stretch to the same height, each card fills
+    // its column and scrolls its list inside at the same maximum height.
+    const pair = container.querySelector(`#${DETAIL_SECTIONS.milestone}`)!.parentElement!;
+    expect(pair.className).toContain("items-stretch");
+    for (const column of [...pair.children]) {
+      expect(column.className).toContain("flex-col");
+      expect(column.firstElementChild!.className).toContain("flex-1");
+    }
+    // The milestone list scrolls at the shared maximum height (the guidance list too, once it has sessions).
+    expect(pair.querySelector(`#${DETAIL_SECTIONS.milestone} .max-h-150`)).not.toBeNull();
     expect(screen.getByTestId("seminar-readiness")).toBeInTheDocument();
     expect(screen.getByTestId("defence-readiness")).toBeInTheDocument();
     expect(screen.getByTestId("evaluation-card")).toBeInTheDocument();

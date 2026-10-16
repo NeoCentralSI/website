@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { toTitleCaseName } from "@/lib/text";
 import { DateTimeCell, TruncatedText } from "@/lib/guidanceCells";
+import { CLIP_CELL, DATE_COLUMN_WIDTH } from "@/lib/tableColumnWidths";
 import { useClientTable } from "@/hooks/shared/useClientTable";
 import {
   getSupervisor2Requests,
@@ -91,10 +92,11 @@ export function Supervisor2RequestsSection() {
       key: "student",
       header: "Mahasiswa",
       width: 200,
+      className: CLIP_CELL,
       render: (row) => <ThesisStudentInfoCell name={row.studentName} nim={row.studentNim ?? ""} />,
     },
     { key: "title", header: "Judul", render: (row) => <TruncatedText text={row.thesisTitle} className="max-w-full" /> },
-    { key: "requestedAt", header: "Tanggal Masuk", width: 120, render: (row) => <DateTimeCell date={row.requestedAt} /> },
+    { key: "requestedAt", header: "Tanggal Masuk", width: DATE_COLUMN_WIDTH, className: CLIP_CELL, render: (row) => <DateTimeCell date={row.requestedAt} /> },
     {
       key: "actions",
       header: "Aksi",

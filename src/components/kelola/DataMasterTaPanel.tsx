@@ -268,17 +268,17 @@ export function DataMasterTaPanel() {
         {
             key: "title",
             header: "Judul / Topik",
+            // Paket E6 (2): the title wraps to two lines with an ellipsis (the cell is nowrap by
+            // default), the topic badge ends with an ellipsis; both keep the full text in `title`.
             render: (t) => (
                 <div className="min-w-[180px] max-w-[260px]">
-                    <div className="line-clamp-2 text-sm">{t.title || "-"}</div>
+                    <div className="line-clamp-2 whitespace-normal break-words text-sm" title={t.title || undefined}>{t.title || "-"}</div>
                     <Badge
                         variant="outline"
-                        className="mt-1 max-w-full overflow-hidden text-xs"
+                        className="mt-1 inline-block max-w-full truncate align-top text-xs"
                         title={t.topic?.name || "Tanpa Topik"}
                     >
-                        <span className="min-w-0 truncate">
-                            {t.topic?.name || "Tanpa Topik"}
-                        </span>
+                        {t.topic?.name || "Tanpa Topik"}
                     </Badge>
                 </div>
             )

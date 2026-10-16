@@ -10,19 +10,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchableCombobox } from '@/components/shared/SearchableCombobox';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useSubmitTransfer, useSupervisorOptions } from '@/hooks/thesis-change-request/useThesisChangeRequest';
-import { toTitleCaseName, formatLecturerName } from '@/lib/text';
+import { toTitleCaseName } from '@/lib/text';
 import { SUPERVISOR_POSITION_LABELS, type SupervisorPosition } from '@/lib/thesisLabels';
 import type { MyStudentItem } from '@/services/lecturerGuidance.service';
+import { toSupervisorComboboxOptions } from './supervisorOptions';
 
 export interface TransferStudent {
   thesisId: string;
@@ -128,18 +123,19 @@ export function LecturerTransferStudentsDialog({ open, onOpenChange, students, c
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="transfer-target">Dosen tujuan</Label>
+            <Label>Dosen tujuan</Label>
             {isLoading ? (
               <Spinner className="h-5 w-5" />
             ) : (
-              <Select value={targetId} onValueChange={setTargetId}>
-                <SelectTrigger id="transfer-target"><SelectValue placeholder="Pilih dosen" /></SelectTrigger>
-                <SelectContent>
-                  {candidates.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>{formatLecturerName(option.name)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                ariaLabel="Dosen tujuan"
+                options={toSupervisorComboboxOptions(candidates)}
+                value={targetId}
+                onChange={setTargetId}
+                placeholder="Pilih dosen"
+                searchPlaceholder="Cari nama atau NIP..."
+                emptyText="Dosen tidak ditemukan."
+              />
             )}
             <p className="text-xs text-muted-foreground">
               Hanya dosen yang memiliki peran {positions.map((position) => SUPERVISOR_POSITION_LABELS[position]).join(' dan ') || 'pembimbing'} yang ditampilkan.

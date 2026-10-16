@@ -10,7 +10,9 @@ import {
   type ThesisEventStatus,
 } from "@/components/shared/ThesisEventStatusBadge";
 import { ThesisStudentInfoCell } from "@/components/shared/ThesisTableCells";
+import { BADGE_COLUMN_WIDTH, CLIP_CELL } from "@/lib/tableColumnWidths";
 import { formatDateShortId } from "@/lib/text";
+import { cn } from "@/lib/utils";
 import { THESIS_EVENT_DETAIL_PATH, timeRangeText } from "@/lib/thesis-event-schedule";
 import type { MonitoringEvent, ThesisEventKind } from "@/services/monitoring.service";
 import { THESIS_EVENT_COPY } from "./thesis-event-copy";
@@ -77,11 +79,13 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
       key: "student",
       header: "Mahasiswa",
       width: 200,
+      className: CLIP_CELL,
       render: (event) => <ThesisStudentInfoCell name={event.student.name ?? ""} nim={event.student.nim ?? ""} />,
     },
     {
       key: "title",
       header: "Judul",
+      className: CLIP_CELL,
       render: (event) => (
         <span className="block whitespace-normal break-words text-sm line-clamp-2" title={event.title ?? undefined}>{event.title || "-"}</span>
       ),
@@ -89,7 +93,8 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
     {
       key: "status",
       header: "Status",
-      width: 190,
+      width: BADGE_COLUMN_WIDTH.thesisEventStatus,
+      className: CLIP_CELL,
       filter: {
         type: "select",
         value: status,
@@ -108,7 +113,9 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
     {
       key: "date",
       header: "Tanggal Pelaksanaan",
-      width: 150,
+      // The header itself needs 168 px; a date needs 157 px.
+      width: 170,
+      className: CLIP_CELL,
       render: (event) =>
         event.date ? (
           <div className="whitespace-nowrap text-sm">
@@ -123,7 +130,7 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
       key: "finalScore",
       header: "Nilai Akhir",
       width: 110,
-      className: "text-center",
+      className: cn("text-center", CLIP_CELL),
       render: (event) => (
         <span className="whitespace-nowrap text-sm">
           {event.finalScore != null ? `${scoreFormat.format(event.finalScore)}${event.grade ? ` (${event.grade})` : ""}` : "-"}

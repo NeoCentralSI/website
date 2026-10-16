@@ -28,6 +28,29 @@ export function ThesisChangeRequestViewStatusBadge({ status }: { status: ChangeR
   );
 }
 
+/**
+ * Paket E6: an open request the rules block from being approved now (e.g. the seminar was
+ * registered after it was sent); the reason is the tooltip.
+ */
+export function ThesisChangeRequestBlockedBadge({ reason }: { reason: string | null | undefined }) {
+  if (!reason) return null;
+  return (
+    <Badge variant="destructive" className="whitespace-nowrap" title={reason}>
+      Terblokir
+    </Badge>
+  );
+}
+
+/** The row status, with the "Terblokir" marker under it while approving is blocked (Paket E6). */
+export function ThesisChangeRequestRowStatus({ status, blockReason }: { status: ChangeRequestViewStatus; blockReason?: string | null }) {
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <ThesisChangeRequestViewStatusBadge status={status} />
+      <ThesisChangeRequestBlockedBadge reason={blockReason} />
+    </div>
+  );
+}
+
 export function ThesisChangeRequestTypeBadge({ request }: { request: ThesisChangeRequest }) {
   return <Badge variant="secondary" className="whitespace-nowrap">{getChangeRequestKindLabel(request)}</Badge>;
 }

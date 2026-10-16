@@ -11,6 +11,7 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { usePagedSearch } from '@/hooks/shared/usePagedSearch';
 import { useEvaluationInbox } from '@/hooks/thesis-guidance-evaluation/useThesisGuidanceEvaluation';
 import { DateTimeCell } from '@/lib/guidanceCells';
+import { ACTIONS_3_WIDTH, BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
 import { toTitleCaseName } from '@/lib/text';
 import {
   GUIDANCE_EVALUATION_RECOMMENDATION_EFFECTS,
@@ -33,8 +34,12 @@ const STATUS_OPTIONS: { label: string; value: GuidanceEvaluationViewStatus | '' 
   })),
 ];
 
-/** Fixed widths except "Keputusan Pembimbing", so the table fits 1366 px with the sidebar open. */
-const TABLE_CLASS = 'table-fixed min-w-[960px]';
+/**
+ * Fixed widths except "Keputusan Pembimbing" (Paket E6, 1): the badge and date columns fit their
+ * longest text and the free-text column narrows instead; the masa bimbingan sits under the
+ * stage. Below 1000 px the table scrolls.
+ */
+const TABLE_CLASS = 'table-fixed min-w-[1000px]';
 
 function ClampedText({ text }: { text: string }) {
   return <span className="block whitespace-normal break-words text-sm line-clamp-2" title={text}>{text}</span>;
@@ -62,31 +67,37 @@ export function ThesisGuidanceEvaluationTable() {
     {
       key: 'student',
       header: 'Mahasiswa',
-      width: 200,
+      width: 190,
+      className: CLIP_CELL,
       render: (row) => <ThesisStudentInfoCell name={row.student?.name ?? ''} nim={row.student?.identityNumber ?? ''} />,
     },
     {
+      // The masa bimbingan sits under the stage instead of a narrow column of its own.
       key: 'stage',
       header: 'Tahap',
-      width: 160,
-      render: (row) => <ClampedText text={getGuidanceEvaluationStageLabel(row.stage)} />,
+      width: 170,
+      className: CLIP_CELL,
+      render: (row) => (
+        <div className="min-w-0 space-y-0.5">
+          <ClampedText text={getGuidanceEvaluationStageLabel(row.stage)} />
+          <p className="truncate text-xs text-muted-foreground">
+            Masa bimbingan {row.basis.elapsedDays === null ? '-' : `${row.basis.elapsedDays} hari`}
+          </p>
+        </div>
+      ),
     },
     {
       key: 'recommendation',
       header: 'Keputusan Pembimbing',
+      className: CLIP_CELL,
       render: (row) => <ClampedText text={getGuidanceEvaluationRecommendationLabel(row.recommendation)} />,
     },
-    {
-      key: 'supervision',
-      header: 'Masa Bimbingan',
-      width: 120,
-      render: (row) => <span className="whitespace-nowrap text-sm">{row.basis.elapsedDays === null ? '-' : `${row.basis.elapsedDays} hari`}</span>,
-    },
-    { key: 'date', header: 'Tanggal', width: 120, render: (row) => <DateTimeCell date={row.createdAt} /> },
+    { key: 'date', header: 'Tanggal', width: DATE_COLUMN_WIDTH, className: CLIP_CELL, render: (row) => <DateTimeCell date={row.createdAt} /> },
     {
       key: 'status',
       header: 'Status',
-      width: 200,
+      width: BADGE_COLUMN_WIDTH.decisionStatus,
+      className: CLIP_CELL,
       render: (row) => (
         <Badge variant={GUIDANCE_EVALUATION_VIEW_STATUS_VARIANTS[row.viewStatus] ?? 'outline'} className="whitespace-nowrap">
           {GUIDANCE_EVALUATION_VIEW_STATUS_LABELS[row.viewStatus] ?? row.viewStatus}
@@ -102,7 +113,7 @@ export function ThesisGuidanceEvaluationTable() {
     {
       key: 'actions',
       header: 'Aksi',
-      width: 128,
+      width: ACTIONS_3_WIDTH,
       className: 'text-center',
       render: (row) => (
         <div className="flex items-center justify-center gap-1">

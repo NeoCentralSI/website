@@ -5,8 +5,6 @@ import type {
   ChangeDecisionDto,
   ChangeRequestInbox,
   ChangeRequestKindFilter,
-  DepartmentChangeRequests,
-  LecturerChangeRequests,
   SubmitChangeRequestDto,
   SubmitTransferDto,
   SupervisorOption,
@@ -57,31 +55,12 @@ export async function submitTransfer(dto: SubmitTransferDto) {
   return parse<{ batchId: string; requests: ThesisChangeRequest[] }>(await post('/transfer', dto), 'Gagal mengajukan pengalihan mahasiswa');
 }
 
-export async function getLecturerChangeRequests(): Promise<LecturerChangeRequests> {
-  const response = await apiRequest(getApiUrl(`${BASE}/lecturer`));
-  return (await parse<LecturerChangeRequests>(response, 'Gagal memuat pengajuan perubahan')).data;
-}
-
 export async function decideAsLecturer(requestId: string, dto: ChangeDecisionDto) {
   return parse<ThesisChangeRequest>(await post(`/${requestId}/lecturer-decision`, dto), 'Gagal menyimpan keputusan');
 }
 
 export async function cancelChangeRequest(requestId: string) {
   return parse<ThesisChangeRequest>(await post(`/${requestId}/cancel`), 'Gagal membatalkan pengajuan');
-}
-
-export async function getDepartmentChangeRequests(params: {
-  scope: 'pending' | 'history';
-  search?: string;
-  page: number;
-  pageSize: number;
-}): Promise<DepartmentChangeRequests> {
-  const query = new URLSearchParams({ scope: params.scope, page: String(params.page), pageSize: String(params.pageSize) });
-  if (params.search) query.set('search', params.search);
-  const response = await apiRequest(getApiUrl(`${BASE}/department?${query.toString()}`));
-  const body = (await response.json().catch(() => ({}))) as Partial<DepartmentChangeRequests> & { message?: string };
-  if (!response.ok) throw new Error(body.message || 'Gagal memuat pengajuan perubahan');
-  return { data: body.data ?? [], meta: body.meta ?? { page: 1, pageSize: params.pageSize, total: 0, totalPages: 1 } };
 }
 
 /** Tugas Akhir > Perubahan (Ketua Departemen): one page sorted by status priority (Paket E5). */

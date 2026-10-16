@@ -72,22 +72,6 @@ export interface SubmitEvaluationDto {
   notes?: string | null;
 }
 
-export interface DepartmentEvaluations {
-  data: ThesisGuidanceEvaluation[];
-  meta: { page: number; pageSize: number; total: number; totalPages: number };
-}
-
-/** Paket E4 (4.3): a supervised thesis whose evaluation is due and not filled yet. */
-export interface SupervisorEvaluationDue {
-  thesis: { id: string; title: string | null; status: ThesisLifecycleStatus; student: EvaluationPerson | null };
-  viewerRole: ThesisGuidanceEvaluationContext['viewerRole'];
-  stage: EvaluationDue;
-  supervision: { startedAt: string | null; elapsedDays: number | null; elapsedLabel: string | null };
-  canSubmit: boolean;
-  /** Why "Isi Evaluasi" is disabled for this viewer (e.g. only Pembimbing 1 fills it). */
-  blockReason: string | null;
-}
-
 /** A row of the Ketua Departemen's Evaluasi table, with its row status (Paket E5). */
 export type EvaluationInboxRow = ThesisGuidanceEvaluation & { viewStatus: GuidanceEvaluationViewStatus };
 
@@ -99,10 +83,4 @@ export interface EvaluationInbox {
   data: EvaluationInboxRow[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };
   counts: { awaitingDecision: number };
-}
-
-/** GET /thesis-guidance-evaluations/lecturer: what the Evaluasi page shows a supervisor. */
-export interface SupervisorEvaluations {
-  due: SupervisorEvaluationDue[];
-  evaluations: ThesisGuidanceEvaluation[];
 }

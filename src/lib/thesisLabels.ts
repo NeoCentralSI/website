@@ -390,10 +390,23 @@ export const SUPERVISOR_REQUEST_STATUS_SHORT_LABELS: Record<SupervisorRequestSta
 /** Paket E5 (3.1): the two kinds of rows of Tugas Akhir > Permohonan. */
 export type LecturerInboxKind = "supervisor_request" | "change_request";
 
-export const LECTURER_INBOX_KIND_LABELS: Record<LecturerInboxKind, string> = {
+/**
+ * Paket E6 (3): the Jenis of a Permohonan row, one badge: the supervisor request, or the kind of
+ * change ("Alihkan" is a supervisor change). Also the values of the Jenis filter.
+ */
+export type LecturerInboxJenis = "supervisor_request" | "change_title" | "change_supervisor" | "change_both";
+
+export const LECTURER_INBOX_JENIS_LABELS: Record<LecturerInboxJenis, string> = {
   supervisor_request: "Pengajuan Pembimbing",
-  change_request: "Perubahan TA",
+  change_title: "Perubahan Judul",
+  change_supervisor: "Perubahan Pembimbing",
+  change_both: "Perubahan Judul & Pembimbing",
 };
+
+export function lecturerInboxJenisOf(row: { kind: LecturerInboxKind; changeRequest?: { requestType: ChangeRequestType } }): LecturerInboxJenis {
+  if (row.kind === "supervisor_request" || !row.changeRequest) return "supervisor_request";
+  return `change_${row.changeRequest.requestType}` as LecturerInboxJenis;
+}
 
 export const SUPERVISOR_REQUEST_ROUTE_LABELS: Record<SupervisorRequestRoute, string> = {
   direct: "Pilih Dosen Sendiri",

@@ -12,6 +12,8 @@ export interface ComboboxOption {
   label: string;
   /** Extra text the search matches (e.g. NIM, NIP). The label is always matched. */
   keywords?: string[];
+  /** Short muted text at the right of the option (e.g. a lecturer's supervision load). */
+  detail?: string;
 }
 
 interface SearchableComboboxProps {
@@ -38,8 +40,9 @@ function matchesEveryWord(_value: string, search: string, keywords?: string[]): 
 
 /**
  * Select with a search box (`Popover` + `Command`, the pattern of the topic picker in
- * `TemplateManagementPanel`). The list scrolls; the popover is modal so that it also
- * scrolls inside a dialog.
+ * `TemplateManagementPanel`). The list scrolls inside at most 280 px; the popover opens to the
+ * side that fits the screen (Radix flips it) and is modal so that it also scrolls inside a
+ * dialog.
  */
 export function SearchableCombobox({
   options,
@@ -76,7 +79,7 @@ export function SearchableCombobox({
       <PopoverContent className="w-(--radix-popover-trigger-width) min-w-72 p-0" align="start">
         <Command filter={matchesEveryWord}>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
+          <CommandList className="max-h-[280px]">
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
@@ -91,7 +94,8 @@ export function SearchableCombobox({
                   className="flex items-center gap-2"
                 >
                   <Check className={cn("h-4 w-4 shrink-0", option.value === value ? "opacity-100" : "opacity-0")} />
-                  <span className="truncate">{option.label}</span>
+                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                  {option.detail && <span className="shrink-0 text-xs text-muted-foreground">{option.detail}</span>}
                 </CommandItem>
               ))}
             </CommandGroup>

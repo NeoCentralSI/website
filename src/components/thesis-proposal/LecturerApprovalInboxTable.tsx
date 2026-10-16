@@ -7,7 +7,7 @@ import { SupervisionLoadBadge } from '@/components/shared/SupervisionLoadBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { ThesisStudentInfoCell } from '@/components/shared/ThesisTableCells';
 import { ThesisChangeRequestDecisionDialog, type ChangeDecisionDialogState } from '@/components/thesis-change-request/ThesisChangeRequestDecisionDialog';
-import { ThesisChangeRequestViewStatusBadge } from '@/components/thesis-change-request/ThesisChangeRequestParts';
+import { ThesisChangeRequestRowStatus } from '@/components/thesis-change-request/ThesisChangeRequestParts';
 import { ThesisChangeRequestDetailDialog, lecturerDecisionDialogState } from '@/components/thesis-change-request/ThesisChangeRequestViews';
 import { summarizeChange } from '@/components/thesis-change-request/thesisChangeRequestGroups';
 import { Badge } from '@/components/ui/badge';
@@ -24,16 +24,16 @@ import {
 } from '@/hooks/thesis-proposal/useSupervisorRequests';
 import { DateTimeCell, TruncatedText } from '@/lib/guidanceCells';
 import { formatLecturerName } from '@/lib/text';
+import { ACTIONS_3_WIDTH, BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
 import {
   CHANGE_REQUEST_VIEW_STATUS_LABELS,
-  LECTURER_INBOX_KIND_LABELS,
+  LECTURER_INBOX_JENIS_LABELS,
   SUPERVISOR_REQUEST_STATUS_SHORT_LABELS,
-  getChangeRequestKindLabel,
-  getSupervisorRequestRouteLabel,
   getSupervisorRequestStatusLabel,
   getSupervisorRequestStatusVariant,
+  lecturerInboxJenisOf,
   type ChangeRequestViewStatus,
-  type LecturerInboxKind,
+  type LecturerInboxJenis,
   type SupervisorRequestStatus,
 } from '@/lib/thesisLabels';
 import type { ThesisChangeRequest } from '@/types/thesis-change-request.types';
@@ -41,12 +41,15 @@ import type { LecturerApprovalRow, SupervisorRequest } from '@/types/thesis-prop
 import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 import { SupervisorRequestResponseDialog, type SupervisorResponseState } from './SupervisorRequestResponseDialog';
 
-/** Fixed widths except "Usulan", so the table fits 1366 px with the sidebar open. */
-const TABLE_CLASS = 'table-fixed min-w-[960px]';
+/**
+ * Fixed widths except "Usulan" (Paket E6, 1): the badge columns fit their longest label and
+ * "Usulan" narrows instead; below 1000 px the table scrolls.
+ */
+const TABLE_CLASS = 'table-fixed min-w-[1000px]';
 
 const KIND_OPTIONS = [
   { label: 'Semua', value: '' },
-  ...(Object.keys(LECTURER_INBOX_KIND_LABELS) as LecturerInboxKind[]).map((kind) => ({ label: LECTURER_INBOX_KIND_LABELS[kind], value: kind })),
+  ...(Object.keys(LECTURER_INBOX_JENIS_LABELS) as LecturerInboxJenis[]).map((jenis) => ({ label: LECTURER_INBOX_JENIS_LABELS[jenis], value: jenis })),
 ];
 
 /** Status filter per Jenis, in the order of each kind's priority. */
@@ -63,9 +66,9 @@ const ALL_STATUSES: string[] = [
 const statusLabel = (status: string) =>
   SUPERVISOR_REQUEST_STATUS_SHORT_LABELS[status as SupervisorRequestStatus] ?? CHANGE_REQUEST_VIEW_STATUS_LABELS[status as ChangeRequestViewStatus] ?? status;
 
-function statusOptionsFor(kind: LecturerInboxKind | ''): string[] {
-  if (kind === 'supervisor_request') return REQUEST_STATUSES;
-  if (kind === 'change_request') return CHANGE_STATUSES;
+function statusOptionsFor(jenis: LecturerInboxJenis | ''): string[] {
+  if (jenis === 'supervisor_request') return REQUEST_STATUSES;
+  if (jenis) return CHANGE_STATUSES;
   return ALL_STATUSES;
 }
 
@@ -102,14 +105,15 @@ export function LecturerSupervisionLoadControls() {
  * Tugas Akhir > Permohonan (Paket E5, 3.1): the lecturer's approval inbox in one table, the
  * "Pengajuan Pembimbing" of the proposal phase and the lecturer's own steps of a "Perubahan
  * TA" (previous supervisor, new supervisor, or Pembimbing 1 for a title). "Semua" by default,
- * sorted by the server (what waits for the viewer first); Jenis and Status are filtered in the
- * column header. Terima / Tolak (an arrow to forward to the Ketua Departemen when the
+ * sorted by the server (what waits for the viewer first); Jenis (Paket E6: Pengajuan
+ * Pembimbing, Perubahan Judul, Perubahan Pembimbing, Perubahan Judul & Pembimbing) and Status
+ * are filtered in the column header. Terima / Tolak (an arrow to forward to the Ketua Departemen when the
  * lecturer is full) and Setujui / Tolak are icons in the row, everything else in the modal.
  */
 export function LecturerApprovalInboxTable() {
   const { search, setSearch, debouncedSearch, page, setPage } = usePagedSearch();
   const [pageSize, setPageSize] = useState(10);
-  const [kind, setKind] = useState<LecturerInboxKind | ''>('');
+  const [kind, setKind] = useState<LecturerInboxJenis | ''>('');
   const [status, setStatus] = useState('');
   const inbox = useLecturerApprovalInbox({
     kind: kind || undefined,
@@ -137,26 +141,22 @@ export function LecturerApprovalInboxTable() {
     {
       key: 'student',
       header: 'Mahasiswa',
-      width: 200,
+      width: 170,
+      className: CLIP_CELL,
       render: (row) => <ThesisStudentInfoCell {...studentOf(row)} />,
     },
     {
+      // Paket E6 (3): one badge; the details (position, before → after) are in Usulan.
       key: 'kind',
       header: 'Jenis',
-      width: 170,
-      render: (row) => (
-        <div className="min-w-0 space-y-1">
-          <Badge variant="outline" className="whitespace-nowrap">{LECTURER_INBOX_KIND_LABELS[row.kind]}</Badge>
-          <p className="truncate text-xs text-muted-foreground">
-            {row.kind === 'supervisor_request' ? getSupervisorRequestRouteLabel(row.supervisorRequest.route) : getChangeRequestKindLabel(row.changeRequest)}
-          </p>
-        </div>
-      ),
+      width: BADGE_COLUMN_WIDTH.lecturerInboxJenis,
+      className: CLIP_CELL,
+      render: (row) => <Badge variant="outline" className="whitespace-nowrap">{LECTURER_INBOX_JENIS_LABELS[lecturerInboxJenisOf(row)]}</Badge>,
       filter: {
         type: 'select',
         value: kind,
         onChange: (value) => {
-          const next = value as LecturerInboxKind | '';
+          const next = value as LecturerInboxJenis | '';
           setKind(next);
           if (status && !statusOptionsFor(next).includes(status)) setStatus('');
           setPage(1);
@@ -174,11 +174,12 @@ export function LecturerApprovalInboxTable() {
         />
       ),
     },
-    { key: 'createdAt', header: 'Tanggal Masuk', width: 120, render: (row) => <DateTimeCell date={row.createdAt} /> },
+    { key: 'createdAt', header: 'Tanggal Masuk', width: DATE_COLUMN_WIDTH, className: CLIP_CELL, render: (row) => <DateTimeCell date={row.createdAt} /> },
     {
       key: 'status',
       header: 'Status',
-      width: 190,
+      width: BADGE_COLUMN_WIDTH.lecturerInboxStatus,
+      className: CLIP_CELL,
       render: (row) =>
         row.kind === 'supervisor_request' ? (
           <Badge
@@ -189,7 +190,7 @@ export function LecturerApprovalInboxTable() {
             {SUPERVISOR_REQUEST_STATUS_SHORT_LABELS[row.viewStatus] ?? row.viewStatus}
           </Badge>
         ) : (
-          <ThesisChangeRequestViewStatusBadge status={row.viewStatus} />
+          <ThesisChangeRequestRowStatus status={row.viewStatus} blockReason={row.changeRequest.applyBlockReason} />
         ),
       filter: {
         type: 'select',
@@ -201,7 +202,7 @@ export function LecturerApprovalInboxTable() {
     {
       key: 'actions',
       header: 'Aksi',
-      width: 128,
+      width: ACTIONS_3_WIDTH,
       className: 'text-center',
       render: (row) => (
         <div className="flex items-center justify-center gap-1">
@@ -229,6 +230,8 @@ export function LecturerApprovalInboxTable() {
                     icon={Check}
                     label="Setujui"
                     tone="approve"
+                    disabled={!!row.changeRequest.applyBlockReason}
+                    disabledReason={row.changeRequest.applyBlockReason}
                     onClick={() => setChangeDecision({ request: row.changeRequest, state: lecturerDecisionDialogState(row.changeRequest, true) })}
                   />
                   <TableIconAction

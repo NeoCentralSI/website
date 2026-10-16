@@ -6,6 +6,7 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DateTimeCell } from '@/lib/guidanceCells';
+import { BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
 import { formatDateTimeWib } from '@/lib/text';
 import { getGuidanceEvaluationStageLabel } from '@/lib/thesisLabels';
 import type { ThesisGuidanceEvaluation, ThesisGuidanceEvaluationContext } from '@/types/thesis-guidance-evaluation.types';
@@ -37,25 +38,25 @@ export function ThesisGuidanceEvaluationMiniTable({ evaluations, onDetail, empty
   if (evaluations.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   return (
     <div className="overflow-x-auto rounded-md border">
-      <Table className="table-fixed min-w-[400px]">
+      <Table className="table-fixed min-w-[476px]">
         <TableHeader>
           <TableRow>
-            <TableHead style={{ width: 120 }}>Tanggal</TableHead>
+            <TableHead style={{ width: DATE_COLUMN_WIDTH }}>Tanggal</TableHead>
             <TableHead>Tahap</TableHead>
-            <TableHead style={{ width: 140 }}>Status</TableHead>
+            <TableHead style={{ width: BADGE_COLUMN_WIDTH.evaluationMiniStatus }}>Status</TableHead>
             <TableHead style={{ width: 64 }} className="text-center">Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {evaluations.map((evaluation) => (
             <TableRow key={evaluation.id}>
-              <TableCell><DateTimeCell date={evaluation.createdAt} /></TableCell>
-              <TableCell>
+              <TableCell className={CLIP_CELL}><DateTimeCell date={evaluation.createdAt} /></TableCell>
+              <TableCell className={CLIP_CELL}>
                 <span className="block whitespace-normal break-words text-sm line-clamp-2" title={getGuidanceEvaluationStageLabel(evaluation.stage)}>
                   {getGuidanceEvaluationStageLabel(evaluation.stage)}
                 </span>
               </TableCell>
-              <TableCell><ThesisGuidanceEvaluationStatusBadge evaluation={evaluation} short /></TableCell>
+              <TableCell className={CLIP_CELL}><ThesisGuidanceEvaluationStatusBadge evaluation={evaluation} short /></TableCell>
               <TableCell className="text-center">
                 <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => onDetail(evaluation)} />
               </TableCell>

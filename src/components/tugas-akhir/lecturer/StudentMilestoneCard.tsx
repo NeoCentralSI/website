@@ -189,7 +189,8 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
     const previousFeedback = milestones.find((m) => m.id === feedbackMilestoneId)?.feedback;
 
     return (
-        <Card>
+        // Paket E6 (5): fills its column so it is as tall as Riwayat Bimbingan beside it.
+        <Card className="flex-1">
             <CardHeader className="flex flex-row items-start justify-between gap-3 pb-4">
                 <div className="min-w-0 space-y-1">
                     <CardTitle className="flex flex-wrap items-center gap-2 text-base">

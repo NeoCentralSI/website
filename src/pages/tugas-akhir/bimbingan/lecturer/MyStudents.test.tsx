@@ -4,6 +4,7 @@ import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getMyStudents, type MyStudentItem } from "@/services/lecturerGuidance.service";
+import { MEASURED_MIN_WIDTH } from "@/test/columnFit";
 import LecturerMyStudentsPage from "./MyStudents";
 
 vi.mock("lottie-react", () => ({ default: () => null }));
@@ -85,8 +86,11 @@ describe("LecturerMyStudentsPage table", () => {
     expect(headers).toEqual(["", "Mahasiswa", "Milestone", "Bimbingan", "Masa Bimbingan", "Aktivitas", "Aksi"]);
     // Only "Mahasiswa" has no width: it takes what the other columns leave.
     const widths = screen.getAllByRole("columnheader").map((header) => (header as HTMLElement).style.width);
-    expect(widths).toEqual(["44px", "", "150px", "150px", "190px", "124px", "152px"]);
+    // Paket E6 (1): Aksi fits four icons; the minimum width keeps Mahasiswa as wide as its
+    // longest badge ("Berhenti Studi Sementara (BSS)", 229 px) beside the 782 px of fixed columns.
+    expect(widths).toEqual(["44px", "", "140px", "140px", "170px", "124px", "164px"]);
     expect(screen.getByRole("table").className).toContain("table-fixed");
+    expect(screen.getByRole("table").className).toContain("min-w-[1014px]");
     // The "Alihkan" button appears only once a student is ticked.
     expect(screen.queryByRole("button", { name: /Alihkan/ })).not.toBeInTheDocument();
     expect(screen.queryByText("Permohonan Pembimbing")).not.toBeInTheDocument();
@@ -138,6 +142,18 @@ describe("LecturerMyStudentsPage table", () => {
 
     expect(within(actions).getByText("Kirim Peringatan")).toBeInTheDocument();
     expect(within(actions).getByText("Detail")).toBeInTheDocument();
+  });
+
+  it("Paket E6 (1): the longest status badge is clipped inside the Mahasiswa cell, never over the next one", async () => {
+    vi.mocked(getMyStudents).mockResolvedValue({ success: true, count: 1, students: [row({ thesisStatus: "on_leave" })] });
+    renderPage();
+    const tableRow = (await screen.findByText("Ilham Nofaldi")).closest("tr")!;
+    const cell = within(tableRow).getAllByRole("cell")[1];
+    expect(cell.className).toContain("overflow-hidden");
+    expect(within(cell).getByText("Berhenti Studi Sementara (BSS)").className).toContain("truncate");
+    const fixed = [0, 2, 3, 4, 5, 6].map((index) => Number.parseFloat((screen.getAllByRole("columnheader")[index] as HTMLElement).style.width));
+    const minWidth = Number(/min-w-\[(\d+)px\]/.exec(screen.getByRole("table").className)?.[1]);
+    expect(minWidth - fixed.reduce((sum, width) => sum + width, 0)).toBeGreaterThanOrEqual(MEASURED_MIN_WIDTH["Berhenti Studi Sementara (BSS)"]);
   });
 
   it("shows placeholders instead of blanks for a student without title, sessions or activity", async () => {
