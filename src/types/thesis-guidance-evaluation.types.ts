@@ -4,6 +4,7 @@ import type {
   GuidanceEvaluationRecommendation,
   GuidanceEvaluationStatus,
   GuidanceEvaluationType,
+  GuidanceEvaluationViewStatus,
   SupervisionClock,
   ThesisActivityLevel,
   ThesisLifecycleStatus,
@@ -87,20 +88,17 @@ export interface SupervisorEvaluationDue {
   blockReason: string | null;
 }
 
-/** Lanjutan Paket E4: filters of Tugas Akhir > Evaluasi, filtered and paged on the server. */
-export type EvaluationScope = 'action' | 'kadep' | 'history';
+/** A row of the Ketua Departemen's Evaluasi table, with its row status (Paket E5). */
+export type EvaluationInboxRow = ThesisGuidanceEvaluation & { viewStatus: GuidanceEvaluationViewStatus };
 
-/** A due evaluation not filled yet, or a filled evaluation. */
-export type EvaluationRow =
-  | { kind: 'due'; id: string; due: SupervisorEvaluationDue }
-  | { kind: 'evaluation'; id: string; evaluation: ThesisGuidanceEvaluation };
-
+/**
+ * Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5): one page, "Semua" by default and sorted
+ * by status priority on the server; filtered, searched and paged there.
+ */
 export interface EvaluationInbox {
-  data: EvaluationRow[];
+  data: EvaluationInboxRow[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };
-  /** Rows per open filter, for the filter labels. */
-  counts: { action: number; kadep: number };
-  viewer: { isKadep: boolean; isSupervisor: boolean };
+  counts: { awaitingDecision: number };
 }
 
 /** GET /thesis-guidance-evaluations/lecturer: what the Evaluasi page shows a supervisor. */

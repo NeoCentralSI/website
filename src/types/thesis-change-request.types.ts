@@ -2,6 +2,7 @@ import type {
   ChangeRequestStatus,
   ChangeRequestStepKey,
   ChangeRequestType,
+  ChangeRequestViewStatus,
   SupervisorPosition,
   ThesisLifecycleStatus,
 } from '@/lib/thesisLabels';
@@ -110,14 +111,20 @@ export interface LecturerChangeRequests {
   history: ThesisChangeRequest[];
 }
 
-/** Lanjutan Paket E4: filters of Tugas Akhir > Perubahan, filtered and paged on the server. */
-export type ChangeRequestScope = 'awaitingMe' | 'inProgress' | 'history';
+/** A row of a change-request table, with the status it shows this viewer (Paket E5, 1.5). */
+export type ThesisChangeRequestRow = ThesisChangeRequest & { viewStatus: ChangeRequestViewStatus };
 
+/** Jenis filter of Tugas Akhir > Perubahan: "transfer" is a request of an "Alihkan" batch. */
+export type ChangeRequestKindFilter = ChangeRequestType | 'transfer';
+
+/**
+ * Tugas Akhir > Perubahan (Ketua Departemen, Paket E5): one page, "Semua" by default and sorted
+ * by status priority on the server; filtered, searched and paged there.
+ */
 export interface ChangeRequestInbox {
-  data: ThesisChangeRequest[];
+  data: ThesisChangeRequestRow[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };
-  /** Open requests per filter, for the filter labels. */
-  counts: { awaitingMe: number; inProgress: number };
+  counts: { awaitingDecision: number; inProgress: number };
 }
 
 export interface DepartmentChangeRequests {

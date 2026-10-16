@@ -10,6 +10,23 @@ vi.mock("lottie-react", () => ({ default: () => null }));
 vi.mock("@/services/lecturerGuidance.service", () => ({ getMyStudents: vi.fn(), sendWarningToStudent: vi.fn() }));
 // The summary charts have their own tests.
 vi.mock("@/components/bimbingan/MyStudentsCharts", () => ({ MyStudentsCharts: () => null }));
+vi.mock("@/hooks/shared", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/shared")>()),
+  useAuth: () => ({ user: { id: "lecturer-1" } }),
+}));
+// Paket E5: the dialogs the row actions open have their own tests; here they show what they got.
+vi.mock("@/components/thesis-change-request/LecturerTransferStudentsDialog", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/thesis-change-request/LecturerTransferStudentsDialog")>()),
+  LecturerTransferStudentsDialog: ({ open, students }: { open: boolean; students: { name: string }[] }) =>
+    open ? <div role="dialog" aria-label="Alihkan Mahasiswa">{students.map((student) => student.name).join(", ")}</div> : null,
+}));
+vi.mock("@/components/thesis-change-request/ThesisChangeRequestLaunchers", () => ({
+  ThesisChangeRequestFormLauncher: ({ thesisId }: { thesisId: string }) => <div role="dialog">Formulir perubahan {thesisId}</div>,
+  OpenThesisChangeRequestLauncher: ({ thesisId }: { thesisId: string }) => <div role="dialog">Pengajuan berjalan {thesisId}</div>,
+}));
+vi.mock("@/components/thesis-guidance-evaluation/EvaluationFormLauncher", () => ({
+  EvaluationFormLauncher: ({ thesisId }: { thesisId: string }) => <div role="dialog">Formulir evaluasi {thesisId}</div>,
+}));
 
 const LONG_TITLE = "Rancang Bangun Sistem Informasi Monitoring Tugas Akhir Berbasis Web pada Departemen Sistem Informasi Universitas Andalas";
 
@@ -34,6 +51,7 @@ const row = (overrides: Partial<MyStudentItem> = {}): MyStudentItem => ({
   milestoneProgress: 40,
   completedGuidanceCount: 6,
   lastGuidanceAt: "2026-09-14T07:00:00.000Z",
+  changeRequest: { hasOpenRequest: false, canSubmit: true, blockReason: null, canTransfer: true, transferBlockReason: null },
   ...overrides,
 });
 
@@ -62,14 +80,15 @@ describe("LecturerMyStudentsPage table", () => {
     renderPage();
     await screen.findByText("Ilham Nofaldi");
 
-    // Paket E4 (4): no selection column; "Alihkan Mahasiswa" moved to Tugas Akhir > Perubahan.
+    // Paket E5 (3.3): the tick column for "Alihkan" is back, first.
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent?.trim());
-    expect(headers).toEqual(["Mahasiswa", "Milestone", "Bimbingan", "Masa Bimbingan", "Aktivitas", "Aksi"]);
+    expect(headers).toEqual(["", "Mahasiswa", "Milestone", "Bimbingan", "Masa Bimbingan", "Aktivitas", "Aksi"]);
     // Only "Mahasiswa" has no width: it takes what the other columns leave.
     const widths = screen.getAllByRole("columnheader").map((header) => (header as HTMLElement).style.width);
-    expect(widths).toEqual(["", "150px", "150px", "190px", "124px", "96px"]);
+    expect(widths).toEqual(["44px", "", "150px", "150px", "190px", "124px", "152px"]);
     expect(screen.getByRole("table").className).toContain("table-fixed");
-    expect(screen.queryByRole("button", { name: /Alihkan Mahasiswa/ })).not.toBeInTheDocument();
+    // The "Alihkan" button appears only once a student is ticked.
+    expect(screen.queryByRole("button", { name: /Alihkan/ })).not.toBeInTheDocument();
     expect(screen.queryByText("Permohonan Pembimbing")).not.toBeInTheDocument();
     expect(screen.queryByText("Pengajuan Perubahan")).not.toBeInTheDocument();
   });
@@ -85,12 +104,15 @@ describe("LecturerMyStudentsPage table", () => {
     expect(within(tableRow).getByText("Tidak lagi membimbing")).toBeInTheDocument();
     expect(within(tableRow).queryByText("Kirim Peringatan")).not.toBeInTheDocument();
     expect(within(tableRow).getByText("Detail")).toBeInTheDocument();
+    // Paket E5: neither a change, an evaluation nor a hand-over from a released relation.
+    expect(within(tableRow).queryByRole("button", { name: "Ajukan Perubahan" })).not.toBeInTheDocument();
+    expect(within(tableRow).queryByRole("button", { name: "Isi Evaluasi" })).not.toBeInTheDocument();
   });
 
   it("keeps every piece of information of the old columns", async () => {
     renderPage();
     const cells = within((await screen.findByText("Ilham Nofaldi")).closest("tr")!).getAllByRole("cell");
-    const [student, milestone, guidance, clock, activity, actions] = cells;
+    const [, student, milestone, guidance, clock, activity, actions] = cells;
 
     // Mahasiswa: name, NIM, one truncated title line, status badge.
     expect(within(student).getByText("Ilham Nofaldi")).toBeInTheDocument();
@@ -133,6 +155,87 @@ describe("LecturerMyStudentsPage table", () => {
     expect(within(tableRow).getByText("Belum pernah")).toBeInTheDocument();
     // No warning for a thesis without an activity level.
     expect(within(tableRow).queryByText("Kirim Peringatan")).not.toBeInTheDocument();
+  });
+});
+
+describe("LecturerMyStudentsPage row actions (Paket E5, 3.2-3.4)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("Pembimbing 1 with a due evaluation gets Isi Evaluasi and Ajukan Perubahan; each opens its form", async () => {
+    vi.mocked(getMyStudents).mockResolvedValue({ success: true, count: 1, students: [row()] });
+    renderPage();
+    const tableRow = (await screen.findByText("Ilham Nofaldi")).closest("tr")!;
+
+    fireEvent.click(within(tableRow).getByRole("button", { name: "Isi Evaluasi" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Formulir evaluasi t1");
+    fireEvent.click(within(tableRow).getByRole("button", { name: "Ajukan Perubahan" }));
+    expect(screen.getByText("Formulir perubahan t1")).toBeInTheDocument();
+  });
+
+  it("no Isi Evaluasi when nothing is due or for Pembimbing 2; a blocked Ajukan Perubahan is disabled with its reason", async () => {
+    const reason = "Perubahan diajukan oleh mahasiswa atau Pembimbing 1. Sebagai Pembimbing 2, Anda dapat mengalihkan posisi Anda lewat aksi Alihkan di tabel Mahasiswa Bimbingan.";
+    vi.mocked(getMyStudents).mockResolvedValue({
+      success: true,
+      count: 2,
+      students: [
+        row({ supervisionClock: { ...row().supervisionClock!, evaluationDue: null } }),
+        row({
+          studentId: "s2", thesisId: "t2", fullName: "NABIL RIZKI", roles: ["Pembimbing 2"],
+          changeRequest: { hasOpenRequest: false, canSubmit: false, blockReason: reason, canTransfer: true, transferBlockReason: null },
+        }),
+      ],
+    });
+    renderPage();
+    const first = (await screen.findByText("Ilham Nofaldi")).closest("tr")!;
+    const second = screen.getByText("Nabil Rizki").closest("tr")!;
+
+    expect(within(first).queryByRole("button", { name: "Isi Evaluasi" })).not.toBeInTheDocument();
+    expect(within(second).queryByRole("button", { name: "Isi Evaluasi" })).not.toBeInTheDocument();
+    const ask = within(second).getByRole("button", { name: "Ajukan Perubahan" });
+    expect(ask).toBeDisabled();
+    expect(ask.parentElement).toHaveAttribute("title", `Ajukan Perubahan: ${reason}`);
+  });
+
+  it("marks a student with a running change request; the marker opens its detail", async () => {
+    vi.mocked(getMyStudents).mockResolvedValue({
+      success: true,
+      count: 1,
+      students: [row({ changeRequest: { hasOpenRequest: true, canSubmit: false, blockReason: "Masih ada pengajuan perubahan yang berjalan.", canTransfer: false, transferBlockReason: "Masih ada pengajuan perubahan yang berjalan." } })],
+    });
+    renderPage();
+    const tableRow = (await screen.findByText("Ilham Nofaldi")).closest("tr")!;
+
+    fireEvent.click(within(tableRow).getByText("Perubahan berjalan"));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Pengajuan berjalan t1");
+  });
+
+  it("ticks only the students that may be handed over and opens Alihkan (N) with them", async () => {
+    vi.mocked(getMyStudents).mockResolvedValue({
+      success: true,
+      count: 3,
+      students: [
+        row(),
+        row({ studentId: "s2", thesisId: "t2", fullName: "NABIL RIZKI" }),
+        row({
+          studentId: "s3", thesisId: "t3", fullName: "FATHUR RAHMAN",
+          changeRequest: { hasOpenRequest: false, canSubmit: false, blockReason: "x", canTransfer: false, transferBlockReason: "Pengajuan perubahan hanya dapat dibuat sampai sebelum pendaftaran seminar hasil." },
+        }),
+      ],
+    });
+    renderPage();
+    await screen.findByText("Ilham Nofaldi");
+
+    const blocked = screen.getByRole("checkbox", { name: "Pilih Fathur Rahman" });
+    expect(blocked).toBeDisabled();
+    expect(blocked.parentElement).toHaveAttribute("title", "Pengajuan perubahan hanya dapat dibuat sampai sebelum pendaftaran seminar hasil.");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Pilih semua mahasiswa yang dapat dialihkan di halaman ini" }));
+    expect(screen.getByRole("checkbox", { name: "Pilih Ilham Nofaldi" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Pilih Nabil Rizki" })).toBeChecked();
+    expect(blocked).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: "Alihkan (2)" }));
+    expect(screen.getByRole("dialog", { name: "Alihkan Mahasiswa" })).toHaveTextContent("ILHAM NOFALDI, NABIL RIZKI");
   });
 });
 

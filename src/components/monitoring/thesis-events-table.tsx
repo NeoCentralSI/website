@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ExternalLink, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Eye } from "lucide-react";
 
 import { CustomTable, type Column } from "@/components/layout/CustomTable";
+import { TableIconAction } from "@/components/shared/TableIconAction";
 import {
   ThesisEventStatusBadge,
   getThesisEventStatusLabel,
   type ThesisEventStatus,
 } from "@/components/shared/ThesisEventStatusBadge";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDateShortId, toTitleCaseName } from "@/lib/text";
+import { ThesisStudentInfoCell } from "@/components/shared/ThesisTableCells";
+import { formatDateShortId } from "@/lib/text";
 import { THESIS_EVENT_DETAIL_PATH, timeRangeText } from "@/lib/thesis-event-schedule";
 import type { MonitoringEvent, ThesisEventKind } from "@/services/monitoring.service";
 import { THESIS_EVENT_COPY } from "./thesis-event-copy";
@@ -26,7 +26,10 @@ const EVENT_STATUSES: ThesisEventStatus[] = [
   "failed",
   "cancelled",
 ];
-const ALL_STATUSES = "all";
+const STATUS_OPTIONS = [
+  { label: "Semua", value: "" },
+  ...EVENT_STATUSES.map((value) => ({ label: getThesisEventStatusLabel(value), value })),
+];
 
 const scoreFormat = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
 
@@ -43,11 +46,14 @@ interface ThesisEventsTableProps {
  * seminar and defence modules show: their badge is given the schedule, so it derives the
  * display status itself (a scheduled event whose start has passed reads "Sedang
  * Berlangsung"). The status filter, like the summary cards, goes by the stored status.
- * Search and the filter run in the browser.
+ * Search and the filter run in the browser. Paket E5: the rows come in the order of the
+ * seminar and defence modules (status priority, then the latest); the status filter sits in
+ * the column header and the detail is an icon.
  */
 export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: ThesisEventsTableProps) {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState(ALL_STATUSES);
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const copy = THESIS_EVENT_COPY[kind];
@@ -55,7 +61,7 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return (events ?? []).filter((event) => {
-      if (status !== ALL_STATUSES && event.status !== status) return false;
+      if (status && event.status !== status) return false;
       if (!query) return true;
       return [event.student.name, event.student.nim].some((value) => value?.toLowerCase().includes(query));
     });
@@ -64,29 +70,32 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
   // The rows change with the semester; never stay on a page that no longer exists.
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / pageSize)));
   const rows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const hasFilters = search !== "" || status !== ALL_STATUSES;
+  const hasFilters = search !== "" || status !== "";
 
   const columns: Column<MonitoringEvent>[] = [
     {
       key: "student",
       header: "Mahasiswa",
-      render: (event) => (
-        <div className="space-y-0.5">
-          <p className="font-medium">{toTitleCaseName(event.student.name)}</p>
-          <p className="text-sm text-muted-foreground">{event.student.nim || "-"}</p>
-        </div>
-      ),
+      width: 200,
+      render: (event) => <ThesisStudentInfoCell name={event.student.name ?? ""} nim={event.student.nim ?? ""} />,
     },
     {
       key: "title",
       header: "Judul",
       render: (event) => (
-        <span className="block max-w-72 truncate text-sm" title={event.title ?? undefined}>{event.title || "-"}</span>
+        <span className="block whitespace-normal break-words text-sm line-clamp-2" title={event.title ?? undefined}>{event.title || "-"}</span>
       ),
     },
     {
       key: "status",
       header: "Status",
+      width: 190,
+      filter: {
+        type: "select",
+        value: status,
+        onChange: (value) => { setStatus(value); setPage(1); },
+        options: STATUS_OPTIONS,
+      },
       render: (event) => (
         <ThesisEventStatusBadge
           status={event.status as ThesisEventStatus}
@@ -99,6 +108,7 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
     {
       key: "date",
       header: "Tanggal Pelaksanaan",
+      width: 150,
       render: (event) =>
         event.date ? (
           <div className="whitespace-nowrap text-sm">
@@ -112,6 +122,7 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
     {
       key: "finalScore",
       header: "Nilai Akhir",
+      width: 110,
       className: "text-center",
       render: (event) => (
         <span className="whitespace-nowrap text-sm">
@@ -123,46 +134,14 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
       ? [{
           key: "actions",
           header: "Aksi",
+          width: 80,
           className: "text-center",
           render: (event: MonitoringEvent) => (
-            <Link
-              to={`${THESIS_EVENT_DETAIL_PATH[kind]}/${event.id}`}
-              className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-primary hover:underline"
-            >
-              Lihat detail
-              <ExternalLink className="h-3 w-3" />
-            </Link>
+            <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => navigate(`${THESIS_EVENT_DETAIL_PATH[kind]}/${event.id}`)} />
           ),
         }]
       : []),
   ];
-
-  const actions = (
-    <>
-      <Select value={status} onValueChange={(value) => { setStatus(value); setPage(1); }}>
-        <SelectTrigger className="w-60" aria-label="Filter status">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL_STATUSES}>Semua Status</SelectItem>
-          {EVENT_STATUSES.map((value) => (
-            <SelectItem key={value} value={value}>{getThesisEventStatusLabel(value)}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {hasFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={() => { setSearch(""); setStatus(ALL_STATUSES); setPage(1); }}
-        >
-          <X className="mr-1 h-4 w-4" />
-          Reset
-        </Button>
-      )}
-    </>
-  );
 
   return (
     <CustomTable<MonitoringEvent>
@@ -177,7 +156,8 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
       searchValue={search}
       onSearchChange={(value) => { setSearch(value); setPage(1); }}
       searchPlaceholder="Cari nama atau NIM..."
-      actions={actions}
+      enableColumnFilters
+      tableClassName="table-fixed min-w-[900px]"
       emptyText={hasFilters ? `Tidak ada ${copy.noun} yang cocok dengan pencarian atau filter.` : `Belum ada ${copy.noun} pada semester ini.`}
       rowKey={(event) => event.id}
     />

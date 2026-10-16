@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Eye } from 'lucide-react';
 
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatDateShortId, formatDateTimeWib } from '@/lib/text';
+import { DateTimeCell } from '@/lib/guidanceCells';
+import { formatDateTimeWib } from '@/lib/text';
 import { getGuidanceEvaluationStageLabel } from '@/lib/thesisLabels';
 import type { ThesisGuidanceEvaluation, ThesisGuidanceEvaluationContext } from '@/types/thesis-guidance-evaluation.types';
 import { ThesisGuidanceEvaluationStatusBadge, ThesisGuidanceEvaluationSummary } from './ThesisGuidanceEvaluationParts';
@@ -24,7 +25,10 @@ export function ThesisGuidanceEvaluationDetailDialog({ evaluation, onClose }: { 
   );
 }
 
-/** Mini history table of one thesis: tanggal, tahap, status, Detail (Paket E4, 5 and 6). */
+/**
+ * Mini history table of one thesis: tanggal, tahap, status, Detail (Paket E4, 5 and 6; Paket E5:
+ * the table standard, with a fixed layout, a two-line date and the detail as an icon).
+ */
 export function ThesisGuidanceEvaluationMiniTable({ evaluations, onDetail, emptyText = 'Belum ada evaluasi.' }: {
   evaluations: ThesisGuidanceEvaluation[];
   onDetail: (evaluation: ThesisGuidanceEvaluation) => void;
@@ -32,24 +36,28 @@ export function ThesisGuidanceEvaluationMiniTable({ evaluations, onDetail, empty
 }) {
   if (evaluations.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="overflow-x-auto rounded-md border">
+      <Table className="table-fixed min-w-[400px]">
         <TableHeader>
           <TableRow>
-            <TableHead>Tanggal</TableHead>
+            <TableHead style={{ width: 120 }}>Tanggal</TableHead>
             <TableHead>Tahap</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="w-20 text-right">Aksi</TableHead>
+            <TableHead style={{ width: 140 }}>Status</TableHead>
+            <TableHead style={{ width: 64 }} className="text-center">Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {evaluations.map((evaluation) => (
             <TableRow key={evaluation.id}>
-              <TableCell className="whitespace-nowrap">{formatDateShortId(evaluation.createdAt)}</TableCell>
-              <TableCell className="whitespace-normal">{getGuidanceEvaluationStageLabel(evaluation.stage)}</TableCell>
-              <TableCell><ThesisGuidanceEvaluationStatusBadge evaluation={evaluation} /></TableCell>
-              <TableCell className="text-right">
-                <Button size="sm" variant="ghost" className="px-2" onClick={() => onDetail(evaluation)}>Detail</Button>
+              <TableCell><DateTimeCell date={evaluation.createdAt} /></TableCell>
+              <TableCell>
+                <span className="block whitespace-normal break-words text-sm line-clamp-2" title={getGuidanceEvaluationStageLabel(evaluation.stage)}>
+                  {getGuidanceEvaluationStageLabel(evaluation.stage)}
+                </span>
+              </TableCell>
+              <TableCell><ThesisGuidanceEvaluationStatusBadge evaluation={evaluation} short /></TableCell>
+              <TableCell className="text-center">
+                <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => onDetail(evaluation)} />
               </TableCell>
             </TableRow>
           ))}

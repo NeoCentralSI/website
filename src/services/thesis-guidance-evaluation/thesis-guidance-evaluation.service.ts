@@ -3,12 +3,13 @@ import { apiRequest } from '@/services/auth.service';
 import type {
   DepartmentEvaluations,
   EvaluationInbox,
-  EvaluationScope,
   SubmitEvaluationDto,
   SupervisorEvaluations,
   ThesisGuidanceEvaluation,
   ThesisGuidanceEvaluationContext,
 } from '@/types/thesis-guidance-evaluation.types';
+
+import type { GuidanceEvaluationViewStatus } from '@/lib/thesisLabels';
 
 const BASE = '/thesis-guidance-evaluations';
 
@@ -59,9 +60,10 @@ export async function getSupervisorEvaluations(): Promise<SupervisorEvaluations>
   return (await parse<SupervisorEvaluations>(response, 'Gagal memuat evaluasi bimbingan')).data;
 }
 
-/** Tugas Akhir > Evaluasi: one page of a filter for the signed-in viewer (Lanjutan Paket E4). */
-export async function getEvaluationInbox(params: { scope: EvaluationScope; search?: string; page: number; pageSize: number }): Promise<EvaluationInbox> {
-  const query = new URLSearchParams({ scope: params.scope, page: String(params.page), pageSize: String(params.pageSize) });
+/** Tugas Akhir > Evaluasi (Ketua Departemen): one page sorted by status priority (Paket E5). */
+export async function getEvaluationInbox(params: { status?: GuidanceEvaluationViewStatus; search?: string; page: number; pageSize: number }): Promise<EvaluationInbox> {
+  const query = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.status) query.set('status', params.status);
   if (params.search) query.set('search', params.search);
   const response = await apiRequest(getApiUrl(`${BASE}/inbox?${query.toString()}`));
   const body = (await response.json().catch(() => ({}))) as Partial<EvaluationInbox> & { message?: string };
@@ -69,8 +71,7 @@ export async function getEvaluationInbox(params: { scope: EvaluationScope; searc
   return {
     data: body.data ?? [],
     meta: body.meta ?? { page: 1, pageSize: params.pageSize, total: 0, totalPages: 1 },
-    counts: body.counts ?? { action: 0, kadep: 0 },
-    viewer: body.viewer ?? { isKadep: false, isSupervisor: false },
+    counts: body.counts ?? { awaitingDecision: 0 },
   };
 }
 

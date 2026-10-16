@@ -4,11 +4,11 @@ import { toast } from 'sonner';
 import * as service from '@/services/thesis-change-request/thesis-change-request.service';
 import type {
   ChangeDecisionDto,
-  ChangeRequestScope,
+  ChangeRequestKindFilter,
   SubmitChangeRequestDto,
   SubmitTransferDto,
 } from '@/types/thesis-change-request.types';
-import type { SupervisorPosition } from '@/lib/thesisLabels';
+import type { ChangeRequestViewStatus, SupervisorPosition } from '@/lib/thesisLabels';
 
 export const thesisChangeRequestKeys = {
   all: ['thesis-change-requests'] as const,
@@ -50,9 +50,12 @@ export function useDepartmentChangeRequests(params: { scope: 'pending' | 'histor
   });
 }
 
-/** Tugas Akhir > Perubahan: a filter page from the server; the old page stays while the next loads. */
+/**
+ * Tugas Akhir > Perubahan (Ketua Departemen): a page from the server, sorted by status
+ * priority; the old page stays while the next loads.
+ */
 export function useChangeRequestInbox(
-  params: { scope?: ChangeRequestScope; search?: string; page?: number; pageSize?: number; batchId?: string },
+  params: { status?: ChangeRequestViewStatus; kind?: ChangeRequestKindFilter; search?: string; page?: number; pageSize?: number; batchId?: string },
   enabled = true,
 ) {
   return useQuery({
@@ -68,6 +71,8 @@ function useRefreshAfterChange() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: thesisChangeRequestKeys.all });
+    // Paket E5: a lecturer's steps are rows of Tugas Akhir > Permohonan (and its sidebar badge).
+    queryClient.invalidateQueries({ queryKey: ['thesis-proposal', 'lecturer-inbox'] });
     queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
     queryClient.invalidateQueries({ queryKey: ['student-detail'] });
     queryClient.invalidateQueries({ queryKey: ['my-thesis-detail'] });

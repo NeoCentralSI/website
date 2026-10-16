@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Eye } from 'lucide-react';
 
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +16,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCancelChangeRequest, useLecturerDecision } from '@/hooks/thesis-change-request/useThesisChangeRequest';
-import { formatDateShortId, toTitleCaseName } from '@/lib/text';
+import { DateTimeCell } from '@/lib/guidanceCells';
+import { toTitleCaseName } from '@/lib/text';
 import { getChangeRequestStepLabel } from '@/lib/thesisLabels';
 import type { ThesisChangeRequest } from '@/types/thesis-change-request.types';
 import { ThesisChangeRequestDecisionDialog, type ChangeDecisionDialogState } from './ThesisChangeRequestDecisionDialog';
@@ -38,6 +41,14 @@ export function changeRequestKindPhrase(request: ThesisChangeRequest): string {
 export const changesTitle = (request: ThesisChangeRequest) => request.requestType === 'title' || request.requestType === 'both';
 export const changesSupervisor = (request: ThesisChangeRequest) => request.requestType === 'supervisor' || request.requestType === 'both';
 
+/** The confirmation of a lecturer's own step (Setujui / Tolak), shared by the detail and Permohonan. */
+export function lecturerDecisionDialogState(request: ThesisChangeRequest, approve: boolean): ChangeDecisionDialogState {
+  const student = toTitleCaseName(request.student?.name) || 'mahasiswa';
+  return approve
+    ? { approve: true, title: 'Setujui pengajuan?', description: `Pengajuan perubahan untuk ${student} dilanjutkan ke langkah berikutnya.` }
+    : { approve: false, title: 'Tolak pengajuan?', description: `Pengajuan perubahan untuk ${student} ditutup dan tidak diteruskan.` };
+}
+
 /**
  * Detail of one request: before/after, reason, the approval steps with status and date. The
  * requester may cancel it; a lecturer whose step is open approves or rejects it here.
@@ -47,14 +58,8 @@ export function ThesisChangeRequestDetailDialog({ request, onClose }: { request:
   const decision = useLecturerDecision();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [dialog, setDialog] = useState<ChangeDecisionDialogState | null>(null);
-  const student = toTitleCaseName(request?.student?.name) || 'mahasiswa';
 
-  const openDecision = (approve: boolean) =>
-    setDialog(
-      approve
-        ? { approve: true, title: 'Setujui pengajuan?', description: `Pengajuan perubahan untuk ${student} dilanjutkan ke langkah berikutnya.` }
-        : { approve: false, title: 'Tolak pengajuan?', description: `Pengajuan perubahan untuk ${student} ditutup dan tidak diteruskan.` },
-    );
+  const openDecision = (approve: boolean) => { if (request) setDialog(lecturerDecisionDialogState(request, approve)); };
 
   return (
     <>
@@ -132,7 +137,10 @@ export function ThesisChangeRequestDetailDialog({ request, onClose }: { request:
   );
 }
 
-/** Mini history table of one thesis: tanggal, jenis, status, Detail (Paket E4, 5 and 6). */
+/**
+ * Mini history table of one thesis: tanggal, jenis, status, Detail (Paket E4, 5 and 6; Paket E5:
+ * the table standard, with a fixed layout, a two-line date and the detail as an icon).
+ */
 export function ThesisChangeRequestMiniTable({ requests, onDetail, emptyText = 'Belum ada riwayat pengajuan.' }: {
   requests: ThesisChangeRequest[];
   onDetail: (request: ThesisChangeRequest) => void;
@@ -140,24 +148,24 @@ export function ThesisChangeRequestMiniTable({ requests, onDetail, emptyText = '
 }) {
   if (requests.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="overflow-x-auto rounded-md border">
+      <Table className="table-fixed min-w-[400px]">
         <TableHeader>
           <TableRow>
-            <TableHead>Tanggal</TableHead>
+            <TableHead style={{ width: 120 }}>Tanggal</TableHead>
             <TableHead>Jenis</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="w-20 text-right">Aksi</TableHead>
+            <TableHead style={{ width: 160 }}>Status</TableHead>
+            <TableHead style={{ width: 64 }} className="text-center">Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {requests.map((request) => (
             <TableRow key={request.id}>
-              <TableCell className="whitespace-nowrap">{formatDateShortId(request.decision?.at ?? request.createdAt)}</TableCell>
+              <TableCell><DateTimeCell date={request.decision?.at ?? request.createdAt} /></TableCell>
               <TableCell><ThesisChangeRequestTypeBadge request={request} /></TableCell>
               <TableCell><ThesisChangeRequestStatusBadge status={request.status} /></TableCell>
-              <TableCell className="text-right">
-                <Button size="sm" variant="ghost" className="px-2" onClick={() => onDetail(request)}>Detail</Button>
+              <TableCell className="text-center">
+                <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => onDetail(request)} />
               </TableCell>
             </TableRow>
           ))}

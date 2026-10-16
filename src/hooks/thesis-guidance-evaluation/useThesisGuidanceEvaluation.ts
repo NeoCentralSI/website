@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import * as service from '@/services/thesis-guidance-evaluation/thesis-guidance-evaluation.service';
-import type { EvaluationScope, SubmitEvaluationDto } from '@/types/thesis-guidance-evaluation.types';
+import type { GuidanceEvaluationViewStatus } from '@/lib/thesisLabels';
+import type { SubmitEvaluationDto } from '@/types/thesis-guidance-evaluation.types';
 
 export const thesisGuidanceEvaluationKeys = {
   all: ['thesis-guidance-evaluations'] as const,
@@ -34,8 +35,11 @@ export function useSupervisorEvaluations(enabled = true) {
   return useQuery({ queryKey: thesisGuidanceEvaluationKeys.lecturer(), queryFn: service.getSupervisorEvaluations, enabled });
 }
 
-/** Tugas Akhir > Evaluasi: a filter page from the server; the old page stays while the next loads. */
-export function useEvaluationInbox(params: { scope: EvaluationScope; search: string; page: number; pageSize: number }) {
+/**
+ * Tugas Akhir > Evaluasi (Ketua Departemen): a page from the server, sorted by status priority;
+ * the old page stays while the next loads.
+ */
+export function useEvaluationInbox(params: { status?: GuidanceEvaluationViewStatus; search: string; page: number; pageSize: number }) {
   return useQuery({
     queryKey: thesisGuidanceEvaluationKeys.inbox(params),
     queryFn: () => service.getEvaluationInbox({ ...params, search: params.search || undefined }),

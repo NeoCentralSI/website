@@ -3,6 +3,7 @@ import type {
   CatalogLecturer,
   KadepDecisionDto,
   KadepQueue,
+  LecturerApprovalInbox,
   LecturerInbox,
   LecturerResponseDto,
   StudentSupervisorRequests,
@@ -10,7 +11,10 @@ import type {
   SupervisorRequestDraft,
   SupervisorRequestInput,
 } from '@/types/thesis-proposal.types';
-import { getJson, send } from './api';
+import { getApiUrl } from '@/config/api';
+import type { LecturerInboxKind } from '@/lib/thesisLabels';
+import { apiRequest } from '@/services/auth.service';
+import { getJson, parse, send } from './api';
 
 const BASE = '/thesis-proposals';
 
@@ -28,6 +32,28 @@ export const withdrawRequest = (id: string) =>
 // Lecturer
 export const getLecturerInbox = () =>
   getJson<LecturerInbox>(`${BASE}/supervisor-requests/inbox`, 'Gagal memuat permohonan pembimbing');
+/** Tugas Akhir > Permohonan (Paket E5): Pengajuan Pembimbing and the lecturer's Perubahan TA steps. */
+export async function getLecturerApprovalInbox(params: {
+  kind?: LecturerInboxKind;
+  status?: string;
+  search?: string;
+  page: number;
+  pageSize: number;
+}): Promise<LecturerApprovalInbox> {
+  const query = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.kind) query.set('kind', params.kind);
+  if (params.status) query.set('status', params.status);
+  if (params.search) query.set('search', params.search);
+  const body = await parse<LecturerApprovalInbox['data']>(
+    await apiRequest(getApiUrl(`${BASE}/lecturer-inbox?${query.toString()}`)),
+    'Gagal memuat permohonan',
+  ) as unknown as Partial<LecturerApprovalInbox>;
+  return {
+    data: body.data ?? [],
+    meta: body.meta ?? { page: 1, pageSize: params.pageSize, total: 0, totalPages: 1 },
+    counts: body.counts ?? { waiting: 0, waitingRequests: 0, waitingChanges: 0 },
+  };
+}
 export const markUnderReview = (id: string) =>
   send<SupervisorRequest>('POST', `${BASE}/supervisor-requests/${id}/review`, undefined, 'Gagal menandai pengajuan');
 export const respondAsLecturer = (id: string, dto: LecturerResponseDto) =>

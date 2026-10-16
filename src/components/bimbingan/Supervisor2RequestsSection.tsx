@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
 import { RecordDetailDialog } from "@/components/shared/RecordDetailDialog";
-import { Button } from "@/components/ui/button";
+import { TableIconAction } from "@/components/shared/TableIconAction";
+import { ThesisStudentInfoCell } from "@/components/shared/ThesisTableCells";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { toTitleCaseName } from "@/lib/text";
-import { DateTimeCell, STICKY_ACTION_COLUMN_CLASS, TruncatedText } from "@/lib/guidanceCells";
+import { DateTimeCell, TruncatedText } from "@/lib/guidanceCells";
 import { useClientTable } from "@/hooks/shared/useClientTable";
 import {
   getSupervisor2Requests,
@@ -25,11 +26,12 @@ import {
   rejectSupervisor2Request,
   type Supervisor2RequestItem,
 } from "@/services/lecturerGuidance.service";
-import { Eye } from "lucide-react";
+import { Check, Eye, X } from "lucide-react";
 
 /**
  * "Permintaan Pembimbing 2" fase proposal, di halaman Tugas Akhir > Permohonan (Paket E4, 4.1).
- * Tabel dengan Setujui / Tolak di baris dan Detail di modal; tidak tampil bila kosong.
+ * Tabel dengan Setujui / Tolak di baris dan Detail di modal; tidak tampil bila kosong. Paket E5:
+ * aksi berupa ikon dan lebar kolom tetap, seperti tabel Permohonan.
  */
 export function Supervisor2RequestsSection() {
   const queryClient = useQueryClient();
@@ -88,39 +90,27 @@ export function Supervisor2RequestsSection() {
     {
       key: "student",
       header: "Mahasiswa",
-      width: 210,
-      render: (row) => (
-        <div className="min-w-0">
-          <p className="truncate font-medium" title={toTitleCaseName(row.studentName)}>{toTitleCaseName(row.studentName)}</p>
-          <p className="text-xs text-muted-foreground">{row.studentNim || "-"}</p>
-        </div>
-      ),
+      width: 200,
+      render: (row) => <ThesisStudentInfoCell name={row.studentName} nim={row.studentNim ?? ""} />,
     },
     { key: "title", header: "Judul", render: (row) => <TruncatedText text={row.thesisTitle} className="max-w-full" /> },
-    { key: "requestedAt", header: "Tanggal Masuk", width: 140, render: (row) => <DateTimeCell date={row.requestedAt} /> },
+    { key: "requestedAt", header: "Tanggal Masuk", width: 120, render: (row) => <DateTimeCell date={row.requestedAt} /> },
     {
       key: "actions",
       header: "Aksi",
-      width: 240,
-      className: STICKY_ACTION_COLUMN_CLASS,
+      width: 128,
+      className: "text-center",
       render: (row) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setRejectDialog({ open: true, request: row })}
-            disabled={rejectMutation.isPending}
-          >
-            Tolak
-          </Button>
-          <Button size="sm" onClick={() => approveMutation.mutate(row.requestId)} disabled={approveMutation.isPending}>
-            {approveMutation.isPending && approveMutation.variables === row.requestId && <Spinner className="mr-1 h-3 w-3" />}
-            Setujui
-          </Button>
-          <Button size="sm" variant="ghost" className="gap-1 px-2" onClick={() => setDetail(row)}>
-            <Eye className="h-4 w-4" />
-            Detail
-          </Button>
+        <div className="flex items-center justify-center gap-1">
+          <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(row)} />
+          <TableIconAction
+            icon={Check}
+            label="Setujui"
+            tone="approve"
+            disabled={approveMutation.isPending}
+            onClick={() => approveMutation.mutate(row.requestId)}
+          />
+          <TableIconAction icon={X} label="Tolak" disabled={rejectMutation.isPending} onClick={() => setRejectDialog({ open: true, request: row })} />
         </div>
       ),
     },
@@ -130,13 +120,13 @@ export function Supervisor2RequestsSection() {
     <section className="space-y-3" aria-labelledby="supervisor2-requests-title">
       <div>
         <h2 id="supervisor2-requests-title" className="text-lg font-semibold">Permintaan Pembimbing 2</h2>
-        <p className="text-sm text-muted-foreground">Mahasiswa fase proposal yang meminta Anda menjadi Pembimbing 2.</p>
+        <p className="text-sm text-muted-foreground">Mahasiswa fase proposal yang meminta Anda menjadi Pembimbing 2</p>
       </div>
 
       <CustomTable
         columns={columns}
         data={table.pageRows}
-        tableClassName="table-fixed min-w-[760px]"
+        tableClassName="table-fixed min-w-[640px]"
         total={table.total}
         page={table.page}
         pageSize={table.pageSize}

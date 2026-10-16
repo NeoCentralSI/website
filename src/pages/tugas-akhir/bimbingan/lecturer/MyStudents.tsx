@@ -38,7 +38,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, CalendarCheck, Milestone, Bell, AlertTriangle } from "lucide-react";
+import { Eye, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft, ClipboardCheck, FilePenLine } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TableIconAction } from "@/components/shared/TableIconAction";
+import { useAuth } from "@/hooks/shared";
+import {
+  LecturerTransferStudentsDialog,
+  toSupervisorPosition,
+  toTransferStudents,
+} from "@/components/thesis-change-request/LecturerTransferStudentsDialog";
+import {
+  OpenThesisChangeRequestLauncher,
+  ThesisChangeRequestFormLauncher,
+} from "@/components/thesis-change-request/ThesisChangeRequestLaunchers";
+import { EvaluationFormLauncher } from "@/components/thesis-guidance-evaluation/EvaluationFormLauncher";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
@@ -57,9 +70,22 @@ const MY_STUDENTS_TABLE_CLASS = "table-fixed min-w-[960px]";
 /** A warning can be sent while the activity level is Lambat or Berisiko. */
 const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
 
+/** An active relation of this lecturer (a replaced supervisor's row is read-only, Paket E4 1.1). */
+const isActiveSupervisor = (row: MyStudentItem) => (row.supervisorStatus ?? "active") === "active" && !row.noLongerSupervising;
+
+/**
+ * Paket E5 (3.2, 3.4): "Ajukan Perubahan" for an active Pembimbing 1 or 2 (disabled with the
+ * reason when a rule blocks it); "Isi Evaluasi" only when the evaluation is due and the viewer is
+ * Pembimbing 1.
+ */
+const canAskChange = (row: MyStudentItem) => !!row.thesisId && !!row.changeRequest && isActiveSupervisor(row) && !!toSupervisorPosition(row.roles?.[0]);
+const canFillEvaluation = (row: MyStudentItem) =>
+  !!row.thesisId && isActiveSupervisor(row) && !!row.supervisionClock?.evaluationDue && toSupervisorPosition(row.roles?.[0]) === "pembimbing_1";
+
 export default function LecturerMyStudentsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/requests" }, { label: "Mahasiswa Bimbingan" }], []);
 
   useEffect(() => {
@@ -76,6 +102,13 @@ export default function LecturerMyStudentsPage() {
     open: boolean;
     student: MyStudentItem | null;
   }>({ open: false, student: null });
+
+  // Paket E5 (3.2-3.4): row actions and the "Alihkan" bulk action.
+  const [selectedThesisIds, setSelectedThesisIds] = useState<Set<string>>(new Set());
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [changeFormThesisId, setChangeFormThesisId] = useState<string | null>(null);
+  const [openRequestThesisId, setOpenRequestThesisId] = useState<string | null>(null);
+  const [evaluationThesisId, setEvaluationThesisId] = useState<string | null>(null);
 
   const [studentFilter, setStudentFilter] = useState<MyStudentsFilter>("active");
   const { data, isLoading, isFetching, refetch } = useQuery({
@@ -124,7 +157,51 @@ export default function LecturerMyStudentsPage() {
     return filteredData.slice(startIndex, endIndex);
   }, [filteredData, page, pageSize]);
 
+  // Ticked students that may still be handed over (the list reloads after every change).
+  const transferStudents = useMemo(
+    () => toTransferStudents((data?.students ?? []).filter((row) => row.thesisId && selectedThesisIds.has(row.thesisId))),
+    [data?.students, selectedThesisIds],
+  );
+  const selectableOnPage = paginatedData.filter((row) => row.thesisId && row.changeRequest?.canTransfer);
+  const allOnPageSelected = selectableOnPage.length > 0 && selectableOnPage.every((row) => selectedThesisIds.has(row.thesisId as string));
+  const toggleSelected = (thesisIds: string[], checked: boolean) =>
+    setSelectedThesisIds((previous) => {
+      const next = new Set(previous);
+      for (const thesisId of thesisIds) {
+        if (checked) next.add(thesisId);
+        else next.delete(thesisId);
+      }
+      return next;
+    });
+
   const columns: Column<MyStudentItem>[] = useMemo(() => [
+    {
+      // Paket E5 (3.3): only the students that may be handed over can be ticked.
+      key: 'select',
+      header: () => (
+        <Checkbox
+          checked={allOnPageSelected}
+          disabled={selectableOnPage.length === 0}
+          onCheckedChange={(checked) => toggleSelected(selectableOnPage.map((row) => row.thesisId as string), !!checked)}
+          aria-label="Pilih semua mahasiswa yang dapat dialihkan di halaman ini"
+        />
+      ),
+      width: 44,
+      render: (row) => {
+        const reason = row.changeRequest?.transferBlockReason ?? (row.changeRequest ? null : "Mahasiswa ini tidak dapat dialihkan.");
+        const disabled = !row.thesisId || !row.changeRequest?.canTransfer;
+        return (
+          <span className="inline-flex" title={disabled ? reason ?? undefined : "Pilih untuk dialihkan"}>
+            <Checkbox
+              checked={!!row.thesisId && selectedThesisIds.has(row.thesisId)}
+              disabled={disabled}
+              onCheckedChange={(checked) => row.thesisId && toggleSelected([row.thesisId], !!checked)}
+              aria-label={`Pilih ${toTitleCaseName(row.fullName)}`}
+            />
+          </span>
+        );
+      },
+    },
     {
       // The only column without a width: it takes what the fixed columns leave.
       key: 'fullName',
@@ -147,6 +224,16 @@ export default function LecturerMyStudentsPage() {
           )}
           <div className="flex flex-wrap items-center gap-1.5">
             {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="text-xs" />}
+            {/* Paket E5 (3.2): a running change request; the marker opens its detail. */}
+            {row.changeRequest?.hasOpenRequest && row.thesisId && (
+              <button
+                type="button"
+                onClick={() => setOpenRequestThesisId(row.thesisId as string)}
+                title="Lihat pengajuan perubahan yang sedang berjalan"
+              >
+                <Badge variant="warning" className="whitespace-nowrap text-xs">Perubahan berjalan</Badge>
+              </button>
+            )}
             {/* Paket E4 (1.1): a replaced supervisor reads the student under "Semua" only. */}
             {row.noLongerSupervising && (
               <Badge variant="outline" className="text-xs text-muted-foreground">Tidak lagi membimbing</Badge>
@@ -226,7 +313,7 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'actions',
       header: 'Aksi',
-      width: 96,
+      width: 152,
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (row) => {
         // Only an active supervisor relation may send a warning (backend rule); a replaced
@@ -234,6 +321,18 @@ export default function LecturerMyStudentsPage() {
         const canWarn = needsWarning(row.activityLevel) && (row.supervisorStatus ?? "active") === "active" && !row.noLongerSupervising;
         return (
           <div className="flex items-center justify-end gap-1">
+            {canFillEvaluation(row) && (
+              <TableIconAction icon={ClipboardCheck} label="Isi Evaluasi" onClick={() => setEvaluationThesisId(row.thesisId as string)} />
+            )}
+            {canAskChange(row) && (
+              <TableIconAction
+                icon={FilePenLine}
+                label="Ajukan Perubahan"
+                disabled={!row.changeRequest?.canSubmit}
+                disabledReason={row.changeRequest?.blockReason}
+                onClick={() => setChangeFormThesisId(row.thesisId as string)}
+              />
+            )}
             {canWarn && (
               <TooltipProvider>
                 <Tooltip>
@@ -276,7 +375,7 @@ export default function LecturerMyStudentsPage() {
         );
       }
     }
-  ], [navigate]);
+  ], [navigate, allOnPageSelected, selectableOnPage, selectedThesisIds]);
 
   // Define tabs for reuse
   const tabs = [
@@ -293,8 +392,8 @@ export default function LecturerMyStudentsPage() {
 
       <TabsNav tabs={tabs} />
 
-      {/* Paket E4 (4): only the summary and the students table. Permohonan Pembimbing and
-          Pengajuan Perubahan have their own pages under Tugas Akhir. */}
+      {/* Paket E4 (4): only the summary and the students table; Permohonan has its own page.
+          Paket E5: "Ajukan Perubahan", "Isi Evaluasi" and "Alihkan" act on the rows. */}
       {!isLoading && data?.students && data.students.length > 0 && (
         <MyStudentsCharts students={data.students} />
       )}
@@ -326,6 +425,13 @@ export default function LecturerMyStudentsPage() {
           rowKey={(row) => row.thesisId ?? row.studentId}
           actions={
             <div className="flex items-center gap-2">
+              {/* Paket E5 (3.3): appears with the number of ticked students. */}
+              {transferStudents.length > 0 && (
+                <Button variant="outline" className="h-9 gap-1.5" onClick={() => setTransferOpen(true)}>
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Alihkan ({transferStudents.length})
+                </Button>
+              )}
               <Select
                 value={studentFilter}
                 onValueChange={(v) => {
@@ -351,6 +457,23 @@ export default function LecturerMyStudentsPage() {
             </div>
           }
         />
+      )}
+
+      <LecturerTransferStudentsDialog
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        students={transferStudents}
+        currentLecturerId={user?.id}
+        onSuccess={() => setSelectedThesisIds(new Set())}
+      />
+      {changeFormThesisId && (
+        <ThesisChangeRequestFormLauncher thesisId={changeFormThesisId} onClose={() => setChangeFormThesisId(null)} />
+      )}
+      {openRequestThesisId && (
+        <OpenThesisChangeRequestLauncher thesisId={openRequestThesisId} onClose={() => setOpenRequestThesisId(null)} />
+      )}
+      {evaluationThesisId && (
+        <EvaluationFormLauncher thesisId={evaluationThesisId} onClose={() => setEvaluationThesisId(null)} />
       )}
 
       {/* Warning Confirmation Dialog */}

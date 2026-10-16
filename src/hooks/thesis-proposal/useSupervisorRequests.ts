@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import * as service from '@/services/thesis-proposal/supervisor-request.service';
+import type { LecturerInboxKind } from '@/lib/thesisLabels';
 import type { KadepDecisionDto, LecturerResponseDto, SupervisorRequestInput } from '@/types/thesis-proposal.types';
 
 export const supervisorRequestKeys = {
@@ -9,6 +10,7 @@ export const supervisorRequestKeys = {
   mine: () => ['thesis-proposal', 'supervisor-requests', 'mine'] as const,
   catalog: () => ['thesis-proposal', 'supervisor-requests', 'catalog'] as const,
   inbox: () => ['thesis-proposal', 'supervisor-requests', 'inbox'] as const,
+  approvalInbox: (params: object) => ['thesis-proposal', 'lecturer-inbox', params] as const,
   kadep: () => ['thesis-proposal', 'supervisor-requests', 'kadep'] as const,
   recommendations: (id: string) => ['thesis-proposal', 'supervisor-requests', id, 'recommendations'] as const,
   assignable: (id: string) => ['thesis-proposal', 'supervisor-requests', id, 'assignable'] as const,
@@ -24,6 +26,22 @@ export function useSupervisorCatalog(enabled: boolean) {
 
 export function useLecturerSupervisorInbox(enabled = true) {
   return useQuery({ queryKey: supervisorRequestKeys.inbox(), queryFn: service.getLecturerInbox, enabled });
+}
+
+/**
+ * Tugas Akhir > Permohonan (Paket E5): a page of the lecturer's approval inbox from the server,
+ * sorted by status priority; the old page stays while the next loads.
+ */
+export function useLecturerApprovalInbox(
+  params: { kind?: LecturerInboxKind; status?: string; search?: string; page: number; pageSize: number },
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: supervisorRequestKeys.approvalInbox(params),
+    queryFn: () => service.getLecturerApprovalInbox(params),
+    placeholderData: (previous) => previous,
+    enabled,
+  });
 }
 
 export function useKadepSupervisorQueue(enabled = true) {

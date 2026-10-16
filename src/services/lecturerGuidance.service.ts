@@ -35,6 +35,17 @@ export interface MyStudentItem {
   /** ISO; format di frontend (C5). */
   lastGuidanceAt?: string | null;
   startDate?: string | null;
+  /**
+   * Paket E5: the open-request marker, "Ajukan Perubahan" and "Alihkan" of the row, with the
+   * reason when a rule blocks them (null for a closed relation the backend does not read).
+   */
+  changeRequest?: {
+    hasOpenRequest: boolean;
+    canSubmit: boolean;
+    blockReason: string | null;
+    canTransfer: boolean;
+    transferBlockReason: string | null;
+  } | null;
 }
 
 export interface GuidanceItem {

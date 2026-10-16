@@ -4,20 +4,32 @@ import { Badge } from '@/components/ui/badge';
 import { formatDateTimeWib, formatLecturerName } from '@/lib/text';
 import {
   CHANGE_REQUEST_STATUS_VARIANTS,
+  CHANGE_REQUEST_VIEW_STATUS_VARIANTS,
   getChangeRequestStatusLabel,
+  getChangeRequestViewStatusLabel,
   getChangeRequestKindLabel,
   getChangeRequestStepLabel,
   getSupervisorPositionLabel,
   type ChangeRequestStatus,
+  type ChangeRequestViewStatus,
 } from '@/lib/thesisLabels';
 import type { ChangeRequestStep, SupervisorLoad, ThesisChangeRequest } from '@/types/thesis-change-request.types';
 
 export function ThesisChangeRequestStatusBadge({ status }: { status: ChangeRequestStatus }) {
-  return <Badge variant={CHANGE_REQUEST_STATUS_VARIANTS[status] ?? 'outline'}>{getChangeRequestStatusLabel(status)}</Badge>;
+  return <Badge variant={CHANGE_REQUEST_STATUS_VARIANTS[status] ?? 'outline'} className="whitespace-nowrap">{getChangeRequestStatusLabel(status)}</Badge>;
+}
+
+/** Paket E5 (1.5): the status a row shows this viewer ("Menunggu Persetujuan Anda", "Sedang Berjalan", ...). */
+export function ThesisChangeRequestViewStatusBadge({ status }: { status: ChangeRequestViewStatus }) {
+  return (
+    <Badge variant={CHANGE_REQUEST_VIEW_STATUS_VARIANTS[status] ?? 'outline'} className="whitespace-nowrap">
+      {getChangeRequestViewStatusLabel(status)}
+    </Badge>
+  );
 }
 
 export function ThesisChangeRequestTypeBadge({ request }: { request: ThesisChangeRequest }) {
-  return <Badge variant="secondary">{getChangeRequestKindLabel(request)}</Badge>;
+  return <Badge variant="secondary" className="whitespace-nowrap">{getChangeRequestKindLabel(request)}</Badge>;
 }
 
 const personName = (person: { name: string | null } | null | undefined) => formatLecturerName(person?.name) || '-';

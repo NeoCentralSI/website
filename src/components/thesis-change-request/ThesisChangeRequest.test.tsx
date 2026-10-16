@@ -3,17 +3,16 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as service from '@/services/thesis-change-request/thesis-change-request.service';
-import type { ThesisChangeContext, ThesisChangeRequest } from '@/types/thesis-change-request.types';
-import * as lecturerGuidance from '@/services/lecturerGuidance.service';
-import { LecturerTransferStudentsDialog } from './LecturerTransferStudentsDialog';
+import type { ThesisChangeContext, ThesisChangeRequest, ThesisChangeRequestRow } from '@/types/thesis-change-request.types';
+import { LecturerTransferStudentsDialog, toTransferStudents } from './LecturerTransferStudentsDialog';
 import { ThesisChangeRequestCard } from './ThesisChangeRequestCard';
 import { ThesisChangeRequestTable } from './ThesisChangeRequestTable';
+import { ThesisChangeRequestMiniTable } from './ThesisChangeRequestViews';
 import { groupByBatch, summarizeChange } from './thesisChangeRequestGroups';
 
 vi.mock('lottie-react', () => ({ default: () => null }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/services/topic.service', () => ({ getTopics: vi.fn().mockResolvedValue([]) }));
-vi.mock('@/services/lecturerGuidance.service', () => ({ getMyStudents: vi.fn() }));
 vi.mock('@/services/thesis-change-request/thesis-change-request.service', () => ({
   getThesisChangeContext: vi.fn(),
   getSupervisorOptions: vi.fn(),
@@ -167,39 +166,71 @@ describe('ThesisChangeRequestCard (compact, Paket E4, 5)', () => {
   });
 });
 
-describe('Tugas Akhir > Perubahan (Paket E4, 4.2; server paging in the Lanjutan)', () => {
+/** Radix menus open on pointer down in jsdom. */
+function openMenu(trigger: HTMLElement) {
+  fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
+}
+
+describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
   const meta = (total: number, page = 1, pageSize = 10) => ({ page, pageSize, total, totalPages: Math.max(Math.ceil(total / pageSize), 1) });
-  const counts = { awaitingMe: 1, inProgress: 0 };
-  const inbox = (data: ThesisChangeRequest[], total = data.length) => ({ data, meta: meta(total), counts });
+  const counts = { awaitingDecision: 1, inProgress: 0 };
+  const row = (overrides: Partial<ThesisChangeRequestRow> = {}): ThesisChangeRequestRow => ({ ...request(), viewStatus: 'in_progress', ...overrides });
+  const inbox = (data: ThesisChangeRequestRow[], total = data.length) => ({ data, meta: meta(total), counts });
+  const atKadep = (overrides: Partial<ThesisChangeRequestRow> = {}) =>
+    row({
+      currentStep: 'kadep',
+      viewStatus: 'awaiting_decision',
+      steps: request().steps.map((step) => (step.key === 'kadep' ? step : { ...step, status: 'approved' as const })),
+      ...overrides,
+    });
 
   it('summarizes before and after in one line', () => {
     expect(summarizeChange(request(), (name) => name ?? '')).toBe('Pembimbing 1: HUSNIL KAMIL → AINA HUBBY');
     expect(summarizeChange(request({ supervisor: null, requestType: 'title', title: { previous: 'Lama', next: 'Baru', newTopic: null } }), (n) => n ?? '')).toBe('Lama → Baru');
   });
 
-  it('asks the server for the chosen filter, search and page; the labels carry the server counts', async () => {
-    vi.mocked(service.getChangeRequestInbox).mockResolvedValue({ data: [], meta: meta(0), counts: { awaitingMe: 3, inProgress: 7 } });
-    wrap(<ThesisChangeRequestTable isKadep={false} />);
+  it('"Semua" by default in the server order; Status and Jenis are filtered in the column header', async () => {
+    vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep(), row({ id: 'req-2' })]));
+    wrap(<ThesisChangeRequestTable />);
 
-    expect(await screen.findByText('Tidak ada pengajuan yang menunggu keputusan Anda.')).toBeInTheDocument();
-    expect(service.getChangeRequestInbox).toHaveBeenCalledWith({ scope: 'awaitingMe', search: undefined, page: 1, pageSize: 10 });
-    fireEvent.click(screen.getByRole('combobox', { name: 'Filter status pengajuan' }));
-    expect(await screen.findByRole('option', { name: 'Menunggu Saya (3)' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('option', { name: 'Sedang Berjalan (7)' }));
-    await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenLastCalledWith({ scope: 'inProgress', search: undefined, page: 1, pageSize: 10 }));
+    await screen.findAllByText('Ilham Nofaldi');
+    const table = screen.getByRole('table');
+    const rows = within(table).getAllByRole('row');
+    expect(service.getChangeRequestInbox).toHaveBeenCalledWith({ status: undefined, kind: undefined, search: undefined, page: 1, pageSize: 10 });
+    expect(within(table).getAllByRole('columnheader').map((header) => header.textContent?.trim())).toEqual([
+      'Mahasiswa dan Perubahan', 'Jenis', 'Langkah Berjalan', 'Tanggal', 'Status', 'Aksi',
+    ]);
+    // The viewer's own status is a label of its own, at the top (1.5); the summary sits under the name (1.2).
+    expect(within(rows[1]).getByText('Menunggu Keputusan Anda')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('Pembimbing 1: Husnil Kamil → Aina Hubby')).toBeInTheDocument();
+    expect(within(rows[2]).getByText('Sedang Berjalan')).toBeInTheDocument();
+    // No dropdown filter above the table (the only select left is the page size).
+    expect(screen.queryByRole('combobox', { name: /Filter/ })).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText('Cari nama atau NIM...'), { target: { value: ' 2211522 ' } });
-    await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenLastCalledWith({ scope: 'inProgress', search: '2211522', page: 1, pageSize: 10 }));
+    openMenu(within(screen.getByRole('columnheader', { name: /Status/ })).getByRole('button'));
+    expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
+      'Semua', 'Menunggu Keputusan Anda', 'Sedang Berjalan', 'Disetujui', 'Ditolak', 'Dibatalkan',
+    ]);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Sedang Berjalan' }));
+    await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenLastCalledWith({ status: 'in_progress', kind: undefined, search: undefined, page: 1, pageSize: 10 }));
+
+    openMenu(within(screen.getByRole('columnheader', { name: /Jenis/ })).getByRole('button'));
+    expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual(['Semua', 'Judul', 'Pembimbing', 'Judul dan Pembimbing', 'Alihkan']);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Alihkan' }));
+    await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenLastCalledWith({ status: 'in_progress', kind: 'transfer', search: undefined, page: 1, pageSize: 10 }));
+
+    fireEvent.change(screen.getByPlaceholderText('Cari nama, NIM, atau judul...'), { target: { value: ' 2211522 ' } });
+    await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenLastCalledWith({ status: 'in_progress', kind: 'transfer', search: '2211522', page: 1, pageSize: 10 }));
   });
 
   it('pages past the first hundred rows: page 11 of 150 shows rows 101-110', async () => {
-    const rows = Array.from({ length: 150 }, (_, i) => request({ id: `req-${i + 1}`, student: person(`s${i + 1}`, `MAHASISWA ${i + 1}`) }));
+    const rows = Array.from({ length: 150 }, (_, i) => row({ id: `req-${i + 1}`, student: person(`s${i + 1}`, `MAHASISWA ${i + 1}`) }));
     vi.mocked(service.getChangeRequestInbox).mockImplementation(async ({ page = 1, pageSize = 10 }) => ({
       data: rows.slice((page - 1) * pageSize, page * pageSize),
       meta: meta(150, page, pageSize),
       counts,
     }));
-    wrap(<ThesisChangeRequestTable isKadep />);
+    wrap(<ThesisChangeRequestTable />);
 
     expect(await screen.findByText('Menampilkan 1-10 dari 150')).toBeInTheDocument();
     for (let next = 2; next <= 11; next += 1) {
@@ -212,48 +243,35 @@ describe('Tugas Akhir > Perubahan (Paket E4, 4.2; server paging in the Lanjutan)
     expect(vi.mocked(service.getChangeRequestInbox).mock.calls.at(-1)?.[0]).toMatchObject({ page: 11, pageSize: 10 });
   });
 
-  it('a supervisor approves or rejects the rows waiting for their step; rejecting needs a reason', async () => {
-    vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([
-      request({ viewer: { canDecideAsLecturer: true, canCancel: false }, newSupervisorLoad: { activeCount: 10, quotaMax: 10, isFull: true } }),
-    ]));
-    vi.mocked(service.decideAsLecturer).mockResolvedValue({ success: true, message: 'Pengajuan ditolak', data: request({ status: 'rejected' }) });
-    wrap(<ThesisChangeRequestTable isKadep={false} />);
+  it('approves or rejects with icons once every lecturer step is done; rejecting needs a reason', async () => {
+    vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep()]));
+    vi.mocked(service.decideAsKadep).mockResolvedValue({ success: true, message: 'Pengajuan ditolak', data: request({ status: 'rejected' }) });
+    wrap(<ThesisChangeRequestTable />);
 
-    expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();
-    expect(screen.getByText('Pembimbing 1: Husnil Kamil → Aina Hubby')).toBeInTheDocument();
-    expect(screen.getByText('Pembimbing Baru')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Detail' }));
-    expect(await screen.findByText(/Beban bimbingan Anda saat ini: 10 dari 10 mahasiswa\. Kuota sudah penuh/)).toBeInTheDocument();
-    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
-
-    fireEvent.click(screen.getAllByRole('button', { name: 'Tolak' })[0]);
+    const tableRow = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
+    expect(within(tableRow).getByRole('button', { name: 'Lihat Detail' })).toBeInTheDocument();
+    // Approve is green, as on the reference table (1.1).
+    expect(within(tableRow).getByRole('button', { name: 'Setujui' }).className).toContain('text-emerald-600');
+    fireEvent.click(within(tableRow).getByRole('button', { name: 'Tolak' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tolak pengajuan?' });
     expect(within(dialog).getByRole('button', { name: 'Tolak' })).toBeDisabled();
-    fireEvent.change(within(dialog).getByLabelText('Alasan penolakan'), { target: { value: 'Di luar bidang saya' } });
+    fireEvent.change(within(dialog).getByLabelText('Alasan penolakan'), { target: { value: 'Tidak sesuai aturan' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Tolak' }));
-    await waitFor(() => expect(service.decideAsLecturer).toHaveBeenCalledWith('req-1', { approve: false, notes: 'Di luar bidang saya' }));
+    await waitFor(() => expect(service.decideAsKadep).toHaveBeenCalledWith('req-1', { approve: false, notes: 'Tidak sesuai aturan' }));
   });
 
-  it('the Kadep decides an Alihkan batch together from its group modal, read from the server', async () => {
+  it('decides an Alihkan batch together from its group modal, read from the server', async () => {
     const batch = (id: string, name: string) =>
-      request({
-        id,
-        batchId: 'batch-1',
-        student: person(id, name),
-        currentStep: 'kadep',
-        steps: request().steps.map((step) => (step.key === 'kadep' ? step : { ...step, status: 'approved' as const })),
-        newSupervisorLoad: { activeCount: 3, quotaMax: 10, isFull: false },
-      });
+      atKadep({ id, batchId: 'batch-1', student: person(id, name), newSupervisorLoad: { activeCount: 3, quotaMax: 10, isFull: false } });
     const rows = [batch('a', 'MAHASISWA SATU'), batch('b', 'MAHASISWA DUA')];
     vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox(rows));
     vi.mocked(service.decideBatchAsKadep).mockResolvedValue({ success: true, message: '2 pengajuan disetujui', data: { batchId: 'batch-1', decided: 2, failed: 0, results: [] } });
-    wrap(<ThesisChangeRequestTable isKadep />);
+    wrap(<ThesisChangeRequestTable />);
 
     expect(await screen.findByText('Mahasiswa Satu')).toBeInTheDocument();
     expect(screen.getAllByText('Alihkan')).toHaveLength(2);
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Kelompok' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Keputusan Kelompok' })[0]);
     const group = await screen.findByRole('dialog', { name: 'Kelompok Alihkan Mahasiswa' });
     await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenCalledWith({ batchId: 'batch-1', pageSize: 100 }));
     expect(await within(group).findByText(/2 mahasiswa · Husnil Kamil → Aina Hubby/)).toBeInTheDocument();
@@ -264,18 +282,14 @@ describe('Tugas Akhir > Perubahan (Paket E4, 4.2; server paging in the Lanjutan)
     await waitFor(() => expect(service.decideBatchAsKadep).toHaveBeenCalledWith('batch-1', { approve: true, notes: null }));
   });
 
-  it('the Kadep decides directly with a reason while a lecturer step is open (Putuskan Langsung)', async () => {
-    vi.mocked(service.getChangeRequestInbox).mockImplementation(async ({ scope }) =>
-      scope === 'inProgress' ? inbox([request()]) : inbox([]),
-    );
+  it('decides directly with a reason while a lecturer step is open (Putuskan Langsung)', async () => {
+    vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([row()]));
     vi.mocked(service.decideAsKadep).mockResolvedValue({ success: true, message: 'ok', data: request({ status: 'approved' }) });
-    wrap(<ThesisChangeRequestTable isKadep />);
+    wrap(<ThesisChangeRequestTable />);
 
-    expect(await screen.findByText('Tidak ada pengajuan yang menunggu keputusan Anda.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('combobox', { name: 'Filter status pengajuan' }));
-    fireEvent.click(await screen.findByRole('option', { name: /^Sedang Berjalan/ }));
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Putuskan Langsung' }));
+    const tableRow = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
+    expect(within(tableRow).queryByRole('button', { name: 'Setujui' })).not.toBeInTheDocument();
+    fireEvent.click(within(tableRow).getByRole('button', { name: 'Putuskan Langsung' }));
     const detail = await screen.findByRole('dialog', { name: 'Detail Pengajuan Perubahan' });
     expect(within(detail).getByText('Langkah dosen belum selesai. Anda tetap dapat memutuskan langsung dengan alasan.')).toBeInTheDocument();
     fireEvent.click(within(detail).getByRole('button', { name: 'Setujui' }));
@@ -288,28 +302,24 @@ describe('Tugas Akhir > Perubahan (Paket E4, 4.2; server paging in the Lanjutan)
   });
 });
 
-describe('LecturerTransferStudentsDialog', () => {
-  it('picks the active research students, offers only lecturers who may hold the position, and sends one request for all', async () => {
-    vi.mocked(lecturerGuidance.getMyStudents).mockResolvedValue({
-      students: [
-        { studentId: 's1', thesisId: 't1', fullName: 'ILHAM NOFALDI', identityNumber: '2211522028', thesisStatus: 'research', supervisorStatus: 'active', roles: ['Pembimbing 1'] },
-        { studentId: 's2', thesisId: 't2', fullName: 'NABIL RIZKI', identityNumber: '2211522018', thesisStatus: 'research', supervisorStatus: 'active', roles: ['Pembimbing 1'] },
-        { studentId: 's3', thesisId: 't3', fullName: 'MAHASISWA PROPOSAL', identityNumber: '2211522099', thesisStatus: 'proposal', supervisorStatus: 'active', roles: ['Pembimbing 1'] },
-      ],
-    } as unknown as Awaited<ReturnType<typeof lecturerGuidance.getMyStudents>>);
+describe('LecturerTransferStudentsDialog (Paket E5, 3.3: the students ticked in Mahasiswa Bimbingan)', () => {
+  it('lists the ticked students, offers only lecturers who may hold the position, and sends one request for all', async () => {
     vi.mocked(service.submitTransfer).mockResolvedValue({ success: true, message: 'ok', data: { batchId: 'b1', requests: [] } });
     const onSuccess = vi.fn();
-    wrap(<LecturerTransferStudentsDialog open onOpenChange={() => {}} currentLecturerId="l1" onSuccess={onSuccess} />);
+    const students = toTransferStudents([
+      { studentId: 's1', thesisId: 't1', fullName: 'ILHAM NOFALDI', identityNumber: '2211522028', roles: ['Pembimbing 1'], changeRequest: { hasOpenRequest: false, canSubmit: true, blockReason: null, canTransfer: true, transferBlockReason: null } },
+      { studentId: 's2', thesisId: 't2', fullName: 'NABIL RIZKI', identityNumber: '2211522018', roles: ['Pembimbing 1'], changeRequest: { hasOpenRequest: false, canSubmit: true, blockReason: null, canTransfer: true, transferBlockReason: null } },
+      { studentId: 's3', thesisId: 't3', fullName: 'MAHASISWA PROPOSAL', identityNumber: '2211522099', roles: ['Pembimbing 1'], changeRequest: { hasOpenRequest: false, canSubmit: false, blockReason: 'x', canTransfer: false, transferBlockReason: 'x' } },
+    ]);
+    wrap(<LecturerTransferStudentsDialog open onOpenChange={() => {}} students={students} currentLecturerId="l1" onSuccess={onSuccess} />);
 
-    expect(await screen.findByText(/Ilham Nofaldi/)).toBeInTheDocument();
+    expect(await screen.findByText('Mahasiswa yang dialihkan (2)')).toBeInTheDocument();
+    expect(screen.getByText(/Ilham Nofaldi/)).toBeInTheDocument();
     expect(screen.queryByText(/Mahasiswa Proposal/)).not.toBeInTheDocument();
-    expect(screen.getByText('Belum dapat dikirim: Pilih minimal satu mahasiswa.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Pilih Ilham Nofaldi' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Pilih Nabil Rizki' }));
-    expect(screen.getByText('Mahasiswa yang dialihkan (2 dipilih)')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.getByText(/Hanya dosen yang memiliki peran Pembimbing 1 yang ditampilkan/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('combobox'));
     const options = (await screen.findAllByRole('option')).map((option) => option.textContent);
     // Not the lecturer themselves, and not a lecturer without the Pembimbing 1 role.
     expect(options).toEqual(['Afriyanti', 'Aina Hubby']);
@@ -321,6 +331,21 @@ describe('LecturerTransferStudentsDialog', () => {
       expect(service.submitTransfer).toHaveBeenCalledWith({ thesisIds: ['t1', 't2'], newSupervisorId: 'l3', reason: 'Penugasan studi lanjut.' }),
     );
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+  });
+});
+
+describe('ThesisChangeRequestMiniTable (Paket E5, 1.1 and 1.2)', () => {
+  it('shows a two-line date, nowrap badges and the detail as an icon', () => {
+    const onDetail = vi.fn();
+    wrap(<ThesisChangeRequestMiniTable requests={[request({ status: 'approved' })]} onDetail={onDetail} />);
+
+    const table = screen.getByRole('table');
+    expect(table.className).toContain('table-fixed');
+    const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
+    expect(within(cells[0]).getByText('9 Oktober 2026')).toBeInTheDocument();
+    expect(within(cells[2]).getByText('Disetujui').className).toContain('whitespace-nowrap');
+    fireEvent.click(within(cells[3]).getByRole('button', { name: 'Lihat Detail' }));
+    expect(onDetail).toHaveBeenCalled();
   });
 });
 

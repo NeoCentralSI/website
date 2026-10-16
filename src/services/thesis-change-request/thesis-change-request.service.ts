@@ -4,7 +4,7 @@ import type {
   BatchDecisionResult,
   ChangeDecisionDto,
   ChangeRequestInbox,
-  ChangeRequestScope,
+  ChangeRequestKindFilter,
   DepartmentChangeRequests,
   LecturerChangeRequests,
   SubmitChangeRequestDto,
@@ -13,7 +13,7 @@ import type {
   ThesisChangeContext,
   ThesisChangeRequest,
 } from '@/types/thesis-change-request.types';
-import type { SupervisorPosition } from '@/lib/thesisLabels';
+import type { ChangeRequestViewStatus, SupervisorPosition } from '@/lib/thesisLabels';
 
 const BASE = '/thesis-change-requests';
 
@@ -84,9 +84,10 @@ export async function getDepartmentChangeRequests(params: {
   return { data: body.data ?? [], meta: body.meta ?? { page: 1, pageSize: params.pageSize, total: 0, totalPages: 1 } };
 }
 
-/** Tugas Akhir > Perubahan: one page of a filter for the signed-in viewer (Lanjutan Paket E4). */
+/** Tugas Akhir > Perubahan (Ketua Departemen): one page sorted by status priority (Paket E5). */
 export async function getChangeRequestInbox(params: {
-  scope?: ChangeRequestScope;
+  status?: ChangeRequestViewStatus;
+  kind?: ChangeRequestKindFilter;
   search?: string;
   page?: number;
   pageSize?: number;
@@ -94,7 +95,8 @@ export async function getChangeRequestInbox(params: {
   batchId?: string;
 }): Promise<ChangeRequestInbox> {
   const query = new URLSearchParams();
-  if (params.scope) query.set('scope', params.scope);
+  if (params.status) query.set('status', params.status);
+  if (params.kind) query.set('kind', params.kind);
   if (params.search) query.set('search', params.search);
   if (params.page) query.set('page', String(params.page));
   if (params.pageSize) query.set('pageSize', String(params.pageSize));
@@ -105,7 +107,7 @@ export async function getChangeRequestInbox(params: {
   return {
     data: body.data ?? [],
     meta: body.meta ?? { page: 1, pageSize: params.pageSize ?? 10, total: 0, totalPages: 1 },
-    counts: body.counts ?? { awaitingMe: 0, inProgress: 0 },
+    counts: body.counts ?? { awaitingDecision: 0, inProgress: 0 },
   };
 }
 

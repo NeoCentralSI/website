@@ -16,13 +16,15 @@ const OBSERVATIONS = Object.keys(GUIDANCE_EVALUATION_OBSERVATION_LABELS) as Guid
 
 /**
  * Status of an evaluation. "Lanjut Bimbingan" needs no decision, so it reads "Tercatat"
- * instead of "Disetujui".
+ * instead of "Disetujui". `short` (Paket E5, 1.2: a table cell) keeps the badge on one line:
+ * "Menunggu Kadep", with the full label as its tooltip.
  */
-export function ThesisGuidanceEvaluationStatusBadge({ evaluation }: { evaluation: ThesisGuidanceEvaluation }) {
-  if (!evaluation.requiresKadep) return <Badge variant="success">Tercatat</Badge>;
+export function ThesisGuidanceEvaluationStatusBadge({ evaluation, short = false }: { evaluation: ThesisGuidanceEvaluation; short?: boolean }) {
+  if (!evaluation.requiresKadep) return <Badge variant="success" className="whitespace-nowrap">Tercatat</Badge>;
+  const label = getGuidanceEvaluationStatusLabel(evaluation.status);
   return (
-    <Badge variant={GUIDANCE_EVALUATION_STATUS_VARIANTS[evaluation.status] ?? 'outline'}>
-      {getGuidanceEvaluationStatusLabel(evaluation.status)}
+    <Badge variant={GUIDANCE_EVALUATION_STATUS_VARIANTS[evaluation.status] ?? 'outline'} className="whitespace-nowrap" title={label}>
+      {short && evaluation.status === 'pending' ? 'Menunggu Kadep' : label}
     </Badge>
   );
 }

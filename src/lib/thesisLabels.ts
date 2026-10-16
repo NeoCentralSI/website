@@ -119,6 +119,31 @@ export const CHANGE_REQUEST_STATUS_VARIANTS: Record<ChangeRequestStatus, ThesisB
   cancelled: "outline",
 };
 
+/**
+ * Paket E5 (1.5): status of a row of the change-request tables, which depends on the viewer
+ * while the request is open. Tugas Akhir > Perubahan (Ketua Departemen) uses "awaiting_decision";
+ * the Perubahan TA rows of Tugas Akhir > Permohonan (a lecturer's own steps) use "awaiting_me".
+ */
+export type ChangeRequestViewStatus = "awaiting_decision" | "awaiting_me" | "in_progress" | "approved" | "rejected" | "cancelled";
+
+export const CHANGE_REQUEST_VIEW_STATUS_LABELS: Record<ChangeRequestViewStatus, string> = {
+  awaiting_decision: "Menunggu Keputusan Anda",
+  awaiting_me: "Menunggu Persetujuan Anda",
+  in_progress: "Sedang Berjalan",
+  approved: "Disetujui",
+  rejected: "Ditolak",
+  cancelled: "Dibatalkan",
+};
+
+export const CHANGE_REQUEST_VIEW_STATUS_VARIANTS: Record<ChangeRequestViewStatus, ThesisBadgeVariant> = {
+  awaiting_decision: "warning",
+  awaiting_me: "warning",
+  in_progress: "info",
+  approved: "success",
+  rejected: "destructive",
+  cancelled: "outline",
+};
+
 export const CHANGE_REQUEST_STEP_LABELS: Record<ChangeRequestStepKey, string> = {
   main_supervisor: "Pembimbing 1",
   previous_supervisor: "Pembimbing Sebelumnya",
@@ -174,6 +199,23 @@ export const GUIDANCE_EVALUATION_STATUS_VARIANTS: Record<GuidanceEvaluationStatu
   pending: "warning",
   approved: "success",
   rejected: "destructive",
+};
+
+/** Paket E5: status of a row of the Ketua Departemen's Evaluasi table ("Tercatat" = Lanjut Bimbingan). */
+export type GuidanceEvaluationViewStatus = "awaiting_decision" | "approved" | "rejected" | "recorded";
+
+export const GUIDANCE_EVALUATION_VIEW_STATUS_LABELS: Record<GuidanceEvaluationViewStatus, string> = {
+  awaiting_decision: "Menunggu Keputusan Anda",
+  approved: "Disetujui",
+  rejected: "Ditolak",
+  recorded: "Tercatat",
+};
+
+export const GUIDANCE_EVALUATION_VIEW_STATUS_VARIANTS: Record<GuidanceEvaluationViewStatus, ThesisBadgeVariant> = {
+  awaiting_decision: "warning",
+  approved: "success",
+  rejected: "destructive",
+  recorded: "success",
 };
 
 export const GUIDANCE_EVALUATION_OBSERVATION_LABELS: Record<GuidanceEvaluationObservation, string> = {
@@ -326,6 +368,33 @@ export const SUPERVISOR_REQUEST_STATUS_LABELS: Record<SupervisorRequestStatus, s
   closed: "Ditutup",
 };
 
+/**
+ * Paket E5 (1.2): the short status of a Pengajuan Pembimbing in a table cell, so the badge stays
+ * on one line inside its column; the full label is its tooltip.
+ */
+export const SUPERVISOR_REQUEST_STATUS_SHORT_LABELS: Record<SupervisorRequestStatus, string> = {
+  pending: "Menunggu Dosen",
+  under_review: "Sedang Ditinjau",
+  pending_kadep: "Menunggu Kadep",
+  revision_requested: "Perlu Revisi",
+  accepted: "Diterima",
+  assigned: "Ditetapkan",
+  rejected_by_lecturer: "Ditolak Dosen",
+  rejected_by_kadep: "Ditolak Kadep",
+  redirected: "Dialihkan",
+  withdrawn: "Ditarik",
+  cancelled: "Dibatalkan",
+  closed: "Ditutup",
+};
+
+/** Paket E5 (3.1): the two kinds of rows of Tugas Akhir > Permohonan. */
+export type LecturerInboxKind = "supervisor_request" | "change_request";
+
+export const LECTURER_INBOX_KIND_LABELS: Record<LecturerInboxKind, string> = {
+  supervisor_request: "Pengajuan Pembimbing",
+  change_request: "Perubahan TA",
+};
+
 export const SUPERVISOR_REQUEST_ROUTE_LABELS: Record<SupervisorRequestRoute, string> = {
   direct: "Pilih Dosen Sendiri",
   over_quota: "Pengajuan di Atas Kuota",
@@ -421,6 +490,9 @@ export const getMilestoneStatusLabel = labelOf(MILESTONE_STATUS_LABELS);
 export const getChangeRequestTypeLabel = labelOf(CHANGE_REQUEST_TYPE_LABELS);
 export const getChangeRequestStatusLabel = labelOf(CHANGE_REQUEST_STATUS_LABELS);
 export const getChangeRequestStepLabel = labelOf(CHANGE_REQUEST_STEP_LABELS);
+export const getChangeRequestViewStatusLabel = labelOf(CHANGE_REQUEST_VIEW_STATUS_LABELS);
+export const getGuidanceEvaluationViewStatusLabel = labelOf(GUIDANCE_EVALUATION_VIEW_STATUS_LABELS);
+export const getSupervisorRequestStatusShortLabel = labelOf(SUPERVISOR_REQUEST_STATUS_SHORT_LABELS);
 export const getSupervisorPositionLabel = labelOf(SUPERVISOR_POSITION_LABELS);
 export const getGuidanceEvaluationTypeLabel = labelOf(GUIDANCE_EVALUATION_TYPE_LABELS);
 export const getGuidanceEvaluationStageLabel = labelOf(GUIDANCE_EVALUATION_STAGE_LABELS);

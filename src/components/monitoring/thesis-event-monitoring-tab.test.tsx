@@ -12,6 +12,12 @@ import {
 import { ThesisEventMonitoringTab } from "./thesis-event-monitoring-tab";
 
 const role = vi.hoisted(() => ({ isAdmin: false, isDosen: true }));
+const navigate = vi.hoisted(() => vi.fn());
+
+vi.mock("react-router-dom", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router-dom")>()),
+  useNavigate: () => navigate,
+}));
 
 vi.mock("lottie-react", () => ({ default: () => null }));
 vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isAdmin: () => role.isAdmin, isDosen: () => role.isDosen }) }));
@@ -101,6 +107,11 @@ function renderTab(props: Partial<Parameters<typeof ThesisEventMonitoringTab>[0]
       </MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+/** Radix menus open on pointer down in jsdom. */
+function openMenu(trigger: HTMLElement) {
+  fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: "mouse" });
 }
 
 /** The card (title, description and list) that carries a heading. */
@@ -235,10 +246,12 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
       expect(within(table).queryByText(raw)).not.toBeInTheDocument();
     }
 
-    expect(within(rows[4]).getByRole("link", { name: /Lihat detail/ })).toHaveAttribute("href", "/tugas-akhir/seminar-hasil/sem-lulus");
+    // Paket E5 (1.1): the detail is an Eye icon to the same page of the seminar module.
+    fireEvent.click(within(rows[4]).getByRole("button", { name: "Lihat Detail" }));
+    expect(navigate).toHaveBeenCalledWith("/tugas-akhir/seminar-hasil/sem-lulus");
   });
 
-  it("searches the table by name or NIM and filters it by status, in the browser", async () => {
+  it("searches the table by name or NIM and filters it by status in the column header, in the browser", async () => {
     renderTab();
     const table = await screen.findByRole("table");
     await within(table).findByText("Uji Mon Seminar Lulus");
@@ -252,13 +265,16 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
     await waitFor(() => expect(within(bodyRows()[0]).getByText("Uji Mon Seminar Terjadwal")).toBeInTheDocument());
     expect(bodyRows()).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole("button", { name: /Reset/ }));
+    fireEvent.change(screen.getByPlaceholderText("Cari nama atau NIM..."), { target: { value: "" } });
     await waitFor(() => expect(bodyRows()).toHaveLength(8));
 
-    fireEvent.keyDown(screen.getByRole("combobox", { name: "Filter status" }), { key: "ArrowDown" });
+    // Paket E5 (1.3): the status filter sits in the header of the Status column, "Semua" first.
+    expect(screen.queryByRole("combobox", { name: "Filter status" })).not.toBeInTheDocument();
+    openMenu(within(screen.getByRole("columnheader", { name: /Status/ })).getByRole("button"));
     // The options carry the labels of the shared badge.
-    expect(await screen.findByRole("option", { name: "Menunggu Penetapan Penguji" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("option", { name: "Terjadwalkan" }));
+    expect((await screen.findAllByRole("menuitem"))[0]).toHaveTextContent("Semua");
+    expect(screen.getByRole("menuitem", { name: "Menunggu Penetapan Penguji" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Terjadwalkan" }));
     await waitFor(() => expect(bodyRows()).toHaveLength(2));
     // The filter goes by the stored status: both scheduled seminars, also the one whose
     // badge already reads "Sedang Berlangsung". The summary card counts the same two.
@@ -277,7 +293,7 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
     const table = await screen.findByRole("table");
     await within(table).findByText("Uji Mon Seminar Lulus");
 
-    expect(screen.queryByRole("link", { name: /Lihat detail/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Lihat Detail" })).not.toBeInTheDocument();
     expect(within(table).queryByRole("columnheader", { name: "Aksi" })).not.toBeInTheDocument();
   });
 
@@ -365,6 +381,7 @@ describe("ThesisEventMonitoringTab — Sidang", () => {
     expect(within(rows[0]).getAllByRole("cell")[4]).toHaveTextContent("84 (A)");
     expect(within(rows[1]).getAllByRole("cell")[4]).toHaveTextContent("78 (B+)");
     expect(within(rows[2]).getAllByRole("cell")[4]).toHaveTextContent(/^-$/);
-    expect(within(rows[0]).getByRole("link", { name: /Lihat detail/ })).toHaveAttribute("href", "/tugas-akhir/sidang/sid-lulus");
+    fireEvent.click(within(rows[0]).getByRole("button", { name: "Lihat Detail" }));
+    expect(navigate).toHaveBeenCalledWith("/tugas-akhir/sidang/sid-lulus");
   });
 });

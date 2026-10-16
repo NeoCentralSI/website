@@ -299,7 +299,9 @@ function App() {
                   <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
                   {/* Seminar Hasil and Sidang lecturer-side handled by unified top-level routes */}
                   <Route path="/jadwal-ketersediaan" element={<LecturerAvailability />} />
-                  {/* Paket E4 (4.1-4.3): Permohonan, Perubahan and Evaluasi have their own pages. */}
+                  {/* Paket E4 (4.1-4.3): Permohonan, Perubahan and Evaluasi have their own pages. Paket E5
+                      (3.2, 3.4): Perubahan and Evaluasi are the Ketua Departemen's; the pages send other
+                      lecturers to Permohonan and Mahasiswa Bimbingan. */}
                   <Route path="/tugas-akhir/permohonan" element={<LecturerSupervisorRequestsPage />} />
                   <Route path="/tugas-akhir/perubahan" element={<ThesisChangeRequestsPage />} />
                   <Route path="/tugas-akhir/evaluasi" element={<ThesisGuidanceEvaluationsPage />} />
@@ -416,7 +418,7 @@ function App() {
                   <Route path="/kelola/tugas-akhir/kadep" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pengesahan-judul" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
-                  {/* Paket E4 (4.4): "Persetujuan Tugas Akhir" is gone; its addresses go to the new pages. */}
+                  {/* Paket E4 (4.4): "Persetujuan Tugas Akhir" is gone; its addresses go to the Kadep's submenus. */}
                   <Route path="/kelola/tugas-akhir/kadep/perubahan" element={<Navigate to="/tugas-akhir/perubahan" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/evaluasi" element={<Navigate to="/tugas-akhir/evaluasi" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pergantian-pembimbing" element={<Navigate to="/tugas-akhir/perubahan" replace />} />

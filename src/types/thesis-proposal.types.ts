@@ -1,11 +1,13 @@
 import type {
   AssignmentBatchStatus,
+  ChangeRequestViewStatus,
   ResearchMethodResult,
   SupervisionLoadLevel,
   SupervisorRequestRoute,
   SupervisorRequestStatus,
   ThesisLifecycleStatus,
 } from '@/lib/thesisLabels';
+import type { ThesisChangeRequestRow } from '@/types/thesis-change-request.types';
 
 export type ResearchPermitStatus = 'approved' | 'in_process' | 'not_approved';
 
@@ -135,6 +137,21 @@ export interface LecturerInbox {
   load: SupervisorLoad & { acceptingRequests: boolean };
   waiting: SupervisorRequest[];
   history: SupervisorRequest[];
+}
+
+/** Paket E5 (3.1): a row of Tugas Akhir > Permohonan, the lecturer's approval inbox. */
+export type LecturerApprovalRow =
+  | { kind: 'supervisor_request'; id: string; viewStatus: SupervisorRequestStatus; createdAt: string; supervisorRequest: SupervisorRequest }
+  | { kind: 'change_request'; id: string; viewStatus: ChangeRequestViewStatus; createdAt: string; changeRequest: ThesisChangeRequestRow };
+
+/**
+ * One page of Tugas Akhir > Permohonan, "Semua" by default and sorted by status priority on the
+ * server; `counts.waiting` (both kinds) is the sidebar badge.
+ */
+export interface LecturerApprovalInbox {
+  data: LecturerApprovalRow[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+  counts: { waiting: number; waitingRequests: number; waitingChanges: number };
 }
 
 export interface LecturerResponseDto {

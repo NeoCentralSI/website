@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
-import { useLecturerSupervisorInbox } from "@/hooks/thesis-proposal/useSupervisorRequests";
+import { useLecturerApprovalInbox } from "@/hooks/thesis-proposal/useSupervisorRequests";
 import { ENV } from "@/config/env";
 
 /** `badge`: a count shown next to the sub-item, e.g. waiting supervisor requests. */
@@ -63,9 +63,10 @@ export const useSidebarMenu = () => {
   const isResearchMethodCoordinatorRole = isResearchMethodCoordinator();
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
-  // Paket E4 (4.1): Tugas Akhir > Permohonan carries the number of waiting supervisor requests.
-  const { data: supervisorInbox } = useLecturerSupervisorInbox(isPembimbingRole);
-  const waitingRequestCount = supervisorInbox?.waiting?.length ?? 0;
+  // Paket E4 (4.1), Paket E5 (3.1): Tugas Akhir > Permohonan carries what waits for the
+  // lecturer, the supervisor requests and the lecturer's change-request steps together.
+  const { data: approvalInbox } = useLecturerApprovalInbox({ page: 1, pageSize: 1 }, isPembimbingRole);
+  const waitingRequestCount = approvalInbox?.counts.waiting ?? 0;
 
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
@@ -110,25 +111,25 @@ export const useSidebarMenu = () => {
     const proposalItems: SidebarLeafItem[] = role.pembimbing ? [{ title: "Proposal", url: "/tugas-akhir/proposal" }] : [];
 
     /**
-     * Paket E4 (4.5): a supervisor's Tugas Akhir order is Permohonan, Proposal, Bimbingan,
-     * Perubahan, Seminar Hasil, Sidang TA, Evaluasi. Permohonan and Proposal are for supervisors;
-     * Perubahan and Evaluasi for supervisors and the Ketua Departemen. A lecturer without the
-     * supervisor role keeps Bimbingan, Seminar Hasil and Sidang TA as before.
+     * Paket E5 (3.5): a supervisor's Tugas Akhir order is Permohonan, Proposal, Bimbingan,
+     * Seminar Hasil, Sidang TA. Supervisors have no Perubahan or Evaluasi page (they act from
+     * Permohonan and Mahasiswa Bimbingan). Permohonan and Proposal are for supervisors; a
+     * lecturer without the supervisor role keeps Bimbingan, Seminar Hasil and Sidang TA.
      */
-    const supervisorThesisItems = (): SidebarLeafItem[] => {
-      const decides = role.pembimbing || role.kadep;
-      return [
-        ...(role.pembimbing
-          ? [{ title: "Permohonan", url: "/tugas-akhir/permohonan", ...(waitingRequestCount > 0 ? { badge: waitingRequestCount } : {}) }]
-          : []),
-        ...proposalItems,
-        { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-        ...(decides ? [{ title: "Perubahan", url: "/tugas-akhir/perubahan" }] : []),
-        { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-        { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-        ...(decides ? [{ title: "Evaluasi", url: "/tugas-akhir/evaluasi" }] : []),
-      ];
-    };
+    const supervisorThesisItems = (): SidebarLeafItem[] => [
+      ...(role.pembimbing
+        ? [{ title: "Permohonan", url: "/tugas-akhir/permohonan", ...(waitingRequestCount > 0 ? { badge: waitingRequestCount } : {}) }]
+        : []),
+      ...proposalItems,
+      { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+      { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+      { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+    ];
+    /** Paket E5 (3.5): the Ketua Departemen's two decision queues, last in Tugas Akhir. */
+    const KADEP_DECISION_ITEMS: SidebarLeafItem[] = [
+      { title: "Perubahan", url: "/tugas-akhir/perubahan" },
+      { title: "Evaluasi", url: "/tugas-akhir/evaluasi" },
+    ];
     const MONITORING_ITEM: SidebarLeafItem = { title: "Monitoring", url: "/tugas-akhir/monitoring" };
     const PENETAPAN_ITEM: SidebarLeafItem = { title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" };
 
@@ -303,8 +304,9 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        // Paket E4 (4.5): Monitoring first, Penetapan Pembimbing, then the supervisor's items.
-        items: [MONITORING_ITEM, PENETAPAN_ITEM, ...supervisorThesisItems()],
+        // Paket E4 (4.5), Paket E5 (3.5): Monitoring, Penetapan Pembimbing, the supervisor's items,
+        // then the two decision queues (Perubahan, Evaluasi).
+        items: [MONITORING_ITEM, PENETAPAN_ITEM, ...supervisorThesisItems(), ...KADEP_DECISION_ITEMS],
       });
 
       appendSharedEventMenus(menuItems);
