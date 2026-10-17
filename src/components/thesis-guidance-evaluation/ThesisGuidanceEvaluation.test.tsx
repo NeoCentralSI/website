@@ -294,6 +294,37 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
     expectFooter(detail, ['Tutup']);
   });
 
+  it('Lanjutan Paket E7: an evaluation closed because the thesis became Selesai stays Ditolak, and its detail shows the system reason', async () => {
+    vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([
+      row({
+        status: 'rejected',
+        viewStatus: 'rejected',
+        decision: { by: null, notes: 'Ditutup otomatis: tugas akhir selesai.', at: '2026-10-17T03:00:00.000Z', closedBySystem: true },
+      }),
+      row({
+        id: 'eval-2',
+        student: person('stu-2', 'NABIL RIZKI'),
+        status: 'rejected',
+        viewStatus: 'rejected',
+        decision: { by: person('k', 'RICKY AKBAR'), notes: 'Belum perlu peringatan.', at: '2026-10-10T03:00:00.000Z', closedBySystem: false },
+      }),
+    ]));
+    wrap(<ThesisGuidanceEvaluationTable />);
+    const closedRow = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
+    expect(within(closedRow).getByText('Ditolak')).toBeInTheDocument();
+    fireEvent.click(within(closedRow).getByRole('button', { name: 'Lihat Detail' }));
+    let detail = await screen.findByRole('dialog', { name: 'Detail Evaluasi Bimbingan' });
+    expect(within(detail).getByText(/^Ditutup oleh sistem · .* · Ditutup otomatis: tugas akhir selesai\.$/)).toBeInTheDocument();
+    expect(within(detail).queryByText(/Keputusan Ketua Departemen:/)).not.toBeInTheDocument();
+    expectFooter(detail, ['Tutup']);
+    fireEvent.click(within(detail).getByRole('button', { name: 'Tutup' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Detail Evaluasi Bimbingan' })).not.toBeInTheDocument());
+
+    fireEvent.click(within(screen.getByText('Nabil Rizki').closest('tr')!).getByRole('button', { name: 'Lihat Detail' }));
+    detail = await screen.findByRole('dialog', { name: 'Detail Evaluasi Bimbingan' });
+    expect(within(detail).getByText(/Keputusan Ketua Departemen: Ricky Akbar · .* · Belum perlu peringatan\./)).toBeInTheDocument();
+  });
+
   it('rejects with notes and approves without, from the row icons', async () => {
     vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([row({ recommendation: 'terminate_supervision', evaluationType: 'one_year', stage: 'one_year' })]));
     vi.mocked(service.decideEvaluation).mockResolvedValue({ success: true, message: 'ok', data: evaluation({ status: 'rejected' }) });

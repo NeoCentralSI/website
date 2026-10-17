@@ -86,7 +86,10 @@ export function ThesisGuidanceEvaluationSummary({ evaluation }: { evaluation: Th
 
       {evaluation.decision && (
         <p className="text-xs text-muted-foreground">
-          Keputusan Ketua Departemen: {formatLecturerName(evaluation.decision.by?.name) || '-'} · {formatDateTimeWib(evaluation.decision.at)}
+          {/* Lanjutan Paket E7: an evaluation closed because the thesis became Selesai has no decider. */}
+          {evaluation.decision.closedBySystem
+            ? 'Ditutup oleh sistem'
+            : `Keputusan Ketua Departemen: ${formatLecturerName(evaluation.decision.by?.name) || '-'}`} · {formatDateTimeWib(evaluation.decision.at)}
           {evaluation.decision.notes ? ` · ${evaluation.decision.notes}` : ''}
         </p>
       )}

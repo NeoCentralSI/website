@@ -55,6 +55,8 @@ import {
 } from '@/hooks/thesis-defence';
 import { useAuth, useRole } from '@/hooks/shared';
 import { toTitleCaseName } from '@/lib/text';
+import { REVISION_FINALIZED_UNAPPROVE_REASON } from '@/lib/revisionRules';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import {
   Select,
   SelectContent,
@@ -454,6 +456,10 @@ function RevisionBoardSection({
               <Button variant="ghost" size="icon" onClick={() => setUnapproveConfirmId(row.id)} className="h-8 w-8 text-muted-foreground hover:bg-gray-100 hover:text-foreground" title="Batalkan Persetujuan">
                 <RotateCcw className="h-4 w-4" />
               </Button>
+            )}
+            {/* Lanjutan Paket E7: after the finalization the approval stays, with the reason. */}
+            {showSupervisorActions && row.isFinished && isRevisionFinalized && (
+              <TableIconAction icon={RotateCcw} label="Batalkan Persetujuan" disabled disabledReason={REVISION_FINALIZED_UNAPPROVE_REASON} />
             )}
 
             {row.isFinished && (isRevisionFinalized || showStudentActions) && (

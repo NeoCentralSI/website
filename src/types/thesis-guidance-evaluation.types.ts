@@ -34,7 +34,13 @@ export interface ThesisGuidanceEvaluation {
   /** Basis of the evaluation, copied when it was filled. */
   basis: { guidanceCount: number; supervisionStartedAt: string | null; elapsedDays: number | null };
   extensionUntil: string | null;
-  decision: { by: EvaluationPerson | null; notes: string | null; at: string | null } | null;
+  decision: {
+    by: EvaluationPerson | null;
+    notes: string | null;
+    at: string | null;
+    /** Lanjutan Paket E7: closed by the system when the thesis became Selesai (status Ditolak). */
+    closedBySystem?: boolean;
+  } | null;
   createdAt: string;
 }
 
