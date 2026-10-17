@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Check, Eye, Gavel, Users, X } from 'lucide-react';
+import { Check, Eye, Users, X } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { Button } from '@/components/ui/button';
@@ -72,9 +73,10 @@ type DialogTarget =
  * Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2): every Pengajuan Perubahan Tugas
  * Akhir with the final decision. "Semua" by default, sorted by the server (Menunggu Keputusan
  * Anda first); Jenis and Status are filtered in the column header, the search matches name, NIM
- * or title. Setujui / Tolak when every lecturer step is done, Putuskan Langsung (with a reason)
- * while one is open, and the decision of an "Alihkan Mahasiswa" batch together in its group
- * modal. The lecturer steps are decided by the lecturers in Tugas Akhir > Permohonan.
+ * or title. Setujui / Tolak icons once it is the Ketua Departemen's turn; while a lecturer
+ * step is open the direct decision (with a reason) is made in the Detail modal (Lanjutan Paket
+ * E6: no separate icon); an "Alihkan Mahasiswa" batch is decided together in its group modal.
+ * The lecturer steps are decided by the lecturers in Tugas Akhir > Permohonan.
  */
 export function ThesisChangeRequestTable() {
   const [status, setStatus] = useState<ChangeRequestViewStatus | ''>('');
@@ -216,9 +218,6 @@ export function ThesisChangeRequestTable() {
               <TableIconAction icon={X} label="Tolak" onClick={() => decideAsKadep(row, false)} />
             </>
           )}
-          {row.status === 'pending' && !row.batchId && !lecturerStepsDone(row) && (
-            <TableIconAction icon={Gavel} label="Putuskan Langsung" onClick={() => setDetail(row)} />
-          )}
         </div>
       ),
     },
@@ -260,20 +259,23 @@ export function ThesisChangeRequestTable() {
         onOpenChange={(open) => { if (!open) setDetail(null); }}
         title="Detail Pengajuan Perubahan"
         description={detail ? `${toTitleCaseName(detail.student?.name) || '-'} · ${detail.student?.identityNumber ?? '-'}` : undefined}
-        footer={detail && detailCanDecide ? (
-          <>
-            {detail.applyBlockReason ? (
-              <span className="mr-auto text-xs text-destructive">{detail.applyBlockReason}</span>
-            ) : !lecturerStepsDone(detail) && (
-              <span className="mr-auto text-xs text-amber-700">
-                Langkah dosen belum selesai. Anda tetap dapat memutuskan langsung dengan alasan.
+        footer={detail ? (
+          detailCanDecide ? (
+            // A decision while a lecturer step is open is the direct decision: notes required.
+            <DetailDialogActions
+              onClose={() => setDetail(null)}
+              note={detail.applyBlockReason
+                ?? (!lecturerStepsDone(detail) ? 'Langkah dosen belum selesai. Anda tetap dapat memutuskan langsung dengan alasan.' : undefined)}
+              noteClassName={detail.applyBlockReason ? 'text-destructive' : !lecturerStepsDone(detail) ? 'text-amber-700' : undefined}
+            >
+              <Button size="sm" variant="destructive" onClick={() => decideAsKadep(detail, false)}>Tolak</Button>
+              <span title={detail.applyBlockReason ?? undefined}>
+                <Button size="sm" disabled={!!detail.applyBlockReason} onClick={() => decideAsKadep(detail, true)}>Setujui</Button>
               </span>
-            )}
-            <Button size="sm" variant="outline" onClick={() => decideAsKadep(detail, false)}>Tolak</Button>
-            <span title={detail.applyBlockReason ?? undefined}>
-              <Button size="sm" disabled={!!detail.applyBlockReason} onClick={() => decideAsKadep(detail, true)}>Setujui</Button>
-            </span>
-          </>
+            </DetailDialogActions>
+          ) : (
+            <DetailDialogActions onClose={() => setDetail(null)} />
+          )
         ) : undefined}
       >
         {detail && (
@@ -306,11 +308,15 @@ export function ThesisChangeRequestTable() {
         description={groupRequests.length > 0
           ? `${groupRequests.length} mahasiswa · ${formatLecturerName(groupRequests[0].supervisor?.replaced?.name) || '-'} → ${formatLecturerName(groupRequests[0].supervisor?.next?.name) || '-'}`
           : undefined}
-        footer={groupId && groupRequests.length > 0 ? (
-          <>
-            <Button size="sm" variant="outline" onClick={() => decideBatch(groupId, groupRequests, false)}>Tolak Semua</Button>
-            <Button size="sm" onClick={() => decideBatch(groupId, groupRequests, true)}>Setujui Semua</Button>
-          </>
+        footer={groupId ? (
+          groupRequests.length > 0 ? (
+            <DetailDialogActions onClose={() => setGroupId(null)}>
+              <Button size="sm" variant="destructive" onClick={() => decideBatch(groupId, groupRequests, false)}>Tolak Semua</Button>
+              <Button size="sm" onClick={() => decideBatch(groupId, groupRequests, true)}>Setujui Semua</Button>
+            </DetailDialogActions>
+          ) : (
+            <DetailDialogActions onClose={() => setGroupId(null)} />
+          )
         ) : undefined}
       >
         <ul className="divide-y rounded-md border">

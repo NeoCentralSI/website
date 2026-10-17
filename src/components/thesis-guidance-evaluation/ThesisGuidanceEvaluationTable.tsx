@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, Eye, X } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { ThesisStudentInfoCell } from '@/components/shared/ThesisTableCells';
@@ -157,12 +158,15 @@ export function ThesisGuidanceEvaluationTable() {
         onOpenChange={(open) => { if (!open) setDetail(null); }}
         title="Detail Evaluasi Bimbingan"
         description={detail ? `${toTitleCaseName(detail.student?.name) || '-'} · ${detail.student?.identityNumber ?? '-'}` : undefined}
-        footer={detail && awaiting(detail) ? (
-          <>
-            <span className="mr-auto text-xs text-muted-foreground">{GUIDANCE_EVALUATION_RECOMMENDATION_EFFECTS[detail.recommendation]}</span>
-            <Button size="sm" variant="outline" onClick={() => setDecision({ evaluation: detail, approve: false })}>Tolak</Button>
-            <Button size="sm" onClick={() => setDecision({ evaluation: detail, approve: true })}>Setujui</Button>
-          </>
+        footer={detail ? (
+          awaiting(detail) ? (
+            <DetailDialogActions onClose={() => setDetail(null)} note={GUIDANCE_EVALUATION_RECOMMENDATION_EFFECTS[detail.recommendation]}>
+              <Button size="sm" variant="destructive" onClick={() => setDecision({ evaluation: detail, approve: false })}>Tolak</Button>
+              <Button size="sm" onClick={() => setDecision({ evaluation: detail, approve: true })}>Setujui</Button>
+            </DetailDialogActions>
+          ) : (
+            <DetailDialogActions onClose={() => setDetail(null)} />
+          )
         ) : undefined}
       >
         {detail && (

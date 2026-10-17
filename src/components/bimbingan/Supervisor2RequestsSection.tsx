@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
+import { DetailDialogActions } from "@/components/shared/DetailDialogActions";
 import { RecordDetailDialog } from "@/components/shared/RecordDetailDialog";
 import { TableIconAction } from "@/components/shared/TableIconAction";
 import { ThesisStudentInfoCell } from "@/components/shared/ThesisTableCells";
@@ -145,6 +146,7 @@ export function Supervisor2RequestsSection() {
         open={!!detail}
         onOpenChange={(open) => { if (!open) setDetail(null); }}
         title="Detail Permintaan Pembimbing 2"
+        footer={<DetailDialogActions onClose={() => setDetail(null)} />}
       >
         {detail && (
           <dl className="grid gap-3 text-sm sm:grid-cols-[10rem_1fr]">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Eye } from 'lucide-react';
 
+import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import {
@@ -68,30 +69,34 @@ export function ThesisChangeRequestDetailDialog({ request, onClose }: { request:
         open={!!request}
         onOpenChange={(open) => { if (!open) onClose(); }}
         title="Detail Pengajuan Perubahan"
-        footer={request && (request.viewer.canCancel || request.viewer.canDecideAsLecturer) ? (
-          <>
-            {request.viewer.canDecideAsLecturer && (
-              <>
-                {request.applyBlockReason ? (
-                  <span className="mr-auto text-xs text-destructive">{request.applyBlockReason}</span>
-                ) : (
-                  <span className="mr-auto text-xs text-muted-foreground">
-                    Anda menyetujui sebagai {request.currentStep ? getChangeRequestStepLabel(request.currentStep) : '-'}.
-                  </span>
-                )}
-                <Button size="sm" variant="outline" onClick={() => openDecision(false)}>Tolak</Button>
-                {/* Paket E6: while the rules block approving, Setujui waits with the reason. */}
-                <span title={request.applyBlockReason ?? undefined}>
-                  <Button size="sm" disabled={!!request.applyBlockReason} onClick={() => openDecision(true)}>Setujui</Button>
-                </span>
-              </>
-            )}
-            {request.viewer.canCancel && (
+        footer={request ? (
+          request.viewer.canDecideAsLecturer ? (
+            <DetailDialogActions
+              onClose={onClose}
+              note={request.applyBlockReason
+                ?? `Anda menyetujui sebagai ${request.currentStep ? getChangeRequestStepLabel(request.currentStep) : '-'}.`}
+              noteClassName={request.applyBlockReason ? 'text-destructive' : undefined}
+            >
+              {request.viewer.canCancel && (
+                <Button size="sm" variant="outline" disabled={cancel.isPending} onClick={() => setConfirmCancel(true)}>
+                  Batalkan Pengajuan
+                </Button>
+              )}
+              <Button size="sm" variant="destructive" onClick={() => openDecision(false)}>Tolak</Button>
+              {/* Paket E6: while the rules block approving, Setujui waits with the reason. */}
+              <span title={request.applyBlockReason ?? undefined}>
+                <Button size="sm" disabled={!!request.applyBlockReason} onClick={() => openDecision(true)}>Setujui</Button>
+              </span>
+            </DetailDialogActions>
+          ) : request.viewer.canCancel ? (
+            <DetailDialogActions onClose={onClose} closeLabel="Tutup">
               <Button size="sm" variant="outline" disabled={cancel.isPending} onClick={() => setConfirmCancel(true)}>
                 Batalkan Pengajuan
               </Button>
-            )}
-          </>
+            </DetailDialogActions>
+          ) : (
+            <DetailDialogActions onClose={onClose} />
+          )
         ) : undefined}
       >
         {request && (

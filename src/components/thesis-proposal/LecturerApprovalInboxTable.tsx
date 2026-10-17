@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowRight, Check, Eye, X } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
 import { SupervisionLoadBadge } from '@/components/shared/SupervisionLoadBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -276,15 +277,21 @@ export function LecturerApprovalInboxTable() {
         onOpenChange={(open) => { if (!open) setRequestDetail(null); }}
         title="Detail Pengajuan Pembimbing"
         description={supervisorInbox ? `Semester ${supervisorInbox.academicYear.label}` : undefined}
-        footer={requestDetail && isWaitingRequest(requestDetail) ? (
-          <>
-            {isFull && <p className="mr-auto text-xs text-muted-foreground">Anda sudah mencapai batas bimbingan; menerima berarti meneruskan ke Ketua Departemen.</p>}
-            {requestDetail.status === 'pending' && (
-              <Button size="sm" variant="ghost" disabled={markReview.isPending} onClick={() => markReview.mutate(requestDetail.id)}>Tandai Sedang Ditinjau</Button>
-            )}
-            <Button size="sm" variant="outline" onClick={() => setResponse({ request: requestDetail, action: 'reject' })}>Tolak</Button>
-            <Button size="sm" onClick={() => setResponse({ request: requestDetail, action: 'accept' })}>{isFull ? 'Terima dan Teruskan' : 'Terima'}</Button>
-          </>
+        footer={requestDetail ? (
+          isWaitingRequest(requestDetail) ? (
+            <DetailDialogActions
+              onClose={() => setRequestDetail(null)}
+              note={isFull ? 'Anda sudah mencapai batas bimbingan; menerima berarti meneruskan ke Ketua Departemen.' : undefined}
+            >
+              {requestDetail.status === 'pending' && (
+                <Button size="sm" variant="ghost" disabled={markReview.isPending} onClick={() => markReview.mutate(requestDetail.id)}>Tandai Sedang Ditinjau</Button>
+              )}
+              <Button size="sm" variant="destructive" onClick={() => setResponse({ request: requestDetail, action: 'reject' })}>Tolak</Button>
+              <Button size="sm" onClick={() => setResponse({ request: requestDetail, action: 'accept' })}>{isFull ? 'Terima dan Teruskan' : 'Terima'}</Button>
+            </DetailDialogActions>
+          ) : (
+            <DetailDialogActions onClose={() => setRequestDetail(null)} />
+          )
         ) : undefined}
       >
         {requestDetail && <SupervisorRequestDetails request={requestDetail} showStudent />}

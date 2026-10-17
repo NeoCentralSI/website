@@ -16,6 +16,7 @@ import type {
   SupervisorRequest,
 } from '@/types/thesis-proposal.types';
 import { expectColumnFits } from '@/test/columnFit';
+import { expectFooter } from '@/test/dialogFooter';
 import { KadepSupervisorRequestQueue } from './KadepSupervisorRequestQueue';
 import { LecturerApprovalInboxTable } from './LecturerApprovalInboxTable';
 import { getSubmitBlockReason } from './StudentSupervisorRequestForm';
@@ -322,7 +323,35 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
     fireEvent.click(await screen.findByRole('button', { name: 'Lihat Detail' }));
     expect(await screen.findByText('Detail Pengajuan Pembimbing')).toBeInTheDocument();
     expect(screen.getByText('Rumusan masalah')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Tandai Sedang Ditinjau' })).toBeInTheDocument();
+    // Lanjutan Paket E6: Batal, then the actions, Tolak destructive, Terima last.
+    expectFooter(screen.getByRole('dialog'), ['Batal', 'Tandai Sedang Ditinjau', 'Tolak', 'Terima']);
+  });
+
+  it('Lanjutan Paket E6: when the lecturer is full the note is one line above the buttons; a closed request has only Tutup', async () => {
+    vi.mocked(requests.getLecturerInbox).mockResolvedValue(lecturerInbox('full'));
+    vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([
+      supervisorRow(request({ status: 'under_review' })),
+      supervisorRow(request({ id: 'req-done', status: 'assigned', student: { id: 's2', fullName: 'CITRA LESTARI', identityNumber: '2211528002' } })),
+    ]));
+    wrap(<LecturerApprovalInboxTable />);
+
+    fireEvent.click(within((await screen.findByText('Budi Santoso')).closest('tr')!).getByRole('button', { name: 'Lihat Detail' }));
+    let dialog = await screen.findByRole('dialog');
+    expectFooter(dialog, ['Batal', 'Tolak', 'Terima dan Teruskan'], 'Anda sudah mencapai batas bimbingan');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    fireEvent.click(within(screen.getByText('Citra Lestari').closest('tr')!).getByRole('button', { name: 'Lihat Detail' }));
+    dialog = await screen.findByRole('dialog');
+    expectFooter(dialog, ['Tutup']);
+  });
+
+  it('Lanjutan Paket E6: the Perubahan TA detail says the lecturer\'s step on one line above Batal, Tolak, Setujui', async () => {
+    vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([changeRow()]));
+    wrap(<LecturerApprovalInboxTable />);
+    fireEvent.click(within((await screen.findByText('Nabil Rizki')).closest('tr')!).getByRole('button', { name: 'Lihat Detail' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Detail Pengajuan Perubahan' });
+    expectFooter(dialog, ['Batal', 'Tolak', 'Setujui'], 'Anda menyetujui sebagai Pembimbing Baru.');
   });
 
   it('pages past the first hundred rows: page 11 of 150 shows rows 101-110', async () => {

@@ -9,6 +9,7 @@ import { ThesisChangeRequestCard } from './ThesisChangeRequestCard';
 import { ThesisChangeRequestTable } from './ThesisChangeRequestTable';
 import { ThesisChangeRequestMiniTable } from './ThesisChangeRequestViews';
 import { expectColumnFits } from '@/test/columnFit';
+import { expectFooter } from '@/test/dialogFooter';
 import { groupByBatch, summarizeChange } from './thesisChangeRequestGroups';
 
 vi.mock('lottie-react', () => ({ default: () => null }));
@@ -258,6 +259,21 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
     expectColumnFits(header('Status'), cells[4], 'Menunggu Keputusan Anda');
   });
 
+  it('Lanjutan Paket E6: Batal closes the Detail modal; a closed request has only Tutup', async () => {
+    vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep(), row({ id: 'req-done', status: 'approved', viewStatus: 'approved', student: person('s2', 'NABIL RIZKI') })]));
+    wrap(<ThesisChangeRequestTable />);
+    const waiting = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
+    fireEvent.click(within(waiting).getByRole('button', { name: 'Lihat Detail' }));
+    let detail = await screen.findByRole('dialog', { name: 'Detail Pengajuan Perubahan' });
+    expectFooter(detail, ['Batal', 'Tolak', 'Setujui']);
+    fireEvent.click(within(detail).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Detail Pengajuan Perubahan' })).not.toBeInTheDocument());
+
+    fireEvent.click(within(screen.getByText('Nabil Rizki').closest('tr')!).getByRole('button', { name: 'Lihat Detail' }));
+    detail = await screen.findByRole('dialog', { name: 'Detail Pengajuan Perubahan' });
+    expectFooter(detail, ['Tutup']);
+  });
+
   it('Paket E6 (6): a request the rules block now is marked, and Setujui waits with the reason', async () => {
     const reason = 'Pengajuan ini tidak dapat disetujui saat ini. Perubahan judul tidak dapat diajukan selama seminar hasil sedang berproses. Pengajuan tetap menunggu dan dapat ditolak.';
     vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep({ applyBlockReason: reason })]));
@@ -324,22 +340,25 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
     await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenCalledWith({ batchId: 'batch-1', pageSize: 100 }));
     expect(await within(group).findByText(/2 mahasiswa · Husnil Kamil → Aina Hubby/)).toBeInTheDocument();
     expect(within(group).getByText(/Beban bimbingan Aina Hubby saat ini: 3 dari 10 mahasiswa\./)).toBeInTheDocument();
+    expectFooter(group, ['Batal', 'Tolak Semua', 'Setujui Semua']);
     fireEvent.click(within(group).getByRole('button', { name: 'Setujui Semua' }));
     const confirm = await screen.findByRole('dialog', { name: 'Setujui 2 pengajuan?' });
     fireEvent.click(within(confirm).getByRole('button', { name: 'Setujui' }));
     await waitFor(() => expect(service.decideBatchAsKadep).toHaveBeenCalledWith('batch-1', { approve: true, notes: null }));
   });
 
-  it('decides directly with a reason while a lecturer step is open (Putuskan Langsung)', async () => {
+  it('decides directly with a reason from the Detail modal while a lecturer step is open (no Putuskan Langsung icon)', async () => {
     vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([row()]));
     vi.mocked(service.decideAsKadep).mockResolvedValue({ success: true, message: 'ok', data: request({ status: 'approved' }) });
     wrap(<ThesisChangeRequestTable />);
 
     const tableRow = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
-    expect(within(tableRow).queryByRole('button', { name: 'Setujui' })).not.toBeInTheDocument();
-    fireEvent.click(within(tableRow).getByRole('button', { name: 'Putuskan Langsung' }));
+    // Lanjutan Paket E6: the row has the Detail icon only until it is the Ketua Departemen's turn.
+    expect(within(tableRow).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['Lihat Detail']);
+    expect(within(tableRow).queryByRole('button', { name: 'Putuskan Langsung' })).not.toBeInTheDocument();
+    fireEvent.click(within(tableRow).getByRole('button', { name: 'Lihat Detail' }));
     const detail = await screen.findByRole('dialog', { name: 'Detail Pengajuan Perubahan' });
-    expect(within(detail).getByText('Langkah dosen belum selesai. Anda tetap dapat memutuskan langsung dengan alasan.')).toBeInTheDocument();
+    expectFooter(detail, ['Batal', 'Tolak', 'Setujui'], 'Langkah dosen belum selesai. Anda tetap dapat memutuskan langsung dengan alasan.');
     fireEvent.click(within(detail).getByRole('button', { name: 'Setujui' }));
     const dialog = await screen.findByRole('dialog', { name: 'Setujui pengajuan?' });
     expect(within(dialog).getByText('Langkah dosen belum selesai: alasan memutuskan langsung wajib diisi.')).toBeInTheDocument();

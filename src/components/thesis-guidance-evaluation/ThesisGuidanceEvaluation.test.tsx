@@ -7,6 +7,7 @@ import * as service from '@/services/thesis-guidance-evaluation/thesis-guidance-
 import type { EvaluationInboxRow, ThesisGuidanceEvaluation, ThesisGuidanceEvaluationContext } from '@/types/thesis-guidance-evaluation.types';
 import { EvaluationDueCard } from '@/components/monitoring/EvaluationDueCard';
 import { expectColumnFits } from '@/test/columnFit';
+import { expectFooter } from '@/test/dialogFooter';
 import { LecturerThesisGuidanceEvaluationCard } from './LecturerThesisGuidanceEvaluationCard';
 import { ThesisGuidanceEvaluationTable } from './ThesisGuidanceEvaluationTable';
 import { AcademicWarningAlert, ThesisGuidanceEvaluationHistoryLink, evaluationsOf } from './ThesisGuidanceEvaluationViews';
@@ -274,6 +275,23 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
     expectColumnFits(header('Status'), cells[4], 'Menunggu Keputusan Anda');
     expectColumnFits(header('Tanggal'), cells[3], '11 September 2026');
     expect(within(cells[1]).getByText(/Masa bimbingan/)).toBeInTheDocument();
+  });
+
+  it('Lanjutan Paket E6: the Detail modal has its effect on one line above Batal, Tolak, Setujui; a recorded one only Tutup', async () => {
+    vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([
+      row({ recommendation: 'terminate_supervision', evaluationType: 'one_year', stage: 'one_year' }),
+      row({ id: 'eval-2', student: person('stu-2', 'NABIL RIZKI'), status: 'approved', recommendation: 'continue', requiresKadep: false, viewStatus: 'recorded' }),
+    ]));
+    wrap(<ThesisGuidanceEvaluationTable />);
+    fireEvent.click(within((await screen.findByText('Ilham Nofaldi')).closest('tr')!).getByRole('button', { name: 'Lihat Detail' }));
+    let detail = await screen.findByRole('dialog', { name: 'Detail Evaluasi Bimbingan' });
+    expectFooter(detail, ['Batal', 'Tolak', 'Setujui'], 'Setelah disetujui Ketua Departemen: tugas akhir berstatus Gagal');
+    fireEvent.click(within(detail).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Detail Evaluasi Bimbingan' })).not.toBeInTheDocument());
+
+    fireEvent.click(within(screen.getByText('Nabil Rizki').closest('tr')!).getByRole('button', { name: 'Lihat Detail' }));
+    detail = await screen.findByRole('dialog', { name: 'Detail Evaluasi Bimbingan' });
+    expectFooter(detail, ['Tutup']);
   });
 
   it('rejects with notes and approves without, from the row icons', async () => {
