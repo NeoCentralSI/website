@@ -26,8 +26,6 @@ vi.mock("@/components/milestone/TemplateManagementPanel", () => ({
   TemplateManagementPanel: ({ phase }: { phase?: string }) => <div data-testid="template-panel">{phase}</div>,
 }));
 
-const isSekdep = vi.fn(() => true);
-vi.mock("@/hooks/shared/useRole", () => ({ useRole: () => ({ isSekdep }) }));
 
 const YEARS = [
   { id: "ay-active", semester: "ganjil", year: "2026/2027", isActive: true },
@@ -49,7 +47,6 @@ function wrap(ui: React.ReactNode, path = "/kelola/metode-penelitian/milestone")
 
 beforeEach(() => {
   vi.clearAllMocks();
-  isSekdep.mockReturnValue(true);
   vi.mocked(getAcademicYearsAPI).mockResolvedValue({ academicYears: YEARS } as never);
   vi.mocked(getActiveAcademicYearAPI).mockResolvedValue({ academicYear: YEARS[0] } as never);
   vi.mocked(rmService.getResearchMethodCpmks).mockResolvedValue([]);
@@ -74,13 +71,10 @@ describe("Kelola > Metode Penelitian (Paket P8, 3)", () => {
     expect(setTitle).toHaveBeenCalledWith("Kelola Metode Penelitian");
   });
 
-  it("the coordinator has the Template Milestone tab only; CPMK and Rubrik go back to it", async () => {
-    isSekdep.mockReturnValue(false);
-    wrap(<ResearchMethod />, "/kelola/metode-penelitian/cpmk");
+  it("an unknown tab goes back to Template Milestone; the three tabs are always there (Lanjutan P8: the page is the Sekdep's)", async () => {
+    wrap(<ResearchMethod />, "/kelola/metode-penelitian/tidak-ada");
     await waitFor(() => expect(screen.getByTestId("template-panel")).toBeInTheDocument());
-    expect(screen.getByRole("link", { name: "Template Milestone" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "CPMK" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Rubrik Penilaian" })).not.toBeInTheDocument();
+    for (const name of ["Template Milestone", "CPMK", "Rubrik Penilaian"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
   });
 });
 

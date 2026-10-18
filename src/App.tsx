@@ -373,8 +373,8 @@ function App() {
                   <Route path="/kelola/metopen/kuota-dosen" element={<Navigate to="/kelola/tugas-akhir/batas-bimbingan" replace />} />
                 </Route>
                 {/* Kelola > Metode Penelitian: Template Milestone, CPMK, Rubrik Penilaian (K18). Paket P8 (3): one
-                    address per tab, as Kelola Tugas Akhir; the coordinator has the Template Milestone tab only. */}
-                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_METODE_PENELITIAN]} />}>
+                    address per tab, as Kelola Tugas Akhir. Lanjutan P8: the Sekretaris Departemen's only. */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN]} />}>
                   <Route path="/kelola/metode-penelitian" element={<Navigate to="/kelola/metode-penelitian/milestone" replace />} />
                   <Route path="/kelola/metode-penelitian/:tab" element={<ResearchMethodPage />} />
                 </Route>

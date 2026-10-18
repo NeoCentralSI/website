@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { Navigate, useOutletContext, useParams } from "react-router-dom";
 
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
@@ -7,27 +7,23 @@ import { ResearchMethodRubricManagementPanel } from "@/components/master-data/re
 import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
 import { PageHeading } from "@/components/shared/PageHeading";
 import { TabsNav } from "@/components/ui/tabs-nav";
-import { useRole } from "@/hooks/shared/useRole";
 
 /**
  * Kelola > Metode Penelitian (K18; Paket P8, 3): one address per tab, as Kelola Tugas Akhir.
- * Template Milestone (fase proposal, umum) is managed by the Sekretaris Departemen and the
- * Koordinator Metode Penelitian; CPMK and Rubrik Penilaian by the Sekretaris Departemen only, each
- * with its own period select inside the panel.
+ * Lanjutan P8 (18 Oktober 2026): the page and its master data are the Sekretaris Departemen's
+ * only (route guard in App.tsx): Template Milestone (fase proposal, umum), CPMK and Rubrik
+ * Penilaian, the last two with their own period select inside the panel.
  */
 const TABS = [
-  { value: "milestone", label: "Template Milestone", to: "/kelola/metode-penelitian/milestone", sekdepOnly: false },
-  { value: "cpmk", label: "CPMK", to: "/kelola/metode-penelitian/cpmk", sekdepOnly: true },
-  { value: "rubrik", label: "Rubrik Penilaian", to: "/kelola/metode-penelitian/rubrik", sekdepOnly: true },
+  { value: "milestone", label: "Template Milestone", to: "/kelola/metode-penelitian/milestone" },
+  { value: "cpmk", label: "CPMK", to: "/kelola/metode-penelitian/cpmk" },
+  { value: "rubrik", label: "Rubrik Penilaian", to: "/kelola/metode-penelitian/rubrik" },
 ] as const;
 
 export default function ResearchMethod() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { tab } = useParams();
-  const { isSekdep } = useRole();
-  const sekdep = isSekdep();
-  const visible = useMemo(() => TABS.filter((t) => sekdep || !t.sekdepOnly), [sekdep]);
-  const active = visible.find((t) => t.value === tab) ?? null;
+  const active = TABS.find((t) => t.value === tab) ?? null;
 
   useEffect(() => {
     setBreadcrumbs([
@@ -44,12 +40,10 @@ export default function ResearchMethod() {
     <div className="space-y-6 p-6">
       <PageHeading
         title="Kelola Metode Penelitian"
-        subtitle={sekdep
-          ? "Template milestone fase proposal, CPMK, serta kriteria dan rubrik Penilaian Proposal"
-          : "Template milestone fase proposal yang dipasang mahasiswa"}
+        subtitle="Template milestone fase proposal, CPMK, serta kriteria dan rubrik Penilaian Proposal"
       />
 
-      <TabsNav tabs={visible.map((t) => ({ label: t.label, to: t.to }))} />
+      <TabsNav tabs={TABS.map((t) => ({ label: t.label, to: t.to }))} />
 
       {active.value === "milestone" && <TemplateManagementPanel phase="proposal" />}
       {active.value === "cpmk" && <ResearchMethodCpmkManagementPanel />}

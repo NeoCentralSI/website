@@ -1,6 +1,6 @@
 import { getJson, send } from '@/services/thesis-proposal/api';
 
-/** General proposal-phase milestone template (K18): no topic, managed by Sekdep and the coordinator (Paket P8). */
+/** General proposal-phase milestone template (K18): no topic, managed by the Sekretaris Departemen only. */
 export interface ProposalMilestoneTemplate {
   id: string;
   name: string;

@@ -248,14 +248,8 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
-      if (role.researchMethodCoordinator) {
-        menuItems.push({
-          title: "Kelola",
-          url: "#",
-          icon: Database,
-          items: [{ title: "Metode Penelitian", url: "/kelola/metode-penelitian" }],
-        });
-      }
+      // Lanjutan P8 (18 Oktober 2026): Kelola > Metode Penelitian is the Sekdep's; the coordinator's
+      // menu is Metode Penelitian > Monitoring Kelas, Presensi, Penilaian Proposal.
 
       return {
         user: {

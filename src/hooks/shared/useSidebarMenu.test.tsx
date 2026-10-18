@@ -118,11 +118,12 @@ describe("useSidebarMenu", () => {
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA"]);
   });
 
-  it("gives the Research Method coordinator Monitoring Kelas, Presensi, Penilaian Proposal", () => {
+  it("gives the Research Method coordinator Monitoring Kelas, Presensi, Penilaian Proposal and no Kelola (Lanjutan P8)", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isResearchMethodCoordinator: true });
 
     expect(menuOf("Metode Penelitian")?.items).toEqual(COORDINATOR_ITEMS);
+    expect(menuOf("Kelola")).toBeUndefined();
   });
 
   it("gives Kadep Tugas Akhir > Monitoring first, Penetapan, then Perubahan and Evaluasi last; Kelola > Batas Bimbingan; Monitoring Kelas", () => {
