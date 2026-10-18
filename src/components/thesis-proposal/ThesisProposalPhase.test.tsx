@@ -9,7 +9,7 @@ import { formatPhaseSessionSummary } from '@/components/thesis/ThesisPhaseFilter
 import type { Milestone } from '@/types/milestone.types';
 import * as assignments from '@/services/thesis-proposal/supervisor-assignment.service';
 import type { StudentProposalOverview } from '@/types/thesis-proposal.types';
-import { getFileProblem, StudentFinalProposalSection } from './StudentFinalProposalSection';
+import { getProposalFileProblem, StudentProposalFileCard } from './StudentProposalFileCard';
 
 vi.mock('lottie-react', () => ({ default: () => null }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -74,15 +74,14 @@ describe('Proposal final (10.3)', () => {
   });
 
   it('checks the file before sending', () => {
-    expect(getFileProblem(null)).toMatch(/Pilih berkas/);
-    expect(getFileProblem(new File(['x'], 'p.docx', { type: 'application/msword' }))).toMatch(/PDF/);
-    expect(getFileProblem(new File(['%PDF'], 'p.pdf', { type: 'application/pdf' }))).toBeNull();
+    expect(getProposalFileProblem(null)).toMatch(/Pilih berkas/);
+    expect(getProposalFileProblem(new File(['x'], 'p.docx', { type: 'application/msword' }))).toMatch(/PDF/);
+    expect(getProposalFileProblem(new File(['%PDF'], 'p.pdf', { type: 'application/pdf' }))).toBeNull();
   });
 
   it('sends the chosen PDF', async () => {
-    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(overview());
     vi.mocked(assignments.submitFinalProposal).mockResolvedValue({ success: true, message: 'Proposal final diajukan', data: { attempt: {} as never, replaced: false } });
-    wrap(<StudentFinalProposalSection />);
+    wrap(<StudentProposalFileCard kind="final" overview={overview()} />);
 
     const button = await screen.findByRole('button', { name: 'Ajukan Proposal Final' });
     expect(button).toBeDisabled();
@@ -92,8 +91,8 @@ describe('Proposal final (10.3)', () => {
     await waitFor(() => expect(assignments.submitFinalProposal).toHaveBeenCalledWith(file, expect.anything()));
   });
 
-  it('keeps the button with its reason when the attempt is locked, and lists earlier attempts', async () => {
-    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(overview({
+  it('keeps the button with its reason in the tooltip when the attempt is locked (Paket P9: Button, no raw file input)', async () => {
+    const locked = overview({
       canSubmit: false,
       blockReason: 'Penilaian proposal periode ini sudah dimulai. Proposal final tidak dapat diganti.',
       current: {
@@ -106,12 +105,14 @@ describe('Proposal final (10.3)', () => {
         file: { fileName: 'lama.pdf', fileSize: 10, url: '/uploads/thesis/t1/proposal/a1/lama.pdf', submittedAt: null },
         supervisorScored: true, coordinatorScored: true, isFinalized: true, finalScore: 47, result: 'failed', attendanceAutoZeroed: false,
       }],
-    }));
-    wrap(<StudentFinalProposalSection />);
+    });
+    wrap(<StudentProposalFileCard kind="final" overview={locked} />);
 
-    expect(await screen.findByRole('button', { name: 'Ganti Proposal Final' })).toBeDisabled();
-    expect(screen.getByText(/sudah dimulai/)).toBeInTheDocument();
-    expect(screen.getByText('Tidak Lulus · 47')).toBeInTheDocument();
-    expect(screen.queryByText('failed')).not.toBeInTheDocument();
+    const replace = await screen.findByRole('button', { name: 'Ganti Proposal Final' });
+    expect(replace).toBeDisabled();
+    expect(replace.parentElement).toHaveAttribute('title', expect.stringMatching(/sudah dimulai/));
+    expect(screen.getByRole('button', { name: 'Pilih Berkas' }).className).toContain('border-primary/30');
+    expect(screen.getByLabelText('Berkas proposal final')).toHaveClass('hidden');
+    expect(screen.getByText('proposal.pdf')).toBeInTheDocument();
   });
 });

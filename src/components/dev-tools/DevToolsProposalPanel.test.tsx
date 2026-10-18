@@ -53,6 +53,13 @@ describe('DevTools tab Proposal (rencana 10.8)', () => {
     expect(before - new Date(iso).getTime()).toBeGreaterThanOrEqual(72 * 60 * 60 * 1000);
   });
 
+  it('Paket P9 (8): two cards only; the semester flags moved to Data Master → Mahasiswa', () => {
+    render(<MemoryRouter><DevToolsProposalPanel /></MemoryRouter>);
+    expect(screen.getByText('Waktu Pengajuan Pembimbing')).toBeInTheDocument();
+    expect(screen.getByText('Proses Kelulusan')).toBeInTheDocument();
+    expect(screen.queryByText(/Penanda SIA/)).not.toBeInTheDocument();
+  });
+
   it('runs the promotion only when someone may move up', () => {
     const { unmount } = render(<MemoryRouter><DevToolsProposalPanel /></MemoryRouter>);
     expect(screen.getByRole('button', { name: /Jalankan/ })).toBeDisabled();

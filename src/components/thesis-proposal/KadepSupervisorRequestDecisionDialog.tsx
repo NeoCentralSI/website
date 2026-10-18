@@ -88,7 +88,7 @@ export function KadepSupervisorRequestDecisionDialog({
           <div className="space-y-3">
             {(recommendations?.alternatives?.length ?? 0) > 0 && (
               <div className="space-y-2">
-                <Label>Rekomendasi (KBK sama, belum penuh)</Label>
+                <Label>Rekomendasi (kelompok keilmuan sama, belum penuh)</Label>
                 <div className="flex flex-wrap gap-2">
                   {recommendations!.alternatives.map((lecturer) => (
                     <Button key={lecturer.lecturerId} size="sm" variant={target === lecturer.lecturerId ? 'default' : 'outline'}
@@ -103,7 +103,7 @@ export function KadepSupervisorRequestDecisionDialog({
             <div className="space-y-2">
               <Label>Dosen pembimbing</Label>
               <SearchableCombobox ariaLabel="Dosen pembimbing" options={options} value={target} onChange={setTarget}
-                placeholder="Pilih dosen" searchPlaceholder="Cari nama atau KBK" emptyText="Dosen tidak ditemukan" />
+                placeholder="Pilih dosen" searchPlaceholder="Cari nama atau kelompok keilmuan" emptyText="Dosen tidak ditemukan" />
               {chosen && <SupervisionLoadBadge activeCount={chosen.activeCount} hardLimit={chosen.hardLimit} level={chosen.level} />}
             </div>
           </div>

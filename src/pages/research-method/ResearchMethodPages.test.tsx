@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getEntryProblem } from '@/components/research-method/ScoreFormDialog';
-import { describeAttempt } from '@/components/thesis-proposal/StudentResearchMethodScoreSection';
+import { buildProposalSteps } from '@/components/thesis-proposal/studentProposalState';
 import * as service from '@/services/research-method/research-method.service';
 import { expectColumnFits } from '@/test/columnFit';
 import { expectFooter } from '@/test/dialogFooter';
@@ -77,13 +77,21 @@ describe('form rules (R22)', () => {
     expect(getFilesProblem([new File(['x'], 'a.xlsx')])).toBeNull();
   });
 
-  it('tells the student where the assessment stands', () => {
-    expect(describeAttempt(null)).toMatch(/setelah proposal final/);
+  it('Paket P9 (2): the stepper tells the student where the assessment stands', () => {
     const base = { id: 'a', academicYear: { id: 'ay', label: 'x' }, file: { fileName: 'p', fileSize: 1, url: 'u', submittedAt: null }, supervisorScored: true, coordinatorScored: false, isFinalized: false, finalScore: null, result: null, attendanceAutoZeroed: false };
-    expect(describeAttempt(base)).toMatch(/Nilai pembimbing sudah masuk/);
-    expect(describeAttempt({ ...base, isFinalized: true, result: 'passed', finalScore: 82 })).toMatch(/Lulus/);
-    expect(describeAttempt({ ...base, isFinalized: true, result: 'failed', finalScore: 47 })).toMatch(/mengulang/);
-    expect(describeAttempt({ ...base, attendanceAutoZeroed: true })).toMatch(/di bawah 75%/);
+    const stepOf = (current: typeof base | null) => buildProposalSteps({
+      thesis: { id: 't', title: 'x', status: 'proposal', startDate: null, topic: null, academicYear: null, supervisors: [] },
+      assignment: { assigned: true, assignedAt: null, semesterLabel: null, version: 1, waitingReason: null },
+      finalProposal: { academicYear: null, current: current as never, canSubmit: true, blockReason: null, history: [] },
+      proposalRevision: { applicable: false, evaluation: null, current: null, history: [], canSubmit: false, blockReason: null, replacesCurrent: false },
+    }, undefined);
+    expect(stepOf(null)[3]).toMatchObject({ state: 'waiting', note: 'Menunggu' });
+    expect(stepOf(base)[3].note).toBe('Menunggu koordinator');
+    const passed = stepOf({ ...base, isFinalized: true, result: 'passed' as never, finalScore: 82 as never });
+    expect(passed[3]).toMatchObject({ state: 'done', note: 'Lulus' });
+    expect(passed[4].note).toBe('Menunggu KRS Tugas Akhir semester berikutnya');
+    expect(stepOf({ ...base, isFinalized: true, result: 'failed' as never, finalScore: 47 as never })[3]).toMatchObject({ state: 'failed', note: 'Tidak lulus, ulangi semester berikutnya' });
+    expect(stepOf({ ...base, attendanceAutoZeroed: true })[3].state).toBe('failed');
   });
 });
 
@@ -194,7 +202,7 @@ describe('Monitoring Kelas', () => {
     }],
   };
 
-  it('shows labels, not raw values; the promotion run is disabled with a reason for readers', async () => {
+  it('shows labels, not raw values; readers do not get the Proses Kelulusan panel (Paket P9: a panel of its own)', async () => {
     vi.mocked(service.getMonitoring).mockResolvedValue(monitoring);
     wrap(<ClassMonitoring />);
     expect(await screen.findByText('Uji Proposal Siap Dinilai')).toBeInTheDocument();
@@ -204,7 +212,8 @@ describe('Monitoring Kelas', () => {
     expect(screen.queryByText('assigned')).not.toBeInTheDocument();
     expect(screen.queryByText('guidance')).not.toBeInTheDocument();
     expect(screen.getByText('2 sesi')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Jalankan Proses Kelulusan/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Proses Kelulusan' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('table')).toHaveLength(1);
     expect(service.getPromotionPreview).not.toHaveBeenCalled();
   });
 
@@ -234,7 +243,9 @@ describe('Monitoring Kelas', () => {
     });
     vi.mocked(service.runPromotion).mockResolvedValue({ success: true, data: { academicYear: null, promoted: [], deferred: [], failed: [] } });
     wrap(<ClassMonitoring />);
+    fireEvent.click(await screen.findByRole('button', { name: /^Proses Kelulusan/ }));
     expect(await screen.findByText('Siap Naik')).toBeInTheDocument();
+    expect(screen.getAllByRole('table')).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: /Jalankan Proses Kelulusan/ }));
     await waitFor(() => expect(service.runPromotion).toHaveBeenCalled());
   });
@@ -270,7 +281,14 @@ describe('Metode Penelitian > Presensi, Paket P8', () => {
     expect(within(rows[0]).getByText('Di Bawah 75%')).toBeInTheDocument();
     expect(within(rows[1]).getByText('Tidak Dikenal')).toBeInTheDocument();
     expectColumnFits(within(table).getByRole('columnheader', { name: /Status/ }), within(rows[0]).getAllByRole('cell')[4], 'Di Bawah 75%');
-    expect(screen.getByText('Hanya Koordinator Metode Penelitian yang mengunggah presensi.')).toBeInTheDocument();
+    // Paket P9 (9): Pilih Berkas is a Button; the reason is in the tooltip; two panels.
+    const choose = screen.getByRole('button', { name: /Pilih Berkas/ });
+    expect(choose).toBeDisabled();
+    expect(choose.parentElement).toHaveAttribute('title', 'Hanya Koordinator Metode Penelitian yang mengunggah presensi.');
+    expect(screen.getByLabelText('Berkas presensi')).toHaveClass('hidden');
     expect(screen.getByRole('button', { name: /Unggah dan Terapkan/ })).toBeDisabled();
+    expect(screen.getAllByRole('table')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Riwayat Unggahan' }));
+    expect(await screen.findByText('Belum ada unggahan sebelumnya pada periode ini.')).toBeInTheDocument();
   });
 });

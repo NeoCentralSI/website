@@ -5,6 +5,7 @@ import * as service from '@/services/thesis-proposal/supervisor-assignment.servi
 
 export const supervisorAssignmentKeys = {
   overview: (academicYearId?: string | null) => ['thesis-proposal', 'supervisor-assignments', academicYearId ?? 'current'] as const,
+  board: (academicYearId?: string | null) => ['thesis-proposal', 'supervisor-assignments', 'board', academicYearId ?? 'current'] as const,
   mine: () => ['thesis-proposal', 'me'] as const,
 };
 
@@ -30,6 +31,15 @@ export function useSupervisorAssignmentOverview(academicYearId?: string | null) 
   return useQuery({
     queryKey: supervisorAssignmentKeys.overview(academicYearId),
     queryFn: () => service.getAssignmentOverview(academicYearId),
+  });
+}
+
+/** Paket P9 (5): every Kadep decision and the issue refresh it (all under 'thesis-proposal'). */
+export function useAssignmentBoard(academicYearId?: string | null) {
+  return useQuery({
+    queryKey: supervisorAssignmentKeys.board(academicYearId),
+    queryFn: () => service.getAssignmentBoard(academicYearId),
+    placeholderData: (previous) => previous,
   });
 }
 

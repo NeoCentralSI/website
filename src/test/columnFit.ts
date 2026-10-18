@@ -28,6 +28,11 @@ export const MEASURED_MIN_WIDTH: Record<string, number> = {
   'Menunggu Periode Berikutnya': 222,
   'Di Bawah 75%': 129,
   'Tidak Lulus': 113,
+  // Paket P9
+  'Jalur Departemen · Menunggu Keputusan': 288,
+  'Di Atas Kuota · Menunggu Keputusan': 263,
+  'Pembimbing 2 · Menunggu Keputusan': 268,
+  'Ditetapkan (versi 12)': 166,
 };
 
 /**

@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Download, Loader2, Upload } from 'lucide-react';
+import { Download, Loader2, Paperclip, Upload } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { formatAttendance } from '@/components/research-method/AssessmentCells';
 import { PeriodSelect } from '@/components/research-method/PeriodSelect';
-import { PageHeading, SectionHeading } from '@/components/shared/PageHeading';
+import { PageHeading } from '@/components/shared/PageHeading';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { useActiveAcademicYear } from '@/hooks/shared/useActiveAcademicYear';
 import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { useRole } from '@/hooks/shared/useRole';
@@ -39,11 +40,17 @@ const RECORD_STATUS_LABELS: Record<RecordStatus, string> = { below: 'Di Bawah 75
 const RECORD_STATUS_VARIANTS = { below: 'destructive', unknown: 'outline', eligible: 'success' } as const;
 const recordStatus = (row: AttendanceRow): RecordStatus => (row.matched === false ? 'unknown' : row.isEligible ? 'eligible' : 'below');
 
+const TABS = [
+  { value: 'berlaku', label: 'Presensi Berlaku' },
+  { value: 'riwayat', label: 'Riwayat Unggahan' },
+];
+
 /**
  * Metode Penelitian > Presensi (rencana 10.5; Paket P8): ekspor aplikasi presensi diunggah
  * koordinator, dipratinjau lebih dulu, lalu diterapkan. Presensi di bawah 75% membuat nilai
  * proposal otomatis 0 (setelah proposal final ada); unggahan koreksi yang memenuhi membuka
- * kembali nilai itu selama TA masih fase proposal.
+ * kembali nilai itu selama TA masih fase proposal. Paket P9 (9): the period select beside the
+ * title, Pilih Berkas as a Button, and two panels with one table each.
  */
 export default function Attendance() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -58,6 +65,7 @@ export default function Attendance() {
   const [files, setFiles] = useState<File[]>([]);
   const [previewResult, setPreviewResult] = useState<AttendancePreview | null>(null);
   const [status, setStatus] = useState<RecordStatus | ''>('');
+  const [tab, setTab] = useState('berlaku');
   const canUpload = isResearchMethodCoordinator();
   const filesProblem = getFilesProblem(files);
   const uploadReason = !canUpload ? 'Hanya Koordinator Metode Penelitian yang mengunggah presensi.' : filesProblem ?? (!previewResult ? 'Pratinjau berkas terlebih dahulu.' : null);
@@ -126,17 +134,13 @@ export default function Attendance() {
 
   return (
     <div className="space-y-6 p-6">
-      <PageHeading title="Presensi" subtitle="Presensi kelas Metode Penelitian dari aplikasi presensi; kehadiran di bawah 75% membuat nilai proposal otomatis 0" />
+      <PageHeading title="Presensi" subtitle="Presensi kelas Metode Penelitian">
+        <PeriodSelect value={yearId} onChange={(value) => { setAcademicYearId(value); reset(); }} />
+      </PageHeading>
 
       <Card>
-        <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
-          <div className="space-y-1.5">
-            <CardTitle className="text-base">Unggah Presensi Kelas</CardTitle>
-            <CardDescription>
-              Satu atau dua berkas kelas digabung per NIM. NIM yang muncul di dua berkas membatalkan unggahan. Ambang kehadiran 75%.
-            </CardDescription>
-          </div>
-          <PeriodSelect value={yearId} onChange={(value) => { setAcademicYearId(value); reset(); }} />
+        <CardHeader>
+          <CardTitle className="text-base">Unggah Presensi Kelas</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <input
@@ -145,14 +149,19 @@ export default function Attendance() {
             multiple
             accept=".xlsx,.xls"
             aria-label="Berkas presensi"
+            className="hidden"
             disabled={!canUpload}
             onChange={(e) => { setFiles(Array.from(e.target.files ?? [])); setPreviewResult(null); }}
-            className="block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm disabled:opacity-60"
           />
           {files.length > 0 && filesProblem && <p className="text-xs text-destructive">{filesProblem}</p>}
           <div className="flex flex-col gap-2">
-            {uploadReason && <p className="text-xs text-muted-foreground">{uploadReason}</p>}
             <div className="flex flex-wrap items-center justify-end gap-2">
+              {files.length > 0 && <span className="mr-auto min-w-0 truncate text-xs text-muted-foreground">{files.map((f) => f.name).join(', ')}</span>}
+              <span title={!canUpload ? uploadReason ?? undefined : undefined} className="inline-flex">
+                <Button variant="outline" size="sm" disabled={!canUpload} onClick={() => inputRef.current?.click()}>
+                  <Paperclip className="mr-2 h-4 w-4" />Pilih Berkas
+                </Button>
+              </span>
               <span title={!canUpload ? uploadReason ?? undefined : filesProblem ?? undefined} className="inline-flex">
                 <Button
                   variant="outline"
@@ -181,7 +190,7 @@ export default function Attendance() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Pratinjau {previewResult.sourceFiles.map((f) => f.originalName).join(' + ')}</CardTitle>
-            <CardDescription>Belum ada yang disimpan. Periksa ringkasan ini lalu pilih Unggah dan Terapkan.</CardDescription>
+            <CardDescription>Belum disimpan.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
@@ -200,24 +209,9 @@ export default function Attendance() {
         </Card>
       )}
 
-      <div className="space-y-3">
-        <SectionHeading
-          title={`Presensi Berlaku${data?.academicYear.label ? ` ${data.academicYear.label}` : ''}`}
-          description={data?.current
-            ? `Kelas ${data.current.classCode ?? '-'} · diunggah ${formatDateTimeWib(data.current.uploadedAt)}${data.current.uploadedBy?.fullName ? ` oleh ${formatLecturerName(data.current.uploadedBy.fullName)}` : ''}. Unggahan terbaru ini yang dipakai Penilaian Proposal`
-            : 'Unggahan terbaru yang dipakai Penilaian Proposal'}
-        >
-          {data?.current && data.current.sourceFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {data.current.sourceFiles.map((file) => (
-                <Button key={file.index} variant="outline" size="sm" onClick={() => downloadAuthenticatedFileOrToast(file.url, file.originalName)}>
-                  <Download className="mr-2 h-4 w-4" />{file.originalName}
-                </Button>
-              ))}
-            </div>
-          )}
-        </SectionHeading>
-        {attendance.error ? (
+      <LocalTabsNav tabs={TABS} activeTab={tab} onTabChange={setTab} />
+      {tab === 'berlaku' ? (
+        attendance.error ? (
           <p className="text-sm text-destructive">{attendance.error instanceof Error ? attendance.error.message : 'Gagal memuat presensi.'}</p>
         ) : (
           <CustomTable
@@ -231,22 +225,33 @@ export default function Attendance() {
             searchPlaceholder="Cari NIM atau nama..."
             emptyText={recordTable.search || status ? 'Tidak ditemukan' : 'Presensi periode ini belum diunggah.'}
             rowKey={(row) => row.id ?? row.identityNumber}
-            actions={<RefreshButton onClick={() => void attendance.refetch()} isRefreshing={attendance.isFetching && !attendance.isLoading} />}
+            actions={(
+              <>
+                {data?.current?.sourceFiles.map((file) => (
+                  <Button
+                    key={file.index}
+                    variant="outline"
+                    size="sm"
+                    title={`Kelas ${data.current?.classCode ?? '-'} · diunggah ${formatDateTimeWib(data.current?.uploadedAt)}`}
+                    onClick={() => downloadAuthenticatedFileOrToast(file.url, file.originalName)}
+                  >
+                    <Download className="mr-2 h-4 w-4" />{file.originalName}
+                  </Button>
+                ))}
+                <RefreshButton onClick={() => void attendance.refetch()} isRefreshing={attendance.isFetching && !attendance.isLoading} />
+              </>
+            )}
           />
-        )}
-      </div>
-
-      {(data?.history.length ?? 0) > 0 && (
-        <div className="space-y-3">
-          <SectionHeading title="Riwayat Unggahan" description="Unggahan sebelumnya pada periode ini, disimpan sebagai bukti" />
-          <CustomTable
-            columns={historyColumns}
-            {...historyTable.tableProps}
-            tableClassName="table-fixed"
-            emptyText="Tidak ditemukan"
-            rowKey={(row) => row.id}
-          />
-        </div>
+        )
+      ) : (
+        <CustomTable
+          columns={historyColumns}
+          {...historyTable.tableProps}
+          loading={attendance.isLoading}
+          tableClassName="table-fixed"
+          emptyText={historyTable.search ? 'Tidak ditemukan' : 'Belum ada unggahan sebelumnya pada periode ini.'}
+          rowKey={(row) => row.id}
+        />
       )}
     </div>
   );

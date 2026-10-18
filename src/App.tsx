@@ -87,6 +87,7 @@ const SignLetterPage = lazy(() => import('./pages/kerja-praktik/kadep/SignLetter
 // Overview Pages
 const KerjaPraktekOverviewPage = lazy(() => import('./pages/kerja-praktik/student/Overview'))
 const ThesisProposalEntryPage = lazy(() => import('./pages/thesis-proposal/ThesisProposalEntry'))
+const StudentSupervisorRequestPage = lazy(() => import('./pages/thesis-proposal/StudentSupervisorRequestPage'));
 const KadepThesisSupervisorAssignmentPage = lazy(() => import('./pages/thesis-proposal/KadepThesisSupervisorAssignment'))
 const SupervisionQuotaPage = lazy(() => import('./pages/thesis-proposal/SupervisionQuota'))
 const YudisiumEntry = lazy(() => import('./pages/yudisium/YudisiumEntry'))
@@ -256,6 +257,10 @@ function App() {
                 <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
                 {/* Tugas Akhir > Proposal (Paket P): student page; the entry picks the view per role. */}
                 <Route path="/tugas-akhir/proposal" element={<ThesisProposalEntryPage />} />
+                {/* Paket P9 (2): the student's request form on its own page */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
+                  <Route path="/tugas-akhir/proposal/pengajuan" element={<StudentSupervisorRequestPage />} />
+                </Route>
 
                 {/* Pengumuman dapat dibaca oleh seluruh pengguna terautentikasi.
                     Mutasi pendaftaran audiens seminar tetap dibatasi untuk Mahasiswa

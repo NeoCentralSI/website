@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
-import { SearchableCombobox } from '@/components/shared/SearchableCombobox';
-import { SupervisionLoadBadge } from '@/components/shared/SupervisionLoadBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +16,7 @@ import {
 } from '@/hooks/thesis-proposal/useSupervisorRequests';
 import { formatLecturerName } from '@/lib/text';
 import type { ResearchPermitStatus, SupervisorRequestDraft, SupervisorRequestInput } from '@/types/thesis-proposal.types';
+import { StudentLecturerCatalogTable } from './StudentLecturerCatalogTable';
 
 const MIN_TITLE = 12;
 const MIN_JUSTIFICATION = 20;
@@ -82,8 +81,16 @@ export function getSubmitBlockReason(form: FormState, chosenFull: boolean): stri
   return null;
 }
 
-/** Formulir Pengajuan Pembimbing dengan dua jalur: Pilih Dosen Sendiri dan Ditetapkan Departemen. */
-export function StudentSupervisorRequestForm({ draft }: { draft: SupervisorRequestDraft | null }) {
+/**
+ * Formulir Pengajuan Pembimbing dengan dua jalur: Pilih Dosen Sendiri dan Ditetapkan Departemen.
+ * Paket P9 (2): on its own page; the lecturer is chosen from the catalog table. Batal and a sent
+ * request go back to the Proposal page; Simpan Draf stays.
+ */
+export function StudentSupervisorRequestForm({ draft, onClose, onSubmitted }: {
+  draft: SupervisorRequestDraft | null;
+  onClose?: () => void;
+  onSubmitted?: () => void;
+}) {
   const [form, setForm] = useState<FormState>(() => fromDraft(draft));
   const { data: catalog = [], isLoading: catalogLoading } = useSupervisorCatalog(true);
   const { data: topics = [] } = useTopics();
@@ -98,13 +105,6 @@ export function StudentSupervisorRequestForm({ draft }: { draft: SupervisorReque
   const blockReason = getSubmitBlockReason(form, chosenFull);
   const busy = saveDraft.isPending || submit.isPending;
 
-  const lecturerOptions = catalog
-    .filter((lecturer) => lecturer.acceptingRequests)
-    .map((lecturer) => ({
-      value: lecturer.lecturerId,
-      label: `${formatLecturerName(lecturer.fullName)} · ${lecturer.activeCount}/${lecturer.hardLimit}`,
-      keywords: [lecturer.fullName ?? '', lecturer.scienceGroup?.name ?? '', ...lecturer.supervisedTopics],
-    }));
 
   return (
     <div className="space-y-5">
@@ -131,23 +131,14 @@ export function StudentSupervisorRequestForm({ draft }: { draft: SupervisorReque
       {form.route === 'direct' && (
         <div className="space-y-2">
           <Label>Dosen pembimbing</Label>
-          <SearchableCombobox
-            ariaLabel="Dosen pembimbing"
-            options={lecturerOptions}
-            value={form.lecturerId}
-            onChange={(value) => set('lecturerId', value)}
-            placeholder={catalogLoading ? 'Memuat daftar dosen…' : 'Pilih dosen'}
-            searchPlaceholder="Cari nama, KBK, atau topik"
-            emptyText="Dosen tidak ditemukan"
-            fallbackLabel={draft?.lecturer?.fullName ? formatLecturerName(draft.lecturer.fullName) : undefined}
-          />
-          {chosen && (
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <SupervisionLoadBadge activeCount={chosen.activeCount} hardLimit={chosen.hardLimit} level={chosen.level} />
-              {chosen.scienceGroup?.name && <span>{chosen.scienceGroup.name}</span>}
-              {chosen.supervisedTopics.length > 0 && <span>· Topik bimbingan: {chosen.supervisedTopics.join(', ')}</span>}
-            </div>
-          )}
+          <p className="text-sm">
+            {chosen
+              ? <span className="font-medium">{formatLecturerName(chosen.fullName)}</span>
+              : draft?.lecturer?.fullName && form.lecturerId
+                ? <span className="font-medium">{formatLecturerName(draft.lecturer.fullName)}</span>
+                : <span className="text-muted-foreground">Belum dipilih</span>}
+          </p>
+          <StudentLecturerCatalogTable lecturers={catalog} value={form.lecturerId} onChange={(value) => set('lecturerId', value)} isLoading={catalogLoading} />
           {chosen?.level === 'near_limit' && (
             <p className="text-xs text-muted-foreground">Dosen ini mendekati batas bimbingan. Pengajuan tetap bisa dikirim.</p>
           )}
@@ -214,12 +205,12 @@ export function StudentSupervisorRequestForm({ draft }: { draft: SupervisorReque
       )}
 
       <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-4">
-        {blockReason && <p className="mr-auto text-xs text-muted-foreground">{blockReason}</p>}
+        {onClose && <Button variant="outline" disabled={busy} onClick={onClose}>Batal</Button>}
         <Button variant="outline" disabled={busy} onClick={() => saveDraft.mutate(toInput(form))}>
           {saveDraft.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Simpan Draf
         </Button>
-        <span title={blockReason ?? undefined}>
-          <Button disabled={busy || Boolean(blockReason)} onClick={() => submit.mutate(toInput(form))}>
+        <span title={blockReason ?? undefined} className="inline-flex">
+          <Button disabled={busy || Boolean(blockReason)} onClick={() => submit.mutate(toInput(form), { onSuccess: () => onSubmitted?.() })}>
             {submit.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Ajukan
           </Button>
         </span>

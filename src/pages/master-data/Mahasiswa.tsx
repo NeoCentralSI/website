@@ -262,9 +262,11 @@ export default function Mahasiswa() {
       render: (row: Student) => {
         const flags = row.student?.semesterFlags;
         if (!flags?.takingResearchMethod && !flags?.takingThesisCourse) return <span className="text-muted-foreground">—</span>;
-        const source = flags.source === 'devtools' ? ' (diubah lewat DevTools)' : '';
+        // Paket P9 (K36): an Admin or DevTools value is named; otherwise it is SIA's.
+        const manual = [flags.researchMethodSource, flags.thesisCourseSource, flags.source];
+        const source = manual.includes('admin') ? ' (diisi Admin)' : manual.includes('devtools') ? ' (diubah lewat DevTools)' : '';
         return (
-          <div className="flex flex-wrap gap-1" title={`Menurut SIA ${flags.academicYearLabel}${source}`}>
+          <div className="flex flex-wrap gap-1" title={`Keikutsertaan ${flags.academicYearLabel}${source}`}>
             {flags.takingResearchMethod && (
               <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">
                 Metode Penelitian

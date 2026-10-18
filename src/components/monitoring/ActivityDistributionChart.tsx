@@ -10,6 +10,14 @@ import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 interface ActivityDistributionChartProps {
   activityDistribution: ActivityDistribution[] | undefined;
   isLoading: boolean;
+  /**
+   * Paket P9 (6): the same pie for another distribution (Kelola → Batas Bimbingan). Defaults are
+   * the activity chart's own title, labels, colours and empty text.
+   */
+  title?: string;
+  emptyDescription?: string;
+  labelOf?: (value: string) => string;
+  colorOf?: (value: string) => string | undefined;
 }
 
 function getColor(level: string, index: number): string {
@@ -17,12 +25,20 @@ function getColor(level: string, index: number): string {
 }
 
 /** Sebaran tingkat aktivitas TA berstatus Penelitian (Lancar / Lambat / Berisiko). */
-export function ActivityDistributionChart({ activityDistribution, isLoading }: ActivityDistributionChartProps) {
+export function ActivityDistributionChart({
+  activityDistribution,
+  isLoading,
+  title = "Distribusi Aktivitas",
+  emptyDescription = "Belum ada tugas akhir berstatus Penelitian",
+  labelOf = getThesisActivityLabel,
+  colorOf,
+}: ActivityDistributionChartProps) {
+  const colorFor = (value: string, index: number) => colorOf?.(value) ?? getColor(value, index);
   if (isLoading) {
     return (
       <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
-          <CardTitle className="text-base">Distribusi Aktivitas</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-62.5">
           <Loading size="md" text="Memuat..." />
@@ -32,22 +48,22 @@ export function ActivityDistributionChart({ activityDistribution, isLoading }: A
   }
 
   // Label from the enum value (single source: lib/thesisLabels).
-  const data = (activityDistribution ?? []).map((r) => ({ ...r, name: getThesisActivityLabel(r.value) }));
+  const data = (activityDistribution ?? []).map((r) => ({ ...r, name: labelOf(r.value) }));
   const total = data.reduce((sum, r) => sum + r.count, 0);
 
   const chartConfig: ChartConfig = {};
   data.forEach((r, i) => {
-    chartConfig[r.name] = { label: r.name, color: getColor(r.value, i) };
+    chartConfig[r.name] = { label: r.name, color: colorFor(r.value, i) };
   });
 
   return (
     <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
-        <CardTitle className="text-base">Distribusi Aktivitas</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {data.length === 0 || total === 0 ? (
-          <EmptyState size="sm" title="Tidak Ada Data" description="Belum ada tugas akhir berstatus Penelitian" />
+          <EmptyState size="sm" title="Tidak Ada Data" description={emptyDescription} />
         ) : (
           <ChartContainer config={chartConfig} className="h-62.5 w-full">
             <PieChart>
@@ -74,7 +90,7 @@ export function ActivityDistributionChart({ activityDistribution, isLoading }: A
                 fontSize={11}
               >
                 {data.map((entry, index) => (
-                  <Cell key={entry.id} fill={getColor(entry.value, index)} />
+                  <Cell key={entry.id} fill={colorFor(entry.value, index)} />
                 ))}
               </Pie>
               <Legend

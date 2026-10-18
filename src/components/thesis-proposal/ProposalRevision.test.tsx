@@ -8,7 +8,8 @@ import * as assignments from '@/services/thesis-proposal/supervisor-assignment.s
 import * as revisions from '@/services/thesis-proposal/proposal-revision.service';
 import type { LecturerProposalRevisionState, ProposalRevision, StudentProposalOverview } from '@/types/thesis-proposal.types';
 import { getRevisionNotesProblem, LecturerProposalRevisionCard } from './LecturerProposalRevisionCard';
-import { getRevisionFileProblem, StudentProposalRevisionSection } from './StudentProposalRevisionSection';
+import { getProposalFileProblem, StudentProposalFileCard } from './StudentProposalFileCard';
+import { buildProposalSteps } from './studentProposalState';
 
 vi.mock('lottie-react', () => ({ default: () => null }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -51,18 +52,23 @@ beforeEach(() => vi.clearAllMocks());
 
 describe('Proposal revisi (mengulang proposal)', () => {
   it('checks the file and the revision notes before sending', () => {
-    expect(getRevisionFileProblem(null)).toMatch(/Pilih berkas/);
-    expect(getRevisionFileProblem(new File(['x'], 'p.docx', { type: 'application/msword' }))).toMatch(/PDF/);
-    expect(getRevisionFileProblem(new File(['%PDF'], 'p.pdf', { type: 'application/pdf' }))).toBeNull();
+    expect(getProposalFileProblem(null, 'revision')).toMatch(/Pilih berkas/);
+    expect(getProposalFileProblem(new File(['x'], 'p.docx', { type: 'application/msword' }), 'revision')).toMatch(/Proposal Revisi harus berupa berkas PDF/);
+    expect(getProposalFileProblem(new File(['%PDF'], 'p.pdf', { type: 'application/pdf' }), 'revision')).toBeNull();
     expect(getRevisionNotesProblem('  pendek  ')).toMatch(/minimal 10 karakter/);
     expect(getRevisionNotesProblem('Perjelas metodologi.')).toBeNull();
   });
 
-  it('is not shown to a student whose thesis is not repeating its proposal', async () => {
-    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(overview({ applicable: false, evaluation: null, canSubmit: false }));
-    const { container } = wrap(<StudentProposalRevisionSection />);
-    await waitFor(() => expect(assignments.getMyProposalOverview).toHaveBeenCalled());
-    expect(container).toBeEmptyDOMElement();
+  it('Paket P9 (2): steps 3 to 5 are the repeat steps only for a thesis repeating its proposal', () => {
+    const labels = (o: StudentProposalOverview) => buildProposalSteps(o, undefined).map((step) => step.label);
+    expect(labels(overview({ applicable: false, evaluation: null, canSubmit: false }))).toEqual([
+      'Pengajuan Pembimbing', 'Penetapan Pembimbing', 'Proposal Final', 'Penilaian Proposal', 'Naik ke Penelitian',
+    ]);
+    const repeat = buildProposalSteps(overview({ current: revision({ status: 'revision_requested' }) }), undefined);
+    expect(repeat.map((step) => step.label)).toEqual([
+      'Pengajuan Pembimbing', 'Penetapan Pembimbing', 'Proposal Revisi', 'Persetujuan Pembimbing 1', 'Kembali ke Penelitian',
+    ]);
+    expect(repeat[3]).toMatchObject({ state: 'attention', note: 'Revisi diminta' });
   });
 
   it('student: after "Minta Revisi" sees the notes and uploads a new revision', async () => {
@@ -70,7 +76,9 @@ describe('Proposal revisi (mengulang proposal)', () => {
       current: revision({ status: 'revision_requested', reviewNotes: 'Perjelas metodologi penelitian.', reviewerName: 'Husnil Kamil, MT', reviewedAt: '2026-10-14T05:00:00Z' }),
     }));
     vi.mocked(revisions.submitProposalRevision).mockResolvedValue({ success: true, message: 'Proposal revisi diajukan', data: { revision: revision({ id: 'r2' }), replaced: false } });
-    wrap(<StudentProposalRevisionSection />);
+    wrap(<StudentProposalFileCard kind="revision" overview={overview({
+      current: revision({ status: 'revision_requested', reviewNotes: 'Perjelas metodologi penelitian.', reviewerName: 'Husnil Kamil, MT', reviewedAt: '2026-10-14T05:00:00Z' }),
+    })} />);
 
     expect(await screen.findByText('Proposal Revisi')).toBeInTheDocument();
     expect(screen.getAllByText('Perlu Revisi').length).toBeGreaterThan(0);
@@ -84,8 +92,7 @@ describe('Proposal revisi (mengulang proposal)', () => {
   });
 
   it('student: an upload waiting for review can be replaced', async () => {
-    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(overview({ current: revision(), replacesCurrent: true }));
-    wrap(<StudentProposalRevisionSection />);
+    wrap(<StudentProposalFileCard kind="revision" overview={overview({ current: revision(), replacesCurrent: true })} />);
     expect(await screen.findByRole('button', { name: 'Ganti Proposal Revisi' })).toBeInTheDocument();
     expect(screen.getAllByText('Menunggu Tinjauan Pembimbing 1').length).toBeGreaterThan(0);
   });

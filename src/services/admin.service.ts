@@ -471,8 +471,32 @@ export interface StudentSemesterFlags {
   takingResearchMethod: boolean | null;
   takingThesisCourse: boolean | null;
   source: string | null;
+  /** Paket P9 (K36): the source of each flag ("sia", "admin", "devtools"); "admin" is kept by the sync. */
+  researchMethodSource?: string | null;
+  thesisCourseSource?: string | null;
   capturedAt: string | null;
 }
+
+async function adminJson<T>(path: string, init: RequestInit, fallback: string): Promise<{ data: T; message?: string }> {
+  const response = await fetch(getApiUrl(path), {
+    ...init,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.message || fallback);
+  return body;
+}
+
+/** Paket P9 (K36): the Admin sets one semester's flags (source "admin", kept by the SIA sync). null clears a flag. */
+export const setStudentPeriodFlagsAPI = (
+  studentId: string,
+  academicYearId: string,
+  flags: { eligibleResearchMethod?: boolean | null; takingThesisCourse?: boolean | null },
+) => adminJson<unknown>(`/adminfeatures/students/${studentId}/period-flags/${academicYearId}`, { method: 'PATCH', body: JSON.stringify(flags) }, 'Gagal menyimpan keikutsertaan semester');
+
+/** Paket P9 (K36): "Ikuti Data SIA" for one semester. */
+export const followSiaPeriodFlagsAPI = (studentId: string, academicYearId: string) =>
+  adminJson<{ fromSia: boolean }>(`/adminfeatures/students/${studentId}/period-flags/${academicYearId}/follow-sia`, { method: 'POST' }, 'Gagal mengikuti data SIA');
 
 // Lecturer interface with workload info
 export interface Lecturer {

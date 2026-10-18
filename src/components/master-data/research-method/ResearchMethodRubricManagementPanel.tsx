@@ -9,7 +9,6 @@ import { useAssessmentForm, useSetMinimumScore } from "@/hooks/research-method/u
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -99,10 +98,6 @@ export function ResearchMethodRubricManagementPanel() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>Rubrik Penilaian Metode Penelitian</CardTitle>
-            <CardDescription>
-              Kelola kriteria dan rentang rubrik penilaian proposal berdasarkan
-              CPMK serta peran penilai.
-            </CardDescription>
             <div className="mt-3 w-full sm:w-[240px]">
               <Select value={academicYearId ?? ""} onValueChange={period.setAcademicYearId}>
                 <SelectTrigger aria-label="Tahun ajaran">

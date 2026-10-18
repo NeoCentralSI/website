@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 
-import { Supervisor2RequestsSection } from '@/components/bimbingan/Supervisor2RequestsSection';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import {
   LecturerApprovalInboxTable,
@@ -10,8 +9,8 @@ import {
 
 /**
  * Tugas Akhir > Permohonan (Paket E4, 4.1; Paket E5, 3.1): the lecturer's approval inbox, the
- * Pengajuan Pembimbing and the lecturer's own steps of a Perubahan TA in one table; the
- * Pembimbing 2 requests of the proposal phase come along.
+ * Pengajuan Pembimbing, the lecturer's own steps of a Perubahan TA and (Paket P9, 4) the
+ * Pembimbing 2 requests of the proposal phase, in one table.
  */
 export default function LecturerSupervisorRequestsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -27,14 +26,12 @@ export default function LecturerSupervisorRequestsPage() {
       <div className="space-y-3">
         <div>
           <h1 className="text-2xl font-bold">Permohonan</h1>
-          <p className="text-muted-foreground">Pengajuan pembimbing dan perubahan tugas akhir yang memerlukan persetujuan Anda</p>
+          <p className="text-muted-foreground">Pengajuan pembimbing, Pembimbing 2, dan perubahan tugas akhir yang memerlukan persetujuan Anda</p>
         </div>
         <LecturerSupervisionLoadControls />
       </div>
 
       <LecturerApprovalInboxTable />
-
-      <Supervisor2RequestsSection />
     </div>
   );
 }

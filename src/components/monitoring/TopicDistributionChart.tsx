@@ -9,6 +9,11 @@ import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 interface TopicDistributionChartProps {
   topicDistribution: TopicDistribution[] | undefined;
   isLoading: boolean;
+  /** Paket P9 (6): the same bars for another distribution; defaults are the topic chart's own. */
+  title?: string;
+  emptyDescription?: string;
+  /** Unit in the tooltip ("tugas akhir"). */
+  unit?: string;
 }
 
 const TOPIC_COLORS = [
@@ -16,12 +21,18 @@ const TOPIC_COLORS = [
   "#ec4899", "#6366f1", "#f97316", "#14b8a6", "#a855f7",
 ];
 
-export function TopicDistributionChart({ topicDistribution, isLoading }: TopicDistributionChartProps) {
+export function TopicDistributionChart({
+  topicDistribution,
+  isLoading,
+  title = "Distribusi Topik",
+  emptyDescription = "Belum ada data topik",
+  unit = "tugas akhir",
+}: TopicDistributionChartProps) {
   if (isLoading) {
     return (
       <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
-          <CardTitle className="text-base">Distribusi Topik</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-62.5">
           <Loading size="md" text="Memuat..." />
@@ -46,11 +57,11 @@ export function TopicDistributionChart({ topicDistribution, isLoading }: TopicDi
   return (
     <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
-        <CardTitle className="text-base">Distribusi Topik</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
-          <EmptyState size="sm" title="Tidak Ada Data" description="Belum ada data topik" />
+          <EmptyState size="sm" title="Tidak Ada Data" description={emptyDescription} />
         ) : (
           <ChartContainer config={chartConfig} className="h-62.5 w-full">
             <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 16 }}>
@@ -67,7 +78,7 @@ export function TopicDistributionChart({ topicDistribution, isLoading }: TopicDi
                 content={
                   <ChartTooltipContent
                     formatter={(value, _name, props) => (
-                      <span>{props.payload?.name}: {value} tugas akhir</span>
+                      <span>{props.payload?.name}: {value} {unit}</span>
                     )}
                   />
                 }

@@ -124,6 +124,8 @@ export interface CatalogLecturer extends SupervisorLoad {
   scienceGroup: { id: string; name: string } | null;
   acceptingRequests: boolean;
   supervisedTopics: string[];
+  /** Paket P9 (2): the topics the lecturer offers (published). */
+  offeredTopics?: string[];
 }
 
 export interface CandidateLecturer extends CatalogLecturer {
@@ -142,7 +144,20 @@ export interface LecturerInbox {
 /** Paket E5 (3.1): a row of Tugas Akhir > Permohonan, the lecturer's approval inbox. */
 export type LecturerApprovalRow =
   | { kind: 'supervisor_request'; id: string; viewStatus: SupervisorRequestStatus; createdAt: string; supervisorRequest: SupervisorRequest }
-  | { kind: 'change_request'; id: string; viewStatus: ChangeRequestViewStatus; createdAt: string; changeRequest: ThesisChangeRequestRow };
+  | { kind: 'change_request'; id: string; viewStatus: ChangeRequestViewStatus; createdAt: string; changeRequest: ThesisChangeRequestRow }
+  // Paket P9 (4): a student asks the lecturer to be Pembimbing 2; always "Menunggu Persetujuan Anda".
+  | { kind: 'supervisor2_request'; id: string; viewStatus: 'awaiting_me'; createdAt: string; supervisor2Request: Supervisor2InboxItem };
+
+export interface Supervisor2InboxItem {
+  requestId: string;
+  thesisId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail?: string | null;
+  studentNim: string | null;
+  thesisTitle: string;
+  requestedAt: string;
+}
 
 /**
  * One page of Tugas Akhir > Permohonan, "Semua" by default and sorted by status priority on the
@@ -151,7 +166,7 @@ export type LecturerApprovalRow =
 export interface LecturerApprovalInbox {
   data: LecturerApprovalRow[];
   meta: { page: number; pageSize: number; total: number; totalPages: number };
-  counts: { waiting: number; waitingRequests: number; waitingChanges: number };
+  counts: { waiting: number; waitingRequests: number; waitingChanges: number; waitingSupervisor2?: number };
 }
 
 export interface LecturerResponseDto {
@@ -247,6 +262,67 @@ export interface AssignmentOverview {
   newCount: number;
 }
 
+/** Paket P9 (5): the "Pengajuan" column of the Penetapan panel. */
+export type AssignmentBoardSubmission =
+  | 'department_waiting'
+  | 'over_quota_waiting'
+  | 'supervisor2_waiting'
+  | 'approved'
+  | 'revision_requested'
+  | 'rejected'
+  | 'other';
+
+export interface AssignmentBoardLecturer {
+  lecturerId: string;
+  fullName: string | null;
+  role: string | null;
+  load: SupervisorLoad | null;
+  /** "Menerima pengajuan baru" of the lecturer. */
+  acceptingRequests: boolean;
+}
+
+/** One student of the chosen semester (Paket P9, 5). */
+export interface AssignmentBoardRow {
+  studentId: string;
+  thesisId: string | null;
+  student: { fullName: string | null; identityNumber: string | null };
+  title: string | null;
+  supervisors: AssignmentBoardLecturer[];
+  /** The lecturer a waiting decision is about (over quota: Pembimbing 1; Pembimbing 2). */
+  candidate: AssignmentBoardLecturer | null;
+  submission: AssignmentBoardSubmission;
+  waiting: boolean;
+  requestStatus: SupervisorRequestStatus | null;
+  assignment: { inCohort: boolean; assigned: boolean; version: number | null };
+  request: (SupervisorRequest & { lecturerLoad?: (SupervisorLoad & { projectedCount: number; overBy: number }) | null }) | null;
+  supervisor2Request: {
+    requestId: string;
+    thesisId: string;
+    studentId: string;
+    lecturerId: string;
+    studentName: string;
+    studentNim?: string | null;
+    lecturerName: string;
+    thesisTitle: string;
+    requestedAt: string;
+    lecturerLoad: SupervisorLoad | null;
+  } | null;
+  history: SupervisorRequest[];
+  proposal: { fileName: string | null; url: string | null; submittedAt: string | null } | null;
+  requestedAt: string | null;
+}
+
+export interface AssignmentBoard {
+  academicYear: AcademicYearRef & { isOperational: boolean };
+  rows: AssignmentBoardRow[];
+  counts: { waiting: number; cohort: number };
+  currentBatch: AssignmentBatch | null;
+  batches: AssignmentBatch[];
+  upToDate: boolean;
+  needsIssue: boolean;
+  newCount: number;
+}
+
 export interface IssueAssignmentResult extends AssignmentOverview {
   alreadyIssued: boolean;
   newlyAssigned?: number;
@@ -258,6 +334,9 @@ export interface FinalProposalAttempt {
   file: { fileName: string | null; fileSize: number | null; url: string | null; submittedAt: string | null } | null;
   supervisorScored: boolean;
   coordinatorScored: boolean;
+  /** Paket P9 (2): the two parts of the final score, sent once it is final. */
+  supervisorScore?: number | null;
+  coordinatorScore?: number | null;
   isFinalized: boolean;
   finalScore: number | null;
   result: ResearchMethodResult | null;

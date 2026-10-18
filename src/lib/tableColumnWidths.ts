@@ -51,5 +51,27 @@ export const BADGE_COLUMN_WIDTH = {
   researchMethodResult: 120,
 } as const;
 
+/**
+ * Paket P9 (6): Beban Dosen, one number column per stage; each fits its header (14 px semibold +
+ * the cell padding): "Menunggu Penetapan" 173, "Proposal" 84, "Penelitian" 91, "BSS" 52,
+ * "Pembimbing 2" 121.
+ */
+export const LOAD_COUNT_COLUMN_WIDTH = {
+  waitingAssignment: 176,
+  proposal: 88,
+  research: 96,
+  onLeave: 64,
+  asSupervisor2: 124,
+} as const;
+
+/**
+ * Paket P9 (5): Penetapan, one table. "Jalur Departemen · Menunggu Keputusan" 288 and
+ * "Ditetapkan (versi 12)" 166 (badges, measured in Inter).
+ */
+export const ASSIGNMENT_BOARD_WIDTH = {
+  submission: 292,
+  assignment: 168,
+} as const;
+
 /** Mahasiswa Bimbingan: "Berhenti Studi Sementara (BSS)" in the Mahasiswa column needs 229 px. */
 export const MY_STUDENTS_NAME_MIN_WIDTH = 232;

@@ -5,6 +5,7 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { PeriodSelect } from '@/components/research-method/PeriodSelect';
 import { ProposalAssessmentTable } from '@/components/research-method/ProposalAssessmentTable';
 import { PageHeading } from '@/components/shared/PageHeading';
+import { Badge } from '@/components/ui/badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSupervisorQueue } from '@/hooks/research-method/useResearchMethod';
 
@@ -25,14 +26,9 @@ export default function LecturerThesisProposal() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="space-y-1">
-        <PageHeading title="Proposal" subtitle="Mahasiswa bimbingan fase proposal dan Penilaian Proposal oleh pembimbing" />
-        {queue.data && (
-          <p className="text-sm text-muted-foreground">
-            Nilai minimum lulus {queue.data.academicYear.label}: {queue.data.minimumScore}. Nilai diisi setelah mahasiswa mengajukan proposal final dan presensi kelas tersedia.
-          </p>
-        )}
-      </div>
+      <PageHeading title="Proposal" subtitle="Penilaian proposal mahasiswa bimbingan">
+        <PeriodSelect value={academicYearId ?? queue.data?.academicYear.id} onChange={setAcademicYearId} />
+      </PageHeading>
 
       {queue.error ? (
         <p className="text-sm text-destructive">{queue.error instanceof Error ? queue.error.message : 'Gagal memuat data.'}</p>
@@ -47,7 +43,11 @@ export default function LecturerThesisProposal() {
           studentHref={(row) => `/tugas-akhir/bimbingan/lecturer/my-students/${row.thesis.id}`}
           actions={
             <>
-              <PeriodSelect value={academicYearId ?? queue.data?.academicYear.id} onChange={setAcademicYearId} />
+              {queue.data && (
+                <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium" title="Nilai diisi setelah mahasiswa mengajukan proposal final dan presensi kelas tersedia">
+                  Nilai minimum: {queue.data.minimumScore}
+                </Badge>
+              )}
               <RefreshButton onClick={() => void queue.refetch()} isRefreshing={queue.isFetching && !queue.isLoading} />
             </>
           }

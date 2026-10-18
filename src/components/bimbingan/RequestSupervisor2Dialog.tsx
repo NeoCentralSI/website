@@ -31,6 +31,9 @@ interface RequestSupervisor2DialogProps {
 }
 
 // Info kuota aman untuk mahasiswa (canon §7.3): hanya traffic light.
+/** Paket P9 (3): a full lecturer stays selectable (the lecturer and the Ketua Departemen decide). */
+export const SUPERVISOR2_FULL_NOTE = "Beban dosen ini sudah penuh; permintaan tetap bisa dikirim dan dapat ditolak.";
+export const SUPERVISOR2_CLOSED_NOTE = "Dosen sedang menutup penerimaan permintaan.";
 const TRAFFIC_LIGHT_META: Record<string, { label: string; className: string }> = {
   green: { label: "Tersedia", className: "border-green-300 bg-green-50 text-green-700" },
   yellow: { label: "Hampir penuh", className: "border-amber-300 bg-amber-50 text-amber-700" },
@@ -132,8 +135,9 @@ export function RequestSupervisor2Dialog({
           ) : (
             filteredLecturers.map((lecturer) => {
               const isSelected = selectedLecturer?.id === lecturer.id;
-              const isFull =
-                lecturer.trafficLight === "red" || lecturer.acceptingRequests === false;
+              // Paket P9 (3): only a closed intake locks the card; a full lecturer gets a warning.
+              const isClosed = lecturer.acceptingRequests === false;
+              const isFull = lecturer.trafficLight === "red";
               const trafficMeta = lecturer.trafficLight
                 ? TRAFFIC_LIGHT_META[lecturer.trafficLight]
                 : null;
@@ -144,16 +148,19 @@ export function RequestSupervisor2Dialog({
               return (
                 <Card
                   key={lecturer.id}
-                  aria-disabled={isFull}
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-disabled={isClosed}
+                  aria-label={formatLecturerName(lecturer.fullName || "")}
                   className={cn(
                     "p-3 transition-all",
-                    isFull ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:shadow-sm",
+                    isClosed ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:shadow-sm",
                     isSelected
                       ? "ring-2 ring-primary bg-primary/5"
-                      : !isFull && "hover:bg-muted/50",
+                      : !isClosed && "hover:bg-muted/50",
                   )}
                   onClick={() => {
-                    if (isFull) return;
+                    if (isClosed) return;
                     setSelectedLecturer(lecturer);
                   }}
                 >
@@ -190,13 +197,11 @@ export function RequestSupervisor2Dialog({
                           )}
                         </div>
                       )}
-                      {isFull && (
-                        <p className="mt-1 text-[11px] text-red-600">
-                          {lecturer.acceptingRequests === false
-                            ? "Dosen sedang menutup penerimaan permintaan."
-                            : "Kuota pembimbing penuh."}
-                        </p>
-                      )}
+                      {isClosed ? (
+                        <p className="mt-1 text-[11px] text-red-600">{SUPERVISOR2_CLOSED_NOTE}</p>
+                      ) : isFull ? (
+                        <p className="mt-1 text-[11px] text-amber-700">{SUPERVISOR2_FULL_NOTE}</p>
+                      ) : null}
                     </div>
                     {isSelected && (
                       <div className="shrink-0 ml-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center">

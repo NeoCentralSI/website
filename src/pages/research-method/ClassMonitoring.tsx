@@ -7,12 +7,13 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { formatAttendance } from '@/components/research-method/AssessmentCells';
 import { ExportButtons } from '@/components/research-method/ExportButtons';
 import { PeriodSelect } from '@/components/research-method/PeriodSelect';
-import { PageHeading, SectionHeading } from '@/components/shared/PageHeading';
+import { PageHeading } from '@/components/shared/PageHeading';
 import { ThesisStudentInfoCell } from '@/components/shared/ThesisTableCells';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { useClassMonitoring, usePromotionPreview, useRunPromotion } from '@/hooks/research-method/useResearchMethod';
 import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { useRole } from '@/hooks/shared/useRole';
@@ -77,6 +78,8 @@ function supervisorsOf(row: MonitoringRow) {
  * Metode Penelitian > Monitoring Kelas (Paket P8): semua mahasiswa kelas periode itu dan sejauh
  * mana prosesnya, ekspor, dan proses kelulusan (naik ke Penelitian, K13). Bawaan "Semua",
  * diurutkan dari tahap yang paling butuh perhatian; Tahap disaring di kepala kolom.
+ * Paket P9 (9): the period select beside the title; Peserta Kelas and Proses Kelulusan are two
+ * panels, one table each.
  */
 export default function ClassMonitoring() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -85,6 +88,7 @@ export default function ClassMonitoring() {
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
   const [stage, setStage] = useState<ResearchMethodStage | ''>('');
   const [decision, setDecision] = useState<PromotionDecision | ''>('');
+  const [tab, setTab] = useState('peserta');
   const monitoring = useClassMonitoring(academicYearId);
   const promotion = usePromotionPreview(canPromote);
   const run = useRunPromotion();
@@ -229,79 +233,75 @@ export default function ClassMonitoring() {
     { key: 'reason', header: 'Keterangan', className: CLIP_CELL, render: (row) => <TruncatedText text={row.error ?? row.reason} className="max-w-full" /> },
   ];
 
+  const tabs = [
+    { value: 'peserta', label: 'Peserta Kelas' },
+    ...(canPromote ? [{ value: 'kelulusan', label: 'Proses Kelulusan', badge: promotable || undefined }] : []),
+  ];
+
   return (
     <div className="space-y-6 p-6">
-      <div className="space-y-1">
-        <PageHeading title="Monitoring Kelas" subtitle="Kemajuan mahasiswa kelas Metode Penelitian, dari pengajuan pembimbing sampai nilai akhir" />
-        {data && (
-          <p className="text-sm text-muted-foreground">
-            Peserta {data.academicYear.label}: mahasiswa yang mengambil Metode Penelitian menurut SIA atau punya penilaian proposal pada periode ini. Nilai minimum lulus {data.minimumScore}.
-          </p>
-        )}
-      </div>
+      <PageHeading title="Monitoring Kelas" subtitle="Kemajuan mahasiswa kelas Metode Penelitian">
+        <PeriodSelect value={yearId} onChange={setAcademicYearId} />
+      </PageHeading>
+      <LocalTabsNav tabs={tabs} activeTab={tab} onTabChange={setTab} />
 
-      {tiles.length > 0 && (
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
-          {tiles.map(([label, value]) => (
-            <Card key={label} className="gap-1 p-3">
-              <dt className="text-xs text-muted-foreground">{label}</dt>
-              <dd className="text-xl font-semibold">{value}</dd>
-            </Card>
-          ))}
-        </dl>
-      )}
-
-      {monitoring.error ? (
-        <p className="text-sm text-destructive">{monitoring.error instanceof Error ? monitoring.error.message : 'Gagal memuat monitoring.'}</p>
-      ) : (
+      {tab === 'kelulusan' && canPromote ? (
         <CustomTable
-          columns={columns}
-          {...table.tableProps}
-          loading={monitoring.isLoading}
-          isRefreshing={monitoring.isFetching && !monitoring.isLoading}
+          columns={promotionColumns}
+          {...promotionTable.tableProps}
+          loading={promotion.isLoading}
+          isRefreshing={promotion.isFetching && !promotion.isLoading}
           subtleRefresh
           enableColumnFilters
-          tableClassName={TABLE_CLASS}
-          searchPlaceholder="Cari nama, NIM, atau judul..."
-          emptyText={table.search || stage ? 'Tidak ditemukan' : 'Belum ada peserta kelas Metode Penelitian pada periode ini.'}
-          rowKey={(row) => row.studentId}
-          actions={
-            <>
-              <PeriodSelect value={yearId} onChange={setAcademicYearId} />
-              <ExportButtons academicYearId={yearId} />
-              <RefreshButton onClick={() => void monitoring.refetch()} isRefreshing={monitoring.isFetching && !monitoring.isLoading} />
-            </>
-          }
+          tableClassName="table-fixed"
+          searchPlaceholder="Cari nama atau NIM..."
+          emptyText={promotionTable.search || decision ? 'Tidak ditemukan' : 'Tidak ada mahasiswa lulus yang masih di fase proposal.'}
+          rowKey={(row) => row.thesisId}
+          actions={(
+            <span title={runReason ?? undefined} className="inline-flex">
+              <Button size="sm" disabled={Boolean(runReason) || run.isPending} onClick={() => run.mutate()}>
+                {run.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}Jalankan Proses Kelulusan
+              </Button>
+            </span>
+          )}
         />
+      ) : (
+        <>
+          {tiles.length > 0 && (
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
+              {tiles.map(([label, value]) => (
+                <Card key={label} className="gap-1 p-3">
+                  <dt className="text-xs text-muted-foreground">{label}</dt>
+                  <dd className="text-xl font-semibold">{value}</dd>
+                </Card>
+              ))}
+            </dl>
+          )}
+          {monitoring.error ? (
+            <p className="text-sm text-destructive">{monitoring.error instanceof Error ? monitoring.error.message : 'Gagal memuat monitoring.'}</p>
+          ) : (
+            <CustomTable
+              columns={columns}
+              {...table.tableProps}
+              loading={monitoring.isLoading}
+              isRefreshing={monitoring.isFetching && !monitoring.isLoading}
+              subtleRefresh
+              enableColumnFilters
+              tableClassName={TABLE_CLASS}
+              searchPlaceholder="Cari nama, NIM, atau judul..."
+              emptyText={table.search || stage ? 'Tidak ditemukan' : 'Belum ada peserta kelas Metode Penelitian pada periode ini.'}
+              rowKey={(row) => row.studentId}
+              actions={
+                <>
+                  {data && <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium">Nilai minimum: {data.minimumScore}</Badge>}
+                  <ExportButtons academicYearId={yearId} />
+                  <RefreshButton onClick={() => void monitoring.refetch()} isRefreshing={monitoring.isFetching && !monitoring.isLoading} />
+                </>
+              }
+            />
+          )}
+        </>
       )}
-
-      <div className="space-y-3">
-        <SectionHeading
-          title="Proses Kelulusan"
-          description="Mahasiswa lulus naik ke fase Penelitian setelah SIA menunjukkan KRS Tugas Akhir pada periode setelah Penetapan Pembimbing. Berjalan otomatis setiap enam jam dan dapat dijalankan manual."
-        >
-          <span title={runReason ?? undefined} className="inline-flex">
-            <Button size="sm" disabled={Boolean(runReason) || run.isPending} onClick={() => run.mutate()}>
-              {run.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}Jalankan Proses Kelulusan
-            </Button>
-          </span>
-        </SectionHeading>
-        {runReason && <p className="text-xs text-muted-foreground">{runReason}</p>}
-        {canPromote && (
-          <CustomTable
-            columns={promotionColumns}
-            {...promotionTable.tableProps}
-            loading={promotion.isLoading}
-            isRefreshing={promotion.isFetching && !promotion.isLoading}
-            subtleRefresh
-            enableColumnFilters
-            tableClassName="table-fixed"
-            searchPlaceholder="Cari nama atau NIM..."
-            emptyText={promotionTable.search || decision ? 'Tidak ditemukan' : 'Tidak ada mahasiswa lulus yang masih di fase proposal.'}
-            rowKey={(row) => row.thesisId}
-          />
-        )}
-      </div>
     </div>
   );
 }

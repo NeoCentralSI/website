@@ -29,6 +29,7 @@ import {
   Award
 } from 'lucide-react';
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
+import { StudentSemesterFlagsCard } from '@/components/master-data/StudentSemesterFlagsCard';
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -43,11 +44,6 @@ const CPL_STATUS_LABELS: Record<string, string> = {
   verified: 'Diverifikasi',
   finalized: 'Final',
 };
-
-/** Ya / Tidak / Belum diketahui for one SIA flag. */
-function formatFlag(value: boolean | null) {
-  return value === null ? 'Belum diketahui' : value ? 'Ya' : 'Tidak';
-}
 
 export default function MahasiswaDetail() {
   const navigate = useNavigate();
@@ -341,39 +337,7 @@ export default function MahasiswaDetail() {
 
         {/* Right Column - Thesis Info */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Users className="h-4 w-4" />
-                Mata Kuliah per Semester (SIA)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {semesterFlags.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Belum ada data semester dari SIA.</p>
-              ) : (
-                <ul className="divide-y rounded-lg border text-sm">
-                  {semesterFlags.map((flags) => (
-                    <li key={flags.academicYearId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-                      <span className="font-medium">{flags.academicYearLabel}</span>
-                      <span className="flex flex-wrap items-center gap-1">
-                        <Badge variant={flags.takingResearchMethod ? 'default' : 'outline'}>
-                          Metode Penelitian: {formatFlag(flags.takingResearchMethod)}
-                        </Badge>
-                        <Badge variant={flags.takingThesisCourse ? 'default' : 'outline'}>
-                          Tugas Akhir: {formatFlag(flags.takingThesisCourse)}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {flags.source === 'devtools' ? 'DevTools' : flags.source === 'sia' ? 'SIA' : '-'}
-                          {flags.capturedAt ? ` · ${formatDateId(flags.capturedAt)}` : ''}
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <StudentSemesterFlagsCard studentId={data.id} semesterFlags={semesterFlags} canEdit={isAdmin()} />
 
           {/* Active Thesis */}
           {activeThesis && (

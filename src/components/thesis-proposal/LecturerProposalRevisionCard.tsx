@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { CheckCircle2, FilePen, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useLecturerProposalRevision, useReviewProposalRevision } from '@/hooks/thesis-proposal/useProposalRevision';
 import type { ProposalRevisionAction } from '@/types/thesis-proposal.types';
-import { RevisionRow } from './StudentProposalRevisionSection';
+import { RevisionRow } from './ProposalRevisionRow';
 
 const MIN_NOTES = 10;
 
@@ -59,10 +59,6 @@ export function LecturerProposalRevisionCard({ thesisId }: { thesisId: string })
           <FilePen className="h-4 w-4" />
           Proposal Revisi (Mengulang Proposal)
         </CardTitle>
-        <CardDescription>
-          Tugas akhir ini mengulang proposal berdasarkan evaluasi bimbingan. Pembimbing 1 meninjau proposal revisi; bila disetujui,
-          tugas akhir kembali ke fase Penelitian dan masa bimbingan dihitung ulang mulai hari persetujuan.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         {current ? <RevisionRow revision={current} /> : <p className="text-muted-foreground">Mahasiswa belum mengunggah proposal revisi.</p>}

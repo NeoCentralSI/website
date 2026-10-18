@@ -38,7 +38,8 @@ import {
   type SupervisorRequestStatus,
 } from '@/lib/thesisLabels';
 import type { ThesisChangeRequest } from '@/types/thesis-change-request.types';
-import type { LecturerApprovalRow, SupervisorRequest } from '@/types/thesis-proposal.types';
+import type { LecturerApprovalRow, Supervisor2InboxItem, SupervisorRequest } from '@/types/thesis-proposal.types';
+import { Supervisor2InboxDetails, Supervisor2LecturerDecisionDialog, type Supervisor2LecturerDecision } from './LecturerSupervisor2Dialogs';
 import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 import { SupervisorRequestResponseDialog, type SupervisorResponseState } from './SupervisorRequestResponseDialog';
 
@@ -69,16 +70,19 @@ const statusLabel = (status: string) =>
 
 function statusOptionsFor(jenis: LecturerInboxJenis | ''): string[] {
   if (jenis === 'supervisor_request') return REQUEST_STATUSES;
+  // Paket P9 (4): a Pembimbing 2 request always waits for the lecturer.
+  if (jenis === 'supervisor2') return ['awaiting_me'];
   if (jenis) return CHANGE_STATUSES;
   return ALL_STATUSES;
 }
 
 const WAITING_REQUEST_STATUSES: SupervisorRequestStatus[] = ['pending', 'under_review'];
 
-const studentOf = (row: LecturerApprovalRow) =>
-  row.kind === 'supervisor_request'
-    ? { name: row.supervisorRequest.student?.fullName ?? '', nim: row.supervisorRequest.student?.identityNumber ?? '' }
-    : { name: row.changeRequest.student?.name ?? '', nim: row.changeRequest.student?.identityNumber ?? '' };
+const studentOf = (row: LecturerApprovalRow) => {
+  if (row.kind === 'supervisor_request') return { name: row.supervisorRequest.student?.fullName ?? '', nim: row.supervisorRequest.student?.identityNumber ?? '' };
+  if (row.kind === 'supervisor2_request') return { name: row.supervisor2Request.studentName, nim: row.supervisor2Request.studentNim ?? '' };
+  return { name: row.changeRequest.student?.name ?? '', nim: row.changeRequest.student?.identityNumber ?? '' };
+};
 
 /** Supervision load and "Menerima pengajuan baru", shown in the page header (as on the old card). */
 export function LecturerSupervisionLoadControls() {
@@ -110,6 +114,8 @@ export function LecturerSupervisionLoadControls() {
  * Pembimbing, Perubahan Judul, Perubahan Pembimbing, Perubahan Judul & Pembimbing) and Status
  * are filtered in the column header. Terima / Tolak (an arrow to forward to the Ketua Departemen when the
  * lecturer is full) and Setujui / Tolak are icons in the row, everything else in the modal.
+ * Paket P9 (4): the Pembimbing 2 requests are the Jenis "Pembimbing 2" (Lihat, Bersedia, Tolak),
+ * first among what waits; the page has this one table.
  */
 export function LecturerApprovalInboxTable() {
   const { search, setSearch, debouncedSearch, page, setPage } = usePagedSearch();
@@ -131,6 +137,8 @@ export function LecturerApprovalInboxTable() {
   const [changeDetail, setChangeDetail] = useState<ThesisChangeRequest | null>(null);
   const [response, setResponse] = useState<SupervisorResponseState>(null);
   const [changeDecision, setChangeDecision] = useState<{ request: ThesisChangeRequest; state: ChangeDecisionDialogState } | null>(null);
+  const [supervisor2Detail, setSupervisor2Detail] = useState<Supervisor2InboxItem | null>(null);
+  const [supervisor2Decision, setSupervisor2Decision] = useState<Supervisor2LecturerDecision>(null);
 
   const isFull = supervisorInbox?.load.level === 'full';
   const acceptLabel = isFull ? 'Terima dan Teruskan ke Ketua Departemen' : 'Terima';
@@ -170,7 +178,11 @@ export function LecturerApprovalInboxTable() {
       header: 'Usulan',
       render: (row) => (
         <TruncatedText
-          text={row.kind === 'supervisor_request' ? row.supervisorRequest.proposedTitle : summarizeChange(row.changeRequest, formatLecturerName)}
+          text={row.kind === 'supervisor_request'
+            ? row.supervisorRequest.proposedTitle
+            : row.kind === 'supervisor2_request'
+              ? row.supervisor2Request.thesisTitle
+              : summarizeChange(row.changeRequest, formatLecturerName)}
           className="max-w-full"
         />
       ),
@@ -190,6 +202,8 @@ export function LecturerApprovalInboxTable() {
           >
             {SUPERVISOR_REQUEST_STATUS_SHORT_LABELS[row.viewStatus] ?? row.viewStatus}
           </Badge>
+        ) : row.kind === 'supervisor2_request' ? (
+          <ThesisChangeRequestRowStatus status={row.viewStatus} blockReason={null} />
         ) : (
           <ThesisChangeRequestRowStatus status={row.viewStatus} blockReason={row.changeRequest.applyBlockReason} />
         ),
@@ -221,6 +235,12 @@ export function LecturerApprovalInboxTable() {
                   <TableIconAction icon={X} label="Tolak" onClick={() => setResponse({ request: row.supervisorRequest, action: 'reject' })} />
                 </>
               )}
+            </>
+          ) : row.kind === 'supervisor2_request' ? (
+            <>
+              <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setSupervisor2Detail(row.supervisor2Request)} />
+              <TableIconAction icon={Check} label="Bersedia" tone="approve" onClick={() => setSupervisor2Decision({ mode: 'approve', item: row.supervisor2Request })} />
+              <TableIconAction icon={X} label="Tolak" onClick={() => setSupervisor2Decision({ mode: 'reject', item: row.supervisor2Request })} />
             </>
           ) : (
             <>
@@ -284,7 +304,7 @@ export function LecturerApprovalInboxTable() {
               note={isFull ? 'Anda sudah mencapai batas bimbingan; menerima berarti meneruskan ke Ketua Departemen.' : undefined}
             >
               {requestDetail.status === 'pending' && (
-                <Button size="sm" variant="ghost" disabled={markReview.isPending} onClick={() => markReview.mutate(requestDetail.id)}>Tandai Sedang Ditinjau</Button>
+                <Button size="sm" variant="outline" disabled={markReview.isPending} onClick={() => markReview.mutate(requestDetail.id)}>Tandai Sedang Ditinjau</Button>
               )}
               <Button size="sm" variant="destructive" onClick={() => setResponse({ request: requestDetail, action: 'reject' })}>Tolak</Button>
               <Button size="sm" onClick={() => setResponse({ request: requestDetail, action: 'accept' })}>{isFull ? 'Terima dan Teruskan' : 'Terima'}</Button>
@@ -303,6 +323,22 @@ export function LecturerApprovalInboxTable() {
         onClose={() => setResponse(null)}
         onDone={() => setRequestDetail(null)}
       />
+
+      <RecordDetailDialog
+        open={!!supervisor2Detail}
+        onOpenChange={(open) => { if (!open) setSupervisor2Detail(null); }}
+        title="Detail Permintaan Pembimbing 2"
+        footer={supervisor2Detail ? (
+          <DetailDialogActions onClose={() => setSupervisor2Detail(null)}>
+            <Button size="sm" variant="destructive" onClick={() => setSupervisor2Decision({ mode: 'reject', item: supervisor2Detail })}>Tolak</Button>
+            <Button size="sm" onClick={() => setSupervisor2Decision({ mode: 'approve', item: supervisor2Detail })}>Bersedia</Button>
+          </DetailDialogActions>
+        ) : undefined}
+      >
+        {supervisor2Detail && <Supervisor2InboxDetails item={supervisor2Detail} />}
+      </RecordDetailDialog>
+
+      <Supervisor2LecturerDecisionDialog decision={supervisor2Decision} onClose={() => setSupervisor2Decision(null)} onDone={() => setSupervisor2Detail(null)} />
 
       <ThesisChangeRequestDetailDialog request={changeDetail} onClose={() => setChangeDetail(null)} />
 
