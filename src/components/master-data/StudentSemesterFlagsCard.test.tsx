@@ -8,6 +8,8 @@ import { StudentSemesterFlagsCard } from './StudentSemesterFlagsCard';
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/services/admin.service', () => ({ setStudentPeriodFlagsAPI: vi.fn(), followSiaPeriodFlagsAPI: vi.fn() }));
+const siaStatus = vi.hoisted(() => ({ configured: true }));
+vi.mock('@/services/sia.service', () => ({ getSiaSyncStatus: vi.fn(async () => ({ configured: siaStatus.configured, lastRun: null, periodSnapshots: null })) }));
 
 const flags = (overrides: Partial<StudentSemesterFlags>): StudentSemesterFlags => ({
   academicYearId: 'ay-1', academicYearLabel: '2026/2027 Ganjil', takingResearchMethod: true, takingThesisCourse: null,
@@ -21,7 +23,10 @@ function wrap(rows: StudentSemesterFlags[]) {
 
 /** Paket P9 (8, K36): the Admin's semester flags in Data Master → Mahasiswa. */
 describe('Keikutsertaan per Semester', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    siaStatus.configured = true;
+  });
 
   it('shows each flag with its source; the Admin changes them; Ikuti Data SIA only when a flag is the Admin\'s', async () => {
     vi.mocked(admin.setStudentPeriodFlagsAPI).mockResolvedValue({ data: {}, message: 'Keikutsertaan semester disimpan.' });
@@ -45,5 +50,14 @@ describe('Keikutsertaan per Semester', () => {
     expect(within(dialog).getByText(/Isian Admin tidak ditimpa sinkronisasi SIA/)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Simpan' }));
     await waitFor(() => expect(admin.setStudentPeriodFlagsAPI).toHaveBeenCalledWith('s1', 'ay-1', { eligibleResearchMethod: true, takingThesisCourse: null }));
+  });
+
+  it('Paket P9: without SIA_BASE_URL, Ikuti Data SIA is disabled with "Sinkronisasi SIA belum tersedia."; Ubah still works', async () => {
+    siaStatus.configured = false;
+    wrap([flags({ researchMethodSource: 'admin' })]);
+    const button = screen.getByRole('button', { name: 'Ikuti Data SIA' });
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(button.parentElement).toHaveAttribute('title', 'Sinkronisasi SIA belum tersedia.');
+    expect(screen.getByRole('button', { name: 'Ubah' })).toBeEnabled();
   });
 });

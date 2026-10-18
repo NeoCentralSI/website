@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { useSiaAvailability } from '@/hooks/shared/useSiaAvailability';
 import { triggerSiaSync } from '@/services/sia.service';
 
 /**
@@ -14,6 +15,7 @@ import { triggerSiaSync } from '@/services/sia.service';
  */
 export function DevToolsPeriodPanel() {
   const [syncing, setSyncing] = useState(false);
+  const sia = useSiaAvailability();
 
   const runSiaSync = async () => {
     setSyncing(true);
@@ -41,10 +43,12 @@ export function DevToolsPeriodPanel() {
             Sinkronisasi hanya membaca SIA dan menyimpan penanda semester berjalan (mengambil Metode Penelitian,
             mengambil Tugas Akhir). Penanda satu mahasiswa bisa diubah di tab Mahasiswa.
           </p>
-          <Button variant="outline" size="sm" disabled={syncing} onClick={() => void runSiaSync()}>
-            {syncing ? <Spinner className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Jalankan Sinkronisasi SIA
-          </Button>
+          <span title={sia.reason ?? undefined} className="inline-flex">
+            <Button variant="outline" size="sm" disabled={syncing || !sia.configured} onClick={() => void runSiaSync()}>
+              {syncing ? <Spinner className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Jalankan Sinkronisasi SIA
+            </Button>
+          </span>
         </CardContent>
       </Card>
     </div>

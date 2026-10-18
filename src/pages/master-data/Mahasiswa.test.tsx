@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 
 import Mahasiswa from './Mahasiswa';
@@ -37,6 +37,9 @@ vi.mock('@/services/admin.service', async () => {
     adminUpdateStudentAPI: vi.fn(),
   };
 });
+
+const siaStatus = vi.hoisted(() => ({ configured: true }));
+vi.mock('@/services/sia.service', () => ({ getSiaSyncStatus: vi.fn(async () => ({ configured: siaStatus.configured, lastRun: null, periodSnapshots: null })) }));
 
 vi.mock('@/components/layout/CustomTable', () => ({
   default: ({
@@ -152,4 +155,19 @@ describe('Mahasiswa page', () => {
     expect(screen.getByText('Metode Penelitian')).toBeInTheDocument();
     expect(screen.queryByText('Tugas Akhir')).not.toBeInTheDocument();
   });
+
+  it('Paket P9: without SIA_BASE_URL the "Sinkronkan data SIA" button is disabled with the reason', async () => {
+    siaStatus.configured = false;
+    vi.mocked(getStudentsAPI).mockResolvedValue({
+      students: [],
+      meta: { page: 1, pageSize: 10, total: 0, totalPages: 0 },
+      academicYearContext: { id: 'ay-active', year: 2025, semester: 'genap', label: 'Genap 2025', isActive: true },
+    } as never);
+    render(<Mahasiswa />, { wrapper: createWrapper() });
+    const button = await screen.findByRole('button', { name: 'Sinkronisasi data SIA' });
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(button.parentElement).toHaveAttribute('title', 'Sinkronisasi SIA belum tersedia.');
+    siaStatus.configured = true;
+  });
 });
+

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDateId } from '@/lib/text';
+import { useSiaAvailability } from '@/hooks/shared/useSiaAvailability';
 import { followSiaPeriodFlagsAPI, setStudentPeriodFlagsAPI, type StudentSemesterFlags } from '@/services/admin.service';
 
 const SOURCE_LABELS: Record<string, string> = { sia: 'SIA', admin: 'Admin', devtools: 'DevTools' };
@@ -48,6 +49,7 @@ export function StudentSemesterFlagsCard({ studentId, semesterFlags, canEdit }: 
   const [researchMethod, setResearchMethod] = useState<FlagValue>('unknown');
   const [thesisCourse, setThesisCourse] = useState<FlagValue>('unknown');
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['student-detail', studentId] });
+  const sia = useSiaAvailability(canEdit);
 
   const save = useMutation({
     mutationFn: (flags: StudentSemesterFlags) => setStudentPeriodFlagsAPI(studentId, flags.academicYearId, {
@@ -98,8 +100,8 @@ export function StudentSemesterFlagsCard({ studentId, semesterFlags, canEdit }: 
                     {canEdit && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => open(flags)}>Ubah</Button>
-                        <span title={isAdmin ? undefined : 'Penanda semester ini sudah mengikuti data SIA.'} className="inline-flex">
-                          <Button size="sm" variant="outline" disabled={!isAdmin || follow.isPending} onClick={() => follow.mutate(flags)}>
+                        <span title={sia.reason ?? (isAdmin ? undefined : 'Penanda semester ini sudah mengikuti data SIA.')} className="inline-flex">
+                          <Button size="sm" variant="outline" disabled={!sia.configured || !isAdmin || follow.isPending} onClick={() => follow.mutate(flags)}>
                             {follow.isPending && follow.variables?.academicYearId === flags.academicYearId && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Ikuti Data SIA
                           </Button>
                         </span>

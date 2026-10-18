@@ -13,7 +13,8 @@ import { DevToolsUserPanel } from './DevToolsUserPanel';
 import { buildGuidanceSchedulePatch, isoToWibInput, toGuidanceScheduleForm, wibInputToIso } from './devToolsDate';
 
 vi.mock('lottie-react', () => ({ default: () => null }));
-vi.mock('@/services/sia.service', () => ({ triggerSiaSync: vi.fn() }));
+const siaStatus = vi.hoisted(() => ({ configured: true }));
+vi.mock('@/services/sia.service', () => ({ triggerSiaSync: vi.fn(), getSiaSyncStatus: vi.fn(async () => ({ configured: siaStatus.configured, lastRun: null, periodSnapshots: null })) }));
 vi.mock('@/services/devTools.service', () => ({
   devToolsService: {
     getStudents: vi.fn(),
@@ -118,9 +119,18 @@ describe('DevTools panels', () => {
   });
 
   it('Period panel offers the SIA sync and no period close (K2)', () => {
+    siaStatus.configured = true;
     wrap(<DevToolsPeriodPanel />);
     expect(screen.getByRole('button', { name: 'Jalankan Sinkronisasi SIA' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Dry-run' })).not.toBeInTheDocument();
+  });
+
+  it('Paket P9: without SIA_BASE_URL the sync button is disabled with the reason', async () => {
+    siaStatus.configured = false;
+    wrap(<DevToolsPeriodPanel />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Jalankan Sinkronisasi SIA' })).toBeDisabled());
+    expect(screen.getByRole('button', { name: 'Jalankan Sinkronisasi SIA' }).parentElement).toHaveAttribute('title', 'Sinkronisasi SIA belum tersedia.');
+    siaStatus.configured = true;
   });
 
   it('Guidance panel shows the status badge and WIB dates, and saves only changed dates', async () => {

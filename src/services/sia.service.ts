@@ -25,6 +25,8 @@ export interface SiaStudent {
 
 /** `GET /sia/sync/status`: the last sync and how many students have flags for the running semester. */
 export interface SiaSyncStatus {
+  /** False while SIA_BASE_URL is empty: every SIA read is refused ("Sinkronisasi SIA belum tersedia."). */
+  configured?: boolean;
   lastRun: string | null;
   fetched?: number;
   dbUpdated?: number;

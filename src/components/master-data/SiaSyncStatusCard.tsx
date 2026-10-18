@@ -5,6 +5,7 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDateTimeWib } from '@/lib/text';
+import { SIA_NOT_AVAILABLE } from '@/hooks/shared/useSiaAvailability';
 import { getSiaSyncStatus, triggerSiaSync } from '@/services/sia.service';
 
 const KEY = ['sia', 'sync-status'] as const;
@@ -25,6 +26,7 @@ export function SiaSyncStatusCard({ canMutate = false }: { canMutate?: boolean }
     onError: (err: Error) => toast.error(err.message),
   });
   const coverage = data?.periodSnapshots ?? null;
+  const notConfigured = data?.configured === false;
 
   return (
     <Card>
@@ -36,10 +38,12 @@ export function SiaSyncStatusCard({ canMutate = false }: { canMutate?: boolean }
           </CardDescription>
         </div>
         {canMutate && (
-          <Button size="sm" variant="outline" disabled={sync.isPending} onClick={() => sync.mutate()}>
-            {sync.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Jalankan Sinkronisasi
-          </Button>
+          <span title={notConfigured ? SIA_NOT_AVAILABLE : undefined} className="inline-flex">
+            <Button size="sm" variant="outline" disabled={sync.isPending || notConfigured} onClick={() => sync.mutate()}>
+              {sync.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Jalankan Sinkronisasi
+            </Button>
+          </span>
         )}
       </CardHeader>
       <CardContent className="grid gap-3 text-sm sm:grid-cols-3">

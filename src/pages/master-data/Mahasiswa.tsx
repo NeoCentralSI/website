@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useRole } from '@/hooks/shared/useRole';
+import { useSiaAvailability } from '@/hooks/shared/useSiaAvailability';
 import {
   getStudentsAPI,
   getAcademicYearsAPI,
@@ -127,6 +128,7 @@ export default function Mahasiswa() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const sia = useSiaAvailability(showSyncButton());
   const syncMutation = useMutation({
     mutationFn: triggerSiaSyncAPI,
     onSuccess: (result) => {
@@ -389,18 +391,21 @@ export default function Mahasiswa() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => syncMutation.mutate()}
-                      disabled={syncMutation.isPending}
-                      aria-label="Sinkronisasi data SIA"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-                    </Button>
+                    {/* A disabled button gets no pointer events, so the tooltip sits on its wrapper. */}
+                    <span className="inline-flex" title={sia.reason ?? undefined}>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => syncMutation.mutate()}
+                        disabled={syncMutation.isPending || !sia.configured}
+                        aria-label="Sinkronisasi data SIA"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{syncMutation.isPending ? 'Menyinkronkan...' : 'Sinkronkan data SIA'}</p>
+                    <p>{sia.reason ?? (syncMutation.isPending ? 'Menyinkronkan...' : 'Sinkronkan data SIA')}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
